@@ -1,2 +1,7 @@
+#*
+*.sublime-*
 *~
-cbft
+.#*
+.project
+.settings
+.DS_Store
