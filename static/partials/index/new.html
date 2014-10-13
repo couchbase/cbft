@@ -1,0 +1,46 @@
+<ol class="breadcrumb">
+  <li><span class="glyphicon glyphicon-book"></li>
+  <li><a href="/indexes">Indexes</a></li>
+  <li>New</li>
+</ol>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert"> {{errorMessage}}
+</div>
+
+<form class="form-horizontal" role="form">
+  <div class="form-group">
+    <label for="inputIndexName" class="col-sm-2 control-label">Name</label>
+    <div class="col-sm-10">
+      <input ng-model="newIndexName" type="text" class="form-control" id="inputIndexName" placeholder="identifier">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputDoc" class="col-sm-2 control-label">Mapping</label>
+	<div class="radio">
+	  <label>
+	    <input type="radio" name="mappingType" id="optionsRadios1" value="default" checked>
+	    Default Mapping
+	  </label>
+	</div>
+  </div>
+  <div class="form-group">
+<label for="inputDoc" class="col-sm-2 control-label">&nbsp;</label>
+	<div class="radio">
+	  <label>
+	    <input type="radio" name="mappingType" id="optionsRadios2" value="custom">
+	    Custom Mapping
+	  </label>
+	</div>
+  </div>
+  <div class="form-group">
+<label for="inputDoc" class="col-sm-2 control-label">&nbsp;</label>
+	<div class="col-sm-10">
+      <textarea ng-model="mapping" id="inputDoc" class="form-control" rows="10"></textarea>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button ng-click="newIndexNamed(newIndexName, mapping)" type="submit" class="btn btn-default">New Index</button>
+    </div>
+  </div>
+</form>

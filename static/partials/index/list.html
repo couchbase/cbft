@@ -1,0 +1,27 @@
+<ol class="breadcrumb">
+  <li><span class="glyphicon glyphicon-book"></li>
+  <li><a href="#">Indexes</a></li>
+</ol>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert"> {{errorMessage}}
+</div>
+
+<table class="table table-striped">
+	<tr>
+		<th>Name</th>
+		<th width="5%"></th>
+	</tr>
+	<tr ng-repeat="indexName in indexNames">
+		<td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+		<td>
+			<button ng-click="deleteIndexNamed(indexName)" type="button" class="btn btn-default btn-sm">
+			<span class="glyphicon glyphicon-trash"></span>
+			</button>
+		</td>
+	</tr>
+</table>
+
+
+<div class="input-group pull-right">
+	<a href="/indexes/_new"><button  class="btn btn-primary" type="submit"><i class="glyphicon glyphicon-plus"></i> New Index</button></a>
+</div>

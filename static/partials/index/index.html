@@ -1,0 +1,16 @@
+<ol class="breadcrumb">
+  <li><span class="glyphicon glyphicon-book"></li>
+  <li><a href="/indexes">Indexes</a></li>
+  <li>{{indexName}}</li>
+</ol>
+
+<div ng-show="successMessage" class="alert alert-success ng-cloak" role="alert"> {{successMessage}}
+</div>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert"> {{errorMessage}}
+</div>
+
+<div ng-include src="'/static/partials/index/tabs.html'"/>
+
+<div ng-include src="tabPath"/>
+
