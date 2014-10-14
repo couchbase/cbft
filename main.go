@@ -43,7 +43,7 @@ func main() {
 	flag.Parse()
 
 	err := mainServer(*bindAddr, *dataDir, *staticPath, *server)
-	if (err != nil) {
+	if err != nil {
 		log.Fatal(err)
 	}
 }
@@ -56,6 +56,14 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 	if server == "" {
 		return fmt.Errorf("error: couchbase server URL required (-server)")
 	}
+
+	// TODO: need different approach keeps trying even if the
+	// server(s) are down, so that we could at least serve queries
+	// to old, existing indexes.
+	//
+	// TODO: if we handle multiple "seed" servers, what if those
+	// seeds actually come from different clusters?  Can we have
+	// multiple clusters fan-in to a single cbft?
 	_, err := couchbase.Connect(server)
 	if err != nil {
 		return fmt.Errorf("error: could not connect to couchbase server URL: %v, err: %v",
@@ -81,6 +89,10 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 			if err != nil {
 				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
 					server, err)
+				// TODO: need a way to collect these errors so REST api
+				// can show them to user ("hey, perhaps you deleted a bucket
+				// and should delete these related full-text indexes?
+				// or the couchbase cluster is just down.")
 				continue
 			}
 			err = StartRegisteredStream(stream, dirInfo.Name(), i)
