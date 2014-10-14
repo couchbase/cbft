@@ -14,6 +14,7 @@ package main
 import (
 	"expvar"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -21,10 +22,10 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/couchbaselabs/go-couchbase"
-
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
+
+	"github.com/couchbaselabs/go-couchbase"
 )
 
 var bindAddr = flag.String("addr", ":8095", "http listen [address]:port")
@@ -40,27 +41,31 @@ func init() {
 
 func main() {
 	flag.Parse()
-	MainServer(*bindAddr, *dataDir, *staticPath, *server)
+
+	err := mainServer(*bindAddr, *dataDir, *staticPath, *server)
+	if (err != nil) {
+		log.Fatal(err)
+	}
 }
 
-func MainServer(bindAddr, dataDir, staticPath, server string) {
+func mainServer(bindAddr, dataDir, staticPath, server string) error {
 	log.Printf("cbft started")
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
 
 	// connect to couchbase, make sure the address is valids
 	if server == "" {
-		log.Fatalf("error: couchbase server URL required (-server)")
+		return fmt.Errorf("error: couchbase server URL required (-server)")
 	}
 	_, err := couchbase.Connect(server)
 	if err != nil {
-		log.Fatalf("error: could not connect to couchbase server URL: %v, err: %v",
+		return fmt.Errorf("error: could not connect to couchbase server URL: %v, err: %v",
 			server, err)
 	}
 
 	// walk the data dir and register index names
 	dirEntries, err := ioutil.ReadDir(dataDir)
 	if err != nil {
-		log.Fatalf("error: could not read dataDir: %v, err: %v", dataDir, err)
+		return fmt.Errorf("error: could not read dataDir: %v, err: %v", dataDir, err)
 	}
 
 	expvars.Set("indexes", bleveHttp.IndexStats())
@@ -135,5 +140,7 @@ func MainServer(bindAddr, dataDir, staticPath, server string) {
 	// start the HTTP server
 	http.Handle("/", router)
 	log.Printf("listening on: %v", bindAddr)
-	log.Fatal(http.ListenAndServe(bindAddr, nil))
+	http.ListenAndServe(bindAddr, nil)
+
+	return nil // never reached :-/
 }
