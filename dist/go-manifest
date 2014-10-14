@@ -1,0 +1,42 @@
+#!/bin/sh
+# Tell me what versions of various things are in use.
+
+eval `go env`
+
+detect() {
+    pkg="$1"
+    dir="$2"
+
+    cd "$dir"
+    gitv=`git describe --always 2>/dev/null`
+    if [ $? -eq 0 ]
+    then
+        echo "$pkg $gitv"
+    else
+        hgv=`hg identify -i`
+        if [ $? -ne 0 ]
+        then
+            echo "Warning: Can't identify $pkg"
+        else
+            echo "$pkg $hgv"
+        fi
+    fi
+}
+
+process() {
+    pkg="$1"
+    dir=`go list -f {{.Dir}} "$pkg"`
+    case "$dir" in
+        $GOROOT*)
+            # echo "$pkg is stdlib";;
+            :
+            ;;
+        *)
+            detect "$pkg" "$dir"
+    esac
+}
+
+for pkg in `go list -f '{{ range .Deps }} {{.}} {{end}}' "$@"`
+do
+    process $pkg
+done

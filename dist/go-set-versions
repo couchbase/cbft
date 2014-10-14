@@ -1,0 +1,52 @@
+#!/bin/sh
+# Reset versions based on a manifest file
+
+eval `go env`
+
+setGitVer() {
+    pkg="$1"
+    ver="$2"
+
+    echo "Setting git version of $pkg to $ver"
+    git reset --hard "$ver"
+}
+
+setHgVer() {
+    pkg="$1"
+    ver="$2"
+
+    echo "Setting hg version of $pkg to $ver"
+    hg checkout -C -r "$ver"
+}
+
+setVer() {
+    pkg="$1"
+    ver="$2"
+
+    cd "$GOPATH/src/$pkg" || exit 1
+    gitv=`git describe --always 2>/dev/null`
+
+    if [ $? -eq 0 ]
+    then
+        if [ "$gitv" != "$ver" ]
+        then
+            setGitVer "$pkg" "$ver"
+        fi
+    else
+        hgv=`hg identify -i`
+        if [ $? -ne 0 ]
+        then
+            echo "Warning: Can't identify $pkg"
+        else
+            if [ "$hgv" != "$ver" ]
+            then
+                setHgVer "$pkg" "$ver"
+            fi
+        fi
+    fi
+}
+
+cat $1 | while read pkg ver
+do
+    setVer "$pkg" "$ver"
+done
