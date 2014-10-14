@@ -32,11 +32,12 @@ var bindAddr = flag.String("addr", ":8095", "http listen [address]:port")
 var dataDir = flag.String("dataDir", "data", "data directory")
 var staticEtag = flag.String("staticEtag", "", "static etag value")
 var staticPath = flag.String("static", "static/", "path to the static web UI content")
-var expvars = expvar.NewMap("stats")
 var server = flag.String("server", "", "url to couchbase server, example: http://localhost:8091")
 
+var expvars = expvar.NewMap("stats")
+
 func init() {
-	expvar.Publish("bleve_explorer", expvars)
+	expvar.Publish("cbft", expvars)
 }
 
 func main() {

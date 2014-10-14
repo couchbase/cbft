@@ -1,15 +1,14 @@
 function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
-
 	$scope.active = true;
 	$scope.monitoredIndexes = {};
-	var updateInterval = null;
 
 	var tv = 1000;
-
+	var top = "/cbft/";
+	var updateInterval = null;
 	var isoDateFormatter = function(x) { return ISODateString(new Date(x*1000)); };
 	var byteSizeFormatter = function(y) { return Humanize.fileSize(y); };
 	var nanosecondFormatter = function(y) {
-		if(y > 1000000) {
+		if (y > 1000000) {
 			return Humanize.toFixed(y/1000000) + " ms";
 		} else {
 			return y + " ns";
@@ -23,7 +22,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 		expvar.pollExpvar();
 		indxs = expvar.getKeys("indexes");
 		indexesSeen = {};
-		for(var idxIndex in indxs) {
+		for (var idxIndex in indxs) {
 			idxname = indxs[idxIndex];
 			if ($scope.monitoredIndexes[idxname] === undefined) {
 				// a new index
@@ -66,7 +65,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 				{
 					name: name+"updates",
 					display: "Updates",
-					path: "/bleve_explorer/indexes/" + name  + "/index/updates",
+					path: top + "indexes/" + name  + "/index/updates",
 					type: "rate",
 					color: "steelblue",
 					yaxis: Rickshaw.Fixtures.Number.formatKMBT,
@@ -76,7 +75,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 				{
 					name: name+"deletes",
 					display: "Deletes",
-					path: "/bleve_explorer/indexes/"+ name  +"/index/deletes",
+					path: top + "indexes/"+ name  +"/index/deletes",
 					type: "rate",
 					color: "steelblue",
 					yaxis: Rickshaw.Fixtures.Number.formatKMBT,
@@ -90,14 +89,14 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 						{
 							display: "Index",
 							name: name+"indextime",
-							path: "/bleve_explorer/indexes/"+ name  +"/index/index_time",
+							path: top + "indexes/"+ name  +"/index/index_time",
 							type: "rate",
 							color: "red",
 						},
 						{
 							display: "Analysis",
 							name: name+"analysistime",
-							path: "/bleve_explorer/indexes/" + name  + "/index/analysis_time",
+							path: top + "indexes/" + name  + "/index/analysis_time",
 							type: "rate",
 							color: "green",
 						}
@@ -110,7 +109,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 				{
 					name: name+"searches",
 					display: "Searches",
-					path: "/bleve_explorer/indexes/"+ name  +"/searches",
+					path: top + "indexes/"+ name  +"/searches",
 					type: "rate",
 					color: "steelblue",
 					yaxis: Rickshaw.Fixtures.Number.formatKMBT,
@@ -120,14 +119,14 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 				{
 					name: name+"searchtime",
 					display: "Search Time",
-					path: "/bleve_explorer/indexes/"+ name  +"/search_time",
+					path: top + "indexes/"+ name  +"/search_time",
 					type: "rate",
 					color: "steelblue",
 					yaxis: Rickshaw.Fixtures.Number.formatKMBT,
 					xformatter: isoDateFormatter,
 					yformatter: nanosecondFormatter
 				},
-		]
+			]
 		};
 
 		indexDivName = "index" + name;
@@ -177,7 +176,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 	}
 
 	function removeIndex(index) {
-		for(var i in index.metrics) {
+		for (var i in index.metrics) {
 			metric = index.metrics[i];
 			expvar.removeMetric(metric.name);
 			// $("#header" + metric.name).remove();
@@ -215,7 +214,6 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 			}
 			graph.series.addData(d);
 		}
-		
 
 		// redraw
 		graph.render();
@@ -250,8 +248,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 		}
 	};
 
-
-	expvar.addKeysLookup("indexes", "/bleve_explorer/indexes");
+	expvar.addKeysLookup("indexes", top + "indexes");
 
 	for (var categoryName in $scope.metrics) {
 		category = $scope.metrics[categoryName];
@@ -259,7 +256,6 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 		divName = "cat" + categoryName;
 		panel = '<div class="panel panel-default"><div class="panel-heading"><a data-toggle="collapse" data-target="#' + divName + '">'+ category.display + '</a></div><div id="' + divName + '" class="panel-body collapse in"></div></div>';
 		$(panel).insertBefore('#chartend');
-
 
 		for (var i in category.metrics) {
 			metric = category.metrics[i];
@@ -273,12 +269,10 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
 			// build chart
 			addGraph(metric);
-
 		}
 	}
 
 	function addGraph(metric) {
-
 		var seriesData = [];
 		if (metric.series !== undefined) {
 			for (var si in metric.series) {
