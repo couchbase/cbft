@@ -12,8 +12,9 @@
 package main
 
 import (
-	"github.com/blevesearch/bleve"
 	"sync"
+
+	"github.com/blevesearch/bleve"
 )
 
 type StreamMutation interface {
