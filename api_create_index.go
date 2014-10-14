@@ -19,7 +19,6 @@ import (
 	"os"
 
 	"github.com/blevesearch/bleve"
-	bleveHttp "github.com/blevesearch/bleve/http"
 
 	"github.com/gorilla/mux"
 )
@@ -39,13 +38,6 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
-		return
-	}
-
-	// make sure there is a bucket with this name
-	stream, err := NewTAPStream(*server, indexName)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("error preparing tap stream: %v", err), 400)
 		return
 	}
 
@@ -73,16 +65,19 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// now start the stream
-	go HandleStream(stream, newIndex)
-	err = stream.Start()
+	// make sure there is a bucket with this name
+	stream, err := NewTAPStream(*server, indexName)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error starting stream: %v", err), 500)
+		showError(w, req, fmt.Sprintf("error preparing tap stream: %v", err), 400)
 		return
 	}
 
-	RegisterStream(indexName, stream)
-	bleveHttp.RegisterIndexName(indexName, newIndex)
+	err = StartRegisteredStream(stream, indexName, newIndex)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("error starting registered stream: %v", err), 500)
+		return
+	}
+
 	rv := struct {
 		Status string `json:"status"`
 	}{

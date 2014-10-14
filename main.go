@@ -83,17 +83,11 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 					server, err)
 				continue
 			}
-			// now start the stream
-			go HandleStream(stream, i)
-			err = stream.Start()
+			err = StartRegisteredStream(stream, dirInfo.Name(), i)
 			if err != nil {
-				log.Printf("error: could not starting stream, err: %v", err)
+				log.Printf("error: could not start registered stream, err: %v", err)
 				continue
 			}
-			// now register the index
-			RegisterStream(dirInfo.Name(), stream)
-			log.Printf("registered index: %s", dirInfo.Name())
-			bleveHttp.RegisterIndexName(dirInfo.Name(), i)
 		}
 	}
 
@@ -143,4 +137,18 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 	http.ListenAndServe(bindAddr, nil)
 
 	return nil // never reached :-/
+}
+
+func StartRegisteredStream(stream Stream, indexName string, index bleve.Index) error {
+	// now start the stream
+	go HandleStream(stream, index)
+	err := stream.Start()
+	if err != nil {
+		return err
+	}
+	// now register the index
+	RegisterStream(indexName, stream)
+	bleveHttp.RegisterIndexName(indexName, index)
+	log.Printf("registered index: %s", indexName)
+	return nil
 }
