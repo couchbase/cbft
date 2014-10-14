@@ -29,9 +29,9 @@ import (
 )
 
 var bindAddr = flag.String("addr", ":8095", "http listen [address]:port")
-var dataDir = flag.String("dataDir", "data", "data directory")
+var dataDir = flag.String("dataDir", "data", "directory for index data")
+var staticDir = flag.String("staticDir", "static", "directory for static web UI content")
 var staticEtag = flag.String("staticEtag", "", "static etag value")
-var staticPath = flag.String("static", "static/", "path to the static web UI content")
 var server = flag.String("server", "", "url to couchbase server, example: http://localhost:8091")
 
 var expvars = expvar.NewMap("stats")
@@ -43,13 +43,13 @@ func init() {
 func main() {
 	flag.Parse()
 
-	err := mainServer(*bindAddr, *dataDir, *staticPath, *server)
+	err := mainServer(*bindAddr, *dataDir, *staticDir, *server)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func mainServer(bindAddr, dataDir, staticPath, server string) error {
+func mainServer(bindAddr, dataDir, staticDir, server string) error {
 	log.Printf("cbft started")
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
 
@@ -105,7 +105,7 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 	}
 
 	// create a router to serve static files
-	router := staticFileRouter(staticPath)
+	router := staticFileRouter(staticDir)
 
 	// add the API
 
