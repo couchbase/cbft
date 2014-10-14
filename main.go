@@ -27,12 +27,12 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 )
 
-var bindAddr = flag.String("addr", ":8095", "http listen address")
+var bindAddr = flag.String("addr", ":8095", "http listen [address]:port")
 var dataDir = flag.String("dataDir", "data", "data directory")
-var staticEtag = flag.String("staticEtag", "", "A static etag value.")
-var staticPath = flag.String("static", "static/", "Path to the static content")
+var staticEtag = flag.String("staticEtag", "", "static etag value")
+var staticPath = flag.String("static", "static/", "path to the static web UI content")
 var expvars = expvar.NewMap("stats")
-var server = flag.String("server", "", "couchbase server address")
+var server = flag.String("server", "", "url to couchbase server, example: http://localhost:8091")
 
 func init() {
 	expvar.Publish("bleve_explorer", expvars)
@@ -41,21 +41,23 @@ func init() {
 func main() {
 	flag.Parse()
 
+	log.Printf("cbft started")
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
 
 	// connect to couchbase, make sure the address is valids
 	if *server == "" {
-		log.Fatalf("couchbase server address required")
+		log.Fatalf("error: couchbase server URL required (-server)")
 	}
 	_, err := couchbase.Connect(*server)
 	if err != nil {
-		log.Fatal("error connecting to couchbase: %v", err)
+		log.Fatalf("error: could not connect to couchbase server URL: %v, err: %v",
+			*server, err)
 	}
 
 	// walk the data dir and register index names
 	dirEntries, err := ioutil.ReadDir(*dataDir)
 	if err != nil {
-		log.Fatalf("error reading data dir: %v", err)
+		log.Fatalf("error: could not read dataDir: %v, err: %v", *dataDir, err)
 	}
 
 	expvars.Set("indexes", bleveHttp.IndexStats())
@@ -64,19 +66,20 @@ func main() {
 		indexPath := *dataDir + string(os.PathSeparator) + dirInfo.Name()
 		i, err := bleve.Open(indexPath)
 		if err != nil {
-			log.Printf("error opening index: %v", err)
+			log.Printf("error: could not open indexPath: %v, err: %v", indexPath, err)
 		} else {
 			// make sure there is a bucket with this name
 			stream, err := NewTAPStream(*server, dirInfo.Name())
 			if err != nil {
-				log.Printf("error preparing tap stream: %v", err)
+				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
+					*server, err)
 				continue
 			}
 			// now start the stream
 			go HandleStream(stream, i)
 			err = stream.Start()
 			if err != nil {
-				log.Printf("error starting stream: %v", err)
+				log.Printf("error: could not starting stream, err: %v", err)
 				continue
 			}
 			// now register the index
