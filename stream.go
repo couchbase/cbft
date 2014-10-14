@@ -78,6 +78,12 @@ func UnregisterStream(name string) Stream {
 func HandleStream(stream Stream, index bleve.Index) {
 	ch := stream.Channel()
 	for m := range ch {
+		// TODO: probably need things like stream reset/rollback
+		// and snapshot kinds of ops here, too.
+
+		// TODO: maybe need a more batchy API?  Perhaps, yet another
+		// goroutine that clumps up up updates into bigger batches?
+
 		switch m := m.(type) {
 		case *StreamUpdate:
 			index.Index(string(m.Id()), m.Body())
