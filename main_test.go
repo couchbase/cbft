@@ -17,7 +17,7 @@ import (
 
 func TestMainServer(t *testing.T) {
 	err := mainServer(":8095", "./data", "./static", "")
-	if (err == nil) {
+	if err == nil {
 		t.Errorf("expected empty server string to fail")
 	}
 }
