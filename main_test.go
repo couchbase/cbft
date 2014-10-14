@@ -15,9 +15,9 @@ import (
 	"testing"
 )
 
-func TestMainServer(t *testing.T) {
-	err := mainServer(":8095", "./data", "./static", "")
-	if err == nil {
+func TestMainStart(t *testing.T) {
+	router, err := mainStart("./data", "./static", "")
+	if router != nil || err == nil {
 		t.Errorf("expected empty server string to fail")
 	}
 }

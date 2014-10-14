@@ -22,6 +22,8 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/gorilla/mux"
+
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 
@@ -38,30 +40,44 @@ var expvars = expvar.NewMap("stats")
 
 func init() {
 	expvar.Publish("cbft", expvars)
+	expvars.Set("indexes", bleveHttp.IndexStats())
 }
 
 func main() {
 	flag.Parse()
 
-	err := mainServer(*bindAddr, *dataDir, *staticDir, *server)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func mainServer(bindAddr, dataDir, staticDir, server string) error {
 	log.Printf("cbft started")
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
 
-	// connect to couchbase, make sure the address is valids
+	router, err := mainStart(*dataDir, *staticDir, *server)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	http.Handle("/", router)
+	log.Printf("listening on: %v", *bindAddr)
+	log.Fatal(http.ListenAndServe(*bindAddr, nil))
+}
+
+func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
+	err := startStreams(dataDir, server)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeRouter(dataDir, staticDir)
+}
+
+func startStreams(dataDir, server string) error {
+	// TODO: need different approach that keeps trying even if the
+	// server(s) are down, so that we could at least serve queries
+	// to old, existing indexes.
+	//
+	// connect to couchbase, make sure the address is valid
 	if server == "" {
 		return fmt.Errorf("error: couchbase server URL required (-server)")
 	}
 
-	// TODO: need different approach keeps trying even if the
-	// server(s) are down, so that we could at least serve queries
-	// to old, existing indexes.
-	//
 	// TODO: if we handle multiple "seed" servers, what if those
 	// seeds actually come from different clusters?  Can we have
 	// multiple clusters fan-in to a single cbft?
@@ -70,8 +86,6 @@ func mainServer(bindAddr, dataDir, staticDir, server string) error {
 		return fmt.Errorf("error: could not connect to couchbase server URL: %v, err: %v",
 			server, err)
 	}
-
-	expvars.Set("indexes", bleveHttp.IndexStats())
 
 	// walk the data dir and register index names
 	dirEntries, err := ioutil.ReadDir(dataDir)
@@ -104,6 +118,24 @@ func mainServer(bindAddr, dataDir, staticDir, server string) error {
 		}
 	}
 
+	return nil
+}
+
+func StartRegisteredStream(stream Stream, indexName string, index bleve.Index) error {
+	// now start the stream
+	go HandleStream(stream, index)
+	err := stream.Start()
+	if err != nil {
+		return err
+	}
+	// now register the index
+	RegisterStream(indexName, stream)
+	bleveHttp.RegisterIndexName(indexName, index)
+	log.Printf("registered index: %s", indexName)
+	return nil
+}
+
+func makeRouter(dataDir, staticDir string) (*mux.Router, error) {
 	// create a router to serve static files
 	router := staticFileRouter(staticDir)
 
@@ -144,24 +176,5 @@ func mainServer(bindAddr, dataDir, staticDir, server string) error {
 	debugHandler := bleveHttp.NewDebugDocumentHandler("")
 	router.Handle("/api/{indexName}/{docID}/_debug", debugHandler).Methods("GET")
 
-	// start the HTTP server
-	http.Handle("/", router)
-	log.Printf("listening on: %v", bindAddr)
-	http.ListenAndServe(bindAddr, nil)
-
-	return nil // never reached :-/
-}
-
-func StartRegisteredStream(stream Stream, indexName string, index bleve.Index) error {
-	// now start the stream
-	go HandleStream(stream, index)
-	err := stream.Start()
-	if err != nil {
-		return err
-	}
-	// now register the index
-	RegisterStream(indexName, stream)
-	bleveHttp.RegisterIndexName(indexName, index)
-	log.Printf("registered index: %s", indexName)
-	return nil
+	return router, nil
 }
