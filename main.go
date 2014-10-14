@@ -40,39 +40,42 @@ func init() {
 
 func main() {
 	flag.Parse()
+	MainServer(*bindAddr, *dataDir, *staticPath, *server)
+}
 
+func MainServer(bindAddr, dataDir, staticPath, server string) {
 	log.Printf("cbft started")
 	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
 
 	// connect to couchbase, make sure the address is valids
-	if *server == "" {
+	if server == "" {
 		log.Fatalf("error: couchbase server URL required (-server)")
 	}
-	_, err := couchbase.Connect(*server)
+	_, err := couchbase.Connect(server)
 	if err != nil {
 		log.Fatalf("error: could not connect to couchbase server URL: %v, err: %v",
-			*server, err)
+			server, err)
 	}
 
 	// walk the data dir and register index names
-	dirEntries, err := ioutil.ReadDir(*dataDir)
+	dirEntries, err := ioutil.ReadDir(dataDir)
 	if err != nil {
-		log.Fatalf("error: could not read dataDir: %v, err: %v", *dataDir, err)
+		log.Fatalf("error: could not read dataDir: %v, err: %v", dataDir, err)
 	}
 
 	expvars.Set("indexes", bleveHttp.IndexStats())
 
 	for _, dirInfo := range dirEntries {
-		indexPath := *dataDir + string(os.PathSeparator) + dirInfo.Name()
+		indexPath := dataDir + string(os.PathSeparator) + dirInfo.Name()
 		i, err := bleve.Open(indexPath)
 		if err != nil {
 			log.Printf("error: could not open indexPath: %v, err: %v", indexPath, err)
 		} else {
 			// make sure there is a bucket with this name
-			stream, err := NewTAPStream(*server, dirInfo.Name())
+			stream, err := NewTAPStream(server, dirInfo.Name())
 			if err != nil {
 				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
-					*server, err)
+					server, err)
 				continue
 			}
 			// now start the stream
@@ -90,15 +93,15 @@ func main() {
 	}
 
 	// create a router to serve static files
-	router := staticFileRouter()
+	router := staticFileRouter(staticPath)
 
 	// add the API
 
 	// these are custom handlers for cbft
-	createIndexHandler := NewCreateIndexHander(*dataDir)
+	createIndexHandler := NewCreateIndexHander(dataDir)
 	router.Handle("/api/{indexName}", createIndexHandler).Methods("PUT")
 
-	deleteIndexHandler := NewDeleteIndexHandler(*dataDir)
+	deleteIndexHandler := NewDeleteIndexHandler(dataDir)
 	router.Handle("/api/{indexName}", deleteIndexHandler).Methods("DELETE")
 
 	// the rest are standard bleveHttp handlers
@@ -131,6 +134,6 @@ func main() {
 
 	// start the HTTP server
 	http.Handle("/", router)
-	log.Printf("Listening on %v", *bindAddr)
-	log.Fatal(http.ListenAndServe(*bindAddr, nil))
+	log.Printf("listening on: %v", bindAddr)
+	log.Fatal(http.ListenAndServe(bindAddr, nil))
 }
