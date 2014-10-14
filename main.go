@@ -62,13 +62,13 @@ func mainServer(bindAddr, dataDir, staticPath, server string) error {
 			server, err)
 	}
 
+	expvars.Set("indexes", bleveHttp.IndexStats())
+
 	// walk the data dir and register index names
 	dirEntries, err := ioutil.ReadDir(dataDir)
 	if err != nil {
 		return fmt.Errorf("error: could not read dataDir: %v, err: %v", dataDir, err)
 	}
-
-	expvars.Set("indexes", bleveHttp.IndexStats())
 
 	for _, dirInfo := range dirEntries {
 		indexPath := dataDir + string(os.PathSeparator) + dirInfo.Name()
