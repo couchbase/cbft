@@ -20,7 +20,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"runtime"
+	"runtime/pprof"
 
 	"github.com/gorilla/mux"
 
@@ -50,6 +52,8 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	go dumpOnSignalForPlatform()
 
 	log.Printf("%s started", os.Args[0])
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
@@ -183,4 +187,12 @@ func makeRouter(dataDir, staticDir string) (*mux.Router, error) {
 	router.Handle("/api/{indexName}/{docID}/_debug", debugHandler).Methods("GET")
 
 	return router, nil
+}
+
+func dumpOnSignal(signals ...os.Signal) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, signals...)
+	for _ = range c {
+		pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
+	}
 }
