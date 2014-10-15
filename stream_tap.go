@@ -12,24 +12,35 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/couchbase/gomemcached/client"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
 type TAPStream struct {
+	url, poolName, bucketName, bucketUUID string
 	bucket   *couchbase.Bucket
 	feed     *couchbase.TapFeed
 	requests StreamRequests
 }
 
-func NewTAPStream(url, bucketName string) (*TAPStream, error) {
-	bucket, err := couchbase.GetBucket(url, "default", bucketName)
+func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, error) {
+	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err
 	}
+	if bucketUUID != "" && bucketUUID != bucket.UUID {
+		bucket.Close()
+		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
+	}
 	rv := TAPStream{
-		bucket:   bucket,
-		requests: make(StreamRequests),
+		url:        url,
+		poolName:   poolName,
+		bucketName: bucketName,
+		bucketUUID: bucket.UUID,
+		bucket:     bucket,
+		requests:   make(StreamRequests),
 	}
 	return &rv, nil
 }
