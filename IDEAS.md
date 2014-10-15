@@ -125,23 +125,24 @@ Proposed highlevel design concepts and "subparts"...
 
 Inside a single cbft process...
 
-- LIndex (Low-level Index - consumes StreamRequests)
+- PIndex (an "Index Partition" that consumes StreamRequests)
 
 - StreamRequests (a channel of StreamRequest)
 
 - Feed (hook up a data source & pushes requests
         into 1 or more StreamRequests)
 
-- Manager (manages a set of LIndexes, StreamRequests, and Feeds)
+- Manager (manages a set of PIndexes, StreamRequests, and Feeds)
 
-- Queryer (scatter/gathers across relevant LIndexes)
+- Queryer (scatter/gathers across relevant PIndexes)
 
-An LIndex consumes a StreamRequests and maintains a single bleve index.
-That bleve index *might* just be a partition of a larger index, but an
-LIndex doesn't really know.  Higher levels of the system (Manager) have
-the partition to index mapping.  An LIndex, in contrast, just knows
-about a single StreamRequests as its input, and an LIndex doesn't know
-about couchbase, buckets, vbuckets, or DCP/TAP.
+An PIndex (Physical Index or Index Partition) consumes a
+StreamRequests and maintains a single bleve index.  That bleve index
+*might* just be a partition of a larger index, but an PIndex doesn't
+really know.  Higher levels of the system (Manager) have the partition
+to index mapping.  An PIndex, in contrast, just knows about a single
+StreamRequests as its input, and an PIndex doesn't know about
+couchbase, buckets, vbuckets, or DCP/TAP.
 
 A StreamRequests is a channel of StreamRequest objects, which might
 represent mutations (document updated, deleted), or "administrative"
@@ -157,27 +158,27 @@ difficult scenarios.  During reconnections to wobbly data sources,
 it's the responsibility of the different Feed implementations to
 implement backoff strategies.
 
-A Manager is a collection of LIndex'es, Streams, and Feeds.  It has the
-mapping of buckets and vbuckets/partitions to LIndexes/Streams/Feeds.
+A Manager is a collection of PIndex'es, Streams, and Feeds.  It has the
+mapping of buckets and vbuckets/partitions to PIndexes/Streams/Feeds.
 A Manager singleton will be that single "global" object in a cbft
 process rather than having many global variables.  A Manager has API
-to list, setup, teardown and pause LIndexes, Streams and Feeds.  When a
+to list, setup, teardown and pause PIndexes, Streams and Feeds.  When a
 new logical "full text index" is created for a bucket, for example,
-the Manager will assign partitions/vbuckets to LIndexes and hook up all
-the relevant StreamRequests channels between Feeds and LIndexes.  A
+the Manager will assign partitions/vbuckets to PIndexes and hook up all
+the relevant StreamRequests channels between Feeds and PIndexes.  A
 Manager, then, decides the 1-to-1, 1-to-N, N-to-1, N-to-M fan-in-out
-assignment of partitions to LIndexes.  A snapshot of this mapping might
+assignment of partitions to PIndexes.  A snapshot of this mapping might
 need to be stored durably (gometa?).  A part of this mapping might
 actually be a list of known or expected cbft nodes.
 
-A Queryer can query against one or more LIndexes (perhaps even one day
-to remote LIndexes by communicating with remote Queryers).  Initially,
-perhaps it can only do just a single LIndex, but the API should be
-multi-LIndex ready.
+A Queryer can query against one or more PIndexes (perhaps even one day
+to remote PIndexes by communicating with remote Queryers).  Initially,
+perhaps it can only do just a single PIndex, but the API should be
+multi-PIndex ready.
 
 A HTTP/REST (and next-generation protocol / green-stack) networking
 layer sits on top of all of it for index mgmt and querying endpoints
 that clients can access.  During a query, this networking layer
 accesses a Manager for the relevant mapping and invokes the Queryer
-with the LIndexes that need to be accesses.  This networking layer will
+with the PIndexes that need to be accesses.  This networking layer will
 provide the necessary AUTH checks.
