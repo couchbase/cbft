@@ -13,13 +13,14 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
+
+	log "github.com/couchbaselabs/clog"
 )
 
 type DeleteIndexHandler struct {

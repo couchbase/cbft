@@ -16,7 +16,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -29,6 +28,7 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 
+	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
@@ -36,6 +36,8 @@ var bindAddr = flag.String("addr", ":8095",
 	"http listen [address]:port")
 var dataDir = flag.String("dataDir", "data",
 	"directory for index data")
+var logFlags = flag.String("logFlags", "",
+	"comma-separated clog flags, to control logging")
 var staticDir = flag.String("staticDir", "static",
 	"directory for static web UI content")
 var staticEtag = flag.String("staticEtag", "",
@@ -56,6 +58,9 @@ func main() {
 	go dumpOnSignalForPlatform()
 
 	log.Printf("%s started", os.Args[0])
+	if *logFlags != "" {
+		log.ParseLogFlag(*logFlags)
+	}
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 

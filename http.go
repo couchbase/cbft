@@ -12,10 +12,10 @@ package main
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	log "github.com/couchbaselabs/clog"
 )
 
 func staticFileRouter(staticDir string) *mux.Router {
