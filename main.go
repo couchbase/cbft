@@ -30,11 +30,16 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
-var bindAddr = flag.String("addr", ":8095", "http listen [address]:port")
-var dataDir = flag.String("dataDir", "data", "directory for index data")
-var staticDir = flag.String("staticDir", "static", "directory for static web UI content")
-var staticEtag = flag.String("staticEtag", "", "static etag value")
-var server = flag.String("server", "", "url to couchbase server, example: http://localhost:8091")
+var bindAddr = flag.String("addr", ":8095",
+	"http listen [address]:port")
+var dataDir = flag.String("dataDir", "data",
+	"directory for index data")
+var staticDir = flag.String("staticDir", "static",
+	"directory for static web UI content")
+var staticEtag = flag.String("staticEtag", "",
+	"static etag value")
+var server = flag.String("server", "",
+	"url to couchbase server, example: http://localhost:8091")
 
 var expvars = expvar.NewMap("stats")
 
