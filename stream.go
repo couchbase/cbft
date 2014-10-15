@@ -17,12 +17,12 @@ import (
 	"github.com/blevesearch/bleve"
 )
 
-type StreamMutation interface {
+type StreamRequest interface {
 	Id() []byte
 	Body() []byte
 }
 
-type StreamMutations chan StreamMutation
+type StreamRequests chan StreamRequest
 
 type StreamUpdate struct {
 	id   []byte
@@ -50,7 +50,7 @@ func (s *StreamDelete) Body() []byte {
 }
 
 type Stream interface {
-	Channel() StreamMutations
+	Channel() StreamRequests
 	Start() error
 	Close() error
 }

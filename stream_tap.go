@@ -17,9 +17,9 @@ import (
 )
 
 type TAPStream struct {
-	bucket    *couchbase.Bucket
-	feed      *couchbase.TapFeed
-	mutations StreamMutations
+	bucket   *couchbase.Bucket
+	feed     *couchbase.TapFeed
+	requests StreamRequests
 }
 
 func NewTAPStream(url, bucketName string) (*TAPStream, error) {
@@ -28,8 +28,8 @@ func NewTAPStream(url, bucketName string) (*TAPStream, error) {
 		return nil, err
 	}
 	rv := TAPStream{
-		bucket:    bucket,
-		mutations: make(StreamMutations),
+		bucket:   bucket,
+		requests: make(StreamRequests),
 	}
 	return &rv, nil
 }
@@ -42,15 +42,15 @@ func (t *TAPStream) Start() error {
 	}
 	t.feed = feed
 	go func() {
-		defer close(t.mutations)
+		defer close(t.requests)
 		for op := range feed.C {
 			if op.Opcode == memcached.TapMutation {
-				t.mutations <- &StreamUpdate{
+				t.requests <- &StreamUpdate{
 					id:   op.Key,
 					body: op.Value,
 				}
 			} else if op.Opcode == memcached.TapDeletion {
-				t.mutations <- &StreamDelete{
+				t.requests <- &StreamDelete{
 					id: op.Key,
 				}
 			}
@@ -63,6 +63,6 @@ func (t *TAPStream) Close() error {
 	return t.feed.Close()
 }
 
-func (t *TAPStream) Channel() StreamMutations {
-	return t.mutations
+func (t *TAPStream) Channel() StreamRequests {
+	return t.requests
 }
