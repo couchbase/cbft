@@ -14,8 +14,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	log "github.com/couchbaselabs/clog"
+	"github.com/gorilla/mux"
 )
 
 func staticFileRouter(staticDir string) *mux.Router {

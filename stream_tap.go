@@ -19,10 +19,13 @@ import (
 )
 
 type TAPStream struct {
-	url, poolName, bucketName, bucketUUID string
-	bucket   *couchbase.Bucket
-	feed     *couchbase.TapFeed
-	requests StreamRequests
+	url        string
+	poolName   string
+	bucketName string
+	bucketUUID string
+	bucket     *couchbase.Bucket
+	feed       *couchbase.TapFeed
+	requests   StreamRequests
 }
 
 func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, error) {
