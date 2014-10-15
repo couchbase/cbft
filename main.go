@@ -51,8 +51,9 @@ func init() {
 func main() {
 	flag.Parse()
 
-	log.Printf("cbft started")
-	log.Printf("GOMAXPROCS: %d", runtime.GOMAXPROCS(-1))
+	log.Printf("%s started", os.Args[0])
+	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
+	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
 	router, err := mainStart(*dataDir, *staticDir, *server)
 	if err != nil {
