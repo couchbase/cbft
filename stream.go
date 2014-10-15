@@ -22,6 +22,8 @@ type StreamMutation interface {
 	Body() []byte
 }
 
+type StreamMutations chan StreamMutation
+
 type StreamUpdate struct {
 	id   []byte
 	body []byte
@@ -42,8 +44,6 @@ type StreamDelete struct {
 func (s *StreamDelete) Id() []byte {
 	return s.id
 }
-
-type StreamMutations chan StreamMutation
 
 func (s *StreamDelete) Body() []byte {
 	return nil
