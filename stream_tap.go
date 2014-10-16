@@ -25,7 +25,7 @@ type TAPStream struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.TapFeed
-	requests   StreamRequests
+	requests   StreamRequests // TODO: may need to fan-out to multiple StreamRequests.
 }
 
 func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, error) {
@@ -42,7 +42,7 @@ func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, err
 		poolName:   poolName,
 		bucketName: bucketName,
 		bucketUUID: bucket.UUID,
-		bucket:     bucket,
+		bucket:     bucket, // TODO: need to close bucket on cleanup.
 		requests:   make(StreamRequests),
 	}
 	return &rv, nil
@@ -56,7 +56,7 @@ func (t *TAPStream) Start() error {
 	}
 	t.feed = feed
 	go func() {
-		defer close(t.requests)
+		defer close(t.requests) // TODO: figure out close responsibility.
 		for op := range feed.C {
 			if op.Opcode == memcached.TapMutation {
 				t.requests <- &StreamUpdate{
