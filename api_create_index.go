@@ -12,13 +12,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 
-	"github.com/blevesearch/bleve"
+	bleveHttp "github.com/blevesearch/bleve/http"
 
 	"github.com/gorilla/mux"
 )
@@ -41,8 +39,6 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	indexMapping := bleve.NewIndexMapping()
-
 	// read the request body
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -50,33 +46,41 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// interpret request body as index mapping
-	if len(requestBody) > 0 {
-		err := json.Unmarshal(requestBody, &indexMapping)
-		if err != nil {
-			showError(w, req, fmt.Sprintf("error parsing index mapping: %v", err), 400)
-			return
-		}
-	}
+	mgr := h.mgr
 
-	newIndex, err := bleve.New(h.indexPath(indexName), indexMapping)
+	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
+	indexPath := mgr.IndexPath(indexName)
+
+	// TODO: need to check if this pindex already exists?
+	// TODO: need to alloc a version/uuid for the pindex?
+	pindex, err := NewPIndex(indexName, indexPath, requestBody)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error creating index: %v", err), 500)
+		showError(w, req, fmt.Sprintf("error running pindex: %v", err), 500)
 		return
 	}
+
+	mgr.RegisterPIndex(indexName, pindex)
+
+	bleveHttp.RegisterIndexName(indexName, pindex.Index())
 
 	// make sure there is a bucket with this name
-	stream, err := NewTAPFeed(*server, "default", indexName, "")
+	// TODO: incorporate bucket UUID somehow
+	// TODO: Also, for now indexName == bucketName
+	uuid := ""
+	feed, err := NewTAPFeed(mgr.server, "default", indexName, uuid)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error preparing tap stream: %v", err), 400)
+		// TODO: cleanup?
+		showError(w, req, fmt.Sprintf("error preparing feed: %v", err), 400)
 		return
 	}
 
-	err = h.mgr.StartRegisteredStream(stream, indexName, newIndex)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("error starting registered stream: %v", err), 500)
+	if err = feed.Start(); err != nil {
+		// TODO: cleanup?
+		showError(w, req, fmt.Sprintf("error starting feed: %v", err), 500)
 		return
 	}
+
+	mgr.RegisterFeed(indexName, feed)
 
 	rv := struct {
 		Status string `json:"status"`
@@ -84,8 +88,4 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		Status: "ok",
 	}
 	mustEncode(w, rv)
-}
-
-func (h *CreateIndexHandler) indexPath(name string) string {
-	return h.mgr.DataDir() + string(os.PathSeparator) + name
 }

@@ -12,4 +12,8 @@
 package main
 
 type Feed interface {
+	// TODO: a feed might fan out to >1 Stream
+	Channel() Stream
+	Start() error
+	Close() error
 }

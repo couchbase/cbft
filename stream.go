@@ -11,12 +11,12 @@
 
 package main
 
+type Stream chan StreamRequest
+
 type StreamRequest interface {
 	Id() []byte
 	Body() []byte
 }
-
-type StreamRequests chan StreamRequest
 
 type StreamUpdate struct {
 	id   []byte
@@ -41,10 +41,4 @@ func (s *StreamDelete) Id() []byte {
 
 func (s *StreamDelete) Body() []byte {
 	return nil
-}
-
-type Stream interface {
-	Channel() StreamRequests
-	Start() error
-	Close() error
 }

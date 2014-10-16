@@ -47,10 +47,11 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// try to stop the stream
-	stream := h.mgr.UnregisterStream(indexName)
-	if stream != nil {
-		err := stream.Close()
+	// try to stop the feed
+	// TODO: should be future, multiple feeds
+	feed := h.mgr.UnregisterFeed(indexName)
+	if feed != nil {
+		err := feed.Close()
 		if err != nil {
 			log.Printf("error closing stream: %v", err)
 		}
@@ -58,11 +59,29 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		// because we still want to try and delete it
 	}
 
+	pindex := h.mgr.UnregisterPIndex(indexName)
+	if pindex != nil {
+		// TODO: if we closed the stream right now, then feed might
+		// try writing to closed channel.
+		// If there is multiple feeds going into one stream (fan-in)
+		// then need to know how to count down to the final Close().
+		// err := stream.Close()
+		// if err != nil {
+		// 	log.Printf("error closing pindex: %v", err)
+		// }
+		// not returning error here
+		// because we still want to try and delete it
+	}
+
+	// TODO: what about any inflight queries or ops?
+
 	// close the index
+	// TODO: looks like the pindex be responsible for the final bleve.Close()
+	// and actual subdirectory deletes?
 	indexToDelete.Close()
 
 	// now delete it
-	err := os.RemoveAll(h.indexPath(indexName))
+	err := os.RemoveAll(h.mgr.IndexPath(indexName))
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error deletoing index: %v", err), 500)
 		return
@@ -74,8 +93,4 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		Status: "ok",
 	}
 	mustEncode(w, rv)
-}
-
-func (h *DeleteIndexHandler) indexPath(name string) string {
-	return h.mgr.DataDir() + string(os.PathSeparator) + name
 }

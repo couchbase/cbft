@@ -25,7 +25,7 @@ type TAPFeed struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.TapFeed
-	requests   StreamRequests // TODO: may need to fan-out to multiple StreamRequests.
+	requests   Stream // TODO: may need to fan-out to multiple StreamRequests.
 }
 
 func NewTAPFeed(url, poolName, bucketName, bucketUUID string) (*TAPFeed, error) {
@@ -43,7 +43,7 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string) (*TAPFeed, error) 
 		bucketName: bucketName,
 		bucketUUID: bucket.UUID,
 		bucket:     bucket, // TODO: need to close bucket on cleanup.
-		requests:   make(StreamRequests),
+		requests:   make(Stream),
 	}
 	return &rv, nil
 }
@@ -77,6 +77,6 @@ func (t *TAPFeed) Close() error {
 	return t.feed.Close()
 }
 
-func (t *TAPFeed) Channel() StreamRequests {
+func (t *TAPFeed) Channel() Stream {
 	return t.requests
 }

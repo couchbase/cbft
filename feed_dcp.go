@@ -25,7 +25,7 @@ type DCPFeed struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.UprFeed
-	requests   StreamRequests // TODO: may need to fan-out to multiple StreamRequests
+	requests   Stream // TODO: may need to fan-out to multiple StreamRequests
 }
 
 func NewDCPFeed(url, poolName, bucketName, bucketUUID string) (*DCPFeed, error) {
@@ -43,7 +43,7 @@ func NewDCPFeed(url, poolName, bucketName, bucketUUID string) (*DCPFeed, error) 
 		bucketName: bucketName,
 		bucketUUID: bucket.UUID,
 		bucket:     bucket, // TODO: need to close bucket on cleanup.
-		requests:   make(StreamRequests),
+		requests:   make(Stream),
 	}
 	return &rv, nil
 }
@@ -89,6 +89,6 @@ func (t *DCPFeed) Close() error {
 	return t.feed.Close()
 }
 
-func (t *DCPFeed) Channel() StreamRequests {
+func (t *DCPFeed) Channel() Stream {
 	return t.requests
 }

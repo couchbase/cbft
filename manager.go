@@ -17,8 +17,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/blevesearch/bleve"
-
 	// TODO: manager shouldn't know of bleve/http?
 	bleveHttp "github.com/blevesearch/bleve/http"
 
@@ -27,19 +25,19 @@ import (
 )
 
 type Manager struct {
-	dataDir string
-	server  string
-	m       sync.Mutex
-	feeds   map[string]Feed
-	streams map[string]Stream
+	dataDir  string
+	server   string
+	m        sync.Mutex
+	feeds    map[string]Feed
+	pindexes map[string]*PIndex
 }
 
 func NewManager(dataDir, server string) *Manager {
 	return &Manager{
-		dataDir: dataDir,
-		server:  server,
-		streams: make(map[string]Stream),
-		feeds:   make(map[string]Feed),
+		dataDir:  dataDir,
+		server:   server,
+		feeds:    make(map[string]Feed),
+		pindexes: make(map[string]*PIndex),
 	}
 }
 
@@ -47,19 +45,21 @@ func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }
 
+func (mgr *Manager) IndexPath(indexName string) string {
+	return mgr.dataDir + string(os.PathSeparator) + indexName
+}
+
 func (mgr *Manager) Start() error {
-	// TODO: need different approach that keeps trying even if the
-	// server(s) are down, so that we could at least serve queries
-	// to old, existing indexes.
-	//
-	// connect to couchbase, make sure the address is valid
+	// First, check if couchbase server is invalid to exit early.
+	// Afterwards, any later loss of couchbase conns, in contrast,
+	// won't exit the server, where cbft will instead retry/reconnect.
 
 	// TODO: if we handle multiple "seed" servers, what if those
 	// seeds actually come from different clusters?  Can we have
 	// multiple clusters fan-in to a single cbft?
 	_, err := couchbase.Connect(mgr.server)
 	if err != nil {
-		return fmt.Errorf("error: could not connect to couchbase server URL: %v, err: %v",
+		return fmt.Errorf("error: could not connect to couchbase server URL: %s, err: %v",
 			mgr.server, err)
 	}
 
@@ -71,62 +71,82 @@ func (mgr *Manager) Start() error {
 	}
 
 	for _, dirInfo := range dirEntries {
-		indexPath := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
-		i, err := bleve.Open(indexPath)
+		// TODO: need to filter the dirEntries for naming pattern.
+
+		indexName := dirInfo.Name()
+		indexPath := mgr.dataDir + string(os.PathSeparator) + indexName
+
+		pindex, err := OpenPIndex(indexName, indexPath)
 		if err != nil {
-			log.Printf("error: could not open indexPath: %v, err: %v", indexPath, err)
-		} else {
-			// make sure there is a bucket with this name
-			uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
-			stream, err := NewTAPFeed(mgr.server, "default", dirInfo.Name(), uuid)
-			if err != nil {
-				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
-					server, err)
-				// TODO: need a way to collect these errors so REST api
-				// can show them to user ("hey, perhaps you deleted a bucket
-				// and should delete these related full-text indexes?
-				// or the couchbase cluster is just down.")
-				continue
-			}
-			err = mgr.StartRegisteredStream(stream, dirInfo.Name(), i)
-			if err != nil {
-				log.Printf("error: could not start registered stream, err: %v", err)
-				continue
-			}
+			log.Printf("error: could not open indexPath: %v, err: %v",
+				indexPath, err)
+			continue
 		}
+
+		mgr.RegisterPIndex(indexName, pindex)
+
+		bleveHttp.RegisterIndexName(indexName, pindex.Index())
+
+		// TODO: This shouldn't really go here, so need a separate Feed creator.
+		// TODO: Also, for now indexName == bucketName.
+		// make sure there is a bucket with this name
+		uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
+		feed, err := NewTAPFeed(mgr.server, "default", indexName, uuid)
+		if err != nil {
+			log.Printf("error: could not prepare TAP stream to server: %s,"+
+				" indexName: %s, err: %v", mgr.server, indexName, err)
+			// TODO: need a way to collect these errors so REST api
+			// can show them to user ("hey, perhaps you deleted a bucket
+			// and should delete these related full-text indexes?
+			// or the couchbase cluster is just down.")
+			// TODO: cleanup?
+			continue
+		}
+
+		if err = feed.Start(); err != nil {
+			// TODO: need way to track dead cows (non-beef)
+			// TODO: cleanup?
+			log.Printf("error: could not start feed: %v, err: %v",
+				server, err)
+			continue
+		}
+
+		mgr.RegisterFeed(indexName, feed)
 	}
 
 	return nil
 }
 
-func (mgr *Manager) RegisterStream(name string, stream Stream) {
+func (mgr *Manager) RegisterFeed(name string, feed Feed) {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
-	mgr.streams[name] = stream
+	mgr.feeds[name] = feed
 }
 
-func (mgr *Manager) UnregisterStream(name string) Stream {
+func (mgr *Manager) UnregisterFeed(name string) Feed {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
-	rv, ok := mgr.streams[name]
+	rv, ok := mgr.feeds[name]
 	if ok {
-		delete(mgr.streams, name)
+		delete(mgr.feeds, name)
 		return rv
 	}
 	return nil
 }
 
-func (mgr *Manager) StartRegisteredStream(stream Stream,
-	indexName string, index bleve.Index) error {
-	// now start the stream
-	err := stream.Start()
-	if err != nil {
-		return err
+func (mgr *Manager) RegisterPIndex(name string, pindex *PIndex) {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+	mgr.pindexes[name] = pindex
+}
+
+func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+	rv, ok := mgr.pindexes[name]
+	if ok {
+		delete(mgr.pindexes, name)
+		return rv
 	}
-	// now register the index
-	mgr.RegisterStream(indexName, stream)
-	bleveHttp.RegisterIndexName(indexName, index)
-	log.Printf("registered index: %s", indexName)
-	go HandleStream(stream, index)
 	return nil
 }
