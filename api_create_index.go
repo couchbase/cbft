@@ -16,8 +16,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	bleveHttp "github.com/blevesearch/bleve/http"
-
 	"github.com/gorilla/mux"
 )
 
@@ -59,28 +57,13 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	mgr.RegisterPIndex(indexName, pindex)
-
-	bleveHttp.RegisterIndexName(indexName, pindex.Index())
-
-	// make sure there is a bucket with this name
-	// TODO: incorporate bucket UUID somehow
-	// TODO: Also, for now indexName == bucketName
-	uuid := ""
-	feed, err := NewTAPFeed(mgr.server, "default", indexName, uuid)
+	// TODO: 1-to-1 bucket-to-index assumption is wrong here
+	err = mgr.FeedPIndex(indexName, indexName, pindex)
 	if err != nil {
 		// TODO: cleanup?
-		showError(w, req, fmt.Sprintf("error preparing feed: %v", err), 400)
+		showError(w, req, fmt.Sprintf("error creating index: %v", err), 400)
 		return
 	}
-
-	if err = feed.Start(); err != nil {
-		// TODO: cleanup?
-		showError(w, req, fmt.Sprintf("error starting feed: %v", err), 500)
-		return
-	}
-
-	mgr.RegisterFeed(indexName, feed)
 
 	rv := struct {
 		Status string `json:"status"`

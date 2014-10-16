@@ -83,36 +83,41 @@ func (mgr *Manager) Start() error {
 			continue
 		}
 
-		mgr.RegisterPIndex(indexName, pindex)
-
-		bleveHttp.RegisterIndexName(indexName, pindex.Index())
-
-		// TODO: This shouldn't really go here, so need a separate Feed creator.
-		// TODO: Also, for now indexName == bucketName.
-		// make sure there is a bucket with this name
-		uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
-		feed, err := NewTAPFeed(mgr.server, "default", indexName, uuid)
-		if err != nil {
-			log.Printf("error: could not prepare TAP stream to server: %s,"+
-				" indexName: %s, err: %v", mgr.server, indexName, err)
-			// TODO: need a way to collect these errors so REST api
-			// can show them to user ("hey, perhaps you deleted a bucket
-			// and should delete these related full-text indexes?
-			// or the couchbase cluster is just down.")
-			// TODO: cleanup?
-			continue
-		}
-
-		if err = feed.Start(); err != nil {
-			// TODO: need way to track dead cows (non-beef)
-			// TODO: cleanup?
-			log.Printf("error: could not start feed: %v, err: %v",
-				server, err)
-			continue
-		}
-
-		mgr.RegisterFeed(indexName, feed)
+		mgr.FeedPIndex(indexName, indexName, pindex) // TODO: err handling.
 	}
+
+	return nil
+}
+
+func (mgr *Manager) FeedPIndex(bucketName, indexName string, pindex *PIndex) error {
+	mgr.RegisterPIndex(pindex.indexName, pindex)
+
+	// TODO: 1-to-1 bucket-to-index assumption is wrong here
+	bleveHttp.RegisterIndexName(indexName, pindex.Index())
+
+	// TODO: This shouldn't really go here, so need a separate Feed creator.
+	// TODO: Also, for now indexName == bucketName.
+	// make sure there is a bucket with this name
+	uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
+	feed, err := NewTAPFeed(mgr.server, "default", bucketName, uuid)
+	if err != nil {
+		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
+			" indexName: %s, err: %v", mgr.server, indexName, err)
+		// TODO: need a way to collect these errors so REST api
+		// can show them to user ("hey, perhaps you deleted a bucket
+		// and should delete these related full-text indexes?
+		// or the couchbase cluster is just down.")
+		// TODO: cleanup?
+	}
+
+	if err = feed.Start(); err != nil {
+		// TODO: need way to track dead cows (non-beef)
+		// TODO: cleanup?
+		return fmt.Errorf("error: could not start feed: %v, err: %v",
+			server, err)
+	}
+
+	mgr.RegisterFeed(indexName, feed)
 
 	return nil
 }
