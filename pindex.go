@@ -11,40 +11,24 @@
 
 package main
 
-type StreamRequest interface {
-	Id() []byte
-	Body() []byte
-}
+import (
+	"github.com/blevesearch/bleve"
+)
 
-type StreamRequests chan StreamRequest
+func HandleStream(stream Stream, index bleve.Index) {
+	ch := stream.Channel()
+	for m := range ch {
+		// TODO: probably need things like stream reset/rollback
+		// and snapshot kinds of ops here, too.
 
-type StreamUpdate struct {
-	id   []byte
-	body []byte
-}
+		// TODO: maybe need a more batchy API?  Perhaps, yet another
+		// goroutine that clumps up up updates into bigger batches?
 
-func (s *StreamUpdate) Id() []byte {
-	return s.id
-}
-
-func (s *StreamUpdate) Body() []byte {
-	return s.body
-}
-
-type StreamDelete struct {
-	id []byte
-}
-
-func (s *StreamDelete) Id() []byte {
-	return s.id
-}
-
-func (s *StreamDelete) Body() []byte {
-	return nil
-}
-
-type Stream interface {
-	Channel() StreamRequests
-	Start() error
-	Close() error
+		switch m := m.(type) {
+		case *StreamUpdate:
+			index.Index(string(m.Id()), m.Body())
+		case *StreamDelete:
+			index.Delete(string(m.Id()))
+		}
+	}
 }

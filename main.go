@@ -137,20 +137,6 @@ func startStreams(dataDir, server string) error {
 	return nil
 }
 
-func StartRegisteredStream(stream Stream, indexName string, index bleve.Index) error {
-	// now start the stream
-	go HandleStream(stream, index)
-	err := stream.Start()
-	if err != nil {
-		return err
-	}
-	// now register the index
-	RegisterStream(indexName, stream)
-	bleveHttp.RegisterIndexName(indexName, index)
-	log.Printf("registered index: %s", indexName)
-	return nil
-}
-
 func makeRouter(dataDir, staticDir string) (*mux.Router, error) {
 	// create a router to serve static files
 	router := staticFileRouter(staticDir)
