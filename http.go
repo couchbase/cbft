@@ -21,46 +21,28 @@ import (
 
 func NewManagerRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 	// create a router to serve static files
-	router := staticFileRouter(staticDir)
+	r := staticFileRouter(staticDir)
 
 	// add the API
 
 	// these are custom handlers for cbft
-	createIndexHandler := NewCreateIndexHander(mgr)
-	router.Handle("/api/{indexName}", createIndexHandler).Methods("PUT")
-
-	deleteIndexHandler := NewDeleteIndexHandler(mgr)
-	router.Handle("/api/{indexName}", deleteIndexHandler).Methods("DELETE")
+	r.Handle("/api/{indexName}", NewCreateIndexHander(mgr)).Methods("PUT")
+	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 
 	// the rest are standard bleveHttp handlers
-	getIndexHandler := bleveHttp.NewGetIndexHandler()
-	router.Handle("/api/{indexName}", getIndexHandler).Methods("GET")
+	r.Handle("/api/{indexName}", bleveHttp.NewGetIndexHandler()).Methods("GET")
+	r.Handle("/api", bleveHttp.NewListIndexesHander()).Methods("GET")
 
-	listIndexesHandler := bleveHttp.NewListIndexesHander()
-	router.Handle("/api", listIndexesHandler).Methods("GET")
+	r.Handle("/api/{indexName}/_count", bleveHttp.NewDocCountHandler("")).Methods("GET")
+	r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocGetHandler("")).Methods("GET")
+	// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocIndexHandler("")).Methods("PUT")
+	// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocDeleteHandler("")).Methods("DELETE")
+	r.Handle("/api/{indexName}/{docID}/_debug", bleveHttp.NewDebugDocumentHandler("")).Methods("GET")
 
-	// docIndexHandler := bleveHttp.NewDocIndexHandler("")
-	// router.Handle("/api/{indexName}/{docID}", docIndexHandler).Methods("PUT")
+	r.Handle("/api/{indexName}/_search", bleveHttp.NewSearchHandler("")).Methods("POST")
+	r.Handle("/api/{indexName}/_fields", bleveHttp.NewListFieldsHandler("")).Methods("GET")
 
-	docCountHandler := bleveHttp.NewDocCountHandler("")
-	router.Handle("/api/{indexName}/_count", docCountHandler).Methods("GET")
-
-	docGetHandler := bleveHttp.NewDocGetHandler("")
-	router.Handle("/api/{indexName}/{docID}", docGetHandler).Methods("GET")
-
-	// docDeleteHandler := bleveHttp.NewDocDeleteHandler("")
-	// router.Handle("/api/{indexName}/{docID}", docDeleteHandler).Methods("DELETE")
-
-	searchHandler := bleveHttp.NewSearchHandler("")
-	router.Handle("/api/{indexName}/_search", searchHandler).Methods("POST")
-
-	listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-	router.Handle("/api/{indexName}/_fields", listFieldsHandler).Methods("GET")
-
-	debugHandler := bleveHttp.NewDebugDocumentHandler("")
-	router.Handle("/api/{indexName}/{docID}/_debug", debugHandler).Methods("GET")
-
-	return router, nil
+	return r, nil
 }
 
 func staticFileRouter(staticDir string) *mux.Router {
