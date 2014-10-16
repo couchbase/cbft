@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 
 	// TODO: manager shouldn't know of bleve/http?
@@ -23,6 +24,8 @@ import (
 	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
+
+const indexPathSuffix string = ".cbft"
 
 type Manager struct {
 	dataDir  string
@@ -46,7 +49,21 @@ func (mgr *Manager) DataDir() string {
 }
 
 func (mgr *Manager) IndexPath(indexName string) string {
-	return mgr.dataDir + string(os.PathSeparator) + indexName
+	// TODO: path security checks / mapping here; ex: "../etc/pswd"
+	return mgr.dataDir + string(os.PathSeparator) + indexName + indexPathSuffix
+}
+
+func (mgr *Manager) ParseIndexPath(indexPath string) (string, bool) {
+	if !strings.HasSuffix(indexPath, indexPathSuffix) {
+		return "", false
+	}
+	prefix := mgr.dataDir + string(os.PathSeparator)
+	if !strings.HasPrefix(indexPath, prefix) {
+		return "", false
+	}
+	indexName := indexPath[len(prefix):]
+	indexName = indexName[0 : len(indexName)-len(indexPathSuffix)]
+	return indexName, true
 }
 
 func (mgr *Manager) Start() error {
@@ -64,6 +81,7 @@ func (mgr *Manager) Start() error {
 	}
 
 	// walk the data dir and register index names
+	log.Printf("scanning dataDir...")
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
 		return fmt.Errorf("error: could not read dataDir: %v, err: %v",
@@ -71,11 +89,14 @@ func (mgr *Manager) Start() error {
 	}
 
 	for _, dirInfo := range dirEntries {
-		// TODO: need to filter the dirEntries for naming pattern.
+		indexPath := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
+		indexName, ok := mgr.ParseIndexPath(indexPath)
+		if !ok {
+			log.Printf("  skipping dataDir entry: %s", indexPath)
+			continue
+		}
 
-		indexName := dirInfo.Name()
-		indexPath := mgr.dataDir + string(os.PathSeparator) + indexName
-
+		log.Printf("  opening dataDir entry: %s", indexPath)
 		pindex, err := OpenPIndex(indexName, indexPath)
 		if err != nil {
 			log.Printf("error: could not open indexPath: %v, err: %v",
