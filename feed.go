@@ -11,26 +11,5 @@
 
 package main
 
-import (
-	"github.com/blevesearch/bleve"
-)
-
-// A PIndex represents a "physical" index or a index "partition".
-
-func HandleStream(stream Stream, index bleve.Index) {
-	ch := stream.Channel()
-	for m := range ch {
-		// TODO: probably need things like stream reset/rollback
-		// and snapshot kinds of ops here, too.
-
-		// TODO: maybe need a more batchy API?  Perhaps, yet another
-		// goroutine that clumps up up updates into bigger batches?
-
-		switch m := m.(type) {
-		case *StreamUpdate:
-			index.Index(string(m.Id()), m.Body())
-		case *StreamDelete:
-			index.Delete(string(m.Id()))
-		}
-	}
+type Feed interface {
 }

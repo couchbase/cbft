@@ -15,7 +15,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -25,11 +24,9 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 
 	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
 )
 
 var bindAddr = flag.String("addr", ":8095",
@@ -75,79 +72,30 @@ func main() {
 }
 
 func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
-	err := startStreams(dataDir, server)
+	if server == "" {
+		return nil, fmt.Errorf("error: couchbase server URL required (-server)")
+	}
+
+	mgr := NewManager(dataDir, server)
+	err := mgr.Start()
 	if err != nil {
 		return nil, err
 	}
 
-	return makeRouter(dataDir, staticDir)
+	return makeRouter(mgr, staticDir)
 }
 
-func startStreams(dataDir, server string) error {
-	// TODO: need different approach that keeps trying even if the
-	// server(s) are down, so that we could at least serve queries
-	// to old, existing indexes.
-	//
-	// connect to couchbase, make sure the address is valid
-	if server == "" {
-		return fmt.Errorf("error: couchbase server URL required (-server)")
-	}
-
-	// TODO: if we handle multiple "seed" servers, what if those
-	// seeds actually come from different clusters?  Can we have
-	// multiple clusters fan-in to a single cbft?
-	_, err := couchbase.Connect(server)
-	if err != nil {
-		return fmt.Errorf("error: could not connect to couchbase server URL: %v, err: %v",
-			server, err)
-	}
-
-	// walk the data dir and register index names
-	dirEntries, err := ioutil.ReadDir(dataDir)
-	if err != nil {
-		return fmt.Errorf("error: could not read dataDir: %v, err: %v", dataDir, err)
-	}
-
-	for _, dirInfo := range dirEntries {
-		indexPath := dataDir + string(os.PathSeparator) + dirInfo.Name()
-		i, err := bleve.Open(indexPath)
-		if err != nil {
-			log.Printf("error: could not open indexPath: %v, err: %v", indexPath, err)
-		} else {
-			// make sure there is a bucket with this name
-			uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
-			stream, err := NewTAPFeed(server, "default", dirInfo.Name(), uuid)
-			if err != nil {
-				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
-					server, err)
-				// TODO: need a way to collect these errors so REST api
-				// can show them to user ("hey, perhaps you deleted a bucket
-				// and should delete these related full-text indexes?
-				// or the couchbase cluster is just down.")
-				continue
-			}
-			err = StartRegisteredStream(stream, dirInfo.Name(), i)
-			if err != nil {
-				log.Printf("error: could not start registered stream, err: %v", err)
-				continue
-			}
-		}
-	}
-
-	return nil
-}
-
-func makeRouter(dataDir, staticDir string) (*mux.Router, error) {
+func makeRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 	// create a router to serve static files
 	router := staticFileRouter(staticDir)
 
 	// add the API
 
 	// these are custom handlers for cbft
-	createIndexHandler := NewCreateIndexHander(dataDir)
+	createIndexHandler := NewCreateIndexHander(mgr)
 	router.Handle("/api/{indexName}", createIndexHandler).Methods("PUT")
 
-	deleteIndexHandler := NewDeleteIndexHandler(dataDir)
+	deleteIndexHandler := NewDeleteIndexHandler(mgr)
 	router.Handle("/api/{indexName}", deleteIndexHandler).Methods("DELETE")
 
 	// the rest are standard bleveHttp handlers

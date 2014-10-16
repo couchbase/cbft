@@ -24,12 +24,12 @@ import (
 )
 
 type DeleteIndexHandler struct {
-	basePath string
+	mgr *Manager
 }
 
-func NewDeleteIndexHandler(basePath string) *DeleteIndexHandler {
+func NewDeleteIndexHandler(mgr *Manager) *DeleteIndexHandler {
 	return &DeleteIndexHandler{
-		basePath: basePath,
+		mgr: mgr,
 	}
 }
 
@@ -48,7 +48,7 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	// try to stop the stream
-	stream := UnregisterStream(indexName)
+	stream := h.mgr.UnregisterStream(indexName)
 	if stream != nil {
 		err := stream.Close()
 		if err != nil {
@@ -77,5 +77,5 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 }
 
 func (h *DeleteIndexHandler) indexPath(name string) string {
-	return h.basePath + string(os.PathSeparator) + name
+	return h.mgr.DataDir() + string(os.PathSeparator) + name
 }

@@ -24,12 +24,12 @@ import (
 )
 
 type CreateIndexHandler struct {
-	basePath string
+	mgr *Manager
 }
 
-func NewCreateIndexHander(basePath string) *CreateIndexHandler {
+func NewCreateIndexHander(mgr *Manager) *CreateIndexHandler {
 	return &CreateIndexHandler{
-		basePath: basePath,
+		mgr: mgr,
 	}
 }
 
@@ -72,7 +72,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	err = StartRegisteredStream(stream, indexName, newIndex)
+	err = h.mgr.StartRegisteredStream(stream, indexName, newIndex)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error starting registered stream: %v", err), 500)
 		return
@@ -87,5 +87,5 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 }
 
 func (h *CreateIndexHandler) indexPath(name string) string {
-	return h.basePath + string(os.PathSeparator) + name
+	return h.mgr.DataDir() + string(os.PathSeparator) + name
 }
