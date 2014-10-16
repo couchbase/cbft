@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewManagerRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
+func NewManagerHTTPRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir)
 

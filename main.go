@@ -82,7 +82,7 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 		return nil, err
 	}
 
-	return NewManagerRouter(mgr, staticDir)
+	return NewManagerHTTPRouter(mgr, staticDir)
 }
 
 func dumpOnSignal(signals ...os.Signal) {
