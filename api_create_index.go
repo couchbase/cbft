@@ -66,7 +66,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	// make sure there is a bucket with this name
-	stream, err := NewTAPStream(*server, "default", indexName, "")
+	stream, err := NewTAPFeed(*server, "default", indexName, "")
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error preparing tap stream: %v", err), 400)
 		return

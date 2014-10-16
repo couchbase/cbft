@@ -18,7 +18,7 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
-type DCPStream struct {
+type DCPFeed struct {
 	url        string
 	poolName   string
 	bucketName string
@@ -28,7 +28,7 @@ type DCPStream struct {
 	requests   StreamRequests // TODO: may need to fan-out to multiple StreamRequests
 }
 
-func NewDCPStream(url, poolName, bucketName, bucketUUID string) (*DCPStream, error) {
+func NewDCPFeed(url, poolName, bucketName, bucketUUID string) (*DCPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func NewDCPStream(url, poolName, bucketName, bucketUUID string) (*DCPStream, err
 		bucket.Close()
 		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
 	}
-	rv := DCPStream{
+	rv := DCPFeed{
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -48,7 +48,7 @@ func NewDCPStream(url, poolName, bucketName, bucketUUID string) (*DCPStream, err
 	return &rv, nil
 }
 
-func (t *DCPStream) Start() error {
+func (t *DCPFeed) Start() error {
 	// start upr feed
 	feed, err := t.bucket.StartUprFeed("index" /*name*/, 0)
 	if err != nil {
@@ -85,10 +85,10 @@ func (t *DCPStream) Start() error {
 	return nil
 }
 
-func (t *DCPStream) Close() error {
+func (t *DCPFeed) Close() error {
 	return t.feed.Close()
 }
 
-func (t *DCPStream) Channel() StreamRequests {
+func (t *DCPFeed) Channel() StreamRequests {
 	return t.requests
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
-type TAPStream struct {
+type TAPFeed struct {
 	url        string
 	poolName   string
 	bucketName string
@@ -28,7 +28,7 @@ type TAPStream struct {
 	requests   StreamRequests // TODO: may need to fan-out to multiple StreamRequests.
 }
 
-func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, error) {
+func NewTAPFeed(url, poolName, bucketName, bucketUUID string) (*TAPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, err
 		bucket.Close()
 		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
 	}
-	rv := TAPStream{
+	rv := TAPFeed{
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -48,7 +48,7 @@ func NewTAPStream(url, poolName, bucketName, bucketUUID string) (*TAPStream, err
 	return &rv, nil
 }
 
-func (t *TAPStream) Start() error {
+func (t *TAPFeed) Start() error {
 	args := memcached.DefaultTapArguments()
 	feed, err := t.bucket.StartTapFeed(&args)
 	if err != nil {
@@ -73,10 +73,10 @@ func (t *TAPStream) Start() error {
 	return nil
 }
 
-func (t *TAPStream) Close() error {
+func (t *TAPFeed) Close() error {
 	return t.feed.Close()
 }
 
-func (t *TAPStream) Channel() StreamRequests {
+func (t *TAPFeed) Channel() StreamRequests {
 	return t.requests
 }

@@ -116,7 +116,7 @@ func startStreams(dataDir, server string) error {
 		} else {
 			// make sure there is a bucket with this name
 			uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
-			stream, err := NewTAPStream(server, "default", dirInfo.Name(), uuid)
+			stream, err := NewTAPFeed(server, "default", dirInfo.Name(), uuid)
 			if err != nil {
 				log.Printf("error: could not prepare TAP stream to server: %v, err: %v",
 					server, err)
