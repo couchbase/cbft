@@ -17,7 +17,7 @@ import (
 )
 
 func TestIndexPath(t *testing.T) {
-	m := NewManager("dir", "svr")
+	m := NewManager("dir", "svr", nil)
 	p := m.IndexPath("x")
 	expected := "dir" + string(os.PathSeparator) + "x.cbft"
 	if p != expected {
@@ -26,5 +26,12 @@ func TestIndexPath(t *testing.T) {
 	n, ok := m.ParseIndexPath(p)
 	if !ok || n != "x" {
 		t.Errorf("parse index path not ok, %v, %v", n, ok)
+	}
+}
+
+func TestManagerStart(t *testing.T) {
+	m := NewManager("dir", "not-a-real-svr", nil)
+	if m.Start() == nil {
+		t.Errorf("expected NewManager() with bad svr should fail")
 	}
 }

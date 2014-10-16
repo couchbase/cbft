@@ -18,8 +18,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	bleveHttp "github.com/blevesearch/bleve/http"
-
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -38,12 +36,6 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
-		return
-	}
-
-	indexToDelete := bleveHttp.UnregisterIndexByName(indexName)
-	if indexToDelete == nil {
-		showError(w, req, fmt.Sprintf("no such index '%s'", indexName), 404)
 		return
 	}
 
@@ -78,9 +70,17 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	// close the index
 	// TODO: looks like the pindex be responsible for the final bleve.Close()
 	// and actual subdirectory deletes?
-	indexToDelete.Close()
+	// indexToDelete := bleveHttp.UnregisterIndexByName(indexName)
+	// if indexToDelete == nil {
+	// 	showError(w, req, fmt.Sprintf("no such index '%s'", indexName), 404)
+	// 	return
+	//  }
+	// indexToDelete.Close()
+	pindex.Index().Close()
 
 	// now delete it
+	// TODO: should really send a msg to PIndex who's responsible for
+	// actual file / subdir deletion.
 	err := os.RemoveAll(h.mgr.IndexPath(indexName))
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error deletoing index: %v", err), 500)

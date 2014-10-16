@@ -18,14 +18,16 @@ import (
 	"strings"
 	"sync"
 
-	// TODO: manager shouldn't know of bleve/http?
-	bleveHttp "github.com/blevesearch/bleve/http"
-
 	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
 const indexPathSuffix string = ".cbft"
+
+type ManagerEventHandlers interface {
+	OnRegisterPIndex(pindexName string, pindex *PIndex)
+	OnUnregisterPIndex(pindexName string)
+}
 
 type Manager struct {
 	dataDir  string
@@ -33,9 +35,11 @@ type Manager struct {
 	m        sync.Mutex
 	feeds    map[string]Feed
 	pindexes map[string]*PIndex
+
+	meh ManagerEventHandlers
 }
 
-func NewManager(dataDir, server string) *Manager {
+func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		dataDir:  dataDir,
 		server:   server,
@@ -113,9 +117,6 @@ func (mgr *Manager) Start() error {
 func (mgr *Manager) FeedPIndex(bucketName, indexName string, pindex *PIndex) error {
 	mgr.RegisterPIndex(pindex.indexName, pindex)
 
-	// TODO: 1-to-1 bucket-to-index assumption is wrong here
-	bleveHttp.RegisterIndexName(indexName, pindex.Index())
-
 	// TODO: This shouldn't really go here, so need a separate Feed creator.
 	// TODO: Also, for now indexName == bucketName.
 	// make sure there is a bucket with this name
@@ -164,6 +165,9 @@ func (mgr *Manager) RegisterPIndex(name string, pindex *PIndex) {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 	mgr.pindexes[name] = pindex
+	if mgr.meh != nil {
+		mgr.meh.OnRegisterPIndex(name, pindex)
+	}
 }
 
 func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
@@ -172,6 +176,9 @@ func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
 	rv, ok := mgr.pindexes[name]
 	if ok {
 		delete(mgr.pindexes, name)
+		if mgr.meh != nil {
+			mgr.meh.OnUnregisterPIndex(name)
+		}
 		return rv
 	}
 	return nil

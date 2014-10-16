@@ -76,13 +76,23 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 		return nil, fmt.Errorf("error: couchbase server URL required (-server)")
 	}
 
-	mgr := NewManager(dataDir, server)
+	mgr := NewManager(dataDir, server, &MainHandlers{})
 	err := mgr.Start()
 	if err != nil {
 		return nil, err
 	}
 
 	return NewManagerHTTPRouter(mgr, staticDir)
+}
+
+type MainHandlers struct{}
+
+func (meh *MainHandlers) OnRegisterPIndex(pindexName string, pindex *PIndex) {
+	bleveHttp.RegisterIndexName(pindexName, pindex.Index())
+}
+
+func (meh *MainHandlers) OnUnregisterPIndex(pindexName string) {
+	bleveHttp.UnregisterIndexByName(pindexName)
 }
 
 func dumpOnSignal(signals ...os.Signal) {
