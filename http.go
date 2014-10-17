@@ -14,36 +14,9 @@ import (
 	"io"
 	"net/http"
 
-	bleveHttp "github.com/blevesearch/bleve/http"
 	log "github.com/couchbaselabs/clog"
 	"github.com/gorilla/mux"
 )
-
-func NewManagerHTTPRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
-	// create a router to serve static files
-	r := staticFileRouter(staticDir)
-
-	// add the API
-
-	// these are custom handlers for cbft
-	r.Handle("/api/{indexName}", NewCreateIndexHander(mgr)).Methods("PUT")
-	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
-
-	// the rest are standard bleveHttp handlers
-	r.Handle("/api/{indexName}", bleveHttp.NewGetIndexHandler()).Methods("GET")
-	r.Handle("/api", bleveHttp.NewListIndexesHander()).Methods("GET")
-
-	r.Handle("/api/{indexName}/_count", bleveHttp.NewDocCountHandler("")).Methods("GET")
-	r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocGetHandler("")).Methods("GET")
-	// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocIndexHandler("")).Methods("PUT")
-	// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocDeleteHandler("")).Methods("DELETE")
-	r.Handle("/api/{indexName}/{docID}/_debug", bleveHttp.NewDebugDocumentHandler("")).Methods("GET")
-
-	r.Handle("/api/{indexName}/_search", bleveHttp.NewSearchHandler("")).Methods("POST")
-	r.Handle("/api/{indexName}/_fields", bleveHttp.NewListFieldsHandler("")).Methods("GET")
-
-	return r, nil
-}
 
 func staticFileRouter(staticDir string) *mux.Router {
 	r := mux.NewRouter()

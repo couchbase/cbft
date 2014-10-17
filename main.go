@@ -82,7 +82,7 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 		return nil, err
 	}
 
-	return NewManagerHTTPRouter(mgr, staticDir)
+	return NewManagerRESTRouter(mgr, staticDir)
 }
 
 type MainHandlers struct{}
