@@ -18,32 +18,30 @@ import (
 )
 
 // A janitor maintains feeds, creating and deleting as necessary.
-func (mgr *Manager) StartJanitor() {
-	go func() {
-		for _ = range mgr.janitorCh {
-			startFeeds, startPIndexes := mgr.CurrentMaps()
+func (mgr *Manager) JanitorLoop() {
+	for _ = range mgr.janitorCh {
+		startFeeds, startPIndexes := mgr.CurrentMaps()
 
-			neededFeeds, unneededFeeds, err :=
-				CalcFeedsDelta(startFeeds, startPIndexes)
-			if err != nil {
-				log.Printf("error during delta calc, err: %v", err)
-				continue
-			}
-
-			log.Printf("janitor kicked, needed: %v, unneeded: %v",
-				neededFeeds, unneededFeeds)
-
-			// Create feeds that we're missing.
-			for _, targetPindexes := range neededFeeds {
-				mgr.StartFeed(targetPindexes)
-			}
-
-			// Teardown unneeded feeds.
-			for _, unneededFeed := range unneededFeeds {
-				mgr.StopFeed(unneededFeed)
-			}
+		neededFeeds, unneededFeeds, err :=
+			CalcFeedsDelta(startFeeds, startPIndexes)
+		if err != nil {
+			log.Printf("error during delta calc, err: %v", err)
+			continue
 		}
-	}()
+
+		log.Printf("janitor kicked, needed: %v, unneeded: %v",
+			neededFeeds, unneededFeeds)
+
+		// Create feeds that we're missing.
+		for _, targetPindexes := range neededFeeds {
+			mgr.StartFeed(targetPindexes)
+		}
+
+		// Teardown unneeded feeds.
+		for _, unneededFeed := range unneededFeeds {
+			mgr.StopFeed(unneededFeed)
+		}
+	}
 }
 
 // Functionally determine the delta of which feeds need creation and

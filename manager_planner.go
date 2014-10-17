@@ -12,10 +12,8 @@
 package main
 
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.
-func (mgr *Manager) StartPlanner() {
-	go func() {
-		for _ = range mgr.plannerCh {
-			// TODO: implement the grand plans for the planner.
-		}
-	}()
+func (mgr *Manager) PlannerLoop() {
+	for _ = range mgr.plannerCh {
+		// TODO: implement the grand plans for the planner.
+	}
 }

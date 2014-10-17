@@ -71,10 +71,10 @@ func (mgr *Manager) Start() error {
 		return err
 	}
 
-	mgr.StartPlanner()
+	go mgr.PlannerLoop()
 	mgr.plannerCh <- true
 
-	mgr.StartJanitor()
+	go mgr.JanitorLoop()
 	mgr.janitorCh <- true
 
 	return nil
