@@ -40,6 +40,7 @@ func TestManagerStart(t *testing.T) {
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
 	}
+
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	m = NewManager(emptyDir, "", nil)
