@@ -152,12 +152,12 @@ Inside a single cbft process...
 -- Planner (assign partitions to cbft nodes and PIndexes;
             makes the "plan" or "map"; which are written to the Config)
 
--- Janitor (tries to make reality match the plan in the Config by
+-- Janitor (tries to make reality match the plan in the Cfg by
             starting & stopping local PIndexes and Feeds as needed)
 
 - Queryer (scatter/gathers across relevant PIndexes)
 
-- Config (a distributed, consistent config database (like "gometa"))
+- Cfg (a distributed, consistent config database)
 
 Every cbft node is homogeneous for a simple deployment story.
 
@@ -186,8 +186,10 @@ A Manager is a collection of PIndex'es, Streams, and Feeds.  It has
 the mapping of buckets and vbuckets/partitions to
 PIndexes/Streams/Feeds.  A Manager singleton will be that single
 "global" object in a cbft process rather than having many global
-variables.  A Manager has API to create and delete logical indexes
-for higher levels of cbft (like admin REST endpoints).
+variables (although for testing, there might be many Manager instances
+in a test process to validate concurrency scenarios, etc).  A Manager
+has API to create and delete logical indexes for higher levels of cbft
+(like admin REST endpoints).
 
 The Manager has helpers: Planner & Janitor.  When a new logical "full
 text index" is created for a bucket, for example, the Manager engages
@@ -197,6 +199,10 @@ reality) and will make moves to help change reality to be closer to
 the plan, such as by creating/deleting PIndexes, Feeds and Streams.  A
 Planner, then, decides the 1-to-1, 1-to-N, N-to-1, N-to-M
 fan-in-or-out assignment of partitions to PIndexes.
+
+A Cfg is some consistent, distributed database; think: gometa, etcd,
+zookeeper kind of system.  It needs a "watcher" ability where clients
+can subscribe to data changes (configuration changes).
 
 A Queryer can query against one or more PIndexes (perhaps even one day
 to remote PIndexes by communicating with remote Queryers).  Initially,
@@ -209,3 +215,157 @@ that clients can access.  During a query, this networking layer
 accesses a Manager for the relevant mapping and invokes the Queryer
 with the PIndexes that need to be accesses.  This networking layer will
 provide the necessary AUTH checks.
+
+---------------------------------------------
+What happens when creating a full-text index...
+
+Let's "follow a request" through the system of a user creating a
+logical full-text index.  The user supplies inputs of data source
+bucket, indexName, indexMapping, using a client SDK that eventually
+communicates with some cbft instance (doesn't matter which one).
+
+10 Then Manager.CreateIndex() on that cbft instance is invoked with
+the creation arguments.
+
+20 The Manager saves logical full-text instance configuration data to
+the Cfg system.
+
+30 The Cfg store should have enough "watcher" or pub/sub capability so
+that any other subscribed cbft instances can hear about the news that
+the configuration changed.
+
+40 So, Planners across the various cbft nodes across the cbft cluster
+will get awoken (hey, something changed, there's planning to do!)...
+
+50 ASIDE: By the way, each cbft instance or process has its own
+unique, persistent cbft-ID (likely saved in the dataDir somwhere).
+
+52 And all those cbft-ID's will also listed in the Cfg.
+
+53 That is, when a cbft instance starts up it writes its cbft-ID and
+related instance data (like, here's my address, and I got N cpus and M
+amount of RAM here) to the Cfg.
+
+54 Only some subset of cbft-ID's, however, are "wanted" by the user or
+sysadmin.
+
+56 The sysadmin can use other API's to mark some of the known cbft
+instances in the Cfg as "wanted".
+
+58 END ASIDE.
+
+60 So, each awoken Planner in a cbft instance will work independently.
+
+70 The Planner takes input of logical full-text configuration, the
+list of wanted cbft-instances, the CB cluster vbucket map, and AllowedVersion.
+
+72 If any of the above inputs changes, the Planner needs to be
+re-awoken and re-run.
+
+80 The Planner functionally (in a deterministic, mathematically
+function sense) computes an assignment of partitions or vbuckets to
+PIndexes and assigns those PIndexes to cbft instances.
+
+90 So, there are N indepedent Planners running across the cbft cluster
+that independently see something needs to be planned, and assumming the
+planning algorithm is deterministic, each Planner instance should come
+up with the same plan, the same determinstic calculation results, no matter
+where it's running on whatever cbft node.
+
+92 ASIDE: what about cases of versioning, where some newer
+software versions, not yet deployed and running homogenously on every
+node, have a different, improved Planning algorithm?
+
+94 For multi-versioning, a Planner must respect their AllowedVersion
+input.  A newer deployed version of the Planner writes an updated
+AllowedVersion into the Cfg.  Older Planners should then stop working.
+
+100 The first version Planner might be very simple, such as a basic
+1-to-1 mapping.  For example, perhaps every cbft-instance receives
+_every_ vbucket partition into a single PIndex instead of actually
+doing real partitoning (so, that handles the "single node"
+requirements of the first Developer Preview).
+
+110 The hope is if we improve the Planner to be smarter over time,
+where there's enough separation of responsibilites here so that the
+later parts of the system don't care so much
+
+120 The Planners will then save the plans down into the Cfg so
+that later parts of the system can use it as input.
+
+122 Also clients will be able to access the plan from the Cfg in order
+to learn of the expected locations of PIndexes across the cbft
+cluster.
+
+130 Some CAS-like facility in Cfg will be necessary to help make this
+work well.
+
+140 There might be some concern that planning won't be deterministic,
+because planning might need to include things like, cpu utilization,
+disk space, number of Pindexes already on a node, etc.
+
+142 The key idea is that re-planning should only be done on topology
+changes (add/remove wanted cbft nodes or logical config additions (add
+logical full-text index).  If CPU utilization changes, that is, don't
+do replanning, similar to how we don't do an automatic Rebalance in CB
+if CPU on just a single CB node temporarily spikes.
+
+144 General machine "capability level" (4 cpus vs 32 cpus) can be
+input into Planning, to be able to handle heterogeneous machine types,
+where we expect # of CPU's won't change per machine; or, even if #
+cpu's does change, we won't replan.
+
+146 A related thought is we'd want to keep PIndex assignments across a
+cbft cluster relatively stable (not try to move or rebuild potentially
+large bleve index files at the drop of a hat).
+
+160 Consider the case where a new cbft node joins and is added to the
+"wanted" list.  Some nodes have seen the news, others haven't yet, so
+it's an inherently race-full situation where Planners are racing
+to recompute their plans.
+
+162 One important assumption here that the Cfg system provides a
+consistent answer.
+
+164 And, the Cfg system provides some CAS-like facilities for
+any Planners that are racing to save their latest plans.
+
+166 Still, some cbft nodes might be slow in hearing the news,
+and clients must be careful to handle this situation.
+
+170 Eventually, a cbft instance / Manager / Planner is going to have a
+new, latest & greatest plan that's different than it's previous plan.
+Next, responsibility switches to the Janitor.
+
+180 Each Janitor on a cbft instance knows its cbft-ID, and can focus
+on the subset of the plan related to that cbft-ID.
+
+190 A Janitor can then create or delete local PIndexes (bleve indexes)
+and setup/teardown Feeds as needed to match the subset of the plan.
+
+200 Care must be taken so that any inflight queries are handled well
+during these PIndex shutdowns and deletions.
+
+300 If the planning does however turn out to be
+non-derministic/non-functional, then we can still use the Cfg system
+to help determine a single, leased master Planner to do the planning
+and write results into the Cfg
+
+310 But, even with a single, elected master Planner, it'll still take
+some time for news of the new plan to get out to all the cbft
+instances; so, beware the inherently concurrent race conditions here.
+
+320 For example, a Queryer might try to contact some instances that
+haven't heard the news yet.
+
+330 To alleviate that, one thought is perhaps a Queryer might try to
+ask all its target cbft nodes "are you up to plan #12343?" before
+doing a full query across those nodes?  Or, only do this PIndex query
+if you are up to plan #12343, and I'm willing to wait/block for T
+timeout for you to get up to date.
+
+400 The hope is the cbft instances are all homogeneous, and during
+their independent Planning that they also don't have to talk to each
+other but can separately arrive at the same answers.
+
+
