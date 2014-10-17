@@ -25,8 +25,8 @@ import (
 const indexPathSuffix string = ".cbft"
 
 type ManagerEventHandlers interface {
-	OnRegisterPIndex(pindexName string, pindex *PIndex)
-	OnUnregisterPIndex(pindexName string)
+	OnRegisterPIndex(pindex *PIndex)
+	OnUnregisterPIndex(pindex *PIndex)
 }
 
 type Manager struct {
@@ -45,6 +45,7 @@ func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 		server:   server,
 		feeds:    make(map[string]Feed),
 		pindexes: make(map[string]*PIndex),
+		meh:      meh,
 	}
 }
 
@@ -96,50 +97,76 @@ func (mgr *Manager) Start() error {
 		indexPath := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
 		indexName, ok := mgr.ParseIndexPath(indexPath)
 		if !ok {
-			log.Printf("  skipping dataDir entry: %s", indexPath)
+			log.Printf("  skipping dataDir entry: %s", indexName)
 			continue
 		}
 
-		log.Printf("  opening dataDir entry: %s", indexPath)
+		log.Printf("  opening dataDir entry: %s", indexName)
 		pindex, err := OpenPIndex(indexName, indexPath)
 		if err != nil {
-			log.Printf("error: could not open indexPath: %v, err: %v",
+			log.Printf("error: could not open indexPath: %s, err: %v",
 				indexPath, err)
 			continue
 		}
 
-		mgr.FeedPIndex(indexName, indexName, pindex) // TODO: err handling.
+		// TODO: Need bucket UUID.
+		mgr.FeedPIndex(pindex) // TODO: err handling.
 	}
 
 	return nil
 }
 
-func (mgr *Manager) FeedPIndex(bucketName, indexName string, pindex *PIndex) error {
-	mgr.RegisterPIndex(pindex.indexName, pindex)
+// Creates a logical index, which might be comprised of many PIndex objects.
+func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
+	indexName string, indexMappingBytes []byte) error {
+	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
+	indexPath := mgr.IndexPath(indexName)
 
-	// TODO: This shouldn't really go here, so need a separate Feed creator.
-	// TODO: Also, for now indexName == bucketName.
-	// make sure there is a bucket with this name
-	uuid := "" // TODO: read bucket UUID and vbucket list out of bleve storage.
-	feed, err := NewTAPFeed(mgr.server, "default", bucketName, uuid)
+	// TODO: need to check if this pindex already exists?
+	// TODO: need to alloc a version/uuid for the pindex?
+	// TODO: need to save feed reconstruction info (bucketName, bucketUUID, etc)
+	//   with the pindex
+	pindex, err := NewPIndex(indexName, indexPath, indexMappingBytes)
+	if err != nil {
+		return fmt.Errorf("error running pindex: %v", err)
+	}
+
+	err = mgr.FeedPIndex(pindex)
+	if err != nil {
+		// TODO: cleanup?
+		return fmt.Errorf("error feeding pindex: %v", err)
+	}
+
+	return nil
+}
+
+func (mgr *Manager) FeedPIndex(pindex *PIndex) error {
+	indexName := pindex.name // TODO: bad assumption of 1-to-1 pindex.name to indexName
+
+	mgr.RegisterPIndex(indexName, pindex)
+
+	bucketName := indexName // TODO: read bucketName out of bleve storage.
+	bucketUUID := ""        // TODO: read bucketUUID and vbucket list out of bleve storage.
+	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" indexName: %s, err: %v", mgr.server, indexName, err)
 		// TODO: need a way to collect these errors so REST api
 		// can show them to user ("hey, perhaps you deleted a bucket
 		// and should delete these related full-text indexes?
-		// or the couchbase cluster is just down.")
-		// TODO: cleanup?
+		// or the couchbase cluster is just down.");
+		// perhaps as specialized clog writer?
+		// TODO: cleanup on error?
 	}
 
 	if err = feed.Start(); err != nil {
 		// TODO: need way to track dead cows (non-beef)
 		// TODO: cleanup?
-		return fmt.Errorf("error: could not start feed: %v, err: %v",
-			server, err)
+		return fmt.Errorf("error: could not start feed, server: %s, err: %v",
+			mgr.server, err)
 	}
 
-	mgr.RegisterFeed(indexName, feed)
+	mgr.RegisterFeed(indexName, feed) // TODO: Need to figure out feed names.
 
 	return nil
 }
@@ -166,20 +193,20 @@ func (mgr *Manager) RegisterPIndex(name string, pindex *PIndex) {
 	defer mgr.m.Unlock()
 	mgr.pindexes[name] = pindex
 	if mgr.meh != nil {
-		mgr.meh.OnRegisterPIndex(name, pindex)
+		mgr.meh.OnRegisterPIndex(pindex)
 	}
 }
 
 func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
-	rv, ok := mgr.pindexes[name]
+	pindex, ok := mgr.pindexes[name]
 	if ok {
 		delete(mgr.pindexes, name)
 		if mgr.meh != nil {
-			mgr.meh.OnUnregisterPIndex(name)
+			mgr.meh.OnUnregisterPIndex(pindex)
 		}
-		return rv
+		return pindex
 	}
 	return nil
 }

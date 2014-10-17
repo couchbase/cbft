@@ -24,9 +24,7 @@ type CreateIndexHandler struct {
 }
 
 func NewCreateIndexHander(mgr *Manager) *CreateIndexHandler {
-	return &CreateIndexHandler{
-		mgr: mgr,
-	}
+	return &CreateIndexHandler{mgr: mgr}
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -37,31 +35,19 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// read the request body
+	// read the request body, which is treated as index mapping JSON bytes
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error reading request body: %v", err), 400)
 		return
 	}
 
-	mgr := h.mgr
-
-	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
-	indexPath := mgr.IndexPath(indexName)
-
-	// TODO: need to check if this pindex already exists?
-	// TODO: need to alloc a version/uuid for the pindex?
-	pindex, err := NewPIndex(indexName, indexPath, requestBody)
+	// TODO: bad assumption of bucketName == indexName right now.
+	// TODO: need a bucketUUID, or perhaps "" just means use latest.
+	err = h.mgr.CreateIndex(indexName, "", indexName, requestBody)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error running pindex: %v", err), 500)
-		return
-	}
-
-	// TODO: 1-to-1 bucket-to-index assumption is wrong here
-	err = mgr.FeedPIndex(indexName, indexName, pindex)
-	if err != nil {
-		// TODO: cleanup?
-		showError(w, req, fmt.Sprintf("error creating index: %v", err), 400)
+		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
+			indexName, err), 500)
 		return
 	}
 

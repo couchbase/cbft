@@ -26,9 +26,7 @@ type DeleteIndexHandler struct {
 }
 
 func NewDeleteIndexHandler(mgr *Manager) *DeleteIndexHandler {
-	return &DeleteIndexHandler{
-		mgr: mgr,
-	}
+	return &DeleteIndexHandler{mgr: mgr}
 }
 
 func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -76,7 +74,7 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	// 	return
 	//  }
 	// indexToDelete.Close()
-	pindex.Index().Close()
+	pindex.BIndex().Close()
 
 	// now delete it
 	// TODO: should really send a msg to PIndex who's responsible for

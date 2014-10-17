@@ -87,12 +87,12 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 
 type MainHandlers struct{}
 
-func (meh *MainHandlers) OnRegisterPIndex(pindexName string, pindex *PIndex) {
-	bleveHttp.RegisterIndexName(pindexName, pindex.Index())
+func (meh *MainHandlers) OnRegisterPIndex(pindex *PIndex) {
+	bleveHttp.RegisterIndexName(pindex.name, pindex.BIndex())
 }
 
-func (meh *MainHandlers) OnUnregisterPIndex(pindexName string) {
-	bleveHttp.UnregisterIndexByName(pindexName)
+func (meh *MainHandlers) OnUnregisterPIndex(pindex *PIndex) {
+	bleveHttp.UnregisterIndexByName(pindex.name)
 }
 
 func dumpOnSignal(signals ...os.Signal) {
