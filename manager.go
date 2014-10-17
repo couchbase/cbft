@@ -27,22 +27,23 @@ type ManagerEventHandlers interface {
 }
 
 type Manager struct {
-	dataDir  string
-	server   string
-	m        sync.Mutex
-	feeds    map[string]Feed
-	pindexes map[string]*PIndex
-
-	meh ManagerEventHandlers
+	dataDir   string
+	server    string
+	m         sync.Mutex
+	feeds     map[string]Feed
+	pindexes  map[string]*PIndex
+	janitorCh chan bool // Used to kick the janitor awake.
+	meh       ManagerEventHandlers
 }
 
 func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
-		dataDir:  dataDir,
-		server:   server,
-		feeds:    make(map[string]Feed),
-		pindexes: make(map[string]*PIndex),
-		meh:      meh,
+		dataDir:   dataDir,
+		server:    server,
+		feeds:     make(map[string]Feed),
+		pindexes:  make(map[string]*PIndex),
+		janitorCh: make(chan bool),
+		meh:       meh,
 	}
 }
 
@@ -183,6 +184,29 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	// actual file / subdir to do the deletion rather than here.
 
 	return os.RemoveAll(mgr.PIndexPath(indexName))
+}
+
+// Maintains feeds, creating and deleting as necessary.
+func (mgr *Manager) StartFeedsJanitor(pindex *PIndex) {
+	go func() {
+		for _ = range mgr.janitorCh {
+			startFeeds := make(map[string]Feed)
+			startPIndexes := make(map[string]*PIndex)
+
+			// Get a snapshot of our current feeds and pindexes.
+			mgr.m.Lock()
+			for k, v := range mgr.feeds {
+				startFeeds[k] = v
+			}
+			for k, v := range mgr.pindexes {
+				startPIndexes[k] = v
+			}
+			mgr.m.Unlock()
+
+			// TODO: create feeds that we're missing.
+			// TODO: teardown feeds that we have too much of.
+		}
+	}()
 }
 
 func (mgr *Manager) FeedPIndex(pindex *PIndex) error {
