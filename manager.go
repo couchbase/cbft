@@ -59,11 +59,11 @@ func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 }
 
 func (mgr *Manager) Start() error {
-	// TODO: if we handle multiple "seed" servers, what if those
-	// seeds actually come from different clusters?  Can we have
+	// TODO: if we one day handle multiple "seed" servers, what if
+	// those seeds actually come from different clusters?  Can we have
 	// multiple clusters fan-in to a single cbft?
 	//
-	// First, check if couchbase server is invalid to exit early.
+	// First, check if couchbase server is valid, else exit early.
 	// Afterwards, any later loss of couchbase conns, in contrast,
 	// won't exit the server, where cbft will instead retry/reconnect.
 	// Empty server ("") allows for unit testing.
@@ -79,7 +79,7 @@ func (mgr *Manager) Start() error {
 	log.Printf("scanning dataDir...")
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
-		return fmt.Errorf("error: could not read dataDir: %v, err: %v",
+		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
 			mgr.dataDir, err)
 	}
 
