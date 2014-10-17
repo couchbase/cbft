@@ -31,6 +31,22 @@ type PIndex struct {
 	stream Stream
 }
 
+func (pindex *PIndex) Name() string {
+	return pindex.name
+}
+
+func (pindex *PIndex) Path() string {
+	return pindex.path
+}
+
+func (pindex *PIndex) BIndex() bleve.Index {
+	return pindex.bindex
+}
+
+func (pindex *PIndex) Stream() Stream {
+	return pindex.stream
+}
+
 func NewPIndex(name, path string, indexMappingBytes []byte) (*PIndex, error) {
 	indexMapping := bleve.NewIndexMapping()
 
@@ -46,7 +62,7 @@ func NewPIndex(name, path string, indexMappingBytes []byte) (*PIndex, error) {
 			path, err)
 	}
 
-	return RunPIndex(name, path, bindex)
+	return StartPIndex(name, path, bindex)
 }
 
 func OpenPIndex(name, path string) (*PIndex, error) {
@@ -55,10 +71,10 @@ func OpenPIndex(name, path string) (*PIndex, error) {
 		return nil, fmt.Errorf("error: could not open bleve index, path: %v, err: %v",
 			path, err)
 	}
-	return RunPIndex(name, path, bindex)
+	return StartPIndex(name, path, bindex)
 }
 
-func RunPIndex(name, path string, bindex bleve.Index) (*PIndex, error) {
+func StartPIndex(name, path string, bindex bleve.Index) (*PIndex, error) {
 	pindex := &PIndex{
 		name:   name,
 		path:   path,
@@ -67,39 +83,6 @@ func RunPIndex(name, path string, bindex bleve.Index) (*PIndex, error) {
 	}
 	go pindex.Run()
 	return pindex, nil
-}
-
-func (pindex *PIndex) IndexName() string {
-	return pindex.name
-}
-
-func (pindex *PIndex) IndexPath() string {
-	return pindex.path
-}
-
-func (pindex *PIndex) BIndex() bleve.Index {
-	return pindex.bindex
-}
-
-func (pindex *PIndex) Stream() Stream {
-	return pindex.stream
-}
-
-func (pindex *PIndex) Run() {
-	for m := range pindex.stream {
-		// TODO: probably need things like stream reset/rollback
-		// and snapshot kinds of ops here, too.
-
-		// TODO: maybe need a more batchy API?  Perhaps, yet another
-		// goroutine that clumps up up updates into bigger batches?
-
-		switch m := m.(type) {
-		case *StreamUpdate:
-			pindex.bindex.Index(string(m.Id()), m.Body())
-		case *StreamDelete:
-			pindex.bindex.Delete(string(m.Id()))
-		}
-	}
 }
 
 func PIndexPath(dataDir, pindexName string) string {

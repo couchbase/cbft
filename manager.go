@@ -97,7 +97,12 @@ func (mgr *Manager) Start() error {
 		}
 
 		// TODO: Need bucket UUID.
-		mgr.FeedPIndex(pindex) // TODO: err handling.
+		err = mgr.FeedPIndex(pindex) // TODO: err handling.
+		if err != nil {
+			log.Printf("error: could not feed pindex: %s, err: %v",
+				path, err)
+			continue
+		}
 	}
 
 	return nil
@@ -187,7 +192,8 @@ func (mgr *Manager) FeedPIndex(pindex *PIndex) error {
 	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
-			" indexName: %s, err: %v", mgr.server, indexName, err)
+			" bucketName: %s, indexName: %s, err: %v",
+			mgr.server, bucketName, indexName, err)
 		// TODO: need a way to collect these errors so REST api
 		// can show them to user ("hey, perhaps you deleted a bucket
 		// and should delete these related full-text indexes?
