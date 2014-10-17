@@ -35,10 +35,16 @@ func TestManagerStart(t *testing.T) {
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
 	}
+	if m.DataDir() != "dir" {
+		t.Errorf("wrong data dir")
+	}
 
 	m = NewManager("not-a-real-dir", "", nil)
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
+	}
+	if m.DataDir() != "not-a-real-dir" {
+		t.Errorf("wrong data dir")
 	}
 
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
