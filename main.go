@@ -82,15 +82,7 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 		return nil, err
 	}
 
-	staticPages := []string{
-		"/overview",
-		"/search",
-		"/indexes",
-		"/analysis",
-		"/monitor",
-	}
-
-	return NewManagerRESTRouter(mgr, staticDir, staticPages)
+	return NewManagerRESTRouter(mgr, staticDir)
 }
 
 type MainHandlers struct{}
