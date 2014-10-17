@@ -48,3 +48,61 @@ func TestManagerStart(t *testing.T) {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
 }
+
+func TestManagerRegisterPIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	m := NewManager(emptyDir, "", nil)
+	p, err := NewPIndex("p0", m.PIndexPath("p0"), []byte{})
+	if err != nil {
+		t.Errorf("expected NewPIndex() to work")
+	}
+	defer close(p.Stream())
+	px := m.UnregisterPIndex(p.Name())
+	if px != nil {
+		t.Errorf("expected UnregisterPIndex() on newborn manager to fail")
+	}
+	err = m.RegisterPIndex(p)
+	if err != nil {
+		t.Errorf("expected first RegisterPIndex() to work")
+	}
+	err = m.RegisterPIndex(p)
+	if err == nil {
+		t.Errorf("expected second RegisterPIndex() to fail")
+	}
+	px = m.UnregisterPIndex(p.Name())
+	if px == nil {
+		t.Errorf("expected first UnregisterPIndex() to work")
+	}
+	px = m.UnregisterPIndex(p.Name())
+	if px != nil {
+		t.Errorf("expected second UnregisterPIndex() to fail")
+	}
+}
+
+func TestManagerRegisterFeed(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	m := NewManager(emptyDir, "", nil)
+	f := &ErrorOnlyFeed{name: "f0"}
+	fx := m.UnregisterFeed(f.Name())
+	if fx != nil {
+		t.Errorf("expected UnregisterFeed() on newborn manager to fail")
+	}
+	err := m.RegisterFeed(f)
+	if err != nil {
+		t.Errorf("expected first RegisterFeed() to work")
+	}
+	err = m.RegisterFeed(f)
+	if err == nil {
+		t.Errorf("expected second RegisterFeed() to fail")
+	}
+	fx = m.UnregisterFeed(f.Name())
+	if fx == nil {
+		t.Errorf("expected first UnregisterFeed() to work")
+	}
+	fx = m.UnregisterFeed(f.Name())
+	if fx != nil {
+		t.Errorf("expected second UnregisterFeed() to fail")
+	}
+}

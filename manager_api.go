@@ -33,11 +33,14 @@ func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 		return fmt.Errorf("error running pindex: %v", err)
 	}
 
-	mgr.RegisterPIndex(pindex)
+	// TODO: Create a uuid for the pindex?
+
+	if err = mgr.RegisterPIndex(pindex); err != nil {
+		// TODO: cleanup the duplicate pindex?
+		return err
+	}
+
 	mgr.janitorCh <- true
-
-	// TODO: Create a uuid for the index?
-
 	return nil
 }
 

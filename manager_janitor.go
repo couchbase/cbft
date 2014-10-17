@@ -105,7 +105,10 @@ func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
 			mgr.server, err)
 	}
 
-	mgr.RegisterFeed(feed) // TODO: Need to figure out feed names.
+	if err = mgr.RegisterFeed(feed); err != nil {
+		// TODO: cleanup?
+		return err
+	}
 
 	return nil
 }

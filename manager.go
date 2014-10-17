@@ -111,13 +111,16 @@ func (mgr *Manager) LoadDataDir() error {
 	return nil
 }
 
-func (mgr *Manager) RegisterFeed(feed Feed) {
+func (mgr *Manager) RegisterFeed(feed Feed) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
-	// TODO: assert(feeds[name] == nil)
-
+	if _, exists := mgr.feeds[feed.Name()]; exists {
+		return fmt.Errorf("error: registered feed already exists, name: %s",
+			feed.Name())
+	}
 	mgr.feeds[feed.Name()] = feed
+	return nil
 }
 
 func (mgr *Manager) UnregisterFeed(name string) Feed {
@@ -132,16 +135,19 @@ func (mgr *Manager) UnregisterFeed(name string) Feed {
 	return nil
 }
 
-func (mgr *Manager) RegisterPIndex(pindex *PIndex) {
+func (mgr *Manager) RegisterPIndex(pindex *PIndex) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
-	// TODO: assert(pindexes[name] == nil)
-
+	if _, exists := mgr.pindexes[pindex.Name()]; exists {
+		return fmt.Errorf("error: registered pindex already exists, name: %s",
+			pindex.Name())
+	}
 	mgr.pindexes[pindex.Name()] = pindex
 	if mgr.meh != nil {
 		mgr.meh.OnRegisterPIndex(pindex)
 	}
+	return nil
 }
 
 func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
