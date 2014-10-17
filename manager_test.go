@@ -12,6 +12,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -33,5 +34,16 @@ func TestManagerStart(t *testing.T) {
 	m := NewManager("dir", "not-a-real-svr", nil)
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
+	}
+
+	m = NewManager("not-a-real-dir", "", nil)
+	if m.Start() == nil {
+		t.Errorf("expected NewManager() with bad dir should fail")
+	}
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	m = NewManager(emptyDir, "", nil)
+	if err := m.Start(); err != nil {
+		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
 }

@@ -59,17 +59,20 @@ func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 }
 
 func (mgr *Manager) Start() error {
-	// First, check if couchbase server is invalid to exit early.
-	// Afterwards, any later loss of couchbase conns, in contrast,
-	// won't exit the server, where cbft will instead retry/reconnect.
-
 	// TODO: if we handle multiple "seed" servers, what if those
 	// seeds actually come from different clusters?  Can we have
 	// multiple clusters fan-in to a single cbft?
-	_, err := couchbase.Connect(mgr.server)
-	if err != nil {
-		return fmt.Errorf("error: could not connect to couchbase server URL: %s, err: %v",
-			mgr.server, err)
+	//
+	// First, check if couchbase server is invalid to exit early.
+	// Afterwards, any later loss of couchbase conns, in contrast,
+	// won't exit the server, where cbft will instead retry/reconnect.
+	// Empty server ("") allows for unit testing.
+	if mgr.server != "" {
+		_, err := couchbase.Connect(mgr.server)
+		if err != nil {
+			return fmt.Errorf("error: could not connect to couchbase server URL: %s, err: %v",
+				mgr.server, err)
+		}
 	}
 
 	// walk the data dir and register pindexes
