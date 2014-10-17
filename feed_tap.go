@@ -42,7 +42,7 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
-		bucketUUID: bucket.UUID,
+		bucketUUID: "",     // bucket.UUID skipped for now as we're ahead of rest of code
 		bucket:     bucket, // TODO: need to close bucket on cleanup.
 		stream:     stream,
 	}

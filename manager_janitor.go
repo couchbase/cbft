@@ -30,6 +30,9 @@ func (mgr *Manager) StartJanitor() {
 				continue
 			}
 
+			log.Printf("janitor kicked, needed: %v, unneeded: %v",
+				neededFeeds, unneededFeeds)
+
 			// Create feeds that we're missing.
 			for _, targetPindexes := range neededFeeds {
 				mgr.StartFeed(targetPindexes)
