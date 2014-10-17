@@ -53,6 +53,16 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	m := NewManager(emptyDir, "", nil)
+
+	feeds, pindexes := m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+
 	p, err := NewPIndex("p0", m.PIndexPath("p0"), []byte{})
 	if err != nil {
 		t.Errorf("expected NewPIndex() to work")
@@ -70,6 +80,20 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected second RegisterPIndex() to fail")
 	}
+
+	feeds, pindexes = m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 1 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+	pc, ok := pindexes[p.Name()]
+	if !ok || p != pc {
+		t.Errorf("wrong pindex in current pindexes")
+	}
+
 	px = m.UnregisterPIndex(p.Name())
 	if px == nil {
 		t.Errorf("expected first UnregisterPIndex() to work")
@@ -78,12 +102,31 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if px != nil {
 		t.Errorf("expected second UnregisterPIndex() to fail")
 	}
+
+	feeds, pindexes = m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
 }
 
 func TestManagerRegisterFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	m := NewManager(emptyDir, "", nil)
+
+	feeds, pindexes := m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+
 	f := &ErrorOnlyFeed{name: "f0"}
 	fx := m.UnregisterFeed(f.Name())
 	if fx != nil {
@@ -97,6 +140,20 @@ func TestManagerRegisterFeed(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected second RegisterFeed() to fail")
 	}
+
+	feeds, pindexes = m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 1 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+	fc, ok := feeds[f.Name()]
+	if !ok || f != fc {
+		t.Errorf("wrong feed in current feeds")
+	}
+
 	fx = m.UnregisterFeed(f.Name())
 	if fx == nil {
 		t.Errorf("expected first UnregisterFeed() to work")
@@ -104,5 +161,14 @@ func TestManagerRegisterFeed(t *testing.T) {
 	fx = m.UnregisterFeed(f.Name())
 	if fx != nil {
 		t.Errorf("expected second UnregisterFeed() to fail")
+	}
+
+	feeds, pindexes = m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
 	}
 }
