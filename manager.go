@@ -32,7 +32,7 @@ type Manager struct {
 	m         sync.Mutex
 	feeds     map[string]Feed
 	pindexes  map[string]*PIndex
-	janitorCh chan bool // Used to kick the janitor awake.
+	janitorCh chan bool // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 }
 
@@ -45,18 +45,6 @@ func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 		janitorCh: make(chan bool),
 		meh:       meh,
 	}
-}
-
-func (mgr *Manager) DataDir() string {
-	return mgr.dataDir
-}
-
-func (mgr *Manager) PIndexPath(pindexName string) string {
-	return PIndexPath(mgr.dataDir, pindexName)
-}
-
-func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
-	return ParsePIndexPath(mgr.dataDir, pindexPath)
 }
 
 func (mgr *Manager) Start() error {
@@ -76,8 +64,20 @@ func (mgr *Manager) Start() error {
 		}
 	}
 
+	err := mgr.LoadDataDir()
+	if err != nil {
+		return err
+	}
+
+	mgr.StartJanitor()
+	mgr.janitorCh <- true
+
+	return nil
+}
+
+func (mgr *Manager) LoadDataDir() error {
 	// walk the data dir and register pindexes
-	log.Printf("scanning dataDir...")
+	log.Printf("loading dataDir...")
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
 		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
@@ -100,156 +100,25 @@ func (mgr *Manager) Start() error {
 			continue
 		}
 
-		// TODO: Need bucket UUID.
-		err = mgr.FeedPIndex(pindex) // TODO: err handling.
-		if err != nil {
-			log.Printf("error: could not feed pindex: %s, err: %v",
-				path, err)
-			continue
-		}
+		mgr.RegisterPIndex(pindex)
 	}
 
 	return nil
 }
 
-// Creates a logical index, which might be comprised of many PIndex objects.
-func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
-	indexName string, indexMappingBytes []byte) error {
-	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
-	indexPath := mgr.PIndexPath(indexName)
-
-	// TODO: need to check if this pindex already exists?
-	// TODO: need to alloc a version/uuid for the pindex?
-	// TODO: need to save feed reconstruction info (bucketName, bucketUUID, etc)
-	//   with the pindex
-	pindex, err := NewPIndex(indexName, indexPath, indexMappingBytes)
-	if err != nil {
-		return fmt.Errorf("error running pindex: %v", err)
-	}
-
-	err = mgr.FeedPIndex(pindex)
-	if err != nil {
-		// TODO: cleanup?
-		return fmt.Errorf("error feeding pindex: %v", err)
-	}
-
-	// TODO: Create a uuid for the index?
-
-	return nil
-}
-
-// Deletes a logical index, which might be comprised of many PIndex objects.
-func (mgr *Manager) DeleteIndex(indexName string) error {
-	// try to stop the feed
-	// TODO: should be future, multiple feeds
-	feed := mgr.UnregisterFeed(indexName)
-	if feed != nil {
-		err := feed.Close()
-		if err != nil {
-			log.Printf("error closing stream: %v", err)
-		}
-		// not returning error here
-		// because we still want to try and delete it
-	}
-
-	pindex := mgr.UnregisterPIndex(indexName)
-	if pindex != nil {
-		// TODO: if we closed the stream right now, then the feed might
-		// incorrectly try writing to a closed channel.
-		// If there is multiple feeds going into one stream (fan-in)
-		// then need to know how to count down to the final Close().
-		// err := stream.Close()
-		// if err != nil {
-		// 	log.Printf("error closing pindex: %v", err)
-		// }
-		// not returning error here
-		// because we still want to try and delete it
-	}
-
-	// TODO: what about any inflight queries or ops?
-
-	// close the index
-	// TODO: looks like the pindex should be responsible
-	// for the final bleve.Close()
-	// and actual subdirectory deletes?
-	// indexToDelete := bleveHttp.UnregisterIndexByName(indexName)
-	// if indexToDelete == nil {
-	// 	log.Printf("no such index '%s'", indexName)
-	//  }
-	// indexToDelete.Close()
-	pindex.BIndex().Close()
-
-	// now delete it
-	// TODO: should really send a msg to PIndex who's responsible for
-	// actual file / subdir to do the deletion rather than here.
-
-	return os.RemoveAll(mgr.PIndexPath(indexName))
-}
-
-// Maintains feeds, creating and deleting as necessary.
-func (mgr *Manager) StartFeedsJanitor(pindex *PIndex) {
-	go func() {
-		for _ = range mgr.janitorCh {
-			startFeeds := make(map[string]Feed)
-			startPIndexes := make(map[string]*PIndex)
-
-			// Get a snapshot of our current feeds and pindexes.
-			mgr.m.Lock()
-			for k, v := range mgr.feeds {
-				startFeeds[k] = v
-			}
-			for k, v := range mgr.pindexes {
-				startPIndexes[k] = v
-			}
-			mgr.m.Unlock()
-
-			// TODO: create feeds that we're missing.
-			// TODO: teardown feeds that we have too much of.
-		}
-	}()
-}
-
-func (mgr *Manager) FeedPIndex(pindex *PIndex) error {
-	indexName := pindex.name // TODO: bad assumption of 1-to-1 pindex.name to indexName
-
-	mgr.RegisterPIndex(indexName, pindex)
-
-	bucketName := indexName // TODO: read bucketName out of bleve storage.
-	bucketUUID := ""        // TODO: read bucketUUID and vbucket list out of bleve storage.
-	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID)
-	if err != nil {
-		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
-			" bucketName: %s, indexName: %s, err: %v",
-			mgr.server, bucketName, indexName, err)
-		// TODO: need a way to collect these errors so REST api
-		// can show them to user ("hey, perhaps you deleted a bucket
-		// and should delete these related full-text indexes?
-		// or the couchbase cluster is just down.");
-		// perhaps as specialized clog writer?
-		// TODO: cleanup on error?
-	}
-
-	if err = feed.Start(); err != nil {
-		// TODO: need way to track dead cows (non-beef)
-		// TODO: cleanup?
-		return fmt.Errorf("error: could not start feed, server: %s, err: %v",
-			mgr.server, err)
-	}
-
-	mgr.RegisterFeed(indexName, feed) // TODO: Need to figure out feed names.
-
-	return nil
-}
-
-func (mgr *Manager) RegisterFeed(name string, feed Feed) {
+func (mgr *Manager) RegisterFeed(feed Feed) {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
-	mgr.feeds[name] = feed
+
+	// TODO: assert(feeds[name] == nil)
+
+	mgr.feeds[feed.Name()] = feed
 }
 
 func (mgr *Manager) UnregisterFeed(name string) Feed {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
+
 	rv, ok := mgr.feeds[name]
 	if ok {
 		delete(mgr.feeds, name)
@@ -258,10 +127,13 @@ func (mgr *Manager) UnregisterFeed(name string) Feed {
 	return nil
 }
 
-func (mgr *Manager) RegisterPIndex(name string, pindex *PIndex) {
+func (mgr *Manager) RegisterPIndex(pindex *PIndex) {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
-	mgr.pindexes[name] = pindex
+
+	// TODO: assert(pindexes[name] == nil)
+
+	mgr.pindexes[pindex.Name()] = pindex
 	if mgr.meh != nil {
 		mgr.meh.OnRegisterPIndex(pindex)
 	}
@@ -270,6 +142,7 @@ func (mgr *Manager) RegisterPIndex(name string, pindex *PIndex) {
 func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
+
 	pindex, ok := mgr.pindexes[name]
 	if ok {
 		delete(mgr.pindexes, name)
@@ -279,4 +152,33 @@ func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
 		return pindex
 	}
 	return nil
+}
+
+// Returns a snapshot copy of the current feeds and pindexes.
+func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
+	feeds := make(map[string]Feed)
+	pindexes := make(map[string]*PIndex)
+
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	for k, v := range mgr.feeds {
+		feeds[k] = v
+	}
+	for k, v := range mgr.pindexes {
+		pindexes[k] = v
+	}
+	return feeds, pindexes
+}
+
+func (mgr *Manager) PIndexPath(pindexName string) string {
+	return PIndexPath(mgr.dataDir, pindexName)
+}
+
+func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
+	return ParsePIndexPath(mgr.dataDir, pindexPath)
+}
+
+func (mgr *Manager) DataDir() string {
+	return mgr.dataDir
 }

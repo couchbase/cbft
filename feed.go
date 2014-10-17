@@ -13,7 +13,12 @@ package main
 
 type Feed interface {
 	// TODO: a feed might fan out to >1 Stream
-	Channel() Stream
+	Name() string
 	Start() error
 	Close() error
+}
+
+func FeedName(poolName, bucketName, bucketUUID string) string {
+	// TODO: Needs to encode stream destinations here too.
+	return poolName + "_" + bucketName + "_" + bucketUUID
 }

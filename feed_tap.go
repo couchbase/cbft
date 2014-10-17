@@ -25,10 +25,11 @@ type TAPFeed struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.TapFeed
-	requests   Stream // TODO: may need to fan-out to multiple StreamRequests.
+	stream     Stream // TODO: support fan-out to >1 Stream
 }
 
-func NewTAPFeed(url, poolName, bucketName, bucketUUID string) (*TAPFeed, error) {
+func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
+	stream Stream) (*TAPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err
@@ -43,9 +44,14 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string) (*TAPFeed, error) 
 		bucketName: bucketName,
 		bucketUUID: bucket.UUID,
 		bucket:     bucket, // TODO: need to close bucket on cleanup.
-		requests:   make(Stream),
+		stream:     stream,
 	}
 	return &rv, nil
+}
+
+func (t *TAPFeed) Name() string {
+	// TODO: Needs to encode stream destinations here too.
+	return FeedName(t.poolName, t.bucketName, t.bucketUUID)
 }
 
 func (t *TAPFeed) Start() error {
@@ -56,15 +62,15 @@ func (t *TAPFeed) Start() error {
 	}
 	t.feed = feed
 	go func() {
-		defer close(t.requests) // TODO: figure out close responsibility.
+		defer close(t.stream) // TODO: figure out close responsibility.
 		for op := range feed.C {
 			if op.Opcode == memcached.TapMutation {
-				t.requests <- &StreamUpdate{
+				t.stream <- &StreamUpdate{
 					id:   op.Key,
 					body: op.Value,
 				}
 			} else if op.Opcode == memcached.TapDeletion {
-				t.requests <- &StreamDelete{
+				t.stream <- &StreamDelete{
 					id: op.Key,
 				}
 			}
@@ -75,8 +81,4 @@ func (t *TAPFeed) Start() error {
 
 func (t *TAPFeed) Close() error {
 	return t.feed.Close()
-}
-
-func (t *TAPFeed) Channel() Stream {
-	return t.requests
 }
