@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
 )
 
 type ManagerEventHandlers interface {
@@ -50,24 +49,7 @@ func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 }
 
 func (mgr *Manager) Start() error {
-	// TODO: if we one day handle multiple "seed" servers, what if
-	// those seeds actually come from different clusters?  Can we have
-	// multiple clusters fan-in to a single cbft?
-	//
-	// First, check if couchbase server is valid, else exit early.
-	// Afterwards, any later loss of couchbase conns, in contrast,
-	// won't exit the server, where cbft will instead retry/reconnect.
-	// Empty server ("") allows for unit testing.
-	if mgr.server != "" {
-		_, err := couchbase.Connect(mgr.server)
-		if err != nil {
-			return fmt.Errorf("error: could not connect to couchbase server URL: %s, err: %v",
-				mgr.server, err)
-		}
-	}
-
-	err := mgr.LoadDataDir()
-	if err != nil {
+	if err := mgr.LoadDataDir(); err != nil {
 		return err
 	}
 

@@ -27,6 +27,7 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 
 	log "github.com/couchbaselabs/clog"
+	"github.com/couchbaselabs/go-couchbase"
 )
 
 var bindAddr = flag.String("addr", ":8095",
@@ -73,12 +74,17 @@ func main() {
 
 func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 	if server == "" {
-		return nil, fmt.Errorf("error: couchbase server URL required (-server)")
+		return nil, fmt.Errorf("error: server URL required (-server)")
+	}
+
+	_, err := couchbase.Connect(server)
+	if err != nil {
+		return nil, fmt.Errorf("error: could not connect to server URL: %s, err: %v",
+			server, err)
 	}
 
 	mgr := NewManager(dataDir, server, &MainHandlers{})
-	err := mgr.Start()
-	if err != nil {
+	if err = mgr.Start(); err != nil {
 		return nil, err
 	}
 
