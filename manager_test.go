@@ -17,6 +17,22 @@ import (
 	"testing"
 )
 
+// Implements ManagerEventHandlers interface.
+type TestMEH struct {
+	lastPIndex *PIndex
+	lastCall   string
+}
+
+func (meh *TestMEH) OnRegisterPIndex(pindex *PIndex) {
+	meh.lastPIndex = pindex
+	meh.lastCall = "OnRegisterPIndex"
+}
+
+func (meh *TestMEH) OnUnregisterPIndex(pindex *PIndex) {
+	meh.lastPIndex = pindex
+	meh.lastCall = "OnUnregisterPIndex"
+}
+
 func TestPIndexPath(t *testing.T) {
 	m := NewManager("dir", "svr", nil)
 	p := m.PIndexPath("x")
@@ -58,7 +74,11 @@ func TestManagerStart(t *testing.T) {
 func TestManagerRegisterPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
-	m := NewManager(emptyDir, "", nil)
+	meh := &TestMEH{}
+	m := NewManager(emptyDir, "", meh)
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
 
 	feeds, pindexes := m.CurrentMaps()
 	if feeds == nil || pindexes == nil {
@@ -67,6 +87,9 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if len(feeds) != 0 || len(pindexes) != 0 {
 		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
 			len(feeds), len(pindexes))
+	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
 	}
 
 	p, err := NewPIndex("p0", m.PIndexPath("p0"), []byte{})
@@ -78,13 +101,26 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if px != nil {
 		t.Errorf("expected UnregisterPIndex() on newborn manager to fail")
 	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
+
 	err = m.RegisterPIndex(p)
 	if err != nil {
 		t.Errorf("expected first RegisterPIndex() to work")
 	}
+	if meh.lastPIndex != p || meh.lastCall != "OnRegisterPIndex" {
+		t.Errorf("expected OnRegisterPIndex callback to meh")
+	}
+	meh.lastPIndex = nil
+	meh.lastCall = ""
+
 	err = m.RegisterPIndex(p)
 	if err == nil {
 		t.Errorf("expected second RegisterPIndex() to fail")
+	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected OnRegisterPIndex callback to meh")
 	}
 
 	feeds, pindexes = m.CurrentMaps()
@@ -104,9 +140,18 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if px == nil {
 		t.Errorf("expected first UnregisterPIndex() to work")
 	}
+	if meh.lastPIndex != p || meh.lastCall != "OnUnregisterPIndex" {
+		t.Errorf("expected OnRegisterPIndex callback to meh")
+	}
+	meh.lastPIndex = nil
+	meh.lastCall = ""
+
 	px = m.UnregisterPIndex(p.Name())
 	if px != nil {
 		t.Errorf("expected second UnregisterPIndex() to fail")
+	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected OnRegisterPIndex callback to meh")
 	}
 
 	feeds, pindexes = m.CurrentMaps()
@@ -122,7 +167,11 @@ func TestManagerRegisterPIndex(t *testing.T) {
 func TestManagerRegisterFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
-	m := NewManager(emptyDir, "", nil)
+	meh := &TestMEH{}
+	m := NewManager(emptyDir, "", meh)
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
 
 	feeds, pindexes := m.CurrentMaps()
 	if feeds == nil || pindexes == nil {
@@ -132,19 +181,33 @@ func TestManagerRegisterFeed(t *testing.T) {
 		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
 			len(feeds), len(pindexes))
 	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
 
 	f := &ErrorOnlyFeed{name: "f0"}
 	fx := m.UnregisterFeed(f.Name())
 	if fx != nil {
 		t.Errorf("expected UnregisterFeed() on newborn manager to fail")
 	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
+
 	err := m.RegisterFeed(f)
 	if err != nil {
 		t.Errorf("expected first RegisterFeed() to work")
 	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
+
 	err = m.RegisterFeed(f)
 	if err == nil {
 		t.Errorf("expected second RegisterFeed() to fail")
+	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
 	}
 
 	feeds, pindexes = m.CurrentMaps()
@@ -164,9 +227,16 @@ func TestManagerRegisterFeed(t *testing.T) {
 	if fx == nil {
 		t.Errorf("expected first UnregisterFeed() to work")
 	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
+
 	fx = m.UnregisterFeed(f.Name())
 	if fx != nil {
 		t.Errorf("expected second UnregisterFeed() to fail")
+	}
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
 	}
 
 	feeds, pindexes = m.CurrentMaps()
