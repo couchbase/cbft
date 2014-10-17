@@ -186,15 +186,17 @@ A Manager is a collection of PIndex'es, Streams, and Feeds.  It has
 the mapping of buckets and vbuckets/partitions to
 PIndexes/Streams/Feeds.  A Manager singleton will be that single
 "global" object in a cbft process rather than having many global
-variables.  A Manager has API to list, setup, teardown and pause
-PIndexes, Streams and Feeds.  When a new logical "full text index" is
-created for a bucket, for example, the Manager will assign
-partitions/vbuckets to PIndexes and hook up all the relevant Stream
-channels between Feeds and PIndexes.  A Manager, then, decides the
-1-to-1, 1-to-N, N-to-1, N-to-M fan-in-out assignment of partitions to
-PIndexes.  A snapshot of this mapping might need to be stored durably
-(gometa?).  A part of this mapping might actually be a list of known
-or expected cbft nodes.
+variables.  A Manager has API to create and delete logical indexes
+for higher levels of cbft (like admin REST endpoints).
+
+The Manager has helpers: Planner & Janitor.  When a new logical "full
+text index" is created for a bucket, for example, the Manager engages
+its Planner to assign partitions/vbuckets to PIndexes across cbft
+instances.  The Janitor will detect "messes" (divergence from plans to
+reality) and will make moves to help change reality to be closer to
+the plan, such as by creating/deleting PIndexes, Feeds and Streams.  A
+Planner, then, decides the 1-to-1, 1-to-N, N-to-1, N-to-M
+fan-in-or-out assignment of partitions to PIndexes.
 
 A Queryer can query against one or more PIndexes (perhaps even one day
 to remote PIndexes by communicating with remote Queryers).  Initially,
