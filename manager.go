@@ -28,10 +28,11 @@ type ManagerEventHandlers interface {
 
 type Manager struct {
 	dataDir   string
-	server    string
+	server    string // The datasource that cbft will index.
 	m         sync.Mutex
 	feeds     map[string]Feed
 	pindexes  map[string]*PIndex
+	plannerCh chan bool // Used to kick the planner that there's more work.
 	janitorCh chan bool // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 }
@@ -42,6 +43,7 @@ func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),
+		plannerCh: make(chan bool),
 		janitorCh: make(chan bool),
 		meh:       meh,
 	}
@@ -68,6 +70,9 @@ func (mgr *Manager) Start() error {
 	if err != nil {
 		return err
 	}
+
+	mgr.StartPlanner()
+	mgr.plannerCh <- true
 
 	mgr.StartJanitor()
 	mgr.janitorCh <- true
