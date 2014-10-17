@@ -18,7 +18,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func staticFileRouter(staticDir string) *mux.Router {
+func staticFileRouter(staticDir string, pages []string) *mux.Router {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
@@ -26,16 +26,7 @@ func staticFileRouter(staticDir string) *mux.Router {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		myFileHandler{http.FileServer(http.Dir(staticDir))}))
 
-	// application pages
-	appPages := []string{
-		"/overview",
-		"/search",
-		"/indexes",
-		"/analysis",
-		"/monitor",
-	}
-
-	for _, p := range appPages {
+	for _, p := range pages {
 		// if you try to use index.html it will redirect...poorly
 		r.PathPrefix(p).Handler(RewriteURL("/",
 			http.FileServer(http.Dir(staticDir))))

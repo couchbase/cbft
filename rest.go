@@ -14,9 +14,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewManagerRESTRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
+func NewManagerRESTRouter(mgr *Manager,
+	staticDir string, staticPages []string) (*mux.Router, error) {
 	// create a router to serve static files
-	r := staticFileRouter(staticDir)
+	r := staticFileRouter(staticDir, staticPages)
 
 	// add the API
 
