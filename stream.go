@@ -13,10 +13,7 @@ package main
 
 type Stream chan StreamRequest
 
-type StreamRequest interface {
-	Id() []byte
-	Body() []byte
-}
+type StreamRequest interface{}
 
 type StreamUpdate struct {
 	id   []byte
@@ -37,8 +34,4 @@ type StreamDelete struct {
 
 func (s *StreamDelete) Id() []byte {
 	return s.id
-}
-
-func (s *StreamDelete) Body() []byte {
-	return nil
 }

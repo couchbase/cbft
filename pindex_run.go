@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	"os"
+)
+
 func (pindex *PIndex) Run() {
 	for m := range pindex.stream {
 		// TODO: probably need things like stream reset/rollback
@@ -26,4 +30,10 @@ func (pindex *PIndex) Run() {
 			pindex.bindex.Delete(string(m.Id()))
 		}
 	}
+
+	// TODO: what about any inflight queries or ops?
+
+	pindex.BIndex().Close()
+
+	os.RemoveAll(pindex.Path())
 }

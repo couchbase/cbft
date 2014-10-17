@@ -13,7 +13,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -46,50 +45,30 @@ func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 
 // Deletes a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) DeleteIndex(indexName string) error {
+	// TODO: Actually, need the Janitor to do all this work to avoid a
+	// concurrency race where it recreates feeds right after we
+	// unregister them.
+	// mgr.janitorCh <- true
+	//
 	// try to stop the feed
-	// TODO: should be future, multiple feeds
+	// TODO: should be unregistering all feeds (multiple).
 	feed := mgr.UnregisterFeed(indexName)
 	if feed != nil {
+		// TODO: This needs to be synchronous so that we know that
+		// feeds have stopped sending to their Streams.
 		err := feed.Close()
 		if err != nil {
 			log.Printf("error closing stream: %v", err)
 		}
-		// not returning error here
-		// because we still want to try and delete it
+		// Not returning error here because we still want to try and
+		// close the Stream and PIndex.
 	}
 
 	pindex := mgr.UnregisterPIndex(indexName)
 	if pindex != nil {
-		// TODO: if we closed the stream right now, then the feed might
-		// incorrectly try writing to a closed channel.
-		// If there is multiple feeds going into one stream (fan-in)
-		// then need to know how to count down to the final Close().
-		// err := stream.Close()
-		// if err != nil {
-		// 	log.Printf("error closing pindex: %v", err)
-		// }
-		// not returning error here
-		// because we still want to try and delete it
+		// TODO: what about any inflight queries or ops?
+		close(pindex.Stream())
 	}
 
-	// TODO: what about any inflight queries or ops?
-
-	// close the index
-	// TODO: looks like the pindex should be responsible
-	// for the final bleve.Close()
-	// and actual subdirectory deletes?
-	// indexToDelete := bleveHttp.UnregisterIndexByName(indexName)
-	// if indexToDelete == nil {
-	// 	log.Printf("no such index '%s'", indexName)
-	//  }
-	// indexToDelete.Close()
-	pindex.BIndex().Close()
-
-	mgr.janitorCh <- true
-
-	// now delete it
-	// TODO: should really send a msg to PIndex who's responsible for
-	// actual file / subdir to do the deletion rather than here.
-
-	return os.RemoveAll(mgr.PIndexPath(indexName))
+	return nil
 }
