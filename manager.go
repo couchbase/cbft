@@ -15,14 +15,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 
 	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
-
-const indexPathSuffix string = ".cbft"
 
 type ManagerEventHandlers interface {
 	OnRegisterPIndex(pindex *PIndex)
@@ -53,22 +50,12 @@ func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }
 
-func (mgr *Manager) IndexPath(indexName string) string {
-	// TODO: path security checks / mapping here; ex: "../etc/pswd"
-	return mgr.dataDir + string(os.PathSeparator) + indexName + indexPathSuffix
+func (mgr *Manager) PIndexPath(pindexName string) string {
+	return PIndexPath(mgr.dataDir, pindexName)
 }
 
-func (mgr *Manager) ParseIndexPath(indexPath string) (string, bool) {
-	if !strings.HasSuffix(indexPath, indexPathSuffix) {
-		return "", false
-	}
-	prefix := mgr.dataDir + string(os.PathSeparator)
-	if !strings.HasPrefix(indexPath, prefix) {
-		return "", false
-	}
-	indexName := indexPath[len(prefix):]
-	indexName = indexName[0 : len(indexName)-len(indexPathSuffix)]
-	return indexName, true
+func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
+	return ParsePIndexPath(mgr.dataDir, pindexPath)
 }
 
 func (mgr *Manager) Start() error {
@@ -85,7 +72,7 @@ func (mgr *Manager) Start() error {
 			mgr.server, err)
 	}
 
-	// walk the data dir and register index names
+	// walk the data dir and register pindexes
 	log.Printf("scanning dataDir...")
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
@@ -94,18 +81,18 @@ func (mgr *Manager) Start() error {
 	}
 
 	for _, dirInfo := range dirEntries {
-		indexPath := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
-		indexName, ok := mgr.ParseIndexPath(indexPath)
+		path := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
+		name, ok := mgr.ParsePIndexPath(path)
 		if !ok {
-			log.Printf("  skipping dataDir entry: %s", indexName)
+			log.Printf("  skipping: %s", dirInfo.Name())
 			continue
 		}
 
-		log.Printf("  opening dataDir entry: %s", indexName)
-		pindex, err := OpenPIndex(indexName, indexPath)
+		log.Printf("  opening pindex: %s", name)
+		pindex, err := OpenPIndex(name, path)
 		if err != nil {
-			log.Printf("error: could not open indexPath: %s, err: %v",
-				indexPath, err)
+			log.Printf("error: could not open pindex: %s, err: %v",
+				path, err)
 			continue
 		}
 
@@ -120,7 +107,7 @@ func (mgr *Manager) Start() error {
 func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 	indexName string, indexMappingBytes []byte) error {
 	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
-	indexPath := mgr.IndexPath(indexName)
+	indexPath := mgr.PIndexPath(indexName)
 
 	// TODO: need to check if this pindex already exists?
 	// TODO: need to alloc a version/uuid for the pindex?
@@ -187,7 +174,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	// TODO: should really send a msg to PIndex who's responsible for
 	// actual file / subdir to do the deletion rather than here.
 
-	return os.RemoveAll(mgr.IndexPath(indexName))
+	return os.RemoveAll(mgr.PIndexPath(indexName))
 }
 
 func (mgr *Manager) FeedPIndex(pindex *PIndex) error {

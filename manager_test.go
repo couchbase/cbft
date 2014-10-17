@@ -16,16 +16,16 @@ import (
 	"testing"
 )
 
-func TestIndexPath(t *testing.T) {
+func TestPIndexPath(t *testing.T) {
 	m := NewManager("dir", "svr", nil)
-	p := m.IndexPath("x")
-	expected := "dir" + string(os.PathSeparator) + "x.cbft"
+	p := m.PIndexPath("x")
+	expected := "dir" + string(os.PathSeparator) + "x.pindex"
 	if p != expected {
-		t.Errorf("wrong index path %s, %s", p, expected)
+		t.Errorf("wrong pindex path %s, %s", p, expected)
 	}
-	n, ok := m.ParseIndexPath(p)
+	n, ok := m.ParsePIndexPath(p)
 	if !ok || n != "x" {
-		t.Errorf("parse index path not ok, %v, %v", n, ok)
+		t.Errorf("parse pindex path not ok, %v, %v", n, ok)
 	}
 }
 

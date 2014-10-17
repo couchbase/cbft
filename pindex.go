@@ -14,11 +14,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 )
 
 // A PIndex represents a "physical" index or a index "partition".
+
+const pindexPathSuffix string = ".pindex"
 
 type PIndex struct {
 	name   string
@@ -96,4 +100,22 @@ func (pindex *PIndex) Run() {
 			pindex.bindex.Delete(string(m.Id()))
 		}
 	}
+}
+
+func PIndexPath(dataDir, pindexName string) string {
+	// TODO: path security checks / mapping here; ex: "../etc/pswd"
+	return dataDir + string(os.PathSeparator) + pindexName + pindexPathSuffix
+}
+
+func ParsePIndexPath(dataDir, pindexPath string) (string, bool) {
+	if !strings.HasSuffix(pindexPath, pindexPathSuffix) {
+		return "", false
+	}
+	prefix := dataDir + string(os.PathSeparator)
+	if !strings.HasPrefix(pindexPath, prefix) {
+		return "", false
+	}
+	pindexName := pindexPath[len(prefix):]
+	pindexName = pindexName[0 : len(pindexName)-len(pindexPathSuffix)]
+	return pindexName, true
 }
