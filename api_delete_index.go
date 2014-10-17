@@ -14,11 +14,8 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
-
-	log "github.com/couchbaselabs/clog"
 )
 
 type DeleteIndexHandler struct {
@@ -37,51 +34,9 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// try to stop the feed
-	// TODO: should be future, multiple feeds
-	feed := h.mgr.UnregisterFeed(indexName)
-	if feed != nil {
-		err := feed.Close()
-		if err != nil {
-			log.Printf("error closing stream: %v", err)
-		}
-		// not returning error here
-		// because we still want to try and delete it
-	}
-
-	pindex := h.mgr.UnregisterPIndex(indexName)
-	if pindex != nil {
-		// TODO: if we closed the stream right now, then feed might
-		// try writing to closed channel.
-		// If there is multiple feeds going into one stream (fan-in)
-		// then need to know how to count down to the final Close().
-		// err := stream.Close()
-		// if err != nil {
-		// 	log.Printf("error closing pindex: %v", err)
-		// }
-		// not returning error here
-		// because we still want to try and delete it
-	}
-
-	// TODO: what about any inflight queries or ops?
-
-	// close the index
-	// TODO: looks like the pindex be responsible for the final bleve.Close()
-	// and actual subdirectory deletes?
-	// indexToDelete := bleveHttp.UnregisterIndexByName(indexName)
-	// if indexToDelete == nil {
-	// 	showError(w, req, fmt.Sprintf("no such index '%s'", indexName), 404)
-	// 	return
-	//  }
-	// indexToDelete.Close()
-	pindex.BIndex().Close()
-
-	// now delete it
-	// TODO: should really send a msg to PIndex who's responsible for
-	// actual file / subdir deletion.
-	err := os.RemoveAll(h.mgr.IndexPath(indexName))
+	err := h.mgr.DeleteIndex(indexName)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error deletoing index: %v", err), 500)
+		showError(w, req, fmt.Sprintf("error deleting index, err: %v", err), 500)
 		return
 	}
 
