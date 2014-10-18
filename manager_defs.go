@@ -35,26 +35,37 @@ type Indexer struct {
 type Indexers []*Indexer
 
 // Returns ok if our version is ok to write to the Cfg.
-func CheckVersion(cfg Cfg, myVersion string) bool {
+func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 	for cfg != nil {
 		clusterVersion, cas, err := cfg.Get(VERSION_KEY, 0)
-		if clusterVersion == nil || clusterVersion == "" || err != nil {
-			clusterVersion = myVersion
-		}
-		if !VersionGTE(myVersion, clusterVersion.(string)) {
-			return false
-		}
-		if myVersion == clusterVersion {
-			return true
-		}
-		// We have a higher VERSION than the version just read from
-		// cfg, so save our VERSION and retry.
-		_, err = cfg.Set(VERSION_KEY, myVersion, cas)
 		if err != nil {
-			log.Printf("error: could not save VERSION to cfg, err: %v", err)
-			return false
+			return false, err
 		}
+		if clusterVersion == nil || clusterVersion == "" {
+			// First time initialization, so save myVersion to cfg and
+			// retry in case there was a race.
+			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
+			if err != nil {
+				log.Printf("error: could not save VERSION to cfg, err: %v", err)
+				return false, err
+			}
+			continue
+		}
+		if VersionGTE(myVersion, clusterVersion.(string)) == false {
+			return false, nil
+		}
+		if myVersion != clusterVersion {
+			// Found myVersion is higher than clusterVersion so save
+			// myVersion to cfg and retry in case there was a race.
+			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
+			if err != nil {
+				log.Printf("error: could not save VERSION to cfg, err: %v", err)
+				return false, err
+			}
+			continue
+		}
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }

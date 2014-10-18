@@ -23,15 +23,20 @@ import (
 
 func (mgr *Manager) PlannerLoop() {
 	for reason := range mgr.plannerCh {
-		log.Printf("planner awakes, due to reason: %s", reason)
+		log.Printf("planner awakes, reason: %s", reason)
 
 		if mgr.cfg == nil { // Can occur during testing.
 			log.Printf("planner skipped due to nil cfg")
 			continue
 		}
-		if !CheckVersion(mgr.cfg, mgr.version) {
-			log.Printf("planner skipped due to obsoleted version: %v",
-				VERSION)
+		ok, err := CheckVersion(mgr.cfg, mgr.version)
+		if err != nil {
+			log.Printf("planner skipped due to CheckVersion err: %v", err)
+			continue
+		}
+		if !ok {
+			log.Printf("planner skipped because version is too low: %v",
+				mgr.version)
 			continue
 		}
 
@@ -41,6 +46,7 @@ func (mgr *Manager) PlannerLoop() {
 		}
 		if plan != nil {
 			// TODO: save the plan.
+			// TODO: kick the janitor if the plan changed.
 		}
 	}
 }
