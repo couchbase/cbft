@@ -11,15 +11,9 @@
 
 package main
 
-import (
-	log "github.com/couchbaselabs/clog"
-)
-
 // JSON/struct definitions of what the Manager stores in the Cfg.
 // NOTE: You *must* update VERSION if you change these
 // definitions or the planning algorithms change.
-const VERSION = "0.0.0"
-const VERSION_KEY = "version"
 
 type Plan struct {
 }
@@ -33,39 +27,3 @@ type Indexer struct {
 }
 
 type Indexers []*Indexer
-
-// Returns true if a given version is modern enough to modify the Cfg.
-func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
-	for cfg != nil {
-		clusterVersion, cas, err := cfg.Get(VERSION_KEY, 0)
-		if err != nil {
-			return false, err
-		}
-		if clusterVersion == nil || clusterVersion == "" {
-			// First time initialization, so save myVersion to cfg and
-			// retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
-			if err != nil {
-				log.Printf("error: could not save VERSION to cfg, err: %v", err)
-				return false, err
-			}
-			continue
-		}
-		if VersionGTE(myVersion, clusterVersion.(string)) == false {
-			return false, nil
-		}
-		if myVersion != clusterVersion {
-			// Found myVersion is higher than clusterVersion so save
-			// myVersion to cfg and retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
-			if err != nil {
-				log.Printf("error: could not save VERSION to cfg, err: %v", err)
-				return false, err
-			}
-			continue
-		}
-		return true, nil
-	}
-
-	return false, nil
-}

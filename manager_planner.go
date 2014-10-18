@@ -40,6 +40,8 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
+		// TODO: What about downgrades?
+
 		plan, err := mgr.CalcPlan(nil, nil)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
