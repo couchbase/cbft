@@ -27,6 +27,7 @@ func (mgr *Manager) PlannerLoop() {
 
 		if mgr.cfg == nil { // Can occur during testing.
 			log.Printf("planner skipped due to nil cfg")
+			continue
 		}
 		if !mgr.CheckVersion() {
 			log.Printf("planner skipped due to obsoleted version: %v",
