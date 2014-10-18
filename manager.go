@@ -26,8 +26,8 @@ type ManagerEventHandlers interface {
 }
 
 type Manager struct {
-	dataDir   string
 	cfg       Cfg
+	dataDir   string
 	server    string // The datasource that cbft will index.
 	m         sync.Mutex
 	feeds     map[string]Feed
@@ -37,11 +37,11 @@ type Manager struct {
 	meh       ManagerEventHandlers
 }
 
-func NewManager(dataDir string, cfg Cfg, server string,
+func NewManager(cfg Cfg, dataDir string, server string,
 	meh ManagerEventHandlers) *Manager {
 	return &Manager{
-		dataDir:   dataDir,
 		cfg:       cfg,
+		dataDir:   dataDir,
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),

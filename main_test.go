@@ -16,7 +16,7 @@ import (
 )
 
 func TestMainStart(t *testing.T) {
-	router, err := mainStart("./data", "./static", "")
+	router, err := mainStart(nil, "./data", "./static", "")
 	if router != nil || err == nil {
 		t.Errorf("expected empty server string to fail mainStart()")
 	}

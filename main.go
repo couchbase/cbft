@@ -62,7 +62,10 @@ func main() {
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
-	router, err := mainStart(*dataDir, *staticDir, *server)
+	// TODO: Use a real cfg one day.
+	cfg := NewCfgSimple()
+
+	router, err := mainStart(cfg, *dataDir, *staticDir, *server)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,7 +75,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
-func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
+func mainStart(cfg Cfg, dataDir, staticDir, server string) (*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
@@ -83,9 +86,7 @@ func mainStart(dataDir, staticDir, server string) (*mux.Router, error) {
 			server, err)
 	}
 
-	cfg := NewCfgSimple() // TODO: Use a real cfg one day.
-
-	mgr := NewManager(dataDir, cfg, server, &MainHandlers{})
+	mgr := NewManager(cfg, dataDir, server, &MainHandlers{})
 	if err = mgr.Start(); err != nil {
 		return nil, err
 	}
