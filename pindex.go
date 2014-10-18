@@ -71,6 +71,7 @@ func OpenPIndex(name, path string) (*PIndex, error) {
 		return nil, fmt.Errorf("error: could not open bleve index, path: %v, err: %v",
 			path, err)
 	}
+	// TODO: Check if name matches what was stored in bleve file.
 	return StartPIndex(name, path, bindex)
 }
 
