@@ -35,9 +35,10 @@ type Indexers []*Indexer
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.
 func (mgr *Manager) PlannerLoop() {
 	for _ = range mgr.plannerCh {
-		// TODO: get allowed version from Cfg.
-		currAllowedPlannerVersion := "0.0"
-		plan, err := mgr.CalcPlan(nil, nil, currAllowedPlannerVersion)
+		if !mgr.CheckPlannerVersion() {
+			continue
+		}
+		plan, err := mgr.CalcPlan(nil, nil)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
@@ -48,8 +49,7 @@ func (mgr *Manager) PlannerLoop() {
 }
 
 func (mgr *Manager) CalcPlan(logicalIndexes LogicalIndexes,
-	indexers Indexers,
-	allowPlannerVersion string) (*Plan, error) {
+	indexers Indexers) (*Plan, error) {
 	// TODO: implement the grand plans for the planner.
 	// First gen planner should keep it simple, such as...
 	// - a single Feed for every datasource node.
@@ -57,4 +57,26 @@ func (mgr *Manager) CalcPlan(logicalIndexes LogicalIndexes,
 	// - have a single PIndex for all datasource partitions
 	//   (vbuckets) to start.
 	return nil, fmt.Errorf("TODO")
+}
+
+func (mgr *Manager) CheckPlannerVersion() bool {
+	for mgr.cfg != nil {
+		version, cas, err := mgr.cfg.Get("plannerVersion", 0)
+		if version == nil || version == "" || err != nil {
+			version = PLANNER_VERSION
+		}
+		if !VersionGTE(PLANNER_VERSION, version.(string)) {
+			log.Printf("planning skipped for obsoleted version: %v < %v",
+				PLANNER_VERSION, version)
+			return false
+		}
+		if PLANNER_VERSION == version {
+			return true
+		}
+		// We have a higher PLANNER_VERSION than the read
+		// version, so save PLANNER_VERSION and retry.
+		mgr.cfg.Set("plannerVersion", PLANNER_VERSION, cas)
+	}
+
+	return false // Never reached.
 }
