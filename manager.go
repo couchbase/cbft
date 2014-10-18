@@ -27,6 +27,7 @@ type ManagerEventHandlers interface {
 
 type Manager struct {
 	dataDir   string
+	cfg       Cfg
 	server    string // The datasource that cbft will index.
 	m         sync.Mutex
 	feeds     map[string]Feed
@@ -36,9 +37,11 @@ type Manager struct {
 	meh       ManagerEventHandlers
 }
 
-func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
+func NewManager(dataDir string, cfg Cfg, server string,
+	meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		dataDir:   dataDir,
+		cfg:       cfg,
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),
@@ -49,6 +52,8 @@ func NewManager(dataDir, server string, meh ManagerEventHandlers) *Manager {
 }
 
 func (mgr *Manager) Start() error {
+	// TODO: Write our cbft-ID into the cfg.
+
 	if err := mgr.LoadDataDir(); err != nil {
 		return err
 	}
