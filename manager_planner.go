@@ -15,5 +15,10 @@ package main
 func (mgr *Manager) PlannerLoop() {
 	for _ = range mgr.plannerCh {
 		// TODO: implement the grand plans for the planner.
+		// First gen planner should keep it simple, such as...
+		// - a single Feed for every datasource node.
+		// - a Feed might "fan out" to multiple Streams/PIndexes.
+		// - have a single PIndex for all datasource partitions
+		//   (vbuckets) to start.
 	}
 }
