@@ -36,6 +36,8 @@ type Indexers []*Indexer
 func (mgr *Manager) PlannerLoop() {
 	for _ = range mgr.plannerCh {
 		if !mgr.CheckPlannerVersion() {
+			log.Printf("planning skipped for obsoleted version: %v",
+				PLANNER_VERSION)
 			continue
 		}
 		plan, err := mgr.CalcPlan(nil, nil)
@@ -66,8 +68,6 @@ func (mgr *Manager) CheckPlannerVersion() bool {
 			version = PLANNER_VERSION
 		}
 		if !VersionGTE(PLANNER_VERSION, version.(string)) {
-			log.Printf("planning skipped for obsoleted version: %v < %v",
-				PLANNER_VERSION, version)
 			return false
 		}
 		if PLANNER_VERSION == version {
