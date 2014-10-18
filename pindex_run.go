@@ -31,8 +31,8 @@ func (pindex *PIndex) Run() {
 		}
 	}
 
-	// TODO: what about any inflight queries or ops?
-
+	// The bleve.Index.Close() handles any inflight, concurrent
+	// queries with its own locking.
 	pindex.BIndex().Close()
 
 	os.RemoveAll(pindex.Path())
