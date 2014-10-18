@@ -16,8 +16,8 @@ import (
 	"sync"
 )
 
-// Non-distributed, local-only, naive implementation of Cfg interface,
-// useful for development and testing.
+// Non-distributed, local-only, memory only implementation of Cfg
+// interface, useful for development and testing.
 
 type CfgSimple struct {
 	m       sync.Mutex

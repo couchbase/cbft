@@ -19,11 +19,11 @@ func TestCfgSimple(t *testing.T) {
 	c := NewCfgSimple()
 	v, cas, err := c.Get("nope", 0)
 	if err != nil || v != nil || cas != 0 {
-		t.Errorf("expected Get() to have no val on new CfgSimple")
+		t.Errorf("expected Get() to miss on brand new CfgSimple")
 	}
 	v, cas, err = c.Get("nope", 100)
 	if err != nil || v != nil || cas != 0 {
-		t.Errorf("expected Get() to have no val on empty cfg with wrong CAS")
+		t.Errorf("expected Get() to miss on brand new CfgSimple with wrong CAS")
 	}
 	cas, err = c.Set("a", "A", 100)
 	if err == nil || cas != 0 {
