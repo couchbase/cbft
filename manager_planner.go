@@ -17,27 +17,15 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-const PLANNER_VERSION = "0.0.0" // Follow semver rules.
-
-type Plan struct {
-}
-
-type LogicalIndex struct {
-}
-
-type LogicalIndexes []*LogicalIndex
-
-type Indexer struct {
-}
-
-type Indexers []*Indexer
-
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.
+// NOTE: You *must* update PLANNER_VERSION if these planning algorithm
+// or schema changes, following semver rules.
+
 func (mgr *Manager) PlannerLoop() {
 	for _ = range mgr.plannerCh {
-		if !mgr.CheckPlannerVersion() {
-			log.Printf("planning skipped for obsoleted version: %v",
-				PLANNER_VERSION)
+		if !mgr.CheckVersion() {
+			log.Printf("planning skipped due to obsoleted version: %v",
+				VERSION)
 			continue
 		}
 		plan, err := mgr.CalcPlan(nil, nil)
@@ -59,24 +47,4 @@ func (mgr *Manager) CalcPlan(logicalIndexes LogicalIndexes,
 	// - have a single PIndex for all datasource partitions
 	//   (vbuckets) to start.
 	return nil, fmt.Errorf("TODO")
-}
-
-func (mgr *Manager) CheckPlannerVersion() bool {
-	for mgr.cfg != nil {
-		version, cas, err := mgr.cfg.Get("plannerVersion", 0)
-		if version == nil || version == "" || err != nil {
-			version = PLANNER_VERSION
-		}
-		if !VersionGTE(PLANNER_VERSION, version.(string)) {
-			return false
-		}
-		if PLANNER_VERSION == version {
-			return true
-		}
-		// We have a higher PLANNER_VERSION than the read
-		// version, so save PLANNER_VERSION and retry.
-		mgr.cfg.Set("plannerVersion", PLANNER_VERSION, cas)
-	}
-
-	return false // Never reached.
 }
