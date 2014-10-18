@@ -34,7 +34,7 @@ type Indexer struct {
 
 type Indexers []*Indexer
 
-// Returns ok if our version is ok to write to the Cfg.
+// Returns true if a given version is modern enough to modify the Cfg.
 func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 	for cfg != nil {
 		clusterVersion, cas, err := cfg.Get(VERSION_KEY, 0)
