@@ -35,21 +35,21 @@ type Indexer struct {
 type Indexers []*Indexer
 
 // Returns ok if our version is ok to write to the Cfg.
-func (mgr *Manager) CheckVersion() bool {
-	for mgr.cfg != nil {
-		version, cas, err := mgr.cfg.Get(VERSION_KEY, 0)
-		if version == nil || version == "" || err != nil {
-			version = VERSION
+func CheckVersion(cfg Cfg, myVersion string) bool {
+	for cfg != nil {
+		clusterVersion, cas, err := cfg.Get(VERSION_KEY, 0)
+		if clusterVersion == nil || clusterVersion == "" || err != nil {
+			clusterVersion = myVersion
 		}
-		if !VersionGTE(VERSION, version.(string)) {
+		if !VersionGTE(myVersion, clusterVersion.(string)) {
 			return false
 		}
-		if VERSION == version {
+		if myVersion == clusterVersion {
 			return true
 		}
 		// We have a higher VERSION than the version just read from
 		// cfg, so save our VERSION and retry.
-		_, err = mgr.cfg.Set(VERSION_KEY, VERSION, cas)
+		_, err = cfg.Set(VERSION_KEY, myVersion, cas)
 		if err != nil {
 			log.Printf("error: could not save VERSION to cfg, err: %v", err)
 			return false

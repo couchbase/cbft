@@ -26,6 +26,7 @@ type ManagerEventHandlers interface {
 }
 
 type Manager struct {
+	version   string // See VERSION.
 	cfg       Cfg
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -37,9 +38,10 @@ type Manager struct {
 	meh       ManagerEventHandlers
 }
 
-func NewManager(cfg Cfg, dataDir string, server string,
+func NewManager(version string, cfg Cfg, dataDir string, server string,
 	meh ManagerEventHandlers) *Manager {
 	return &Manager{
+		version:   version,
 		cfg:       cfg,
 		dataDir:   dataDir,
 		server:    server,

@@ -86,7 +86,7 @@ func mainStart(cfg Cfg, dataDir, staticDir, server string) (*mux.Router, error) 
 			server, err)
 	}
 
-	mgr := NewManager(cfg, dataDir, server, &MainHandlers{})
+	mgr := NewManager(VERSION, cfg, dataDir, server, &MainHandlers{})
 	if err = mgr.Start(); err != nil {
 		return nil, err
 	}

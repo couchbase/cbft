@@ -29,7 +29,7 @@ func (mgr *Manager) PlannerLoop() {
 			log.Printf("planner skipped due to nil cfg")
 			continue
 		}
-		if !mgr.CheckVersion() {
+		if !CheckVersion(mgr.cfg, mgr.version) {
 			log.Printf("planner skipped due to obsoleted version: %v",
 				VERSION)
 			continue

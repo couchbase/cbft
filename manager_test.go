@@ -34,7 +34,7 @@ func (meh *TestMEH) OnUnregisterPIndex(pindex *PIndex) {
 }
 
 func TestPIndexPath(t *testing.T) {
-	m := NewManager(nil, "dir", "svr", nil)
+	m := NewManager(VERSION, nil, "dir", "svr", nil)
 	p := m.PIndexPath("x")
 	expected := "dir" + string(os.PathSeparator) + "x" + pindexPathSuffix
 	if p != expected {
@@ -55,7 +55,7 @@ func TestPIndexPath(t *testing.T) {
 }
 
 func TestManagerStart(t *testing.T) {
-	m := NewManager(nil, "dir", "not-a-real-svr", nil)
+	m := NewManager(VERSION, nil, "dir", "not-a-real-svr", nil)
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
 	}
@@ -63,7 +63,7 @@ func TestManagerStart(t *testing.T) {
 		t.Errorf("wrong data dir")
 	}
 
-	m = NewManager(nil, "not-a-real-dir", "", nil)
+	m = NewManager(VERSION, nil, "not-a-real-dir", "", nil)
 	if m.Start() == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
 	}
@@ -73,7 +73,7 @@ func TestManagerStart(t *testing.T) {
 
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
-	m = NewManager(nil, emptyDir, "", nil)
+	m = NewManager(VERSION, nil, emptyDir, "", nil)
 	if err := m.Start(); err != nil {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(nil, emptyDir, "", meh)
+	m := NewManager(VERSION, nil, emptyDir, "", meh)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
@@ -176,7 +176,7 @@ func TestManagerRegisterFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	meh := &TestMEH{}
-	m := NewManager(nil, emptyDir, "", meh)
+	m := NewManager(VERSION, nil, emptyDir, "", meh)
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
