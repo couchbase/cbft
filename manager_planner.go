@@ -35,6 +35,7 @@ type Indexers []*Indexer
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.
 func (mgr *Manager) PlannerLoop() {
 	for _ = range mgr.plannerCh {
+		// TODO: get allowed version from Cfg.
 		currAllowedPlannerVersion := "0.0"
 		plan, err := mgr.CalcPlan(nil, nil, currAllowedPlannerVersion)
 		if err != nil {
