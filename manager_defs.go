@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	log "github.com/couchbaselabs/clog"
+)
+
 // JSON/struct definitions of what the Manager stores in the Cfg.
 // NOTE: You *must* update VERSION if you change these
 // definitions or the planning algorithms change.
@@ -43,10 +47,14 @@ func (mgr *Manager) CheckVersion() bool {
 		if VERSION == version {
 			return true
 		}
-		// We have a higher VERSION than the read
-		// version, so save VERSION and retry.
-		mgr.cfg.Set(VERSION_KEY, VERSION, cas)
+		// We have a higher VERSION than the version just read from
+		// cfg, so save our VERSION and retry.
+		cas, err = mgr.cfg.Set(VERSION_KEY, VERSION, cas)
+		if err != nil {
+			log.Printf("error: could not save VERSION to cfg, err: %v", err)
+			return false
+		}
 	}
 
-	return false // Never reached.
+	return false // No cfg occurs during testing.
 }

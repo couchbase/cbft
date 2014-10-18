@@ -23,13 +23,17 @@ import (
 
 func (mgr *Manager) PlannerLoop() {
 	for reason := range mgr.plannerCh {
-		log.Printf("planning, due to reason: %s", reason)
+		log.Printf("planner awakes, due to reason: %s", reason)
 
+		if mgr.cfg == nil { // Can occur during testing.
+			log.Printf("planner skipped due to nil cfg")
+		}
 		if !mgr.CheckVersion() {
-			log.Printf("planning skipped due to obsoleted version: %v",
+			log.Printf("planner skipped due to obsoleted version: %v",
 				VERSION)
 			continue
 		}
+
 		plan, err := mgr.CalcPlan(nil, nil)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)

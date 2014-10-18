@@ -20,7 +20,7 @@ import (
 // A janitor maintains feeds, creating and deleting as necessary.
 func (mgr *Manager) JanitorLoop() {
 	for reason := range mgr.janitorCh {
-		log.Printf("janitoring, due to reason: %s", reason)
+		log.Printf("janitor awakes, due to reason: %s", reason)
 
 		startFeeds, startPIndexes := mgr.CurrentMaps()
 
@@ -31,7 +31,7 @@ func (mgr *Manager) JanitorLoop() {
 			continue
 		}
 
-		log.Printf("janitor kicked, needed: %v, unneeded: %v",
+		log.Printf("janitor feeds needed: %v, unneeded: %v",
 			neededFeeds, unneededFeeds)
 
 		// Create feeds that we're missing.
