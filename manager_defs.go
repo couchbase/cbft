@@ -49,12 +49,12 @@ func (mgr *Manager) CheckVersion() bool {
 		}
 		// We have a higher VERSION than the version just read from
 		// cfg, so save our VERSION and retry.
-		cas, err = mgr.cfg.Set(VERSION_KEY, VERSION, cas)
+		_, err = mgr.cfg.Set(VERSION_KEY, VERSION, cas)
 		if err != nil {
 			log.Printf("error: could not save VERSION to cfg, err: %v", err)
 			return false
 		}
 	}
 
-	return false // No cfg occurs during testing.
+	return false
 }
