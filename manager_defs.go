@@ -16,9 +16,9 @@ package main
 // definitions or the planning algorithms change.
 
 type IndexDefs struct {
-	SystemVersion string               `json:"systemVersion"`
 	UUID          string               `json:"uuid"`
 	Indexes       map[string]*IndexDef `json:"indexes"`
+	CompatVersion string               `json:"compatVersion"`
 }
 
 type IndexDef struct {

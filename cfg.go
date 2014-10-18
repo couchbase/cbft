@@ -13,10 +13,10 @@ package main
 
 type Cfg interface {
 	// A zero cas means don't do a CAS match on Get().
-	Get(key string, cas uint64) (val interface{}, casSuccess uint64, err error)
+	Get(key string, cas uint64) (val string, casSuccess uint64, err error)
 
 	// A zero cas means don't match CAS on Set().
-	Set(key string, val interface{}, cas uint64) (casSuccess uint64, err error)
+	Set(key string, val string, cas uint64) (casSuccess uint64, err error)
 
 	// A zero cas means don't match CAS on Del().
 	Del(key string, cas uint64) error

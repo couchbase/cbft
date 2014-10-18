@@ -29,7 +29,7 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if clusterVersion == nil || clusterVersion == "" {
+		if clusterVersion == "" {
 			// First time initialization, so save myVersion to cfg and
 			// retry in case there was a race.
 			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
@@ -39,7 +39,7 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 			}
 			continue
 		}
-		if VersionGTE(myVersion, clusterVersion.(string)) == false {
+		if VersionGTE(myVersion, clusterVersion) == false {
 			return false, nil
 		}
 		if myVersion != clusterVersion {

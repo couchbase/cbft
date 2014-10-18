@@ -18,11 +18,11 @@ import (
 func TestCfgSimple(t *testing.T) {
 	c := NewCfgSimple()
 	v, cas, err := c.Get("nope", 0)
-	if err != nil || v != nil || cas != 0 {
+	if err != nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() to miss on brand new CfgSimple")
 	}
 	v, cas, err = c.Get("nope", 100)
-	if err != nil || v != nil || cas != 0 {
+	if err != nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() to miss on brand new CfgSimple with wrong CAS")
 	}
 	cas, err = c.Set("a", "A", 100)
@@ -39,7 +39,7 @@ func TestCfgSimple(t *testing.T) {
 		t.Errorf("expected update Set() to fail when entry and wrong CAS")
 	}
 	v, cas, err = c.Get("a", 100)
-	if err == nil || v != nil || cas != 0 {
+	if err == nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() to fail on wrong CAS")
 	}
 	v, cas, err = c.Get("a", 0)
@@ -60,7 +60,7 @@ func TestCfgSimple(t *testing.T) {
 		t.Errorf("expected update Set() to fail when retried after success")
 	}
 	v, cas, err = c.Get("a", 100)
-	if err == nil || v != nil || cas != 0 {
+	if err == nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() to fail on wrong CAS")
 	}
 	v, cas, err = c.Get("a", 0)
@@ -97,12 +97,12 @@ func TestCfgSimple(t *testing.T) {
 		t.Errorf("expected Del() to succeed when right CAS")
 	}
 	v, cas, err = c.Get("a", cas2)
-	if err != nil || v != nil || cas != 0 {
+	if err != nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() with CAS to miss after Del(): "+
 			" %v, %v, %v", err, v, cas)
 	}
 	v, cas, err = c.Get("a", 0)
-	if err != nil || v != nil || cas != 0 {
+	if err != nil || v != "" || cas != 0 {
 		t.Errorf("expected Get() with 0 CAS to miss after Del(): "+
 			" %v, %v, %v", err, v, cas)
 	}
