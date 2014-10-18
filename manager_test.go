@@ -36,7 +36,7 @@ func (meh *TestMEH) OnUnregisterPIndex(pindex *PIndex) {
 func TestPIndexPath(t *testing.T) {
 	m := NewManager(nil, "dir", "svr", nil)
 	p := m.PIndexPath("x")
-	expected := "dir" + string(os.PathSeparator) + "x.pindex"
+	expected := "dir" + string(os.PathSeparator) + "x" + pindexPathSuffix
 	if p != expected {
 		t.Errorf("wrong pindex path %s, %s", p, expected)
 	}
@@ -44,7 +44,7 @@ func TestPIndexPath(t *testing.T) {
 	if !ok || n != "x" {
 		t.Errorf("parse pindex path not ok, %v, %v", n, ok)
 	}
-	n, ok = m.ParsePIndexPath("totally not a pindex path")
+	n, ok = m.ParsePIndexPath("totally not a pindex path" + pindexPathSuffix)
 	if ok {
 		t.Errorf("expected not-ok on bad pindex path")
 	}
