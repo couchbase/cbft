@@ -19,7 +19,9 @@ import (
 
 // A janitor maintains feeds, creating and deleting as necessary.
 func (mgr *Manager) JanitorLoop() {
-	for _ = range mgr.janitorCh {
+	for reason := range mgr.janitorCh {
+		log.Printf("janitoring, due to reason: %s", reason)
+
 		startFeeds, startPIndexes := mgr.CurrentMaps()
 
 		neededFeeds, unneededFeeds, err :=

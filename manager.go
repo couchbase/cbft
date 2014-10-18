@@ -32,8 +32,8 @@ type Manager struct {
 	m         sync.Mutex
 	feeds     map[string]Feed
 	pindexes  map[string]*PIndex
-	plannerCh chan bool // Used to kick the planner that there's more work.
-	janitorCh chan bool // Used to kick the janitor that there's more work.
+	plannerCh chan string // Used to kick the planner that there's more work.
+	janitorCh chan string // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 }
 
@@ -45,8 +45,8 @@ func NewManager(cfg Cfg, dataDir string, server string,
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),
-		plannerCh: make(chan bool),
-		janitorCh: make(chan bool),
+		plannerCh: make(chan string),
+		janitorCh: make(chan string),
 		meh:       meh,
 	}
 }
@@ -59,10 +59,10 @@ func (mgr *Manager) Start() error {
 	}
 
 	go mgr.PlannerLoop()
-	mgr.plannerCh <- true
+	mgr.plannerCh <- "start"
 
 	go mgr.JanitorLoop()
-	mgr.janitorCh <- true
+	mgr.janitorCh <- "start"
 
 	return nil
 }

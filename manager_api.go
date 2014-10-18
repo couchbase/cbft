@@ -39,7 +39,7 @@ func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 		return err
 	}
 
-	mgr.janitorCh <- true
+	mgr.janitorCh <- "api/CreateIndex"
 	return nil
 }
 

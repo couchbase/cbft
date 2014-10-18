@@ -22,7 +22,9 @@ import (
 // or schema changes, following semver rules.
 
 func (mgr *Manager) PlannerLoop() {
-	for _ = range mgr.plannerCh {
+	for reason := range mgr.plannerCh {
+		log.Printf("planning, due to reason: %s", reason)
+
 		if !mgr.CheckVersion() {
 			log.Printf("planning skipped due to obsoleted version: %v",
 				VERSION)
