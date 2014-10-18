@@ -44,6 +44,14 @@ func TestPIndexPath(t *testing.T) {
 	if !ok || n != "x" {
 		t.Errorf("parse pindex path not ok, %v, %v", n, ok)
 	}
+	n, ok = m.ParsePIndexPath("totally not a pindex path")
+	if ok {
+		t.Errorf("expected not-ok on bad pindex path")
+	}
+	n, ok = m.ParsePIndexPath("dir" + string(os.PathSeparator) + "not-a-pindex")
+	if ok {
+		t.Errorf("expected not-ok on bad pindex path")
+	}
 }
 
 func TestManagerStart(t *testing.T) {
