@@ -15,15 +15,33 @@ package main
 // NOTE: You *must* update VERSION if you change these
 // definitions or the planning algorithms change.
 
+type IndexDefs struct {
+	SystemVersion string               `json:"systemVersion"`
+	UUID          string               `json:"uuid"`
+	Indexes       map[string]*IndexDef `json:"indexes"`
+}
+
+type IndexDef struct {
+	SourceType string `json:"sourceType"`
+	SourceName string `json:"sourceName"`
+	SourceUUID string `json:"sourceUUID"`
+	Name       string `json:"name"`
+	UUID       string `json:"uuid"`
+	Type       string `json:"type"`
+	Mapping    string `json:"mapping"`
+}
+
+type IndexerDef struct {
+	HostPort string `json:"string"`
+	UUID     string `json:"string"`
+
+	// TODO: declared capability; not all indexers equal (cpu, ram, disk, etc)
+}
+
+type IndexerDefs struct {
+	UUID     string        `json: "string"`
+	Indexers []*IndexerDef `json: "indexers"`
+}
+
 type Plan struct {
 }
-
-type LogicalIndex struct {
-}
-
-type LogicalIndexes []*LogicalIndex
-
-type Indexer struct {
-}
-
-type Indexers []*Indexer
