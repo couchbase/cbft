@@ -27,7 +27,7 @@ type CfgSimple struct {
 
 type CfgSimpleEntry struct {
 	cas uint64
-	val string
+	val []byte
 }
 
 func NewCfgSimple() Cfg {
@@ -38,21 +38,23 @@ func NewCfgSimple() Cfg {
 }
 
 func (c *CfgSimple) Get(key string, cas uint64) (
-	string, uint64, error) {
+	[]byte, uint64, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
 	entry, exists := c.entries[key]
 	if !exists {
-		return "", 0, nil
+		return nil, 0, nil
 	}
 	if cas != 0 && cas != entry.cas {
-		return "", 0, fmt.Errorf("error: mismatched Cfg CAS")
+		return nil, 0, fmt.Errorf("error: mismatched Cfg CAS")
 	}
-	return entry.val, entry.cas, nil
+	val := make([]byte, len(entry.val))
+	copy(val, entry.val)
+	return val, entry.cas, nil
 }
 
-func (c *CfgSimple) Set(key string, val string, cas uint64) (
+func (c *CfgSimple) Set(key string, val []byte, cas uint64) (
 	uint64, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -72,8 +74,9 @@ func (c *CfgSimple) Set(key string, val string, cas uint64) (
 	}
 	nextEntry := &CfgSimpleEntry{
 		cas: c.casNext,
-		val: val,
+		val: make([]byte, len(val)),
 	}
+	copy(nextEntry.val, val)
 	c.entries[key] = nextEntry
 	c.casNext += 1
 	return nextEntry.cas, nil

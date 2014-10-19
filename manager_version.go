@@ -29,23 +29,23 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if clusterVersion == "" {
+		if clusterVersion == nil {
 			// First time initialization, so save myVersion to cfg and
 			// retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
+			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
 			if err != nil {
 				log.Printf("error: could not save VERSION to cfg, err: %v", err)
 				return false, err
 			}
 			continue
 		}
-		if VersionGTE(myVersion, clusterVersion) == false {
+		if VersionGTE(myVersion, string(clusterVersion)) == false {
 			return false, nil
 		}
-		if myVersion != clusterVersion {
+		if myVersion != string(clusterVersion) {
 			// Found myVersion is higher than clusterVersion so save
 			// myVersion to cfg and retry in case there was a race.
-			_, err = cfg.Set(VERSION_KEY, myVersion, cas)
+			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
 			if err != nil {
 				log.Printf("error: could not save VERSION to cfg, err: %v", err)
 				return false, err

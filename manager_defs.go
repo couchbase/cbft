@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	"encoding/json"
+)
+
 // JSON/struct definitions of what the Manager stores in the Cfg.
 // NOTE: You *must* update VERSION if you change these
 // definitions or the planning algorithms change.
@@ -44,4 +48,37 @@ type IndexerDefs struct {
 }
 
 type Plan struct {
+}
+
+const INDEX_DEFS_KEY = "indexDefs"
+
+func NewIndexDefs(version string) *IndexDefs {
+	return &IndexDefs{
+		UUID:          NewUUID(),
+		Indexes:       make(map[string]*IndexDef),
+		CompatVersion: version,
+	}
+}
+
+func UnmarshalIndexDefs(jsonBytes []byte) (*IndexDefs, error) {
+	rv := &IndexDefs{}
+	if err := json.Unmarshal(jsonBytes, rv); err != nil {
+		return nil, err
+	}
+	return rv, nil
+}
+
+func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
+	v, cas, err := cfg.Get(INDEX_DEFS_KEY, 0)
+	if err != nil {
+		return nil, 0, err
+	}
+	if v == nil {
+		return nil, 0, nil
+	}
+	rv, err := UnmarshalIndexDefs(v)
+	if err != nil {
+		return nil, 0, err
+	}
+	return rv, cas, nil
 }

@@ -264,7 +264,7 @@ func TestCheckVersion(t *testing.T) {
 		t.Errorf("expected first version to win in brand new cfg")
 	}
 	v, _, err := cfg.Get(VERSION_KEY, 0)
-	if err != nil || v != "1.0.0" {
+	if err != nil || string(v) != "1.0.0" {
 		t.Errorf("expected first version to persist in brand new cfg")
 	}
 	ok, err = CheckVersion(cfg, "1.1.0")
@@ -272,7 +272,7 @@ func TestCheckVersion(t *testing.T) {
 		t.Errorf("expected upgrade version to win")
 	}
 	v, _, err = cfg.Get(VERSION_KEY, 0)
-	if err != nil || v != "1.1.0" {
+	if err != nil || string(v) != "1.1.0" {
 		t.Errorf("expected upgrade version to persist in brand new cfg")
 	}
 	ok, err = CheckVersion(cfg, "1.0.0")
@@ -280,7 +280,7 @@ func TestCheckVersion(t *testing.T) {
 		t.Errorf("expected lower version to lose")
 	}
 	v, _, err = cfg.Get(VERSION_KEY, 0)
-	if err != nil || v != "1.1.0" {
+	if err != nil || string(v) != "1.1.0" {
 		t.Errorf("expected version to remain stable on lower version check")
 	}
 }
