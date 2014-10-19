@@ -57,7 +57,22 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
-		plan, err := mgr.CalcPlan(indexDefs, nil)
+		nodeDefs, _, err := CfgGetNodeDefs(mgr.cfg)
+		if err != nil {
+			log.Printf("planner skipped due to CfgGetNodeDefs err: %v", err)
+			continue
+		}
+		if nodeDefs == nil {
+			log.Printf("planner ended since no NodeDefs")
+			continue
+		}
+		if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
+			log.Printf("planner ended since nodeDefs.ImplVersion: %s"+
+				"> mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+			continue
+		}
+
+		plan, err := mgr.CalcPlan(indexDefs, nodeDefs)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
