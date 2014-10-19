@@ -42,7 +42,22 @@ func (mgr *Manager) PlannerLoop() {
 
 		// TODO: What about downgrades?
 
-		plan, err := mgr.CalcPlan(nil, nil)
+		indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
+		if err != nil {
+			log.Printf("planner skipped due to CfgGetIndexDefs err: %v", err)
+			continue
+		}
+		if indexDefs == nil {
+			log.Printf("planner ended since no IndexDefs")
+			continue
+		}
+		if VersionGTE(mgr.version, indexDefs.CompatVersion) == false {
+			log.Printf("planner ended since IndexDefs.CompatVersion: %s"+
+				" > %s", indexDefs.CompatVersion, mgr.version)
+			continue
+		}
+
+		plan, err := mgr.CalcPlan(indexDefs, nil)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
