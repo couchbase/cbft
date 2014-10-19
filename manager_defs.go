@@ -98,7 +98,7 @@ func CfgSetIndexDefs(cfg Cfg, indexDefs *IndexDefs, cas uint64) (uint64, error) 
 
 // ------------------------------------------------------------------------
 
-const INDEXER_DEFS_KEY = "nodeDefs"
+const NODE_DEFS_KEY = "nodeDefs"
 
 func NewNodeDefs(version string) *NodeDefs {
 	return &NodeDefs{
@@ -117,7 +117,7 @@ func UnmarshalNodeDefs(jsonBytes []byte) (*NodeDefs, error) {
 }
 
 func CfgGetNodeDefs(cfg Cfg) (*NodeDefs, uint64, error) {
-	v, cas, err := cfg.Get(INDEX_DEFS_KEY, 0)
+	v, cas, err := cfg.Get(NODE_DEFS_KEY, 0)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -136,5 +136,5 @@ func CfgSetNodeDefs(cfg Cfg, nodeDefs *NodeDefs, cas uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return cfg.Set(INDEX_DEFS_KEY, buf, cas)
+	return cfg.Set(NODE_DEFS_KEY, buf, cas)
 }
