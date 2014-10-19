@@ -12,6 +12,8 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -37,4 +39,12 @@ func VersionGTE(x, y string) bool {
 		}
 	}
 	return len(xa) >= len(ya)
+}
+
+// TODO: replace with proper UUID implementation
+func NewUUID() string {
+	val1 := rand.Int63()
+	val2 := rand.Int63()
+	uuid := fmt.Sprintf("%x%x", val1, val2)
+	return uuid
 }
