@@ -42,6 +42,8 @@ var staticEtag = flag.String("staticEtag", "",
 	"static etag value")
 var server = flag.String("server", "",
 	"url to couchbase server, example: http://localhost:8091")
+var wanted = flag.Bool("wanted", false,
+	"force this node to be wanted as part of the cluster")
 
 var expvars = expvar.NewMap("stats")
 
@@ -66,7 +68,7 @@ func main() {
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
 	cfg := NewCfgSimple()
 
-	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server)
+	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +78,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
-func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string) (
+func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -89,7 +91,7 @@ func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string) (
 	}
 
 	mgr := NewManager(VERSION, cfg, bindAddr, dataDir, server, &MainHandlers{})
-	if err = mgr.Start(false); err != nil {
+	if err = mgr.Start(wanted); err != nil {
 		return nil, err
 	}
 

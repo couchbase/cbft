@@ -74,9 +74,38 @@ func TestManagerStart(t *testing.T) {
 
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
+
 	m = NewManager(VERSION, nil, "", emptyDir, "", nil)
 	if err := m.Start(false); err != nil {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
+	}
+
+	cfg := NewCfgSimple()
+	m = NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
+	if err := m.Start(false); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	nd, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas != 0 || nd != nil {
+		t.Errorf("expected no node defs wanted")
+	}
+
+	cfg = NewCfgSimple()
+	m = NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
+	if err := m.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs wanted")
 	}
 }
 
