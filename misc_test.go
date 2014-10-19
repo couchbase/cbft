@@ -54,7 +54,7 @@ func TestVersionGTE(t *testing.T) {
 func TestNewUUID(t *testing.T) {
 	u0 := NewUUID()
 	u1 := NewUUID()
-	if u0 == "" || u1 == "" || u0 == u1 || len(u0) != len(u1) {
+	if u0 == "" || u1 == "" || u0 == u1 {
 		t.Errorf("NewUUID() failed, %s, %s", u0, u1)
 	}
 }
