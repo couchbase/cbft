@@ -27,9 +27,11 @@ type ManagerEventHandlers interface {
 }
 
 type Manager struct {
+	uuid      string // Unique to every Manager process instance.
 	startTime time.Time
-	version   string // See VERSION.
+	version   string // Our software VERSION.
 	cfg       Cfg
+	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
 	m         sync.Mutex
@@ -40,12 +42,14 @@ type Manager struct {
 	meh       ManagerEventHandlers
 }
 
-func NewManager(version string, cfg Cfg, dataDir string, server string,
-	meh ManagerEventHandlers) *Manager {
+func NewManager(version string, cfg Cfg, bindAddr, dataDir string,
+	server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
+		uuid:      NewUUID(),
 		startTime: time.Now(),
 		version:   version,
 		cfg:       cfg,
+		bindAddr:  bindAddr,
 		dataDir:   dataDir,
 		server:    server,
 		feeds:     make(map[string]Feed),

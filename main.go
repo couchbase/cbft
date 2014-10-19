@@ -65,7 +65,7 @@ func main() {
 	// TODO: Use a real cfg one day.
 	cfg := NewCfgSimple()
 
-	router, err := mainStart(cfg, *dataDir, *staticDir, *server)
+	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,7 +75,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
-func mainStart(cfg Cfg, dataDir, staticDir, server string) (*mux.Router, error) {
+func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string) (
+	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
@@ -86,7 +87,7 @@ func mainStart(cfg Cfg, dataDir, staticDir, server string) (*mux.Router, error) 
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, dataDir, server, &MainHandlers{})
+	mgr := NewManager(VERSION, cfg, bindAddr, dataDir, server, &MainHandlers{})
 	if err = mgr.Start(); err != nil {
 		return nil, err
 	}
