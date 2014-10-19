@@ -20,9 +20,10 @@ import (
 // definitions or the planning algorithms change.
 
 type IndexDefs struct {
+	// IndexDefs.UUID changes whenever any child IndexDef changes.
 	UUID        string               `json:"uuid"`
-	IndexDefs   map[string]*IndexDef `json:"indexDefs"` // From Name -> IndexDef.
-	ImplVersion string               `json:"implVersion"`
+	IndexDefs   map[string]*IndexDef `json:"indexDefs"`   // From Name -> IndexDef.
+	ImplVersion string               `json:"implVersion"` // See VERSION.
 }
 
 type IndexDef struct {
@@ -34,21 +35,23 @@ type IndexDef struct {
 	SourceUUID string `json:"sourceUUID"`
 
 	// TODO: auth to access datasource?
-	// TODO: hints at creation time for planner?
+	// TODO: hints at creation time for planner, such as partitoning scheme:
+	// none, hash, range, etc?
 }
 
 // ------------------------------------------------------------------------
 
 type NodeDefs struct {
+	// NodeDefs.UUID changes whenever any child NodeDef changes.
 	UUID        string              `json:"uuid"`
-	NodeDefs    map[string]*NodeDef `json:"nodeDefs"` // From HostPort -> NodeDef.
-	ImplVersion string              `json:"implVersion"`
+	NodeDefs    map[string]*NodeDef `json:"nodeDefs"`    // From HostPort -> NodeDef.
+	ImplVersion string              `json:"implVersion"` // See VERSION.
 }
 
 type NodeDef struct {
 	HostPort    string `json:"hostPort"`
 	UUID        string `json:"uuid"`
-	ImplVersion string `json:"implVersion"`
+	ImplVersion string `json:"implVersion"` // See VERSION.
 
 	// TODO: declared ability; not all indexers equal (cpu, ram, disk, etc)
 }
@@ -56,18 +59,19 @@ type NodeDef struct {
 // ------------------------------------------------------------------------
 
 type PlanPIndexes struct {
+	// PlanPIndexes.UUID changes whenever any child PlanPIndex changes.
 	UUID         string                 `json:"uuid"`
 	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is IndexDef.UUID.
-	ImplVersion  string                 `json:"implVersion"`
+	ImplVersion  string                 `json:"implVersion"`  // See VERSION.
 }
 
 type PlanPIndex struct {
 	Name             string            `json:"name"`
 	UUID             string            `json:"uuid"`
-	IndexUUID        string            `json:"indexUUID"`
-	Mapping          string            `json:"mapping"`
+	IndexUUID        string            `json:"indexUUID"` // See IndefDef.UUID.
+	Mapping          string            `json:"mapping"`   // See IndexDef.Mapping.
 	SourcePartitions string            `json:"sourcePartitions"`
-	NodeUUIDs        map[string]string `json:"nodeUUIDs"`
+	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // See NodeDef.UUID.
 }
 
 // ------------------------------------------------------------------------
