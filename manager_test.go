@@ -317,3 +317,35 @@ func TestIndexDefs(t *testing.T) {
 		t.Errorf("expected get to match first save")
 	}
 }
+
+func TestNodeDefs(t *testing.T) {
+	d := NewNodeDefs("1.2.3")
+	buf, _ := json.Marshal(d)
+	d2, err := UnmarshalNodeDefs(buf)
+	if err != nil || d.UUID != d2.UUID || d.CompatVersion != d2.CompatVersion {
+		t.Errorf("UnmarshalNodeDefs err or mismatch")
+	}
+
+	cfg := NewCfgSimple()
+	d3, cas, err := CfgGetNodeDefs(cfg)
+	if err != nil || cas != 0 || d3 != nil {
+		t.Errorf("CfgGetNodeDefs on new cfg should be nil")
+	}
+	cas, err = CfgSetNodeDefs(cfg, d, 100)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetNodeDefs create on new cfg")
+	}
+	cas1, err := CfgSetNodeDefs(cfg, d, 0)
+	if err != nil || cas1 != 1 {
+		t.Errorf("expected ok on first save")
+	}
+	cas, err = CfgSetNodeDefs(cfg, d, 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetNodeDefs recreate")
+	}
+	d4, cas, err := CfgGetNodeDefs(cfg)
+	if err != nil || cas != cas1 ||
+		d.UUID != d4.UUID || d.CompatVersion != d4.CompatVersion {
+		t.Errorf("expected get to match first save")
+	}
+}
