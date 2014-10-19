@@ -66,26 +66,49 @@ func (mgr *Manager) PlannerLoop() {
 		}
 		if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
 			log.Printf("planner ended since nodeDefs.ImplVersion: %s"+
-				"> mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+				"> mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
 			continue
 		}
 
-		// TODO: Need to pass the previous plan to CalcPlan.
-		plan, err := CalcPlan(indexDefs, nodeDefs, mgr.version)
+		planPIndexesPrev, cas, err := CfgGetPlanPIndexes(mgr.cfg)
+		if err != nil {
+			log.Printf("planner skipped due to CfgGetPlanPIndexes err: %v", err)
+			continue
+		}
+		if planPIndexesPrev == nil {
+			planPIndexesPrev = NewPlanPIndexes(mgr.version)
+		}
+		if VersionGTE(mgr.version, planPIndexesPrev.ImplVersion) == false {
+			log.Printf("planner ended since planPIndexes.ImplVersion: %s"+
+				"> mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
+			continue
+		}
+
+		planPIndexes, err := CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
-		if plan != nil {
-			// TODO: save the plan.
-			// TODO: kick the janitor if the plan changed.
-			// TODO: need the cfg systemt o have distributed notify/event facility
-			// to be able to kick any remote janitors.
+		if planPIndexes != nil {
+			// TODO: We should only save the plan if it changed.
+
+			_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
+			if err != nil {
+				log.Printf("planner could not save new plan, cas: %d, err: %v",
+					cas, err)
+				continue
+			}
+
+			mgr.janitorCh <- "the plans have changed"
+
+			// TODO: need some distributed notify/event facility,
+			// perhaps in the Cfg, to kick any remote janitors.
 		}
 	}
 }
 
 // Split logical indexes into Pindexes and assign PIndexes to nodes.
-func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, version string) (
+func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPIndexes,
+	version string) (
 	*PlanPIndexes, error) {
 	// First planner attempt here is naive & simple, where
 	// every single Index is "split" into a single PIndex (so all
@@ -103,11 +126,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, version string) (
 		return nil, nil
 	}
 
-	planPIndexes := &PlanPIndexes{
-		UUID:         NewUUID(),
-		PlanPIndexes: make(map[string]*PlanPIndex),
-		ImplVersion:  version,
-	}
+	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
 		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]

@@ -378,3 +378,35 @@ func TestNodeDefs(t *testing.T) {
 		t.Errorf("expected get to match first save")
 	}
 }
+
+func TestPlanPIndexes(t *testing.T) {
+	d := NewPlanPIndexes("1.2.3")
+	buf, _ := json.Marshal(d)
+	d2, err := UnmarshalPlanPIndexes(buf)
+	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
+		t.Errorf("UnmarshalPlanPIndexes err or mismatch")
+	}
+
+	cfg := NewCfgSimple()
+	d3, cas, err := CfgGetPlanPIndexes(cfg)
+	if err != nil || cas != 0 || d3 != nil {
+		t.Errorf("CfgGetPlanPIndexes on new cfg should be nil")
+	}
+	cas, err = CfgSetPlanPIndexes(cfg, d, 100)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetPlanPIndexes create on new cfg")
+	}
+	cas1, err := CfgSetPlanPIndexes(cfg, d, 0)
+	if err != nil || cas1 != 1 {
+		t.Errorf("expected ok on first save")
+	}
+	cas, err = CfgSetPlanPIndexes(cfg, d, 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetPlanPIndexes recreate")
+	}
+	d4, cas, err := CfgGetPlanPIndexes(cfg)
+	if err != nil || cas != cas1 ||
+		d.UUID != d4.UUID || d.ImplVersion != d4.ImplVersion {
+		t.Errorf("expected get to match first save")
+	}
+}

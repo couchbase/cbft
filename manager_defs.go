@@ -161,3 +161,46 @@ func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs, cas uint64) (uint6
 	}
 	return cfg.Set(NODE_DEFS_KEY+"-"+kind, buf, cas)
 }
+
+// ------------------------------------------------------------------------
+
+const PLAN_PINDEXES_KEY = "planPIndexes"
+
+func NewPlanPIndexes(version string) *PlanPIndexes {
+	return &PlanPIndexes{
+		UUID:         NewUUID(),
+		PlanPIndexes: make(map[string]*PlanPIndex),
+		ImplVersion:  version,
+	}
+}
+
+func UnmarshalPlanPIndexes(jsonBytes []byte) (*PlanPIndexes, error) {
+	rv := &PlanPIndexes{}
+	if err := json.Unmarshal(jsonBytes, rv); err != nil {
+		return nil, err
+	}
+	return rv, nil
+}
+
+func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
+	v, cas, err := cfg.Get(PLAN_PINDEXES_KEY, 0)
+	if err != nil {
+		return nil, 0, err
+	}
+	if v == nil {
+		return nil, 0, nil
+	}
+	rv, err := UnmarshalPlanPIndexes(v)
+	if err != nil {
+		return nil, 0, err
+	}
+	return rv, cas, nil
+}
+
+func CfgSetPlanPIndexes(cfg Cfg, planPIndexes *PlanPIndexes, cas uint64) (uint64, error) {
+	buf, err := json.Marshal(planPIndexes)
+	if err != nil {
+		return 0, err
+	}
+	return cfg.Set(PLAN_PINDEXES_KEY, buf, cas)
+}
