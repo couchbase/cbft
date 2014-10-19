@@ -18,7 +18,9 @@ import (
 )
 
 // Creates a logical index, which might be comprised of many PIndex objects.
-func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
+func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
+	// TODO: what about auth info to be able to access bucket?
+	// TODO: what about hints for # of partitions, etc?
 	indexName string, indexMappingBytes []byte) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
@@ -35,9 +37,9 @@ func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 	uuid := NewUUID()
 
 	indexDef := &IndexDef{
-		SourceType: "couchbase", // TODO: Parameterize this.
-		SourceName: bucketName,
-		SourceUUID: bucketUUID,
+		SourceType: sourceType,
+		SourceName: sourceName,
+		SourceUUID: sourceUUID,
 		Name:       indexName,
 		UUID:       uuid,
 		Mapping:    string(indexMappingBytes),

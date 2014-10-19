@@ -44,7 +44,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	// TODO: bad assumption of bucketName == indexName right now.
 	// TODO: need a bucketUUID, or perhaps "" just means use latest.
-	err = h.mgr.CreateIndex(indexName, "", indexName, requestBody)
+	err = h.mgr.CreateIndex("couchbase", indexName, "", indexName, requestBody)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)
