@@ -117,7 +117,7 @@ func (mgr *Manager) SaveNodeDef() error {
 		return nil // Occurs during testing.
 	}
 
-	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg)
+	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, NODE_DEFS_KNOWN)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (mgr *Manager) SaveNodeDef() error {
 		nodeDefs.NodeDefs[mgr.bindAddr] = nodeDef
 		nodeDefs.ImplVersion = mgr.version
 
-		_, err = CfgSetNodeDefs(mgr.cfg, nodeDefs, cas)
+		_, err = CfgSetNodeDefs(mgr.cfg, NODE_DEFS_KNOWN, nodeDefs, cas)
 		if err != nil {
 			return err
 		}

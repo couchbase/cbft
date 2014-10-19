@@ -55,7 +55,7 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
-		nodeDefs, _, err := CfgGetNodeDefs(mgr.cfg)
+		nodeDefs, _, err := CfgGetNodeDefs(mgr.cfg, NODE_DEFS_WANTED)
 		if err != nil {
 			log.Printf("planner skipped due to CfgGetNodeDefs err: %v", err)
 			continue

@@ -327,23 +327,23 @@ func TestNodeDefs(t *testing.T) {
 	}
 
 	cfg := NewCfgSimple()
-	d3, cas, err := CfgGetNodeDefs(cfg)
+	d3, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
 	if err != nil || cas != 0 || d3 != nil {
 		t.Errorf("CfgGetNodeDefs on new cfg should be nil")
 	}
-	cas, err = CfgSetNodeDefs(cfg, d, 100)
+	cas, err = CfgSetNodeDefs(cfg, NODE_DEFS_KNOWN, d, 100)
 	if err == nil || cas != 0 {
 		t.Errorf("expected error on CfgSetNodeDefs create on new cfg")
 	}
-	cas1, err := CfgSetNodeDefs(cfg, d, 0)
+	cas1, err := CfgSetNodeDefs(cfg, NODE_DEFS_KNOWN, d, 0)
 	if err != nil || cas1 != 1 {
 		t.Errorf("expected ok on first save")
 	}
-	cas, err = CfgSetNodeDefs(cfg, d, 0)
+	cas, err = CfgSetNodeDefs(cfg, NODE_DEFS_KNOWN, d, 0)
 	if err == nil || cas != 0 {
 		t.Errorf("expected error on CfgSetNodeDefs recreate")
 	}
-	d4, cas, err := CfgGetNodeDefs(cfg)
+	d4, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
 	if err != nil || cas != cas1 ||
 		d.UUID != d4.UUID || d.ImplVersion != d4.ImplVersion {
 		t.Errorf("expected get to match first save")
