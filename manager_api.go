@@ -38,12 +38,12 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	uuid := NewUUID()
 
 	indexDef := &IndexDef{
-		SourceType: sourceType,
-		SourceName: sourceName,
-		SourceUUID: sourceUUID,
 		Name:       indexName,
 		UUID:       uuid,
 		Mapping:    string(indexMappingBytes),
+		SourceType: sourceType,
+		SourceName: sourceName,
+		SourceUUID: sourceUUID,
 	}
 
 	indexDefs.UUID = uuid

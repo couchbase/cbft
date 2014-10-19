@@ -113,10 +113,17 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, version string) (
 		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]
 		if !exists {
 			planPIndex := &PlanPIndex{
-				NodeUUIDs: make(map[string]string),
-				// TODO: more fields
+				Name:             indexDef.Name, // This only works for simple 1-to-1.
+				UUID:             NewUUID(),
+				IndexUUID:        indexDef.UUID,
+				Mapping:          indexDef.Mapping,
+				SourcePartitions: "", // Simple version is get all partitions.
+				NodeUUIDs:        make(map[string]string),
 			}
-			// TODO, fill in NodeUUIDs
+			for _, nodeDef := range nodeDefs.NodeDefs {
+				planPIndex.NodeUUIDs[nodeDef.UUID] = "active" // TODO: better val needed.
+			}
+
 			planPIndexes.PlanPIndexes[indexDef.UUID] = planPIndex
 		}
 		// TODO: what if UUID's don't match?

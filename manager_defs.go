@@ -26,12 +26,12 @@ type IndexDefs struct {
 }
 
 type IndexDef struct {
-	SourceType string `json:"sourceType"`
-	SourceName string `json:"sourceName"`
-	SourceUUID string `json:"sourceUUID"`
 	Name       string `json:"name"`
 	UUID       string `json:"uuid"`
 	Mapping    string `json:"mapping"`
+	SourceType string `json:"sourceType"`
+	SourceName string `json:"sourceName"`
+	SourceUUID string `json:"sourceUUID"`
 
 	// TODO: auth to access datasource?
 	// TODO: hints at creation time for planner?
@@ -62,12 +62,12 @@ type PlanPIndexes struct {
 }
 
 type PlanPIndex struct {
-	Name      string
-	UUID      string
-	RangeBeg  string
-	RangeEnd  string
-	Mapping   string
-	NodeUUIDs map[string]string `json:"nodeUUIDs"`
+	Name             string            `json:"name"`
+	UUID             string            `json:"uuid"`
+	IndexUUID        string            `json:"indexUUID"`
+	Mapping          string            `json:"mapping"`
+	SourcePartitions string            `json:"sourcePartitions"`
+	NodeUUIDs        map[string]string `json:"nodeUUIDs"`
 }
 
 // ------------------------------------------------------------------------
