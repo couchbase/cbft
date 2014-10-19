@@ -57,19 +57,26 @@ func (c *CfgSimple) Set(key string, val string, cas uint64) (
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	if cas != 0 {
-		entry, exists := c.entries[key]
-		if !exists || cas != entry.cas {
-			return 0, fmt.Errorf("error: mismatched Cfg CAS")
+	prevEntry, exists := c.entries[key]
+	if cas == 0 {
+		if exists {
+			return 0, fmt.Errorf("error: entry already exists, key: %s", key)
+		}
+	} else { // cas != 0
+		if !exists {
+			return 0, fmt.Errorf("error: no entry, key: %s", key)
+		}
+		if cas != prevEntry.cas {
+			return 0, fmt.Errorf("error: mismatched cas, key: %s", key)
 		}
 	}
-	entry := &CfgSimpleEntry{
+	nextEntry := &CfgSimpleEntry{
 		cas: c.casNext,
 		val: val,
 	}
-	c.entries[key] = entry
+	c.entries[key] = nextEntry
 	c.casNext += 1
-	return entry.cas, nil
+	return nextEntry.cas, nil
 }
 
 func (c *CfgSimple) Del(key string, cas uint64) error {

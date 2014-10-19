@@ -27,12 +27,16 @@ func TestCfgSimple(t *testing.T) {
 	}
 	cas, err = c.Set("a", "A", 100)
 	if err == nil || cas != 0 {
-		t.Errorf("expected update Set() to fail when no entry and wrong CAS")
+		t.Errorf("expected creation Set() to fail when no entry and wrong CAS")
 	}
 
 	cas1, err := c.Set("a", "A", 0)
 	if err != nil || cas1 != 1 {
-		t.Errorf("expected update Set() to ok CAS 0")
+		t.Errorf("expected creation Set() to ok CAS 0")
+	}
+	cas, err = c.Set("a", "A", 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected re-creation Set() to fail with CAS 0")
 	}
 	cas, err = c.Set("a", "A", 100)
 	if err == nil || cas != 0 {
@@ -54,6 +58,10 @@ func TestCfgSimple(t *testing.T) {
 	cas2, err := c.Set("a", "AA", cas1)
 	if err != nil || cas2 != 2 {
 		t.Errorf("expected update Set() to succeed when right CAS")
+	}
+	cas, err = c.Set("a", "AA-should-fail", 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected re-creation Set() to fail with CAS 0")
 	}
 	cas, err = c.Set("a", "AA", cas1)
 	if err == nil || cas != 0 {

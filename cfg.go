@@ -15,7 +15,7 @@ type Cfg interface {
 	// A zero cas means don't do a CAS match on Get().
 	Get(key string, cas uint64) (val string, casSuccess uint64, err error)
 
-	// A zero cas means don't match CAS on Set().
+	// A zero cas means must be a create.
 	Set(key string, val string, cas uint64) (casSuccess uint64, err error)
 
 	// A zero cas means don't match CAS on Del().
