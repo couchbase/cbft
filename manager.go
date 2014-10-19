@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+	"time"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -26,6 +27,7 @@ type ManagerEventHandlers interface {
 }
 
 type Manager struct {
+	startTime time.Time
 	version   string // See VERSION.
 	cfg       Cfg
 	dataDir   string
@@ -41,6 +43,7 @@ type Manager struct {
 func NewManager(version string, cfg Cfg, dataDir string, server string,
 	meh ManagerEventHandlers) *Manager {
 	return &Manager{
+		startTime: time.Now(),
 		version:   version,
 		cfg:       cfg,
 		dataDir:   dataDir,
