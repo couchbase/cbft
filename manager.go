@@ -68,7 +68,7 @@ func (mgr *Manager) Start() error {
 	}
 
 	// Save our nodeDef into the Cfg.
-	if err := mgr.SaveNodeDef(); err != nil {
+	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN); err != nil {
 		return err
 	}
 
@@ -112,12 +112,12 @@ func (mgr *Manager) LoadDataDir() error {
 	return nil
 }
 
-func (mgr *Manager) SaveNodeDef() error {
+func (mgr *Manager) SaveNodeDef(kind string) error {
 	if mgr.cfg == nil {
 		return nil // Occurs during testing.
 	}
 
-	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, NODE_DEFS_KNOWN)
+	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (mgr *Manager) SaveNodeDef() error {
 		nodeDefs.NodeDefs[mgr.bindAddr] = nodeDef
 		nodeDefs.ImplVersion = mgr.version
 
-		_, err = CfgSetNodeDefs(mgr.cfg, NODE_DEFS_KNOWN, nodeDefs, cas)
+		_, err = CfgSetNodeDefs(mgr.cfg, kind, nodeDefs, cas)
 		if err != nil {
 			return err
 		}
