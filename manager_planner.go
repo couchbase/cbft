@@ -68,8 +68,8 @@ func (mgr *Manager) PlannerLoop() {
 	}
 }
 
-func (mgr *Manager) CalcPlan(indexDefs *IndexDefs,
-	indexerDefs *IndexerDefs) (*Plan, error) {
+func (mgr *Manager) CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs) (
+	*Plan, error) {
 	// TODO: implement the grand plans for the planner.
 	// First gen planner should keep it simple, such as...
 	// - a single Feed for every datasource node.

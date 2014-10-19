@@ -31,7 +31,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 		indexDefs = NewIndexDefs(mgr.version)
 	}
 
-	if _, exists := indexDefs.Indexes[indexName]; exists {
+	if _, exists := indexDefs.IndexDefs[indexName]; exists {
 		return fmt.Errorf("error: index exists, indexName: %s", indexName)
 	}
 
@@ -47,7 +47,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	}
 
 	indexDefs.UUID = uuid
-	indexDefs.Indexes[indexName] = indexDef
+	indexDefs.IndexDefs[indexName] = indexDef
 	indexDefs.CompatVersion = mgr.version
 
 	// TODO: check the CompatVersion to see if our version is too old.
