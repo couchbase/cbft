@@ -40,4 +40,10 @@ func TestNewPIndex(t *testing.T) {
 	if pindex != nil || err == nil {
 		t.Errorf("expected NewPIndex to fail with empty json map")
 	}
+
+	pindex, err = NewPIndex("fake", PIndexPath(emptyDir, "fake"),
+		[]byte("} hey this isn't json :-("))
+	if pindex != nil || err == nil {
+		t.Errorf("expected NewPIndex to fail with bad json")
+	}
 }
