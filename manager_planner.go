@@ -72,7 +72,7 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
-		plan, err := mgr.CalcPlan(indexDefs, nodeDefs)
+		plan, err := CalcPlan(indexDefs, nodeDefs)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
@@ -83,7 +83,7 @@ func (mgr *Manager) PlannerLoop() {
 	}
 }
 
-func (mgr *Manager) CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs) (
+func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs) (
 	*Plan, error) {
 	// TODO: implement the grand plans for the planner.
 	// First gen planner should keep it simple, such as...

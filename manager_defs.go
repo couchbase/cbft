@@ -37,6 +37,8 @@ type IndexDef struct {
 	// TODO: hints at creation time for planner?
 }
 
+// ------------------------------------------------------------------------
+
 type NodeDefs struct {
 	UUID        string              `json:"uuid"`
 	NodeDefs    map[string]*NodeDef `json:"nodeDefs"` // From HostPort -> NodeDef.
@@ -50,6 +52,8 @@ type NodeDef struct {
 
 	// TODO: declared ability; not all indexers equal (cpu, ram, disk, etc)
 }
+
+// ------------------------------------------------------------------------
 
 type Plan struct {
 }
