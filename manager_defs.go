@@ -31,7 +31,6 @@ type IndexDef struct {
 	SourceUUID string `json:"sourceUUID"`
 	Name       string `json:"name"`
 	UUID       string `json:"uuid"`
-	Type       string `json:"type"`
 	Mapping    string `json:"mapping"`
 }
 
@@ -81,4 +80,12 @@ func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 		return nil, 0, err
 	}
 	return rv, cas, nil
+}
+
+func CfgSetIndexDefs(cfg Cfg, indexDefs *IndexDefs, cas uint64) (uint64, error) {
+	buf, err := json.Marshal(indexDefs)
+	if err != nil {
+		return 0, err
+	}
+	return cfg.Set(INDEX_DEFS_KEY, buf, cas)
 }

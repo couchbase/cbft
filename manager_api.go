@@ -20,6 +20,42 @@ import (
 // Creates a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 	indexName string, indexMappingBytes []byte) error {
+	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
+	if err != nil {
+		return err
+	}
+	if indexDefs == nil {
+		indexDefs = NewIndexDefs(mgr.version)
+	}
+
+	if _, exists := indexDefs.Indexes[indexName]; exists {
+		return fmt.Errorf("error: index exists, indexName: %s", indexName)
+	}
+
+	uuid := NewUUID()
+
+	indexDef := &IndexDef{
+		SourceType: "couchbase", // TODO: Parameterize this.
+		SourceName: bucketName,
+		SourceUUID: bucketUUID,
+		Name:       indexName,
+		UUID:       uuid,
+		Mapping:    string(indexMappingBytes),
+	}
+
+	indexDefs.UUID = uuid
+	indexDefs.Indexes[indexName] = indexDef
+	indexDefs.CompatVersion = mgr.version
+
+	// TODO: check the CompatVersion to see if our version is too old.
+
+	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
+	if err != nil {
+		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+	}
+
+	mgr.plannerCh <- ("api/CreateIndex, indexName: " + indexName)
+
 	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
 	indexPath := mgr.PIndexPath(indexName)
 
@@ -39,7 +75,7 @@ func (mgr *Manager) CreateIndex(bucketName, bucketUUID,
 		return err
 	}
 
-	mgr.janitorCh <- "api/CreateIndex"
+	mgr.janitorCh <- ("api/CreateIndex, indexName: " + indexName)
 	return nil
 }
 
