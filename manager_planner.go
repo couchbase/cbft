@@ -70,6 +70,7 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
+		// TODO: Need to pass the previous plan to CalcPlan.
 		plan, err := CalcPlan(indexDefs, nodeDefs, mgr.version)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
@@ -77,6 +78,8 @@ func (mgr *Manager) PlannerLoop() {
 		if plan != nil {
 			// TODO: save the plan.
 			// TODO: kick the janitor if the plan changed.
+			// TODO: need the cfg systemt o have distributed notify/event facility
+			// to be able to kick any remote janitors.
 		}
 	}
 }
@@ -109,7 +112,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, version string) (
 	for _, indexDef := range indexDefs.IndexDefs {
 		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]
 		if !exists {
-			planPIndex := &PlanPIndex {
+			planPIndex := &PlanPIndex{
 				NodeUUIDs: make(map[string]string),
 				// TODO: more fields
 			}
