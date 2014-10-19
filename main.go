@@ -63,6 +63,7 @@ func main() {
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
 	// TODO: Use a real cfg one day.
+	// TODO: If cfg goes down, should we stop?  How do we reconnect?
 	cfg := NewCfgSimple()
 
 	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server)

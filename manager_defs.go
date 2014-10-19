@@ -20,9 +20,9 @@ import (
 // definitions or the planning algorithms change.
 
 type IndexDefs struct {
-	UUID          string               `json:"uuid"`
-	IndexDefs     map[string]*IndexDef `json:"indexDefs"` // From Name -> IndexDef.
-	CompatVersion string               `json:"compatVersion"`
+	UUID        string               `json:"uuid"`
+	IndexDefs   map[string]*IndexDef `json:"indexDefs"` // From Name -> IndexDef.
+	ImplVersion string               `json:"implVersion"`
 }
 
 type IndexDef struct {
@@ -38,14 +38,15 @@ type IndexDef struct {
 }
 
 type NodeDefs struct {
-	UUID          string              `json:"string"`
-	NodeDefs      map[string]*NodeDef `json:"nodeDefs"` // From HostPort -> NodeDef.
-	CompatVersion string              `json:"compatVersion"`
+	UUID        string              `json:"uuid"`
+	NodeDefs    map[string]*NodeDef `json:"nodeDefs"` // From HostPort -> NodeDef.
+	ImplVersion string              `json:"implVersion"`
 }
 
 type NodeDef struct {
-	HostPort string `json:"string"`
-	UUID     string `json:"string"`
+	HostPort    string `json:"hostPort"`
+	UUID        string `json:"uuid"`
+	ImplVersion string `json:"implVersion"`
 
 	// TODO: declared ability; not all indexers equal (cpu, ram, disk, etc)
 }
@@ -59,9 +60,9 @@ const INDEX_DEFS_KEY = "indexDefs"
 
 func NewIndexDefs(version string) *IndexDefs {
 	return &IndexDefs{
-		UUID:          NewUUID(),
-		IndexDefs:     make(map[string]*IndexDef),
-		CompatVersion: version,
+		UUID:        NewUUID(),
+		IndexDefs:   make(map[string]*IndexDef),
+		ImplVersion: version,
 	}
 }
 
@@ -102,9 +103,9 @@ const NODE_DEFS_KEY = "nodeDefs"
 
 func NewNodeDefs(version string) *NodeDefs {
 	return &NodeDefs{
-		UUID:          NewUUID(),
-		NodeDefs:      make(map[string]*NodeDef),
-		CompatVersion: version,
+		UUID:        NewUUID(),
+		NodeDefs:    make(map[string]*NodeDef),
+		ImplVersion: version,
 	}
 }
 

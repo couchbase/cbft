@@ -51,9 +51,9 @@ func (mgr *Manager) PlannerLoop() {
 			log.Printf("planner ended since no IndexDefs")
 			continue
 		}
-		if VersionGTE(mgr.version, indexDefs.CompatVersion) == false {
-			log.Printf("planner ended since indexDefs.CompatVersion: %s"+
-				"> mgr.version: %s", indexDefs.CompatVersion, mgr.version)
+		if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
+			log.Printf("planner ended since indexDefs.ImplVersion: %s"+
+				"> mgr.version: %s", indexDefs.ImplVersion, mgr.version)
 			continue
 		}
 

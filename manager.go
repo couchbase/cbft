@@ -67,6 +67,11 @@ func (mgr *Manager) Start() error {
 		return err
 	}
 
+	// Save our nodeDef into the Cfg.
+	if err := mgr.SaveNodeDef(); err != nil {
+		return err
+	}
+
 	go mgr.PlannerLoop()
 	mgr.plannerCh <- "start"
 
@@ -102,6 +107,43 @@ func (mgr *Manager) LoadDataDir() error {
 		}
 
 		mgr.RegisterPIndex(pindex)
+	}
+
+	return nil
+}
+
+func (mgr *Manager) SaveNodeDef() error {
+	if mgr.cfg == nil {
+		return nil // Occurs during testing.
+	}
+
+	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg)
+	if err != nil {
+		return err
+	}
+	if nodeDefs == nil {
+		nodeDefs = NewNodeDefs(mgr.version)
+	}
+	nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+	if !exists {
+		nodeDef = &NodeDef{
+			HostPort:    mgr.bindAddr, // TODO: need FQDN:port instead of ":8095".
+			UUID:        mgr.uuid,
+			ImplVersion: mgr.version,
+		}
+
+		nodeDefs.UUID = NewUUID()
+		nodeDefs.NodeDefs[mgr.bindAddr] = nodeDef
+		nodeDefs.ImplVersion = mgr.version
+
+		_, err = CfgSetNodeDefs(mgr.cfg, nodeDefs, cas)
+		if err != nil {
+			return err
+		}
+	}
+
+	if nodeDef.UUID != mgr.uuid {
+		// TODO: Check if our UUID (in dataDir) matches nodeDef.
 	}
 
 	return nil

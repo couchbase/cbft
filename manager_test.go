@@ -290,7 +290,7 @@ func TestIndexDefs(t *testing.T) {
 	d := NewIndexDefs("1.2.3")
 	buf, _ := json.Marshal(d)
 	d2, err := UnmarshalIndexDefs(buf)
-	if err != nil || d.UUID != d2.UUID || d.CompatVersion != d2.CompatVersion {
+	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
 		t.Errorf("UnmarshalIndexDefs err or mismatch")
 	}
 
@@ -313,7 +313,7 @@ func TestIndexDefs(t *testing.T) {
 	}
 	d4, cas, err := CfgGetIndexDefs(cfg)
 	if err != nil || cas != cas1 ||
-		d.UUID != d4.UUID || d.CompatVersion != d4.CompatVersion {
+		d.UUID != d4.UUID || d.ImplVersion != d4.ImplVersion {
 		t.Errorf("expected get to match first save")
 	}
 }
@@ -322,7 +322,7 @@ func TestNodeDefs(t *testing.T) {
 	d := NewNodeDefs("1.2.3")
 	buf, _ := json.Marshal(d)
 	d2, err := UnmarshalNodeDefs(buf)
-	if err != nil || d.UUID != d2.UUID || d.CompatVersion != d2.CompatVersion {
+	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
 		t.Errorf("UnmarshalNodeDefs err or mismatch")
 	}
 
@@ -345,7 +345,7 @@ func TestNodeDefs(t *testing.T) {
 	}
 	d4, cas, err := CfgGetNodeDefs(cfg)
 	if err != nil || cas != cas1 ||
-		d.UUID != d4.UUID || d.CompatVersion != d4.CompatVersion {
+		d.UUID != d4.UUID || d.ImplVersion != d4.ImplVersion {
 		t.Errorf("expected get to match first save")
 	}
 }

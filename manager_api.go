@@ -48,9 +48,9 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 
 	indexDefs.UUID = uuid
 	indexDefs.IndexDefs[indexName] = indexDef
-	indexDefs.CompatVersion = mgr.version
+	indexDefs.ImplVersion = mgr.version
 
-	// TODO: check the CompatVersion to see if our version is too old.
+	// TODO: check the ImplVersion to see if our version is too old.
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
