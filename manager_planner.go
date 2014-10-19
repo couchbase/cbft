@@ -12,8 +12,6 @@
 package main
 
 import (
-	"fmt"
-
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -72,7 +70,7 @@ func (mgr *Manager) PlannerLoop() {
 			continue
 		}
 
-		plan, err := CalcPlan(indexDefs, nodeDefs)
+		plan, err := CalcPlan(indexDefs, nodeDefs, mgr.version)
 		if err != nil {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
@@ -83,13 +81,43 @@ func (mgr *Manager) PlannerLoop() {
 	}
 }
 
-func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs) (
-	*Plan, error) {
-	// TODO: implement the grand plans for the planner.
-	// First gen planner should keep it simple, such as...
-	// - a single Feed for every datasource node.
-	// - a Feed might "fan out" to multiple Streams/PIndexes.
-	// - have a single PIndex for all datasource partitions
-	//   (vbuckets) to start.
-	return nil, fmt.Errorf("TODO")
+// Split logical indexes into Pindexes and assign PIndexes to nodes.
+func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, version string) (
+	*PlanPIndexes, error) {
+	// First planner attempt here is naive & simple, where
+	// every single Index is "split" into a single PIndex (so all
+	// the datasource partitions (vbuckets) will feed into that
+	// single PIndex).  And, every single node has a replica
+	// of that PIndex.  This takes care of the "single node"
+	// requirement of a developer preview.
+	//
+	// TODO: Implement more advanced planners another day,
+	// - multiple PIndexes per Index.
+	// - different fan-out/fan-in topologies from datasource to
+	//   Feed to PIndex.
+	//
+	if indexDefs == nil || nodeDefs == nil {
+		return nil, nil
+	}
+
+	planPIndexes := &PlanPIndexes{
+		UUID:         NewUUID(),
+		PlanPIndexes: make(map[string]*PlanPIndex),
+		ImplVersion:  version,
+	}
+
+	for _, indexDef := range indexDefs.IndexDefs {
+		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]
+		if !exists {
+			planPIndex := &PlanPIndex {
+				NodeUUIDs: make(map[string]string),
+				// TODO: more fields
+			}
+			// TODO, fill in NodeUUIDs
+			planPIndexes.PlanPIndexes[indexDef.UUID] = planPIndex
+		}
+		// TODO: what if UUID's don't match?
+	}
+
+	return planPIndexes, nil
 }

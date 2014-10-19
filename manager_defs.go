@@ -55,7 +55,19 @@ type NodeDef struct {
 
 // ------------------------------------------------------------------------
 
-type Plan struct {
+type PlanPIndexes struct {
+	UUID         string                 `json:"uuid"`
+	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is IndexDef.UUID.
+	ImplVersion  string                 `json:"implVersion"`
+}
+
+type PlanPIndex struct {
+	Name      string
+	UUID      string
+	RangeBeg  string
+	RangeEnd  string
+	Mapping   string
+	NodeUUIDs map[string]string `json:"nodeUUIDs"`
 }
 
 // ------------------------------------------------------------------------
