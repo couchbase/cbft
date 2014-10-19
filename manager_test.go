@@ -57,7 +57,7 @@ func TestPIndexPath(t *testing.T) {
 
 func TestManagerStart(t *testing.T) {
 	m := NewManager(VERSION, nil, "", "dir", "not-a-real-svr", nil)
-	if m.Start() == nil {
+	if m.Start(false) == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
 	}
 	if m.DataDir() != "dir" {
@@ -65,7 +65,7 @@ func TestManagerStart(t *testing.T) {
 	}
 
 	m = NewManager(VERSION, nil, "", "not-a-real-dir", "", nil)
-	if m.Start() == nil {
+	if m.Start(false) == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
 	}
 	if m.DataDir() != "not-a-real-dir" {
@@ -75,7 +75,7 @@ func TestManagerStart(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	m = NewManager(VERSION, nil, "", emptyDir, "", nil)
-	if err := m.Start(); err != nil {
+	if err := m.Start(false); err != nil {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
 }

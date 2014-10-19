@@ -89,7 +89,7 @@ func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string) (
 	}
 
 	mgr := NewManager(VERSION, cfg, bindAddr, dataDir, server, &MainHandlers{})
-	if err = mgr.Start(); err != nil {
+	if err = mgr.Start(false); err != nil {
 		return nil, err
 	}
 

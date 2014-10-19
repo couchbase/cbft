@@ -60,7 +60,7 @@ func NewManager(version string, cfg Cfg, bindAddr, dataDir string,
 	}
 }
 
-func (mgr *Manager) Start() error {
+func (mgr *Manager) Start(registerAsWanted bool) error {
 	// TODO: Write our cbft-ID into the cfg.
 
 	if err := mgr.LoadDataDir(); err != nil {
@@ -70,6 +70,11 @@ func (mgr *Manager) Start() error {
 	// Save our nodeDef into the Cfg.
 	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN); err != nil {
 		return err
+	}
+	if registerAsWanted {
+		if err := mgr.SaveNodeDef(NODE_DEFS_WANTED); err != nil {
+			return err
+		}
 	}
 
 	go mgr.PlannerLoop()
