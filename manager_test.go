@@ -12,6 +12,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -282,5 +283,37 @@ func TestCheckVersion(t *testing.T) {
 	v, _, err = cfg.Get(VERSION_KEY, 0)
 	if err != nil || string(v) != "1.1.0" {
 		t.Errorf("expected version to remain stable on lower version check")
+	}
+}
+
+func TestIndexDefs(t *testing.T) {
+	d := NewIndexDefs("1.2.3")
+	buf, _ := json.Marshal(d)
+	d2, err := UnmarshalIndexDefs(buf)
+	if err != nil || d.UUID != d2.UUID || d.CompatVersion != d2.CompatVersion {
+		t.Errorf("UnmarshalIndexDefs err or mismatch")
+	}
+
+	cfg := NewCfgSimple()
+	d3, cas, err := CfgGetIndexDefs(cfg)
+	if err != nil || cas != 0 || d3 != nil {
+		t.Errorf("CfgGetIndexDefs on new cfg should be nil")
+	}
+	cas, err = CfgSetIndexDefs(cfg, d, 100)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetIndexDefs create on new cfg")
+	}
+	cas1, err := CfgSetIndexDefs(cfg, d, 0)
+	if err != nil || cas1 != 1 {
+		t.Errorf("expected ok on first save")
+	}
+	cas, err = CfgSetIndexDefs(cfg, d, 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected error on CfgSetIndexDefs recreate")
+	}
+	d4, cas, err := CfgGetIndexDefs(cfg)
+	if err != nil || cas != cas1 ||
+		d.UUID != d4.UUID || d.CompatVersion != d4.CompatVersion {
+		t.Errorf("expected get to match first save")
 	}
 }
