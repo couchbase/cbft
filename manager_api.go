@@ -59,35 +59,15 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 
 	mgr.plannerCh <- ("api/CreateIndex, indexName: " + indexName)
 
-	// TODO: a logical index might map to multiple PIndexes, not the current 1-to-1.
-	indexPath := mgr.PIndexPath(indexName)
-
-	// TODO: need to check if this pindex already exists?
-	// TODO: need to alloc a version/uuid for the pindex?
-	// TODO: need to save feed reconstruction info (bucketName, bucketUUID, etc)
-	//   with the pindex
-	pindex, err := NewPIndex(indexName, indexPath, indexMappingBytes)
-	if err != nil {
-		return fmt.Errorf("error running pindex: %v", err)
-	}
-
-	// TODO: Create a uuid for the pindex?
-
-	if err = mgr.RegisterPIndex(pindex); err != nil {
-		// TODO: cleanup the duplicate pindex?
-		return err
-	}
-
-	mgr.janitorCh <- ("api/CreateIndex, indexName: " + indexName)
 	return nil
 }
 
 // Deletes a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) DeleteIndex(indexName string) error {
-	// TODO: Actually, need the Janitor to do all this work to avoid a
+	// TODO - rewrite all this to update the Cfg and kick the planner.
+	// Later, we need the Janitor to do all the below work to avoid a
 	// concurrency race where it recreates feeds right after we
-	// unregister them.
-	// mgr.janitorCh <- true
+	// unregister them.  mgr.janitorCh <- true
 	//
 	// try to stop the feed
 	// TODO: should be unregistering all feeds (multiple).
@@ -106,7 +86,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	pindex := mgr.UnregisterPIndex(indexName)
 	if pindex != nil {
 		// TODO: what about any inflight queries or ops?
-		close(pindex.Stream())
+		close(pindex.Stream)
 	}
 
 	return nil

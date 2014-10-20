@@ -139,8 +139,12 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 				// This name only works for simple 1-to-1.
 				Name:             indexDef.Name + "/" + indexDef.UUID,
 				UUID:             NewUUID(),
+				IndexName:        indexDef.Name,
 				IndexUUID:        indexDef.UUID,
-				Mapping:          indexDef.Mapping,
+				IndexMapping:     indexDef.Mapping,
+				SourceType:       indexDef.SourceType,
+				SourceName:       indexDef.SourceName,
+				SourceUUID:       indexDef.SourceUUID,
 				SourcePartitions: "", // Simple version is get all partitions.
 				NodeUUIDs:        make(map[string]string),
 			}

@@ -67,10 +67,14 @@ type PlanPIndexes struct {
 }
 
 type PlanPIndex struct {
-	Name             string            `json:"name"`
+	Name             string            `json:"name"` // Stable & unique cluster wide.
 	UUID             string            `json:"uuid"`
-	IndexUUID        string            `json:"indexUUID"` // See IndefDef.UUID.
-	Mapping          string            `json:"mapping"`   // See IndexDef.Mapping.
+	IndexName        string            `json:"indexName"`    // See IndexDef.Name.
+	IndexUUID        string            `json:"indexUUID"`    // See IndefDef.UUID.
+	IndexMapping     string            `json:"indexMapping"` // See IndexDef.Mapping.
+	SourceType       string            `json:"sourceType"`
+	SourceName       string            `json:"sourceName"`
+	SourceUUID       string            `json:"sourceUUID"`
 	SourcePartitions string            `json:"sourcePartitions"`
 	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // Key is NodeDef.UUID.
 }
@@ -234,8 +238,12 @@ func SubsetPlanPIndexes(a, b *PlanPIndexes) bool {
 func SamePlanPIndex(a, b *PlanPIndex) bool {
 	// Of note, we don't compare UUID's.
 	if a.Name != b.Name ||
+		a.IndexName != b.IndexName ||
 		a.IndexUUID != b.IndexUUID ||
-		a.Mapping != b.Mapping ||
+		a.IndexMapping != b.IndexMapping ||
+		a.SourceType != b.SourceType ||
+		a.SourceName != b.SourceName ||
+		a.SourceUUID != b.SourceUUID ||
 		a.SourcePartitions != b.SourcePartitions ||
 		!reflect.DeepEqual(a.NodeUUIDs, b.NodeUUIDs) {
 		return false

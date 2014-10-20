@@ -130,12 +130,15 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	p, err := NewPIndex("p0", m.PIndexPath("p0"), []byte{})
+	p, err := NewPIndex("p0", "uuid",
+		"indexName", "indexUUID", "",
+		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		m.PIndexPath("p0"))
 	if err != nil {
 		t.Errorf("expected NewPIndex() to work")
 	}
-	defer close(p.Stream())
-	px := m.UnregisterPIndex(p.Name())
+	defer close(p.Stream)
+	px := m.UnregisterPIndex(p.Name)
 	if px != nil {
 		t.Errorf("expected UnregisterPIndex() on newborn manager to fail")
 	}
@@ -169,12 +172,12 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
 			len(feeds), len(pindexes))
 	}
-	pc, ok := pindexes[p.Name()]
+	pc, ok := pindexes[p.Name]
 	if !ok || p != pc {
 		t.Errorf("wrong pindex in current pindexes")
 	}
 
-	px = m.UnregisterPIndex(p.Name())
+	px = m.UnregisterPIndex(p.Name)
 	if px == nil {
 		t.Errorf("expected first UnregisterPIndex() to work")
 	}
@@ -184,7 +187,7 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	meh.lastPIndex = nil
 	meh.lastCall = ""
 
-	px = m.UnregisterPIndex(p.Name())
+	px = m.UnregisterPIndex(p.Name)
 	if px != nil {
 		t.Errorf("expected second UnregisterPIndex() to fail")
 	}

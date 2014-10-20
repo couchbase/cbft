@@ -14,6 +14,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -22,66 +23,103 @@ import (
 
 // A PIndex represents a "physical" index or a index "partition".
 
+const PINDEX_META_FILENAME string = "PINDEX_META"
 const pindexPathSuffix string = ".pindex"
 
 type PIndex struct {
-	name   string
-	path   string
-	bindex bleve.Index
-	stream Stream
+	Name             string      `json:"name"`
+	UUID             string      `json:"uuid"`
+	IndexName        string      `json:"indexName"`
+	IndexUUID        string      `json:"indexUUID"`
+	IndexMapping     string      `json:"indexMapping"`
+	SourceType       string      `json:"sourceType"`
+	SourceName       string      `json:"sourceName"`
+	SourceUUID       string      `json:"sourceUUID"`
+	SourcePartitions string      `json:"sourcePartitions"`
+	Path             string      `json:"-"` // Transient, not persisted.
+	BIndex           bleve.Index `json:"-"` // Transient, not persisted.
+	Stream           Stream      `json:"-"` // Transient, not persisted.
 }
 
-func (pindex *PIndex) Name() string {
-	return pindex.name
-}
+func NewPIndex(name, uuid,
+	indexName, indexUUID, indexMapping,
+	sourceType, sourceName, sourceUUID, sourcePartitions,
+	path string) (*PIndex, error) {
+	bindexMapping := bleve.NewIndexMapping()
 
-func (pindex *PIndex) Path() string {
-	return pindex.path
-}
-
-func (pindex *PIndex) BIndex() bleve.Index {
-	return pindex.bindex
-}
-
-func (pindex *PIndex) Stream() Stream {
-	return pindex.stream
-}
-
-func NewPIndex(name, path string, indexMappingBytes []byte) (*PIndex, error) {
-	indexMapping := bleve.NewIndexMapping()
-
-	if len(indexMappingBytes) > 0 {
-		if err := json.Unmarshal(indexMappingBytes, &indexMapping); err != nil {
+	if len(indexMapping) > 0 {
+		if err := json.Unmarshal([]byte(indexMapping), &bindexMapping); err != nil {
 			return nil, fmt.Errorf("error: could not parse index mapping: %v", err)
 		}
 	}
 
-	bindex, err := bleve.New(path, indexMapping)
+	bindex, err := bleve.New(path, bindexMapping)
 	if err != nil {
 		return nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
 			path, err)
 	}
 
-	return StartPIndex(name, path, bindex)
+	pindex := &PIndex{
+		Name:             name,
+		UUID:             uuid,
+		IndexName:        indexName,
+		IndexUUID:        indexUUID,
+		IndexMapping:     indexMapping,
+		SourceType:       sourceType,
+		SourceName:       sourceName,
+		SourceUUID:       sourceUUID,
+		SourcePartitions: sourcePartitions,
+		Path:             path,
+		BIndex:           bindex,
+		Stream:           make(Stream),
+	}
+	buf, err := json.Marshal(pindex)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Save this in the bleve index instead of a separate file.
+	err = ioutil.WriteFile(path+string(os.PathSeparator)+PINDEX_META_FILENAME,
+		buf, 0600)
+	if err != nil {
+		bindex.Close()
+
+		return nil, fmt.Errorf("error: could not save PINDEX_META_FILENAME,"+
+			" path: %s, err: %v", path, err)
+	}
+
+	go pindex.Run()
+	return pindex, nil
 }
 
-func OpenPIndex(name, path string) (*PIndex, error) {
+func OpenPIndex(path string) (*PIndex, error) {
 	bindex, err := bleve.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("error: could not open bleve index, path: %v, err: %v",
 			path, err)
 	}
-	// TODO: Check if name matches what was stored in bleve file.
-	return StartPIndex(name, path, bindex)
-}
 
-func StartPIndex(name, path string, bindex bleve.Index) (*PIndex, error) {
-	pindex := &PIndex{
-		name:   name,
-		path:   path,
-		bindex: bindex,
-		stream: make(Stream),
+	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
+	if err != nil {
+		bindex.Close()
+
+		return nil, fmt.Errorf("error: could not load PINDEX_META_FILENAME,"+
+			" path: %s, err: %v", path, err)
 	}
+
+	pindex := &PIndex{}
+	err = json.Unmarshal(buf, pindex)
+	if err != nil {
+		bindex.Close()
+
+		return nil, fmt.Errorf("error: could not parse pindex json,"+
+			" path: %s, err: %v", path, err)
+	}
+
+	pindex.Path = path
+	pindex.BIndex = bindex
+	pindex.Stream = make(Stream)
+
 	go pindex.Run()
 	return pindex, nil
 }

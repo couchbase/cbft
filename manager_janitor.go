@@ -39,14 +39,24 @@ func (mgr *Manager) JanitorLoop() {
 
 		currFeeds, currPIndexes := mgr.CurrentMaps()
 
-		neededPIndexes, unneededPIndexes, err :=
+		neededPlanPIndexes, unneededPIndexes, err :=
 			CalcPIndexesDelta(currPIndexes, planPIndexes)
 		if err != nil {
 			log.Printf("janitor skipped due to CalcPIndexesDelta, err: %v", err)
 			continue
 		}
 		log.Printf("janitor pindexes needed: %v, unneeded: %v",
-			neededPIndexes, unneededPIndexes)
+			neededPlanPIndexes, unneededPIndexes)
+
+		// Create pindexes that we're missing.
+		for _, neededPlanPIndex := range neededPlanPIndexes {
+			mgr.StartPIndex(neededPlanPIndex)
+		}
+
+		// Teardown unneeded pindexes.
+		for _, unneededPIndex := range unneededPIndexes {
+			mgr.StopPIndex(unneededPIndex)
+		}
 
 		neededFeeds, unneededFeeds, err :=
 			CalcFeedsDelta(currFeeds, currPIndexes)
@@ -71,32 +81,58 @@ func (mgr *Manager) JanitorLoop() {
 
 // Functionally determine the delta of which pindexes need creation
 // and which should be shut down.
-func CalcPIndexesDelta(pindexes map[string]*PIndex, planPIndexes *PlanPIndexes) (
+func CalcPIndexesDelta(currPIndexes map[string]*PIndex,
+	wantedPlanPIndexes *PlanPIndexes) (
 	neededPlanPIndex []*PlanPIndex, unneededPIndex []*PIndex, err error) {
 	neededPlanPIndex = make([]*PlanPIndex, 0)
 	unneededPIndex = make([]*PIndex, 0)
 
-	// TODO.
+	// for each wanted plan pindex, if pindex does not exist, then add to needed PlanPIndex
+	// for each existing pindex, if not part of wanted plan pindex
+
+	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
+		currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
+		if !exists ||
+			currPIndex.Name != wantedPlanPIndex.Name ||
+			currPIndex.UUID != wantedPlanPIndex.UUID {
+			// TODO: Check for change in index mapping bytes.
+			neededPlanPIndex = append(neededPlanPIndex, wantedPlanPIndex)
+		}
+	}
 
 	return neededPlanPIndex, unneededPIndex, nil
 }
 
 // Functionally determine the delta of which feeds need creation and
 // which should be shut down.
-func CalcFeedsDelta(feeds map[string]Feed, pindexes map[string]*PIndex) (
+func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	neededFeeds [][]*PIndex, unneededFeeds []Feed, err error) {
 	neededFeeds = make([][]*PIndex, 0)
 	unneededFeeds = make([]Feed, 0)
 
 	for _, pindex := range pindexes {
-		neededFeedName := FeedName("default", pindex.Name(), "")
-		if _, ok := feeds[neededFeedName]; !ok {
+		neededFeedName := FeedName("default", pindex.Name, "")
+		if _, ok := currFeeds[neededFeedName]; !ok {
 			neededFeeds = append(neededFeeds, []*PIndex{pindex})
 		}
 	}
 
 	return neededFeeds, unneededFeeds, nil
 }
+
+// --------------------------------------------------------
+
+func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
+	// TODO.
+	return nil
+}
+
+func (mgr *Manager) StopPIndex(pindex *PIndex) error {
+	// TODO.
+	return nil
+}
+
+// --------------------------------------------------------
 
 func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 	// TODO: Need to create a fan-out feed.
@@ -105,7 +141,7 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 		err := mgr.StartSimpleFeed(pindex) // TODO: err handling.
 		if err != nil {
 			log.Printf("error: could not start feed for pindex: %s, err: %v",
-				pindex.Name(), err)
+				pindex.Name, err)
 		}
 	}
 	return nil
@@ -116,13 +152,15 @@ func (mgr *Manager) StopFeed(feed Feed) error {
 	return nil
 }
 
+// --------------------------------------------------------
+
 func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
-	indexName := pindex.Name() // TODO: bad assumption of 1-to-1 pindex.name to indexName
+	indexName := pindex.Name // TODO: bad assumption of 1-to-1 pindex.name to indexName
 
 	bucketName := indexName // TODO: read bucketName out of bleve storage.
-	bucketUUID := ""        // TODO: read bucketUUID and vbucket list out of bleve storage.
+	bucketUUID := ""        // TODO: read bucketUUID & vbucket list from bleve storage.
 	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID,
-		pindex.Stream())
+		pindex.Stream)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",

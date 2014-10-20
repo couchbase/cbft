@@ -18,7 +18,7 @@ import (
 )
 
 func TestOpenPIndex(t *testing.T) {
-	pindex, err := OpenPIndex("fake", "not-a-bleve-file")
+	pindex, err := OpenPIndex("not-a-bleve-file")
 	if pindex != nil || err == nil {
 		t.Errorf("expected OpenPIndex to fail on a bad file")
 	}
@@ -28,21 +28,27 @@ func TestNewPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	pindex, err := NewPIndex("fake", PIndexPath(emptyDir, "fake"),
-		[]byte{})
+	pindex, err := NewPIndex("fake", "uuid",
+		"indexName", "indexUUID", "",
+		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		PIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
 	}
-	close(pindex.Stream())
+	close(pindex.Stream)
 
-	pindex, err = NewPIndex("fake", PIndexPath(emptyDir, "fake"),
-		[]byte("{}"))
+	pindex, err = NewPIndex("fake", "uuid",
+		"indexName", "indexUUID", "{}",
+		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
 		t.Errorf("expected NewPIndex to fail with empty json map")
 	}
 
-	pindex, err = NewPIndex("fake", PIndexPath(emptyDir, "fake"),
-		[]byte("} hey this isn't json :-("))
+	pindex, err = NewPIndex("fake", "uuid",
+		"indexName", "indexUUID", "} hey this isn't json :-(",
+		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
 		t.Errorf("expected NewPIndex to fail with bad json")
 	}

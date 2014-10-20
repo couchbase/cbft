@@ -16,7 +16,7 @@ import (
 )
 
 func (pindex *PIndex) Run() {
-	for m := range pindex.stream {
+	for m := range pindex.Stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.
 
@@ -25,15 +25,15 @@ func (pindex *PIndex) Run() {
 
 		switch m := m.(type) {
 		case *StreamUpdate:
-			pindex.bindex.Index(string(m.Id()), m.Body())
+			pindex.BIndex.Index(string(m.Id()), m.Body())
 		case *StreamDelete:
-			pindex.bindex.Delete(string(m.Id()))
+			pindex.BIndex.Delete(string(m.Id()))
 		}
 	}
 
 	// The bleve.Index.Close() handles any inflight, concurrent
 	// queries with its own locking.
-	pindex.BIndex().Close()
+	pindex.BIndex.Close()
 
-	os.RemoveAll(pindex.Path())
+	os.RemoveAll(pindex.Path)
 }

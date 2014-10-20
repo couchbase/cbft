@@ -101,11 +101,11 @@ func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool
 type MainHandlers struct{}
 
 func (meh *MainHandlers) OnRegisterPIndex(pindex *PIndex) {
-	bleveHttp.RegisterIndexName(pindex.Name(), pindex.BIndex())
+	bleveHttp.RegisterIndexName(pindex.Name, pindex.BIndex)
 }
 
 func (meh *MainHandlers) OnUnregisterPIndex(pindex *PIndex) {
-	bleveHttp.UnregisterIndexByName(pindex.Name())
+	bleveHttp.UnregisterIndexByName(pindex.Name)
 }
 
 func dumpOnSignal(signals ...os.Signal) {

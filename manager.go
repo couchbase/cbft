@@ -95,14 +95,8 @@ func (mgr *Manager) LoadDataDir() error {
 
 	for _, dirInfo := range dirEntries {
 		path := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
-		name, ok := mgr.ParsePIndexPath(path)
-		if !ok {
-			log.Printf("  skipping: %s", dirInfo.Name())
-			continue
-		}
-
-		log.Printf("  opening pindex: %s", name)
-		pindex, err := OpenPIndex(name, path)
+		log.Printf("  opening pindex: %s", path)
+		pindex, err := OpenPIndex(path)
 		if err != nil {
 			log.Printf("error: could not open pindex: %s, err: %v",
 				path, err)
@@ -180,11 +174,11 @@ func (mgr *Manager) RegisterPIndex(pindex *PIndex) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
-	if _, exists := mgr.pindexes[pindex.Name()]; exists {
+	if _, exists := mgr.pindexes[pindex.Name]; exists {
 		return fmt.Errorf("error: registered pindex already exists, name: %s",
-			pindex.Name())
+			pindex.Name)
 	}
-	mgr.pindexes[pindex.Name()] = pindex
+	mgr.pindexes[pindex.Name] = pindex
 	if mgr.meh != nil {
 		mgr.meh.OnRegisterPIndex(pindex)
 	}
