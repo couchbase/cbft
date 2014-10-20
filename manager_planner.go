@@ -51,7 +51,7 @@ func (mgr *Manager) PlannerLoop() {
 		}
 		if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
 			log.Printf("planner ended since indexDefs.ImplVersion: %s"+
-				"> mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+				" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
 			continue
 		}
 
@@ -66,7 +66,7 @@ func (mgr *Manager) PlannerLoop() {
 		}
 		if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
 			log.Printf("planner ended since nodeDefs.ImplVersion: %s"+
-				"> mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
+				" > mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
 			continue
 		}
 
@@ -80,7 +80,7 @@ func (mgr *Manager) PlannerLoop() {
 		}
 		if VersionGTE(mgr.version, planPIndexesPrev.ImplVersion) == false {
 			log.Printf("planner ended since planPIndexes.ImplVersion: %s"+
-				"> mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
+				" > mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
 			continue
 		}
 
