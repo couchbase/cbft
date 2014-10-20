@@ -22,15 +22,34 @@ func (mgr *Manager) JanitorLoop() {
 	for reason := range mgr.janitorCh {
 		log.Printf("janitor awakes, reason: %s", reason)
 
+		if mgr.cfg == nil { // Can occur during testing.
+			log.Printf("janitor skipped due to nil cfg")
+			continue
+		}
+
+		planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
+		if err != nil {
+			log.Printf("janitor skipped due to CfgGetPlanPIndexes err: %v", err)
+			continue
+		}
+
 		startFeeds, startPIndexes := mgr.CurrentMaps()
+
+		neededPIndexes, unneededPIndexes, err :=
+			CalcPIndexesDelta(startPIndexes, planPIndexes)
+		if err != nil {
+			log.Printf("janitor skipped due to CalcPIndexesDelta, err: %v", err)
+			continue
+		}
+		log.Printf("janitor pindexes needed: %v, unneeded: %v",
+			neededPIndexes, unneededPIndexes)
 
 		neededFeeds, unneededFeeds, err :=
 			CalcFeedsDelta(startFeeds, startPIndexes)
 		if err != nil {
-			log.Printf("error during delta calc, err: %v", err)
+			log.Printf("janitor skipped due to CalcFeedsDelta, err: %v", err)
 			continue
 		}
-
 		log.Printf("janitor feeds needed: %v, unneeded: %v",
 			neededFeeds, unneededFeeds)
 
@@ -46,8 +65,20 @@ func (mgr *Manager) JanitorLoop() {
 	}
 }
 
+// Functionally determine the delta of which pindexes need creation
+// and which should be shut down.
+func CalcPIndexesDelta(pindexes map[string]*PIndex, planPIndexes *PlanPIndexes) (
+	neededPlanPIndex []*PlanPIndex, unneededPIndex []*PIndex, err error) {
+	neededPlanPIndex = make([]*PlanPIndex, 0)
+	unneededPIndex = make([]*PIndex, 0)
+
+	// TODO.
+
+	return neededPlanPIndex, unneededPIndex, nil
+}
+
 // Functionally determine the delta of which feeds need creation and
-// which feeds should be shut down.
+// which should be shut down.
 func CalcFeedsDelta(feeds map[string]Feed, pindexes map[string]*PIndex) (
 	neededFeeds [][]*PIndex, unneededFeeds []Feed, err error) {
 	neededFeeds = make([][]*PIndex, 0)
