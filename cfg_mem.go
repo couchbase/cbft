@@ -21,19 +21,19 @@ import (
 
 type CfgMem struct {
 	m       sync.Mutex
-	casNext uint64
-	entries map[string]*CfgMemEntry
+	CASNext uint64
+	Entries map[string]*CfgMemEntry
 }
 
 type CfgMemEntry struct {
-	cas uint64
-	val []byte
+	CAS uint64
+	Val []byte
 }
 
 func NewCfgMem() Cfg {
 	return &CfgMem{
-		casNext: 1,
-		entries: make(map[string]*CfgMemEntry),
+		CASNext: 1,
+		Entries: make(map[string]*CfgMemEntry),
 	}
 }
 
@@ -42,16 +42,16 @@ func (c *CfgMem) Get(key string, cas uint64) (
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	entry, exists := c.entries[key]
+	entry, exists := c.Entries[key]
 	if !exists {
 		return nil, 0, nil
 	}
-	if cas != 0 && cas != entry.cas {
+	if cas != 0 && cas != entry.CAS {
 		return nil, 0, fmt.Errorf("error: mismatched Cfg CAS")
 	}
-	val := make([]byte, len(entry.val))
-	copy(val, entry.val)
-	return val, entry.cas, nil
+	val := make([]byte, len(entry.Val))
+	copy(val, entry.Val)
+	return val, entry.CAS, nil
 }
 
 func (c *CfgMem) Set(key string, val []byte, cas uint64) (
@@ -59,7 +59,7 @@ func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	prevEntry, exists := c.entries[key]
+	prevEntry, exists := c.Entries[key]
 	if cas == 0 {
 		if exists {
 			return 0, fmt.Errorf("error: entry already exists, key: %s", key)
@@ -68,18 +68,18 @@ func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 		if !exists {
 			return 0, fmt.Errorf("error: no entry, key: %s", key)
 		}
-		if cas != prevEntry.cas {
+		if cas != prevEntry.CAS {
 			return 0, fmt.Errorf("error: mismatched cas, key: %s", key)
 		}
 	}
 	nextEntry := &CfgMemEntry{
-		cas: c.casNext,
-		val: make([]byte, len(val)),
+		CAS: c.CASNext,
+		Val: make([]byte, len(val)),
 	}
-	copy(nextEntry.val, val)
-	c.entries[key] = nextEntry
-	c.casNext += 1
-	return nextEntry.cas, nil
+	copy(nextEntry.Val, val)
+	c.Entries[key] = nextEntry
+	c.CASNext += 1
+	return nextEntry.CAS, nil
 }
 
 func (c *CfgMem) Del(key string, cas uint64) error {
@@ -87,11 +87,11 @@ func (c *CfgMem) Del(key string, cas uint64) error {
 	defer c.m.Unlock()
 
 	if cas != 0 {
-		entry, exists := c.entries[key]
-		if !exists || cas != entry.cas {
+		entry, exists := c.Entries[key]
+		if !exists || cas != entry.CAS {
 			return fmt.Errorf("error: mismatched Cfg CAS")
 		}
 	}
-	delete(c.entries, key)
+	delete(c.Entries, key)
 	return nil
 }
