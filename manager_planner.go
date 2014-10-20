@@ -94,11 +94,10 @@ func (mgr *Manager) PlannerLoop() {
 				continue
 			}
 
-			// TODO: We should only save the plan if it changed.
-
 			_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
 			if err != nil {
-				log.Printf("planner could not save new plan, cas: %d, err: %v",
+				log.Printf("planner could not save new plan,"+
+					" perhaps a concurrent planner won, cas: %d, err: %v",
 					cas, err)
 				continue
 			}
