@@ -25,7 +25,8 @@ func TestCfgSimple(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	testCfg(t, NewCfgSimple(emptyDir+string(os.PathSeparator)+"test.cfg"))
+	cfg := NewCfgSimple(emptyDir + string(os.PathSeparator) + "test.cfg")
+	testCfg(t, cfg)
 }
 
 func testCfg(t *testing.T, c Cfg) {
@@ -125,5 +126,30 @@ func testCfg(t *testing.T, c Cfg) {
 	if err != nil || v != nil || cas != 0 {
 		t.Errorf("expected Get() with 0 CAS to miss after Del(): "+
 			" %v, %v, %v", err, v, cas)
+	}
+}
+
+func TestCfgSimpleLoad(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	path := emptyDir + string(os.PathSeparator) + "test.cfg"
+
+	c := NewCfgSimple(path)
+	cas1, err := c.Set("a", []byte("A"), 0)
+	if err != nil || cas1 != 1 {
+		t.Errorf("expected Set() on initial cfg simple")
+	}
+
+	c2 := NewCfgSimple(path)
+	if err := c2.(*CfgSimple).Load(); err != nil {
+		t.Errorf("expected Load() to work")
+	}
+	v, cas, err := c2.Get("a", 0)
+	if err != nil || v == nil || cas != cas1 {
+		t.Errorf("expected Get() to succeed")
+	}
+	if string(v) != "A" {
+		t.Errorf("exepcted to read what we wrote")
 	}
 }
