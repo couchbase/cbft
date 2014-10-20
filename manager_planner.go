@@ -133,28 +133,31 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
-		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]
-		if !exists {
-			planPIndex := &PlanPIndex{
-				// This name only works for simple 1-to-1.
-				Name:             indexDef.Name + "/" + indexDef.UUID,
-				UUID:             NewUUID(),
-				IndexName:        indexDef.Name,
-				IndexUUID:        indexDef.UUID,
-				IndexMapping:     indexDef.Mapping,
-				SourceType:       indexDef.SourceType,
-				SourceName:       indexDef.SourceName,
-				SourceUUID:       indexDef.SourceUUID,
-				SourcePartitions: "", // Simple version is get all partitions.
-				NodeUUIDs:        make(map[string]string),
-			}
-			for _, nodeDef := range nodeDefs.NodeDefs {
-				planPIndex.NodeUUIDs[nodeDef.UUID] = "active" // TODO: better val needed.
-			}
-
-			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
+		planPIndex := &PlanPIndex{
+			// This simple PlanPIndex.Name here only works for simple
+			// 1-to-1 case.  NOTE: PlanPIndex.Name must be unique
+			// across the cluster and functionally based off of the
+			// indexDef.
+			//
+			// TODO: More advanced planners will probably have to
+			// incorporate SourcePartitions info into the
+			// PlanPIndex.Name.
+			Name:             indexDef.Name + "/" + indexDef.UUID,
+			UUID:             NewUUID(),
+			IndexName:        indexDef.Name,
+			IndexUUID:        indexDef.UUID,
+			IndexMapping:     indexDef.Mapping,
+			SourceType:       indexDef.SourceType,
+			SourceName:       indexDef.SourceName,
+			SourceUUID:       indexDef.SourceUUID,
+			SourcePartitions: "", // Simple version is get all partitions.
+			NodeUUIDs:        make(map[string]string),
 		}
-		// TODO: what if UUID's don't match?
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			// TODO: better val needed.
+			planPIndex.NodeUUIDs[nodeDef.UUID] = "active"
+		}
+		planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
 	}
 
 	return planPIndexes, nil
