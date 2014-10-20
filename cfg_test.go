@@ -12,11 +12,23 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestCfgMem(t *testing.T) {
-	c := NewCfgMem()
+	testCfg(t, NewCfgMem())
+}
+
+func TestCfgSimple(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	testCfg(t, NewCfgSimple(emptyDir+string(os.PathSeparator)+"test.cfg"))
+}
+
+func testCfg(t *testing.T, c Cfg) {
 	v, cas, err := c.Get("nope", 0)
 	if err != nil || v != nil || cas != 0 {
 		t.Errorf("expected Get() to miss on brand new CfgMem")
