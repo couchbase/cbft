@@ -37,10 +37,10 @@ func (mgr *Manager) JanitorLoop() {
 			continue
 		}
 
-		startFeeds, startPIndexes := mgr.CurrentMaps()
+		currFeeds, currPIndexes := mgr.CurrentMaps()
 
 		neededPIndexes, unneededPIndexes, err :=
-			CalcPIndexesDelta(startPIndexes, planPIndexes)
+			CalcPIndexesDelta(currPIndexes, planPIndexes)
 		if err != nil {
 			log.Printf("janitor skipped due to CalcPIndexesDelta, err: %v", err)
 			continue
@@ -49,7 +49,7 @@ func (mgr *Manager) JanitorLoop() {
 			neededPIndexes, unneededPIndexes)
 
 		neededFeeds, unneededFeeds, err :=
-			CalcFeedsDelta(startFeeds, startPIndexes)
+			CalcFeedsDelta(currFeeds, currPIndexes)
 		if err != nil {
 			log.Printf("janitor skipped due to CalcFeedsDelta, err: %v", err)
 			continue

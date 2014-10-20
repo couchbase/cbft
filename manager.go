@@ -35,10 +35,10 @@ type Manager struct {
 	dataDir   string
 	server    string // The datasource that cbft will index.
 	m         sync.Mutex
-	feeds     map[string]Feed
-	pindexes  map[string]*PIndex
-	plannerCh chan string // Used to kick the planner that there's more work.
-	janitorCh chan string // Used to kick the janitor that there's more work.
+	feeds     map[string]Feed    // Key is Feed.Name().
+	pindexes  map[string]*PIndex // Key is PIndex.Name().
+	plannerCh chan string        // Used to kick the planner that there's more work.
+	janitorCh chan string        // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 }
 
