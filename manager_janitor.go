@@ -32,6 +32,10 @@ func (mgr *Manager) JanitorLoop() {
 			log.Printf("janitor skipped due to CfgGetPlanPIndexes err: %v", err)
 			continue
 		}
+		if planPIndexes == nil {
+			log.Printf("janitor skipped due to nil planPIndexes")
+			continue
+		}
 
 		startFeeds, startPIndexes := mgr.CurrentMaps()
 
