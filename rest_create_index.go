@@ -36,7 +36,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	// read the request body, which is treated as index mapping JSON bytes
-	requestBody, err := ioutil.ReadAll(req.Body)
+	indexMapping, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error reading request body: %v", err), 400)
 		return
@@ -44,7 +44,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	// TODO: bad assumption of bucketName == indexName right now.
 	// TODO: need a bucketUUID, or perhaps "" just means use latest.
-	err = h.mgr.CreateIndex("couchbase", indexName, "", indexName, requestBody)
+	err = h.mgr.CreateIndex("couchbase", indexName, "",
+		indexName, string(indexMapping))
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)

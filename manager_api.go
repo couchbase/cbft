@@ -22,7 +22,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	// TODO: what about auth info to be able to access bucket?
 	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
 	// TODO: what about hints for # of partitions, etc?
-	indexName string, indexMappingBytes []byte) error {
+	indexName, indexMapping string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	indexDef := &IndexDef{
 		Name:       indexName,
 		UUID:       uuid,
-		Mapping:    string(indexMappingBytes),
+		Mapping:    indexMapping,
 		SourceType: sourceType,
 		SourceName: sourceName,
 		SourceUUID: sourceUUID,
