@@ -30,7 +30,7 @@ type CfgMemEntry struct {
 	Val []byte
 }
 
-func NewCfgMem() Cfg {
+func NewCfgMem() *CfgMem {
 	return &CfgMem{
 		CASNext: 1,
 		Entries: make(map[string]*CfgMemEntry),

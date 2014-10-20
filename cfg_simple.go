@@ -25,10 +25,10 @@ type CfgSimple struct {
 	cfgMem *CfgMem
 }
 
-func NewCfgSimple(path string) Cfg {
+func NewCfgSimple(path string) *CfgSimple {
 	return &CfgSimple{
 		path:   path,
-		cfgMem: NewCfgMem().(*CfgMem),
+		cfgMem: NewCfgMem(),
 	}
 }
 

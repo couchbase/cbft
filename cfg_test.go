@@ -142,7 +142,7 @@ func TestCfgSimpleLoad(t *testing.T) {
 	}
 
 	c2 := NewCfgSimple(path)
-	if err := c2.(*CfgSimple).Load(); err != nil {
+	if err := c2.Load(); err != nil {
 		t.Errorf("expected Load() to work")
 	}
 	v, cas, err := c2.Get("a", 0)
