@@ -80,7 +80,7 @@ func TestManagerStart(t *testing.T) {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
 
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 	m = NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
 	if err := m.Start(false); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -94,7 +94,7 @@ func TestManagerStart(t *testing.T) {
 		t.Errorf("expected no node defs wanted")
 	}
 
-	cfg = NewCfgSimple()
+	cfg = NewCfgMem()
 	m = NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
@@ -288,7 +288,7 @@ func TestManagerRegisterFeed(t *testing.T) {
 }
 
 func TestCheckVersion(t *testing.T) {
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 	ok, err := CheckVersion(cfg, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected first version to win in brand new cfg")
@@ -323,7 +323,7 @@ func TestIndexDefs(t *testing.T) {
 		t.Errorf("UnmarshalIndexDefs err or mismatch")
 	}
 
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 	d3, cas, err := CfgGetIndexDefs(cfg)
 	if err != nil || cas != 0 || d3 != nil {
 		t.Errorf("CfgGetIndexDefs on new cfg should be nil")
@@ -355,7 +355,7 @@ func TestNodeDefs(t *testing.T) {
 		t.Errorf("UnmarshalNodeDefs err or mismatch")
 	}
 
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 	d3, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
 	if err != nil || cas != 0 || d3 != nil {
 		t.Errorf("CfgGetNodeDefs on new cfg should be nil")
@@ -387,7 +387,7 @@ func TestPlanPIndexes(t *testing.T) {
 		t.Errorf("UnmarshalPlanPIndexes err or mismatch")
 	}
 
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 	d3, cas, err := CfgGetPlanPIndexes(cfg)
 	if err != nil || cas != 0 || d3 != nil {
 		t.Errorf("CfgGetPlanPIndexes on new cfg should be nil")

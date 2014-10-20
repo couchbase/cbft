@@ -66,7 +66,7 @@ func main() {
 
 	// TODO: Use a real cfg one day.
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
-	cfg := NewCfgSimple()
+	cfg := NewCfgMem()
 
 	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
 	if err != nil {

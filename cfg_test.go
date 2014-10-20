@@ -15,15 +15,15 @@ import (
 	"testing"
 )
 
-func TestCfgSimple(t *testing.T) {
-	c := NewCfgSimple()
+func TestCfgMem(t *testing.T) {
+	c := NewCfgMem()
 	v, cas, err := c.Get("nope", 0)
 	if err != nil || v != nil || cas != 0 {
-		t.Errorf("expected Get() to miss on brand new CfgSimple")
+		t.Errorf("expected Get() to miss on brand new CfgMem")
 	}
 	v, cas, err = c.Get("nope", 100)
 	if err != nil || v != nil || cas != 0 {
-		t.Errorf("expected Get() to miss on brand new CfgSimple with wrong CAS")
+		t.Errorf("expected Get() to miss on brand new CfgMem with wrong CAS")
 	}
 	cas, err = c.Set("a", []byte("A"), 100)
 	if err == nil || cas != 0 {

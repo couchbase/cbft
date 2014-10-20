@@ -16,28 +16,28 @@ import (
 	"sync"
 )
 
-// Non-distributed, local-only, memory only implementation of Cfg
-// interface, useful for development and testing.
+// A local-only, memory-only implementation of Cfg interface, useful
+// for development and testing.
 
-type CfgSimple struct {
+type CfgMem struct {
 	m       sync.Mutex
 	casNext uint64
-	entries map[string]*CfgSimpleEntry
+	entries map[string]*CfgMemEntry
 }
 
-type CfgSimpleEntry struct {
+type CfgMemEntry struct {
 	cas uint64
 	val []byte
 }
 
-func NewCfgSimple() Cfg {
-	return &CfgSimple{
+func NewCfgMem() Cfg {
+	return &CfgMem{
 		casNext: 1,
-		entries: make(map[string]*CfgSimpleEntry),
+		entries: make(map[string]*CfgMemEntry),
 	}
 }
 
-func (c *CfgSimple) Get(key string, cas uint64) (
+func (c *CfgMem) Get(key string, cas uint64) (
 	[]byte, uint64, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -54,7 +54,7 @@ func (c *CfgSimple) Get(key string, cas uint64) (
 	return val, entry.cas, nil
 }
 
-func (c *CfgSimple) Set(key string, val []byte, cas uint64) (
+func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 	uint64, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -72,7 +72,7 @@ func (c *CfgSimple) Set(key string, val []byte, cas uint64) (
 			return 0, fmt.Errorf("error: mismatched cas, key: %s", key)
 		}
 	}
-	nextEntry := &CfgSimpleEntry{
+	nextEntry := &CfgMemEntry{
 		cas: c.casNext,
 		val: make([]byte, len(val)),
 	}
@@ -82,7 +82,7 @@ func (c *CfgSimple) Set(key string, val []byte, cas uint64) (
 	return nextEntry.cas, nil
 }
 
-func (c *CfgSimple) Del(key string, cas uint64) error {
+func (c *CfgMem) Del(key string, cas uint64) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
