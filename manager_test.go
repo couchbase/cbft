@@ -410,3 +410,38 @@ func TestPlanPIndexes(t *testing.T) {
 		t.Errorf("expected get to match first save")
 	}
 }
+
+func TestSamePlanPIndexes(t *testing.T) {
+	a := NewPlanPIndexes("0.0.1")
+	b := NewPlanPIndexes("0.0.1")
+	c := NewPlanPIndexes("0.1.0")
+
+	if !SamePlanPIndexes(a, b) {
+		t.Errorf("expected same, a: %v, b: %v", a, b)
+	}
+	if !SamePlanPIndexes(a, b) {
+		t.Errorf("expected same, a: %v, b: %v", a, b)
+	}
+	if !SamePlanPIndexes(a, c) {
+		t.Errorf("expected same, a: %v, c: %v", a, c)
+	}
+	if !SamePlanPIndexes(c, a) {
+		t.Errorf("expected same, a: %v, c: %v", a, c)
+	}
+
+	a.PlanPIndexes["foo"] = &PlanPIndex{
+		Name: "foo",
+	}
+	if SamePlanPIndexes(a, b) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+	if SamePlanPIndexes(b, a) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+	if SamePlanPIndexes(a, c) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+	if SamePlanPIndexes(c, a) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+}

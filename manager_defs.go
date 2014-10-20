@@ -13,6 +13,7 @@ package main
 
 import (
 	"encoding/json"
+	"reflect"
 )
 
 // JSON/struct definitions of what the Manager stores in the Cfg.
@@ -22,7 +23,7 @@ import (
 type IndexDefs struct {
 	// IndexDefs.UUID changes whenever any child IndexDef changes.
 	UUID        string               `json:"uuid"`
-	IndexDefs   map[string]*IndexDef `json:"indexDefs"`   // From Name -> IndexDef.
+	IndexDefs   map[string]*IndexDef `json:"indexDefs"`   // Key is IndexDef.Name.
 	ImplVersion string               `json:"implVersion"` // See VERSION.
 }
 
@@ -44,7 +45,7 @@ type IndexDef struct {
 type NodeDefs struct {
 	// NodeDefs.UUID changes whenever any child NodeDef changes.
 	UUID        string              `json:"uuid"`
-	NodeDefs    map[string]*NodeDef `json:"nodeDefs"`    // From HostPort -> NodeDef.
+	NodeDefs    map[string]*NodeDef `json:"nodeDefs"`    // Key is NodeDef.HostPort.
 	ImplVersion string              `json:"implVersion"` // See VERSION.
 }
 
@@ -61,7 +62,7 @@ type NodeDef struct {
 type PlanPIndexes struct {
 	// PlanPIndexes.UUID changes whenever any child PlanPIndex changes.
 	UUID         string                 `json:"uuid"`
-	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is IndexDef.UUID.
+	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is PlanPIndex.Name.
 	ImplVersion  string                 `json:"implVersion"`  // See VERSION.
 }
 
@@ -71,7 +72,7 @@ type PlanPIndex struct {
 	IndexUUID        string            `json:"indexUUID"` // See IndefDef.UUID.
 	Mapping          string            `json:"mapping"`   // See IndexDef.Mapping.
 	SourcePartitions string            `json:"sourcePartitions"`
-	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // See NodeDef.UUID.
+	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // Key is NodeDef.UUID.
 }
 
 // ------------------------------------------------------------------------
@@ -203,4 +204,41 @@ func CfgSetPlanPIndexes(cfg Cfg, planPIndexes *PlanPIndexes, cas uint64) (uint64
 		return 0, err
 	}
 	return cfg.Set(PLAN_PINDEXES_KEY, buf, cas)
+}
+
+// Returns true if both PlanPIndexes are the same, ignoring UUID &
+// ImplVersion.
+func SamePlanPIndexes(a, b *PlanPIndexes) bool {
+	if len(a.PlanPIndexes) != len(b.PlanPIndexes) {
+		return false
+	}
+	return SubsetPlanPIndexes(a, b) && SubsetPlanPIndexes(b, a)
+}
+
+// Returns true if PlanPIndex children in a are a subset of those in
+// b, using SamePlanPIndex() for sameness comparion.
+func SubsetPlanPIndexes(a, b *PlanPIndexes) bool {
+	for name, av := range a.PlanPIndexes {
+		bv, exists := b.PlanPIndexes[name]
+		if !exists {
+			return false
+		}
+		if !SamePlanPIndex(av, bv) {
+			return false
+		}
+	}
+	return true
+}
+
+// Returns true if both PlanPIndex are the same, ignoring PlanPIndex.UUID.
+func SamePlanPIndex(a, b *PlanPIndex) bool {
+	// Of note, we don't compare UUID's.
+	if a.Name != b.Name ||
+		a.IndexUUID != b.IndexUUID ||
+		a.Mapping != b.Mapping ||
+		a.SourcePartitions != b.SourcePartitions ||
+		!reflect.DeepEqual(a.NodeUUIDs, b.NodeUUIDs) {
+		return false
+	}
+	return true
 }

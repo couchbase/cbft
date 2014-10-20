@@ -89,6 +89,11 @@ func (mgr *Manager) PlannerLoop() {
 			log.Printf("error: CalcPlan, err: %v", err)
 		}
 		if planPIndexes != nil {
+			if SamePlanPIndexes(planPIndexes, planPIndexesPrev) {
+				log.Printf("planner found no changes")
+				continue
+			}
+
 			// TODO: We should only save the plan if it changed.
 
 			_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
@@ -110,12 +115,12 @@ func (mgr *Manager) PlannerLoop() {
 func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPIndexes,
 	version string) (
 	*PlanPIndexes, error) {
-	// First planner attempt here is naive & simple, where
-	// every single Index is "split" into a single PIndex (so all
-	// the datasource partitions (vbuckets) will feed into that
-	// single PIndex).  And, every single node has a replica
-	// of that PIndex.  This takes care of the "single node"
-	// requirement of a developer preview.
+	// First planner attempt here is naive & simple, where every
+	// single Index is "split" into just a single PIndex (so all the
+	// datasource partitions (vbuckets) will feed into that single
+	// PIndex).  And, every single node has a replica of that PIndex.
+	// This takes care of the "single node" requirement of a developer
+	// preview.
 	//
 	// TODO: Implement more advanced planners another day,
 	// - multiple PIndexes per Index.
@@ -132,7 +137,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 		_, exists := planPIndexes.PlanPIndexes[indexDef.UUID]
 		if !exists {
 			planPIndex := &PlanPIndex{
-				Name:             indexDef.Name, // This only works for simple 1-to-1.
+				// This name only works for simple 1-to-1.
+				Name:             indexDef.Name + "/" + indexDef.UUID,
 				UUID:             NewUUID(),
 				IndexUUID:        indexDef.UUID,
 				Mapping:          indexDef.Mapping,
@@ -143,7 +149,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 				planPIndex.NodeUUIDs[nodeDef.UUID] = "active" // TODO: better val needed.
 			}
 
-			planPIndexes.PlanPIndexes[indexDef.UUID] = planPIndex
+			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
 		}
 		// TODO: what if UUID's don't match?
 	}
