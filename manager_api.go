@@ -30,6 +30,10 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	if indexDefs == nil {
 		indexDefs = NewIndexDefs(mgr.version)
 	}
+	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
+		return fmt.Errorf("error: could not create index, indexDefs.ImplVersion: %s"+
+			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+	}
 
 	if _, exists := indexDefs.IndexDefs[indexName]; exists {
 		return fmt.Errorf("error: index exists, indexName: %s", indexName)
@@ -50,7 +54,8 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	indexDefs.IndexDefs[indexName] = indexDef
 	indexDefs.ImplVersion = mgr.version
 
-	// TODO: check the ImplVersion to see if our version is too old.
+	// NOTE: if our ImplVersion is still too old due to a race, we
+	// expect a more modern planner to catch it later.
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {

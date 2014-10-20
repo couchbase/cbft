@@ -79,7 +79,7 @@ func (mgr *Manager) PlannerLoop() {
 			planPIndexesPrev = NewPlanPIndexes(mgr.version)
 		}
 		if VersionGTE(mgr.version, planPIndexesPrev.ImplVersion) == false {
-			log.Printf("planner ended since planPIndexes.ImplVersion: %s"+
+			log.Printf("planner ended since planPIndexesPrev.ImplVersion: %s"+
 				" > mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
 			continue
 		}
