@@ -12,7 +12,6 @@
 package main
 
 type Feed interface {
-	// TODO: a feed might fan out to >1 Stream
 	Name() string
 	Start() error
 	Close() error

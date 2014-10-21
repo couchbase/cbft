@@ -25,7 +25,7 @@ type DCPFeed struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.UprFeed
-	streams    map[string]Stream // TODO: support fan-out to >1 Stream.
+	streams    map[string]Stream
 	closeCh    chan bool
 }
 
