@@ -217,11 +217,14 @@ func (mgr *Manager) StopFeed(feed Feed) error {
 // --------------------------------------------------------
 
 func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
-	indexName := pindex.Name // TODO: bad assumption of 1-to-1 pindex.name to indexName
+	// TODO: bad assumption of 1-to-1 pindex.name to indexName
+	indexName := pindex.IndexName
 
-	bucketName := indexName // TODO: read bucketName out of bleve storage.
-	bucketUUID := ""        // TODO: read bucketUUID & vbucket list from bleve storage.
+	// TODO: do more with SourceType, SourceName, SourceUUID.
+	bucketName := pindex.SourceName
+	bucketUUID := pindex.SourceUUID
 
+	// TODO: utiilzed SourcePartitions
 	streams := map[string]Stream{
 		"": pindex.Stream,
 	}
