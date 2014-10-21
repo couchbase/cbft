@@ -84,8 +84,8 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 	return nil
 }
 
+// Walk the data dir and register pindexes.
 func (mgr *Manager) LoadDataDir() error {
-	// walk the data dir and register pindexes
 	log.Printf("loading dataDir...")
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
@@ -95,6 +95,11 @@ func (mgr *Manager) LoadDataDir() error {
 
 	for _, dirInfo := range dirEntries {
 		path := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
+		_, ok := mgr.ParsePIndexPath(path)
+		if !ok {
+			continue // Skip the entry that doesn't match the naming pattern.
+		}
+
 		log.Printf("  opening pindex: %s", path)
 		pindex, err := OpenPIndex(path)
 		if err != nil {
@@ -106,6 +111,7 @@ func (mgr *Manager) LoadDataDir() error {
 		mgr.RegisterPIndex(pindex)
 	}
 
+	log.Printf("loading dataDir... done")
 	return nil
 }
 
