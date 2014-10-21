@@ -64,9 +64,23 @@ func main() {
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
-	// TODO: Use a real cfg one day.
+	// TODO: Need way to switch to different cfg provider.
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
-	cfg := NewCfgSimple(*dataDir + string(os.PathSeparator) + "cbft.cfg")
+
+	cfgPath := *dataDir + string(os.PathSeparator) + "cbft.cfg"
+	cfgPathExists := false
+	if _, err := os.Stat(cfgPath); err == nil {
+		cfgPathExists = true
+	}
+
+	cfg := NewCfgSimple(cfgPath)
+	if cfgPathExists {
+		err := cfg.Load()
+		if err != nil {
+			log.Fatalf("error: could not load cfg, cfgPath: %s, err: %v", cfgPath, err)
+			return
+		}
+	}
 
 	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
 	if err != nil {

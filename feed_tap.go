@@ -15,6 +15,7 @@ import (
 	"fmt"
 
 	"github.com/couchbase/gomemcached/client"
+	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
@@ -39,6 +40,7 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
 		bucket.Close()
 		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
 	}
+
 	rv := TAPFeed{
 		url:        url,
 		poolName:   poolName,
@@ -48,6 +50,9 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
 		streams:    streams,
 		closeCh:    make(chan bool),
 	}
+
+	log.Printf("NewTapFeed, name: %s", rv.Name())
+
 	return &rv, nil
 }
 
@@ -57,7 +62,9 @@ func (t *TAPFeed) Name() string {
 }
 
 func (t *TAPFeed) Start() error {
-	args := memcached.DefaultTapArguments()
+	log.Printf("TapFeed.Start, name: %s", t.Name())
+
+	args := memcached.TapArguments{}
 	feed, err := t.bucket.StartTapFeed(&args)
 	if err != nil {
 		return err
