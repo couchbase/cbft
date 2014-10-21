@@ -50,7 +50,7 @@ type Manager struct {
 func NewManager(version string, cfg Cfg, bindAddr, dataDir string,
 	server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
-		uuid:      NewUUID(),
+		uuid:      NewUUID(), // TODO: Manager.UUID needs to be stable across restarts.
 		startTime: time.Now(),
 		version:   version,
 		cfg:       cfg,
@@ -130,15 +130,24 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 		return nil // Occurs during testing.
 	}
 
-	nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
-	if err != nil {
-		return err
-	}
-	if nodeDefs == nil {
-		nodeDefs = NewNodeDefs(mgr.version)
-	}
-	nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
-	if !exists {
+	for {
+		nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
+		if err != nil {
+			return err
+		}
+		if nodeDefs == nil {
+			nodeDefs = NewNodeDefs(mgr.version)
+		}
+		nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+		if exists {
+			if nodeDef.UUID != mgr.uuid {
+				return fmt.Errorf("some other node is running at our bindAddr: %v,"+
+					" with different uuid: %s, than our uuid: %s",
+					mgr.bindAddr, nodeDef.UUID, mgr.uuid)
+			}
+			return nil
+		}
+
 		nodeDef = &NodeDef{
 			HostPort:    mgr.bindAddr, // TODO: need FQDN:port instead of ":8095".
 			UUID:        mgr.uuid,
@@ -147,21 +156,20 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 
 		nodeDefs.UUID = NewUUID()
 		nodeDefs.NodeDefs[mgr.bindAddr] = nodeDef
-		nodeDefs.ImplVersion = mgr.version
+		nodeDefs.ImplVersion = mgr.version // TODO: ImplVersion bump?
 
 		_, err = CfgSetNodeDefs(mgr.cfg, kind, nodeDefs, cas)
 		if err != nil {
-			// TODO: retry if it was a CAS mismatch, as perhaps
-			// multiple nodes are all racing to register themselves,
-			// such as in a full datacenter power restart.
+			if _, ok := err.(*CfgCASError); ok {
+				// Retry if it was a CAS mismatch, as perhaps
+				// multiple nodes are all racing to register themselves,
+				// such as in a full datacenter power restart.
+				continue
+			}
 			return err
 		}
+		break
 	}
-
-	if nodeDef.UUID != mgr.uuid {
-		// TODO: Check if our UUID (in dataDir) matches nodeDef.
-	}
-
 	return nil
 }
 
