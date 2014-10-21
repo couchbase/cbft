@@ -40,7 +40,7 @@ func (mgr *Manager) JanitorLoop() {
 		currFeeds, currPIndexes := mgr.CurrentMaps()
 
 		addPlanPIndexes, removePIndexes :=
-			CalcPIndexesDelta(currPIndexes, planPIndexes)
+			CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
 		log.Printf("janitor pindexes add: %v, remove: %v",
 			addPlanPIndexes, removePIndexes)
 
@@ -53,6 +53,8 @@ func (mgr *Manager) JanitorLoop() {
 		for _, removePIndex := range removePIndexes {
 			mgr.StopPIndex(removePIndex)
 		}
+
+		currFeeds, currPIndexes = mgr.CurrentMaps()
 
 		addFeeds, removeFeeds :=
 			CalcFeedsDelta(currFeeds, currPIndexes)
@@ -72,8 +74,9 @@ func (mgr *Manager) JanitorLoop() {
 }
 
 // Functionally determine the delta of which pindexes need creation
-// and which should be shut down.
-func CalcPIndexesDelta(currPIndexes map[string]*PIndex,
+// and which should be shut down on our local node (mgrUUID).
+func CalcPIndexesDelta(mgrUUID string,
+	currPIndexes map[string]*PIndex,
 	wantedPlanPIndexes *PlanPIndexes) (
 	addPlanPIndexes []*PlanPIndex,
 	removePIndexes []*PIndex) {
@@ -88,15 +91,22 @@ func CalcPIndexesDelta(currPIndexes map[string]*PIndex,
 	// For each wanted plan pindex, if a pindex does not exist or is
 	// different, then schedule to add.
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
-		mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
+	nodeUUIDs:
+		for _, nodeUUID := range wantedPlanPIndex.NodeUUIDs {
+			if nodeUUID == mgrUUID {
+				mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
 
-		currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
-		if !exists {
-			addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
-		} else if PIndexMatchesPlan(currPIndex, wantedPlanPIndex) == false {
-			addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
-			removePIndexes = append(removePIndexes, currPIndex)
-			mapRemovePIndex[currPIndex.Name] = currPIndex
+				currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
+				if !exists {
+					addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+				} else if PIndexMatchesPlan(currPIndex, wantedPlanPIndex) == false {
+					addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+					removePIndexes = append(removePIndexes, currPIndex)
+					mapRemovePIndex[currPIndex.Name] = currPIndex
+				}
+
+				break nodeUUIDs
+			}
 		}
 	}
 
@@ -122,7 +132,7 @@ func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	removeFeeds = make([]Feed, 0)
 
 	for _, pindex := range pindexes {
-		addFeedName := FeedName("default", pindex.Name, "")
+		addFeedName := FeedName("default", pindex.SourceName, "")
 		if _, ok := currFeeds[addFeedName]; !ok {
 			addFeeds = append(addFeeds, []*PIndex{pindex})
 		}
