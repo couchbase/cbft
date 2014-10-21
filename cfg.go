@@ -11,6 +11,8 @@
 
 package main
 
+// TODO: need a special error code for cas mismatch on Set()/Del()
+
 type Cfg interface {
 	// A zero cas means don't do a CAS match on Get().
 	Get(key string, cas uint64) (val []byte, casSuccess uint64, err error)

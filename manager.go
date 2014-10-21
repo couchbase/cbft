@@ -21,6 +21,11 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
+type WorkReq struct {
+	msg   string
+	resCh chan error
+}
+
 type ManagerEventHandlers interface {
 	OnRegisterPIndex(pindex *PIndex)
 	OnUnregisterPIndex(pindex *PIndex)
@@ -37,8 +42,8 @@ type Manager struct {
 	m         sync.Mutex
 	feeds     map[string]Feed    // Key is Feed.Name().
 	pindexes  map[string]*PIndex // Key is PIndex.Name().
-	plannerCh chan string        // Used to kick the planner that there's more work.
-	janitorCh chan string        // Used to kick the janitor that there's more work.
+	plannerCh chan *WorkReq      // Used to kick the planner that there's more work.
+	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 }
 
@@ -54,8 +59,8 @@ func NewManager(version string, cfg Cfg, bindAddr, dataDir string,
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),
-		plannerCh: make(chan string),
-		janitorCh: make(chan string),
+		plannerCh: make(chan *WorkReq),
+		janitorCh: make(chan *WorkReq),
 		meh:       meh,
 	}
 }
@@ -76,10 +81,14 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 	}
 
 	go mgr.PlannerLoop()
-	mgr.plannerCh <- "start"
+	resCh := make(chan error)
+	mgr.plannerCh <- &WorkReq{msg: "start", resCh: resCh}
+	<-resCh
 
 	go mgr.JanitorLoop()
-	mgr.janitorCh <- "start"
+	resCh = make(chan error)
+	mgr.janitorCh <- &WorkReq{msg: "start", resCh: resCh}
+	<-resCh
 
 	return nil
 }
@@ -87,6 +96,7 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 // Walk the data dir and register pindexes.
 func (mgr *Manager) LoadDataDir() error {
 	log.Printf("loading dataDir...")
+
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
 		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
@@ -141,6 +151,9 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 
 		_, err = CfgSetNodeDefs(mgr.cfg, kind, nodeDefs, cas)
 		if err != nil {
+			// TODO: retry if it was a CAS mismatch, as perhaps
+			// multiple nodes are all racing to register themselves,
+			// such as in a full datacenter power restart.
 			return err
 		}
 	}

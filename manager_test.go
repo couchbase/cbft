@@ -107,6 +107,36 @@ func TestManagerStart(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
+
+	cfg = NewCfgMem()
+	m = NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
+	if err := m.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err != nil {
+		t.Errorf("expected CreateIndex() to work, err: %v", err)
+	}
+	close(m.plannerCh)
+	feeds, pindexes := m.CurrentMaps()
+	if len(feeds) != 0 || len(pindexes) != 1 {
+		t.Errorf("expected to be 1 pindex, got feeds: %+v, pindexes: %+v",
+			feeds, pindexes)
+	}
+	for _, pindex := range pindexes {
+		pindex.BIndex.Close()
+	}
+
+	m2 := NewManager(VERSION, cfg, ":1000", emptyDir, "some-datasource", nil)
+	m2.uuid = m.uuid
+	if err := m2.Start(true); err != nil {
+		t.Errorf("expected reload Manager.Start() to work, err: %v", err)
+	}
+	close(m2.plannerCh)
+	feeds, pindexes = m2.CurrentMaps()
+	if len(feeds) != 0 || len(pindexes) != 1 {
+		t.Errorf("expected to load 1 pindex, got feeds: %+v, pindexes: %+v",
+			feeds, pindexes)
+	}
 }
 
 func TestManagerRegisterPIndex(t *testing.T) {

@@ -19,56 +19,85 @@ import (
 
 // A janitor maintains feeds, creating and deleting as necessary.
 func (mgr *Manager) JanitorLoop() {
-	for reason := range mgr.janitorCh {
-		log.Printf("janitor awakes, reason: %s", reason)
-
-		if mgr.cfg == nil { // Can occur during testing.
-			log.Printf("janitor skipped due to nil cfg")
-			continue
-		}
-
-		planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
-		if err != nil {
-			log.Printf("janitor skipped due to CfgGetPlanPIndexes err: %v", err)
-			continue
-		}
-		if planPIndexes == nil {
-			log.Printf("janitor skipped due to nil planPIndexes")
-			continue
-		}
-
-		currFeeds, currPIndexes := mgr.CurrentMaps()
-
-		addPlanPIndexes, removePIndexes :=
-			CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
-		log.Printf("janitor pindexes add: %+v, remove: %+v",
-			addPlanPIndexes, removePIndexes)
-
-		// First, teardown pindexes that need to be removed.
-		for _, removePIndex := range removePIndexes {
-			mgr.StopPIndex(removePIndex)
-		}
-		// Then, (re-)create pindexes that we're missing.
-		for _, addPlanPIndex := range addPlanPIndexes {
-			mgr.StartPIndex(addPlanPIndex)
-		}
-
-		currFeeds, currPIndexes = mgr.CurrentMaps()
-
-		addFeeds, removeFeeds :=
-			CalcFeedsDelta(currFeeds, currPIndexes)
-		log.Printf("janitor feeds add: %+v, remove: %+v",
-			addFeeds, removeFeeds)
-
-		// First, teardown feeds that need to be removed.
-		for _, removeFeed := range removeFeeds {
-			mgr.StopFeed(removeFeed)
-		}
-		// Then, (re-)create feeds that we're missing.
-		for _, targetPindexes := range addFeeds {
-			mgr.StartFeed(targetPindexes)
+	for m := range mgr.janitorCh {
+		mgr.JanitorOnce(m.msg)
+		if m.resCh != nil {
+			close(m.resCh)
 		}
 	}
+}
+
+func (mgr *Manager) JanitorOnce(reason string) bool {
+	log.Printf("janitor awakes, reason: %s", reason)
+
+	if mgr.cfg == nil { // Can occur during testing.
+		log.Printf("janitor skipped due to nil cfg")
+		return false
+	}
+
+	planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
+	if err != nil {
+		log.Printf("janitor skipped due to CfgGetPlanPIndexes err: %v", err)
+		return false
+	}
+	if planPIndexes == nil {
+		log.Printf("janitor skipped due to nil planPIndexes")
+		return false
+	}
+
+	currFeeds, currPIndexes := mgr.CurrentMaps()
+
+	addPlanPIndexes, removePIndexes :=
+		CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
+	log.Printf("janitor pindexes to add:")
+	for _, ppi := range addPlanPIndexes {
+		log.Printf("  %+v", ppi)
+	}
+	log.Printf("janitor pindexes to remove:")
+	for _, pi := range removePIndexes {
+		log.Printf("  %+v", pi)
+	}
+
+	// First, teardown pindexes that need to be removed.
+	for _, removePIndex := range removePIndexes {
+		log.Printf("removing pindex: %s", removePIndex.Name)
+		err = mgr.StopPIndex(removePIndex)
+		if err != nil {
+			log.Printf("removing pindex: %s, err: %v", removePIndex.Name, err)
+		}
+	}
+	// Then, (re-)create pindexes that we're missing.
+	for _, addPlanPIndex := range addPlanPIndexes {
+		log.Printf("adding pindex: %s", addPlanPIndex.Name)
+		err = mgr.StartPIndex(addPlanPIndex)
+		if err != nil {
+			log.Printf("adding pindex: %s, err: %v", addPlanPIndex.Name, err)
+		}
+	}
+
+	currFeeds, currPIndexes = mgr.CurrentMaps()
+
+	addFeeds, removeFeeds :=
+		CalcFeedsDelta(currFeeds, currPIndexes)
+	log.Printf("janitor feeds add: %+v, remove: %+v",
+		addFeeds, removeFeeds)
+
+	// First, teardown feeds that need to be removed.
+	for _, removeFeed := range removeFeeds {
+		err = mgr.StopFeed(removeFeed)
+		if err != nil {
+			log.Printf("  removing feed: %s, err: %v", removeFeed.Name, err)
+		}
+	}
+	// Then, (re-)create feeds that we're missing.
+	for _, targePIndexes := range addFeeds {
+		mgr.StartFeed(targePIndexes)
+		if err != nil {
+			log.Printf("  adding feed, err: %v", err)
+		}
+	}
+
+	return true
 }
 
 // Functionally determine the delta of which pindexes need creation
@@ -175,8 +204,9 @@ func (mgr *Manager) StopPIndex(pindex *PIndex) error {
 
 				}
 
-				// TODO: Need to synchronously wait for feed to close,
-				// so we know it won't write to its streams anymore.
+				// NOTE: We're depending on feed to synchronously
+				// close, where we know it will no longer be writing
+				// any pindex streams anymore.
 				if err := feed.Close(); err != nil {
 					panic(fmt.Sprintf("error: could not close feed, err: %v", err))
 				}
@@ -259,15 +289,17 @@ func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
 // --------------------------------------------------------
 
 func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
-	same :=
-		pindex.Name == planPIndex.Name &&
-			pindex.UUID == planPIndex.UUID &&
-			pindex.IndexName == planPIndex.IndexName &&
-			pindex.IndexUUID == planPIndex.IndexUUID &&
-			pindex.IndexMapping == planPIndex.IndexMapping &&
-			pindex.SourceType == planPIndex.SourceType &&
-			pindex.SourceName == planPIndex.SourceName &&
-			pindex.SourceUUID == planPIndex.SourceUUID &&
-			pindex.SourcePartitions == planPIndex.SourcePartitions
+	same := pindex.Name == planPIndex.Name &&
+		pindex.IndexName == planPIndex.IndexName &&
+		pindex.IndexUUID == planPIndex.IndexUUID &&
+		pindex.IndexMapping == planPIndex.IndexMapping &&
+		pindex.SourceType == planPIndex.SourceType &&
+		pindex.SourceName == planPIndex.SourceName &&
+		pindex.SourceUUID == planPIndex.SourceUUID &&
+		pindex.SourcePartitions == planPIndex.SourcePartitions
+	if !same {
+		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
+			pindex, planPIndex)
+	}
 	return same
 }
