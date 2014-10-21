@@ -12,6 +12,8 @@
 package main
 
 import (
+	"fmt"
+
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -27,7 +29,16 @@ func (mgr *Manager) PlannerKick(msg string) {
 
 func (mgr *Manager) PlannerLoop() {
 	for m := range mgr.plannerCh {
-		mgr.PlannerOnce(m.msg)
+		changed, err := mgr.PlannerOnce(m.msg)
+		if err != nil {
+			log.Printf("error: PlannerOnce, err: %v", err)
+			// Keep looping as perhaps it's a transient issue.
+		} else if changed {
+			// TODO: need some distributed notify/event facility,
+			// perhaps in the Cfg, to kick any remote janitors.
+			//
+			mgr.JanitorKick("the plans have changed")
+		}
 		if m.resCh != nil {
 			close(m.resCh)
 		}
@@ -36,96 +47,77 @@ func (mgr *Manager) PlannerLoop() {
 	close(mgr.janitorCh)
 }
 
-func (mgr *Manager) PlannerOnce(reason string) bool {
+func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	log.Printf("planner awakes, reason: %s", reason)
 
 	if mgr.cfg == nil { // Can occur during testing.
-		log.Printf("planner skipped due to nil cfg")
-		return false
+		return false, fmt.Errorf("planner skipped due to nil cfg")
 	}
 	ok, err := CheckVersion(mgr.cfg, mgr.version)
 	if err != nil {
-		log.Printf("planner skipped due to CheckVersion err: %v", err)
-		return false
+		return false, fmt.Errorf("planner skipped on CheckVersion err: %v", err)
 	}
 	if !ok {
-		log.Printf("planner skipped because version is too low: %v",
+		return false, fmt.Errorf("planner skipped with version too low: %v",
 			mgr.version)
-		return false
 	}
 
 	// TODO: What about downgrades?
 
 	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
-		log.Printf("planner skipped due to CfgGetIndexDefs err: %v", err)
-		return false
+		return false, fmt.Errorf("planner skipped on CfgGetIndexDefs err: %v", err)
 	}
 	if indexDefs == nil {
-		log.Printf("planner ended since no IndexDefs")
-		return false
+		return false, fmt.Errorf("planner ended since no IndexDefs")
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		log.Printf("planner ended since indexDefs.ImplVersion: %s"+
+		return false, fmt.Errorf("planner ended since indexDefs.ImplVersion: %s"+
 			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
-		return false
 	}
 
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.cfg, NODE_DEFS_WANTED)
 	if err != nil {
-		log.Printf("planner skipped due to CfgGetNodeDefs err: %v", err)
-		return false
+		return false, fmt.Errorf("planner skipped on CfgGetNodeDefs err: %v", err)
 	}
 	if nodeDefs == nil {
-		log.Printf("planner ended since no NodeDefs")
-		return false
+		return false, fmt.Errorf("planner ended since no NodeDefs")
 	}
 	if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
-		log.Printf("planner ended since nodeDefs.ImplVersion: %s"+
+		return false, fmt.Errorf("planner ended since nodeDefs.ImplVersion: %s"+
 			" > mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
-		return false
 	}
 
 	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(mgr.cfg)
 	if err != nil {
-		log.Printf("planner skipped due to CfgGetPlanPIndexes err: %v", err)
-		return false
+		return false, fmt.Errorf("planner skipped on CfgGetPlanPIndexes err: %v", err)
 	}
 	if planPIndexesPrev == nil {
 		planPIndexesPrev = NewPlanPIndexes(mgr.version)
 	}
 	if VersionGTE(mgr.version, planPIndexesPrev.ImplVersion) == false {
-		log.Printf("planner ended since planPIndexesPrev.ImplVersion: %s"+
+		return false, fmt.Errorf("planner ended on planPIndexesPrev.ImplVersion: %s"+
 			" > mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
-		return false
 	}
 
 	planPIndexes, err := CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version)
 	if err != nil {
-		log.Printf("error: CalcPlan, err: %v", err)
+		return false, fmt.Errorf("planner ended on CalcPlan, err: %v", err)
 	}
 	if planPIndexes == nil {
-		log.Printf("planner found no plans from CalcPlan()")
-		return false
+		return false, fmt.Errorf("planner found no plans from CalcPlan")
 	}
 	if SamePlanPIndexes(planPIndexes, planPIndexesPrev) {
-		log.Printf("planner found no changes")
-		return false
+		return false, nil
 	}
 	_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
 	if err != nil {
-		log.Printf("planner could not save new plan,"+
+		return true, fmt.Errorf("planner could not save new plan,"+
 			" perhaps a concurrent planner won, cas: %d, err: %v",
 			cas, err)
-		return false
 	}
 
-	// TODO: need some distributed notify/event facility,
-	// perhaps in the Cfg, to kick any remote janitors.
-	//
-	mgr.JanitorKick("the plans have changed")
-
-	return true
+	return true, nil
 }
 
 // Split logical indexes into Pindexes and assign PIndexes to nodes.
