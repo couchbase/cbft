@@ -23,7 +23,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	indexName, indexMapping string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("error: CfgGetIndexDefs err: %v", err)
 	}
 	if indexDefs == nil {
 		indexDefs = NewIndexDefs(mgr.version)
