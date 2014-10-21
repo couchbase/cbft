@@ -46,8 +46,13 @@ func (c *CfgSimple) Set(key string, val []byte, cas uint64) (
 	defer c.m.Unlock()
 
 	cas, err := c.cfgMem.Set(key, val, cas)
-	if err == nil {
-		err = c.unlockedSave()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c.unlockedSave()
+	if err != nil {
+		return 0, err
 	}
 	return cas, err
 }
@@ -57,10 +62,10 @@ func (c *CfgSimple) Del(key string, cas uint64) error {
 	defer c.m.Unlock()
 
 	err := c.cfgMem.Del(key, cas)
-	if err == nil {
-		err = c.unlockedSave()
+	if err != nil {
+		return err
 	}
-	return err
+	return c.unlockedSave()
 }
 
 func (c *CfgSimple) Load() error {

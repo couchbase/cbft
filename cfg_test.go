@@ -133,10 +133,15 @@ func TestCfgSimpleLoad(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
+	c := NewCfgSimple(emptyDir + string(os.PathSeparator) + "not-a-file.cfg")
+	if err := c.Load(); err == nil {
+		t.Errorf("expected Load() to fail on bogus file")
+	}
+
 	path := emptyDir + string(os.PathSeparator) + "test.cfg"
 
-	c := NewCfgSimple(path)
-	cas1, err := c.Set("a", []byte("A"), 0)
+	c1 := NewCfgSimple(path)
+	cas1, err := c1.Set("a", []byte("A"), 0)
 	if err != nil || cas1 != 1 {
 		t.Errorf("expected Set() on initial cfg simple")
 	}
@@ -151,5 +156,21 @@ func TestCfgSimpleLoad(t *testing.T) {
 	}
 	if string(v) != "A" {
 		t.Errorf("exepcted to read what we wrote")
+	}
+
+	badPath := emptyDir + string(os.PathSeparator) + "bad.cfg"
+	ioutil.WriteFile(badPath, []byte("}hey this is bad json :-{"), 0600)
+	c3 := NewCfgSimple(badPath)
+	if err = c3.Load(); err == nil {
+		t.Errorf("expected Load() to fail on bad json file")
+	}
+}
+
+func TestCfgSimpleSave(t *testing.T) {
+	path := "totally/not/a/dir/test.cfg"
+	c1 := NewCfgSimple(path)
+	cas, err := c1.Set("a", []byte("A"), 0)
+	if err == nil || cas != 0 {
+		t.Errorf("expected Save() to bad dir to fail")
 	}
 }
