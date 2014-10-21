@@ -16,6 +16,7 @@ type Feed interface {
 	Name() string
 	Start() error
 	Close() error
+	Streams() map[string]Stream // Key is partition identifier.
 }
 
 func FeedName(poolName, bucketName, bucketUUID string) string {

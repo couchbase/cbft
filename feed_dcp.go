@@ -25,11 +25,11 @@ type DCPFeed struct {
 	bucketUUID string
 	bucket     *couchbase.Bucket
 	feed       *couchbase.UprFeed
-	stream     Stream // TODO: support fan-out to >1 Stream.
+	streams    map[string]Stream // TODO: support fan-out to >1 Stream.
 }
 
 func NewDCPFeed(url, poolName, bucketName, bucketUUID string,
-	stream Stream) (*DCPFeed, error) {
+	streams map[string]Stream) (*DCPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func NewDCPFeed(url, poolName, bucketName, bucketUUID string,
 		bucketName: bucketName,
 		bucketUUID: bucket.UUID,
 		bucket:     bucket, // TODO: need to close bucket on cleanup.
-		stream:     stream,
+		streams:    streams,
 	}
 	return &rv, nil
 }
@@ -74,15 +74,19 @@ func (t *DCPFeed) Start() error {
 	}
 	t.feed = feed
 	go func() {
-		defer close(t.stream) // TODO: figure out close responsibility.
+		defer func() {
+			for _, stream := range t.streams {
+				close(stream) // TODO: figure out close responsibility.
+			}
+		}()
 		for uprEvent := range feed.C {
 			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
-				t.stream <- &StreamUpdate{
+				t.streams[""] <- &StreamUpdate{
 					id:   uprEvent.Key,
 					body: uprEvent.Value,
 				}
 			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
-				t.stream <- &StreamDelete{
+				t.streams[""] <- &StreamDelete{
 					id: uprEvent.Key,
 				}
 			}
@@ -93,4 +97,8 @@ func (t *DCPFeed) Start() error {
 
 func (t *DCPFeed) Close() error {
 	return t.feed.Close()
+}
+
+func (t *DCPFeed) Streams() map[string]Stream {
+	return t.streams
 }

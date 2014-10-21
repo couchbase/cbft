@@ -30,3 +30,7 @@ func (t *ErrorOnlyFeed) Start() error {
 func (t *ErrorOnlyFeed) Close() error {
 	return fmt.Errorf("ErrorOnlyFeed Close() invoked")
 }
+
+func (t *ErrorOnlyFeed) Streams() map[string]Stream {
+	return nil
+}

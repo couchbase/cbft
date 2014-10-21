@@ -147,6 +147,17 @@ func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
 }
 
 func (mgr *Manager) StopPIndex(pindex *PIndex) error {
+	currFeeds, _ := mgr.CurrentMaps()
+	for _, currFeed := range currFeeds {
+		for _, stream := range currFeed.Streams() {
+			if stream == pindex.Stream {
+				if err := currFeed.Close(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	// TODO.
 	return nil
 }
@@ -178,8 +189,11 @@ func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
 
 	bucketName := indexName // TODO: read bucketName out of bleve storage.
 	bucketUUID := ""        // TODO: read bucketUUID & vbucket list from bleve storage.
-	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID,
-		pindex.Stream)
+
+	streams := map[string]Stream{
+		"": pindex.Stream,
+	}
+	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID, streams)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
