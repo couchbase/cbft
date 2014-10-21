@@ -142,7 +142,25 @@ func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 // --------------------------------------------------------
 
 func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
-	// TODO.
+	pindex, err := NewPIndex(planPIndex.Name, NewUUID(),
+		planPIndex.IndexName,
+		planPIndex.IndexUUID,
+		planPIndex.IndexMapping,
+		planPIndex.SourceType,
+		planPIndex.SourceName,
+		planPIndex.SourceUUID,
+		planPIndex.SourcePartitions,
+		mgr.PIndexPath(planPIndex.Name))
+	if err != nil {
+		return fmt.Errorf("error: NewPIndex, name: %s, err: %v",
+			planPIndex.Name, err)
+	}
+
+	if err = mgr.RegisterPIndex(pindex); err != nil {
+		close(pindex.Stream)
+		return err
+	}
+
 	return nil
 }
 
@@ -167,7 +185,7 @@ func (mgr *Manager) StopPIndex(pindex *PIndex) error {
 	}
 
 	pindexUnreg := mgr.UnregisterPIndex(pindex.Name)
-	if pindexUnreg != pindex {
+	if pindexUnreg != nil && pindexUnreg != pindex {
 		panic("unregistered pindex isn't the one we're stopping")
 	}
 

@@ -142,7 +142,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			// TODO: More advanced planners will probably have to
 			// incorporate SourcePartitions info into the
 			// PlanPIndex.Name.
-			Name:             indexDef.Name + "/" + indexDef.UUID,
+			Name:             indexDef.Name + "_" + indexDef.UUID,
 			UUID:             NewUUID(),
 			IndexName:        indexDef.Name,
 			IndexUUID:        indexDef.UUID,
