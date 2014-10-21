@@ -140,6 +140,7 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 		}
 		nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
 		if exists {
+			// TODO: need a way to force overwrite other node's UUID?
 			if nodeDef.UUID != mgr.uuid {
 				return fmt.Errorf("some other node is running at our bindAddr: %v,"+
 					" with different uuid: %s, than our uuid: %s",
