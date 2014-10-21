@@ -39,42 +39,34 @@ func (mgr *Manager) JanitorLoop() {
 
 		currFeeds, currPIndexes := mgr.CurrentMaps()
 
-		neededPlanPIndexes, unneededPIndexes, err :=
+		addPlanPIndexes, removePIndexes :=
 			CalcPIndexesDelta(currPIndexes, planPIndexes)
-		if err != nil {
-			log.Printf("janitor skipped due to CalcPIndexesDelta, err: %v", err)
-			continue
-		}
-		log.Printf("janitor pindexes needed: %v, unneeded: %v",
-			neededPlanPIndexes, unneededPIndexes)
+		log.Printf("janitor pindexes add: %v, remove: %v",
+			addPlanPIndexes, removePIndexes)
 
 		// Create pindexes that we're missing.
-		for _, neededPlanPIndex := range neededPlanPIndexes {
-			mgr.StartPIndex(neededPlanPIndex)
+		for _, addPlanPIndex := range addPlanPIndexes {
+			mgr.StartPIndex(addPlanPIndex)
 		}
 
-		// Teardown unneeded pindexes.
-		for _, unneededPIndex := range unneededPIndexes {
-			mgr.StopPIndex(unneededPIndex)
+		// Teardown pindexes that need to be removed.
+		for _, removePIndex := range removePIndexes {
+			mgr.StopPIndex(removePIndex)
 		}
 
-		neededFeeds, unneededFeeds, err :=
+		addFeeds, removeFeeds :=
 			CalcFeedsDelta(currFeeds, currPIndexes)
-		if err != nil {
-			log.Printf("janitor skipped due to CalcFeedsDelta, err: %v", err)
-			continue
-		}
-		log.Printf("janitor feeds needed: %v, unneeded: %v",
-			neededFeeds, unneededFeeds)
+		log.Printf("janitor feeds add: %v, remove: %v",
+			addFeeds, removeFeeds)
 
 		// Create feeds that we're missing.
-		for _, targetPindexes := range neededFeeds {
+		for _, targetPindexes := range addFeeds {
 			mgr.StartFeed(targetPindexes)
 		}
 
-		// Teardown unneeded feeds.
-		for _, unneededFeed := range unneededFeeds {
-			mgr.StopFeed(unneededFeed)
+		// Teardown feeds that need to be removed.
+		for _, removeFeed := range removeFeeds {
+			mgr.StopFeed(removeFeed)
 		}
 	}
 }
@@ -83,41 +75,60 @@ func (mgr *Manager) JanitorLoop() {
 // and which should be shut down.
 func CalcPIndexesDelta(currPIndexes map[string]*PIndex,
 	wantedPlanPIndexes *PlanPIndexes) (
-	neededPlanPIndex []*PlanPIndex, unneededPIndex []*PIndex, err error) {
-	neededPlanPIndex = make([]*PlanPIndex, 0)
-	unneededPIndex = make([]*PIndex, 0)
+	addPlanPIndexes []*PlanPIndex,
+	removePIndexes []*PIndex) {
+	// Allocate our return arrays.
+	addPlanPIndexes = make([]*PlanPIndex, 0)
+	removePIndexes = make([]*PIndex, 0)
 
-	// for each wanted plan pindex, if pindex does not exist, then add to needed PlanPIndex
-	// for each existing pindex, if not part of wanted plan pindex
+	// Just for fast transient lookups.
+	mapWantedPlanPIndex := make(map[string]*PlanPIndex)
+	mapRemovePIndex := make(map[string]*PIndex)
 
+	// For each wanted plan pindex, if a pindex does not exist or is
+	// different, then schedule to add.
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
+		mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
+
 		currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
-		if !exists ||
-			currPIndex.Name != wantedPlanPIndex.Name ||
-			currPIndex.UUID != wantedPlanPIndex.UUID {
-			// TODO: Check for change in index mapping bytes.
-			neededPlanPIndex = append(neededPlanPIndex, wantedPlanPIndex)
+		if !exists {
+			addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+		} else if PIndexMatchesPlan(currPIndex, wantedPlanPIndex) == false {
+			addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+			removePIndexes = append(removePIndexes, currPIndex)
+			mapRemovePIndex[currPIndex.Name] = currPIndex
 		}
 	}
 
-	return neededPlanPIndex, unneededPIndex, nil
+	// For each existing pindex, if not part of wanted plan pindex,
+	// then schedule for removal.
+	for _, currPIndex := range currPIndexes {
+		if _, exists := mapWantedPlanPIndex[currPIndex.Name]; !exists {
+			if _, exists = mapRemovePIndex[currPIndex.Name]; !exists {
+				removePIndexes = append(removePIndexes, currPIndex)
+				mapRemovePIndex[currPIndex.Name] = currPIndex
+			}
+		}
+	}
+
+	return addPlanPIndexes, removePIndexes
 }
 
 // Functionally determine the delta of which feeds need creation and
 // which should be shut down.
 func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
-	neededFeeds [][]*PIndex, unneededFeeds []Feed, err error) {
-	neededFeeds = make([][]*PIndex, 0)
-	unneededFeeds = make([]Feed, 0)
+	addFeeds [][]*PIndex, removeFeeds []Feed) {
+	addFeeds = make([][]*PIndex, 0)
+	removeFeeds = make([]Feed, 0)
 
 	for _, pindex := range pindexes {
-		neededFeedName := FeedName("default", pindex.Name, "")
-		if _, ok := currFeeds[neededFeedName]; !ok {
-			neededFeeds = append(neededFeeds, []*PIndex{pindex})
+		addFeedName := FeedName("default", pindex.Name, "")
+		if _, ok := currFeeds[addFeedName]; !ok {
+			addFeeds = append(addFeeds, []*PIndex{pindex})
 		}
 	}
 
-	return neededFeeds, unneededFeeds, nil
+	return addFeeds, removeFeeds
 }
 
 // --------------------------------------------------------
@@ -186,4 +197,20 @@ func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
 	}
 
 	return nil
+}
+
+// --------------------------------------------------------
+
+func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
+	same :=
+		pindex.Name == planPIndex.Name &&
+			pindex.UUID == planPIndex.UUID &&
+			pindex.IndexName == planPIndex.IndexName &&
+			pindex.IndexUUID == planPIndex.IndexUUID &&
+			pindex.IndexMapping == planPIndex.IndexMapping &&
+			pindex.SourceType == planPIndex.SourceType &&
+			pindex.SourceName == planPIndex.SourceName &&
+			pindex.SourceUUID == planPIndex.SourceUUID &&
+			pindex.SourcePartitions == planPIndex.SourcePartitions
+	return same
 }
