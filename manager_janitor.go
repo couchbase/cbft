@@ -147,18 +147,33 @@ func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
 }
 
 func (mgr *Manager) StopPIndex(pindex *PIndex) error {
-	currFeeds, _ := mgr.CurrentMaps()
-	for _, currFeed := range currFeeds {
-		for _, stream := range currFeed.Streams() {
+	feeds, _ := mgr.CurrentMaps()
+feedLoop:
+	for _, feed := range feeds {
+		for _, stream := range feed.Streams() {
 			if stream == pindex.Stream {
-				if err := currFeed.Close(); err != nil {
+				feedUnreg := mgr.UnregisterFeed(feed.Name())
+				if feedUnreg != feed {
+					panic("unregistered feed isn't the one we're closing")
+				}
+				if err := feed.Close(); err != nil {
 					return err
 				}
+
+				// TODO: Need to synchronously wait for feed to close,
+				// so we know it won't write to its streams anymore.
+				continue feedLoop
 			}
 		}
 	}
 
-	// TODO.
+	pindexUnreg := mgr.UnregisterPIndex(pindex.Name)
+	if pindexUnreg != pindex {
+		panic("unregistered pindex isn't the one we're stopping")
+	}
+
+	close(pindex.Stream)
+
 	return nil
 }
 

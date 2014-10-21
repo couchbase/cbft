@@ -13,8 +13,6 @@ package main
 
 import (
 	"fmt"
-
-	log "github.com/couchbaselabs/clog"
 )
 
 // Creates a logical index, which might be comprised of many PIndex objects.
@@ -69,30 +67,37 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 
 // Deletes a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) DeleteIndex(indexName string) error {
-	// TODO - rewrite all this to update the Cfg and kick the planner.
-	// Later, we need the Janitor to do all the below work to avoid a
-	// concurrency race where it recreates feeds right after we
-	// unregister them.  mgr.janitorCh <- true
-	//
-	// try to stop the feed
-	// TODO: should be unregistering all feeds (multiple).
-	feed := mgr.UnregisterFeed(indexName)
-	if feed != nil {
-		// TODO: This needs to be synchronous so that we know that
-		// feeds have stopped sending to their Streams.
-		err := feed.Close()
-		if err != nil {
-			log.Printf("error closing stream: %v", err)
-		}
-		// Not returning error here because we still want to try and
-		// close the Stream and PIndex.
+	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
+	if err != nil {
+		return err
+	}
+	if indexDefs == nil {
+		return fmt.Errorf("error: indexes do not exist during deletion of indexName: %s",
+			indexName)
+	}
+	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
+		return fmt.Errorf("error: could not delete index, indexDefs.ImplVersion: %s"+
+			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
 	}
 
-	pindex := mgr.UnregisterPIndex(indexName)
-	if pindex != nil {
-		// TODO: what about any inflight queries or ops?
-		close(pindex.Stream)
+	if _, exists := indexDefs.IndexDefs[indexName]; !exists {
+		return fmt.Errorf("error: index to delete does not exist, indexName: %s",
+			indexName)
 	}
+
+	indexDefs.UUID = NewUUID()
+	delete(indexDefs.IndexDefs, indexName)
+	indexDefs.ImplVersion = mgr.version
+
+	// NOTE: if our ImplVersion is still too old due to a race, we
+	// expect a more modern planner to catch it later.
+
+	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
+	if err != nil {
+		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+	}
+
+	mgr.plannerCh <- ("api/DeleteIndex, indexName: " + indexName)
 
 	return nil
 }
