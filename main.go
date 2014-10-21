@@ -44,6 +44,8 @@ var server = flag.String("server", "",
 	"url to couchbase server, example: http://localhost:8091")
 var wanted = flag.Bool("wanted", false,
 	"force this node to be wanted as part of the cluster")
+var cfgProvider = flag.String("cfgProvider", "simple",
+	"provider/connection to cluster config")
 
 var expvars = expvar.NewMap("stats")
 
@@ -64,25 +66,16 @@ func main() {
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
-	// TODO: Need way to switch to different cfg provider.
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
 
-	cfgPath := *dataDir + string(os.PathSeparator) + "cbft.cfg"
-	cfgPathExists := false
-	if _, err := os.Stat(cfgPath); err == nil {
-		cfgPathExists = true
+	cfg, err := MainCfg(*cfgProvider, *dataDir)
+	if err != nil {
+		log.Fatalf("error: could not start cfg, cfgProvider: %s, err: %v",
+			*cfgProvider, err)
+		return
 	}
 
-	cfg := NewCfgSimple(cfgPath)
-	if cfgPathExists {
-		err := cfg.Load()
-		if err != nil {
-			log.Fatalf("error: could not load cfg, cfgPath: %s, err: %v", cfgPath, err)
-			return
-		}
-	}
-
-	router, err := mainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
+	router, err := MainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,7 +85,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
-func mainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool) (
+func MainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
