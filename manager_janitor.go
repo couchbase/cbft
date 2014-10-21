@@ -41,7 +41,7 @@ func (mgr *Manager) JanitorLoop() {
 
 		addPlanPIndexes, removePIndexes :=
 			CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
-		log.Printf("janitor pindexes add: %v, remove: %v",
+		log.Printf("janitor pindexes add: %+v, remove: %+v",
 			addPlanPIndexes, removePIndexes)
 
 		// First, teardown pindexes that need to be removed.
@@ -57,7 +57,7 @@ func (mgr *Manager) JanitorLoop() {
 
 		addFeeds, removeFeeds :=
 			CalcFeedsDelta(currFeeds, currPIndexes)
-		log.Printf("janitor feeds add: %v, remove: %v",
+		log.Printf("janitor feeds add: %+v, remove: %+v",
 			addFeeds, removeFeeds)
 
 		// First, teardown feeds that need to be removed.
@@ -90,8 +90,8 @@ func CalcPIndexesDelta(mgrUUID string,
 	// different, then schedule to add.
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
 	nodeUUIDs:
-		for _, nodeUUID := range wantedPlanPIndex.NodeUUIDs {
-			if nodeUUID == mgrUUID {
+		for nodeUUID, nodeState := range wantedPlanPIndex.NodeUUIDs {
+			if nodeUUID == mgrUUID && nodeState == "active" {
 				mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
 
 				currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
