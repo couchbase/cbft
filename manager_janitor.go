@@ -44,14 +44,13 @@ func (mgr *Manager) JanitorLoop() {
 		log.Printf("janitor pindexes add: %v, remove: %v",
 			addPlanPIndexes, removePIndexes)
 
-		// Create pindexes that we're missing.
-		for _, addPlanPIndex := range addPlanPIndexes {
-			mgr.StartPIndex(addPlanPIndex)
-		}
-
-		// Teardown pindexes that need to be removed.
+		// First, teardown pindexes that need to be removed.
 		for _, removePIndex := range removePIndexes {
 			mgr.StopPIndex(removePIndex)
+		}
+		// Then, (re-)create pindexes that we're missing.
+		for _, addPlanPIndex := range addPlanPIndexes {
+			mgr.StartPIndex(addPlanPIndex)
 		}
 
 		currFeeds, currPIndexes = mgr.CurrentMaps()
@@ -61,14 +60,13 @@ func (mgr *Manager) JanitorLoop() {
 		log.Printf("janitor feeds add: %v, remove: %v",
 			addFeeds, removeFeeds)
 
-		// Create feeds that we're missing.
-		for _, targetPindexes := range addFeeds {
-			mgr.StartFeed(targetPindexes)
-		}
-
-		// Teardown feeds that need to be removed.
+		// First, teardown feeds that need to be removed.
 		for _, removeFeed := range removeFeeds {
 			mgr.StopFeed(removeFeed)
+		}
+		// Then, (re-)create feeds that we're missing.
+		for _, targetPindexes := range addFeeds {
+			mgr.StartFeed(targetPindexes)
 		}
 	}
 }
