@@ -101,9 +101,11 @@ func (t *DCPFeed) Start() error {
 }
 
 func (t *DCPFeed) Close() error {
+	if err := t.feed.Close(); err != nil {
+		return err
+	}
 	close(t.closeCh)
-
-	return t.feed.Close()
+	return nil
 }
 
 func (t *DCPFeed) Streams() map[string]Stream {

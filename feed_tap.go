@@ -89,9 +89,11 @@ func (t *TAPFeed) Start() error {
 }
 
 func (t *TAPFeed) Close() error {
+	if err := t.feed.Close(); err != nil {
+		return err
+	}
 	close(t.closeCh)
-
-	return t.feed.Close()
+	return nil
 }
 
 func (t *TAPFeed) Streams() map[string]Stream {
