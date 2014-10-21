@@ -19,6 +19,12 @@ import (
 // NOTE: You *must* update PLANNER_VERSION if these planning algorithm
 // or schema changes, following semver rules.
 
+func (mgr *Manager) PlannerKick(msg string) {
+	resCh := make(chan error)
+	mgr.plannerCh <- &WorkReq{msg: msg, resCh: resCh}
+	<-resCh
+}
+
 func (mgr *Manager) PlannerLoop() {
 	for m := range mgr.plannerCh {
 		mgr.PlannerOnce(m.msg)
@@ -117,12 +123,7 @@ func (mgr *Manager) PlannerOnce(reason string) bool {
 	// TODO: need some distributed notify/event facility,
 	// perhaps in the Cfg, to kick any remote janitors.
 	//
-	resCh := make(chan error)
-	mgr.janitorCh <- &WorkReq{
-		msg:   "the plans have changed",
-		resCh: resCh,
-	}
-	<-resCh
+	mgr.JanitorKick("the plans have changed")
 
 	return true
 }

@@ -81,14 +81,10 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 	}
 
 	go mgr.PlannerLoop()
-	resCh := make(chan error)
-	mgr.plannerCh <- &WorkReq{msg: "start", resCh: resCh}
-	<-resCh
+	mgr.PlannerKick("start")
 
 	go mgr.JanitorLoop()
-	resCh = make(chan error)
-	mgr.janitorCh <- &WorkReq{msg: "start", resCh: resCh}
-	<-resCh
+	mgr.JanitorKick("start")
 
 	return nil
 }

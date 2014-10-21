@@ -18,6 +18,13 @@ import (
 )
 
 // A janitor maintains feeds, creating and deleting as necessary.
+
+func (mgr *Manager) JanitorKick(msg string) {
+	resCh := make(chan error)
+	mgr.janitorCh <- &WorkReq{msg: msg, resCh: resCh}
+	<-resCh
+}
+
 func (mgr *Manager) JanitorLoop() {
 	for m := range mgr.janitorCh {
 		mgr.JanitorOnce(m.msg)

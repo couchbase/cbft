@@ -60,12 +60,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
 	}
 
-	resCh := make(chan error)
-	mgr.plannerCh <- &WorkReq{
-		msg:   "api/CreateIndex, indexName: " + indexName,
-		resCh: resCh,
-	}
-	<-resCh
+	mgr.PlannerKick("api/CreateIndex, indexName: " + indexName)
 
 	return nil
 }
@@ -102,12 +97,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
 	}
 
-	resCh := make(chan error)
-	mgr.plannerCh <- &WorkReq{
-		msg:   "api/DeleteIndex, indexName: " + indexName,
-		resCh: resCh,
-	}
-	<-resCh
+	mgr.PlannerKick("api/DeleteIndex, indexName: " + indexName)
 
 	return nil
 }
