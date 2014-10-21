@@ -75,7 +75,8 @@ func main() {
 		return
 	}
 
-	router, err := MainStart(cfg, *bindAddr, *dataDir, *staticDir, *server, *wanted)
+	router, err := MainStart(cfg, *bindAddr, NewUUID(),
+		*dataDir, *staticDir, *server, *wanted)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +86,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
-func MainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool) (
+func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wanted bool) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -97,7 +98,7 @@ func MainStart(cfg Cfg, bindAddr, dataDir, staticDir, server string, wanted bool
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, bindAddr, dataDir, server, &MainHandlers{})
+	mgr := NewManager(VERSION, cfg, uuid, bindAddr, dataDir, server, &MainHandlers{})
 	if err = mgr.Start(wanted); err != nil {
 		return nil, err
 	}

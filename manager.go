@@ -47,10 +47,10 @@ type Manager struct {
 	meh       ManagerEventHandlers
 }
 
-func NewManager(version string, cfg Cfg, bindAddr, dataDir string,
+func NewManager(version string, cfg Cfg, uuid, bindAddr, dataDir string,
 	server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
-		uuid:      NewUUID(), // TODO: Manager.UUID needs to be stable across restarts.
+		uuid:      uuid,
 		startTime: time.Now(),
 		version:   version,
 		cfg:       cfg,
