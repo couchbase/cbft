@@ -15,12 +15,14 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -75,8 +77,14 @@ func main() {
 		return
 	}
 
-	router, err := MainStart(cfg, *bindAddr, NewUUID(),
-		*dataDir, *staticDir, *server, *wanted)
+	uuid, err := MainUUID(*dataDir)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("%v", err))
+		return
+	}
+
+	router, err := MainStart(cfg, uuid, *bindAddr, *dataDir,
+		*staticDir, *server, *wanted)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,6 +92,28 @@ func main() {
 	http.Handle("/", router)
 	log.Printf("listening on: %v", *bindAddr)
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
+}
+
+func MainUUID(dataDir string) (string, error) {
+	uuid := NewUUID()
+	uuidPath := dataDir + string(os.PathSeparator) + "cbft.uuid"
+	uuidBuf, err := ioutil.ReadFile(uuidPath)
+	if err == nil {
+		uuid = strings.TrimSpace(string(uuidBuf))
+		if uuid == "" {
+			return "", fmt.Errorf("error: could not parse uuidPath: %s", uuidPath)
+		}
+		log.Printf("manager uuid: %s", uuid)
+		log.Printf("manager uuid was reloaded")
+	} else {
+		log.Printf("manager uuid: %s", uuid)
+		log.Printf("manager uuid was generated")
+	}
+	err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
+	if err != nil {
+		return "", fmt.Errorf("error: could not write uuidPath: %s", uuidPath)
+	}
+	return uuid, nil
 }
 
 func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wanted bool) (
