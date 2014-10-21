@@ -47,7 +47,7 @@ func (c *CfgMem) Get(key string, cas uint64) (
 		return nil, 0, nil
 	}
 	if cas != 0 && cas != entry.CAS {
-		return nil, 0, fmt.Errorf("error: mismatched Cfg CAS")
+		return nil, 0, &CfgCASError{}
 	}
 	val := make([]byte, len(entry.Val))
 	copy(val, entry.Val)
@@ -65,11 +65,8 @@ func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 			return 0, fmt.Errorf("error: entry already exists, key: %s", key)
 		}
 	} else { // cas != 0
-		if !exists {
-			return 0, fmt.Errorf("error: no entry, key: %s", key)
-		}
-		if cas != prevEntry.CAS {
-			return 0, fmt.Errorf("error: mismatched cas, key: %s", key)
+		if !exists || cas != prevEntry.CAS {
+			return 0, &CfgCASError{}
 		}
 	}
 	nextEntry := &CfgMemEntry{
@@ -89,7 +86,7 @@ func (c *CfgMem) Del(key string, cas uint64) error {
 	if cas != 0 {
 		entry, exists := c.Entries[key]
 		if !exists || cas != entry.CAS {
-			return fmt.Errorf("error: mismatched Cfg CAS")
+			return &CfgCASError{}
 		}
 	}
 	delete(c.Entries, key)
