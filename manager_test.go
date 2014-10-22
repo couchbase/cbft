@@ -470,6 +470,7 @@ func TestSamePlanPIndexes(t *testing.T) {
 	a.PlanPIndexes["foo"] = &PlanPIndex{
 		Name: "foo",
 	}
+
 	if SamePlanPIndexes(a, b) {
 		t.Errorf("expected not same, a: %v, b: %v", a, b)
 	}
@@ -481,5 +482,75 @@ func TestSamePlanPIndexes(t *testing.T) {
 	}
 	if SamePlanPIndexes(c, a) {
 		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+
+	if SubsetPlanPIndexes(a, b) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+	if !SubsetPlanPIndexes(b, a) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+
+	b.PlanPIndexes["foo"] = &PlanPIndex{
+		Name:      "foo",
+		IndexName: "differnet-than-foo-in-a",
+	}
+
+	if SamePlanPIndexes(a, b) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+	if SamePlanPIndexes(b, a) {
+		t.Errorf("expected not same, a: %v, b: %v", a, b)
+	}
+}
+
+func TestSamePlanPIndex(t *testing.T) {
+	ppi0 := &PlanPIndex{
+		Name:             "0",
+		UUID:             "x",
+		IndexName:        "x",
+		IndexUUID:        "x",
+		IndexMapping:     "x",
+		SourceType:       "x",
+		SourceName:       "x",
+		SourceUUID:       "x",
+		SourcePartitions: "x",
+		NodeUUIDs:        make(map[string]string),
+	}
+	ppi1 := &PlanPIndex{
+		Name:             "1",
+		UUID:             "x",
+		IndexName:        "x",
+		IndexUUID:        "x",
+		IndexMapping:     "x",
+		SourceType:       "x",
+		SourceName:       "x",
+		SourceUUID:       "x",
+		SourcePartitions: "x",
+		NodeUUIDs:        make(map[string]string),
+	}
+
+	if !SamePlanPIndex(ppi0, ppi0) {
+		t.Errorf("expected SamePlanPindex to be true")
+	}
+	if SamePlanPIndex(ppi0, ppi1) {
+		t.Errorf("expected SamePlanPindex to be false")
+	}
+	if SamePlanPIndex(ppi1, ppi0) {
+		t.Errorf("expected SamePlanPindex to be false")
+	}
+}
+
+func TestCfgGetHelpers(t *testing.T) {
+	errCfg := &ErrorOnlyCfg{}
+
+	if _, _, err := CfgGetIndexDefs(errCfg); err == nil {
+		t.Errorf("expected to fail with errCfg")
+	}
+	if _, _, err := CfgGetNodeDefs(errCfg, NODE_DEFS_KNOWN); err == nil {
+		t.Errorf("expected to fail with errCfg")
+	}
+	if _, _, err := CfgGetPlanPIndexes(errCfg); err == nil {
+		t.Errorf("expected to fail with errCfg")
 	}
 }

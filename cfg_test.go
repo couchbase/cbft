@@ -12,10 +12,29 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 )
+
+type ErrorOnlyCfg struct{} // For testing.
+
+func (c *ErrorOnlyCfg) Get(key string, cas uint64) (
+	[]byte, uint64, error) {
+	return nil, 0, fmt.Errorf("error only")
+}
+
+func (c *ErrorOnlyCfg) Set(key string, val []byte, cas uint64) (
+	uint64, error) {
+	return 0, fmt.Errorf("error only")
+}
+
+func (c *ErrorOnlyCfg) Del(key string, cas uint64) error {
+	return fmt.Errorf("error only")
+}
+
+// ------------------------------------------------
 
 func TestCfgMem(t *testing.T) {
 	testCfg(t, NewCfgMem())
