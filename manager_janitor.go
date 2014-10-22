@@ -190,23 +190,29 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 // which should be shut down.
 func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	addFeeds [][]*PIndex, removeFeeds []Feed) {
+	// Allocate result holders.
 	addFeeds = make([][]*PIndex, 0)
 	removeFeeds = make([]Feed, 0)
 
-	wantedFeeds := make(map[string]*PIndex) // Transient, for fast lookup.
-
-	// TODO: Group pindexes by IndexName, IndexUUID.
+	// Group the pindexes by their feed names.
+	groupedPIndexes := make(map[string][]*PIndex)
 	for _, pindex := range pindexes {
 		feedName := FeedName(pindex)
-		wantedFeeds[feedName] = pindex
+		arr, exists := groupedPIndexes[feedName]
+		if !exists {
+			arr = make([]*PIndex, 0)
+		}
+		groupedPIndexes[feedName] = append(arr, pindex)
+	}
 
+	for feedName, feedPIndexes := range groupedPIndexes {
 		if _, exists := currFeeds[feedName]; !exists {
-			addFeeds = append(addFeeds, []*PIndex{pindex})
+			addFeeds = append(addFeeds, feedPIndexes)
 		}
 	}
 
-	for _, currFeed := range currFeeds {
-		if _, ok := wantedFeeds[currFeed.Name()]; !ok {
+	for currFeedName, currFeed := range currFeeds {
+		if _, exists := groupedPIndexes[currFeedName]; !exists {
 			removeFeeds = append(removeFeeds, currFeed)
 		}
 	}
@@ -219,6 +225,10 @@ func FeedName(pindex *PIndex) string {
 	// depending on whether they have a "single cluster" abstraction
 	// or work on a "node by node" basis (in where stream destinations
 	// need to be part of the name encoding).
+	//
+	// NOTE: We're depending on the IndexName/IndexUUID to
+	// functionally "cover" the SourceType/SourceName/SourceUUID, so
+	// we don't need to encode the source parts into the feed name.
 	return pindex.IndexName + "_" + pindex.IndexUUID
 }
 
