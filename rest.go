@@ -30,7 +30,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 
 	// the rest are standard bleveHttp handlers
 	r.Handle("/api/{indexName}", bleveHttp.NewGetIndexHandler()).Methods("GET")
-	r.Handle("/api", bleveHttp.NewListIndexesHander()).Methods("GET")
+	r.Handle("/api", bleveHttp.NewListIndexesHandler()).Methods("GET")
 
 	r.Handle("/api/{indexName}/_count", bleveHttp.NewDocCountHandler("")).Methods("GET")
 	r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocGetHandler("")).Methods("GET")
