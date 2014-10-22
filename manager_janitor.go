@@ -113,6 +113,8 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	return nil
 }
 
+// --------------------------------------------------------
+
 // Functionally determine the delta of which pindexes need creation
 // and which should be shut down on our local node (mgrUUID).
 func CalcPIndexesDelta(mgrUUID string,
@@ -133,20 +135,22 @@ func CalcPIndexesDelta(mgrUUID string,
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
 	nodeUUIDs:
 		for nodeUUID, nodeState := range wantedPlanPIndex.NodeUUIDs {
-			if nodeUUID == mgrUUID && nodeState == "active" {
-				mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
-
-				currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
-				if !exists {
-					addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
-				} else if PIndexMatchesPlan(currPIndex, wantedPlanPIndex) == false {
-					addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
-					removePIndexes = append(removePIndexes, currPIndex)
-					mapRemovePIndex[currPIndex.Name] = currPIndex
-				}
-
-				break nodeUUIDs
+			if nodeUUID != mgrUUID || nodeState != "active" {
+				continue nodeUUIDs
 			}
+
+			mapWantedPlanPIndex[wantedPlanPIndex.Name] = wantedPlanPIndex
+
+			currPIndex, exists := currPIndexes[wantedPlanPIndex.Name]
+			if !exists {
+				addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+			} else if PIndexMatchesPlan(currPIndex, wantedPlanPIndex) == false {
+				addPlanPIndexes = append(addPlanPIndexes, wantedPlanPIndex)
+				removePIndexes = append(removePIndexes, currPIndex)
+				mapRemovePIndex[currPIndex.Name] = currPIndex
+			}
+
+			break nodeUUIDs
 		}
 	}
 
@@ -164,6 +168,24 @@ func CalcPIndexesDelta(mgrUUID string,
 	return addPlanPIndexes, removePIndexes
 }
 
+func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
+	same := pindex.Name == planPIndex.Name &&
+		pindex.IndexName == planPIndex.IndexName &&
+		pindex.IndexUUID == planPIndex.IndexUUID &&
+		pindex.IndexMapping == planPIndex.IndexMapping &&
+		pindex.SourceType == planPIndex.SourceType &&
+		pindex.SourceName == planPIndex.SourceName &&
+		pindex.SourceUUID == planPIndex.SourceUUID &&
+		pindex.SourcePartitions == planPIndex.SourcePartitions
+	if !same {
+		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
+			pindex, planPIndex)
+	}
+	return same
+}
+
+// --------------------------------------------------------
+
 // Functionally determine the delta of which feeds need creation and
 // which should be shut down.
 func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
@@ -171,6 +193,7 @@ func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	addFeeds = make([][]*PIndex, 0)
 	removeFeeds = make([]Feed, 0)
 
+	// TODO: Group the pindexes by SourceType/Name/UUID/SourcePartition?
 	for _, pindex := range pindexes {
 		addFeedName := FeedName("default", pindex.SourceName, "")
 		if _, ok := currFeeds[addFeedName]; !ok {
@@ -297,22 +320,4 @@ func (mgr *Manager) StartTAPFeed(pindex *PIndex) error {
 	}
 
 	return nil
-}
-
-// --------------------------------------------------------
-
-func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
-	same := pindex.Name == planPIndex.Name &&
-		pindex.IndexName == planPIndex.IndexName &&
-		pindex.IndexUUID == planPIndex.IndexUUID &&
-		pindex.IndexMapping == planPIndex.IndexMapping &&
-		pindex.SourceType == planPIndex.SourceType &&
-		pindex.SourceName == planPIndex.SourceName &&
-		pindex.SourceUUID == planPIndex.SourceUUID &&
-		pindex.SourcePartitions == planPIndex.SourcePartitions
-	if !same {
-		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
-			pindex, planPIndex)
-	}
-	return same
 }
