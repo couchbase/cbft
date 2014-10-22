@@ -60,28 +60,28 @@ func NewUUID() string {
 // is useful when f() will never make any future progress.
 func ExponentialBackoffLoop(name string,
 	f func() int,
-	startSleepMillis int,
+	startSleepMS int,
 	backoffFactor float32,
-	maxSleepMillis int) {
-	sleepMillis := startSleepMillis
+	maxSleepMS int) {
+	nextSleepMS := startSleepMS
 	for {
 		progress := f()
-		log.Printf("backoff: %s, progress: %d, sleep: %d (millis)",
-			name, progress, sleepMillis)
 		if progress < 0 {
 			return
 		}
 		if progress > 0 {
-			// Retry right away when there was progress, resetting our sleep.
-			sleepMillis = startSleepMillis
+			// When there was some progress, we can reset nextSleepMS.
+			log.Printf("backoff: %s, progress: %d", name, progress)
+			nextSleepMS = startSleepMS
 		} else {
-			// If zero progress was made, sleep.
-			time.Sleep(time.Duration(sleepMillis) * time.Millisecond)
+			// If zero progress was made this cycle, then sleep.
+			log.Printf("backoff: %s, sleep: %d (ms)", name, nextSleepMS)
+			time.Sleep(time.Duration(nextSleepMS) * time.Millisecond)
 
-			// And backoff some more in case next time also has no progress.
-			sleepMillis = int(float32(sleepMillis) * backoffFactor)
-			if sleepMillis > maxSleepMillis {
-				sleepMillis = maxSleepMillis
+			// Increase nextSleepMS in case next time also has 0 progress.
+			nextSleepMS = int(float32(nextSleepMS) * backoffFactor)
+			if nextSleepMS > maxSleepMS {
+				nextSleepMS = maxSleepMS
 			}
 		}
 	}
