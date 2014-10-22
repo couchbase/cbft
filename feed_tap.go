@@ -33,6 +33,8 @@ type TAPFeed struct {
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*TAPFeed, error) {
+	// TODO: All this error checking should move into channel loop
+	// so that it handles reconnects and retries correctly.
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
 		return nil, err

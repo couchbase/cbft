@@ -300,15 +300,32 @@ func (mgr *Manager) StopPIndex(pindex *PIndex) error {
 // --------------------------------------------------------
 
 func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
-	// TODO: Need to create a fan-out feed.
-	for _, pindex := range pindexes {
-		// TODO: Need bucket UUID.
-		err := mgr.StartTAPFeed(pindex) // TODO: err handling.
-		if err != nil {
-			return err
-		}
+	if len(pindexes) <= 0 {
+		return nil
 	}
-	return nil
+
+	pindexFirst := pindexes[0]
+	feedName := FeedName(pindexFirst)
+
+	streams := make(map[string]Stream)
+	for _, pindex := range pindexes {
+		if f := FeedName(pindex); f != feedName {
+			panic(fmt.Sprintf("error: unexpected feedName: %s != %s", f, feedName))
+		}
+
+		streams[pindex.SourcePartitions] = pindex.Stream
+	}
+
+	// TODO: Make this more extensible one day for more SourceType possibilies.
+	if pindexFirst.SourceType == "couchbase" {
+		// TODO: Should default to DCP feed or projector feed one day.
+		return mgr.StartTAPFeed(feedName,
+			pindexFirst.IndexName, pindexFirst.IndexUUID,
+			pindexFirst.SourceName, pindexFirst.SourceUUID, streams)
+	}
+
+	return fmt.Errorf("error: StartFeed() got unknown source type: %s",
+		pindexFirst.SourceType)
 }
 
 func (mgr *Manager) StopFeed(feed Feed) error {
@@ -318,20 +335,10 @@ func (mgr *Manager) StopFeed(feed Feed) error {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) StartTAPFeed(pindex *PIndex) error {
-	// TODO: bad assumption of 1-to-1 pindex.name to indexName
-	indexName := pindex.IndexName
-
-	// TODO: do more with SourceType, SourceName, SourceUUID.
-	bucketName := pindex.SourceName
-	bucketUUID := pindex.SourceUUID
-
-	// TODO: utiilzed SourcePartitions
-	streams := map[string]Stream{
-		"": pindex.Stream,
-	}
-	feed, err := NewTAPFeed(FeedName(pindex), mgr.server,
-		"default", bucketName, bucketUUID, streams)
+func (mgr *Manager) StartTAPFeed(feedName, indexName, indexUUID,
+	bucketName, bucketUUID string, streams map[string]Stream) error {
+	feed, err := NewTAPFeed(feedName, mgr.server, "default",
+		bucketName, bucketUUID, streams)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
