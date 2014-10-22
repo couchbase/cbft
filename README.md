@@ -34,3 +34,10 @@ Delete index
 [![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest)
 
 [![Coverage Status](https://img.shields.io/coveralls/couchbaselabs/cbft.svg)](https://coveralls.io/r/couchbaselabs/cbft?branch=master)
+
+### For cbft developers
+
+To get local coverage reports with heatmaps...
+
+    go test -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
+
