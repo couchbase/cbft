@@ -17,7 +17,7 @@ LICENSE: Apache 2.0
 
 Running against local Couchbase Server
 
-```./cbft -server http://localhost:8091```
+```./cbft -server http://localhost:8091 -wanted```
 
 Create a new index (for a bucket that already exists)
 
