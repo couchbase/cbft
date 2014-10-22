@@ -17,7 +17,7 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-// A janitor maintains PIndexes and Feeds,,, creating, deleting, and
+// A janitor maintains PIndexes and Feeds, creating, deleting &
 // hooking them up as necessary to try to match to latest plans.
 
 func (mgr *Manager) JanitorKick(msg string) {

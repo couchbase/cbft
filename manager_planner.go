@@ -18,7 +18,7 @@ import (
 )
 
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.
-// NOTE: You *must* update PLANNER_VERSION if these planning algorithm
+// NOTE: You *must* update PLANNER_VERSION if the planning algorithm
 // or schema changes, following semver rules.
 
 func (mgr *Manager) PlannerKick(msg string) {
