@@ -113,7 +113,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	}
 	_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
 	if err != nil {
-		return true, fmt.Errorf("planner could not save new plan,"+
+		return false, fmt.Errorf("planner could not save new plan,"+
 			" perhaps a concurrent planner won, cas: %d, err: %v",
 			cas, err)
 	}
@@ -121,7 +121,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	return true, nil
 }
 
-// Split logical indexes into Pindexes and assign PIndexes to nodes.
+// Split logical indexes into PIndexes and assign PIndexes to nodes.
 func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPIndexes,
 	version string) (
 	*PlanPIndexes, error) {

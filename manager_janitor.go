@@ -17,7 +17,8 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-// A janitor maintains feeds, creating and deleting as necessary.
+// A janitor maintains PIndexes and Feeds,,, creating, deleting, and
+// hooking them up as necessary to try to match to latest plans.
 
 func (mgr *Manager) JanitorKick(msg string) {
 	resCh := make(chan error)
@@ -31,6 +32,8 @@ func (mgr *Manager) JanitorLoop() {
 		if err != nil {
 			log.Printf("error: JanitorOnce, err: %v", err)
 			// Keep looping as perhaps it's a transient issue.
+			// TODO: Need a better way to track warnings from errors,
+			// and which need a future, rescheduled janitor kick.
 		}
 		if m.resCh != nil {
 			close(m.resCh)
@@ -308,7 +311,7 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 		streams[pindex.SourcePartitions] = pindex.Stream
 	}
 
-	// TODO: Make this more extensible one day for more SourceType possibilies.
+	// TODO: Make this more extensible one day for more SourceType possibilities.
 	if pindexFirst.SourceType == "couchbase" {
 		// TODO: Should default to DCP feed or projector feed one day.
 		return mgr.StartTAPFeed(feedName,
