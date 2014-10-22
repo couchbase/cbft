@@ -58,3 +58,41 @@ func TestNewUUID(t *testing.T) {
 		t.Errorf("NewUUID() failed, %s, %s", u0, u1)
 	}
 }
+
+func TestExponentialBackoffLoop(t *testing.T) {
+	called := 0
+	ExponentialBackoffLoop("test", func() int {
+		called += 1
+		return -1
+	}, 0, 0, 0)
+	if called != 1 {
+		t.Errorf("expected 1 call")
+	}
+
+	called = 0
+	ExponentialBackoffLoop("test", func() int {
+		called += 1
+		if called <= 1 {
+			return 1
+		}
+		return -1
+	}, 0, 0, 0)
+	if called != 2 {
+		t.Errorf("expected 2 calls")
+	}
+
+	called = 0
+	ExponentialBackoffLoop("test", func() int {
+		called += 1
+		if called == 1 {
+			return 1
+		}
+		if called == 2 {
+			return 0
+		}
+		return -1
+	}, 0, 0, 0)
+	if called != 3 {
+		t.Errorf("expected 2 calls")
+	}
+}
