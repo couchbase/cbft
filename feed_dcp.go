@@ -106,6 +106,7 @@ func (t *DCPFeed) Close() error {
 		return err
 	}
 	close(t.closeCh)
+	t.bucket.Close()
 	return nil
 }
 

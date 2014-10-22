@@ -103,6 +103,7 @@ func (t *TAPFeed) Close() error {
 		return err
 	}
 	close(t.closeCh)
+	t.bucket.Close()
 	return nil
 }
 
