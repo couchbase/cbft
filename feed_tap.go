@@ -20,6 +20,7 @@ import (
 )
 
 type TAPFeed struct {
+	name       string
 	url        string
 	poolName   string
 	bucketName string
@@ -30,7 +31,7 @@ type TAPFeed struct {
 	closeCh    chan bool
 }
 
-func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
+func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*TAPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
@@ -42,6 +43,7 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
 	}
 
 	rv := TAPFeed{
+		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -57,8 +59,7 @@ func NewTAPFeed(url, poolName, bucketName, bucketUUID string,
 }
 
 func (t *TAPFeed) Name() string {
-	// TODO: Needs to encode stream destinations here too.
-	return FeedName(t.poolName, t.bucketName, t.bucketUUID)
+	return t.name
 }
 
 func (t *TAPFeed) Start() error {

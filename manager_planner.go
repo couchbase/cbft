@@ -144,16 +144,22 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
+		// This simple planner puts every PIndex on every node, so
+		// there is not "real" partitioning.  This is good enough for
+		// developer preview level requirement.
+		sourcePartitions := ""
+
+		// This simple PlanPIndex.Name here only works for simple
+		// 1-to-1 case, which is developer preview level requirement.
+		// NOTE: PlanPIndex.Name must be unique across the cluster and
+		// functionally based off of the indexDef.
+		name := indexDef.Name + "_" + indexDef.UUID + "_" + sourcePartitions
+
 		planPIndex := &PlanPIndex{
-			// This simple PlanPIndex.Name here only works for simple
-			// 1-to-1 case.  NOTE: PlanPIndex.Name must be unique
-			// across the cluster and functionally based off of the
-			// indexDef.
-			//
 			// TODO: More advanced planners will probably have to
 			// incorporate SourcePartitions info into the
 			// PlanPIndex.Name.
-			Name:             indexDef.Name + "_" + indexDef.UUID,
+			Name:             name,
 			UUID:             NewUUID(),
 			IndexName:        indexDef.Name,
 			IndexUUID:        indexDef.UUID,
@@ -161,13 +167,14 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			SourceType:       indexDef.SourceType,
 			SourceName:       indexDef.SourceName,
 			SourceUUID:       indexDef.SourceUUID,
-			SourcePartitions: "", // Simple version is get all partitions.
+			SourcePartitions: sourcePartitions,
 			NodeUUIDs:        make(map[string]string),
 		}
 		for _, nodeDef := range nodeDefs.NodeDefs {
 			// TODO: better val needed.
 			planPIndex.NodeUUIDs[nodeDef.UUID] = "active"
 		}
+
 		planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
 	}
 

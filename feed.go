@@ -17,8 +17,3 @@ type Feed interface {
 	Close() error
 	Streams() map[string]Stream // Key is partition identifier.
 }
-
-func FeedName(poolName, bucketName, bucketUUID string) string {
-	// TODO: Needs to encode stream destinations here too.
-	return poolName + "_" + bucketName + "_" + bucketUUID
-}

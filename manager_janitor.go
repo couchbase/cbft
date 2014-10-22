@@ -193,17 +193,33 @@ func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	addFeeds = make([][]*PIndex, 0)
 	removeFeeds = make([]Feed, 0)
 
-	// TODO: Group the pindexes by SourceType/Name/UUID/SourcePartition?
-	for _, pindex := range pindexes {
-		addFeedName := FeedName("default", pindex.SourceName, "")
-		if _, ok := currFeeds[addFeedName]; !ok {
-			addFeeds = append(addFeeds, []*PIndex{pindex})
+	wantedFeeds := make(map[string]*PIndex) // Transient, for fast lookup.
 
-			// TODO: this doesn't seem to do delta calc right.
+	// TODO: Group pindexes by IndexName, IndexUUID.
+	for _, pindex := range pindexes {
+		feedName := FeedName(pindex)
+		wantedFeeds[feedName] = pindex
+
+		if _, exists := currFeeds[feedName]; !exists {
+			addFeeds = append(addFeeds, []*PIndex{pindex})
+		}
+	}
+
+	for _, currFeed := range currFeeds {
+		if _, ok := wantedFeeds[currFeed.Name()]; !ok {
+			removeFeeds = append(removeFeeds, currFeed)
 		}
 	}
 
 	return addFeeds, removeFeeds
+}
+
+func FeedName(pindex *PIndex) string {
+	// TODO: Different feed types might have different name formulas
+	// depending on whether they have a "single cluster" abstraction
+	// or work on a "node by node" basis (in where stream destinations
+	// need to be part of the name encoding).
+	return pindex.IndexName + "_" + pindex.IndexUUID
 }
 
 // --------------------------------------------------------
@@ -294,7 +310,8 @@ func (mgr *Manager) StartTAPFeed(pindex *PIndex) error {
 	streams := map[string]Stream{
 		"": pindex.Stream,
 	}
-	feed, err := NewTAPFeed(mgr.server, "default", bucketName, bucketUUID, streams)
+	feed, err := NewTAPFeed(FeedName(pindex), mgr.server,
+		"default", bucketName, bucketUUID, streams)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",

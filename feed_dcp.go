@@ -19,6 +19,7 @@ import (
 )
 
 type DCPFeed struct {
+	name       string
 	url        string
 	poolName   string
 	bucketName string
@@ -29,7 +30,7 @@ type DCPFeed struct {
 	closeCh    chan bool
 }
 
-func NewDCPFeed(url, poolName, bucketName, bucketUUID string,
+func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*DCPFeed, error) {
 	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
 	if err != nil {
@@ -40,6 +41,7 @@ func NewDCPFeed(url, poolName, bucketName, bucketUUID string,
 		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
 	}
 	rv := DCPFeed{
+		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -52,8 +54,7 @@ func NewDCPFeed(url, poolName, bucketName, bucketUUID string,
 }
 
 func (t *DCPFeed) Name() string {
-	// TODO: Needs to encode stream destinations here too.
-	return FeedName(t.poolName, t.bucketName, t.bucketUUID)
+	return t.name
 }
 
 func (t *DCPFeed) Start() error {
