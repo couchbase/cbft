@@ -91,22 +91,32 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	currFeeds, currPIndexes = mgr.CurrentMaps()
 
 	addFeeds, removeFeeds := CalcFeedsDelta(currFeeds, currPIndexes)
-	log.Printf("janitor feeds add: %+v, remove: %+v",
-		addFeeds, removeFeeds)
+
+	log.Printf("janitor feeds to add:")
+	for _, targetPIndexes := range addFeeds {
+		if len(targetPIndexes) > 0 {
+			log.Printf("  %s", FeedName(targetPIndexes[0]))
+		}
+	}
+	log.Printf("janitor feeds to remove:")
+	for _, removeFeed := range removeFeeds {
+		log.Printf("  %s", removeFeed.Name())
+	}
 
 	// First, teardown feeds that need to be removed.
 	for _, removeFeed := range removeFeeds {
 		err = mgr.StopFeed(removeFeed)
 		if err != nil {
-			return fmt.Errorf("error: janitor removing feed: %s, err: %v",
+			return fmt.Errorf("error: janitor removing feed name: %s, err: %v",
 				removeFeed.Name, err)
 		}
 	}
 	// Then, (re-)create feeds that we're missing.
-	for _, targePIndexes := range addFeeds {
-		err = mgr.StartFeed(targePIndexes)
+	for addFeedName, targetPIndexes := range addFeeds {
+		err = mgr.StartFeed(targetPIndexes)
 		if err != nil {
-			return fmt.Errorf("error: janitor adding feed, err: %v", err)
+			return fmt.Errorf("error: janitor adding feed, addFeedName: %s, err: %v",
+				addFeedName, err)
 		}
 	}
 
