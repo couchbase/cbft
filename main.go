@@ -61,6 +61,12 @@ func main() {
 
 	go dumpOnSignalForPlatform()
 
+	mr, err := NewMsgRing(os.Stderr, 1000)
+	if err != nil {
+		log.Fatalf("error: could not create MsgRing, err: %v", err)
+	}
+	log.SetOutput(mr)
+
 	MainWelcome()
 
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
