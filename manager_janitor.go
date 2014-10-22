@@ -175,6 +175,8 @@ func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 		addFeedName := FeedName("default", pindex.SourceName, "")
 		if _, ok := currFeeds[addFeedName]; !ok {
 			addFeeds = append(addFeeds, []*PIndex{pindex})
+
+			// TODO: this doesn't seem to do delta calc right.
 		}
 	}
 
@@ -213,8 +215,7 @@ func (mgr *Manager) StopPIndex(pindex *PIndex) error {
 			if stream == pindex.Stream {
 				feedUnreg := mgr.UnregisterFeed(feed.Name())
 				if feedUnreg != feed {
-					panic("unregistered feed isn't the one we're closing")
-
+					panic("error: unregistered feed isn't the one we're closing")
 				}
 
 				// NOTE: We're depending on feed to synchronously
