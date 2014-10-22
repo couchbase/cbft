@@ -7,6 +7,12 @@ This project integrates the bleve full-text search engine and Couchbase Server.
 
 LICENSE: Apache 2.0
 
+### Status
+
+[![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest)
+
+[![Coverage Status](https://img.shields.io/coveralls/couchbaselabs/cbft.svg)](https://coveralls.io/r/couchbaselabs/cbft?branch=master)
+
 ### Usage
 
 Running against local Couchbase Server
@@ -28,12 +34,6 @@ Submit search query
 Delete index
 
 ```curl -XDELETE http://localhost:8095/api/default```
-
-### Status
-
-[![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest)
-
-[![Coverage Status](https://img.shields.io/coveralls/couchbaselabs/cbft.svg)](https://coveralls.io/r/couchbaselabs/cbft?branch=master)
 
 ### For cbft developers
 
