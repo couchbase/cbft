@@ -12,6 +12,8 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -26,5 +28,30 @@ func TestMainStart(t *testing.T) {
 		"bad data dir", "./static", "bad server", false)
 	if router != nil || err == nil {
 		t.Errorf("expected bad server string to fail mainStart()")
+	}
+}
+
+func TestMainUUID(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	uuid, err := MainUUID(emptyDir)
+	if err != nil || uuid == "" {
+		t.Errorf("expected MainUUID() to work, err: %v", err)
+	}
+
+	uuid2, err := MainUUID(emptyDir)
+	if err != nil || uuid2 != uuid {
+		t.Errorf("expected MainUUID() reload to give same uuid, uuid: %s vs %s, err: %v",
+			uuid, uuid2, err)
+	}
+
+	path := emptyDir + string(os.PathSeparator) + "cbft.uuid"
+	os.Remove(path)
+	ioutil.WriteFile(path, []byte{}, 0600)
+
+	uuid3, err := MainUUID(emptyDir)
+	if err == nil || uuid3 != "" {
+		t.Errorf("expected MainUUID() to fail on empty file")
 	}
 }
