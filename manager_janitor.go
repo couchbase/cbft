@@ -272,16 +272,8 @@ func (mgr *Manager) StopPIndex(pindex *PIndex) error {
 	for _, feed := range feeds {
 		for _, stream := range feed.Streams() {
 			if stream == pindex.Stream {
-				feedUnreg := mgr.UnregisterFeed(feed.Name())
-				if feedUnreg != nil && feedUnreg != feed {
-					panic("error: unregistered feed isn't the one we're closing")
-				}
-
-				// NOTE: We're depending on feed to synchronously
-				// close, where we know it will no longer be writing
-				// to any of its pindex streams anymore.
-				if err := feed.Close(); err != nil {
-					panic(fmt.Sprintf("error: could not close feed, err: %v", err))
+				if err := mgr.StopFeed(feed); err != nil {
+					panic(fmt.Sprintf("error: could not stop feed, err: %v", err))
 				}
 			}
 		}
@@ -329,8 +321,15 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 }
 
 func (mgr *Manager) StopFeed(feed Feed) error {
-	// TODO.
-	return nil
+	feedUnreg := mgr.UnregisterFeed(feed.Name())
+	if feedUnreg != nil && feedUnreg != feed {
+		panic("error: unregistered feed isn't the one we're closing")
+	}
+
+	// NOTE: We're depending on feed to synchronously close, so we
+	// know it'll no longer be sending to any of its streams anymore.
+	//
+	return feed.Close()
 }
 
 // --------------------------------------------------------
