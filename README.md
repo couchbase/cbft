@@ -41,3 +41,7 @@ To get local coverage reports with heatmaps...
 
     go test -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
 
+To get more coverage reports that include dependencies like the bleve library...
+
+    go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
+
