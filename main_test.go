@@ -79,3 +79,7 @@ func TestMainCfg(t *testing.T) {
 		t.Errorf("expected MainCfg() to work on simple provider when reload")
 	}
 }
+
+func TestMainWelcome(t *testing.T) {
+	MainWelcome() // Don't crash.
+}

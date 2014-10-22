@@ -61,15 +61,10 @@ func main() {
 
 	go dumpOnSignalForPlatform()
 
-	log.Printf("%s started", os.Args[0])
-	if *logFlags != "" {
-		log.ParseLogFlag(*logFlags)
-	}
-	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
-	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
+	MainWelcome()
 
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
-
+	//
 	cfg, err := MainCfg(*cfgProvider, *dataDir)
 	if err != nil {
 		log.Fatalf("error: could not start cfg, cfgProvider: %s, err: %v",
@@ -92,6 +87,15 @@ func main() {
 	http.Handle("/", router)
 	log.Printf("listening on: %v", *bindAddr)
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
+}
+
+func MainWelcome() {
+	log.Printf("%s started", os.Args[0])
+	if *logFlags != "" {
+		log.ParseLogFlag(*logFlags)
+	}
+	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
+	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 }
 
 func MainUUID(dataDir string) (string, error) {
