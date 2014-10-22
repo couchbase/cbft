@@ -78,7 +78,7 @@ func NewPIndex(name, uuid,
 		return nil, err
 	}
 
-	// TODO: Save this in the bleve index instead of a separate file.
+	// TODO: Save this metadata in the bleve index instead of a separate file.
 	err = ioutil.WriteFile(path+string(os.PathSeparator)+PINDEX_META_FILENAME,
 		buf, 0600)
 	if err != nil {
@@ -99,6 +99,7 @@ func OpenPIndex(path string) (*PIndex, error) {
 			path, err)
 	}
 
+	// TODO: Read this metadata from bleve index instead of a separate file.
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
 		bindex.Close()
