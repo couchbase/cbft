@@ -16,6 +16,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	log "github.com/couchbaselabs/clog"
 )
 
 // Implements ManagerEventHandlers interface.
@@ -140,6 +142,46 @@ func TestManagerRestart(t *testing.T) {
 	feeds, pindexes = m2.CurrentMaps()
 	if len(feeds) != 1 || len(pindexes) != 1 {
 		t.Errorf("expected to load 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
+			feeds, pindexes)
+	}
+}
+
+func TestManagerCreateDeleteIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	m := NewManager(VERSION, cfg, NewUUID(), ":1000", emptyDir, "some-datasource", nil)
+	if err := m.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err != nil {
+		t.Errorf("expected CreateIndex() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err == nil {
+		t.Errorf("expected re-CreateIndex() to fail")
+	}
+	if err := m.DeleteIndex("not-an-actual-index-name"); err == nil {
+		t.Errorf("expected bad DeleteIndex() to fail")
+	}
+	m.PlannerNOOP("test")
+	m.JanitorNOOP("test")
+	feeds, pindexes := m.CurrentMaps()
+	if len(feeds) != 1 || len(pindexes) != 1 {
+		t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
+			feeds, pindexes)
+	}
+
+	log.Printf("test will now deleting the index: foo")
+
+	if err := m.DeleteIndex("foo"); err != nil {
+		t.Errorf("expected DeleteIndex() to work on actual index, err: %v", err)
+	}
+	m.PlannerNOOP("test")
+	m.JanitorNOOP("test")
+	feeds, pindexes = m.CurrentMaps()
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("expected to be 0 feed and 0 pindex, got feeds: %+v, pindexes: %+v",
 			feeds, pindexes)
 	}
 }

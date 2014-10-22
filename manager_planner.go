@@ -21,23 +21,31 @@ import (
 // NOTE: You *must* update PLANNER_VERSION if the planning algorithm
 // or schema changes, following semver rules.
 
+func (mgr *Manager) PlannerNOOP(msg string) {
+	SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg)
+}
+
 func (mgr *Manager) PlannerKick(msg string) {
-	resCh := make(chan error)
-	mgr.plannerCh <- &WorkReq{msg: msg, resCh: resCh}
-	<-resCh
+	SyncWorkReq(mgr.plannerCh, WORK_KICK, msg)
 }
 
 func (mgr *Manager) PlannerLoop() {
 	for m := range mgr.plannerCh {
-		changed, err := mgr.PlannerOnce(m.msg)
-		if err != nil {
-			log.Printf("error: PlannerOnce, err: %v", err)
-			// Keep looping as perhaps it's a transient issue.
-		} else if changed {
-			// TODO: need some distributed notify/event facility,
-			// perhaps in the Cfg, to kick any remote janitors.
-			//
-			mgr.JanitorKick("the plans have changed")
+		if m.op == WORK_KICK {
+			changed, err := mgr.PlannerOnce(m.msg)
+			if err != nil {
+				log.Printf("error: PlannerOnce, err: %v", err)
+				// Keep looping as perhaps it's a transient issue.
+			} else if changed {
+				// TODO: need some distributed notify/event facility,
+				// perhaps in the Cfg, to kick any remote janitors.
+				//
+				mgr.JanitorKick("the plans have changed")
+			}
+		} else if m.op == WORK_NOOP {
+			// NOOP.
+		} else {
+			log.Printf("error: unknown planner op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
 			close(m.resCh)

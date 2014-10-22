@@ -21,16 +21,6 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-type WorkReq struct {
-	msg   string
-	resCh chan error
-}
-
-type ManagerEventHandlers interface {
-	OnRegisterPIndex(pindex *PIndex)
-	OnUnregisterPIndex(pindex *PIndex)
-}
-
 type Manager struct {
 	uuid      string // Unique to every Manager process instance.
 	startTime time.Time
@@ -45,6 +35,11 @@ type Manager struct {
 	plannerCh chan *WorkReq      // Used to kick the planner that there's more work.
 	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
+}
+
+type ManagerEventHandlers interface {
+	OnRegisterPIndex(pindex *PIndex)
+	OnUnregisterPIndex(pindex *PIndex)
 }
 
 func NewManager(version string, cfg Cfg, uuid, bindAddr, dataDir string,

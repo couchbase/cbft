@@ -20,20 +20,28 @@ import (
 // A janitor maintains PIndexes and Feeds, creating, deleting &
 // hooking them up as necessary to try to match to latest plans.
 
+func (mgr *Manager) JanitorNOOP(msg string) {
+	SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg)
+}
+
 func (mgr *Manager) JanitorKick(msg string) {
-	resCh := make(chan error)
-	mgr.janitorCh <- &WorkReq{msg: msg, resCh: resCh}
-	<-resCh
+	SyncWorkReq(mgr.janitorCh, WORK_KICK, msg)
 }
 
 func (mgr *Manager) JanitorLoop() {
 	for m := range mgr.janitorCh {
-		err := mgr.JanitorOnce(m.msg)
-		if err != nil {
-			log.Printf("error: JanitorOnce, err: %v", err)
-			// Keep looping as perhaps it's a transient issue.
-			// TODO: Need a better way to track warnings from errors,
-			// and which need a future, rescheduled janitor kick.
+		if m.op == WORK_KICK {
+			err := mgr.JanitorOnce(m.msg)
+			if err != nil {
+				log.Printf("error: JanitorOnce, err: %v", err)
+				// Keep looping as perhaps it's a transient issue.
+				// TODO: Need a better way to track warnings from errors,
+				// and which need a future, rescheduled janitor kick.
+			}
+		} else if m.op == WORK_NOOP {
+			// NOOP.
+		} else {
+			log.Printf("error: unknown janitor op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
 			close(m.resCh)
