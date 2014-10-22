@@ -23,7 +23,7 @@ type CreateIndexHandler struct {
 	mgr *Manager
 }
 
-func NewCreateIndexHander(mgr *Manager) *CreateIndexHandler {
+func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 	return &CreateIndexHandler{mgr: mgr}
 }
 

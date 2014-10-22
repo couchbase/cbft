@@ -25,7 +25,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 	})
 
 	// these are custom handlers for cbft
-	r.Handle("/api/{indexName}", NewCreateIndexHander(mgr)).Methods("PUT")
+	r.Handle("/api/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 
 	// the rest are standard bleveHttp handlers
