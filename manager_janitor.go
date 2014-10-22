@@ -104,7 +104,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	}
 	// Then, (re-)create feeds that we're missing.
 	for _, targePIndexes := range addFeeds {
-		mgr.StartFeed(targePIndexes)
+		err = mgr.StartFeed(targePIndexes)
 		if err != nil {
 			return fmt.Errorf("error: janitor adding feed, err: %v", err)
 		}
@@ -244,10 +244,9 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 	// TODO: Need to create a fan-out feed.
 	for _, pindex := range pindexes {
 		// TODO: Need bucket UUID.
-		err := mgr.StartSimpleFeed(pindex) // TODO: err handling.
+		err := mgr.StartTAPFeed(pindex) // TODO: err handling.
 		if err != nil {
-			log.Printf("error: could not start feed for pindex: %s, err: %v",
-				pindex.Name, err)
+			return err
 		}
 	}
 	return nil
@@ -260,7 +259,7 @@ func (mgr *Manager) StopFeed(feed Feed) error {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) StartSimpleFeed(pindex *PIndex) error {
+func (mgr *Manager) StartTAPFeed(pindex *PIndex) error {
 	// TODO: bad assumption of 1-to-1 pindex.name to indexName
 	indexName := pindex.IndexName
 
