@@ -55,3 +55,27 @@ func TestMainUUID(t *testing.T) {
 		t.Errorf("expected MainUUID() to fail on empty file")
 	}
 }
+
+func TestMainCfg(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg, err := MainCfg("an unknown cfg provider", emptyDir)
+	if err == nil || cfg != nil {
+		t.Errorf("expected MainCfg() to fail on unknown provider")
+	}
+
+	cfg, err = MainCfg("simple", emptyDir)
+	if err != nil || cfg == nil {
+		t.Errorf("expected MainCfg() to work on simple provider")
+	}
+
+	if _, err := cfg.Set("k", []byte("value"), 0); err != nil {
+		t.Errorf("expected Set() to work")
+	}
+
+	cfg, err = MainCfg("simple", emptyDir)
+	if err != nil || cfg == nil {
+		t.Errorf("expected MainCfg() to work on simple provider when reload")
+	}
+}

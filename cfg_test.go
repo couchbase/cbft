@@ -148,6 +148,13 @@ func testCfg(t *testing.T, c Cfg) {
 	}
 }
 
+func TestCfgCASError(t *testing.T) {
+	err := &CfgCASError{}
+	if err.Error() != "CAS mismatch" {
+		t.Errorf("expected error string wasn't right")
+	}
+}
+
 func TestCfgSimpleLoad(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
