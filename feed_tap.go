@@ -25,38 +25,21 @@ type TAPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	bucket     *couchbase.Bucket
-	feed       *couchbase.TapFeed
 	streams    map[string]Stream
 	closeCh    chan bool
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*TAPFeed, error) {
-	// TODO: All this error checking should move into channel loop
-	// so that it handles reconnects and retries correctly.
-	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
-	if err != nil {
-		return nil, err
-	}
-	if bucketUUID != "" && bucketUUID != bucket.UUID {
-		bucket.Close()
-		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
-	}
-
 	rv := TAPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
-		bucketUUID: "",     // bucket.UUID skipped for now as we're ahead of rest of code
-		bucket:     bucket, // TODO: need to close bucket on cleanup.
+		bucketUUID: bucketUUID,
 		streams:    streams,
 		closeCh:    make(chan bool),
 	}
-
-	log.Printf("NewTapFeed, name: %s", rv.Name())
-
 	return &rv, nil
 }
 
@@ -65,45 +48,77 @@ func (t *TAPFeed) Name() string {
 }
 
 func (t *TAPFeed) Start() error {
-	log.Printf("TapFeed.Start, name: %s", t.Name())
+	log.Printf("TAPFeed.Start, name: %s", t.Name())
 
-	args := memcached.TapArguments{}
-	feed, err := t.bucket.StartTapFeed(&args)
-	if err != nil {
-		return err
-	}
-	t.feed = feed
-	go func() {
-		for {
-			select {
-			case <-t.closeCh:
-				break
-			case op, ok := <-feed.C:
-				if !ok {
-					break
-				}
-				if op.Opcode == memcached.TapMutation {
-					t.streams[""] <- &StreamUpdate{
-						id:   op.Key,
-						body: op.Value,
-					}
-				} else if op.Opcode == memcached.TapDeletion {
-					t.streams[""] <- &StreamDelete{
-						id: op.Key,
-					}
-				}
+	go ExponentialBackoffLoop(t.Name(),
+		func() int {
+			progress, err := t.feed()
+			if err != nil {
+				log.Printf("TAPFeed name: %s, progress: %d, err: %v",
+					t.Name(), progress, err)
 			}
-		}
-	}()
+			return progress
+		},
+		FEED_SLEEP_INIT_MS,  // Milliseconds.
+		FEED_BACKOFF_FACTOR, // Backoff.
+		FEED_SLEEP_MAX_MS)
+
 	return nil
 }
 
-func (t *TAPFeed) Close() error {
-	if err := t.feed.Close(); err != nil {
-		return err
+func (t *TAPFeed) feed() (int, error) {
+	// TODO: Check closeCh.
+
+	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
+	if err != nil {
+		return 0, err
 	}
+	defer bucket.Close()
+
+	if t.bucketUUID != "" && t.bucketUUID != bucket.UUID {
+		bucket.Close()
+		return -1, fmt.Errorf("mismatched bucket uuid,"+
+			"bucketName: %s, bucketUUID: %s, bucket.UUID: %s",
+			t.bucketName, t.bucketUUID, bucket.UUID)
+	}
+
+	args := memcached.TapArguments{}
+	feed, err := bucket.StartTapFeed(&args)
+	if err != nil {
+		return 0, err
+	}
+	defer feed.Close()
+
+	for {
+		select {
+		case <-t.closeCh:
+			return -1, nil
+
+		case op, ok := <-feed.C:
+			if !ok {
+				break
+			}
+
+			if op.Opcode == memcached.TapMutation {
+				// TODO: Handle dispatch to streams correctly.
+				t.streams[""] <- &StreamUpdate{
+					id:   op.Key,
+					body: op.Value,
+				}
+			} else if op.Opcode == memcached.TapDeletion {
+				// TODO: Handle dispatch to streams correctly.
+				t.streams[""] <- &StreamDelete{
+					id: op.Key,
+				}
+			}
+		}
+	}
+
+	return 1, nil
+}
+
+func (t *TAPFeed) Close() error {
 	close(t.closeCh)
-	t.bucket.Close()
 	return nil
 }
 

@@ -16,6 +16,9 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
+
+	log "github.com/couchbaselabs/clog"
 )
 
 // Compares two dotted versioning string and returns true when x >= y.
@@ -48,4 +51,38 @@ func NewUUID() string {
 	val2 := rand.Int63()
 	uuid := fmt.Sprintf("%x%x", val1, val2)
 	return uuid
+}
+
+// Calls f() in a loop, sleeping in an exponential backoff if needed.
+// The provided f() function should return < 0 to stop the loop; >= 0
+// to continue the loop, where > 0 means there was progress which
+// allows an immediate retry of f() with no sleeping.  A return of < 0
+// is useful when f() will never make any future progress.
+func ExponentialBackoffLoop(name string,
+	f func() int,
+	startSleepMillis int,
+	backoffFactor float32,
+	maxSleepMillis int) {
+	sleepMillis := startSleepMillis
+	for {
+		progress := f()
+		log.Printf("backoff: %s, progress: %d, sleep: %d (millis)",
+			name, progress, sleepMillis)
+		if progress < 0 {
+			return
+		}
+		if progress > 0 {
+			// Retry right away when there was progress, resetting our sleep.
+			sleepMillis = startSleepMillis
+		} else {
+			// If zero progress was made, sleep.
+			time.Sleep(time.Duration(sleepMillis) * time.Millisecond)
+
+			// And backoff some more in case next time also has no progress.
+			sleepMillis = int(float32(sleepMillis) * backoffFactor)
+			if sleepMillis > maxSleepMillis {
+				sleepMillis = maxSleepMillis
+			}
+		}
+	}
 }

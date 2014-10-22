@@ -15,6 +15,7 @@ import (
 	"fmt"
 
 	"github.com/couchbase/gomemcached"
+	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
@@ -24,29 +25,18 @@ type DCPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	bucket     *couchbase.Bucket
-	feed       *couchbase.UprFeed
 	streams    map[string]Stream
 	closeCh    chan bool
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*DCPFeed, error) {
-	bucket, err := couchbase.GetBucket(url, poolName, bucketName)
-	if err != nil {
-		return nil, err
-	}
-	if bucketUUID != "" && bucketUUID != bucket.UUID {
-		bucket.Close()
-		return nil, fmt.Errorf("mismatched bucket uuid, bucketName: %s", bucketName)
-	}
 	rv := DCPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
-		bucketUUID: bucket.UUID,
-		bucket:     bucket, // TODO: need to close bucket on cleanup.
+		bucketUUID: bucketUUID,
 		streams:    streams,
 		closeCh:    make(chan bool),
 	}
@@ -58,55 +48,90 @@ func (t *DCPFeed) Name() string {
 }
 
 func (t *DCPFeed) Start() error {
-	// start upr feed
-	feed, err := t.bucket.StartUprFeed("index" /*name*/, 0)
+	log.Printf("DCPFeed.Start, name: %s", t.Name())
+
+	go ExponentialBackoffLoop(t.Name(),
+		func() int {
+			progress, err := t.feed()
+			if err != nil {
+				log.Printf("DCPFeed name: %s, progress: %d, err: %v",
+					t.Name(), progress, err)
+			}
+			return progress
+		},
+		FEED_SLEEP_INIT_MS,  // Milliseconds.
+		FEED_BACKOFF_FACTOR, // Backoff.
+		FEED_SLEEP_MAX_MS)
+
+	return nil
+}
+
+func (t *DCPFeed) feed() (int, error) {
+	// TODO: Check closeCh.
+
+	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	defer bucket.Close()
+
+	if t.bucketUUID != "" && t.bucketUUID != bucket.UUID {
+		bucket.Close()
+		return -1, fmt.Errorf("mismatched bucket uuid,"+
+			"bucketName: %s, bucketUUID: %s, bucket.UUID: %s",
+			t.bucketName, t.bucketUUID, bucket.UUID)
+	}
+
+	// TODO: See if UprFeed name is important.
+	feed, err := bucket.StartUprFeed("index" /*name*/, 0)
+	if err != nil {
+		return 0, err
+	}
+	defer feed.Close()
+
 	err = feed.UprRequestStream(
-		uint16(0),          /*vbno*/
+		uint16(0),          /*vbno - TODO: use the vbno's*/
 		uint32(0),          /*opaque*/
 		0,                  /*flag*/
 		0,                  /*vbuuid*/
-		0,                  /*seqStart*/
+		0,                  /*seqStart - TODO: use the seqno's*/
 		0xFFFFFFFFFFFFFFFF, /*seqEnd*/
 		0,                  /*snaps*/
 		0)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	t.feed = feed
-	go func() {
-		for {
-			select {
-			case <-t.closeCh:
+
+	for {
+		select {
+		case <-t.closeCh:
+			return -1, nil
+
+		case uprEvent, ok := <-feed.C:
+			if !ok {
 				break
-			case uprEvent, ok := <-feed.C:
-				if !ok {
-					break
+			}
+
+			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
+				// TODO: Handle dispatch to streams correctly.
+				t.streams[""] <- &StreamUpdate{
+					id:   uprEvent.Key,
+					body: uprEvent.Value,
 				}
-				if uprEvent.Opcode == gomemcached.UPR_MUTATION {
-					t.streams[""] <- &StreamUpdate{
-						id:   uprEvent.Key,
-						body: uprEvent.Value,
-					}
-				} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
-					t.streams[""] <- &StreamDelete{
-						id: uprEvent.Key,
-					}
+			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
+				// TODO: Handle dispatch to streams correctly.
+				t.streams[""] <- &StreamDelete{
+					id: uprEvent.Key,
 				}
 			}
 		}
-	}()
-	return nil
+	}
+
+	return 1, nil
 }
 
 func (t *DCPFeed) Close() error {
-	if err := t.feed.Close(); err != nil {
-		return err
-	}
 	close(t.closeCh)
-	t.bucket.Close()
 	return nil
 }
 

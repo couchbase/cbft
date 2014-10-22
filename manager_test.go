@@ -107,9 +107,14 @@ func TestManagerStart(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
+}
 
-	cfg = NewCfgMem()
-	m = NewManager(VERSION, cfg, NewUUID(), ":1000", emptyDir, "some-datasource", nil)
+func TestManagerRestart(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	m := NewManager(VERSION, cfg, NewUUID(), ":1000", emptyDir, "some-datasource", nil)
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
@@ -118,8 +123,8 @@ func TestManagerStart(t *testing.T) {
 	}
 	close(m.plannerCh)
 	feeds, pindexes := m.CurrentMaps()
-	if len(feeds) != 0 || len(pindexes) != 1 {
-		t.Errorf("expected to be 1 pindex, got feeds: %+v, pindexes: %+v",
+	if len(feeds) != 1 || len(pindexes) != 1 {
+		t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
 			feeds, pindexes)
 	}
 	for _, pindex := range pindexes {
@@ -133,8 +138,8 @@ func TestManagerStart(t *testing.T) {
 	}
 	close(m2.plannerCh)
 	feeds, pindexes = m2.CurrentMaps()
-	if len(feeds) != 0 || len(pindexes) != 1 {
-		t.Errorf("expected to load 1 pindex, got feeds: %+v, pindexes: %+v",
+	if len(feeds) != 1 || len(pindexes) != 1 {
+		t.Errorf("expected to load 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
 			feeds, pindexes)
 	}
 }
