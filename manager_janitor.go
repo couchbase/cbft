@@ -27,35 +27,39 @@ func (mgr *Manager) JanitorKick(msg string) {
 
 func (mgr *Manager) JanitorLoop() {
 	for m := range mgr.janitorCh {
-		mgr.JanitorOnce(m.msg)
+		err := mgr.JanitorOnce(m.msg)
+		if err != nil {
+			log.Printf("error: JanitorOnce, err: %v", err)
+			// Keep looping as perhaps it's a transient issue.
+		}
 		if m.resCh != nil {
 			close(m.resCh)
 		}
 	}
 }
 
-func (mgr *Manager) JanitorOnce(reason string) bool {
+func (mgr *Manager) JanitorOnce(reason string) error {
 	log.Printf("janitor awakes, reason: %s", reason)
 
 	if mgr.cfg == nil { // Can occur during testing.
-		log.Printf("janitor skipped due to nil cfg")
-		return false
+		return fmt.Errorf("janitor skipped due to nil cfg")
 	}
 
 	planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
 	if err != nil {
-		log.Printf("janitor skipped due to CfgGetPlanPIndexes err: %v", err)
-		return false
+		return fmt.Errorf("janitor skipped on CfgGetPlanPIndexes err: %v", err)
 	}
 	if planPIndexes == nil {
-		log.Printf("janitor skipped due to nil planPIndexes")
-		return false
+		// Might happen if janitor wins a race.
+		// TODO: Should we reschedule another future janitor kick?
+		return fmt.Errorf("janitor skipped on nil planPIndexes")
 	}
 
 	currFeeds, currPIndexes := mgr.CurrentMaps()
 
 	addPlanPIndexes, removePIndexes :=
 		CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
+
 	log.Printf("janitor pindexes to add:")
 	for _, ppi := range addPlanPIndexes {
 		log.Printf("  %+v", ppi)
@@ -67,25 +71,26 @@ func (mgr *Manager) JanitorOnce(reason string) bool {
 
 	// First, teardown pindexes that need to be removed.
 	for _, removePIndex := range removePIndexes {
-		log.Printf("removing pindex: %s", removePIndex.Name)
+		log.Printf("janitor removing pindex: %s", removePIndex.Name)
 		err = mgr.StopPIndex(removePIndex)
 		if err != nil {
-			log.Printf("removing pindex: %s, err: %v", removePIndex.Name, err)
+			return fmt.Errorf("error: janitor removing pindex: %s, err: %v",
+				removePIndex.Name, err)
 		}
 	}
 	// Then, (re-)create pindexes that we're missing.
 	for _, addPlanPIndex := range addPlanPIndexes {
-		log.Printf("adding pindex: %s", addPlanPIndex.Name)
+		log.Printf("janitor adding pindex: %s", addPlanPIndex.Name)
 		err = mgr.StartPIndex(addPlanPIndex)
 		if err != nil {
-			log.Printf("adding pindex: %s, err: %v", addPlanPIndex.Name, err)
+			return fmt.Errorf("error: janitor adding pindex: %s, err: %v",
+				addPlanPIndex.Name, err)
 		}
 	}
 
 	currFeeds, currPIndexes = mgr.CurrentMaps()
 
-	addFeeds, removeFeeds :=
-		CalcFeedsDelta(currFeeds, currPIndexes)
+	addFeeds, removeFeeds := CalcFeedsDelta(currFeeds, currPIndexes)
 	log.Printf("janitor feeds add: %+v, remove: %+v",
 		addFeeds, removeFeeds)
 
@@ -93,18 +98,19 @@ func (mgr *Manager) JanitorOnce(reason string) bool {
 	for _, removeFeed := range removeFeeds {
 		err = mgr.StopFeed(removeFeed)
 		if err != nil {
-			log.Printf("  removing feed: %s, err: %v", removeFeed.Name, err)
+			return fmt.Errorf("error: janitor removing feed: %s, err: %v",
+				removeFeed.Name, err)
 		}
 	}
 	// Then, (re-)create feeds that we're missing.
 	for _, targePIndexes := range addFeeds {
 		mgr.StartFeed(targePIndexes)
 		if err != nil {
-			log.Printf("  adding feed, err: %v", err)
+			return fmt.Errorf("error: janitor adding feed, err: %v", err)
 		}
 	}
 
-	return true
+	return nil
 }
 
 // Functionally determine the delta of which pindexes need creation

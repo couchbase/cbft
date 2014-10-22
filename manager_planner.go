@@ -53,6 +53,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	if mgr.cfg == nil { // Can occur during testing.
 		return false, fmt.Errorf("planner skipped due to nil cfg")
 	}
+
 	ok, err := CheckVersion(mgr.cfg, mgr.version)
 	if err != nil {
 		return false, fmt.Errorf("planner skipped on CheckVersion err: %v", err)
