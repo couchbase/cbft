@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewManagerRESTRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
+func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Router, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, []string{
 		"/overview",
@@ -22,9 +22,11 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string) (*mux.Router, error) {
 		"/indexes",
 		"/analysis",
 		"/monitor",
+		"/logs",
 	})
 
 	// these are custom handlers for cbft
+	r.Handle("/api/logs", NewGetLogsHandler(mr))
 	r.Handle("/api/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 

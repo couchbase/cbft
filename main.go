@@ -85,7 +85,7 @@ func main() {
 	}
 
 	router, err := MainStart(cfg, uuid, *bindAddr, *dataDir,
-		*staticDir, *server, *wanted)
+		*staticDir, *server, *wanted, mr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func MainUUID(dataDir string) (string, error) {
 	return uuid, nil
 }
 
-func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wanted bool) (
+func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wanted bool, mr *MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -143,7 +143,7 @@ func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wante
 		return nil, err
 	}
 
-	return NewManagerRESTRouter(mgr, staticDir)
+	return NewManagerRESTRouter(mgr, staticDir, mr)
 }
 
 type MainHandlers struct{}
