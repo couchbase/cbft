@@ -9,7 +9,7 @@ function LogsCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 		$http.get('/api/logs').success(function(data) {
 			for(var i in data.messages) {
 				message = data.messages[i];
-				$scope.logMessages += $sce.trustAsHtml(message) + "\n";
+				$scope.logMessages += $sce.trustAsHtml(message);
 			}
 		}).
 		error(function(data, code) {
