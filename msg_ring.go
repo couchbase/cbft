@@ -42,7 +42,9 @@ func NewMsgRing(inner io.Writer, ringSize int) (*MsgRing, error) {
 func (m *MsgRing) Write(p []byte) (n int, err error) {
 	m.m.Lock()
 
-	m.Msgs[m.Next] = p
+	cp := make([]byte, len(p))
+	copy(cp, p)
+	m.Msgs[m.Next] = cp
 	m.Next += 1
 	if m.Next >= len(m.Msgs) {
 		m.Next = 0
@@ -72,6 +74,5 @@ func (m *MsgRing) Messages() [][]byte {
 		}
 		i += 1
 	}
-
 	return rv
 }
