@@ -109,7 +109,7 @@ func (mgr *Manager) LoadDataDir() error {
 			continue
 		}
 
-		mgr.RegisterPIndex(pindex)
+		mgr.registerPIndex(pindex)
 	}
 
 	log.Printf("loading dataDir... done")
@@ -165,7 +165,7 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 	return nil
 }
 
-func (mgr *Manager) RegisterFeed(feed Feed) error {
+func (mgr *Manager) registerFeed(feed Feed) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
@@ -177,7 +177,7 @@ func (mgr *Manager) RegisterFeed(feed Feed) error {
 	return nil
 }
 
-func (mgr *Manager) UnregisterFeed(name string) Feed {
+func (mgr *Manager) unregisterFeed(name string) Feed {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
@@ -189,7 +189,7 @@ func (mgr *Manager) UnregisterFeed(name string) Feed {
 	return nil
 }
 
-func (mgr *Manager) RegisterPIndex(pindex *PIndex) error {
+func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
@@ -204,7 +204,7 @@ func (mgr *Manager) RegisterPIndex(pindex *PIndex) error {
 	return nil
 }
 
-func (mgr *Manager) UnregisterPIndex(name string) *PIndex {
+func (mgr *Manager) unregisterPIndex(name string) *PIndex {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 

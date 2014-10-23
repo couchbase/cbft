@@ -83,7 +83,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	// First, teardown pindexes that need to be removed.
 	for _, removePIndex := range removePIndexes {
 		log.Printf("janitor removing pindex: %s", removePIndex.Name)
-		err = mgr.StopPIndex(removePIndex)
+		err = mgr.stopPIndex(removePIndex)
 		if err != nil {
 			return fmt.Errorf("error: janitor removing pindex: %s, err: %v",
 				removePIndex.Name, err)
@@ -116,7 +116,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 
 	// First, teardown feeds that need to be removed.
 	for _, removeFeed := range removeFeeds {
-		err = mgr.StopFeed(removeFeed)
+		err = mgr.stopFeed(removeFeed)
 		if err != nil {
 			return fmt.Errorf("error: janitor removing feed name: %s, err: %v",
 				removeFeed.Name, err)
@@ -270,7 +270,7 @@ func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
 			planPIndex.Name, err)
 	}
 
-	if err = mgr.RegisterPIndex(pindex); err != nil {
+	if err = mgr.registerPIndex(pindex); err != nil {
 		close(pindex.Stream)
 		return err
 	}
@@ -278,19 +278,19 @@ func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
 	return nil
 }
 
-func (mgr *Manager) StopPIndex(pindex *PIndex) error {
+func (mgr *Manager) stopPIndex(pindex *PIndex) error {
 	feeds, _ := mgr.CurrentMaps()
 	for _, feed := range feeds {
 		for _, stream := range feed.Streams() {
 			if stream == pindex.Stream {
-				if err := mgr.StopFeed(feed); err != nil {
+				if err := mgr.stopFeed(feed); err != nil {
 					panic(fmt.Sprintf("error: could not stop feed, err: %v", err))
 				}
 			}
 		}
 	}
 
-	pindexUnreg := mgr.UnregisterPIndex(pindex.Name)
+	pindexUnreg := mgr.unregisterPIndex(pindex.Name)
 	if pindexUnreg != nil && pindexUnreg != pindex {
 		panic("unregistered pindex isn't the one we're stopping")
 	}
@@ -322,7 +322,7 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 	// TODO: Make this more extensible one day for more SourceType possibilities.
 	if pindexFirst.SourceType == "couchbase" {
 		// TODO: Should default to DCP feed or projector feed one day.
-		return mgr.StartTAPFeed(feedName,
+		return mgr.startTAPFeed(feedName,
 			pindexFirst.IndexName, pindexFirst.IndexUUID,
 			pindexFirst.SourceName, pindexFirst.SourceUUID, streams)
 	}
@@ -331,8 +331,8 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 		pindexFirst.SourceType)
 }
 
-func (mgr *Manager) StopFeed(feed Feed) error {
-	feedUnreg := mgr.UnregisterFeed(feed.Name())
+func (mgr *Manager) stopFeed(feed Feed) error {
+	feedUnreg := mgr.unregisterFeed(feed.Name())
 	if feedUnreg != nil && feedUnreg != feed {
 		panic("error: unregistered feed isn't the one we're closing")
 	}
@@ -345,7 +345,7 @@ func (mgr *Manager) StopFeed(feed Feed) error {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) StartTAPFeed(feedName, indexName, indexUUID,
+func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 	bucketName, bucketUUID string, streams map[string]Stream) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, streams)
@@ -368,7 +368,7 @@ func (mgr *Manager) StartTAPFeed(feedName, indexName, indexUUID,
 			mgr.server, err)
 	}
 
-	if err = mgr.RegisterFeed(feed); err != nil {
+	if err = mgr.registerFeed(feed); err != nil {
 		// TODO: cleanup?
 		return err
 	}

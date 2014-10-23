@@ -215,17 +215,17 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("expected NewPIndex() to work")
 	}
 	defer close(p.Stream)
-	px := m.UnregisterPIndex(p.Name)
+	px := m.unregisterPIndex(p.Name)
 	if px != nil {
-		t.Errorf("expected UnregisterPIndex() on newborn manager to fail")
+		t.Errorf("expected unregisterPIndex() on newborn manager to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	err = m.RegisterPIndex(p)
+	err = m.registerPIndex(p)
 	if err != nil {
-		t.Errorf("expected first RegisterPIndex() to work")
+		t.Errorf("expected first registerPIndex() to work")
 	}
 	if meh.lastPIndex != p || meh.lastCall != "OnRegisterPIndex" {
 		t.Errorf("expected OnRegisterPIndex callback to meh")
@@ -233,9 +233,9 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	meh.lastPIndex = nil
 	meh.lastCall = ""
 
-	err = m.RegisterPIndex(p)
+	err = m.registerPIndex(p)
 	if err == nil {
-		t.Errorf("expected second RegisterPIndex() to fail")
+		t.Errorf("expected second registerPIndex() to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected OnRegisterPIndex callback to meh")
@@ -254,9 +254,9 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("wrong pindex in current pindexes")
 	}
 
-	px = m.UnregisterPIndex(p.Name)
+	px = m.unregisterPIndex(p.Name)
 	if px == nil {
-		t.Errorf("expected first UnregisterPIndex() to work")
+		t.Errorf("expected first unregisterPIndex() to work")
 	}
 	if meh.lastPIndex != p || meh.lastCall != "OnUnregisterPIndex" {
 		t.Errorf("expected OnRegisterPIndex callback to meh")
@@ -264,9 +264,9 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	meh.lastPIndex = nil
 	meh.lastCall = ""
 
-	px = m.UnregisterPIndex(p.Name)
+	px = m.unregisterPIndex(p.Name)
 	if px != nil {
-		t.Errorf("expected second UnregisterPIndex() to fail")
+		t.Errorf("expected second unregisterPIndex() to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected OnRegisterPIndex callback to meh")
@@ -304,25 +304,25 @@ func TestManagerRegisterFeed(t *testing.T) {
 	}
 
 	f := &ErrorOnlyFeed{name: "f0"}
-	fx := m.UnregisterFeed(f.Name())
+	fx := m.unregisterFeed(f.Name())
 	if fx != nil {
-		t.Errorf("expected UnregisterFeed() on newborn manager to fail")
+		t.Errorf("expected unregisterFeed() on newborn manager to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	err := m.RegisterFeed(f)
+	err := m.registerFeed(f)
 	if err != nil {
-		t.Errorf("expected first RegisterFeed() to work")
+		t.Errorf("expected first registerFeed() to work")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	err = m.RegisterFeed(f)
+	err = m.registerFeed(f)
 	if err == nil {
-		t.Errorf("expected second RegisterFeed() to fail")
+		t.Errorf("expected second registerFeed() to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
@@ -341,17 +341,17 @@ func TestManagerRegisterFeed(t *testing.T) {
 		t.Errorf("wrong feed in current feeds")
 	}
 
-	fx = m.UnregisterFeed(f.Name())
+	fx = m.unregisterFeed(f.Name())
 	if fx == nil {
-		t.Errorf("expected first UnregisterFeed() to work")
+		t.Errorf("expected first unregisterFeed() to work")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	fx = m.UnregisterFeed(f.Name())
+	fx = m.unregisterFeed(f.Name())
 	if fx != nil {
-		t.Errorf("expected second UnregisterFeed() to fail")
+		t.Errorf("expected second unregisterFeed() to fail")
 	}
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
