@@ -61,10 +61,6 @@ func NewManager(version string, cfg Cfg, uuid, bindAddr, dataDir string,
 }
 
 func (mgr *Manager) Start(registerAsWanted bool) error {
-	if err := mgr.LoadDataDir(); err != nil {
-		return err
-	}
-
 	// Save our nodeDef (with our UUID) into the Cfg.
 	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN); err != nil {
 		return err
@@ -73,6 +69,10 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		if err := mgr.SaveNodeDef(NODE_DEFS_WANTED); err != nil {
 			return err
 		}
+	}
+
+	if err := mgr.LoadDataDir(); err != nil {
+		return err
 	}
 
 	go mgr.PlannerLoop()
