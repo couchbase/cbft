@@ -172,7 +172,8 @@ covering just a subset of a larger index, but an PIndex doesn't really
 know.  Higher levels of the system (Manager/Planner/Janitor) have a
 logical index to PIndex mapping.  An PIndex, in contrast, just knows
 about a single Stream as its input, and a PIndex doesn't know about
-couchbase, buckets, vbuckets, or DCP/TAP.
+couchbase, buckets, vbuckets, or DCP/TAP.  The PIndex interface should
+also allow for different, potential PIndex implementations.
 
 A Stream is a channel of StreamRequest objects, which might represent
 mutations (document updated, deleted), or "administrative" requests
