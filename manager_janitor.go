@@ -316,6 +316,10 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		if f := FeedName(pindex); f != feedName {
 			panic(fmt.Sprintf("error: unexpected feedName: %s != %s", f, feedName))
 		}
+		if _, exists := streams[pindex.SourcePartitions]; exists {
+			panic(fmt.Sprintf("error: SourcePartitions collision: %s",
+				pindex.SourcePartitions))
+		}
 
 		streams[pindex.SourcePartitions] = pindex.Stream
 	}
