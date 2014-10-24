@@ -120,7 +120,8 @@ func TestManagerRestart(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err != nil {
+	if err := m.CreateIndex("couchbase", "default", "123",
+		"bleve", "foo", ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	close(m.plannerCh)
@@ -130,7 +131,7 @@ func TestManagerRestart(t *testing.T) {
 			feeds, pindexes)
 	}
 	for _, pindex := range pindexes {
-		pindex.BIndex.Close()
+		pindex.Impl.Close()
 	}
 
 	m2 := NewManager(VERSION, cfg, NewUUID(), ":1000", emptyDir, "some-datasource", nil)
@@ -155,10 +156,12 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err != nil {
+	if err := m.CreateIndex("couchbase", "default", "123",
+		"bleve", "foo", ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "foo", ""); err == nil {
+	if err := m.CreateIndex("couchbase", "default", "123",
+		"bleve", "foo", ""); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
 	if err := m.DeleteIndex("not-an-actual-index-name"); err == nil {
@@ -207,7 +210,7 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("expected no callback events to meh")
 	}
 
-	p, err := NewPIndex("p0", "uuid",
+	p, err := NewPIndex("p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		m.PIndexPath("p0"))

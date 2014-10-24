@@ -257,6 +257,7 @@ func FeedName(pindex *PIndex) string {
 
 func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
 	pindex, err := NewPIndex(planPIndex.Name, NewUUID(),
+		planPIndex.IndexType,
 		planPIndex.IndexName,
 		planPIndex.IndexUUID,
 		planPIndex.IndexMapping,

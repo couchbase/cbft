@@ -28,6 +28,7 @@ type IndexDefs struct {
 }
 
 type IndexDef struct {
+	Type       string `json:"type"` // Like "bleve", "blackhole", etc.
 	Name       string `json:"name"`
 	UUID       string `json:"uuid"`
 	Mapping    string `json:"mapping"`
@@ -69,6 +70,7 @@ type PlanPIndexes struct {
 type PlanPIndex struct {
 	Name             string            `json:"name"` // Stable & unique cluster wide.
 	UUID             string            `json:"uuid"`
+	IndexType        string            `json:"indexType"`    // See IndexDef.Type.
 	IndexName        string            `json:"indexName"`    // See IndexDef.Name.
 	IndexUUID        string            `json:"indexUUID"`    // See IndefDef.UUID.
 	IndexMapping     string            `json:"indexMapping"` // See IndexDef.Mapping.

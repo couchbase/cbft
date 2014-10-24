@@ -17,8 +17,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"github.com/blevesearch/bleve"
 )
 
 // A PIndex represents a "physical" index or a index "partition".
@@ -27,41 +25,40 @@ const PINDEX_META_FILENAME string = "PINDEX_META"
 const pindexPathSuffix string = ".pindex"
 
 type PIndex struct {
-	Name             string      `json:"name"`
-	UUID             string      `json:"uuid"`
-	IndexName        string      `json:"indexName"`
-	IndexUUID        string      `json:"indexUUID"`
-	IndexMapping     string      `json:"indexMapping"`
-	SourceType       string      `json:"sourceType"`
-	SourceName       string      `json:"sourceName"`
-	SourceUUID       string      `json:"sourceUUID"`
-	SourcePartitions string      `json:"sourcePartitions"`
-	Path             string      `json:"-"` // Transient, not persisted.
-	BIndex           bleve.Index `json:"-"` // Transient, not persisted.
-	Stream           Stream      `json:"-"` // Transient, not persisted.
+	Name             string     `json:"name"`
+	UUID             string     `json:"uuid"`
+	IndexType        string     `json:"indexType"`
+	IndexName        string     `json:"indexName"`
+	IndexUUID        string     `json:"indexUUID"`
+	IndexMapping     string     `json:"indexMapping"`
+	SourceType       string     `json:"sourceType"`
+	SourceName       string     `json:"sourceName"`
+	SourceUUID       string     `json:"sourceUUID"`
+	SourcePartitions string     `json:"sourcePartitions"`
+	Path             string     `json:"-"` // Transient, not persisted.
+	Impl             PIndexImpl `json:"-"` // Transient, not persisted.
+	Stream           Stream     `json:"-"` // Transient, not persisted.
+}
+
+type PIndexImpl interface {
+	Close()
 }
 
 func NewPIndex(name, uuid,
-	indexName, indexUUID, indexMapping,
+	indexType, indexName, indexUUID, indexMapping,
 	sourceType, sourceName, sourceUUID, sourcePartitions,
 	path string) (*PIndex, error) {
-	bindexMapping := bleve.NewIndexMapping()
-
-	if len(indexMapping) > 0 {
-		if err := json.Unmarshal([]byte(indexMapping), &bindexMapping); err != nil {
-			return nil, fmt.Errorf("error: could not parse index mapping: %v", err)
-		}
-	}
-
-	bindex, err := bleve.New(path, bindexMapping)
+	impl, err := NewPIndexImpl(indexType, indexMapping, path)
 	if err != nil {
-		return nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
-			path, err)
+		os.RemoveAll(path)
+		return nil, fmt.Errorf("error: new indexType: %s, indexMapping: %s,"+
+			" path: %s, err: %s", indexType, indexMapping, path, err)
 	}
 
 	pindex := &PIndex{
 		Name:             name,
 		UUID:             uuid,
+		IndexType:        indexType,
 		IndexName:        indexName,
 		IndexUUID:        indexUUID,
 		IndexMapping:     indexMapping,
@@ -70,19 +67,22 @@ func NewPIndex(name, uuid,
 		SourceUUID:       sourceUUID,
 		SourcePartitions: sourcePartitions,
 		Path:             path,
-		BIndex:           bindex,
+		Impl:             impl,
 		Stream:           make(Stream),
 	}
 	buf, err := json.Marshal(pindex)
 	if err != nil {
+		impl.Close()
+		os.RemoveAll(path)
 		return nil, err
 	}
 
-	// TODO: Save this metadata in the bleve index instead of a separate file.
 	err = ioutil.WriteFile(path+string(os.PathSeparator)+PINDEX_META_FILENAME,
 		buf, 0600)
 	if err != nil {
-		bindex.Close()
+		impl.Close()
+
+		os.RemoveAll(path)
 
 		return nil, fmt.Errorf("error: could not save PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
@@ -93,17 +93,9 @@ func NewPIndex(name, uuid,
 }
 
 func OpenPIndex(path string) (*PIndex, error) {
-	bindex, err := bleve.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("error: could not open bleve index, path: %v, err: %v",
-			path, err)
-	}
-
-	// TODO: Read this metadata from bleve index instead of a separate file.
+	// TODO: We're assuming the index impl uses path as a subdirectory.
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
-		bindex.Close()
-
 		return nil, fmt.Errorf("error: could not load PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
 	}
@@ -111,14 +103,18 @@ func OpenPIndex(path string) (*PIndex, error) {
 	pindex := &PIndex{}
 	err = json.Unmarshal(buf, pindex)
 	if err != nil {
-		bindex.Close()
-
 		return nil, fmt.Errorf("error: could not parse pindex json,"+
 			" path: %s, err: %v", path, err)
 	}
 
+	impl, err := OpenPIndexImpl(pindex.IndexType, path)
+	if err != nil {
+		return nil, fmt.Errorf("error: could not open indexType: %s, path: %s, err: %v",
+			pindex.IndexType, path, err)
+	}
+
 	pindex.Path = path
-	pindex.BIndex = bindex
+	pindex.Impl = impl
 	pindex.Stream = make(Stream)
 
 	go pindex.Run()

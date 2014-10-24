@@ -169,6 +169,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			// PlanPIndex.Name.
 			Name:             name,
 			UUID:             NewUUID(),
+			IndexType:        indexDef.Type,
 			IndexName:        indexDef.Name,
 			IndexUUID:        indexDef.UUID,
 			IndexMapping:     indexDef.Mapping,

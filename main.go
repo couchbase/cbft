@@ -26,6 +26,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 
 	log "github.com/couchbaselabs/clog"
@@ -149,7 +150,10 @@ func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wante
 type MainHandlers struct{}
 
 func (meh *MainHandlers) OnRegisterPIndex(pindex *PIndex) {
-	bleveHttp.RegisterIndexName(pindex.Name, pindex.BIndex)
+	bindex, ok := pindex.Impl.(bleve.Index)
+	if ok {
+		bleveHttp.RegisterIndexName(pindex.Name, bindex)
+	}
 }
 
 func (meh *MainHandlers) OnUnregisterPIndex(pindex *PIndex) {

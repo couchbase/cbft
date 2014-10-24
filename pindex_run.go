@@ -13,10 +13,30 @@ package main
 
 import (
 	"os"
+
+	"github.com/blevesearch/bleve"
+
+	log "github.com/couchbaselabs/clog"
 )
 
 func (pindex *PIndex) Run() {
-	for m := range pindex.Stream {
+	if pindex.IndexType == "bleve" {
+		err := RunBleveStream(pindex.Stream, pindex.Impl.(bleve.Index))
+		if err != nil {
+			log.Printf("error: RunBleveStream, err: %v", err)
+			return
+		}
+	}
+
+	// NOTE: We expect the PIndexImpl to handle any inflight, concurrent
+	// queries, access and Close() correctly with its own locking.
+	pindex.Impl.Close()
+
+	os.RemoveAll(pindex.Path)
+}
+
+func RunBleveStream(stream Stream, bindex bleve.Index) error {
+	for m := range stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.
 
@@ -25,15 +45,11 @@ func (pindex *PIndex) Run() {
 
 		switch m := m.(type) {
 		case *StreamUpdate:
-			pindex.BIndex.Index(string(m.Id()), m.Body())
+			bindex.Index(string(m.Id()), m.Body())
 		case *StreamDelete:
-			pindex.BIndex.Delete(string(m.Id()))
+			bindex.Delete(string(m.Id()))
 		}
 	}
 
-	// The bleve.Index.Close() handles any inflight, concurrent
-	// queries with its own locking.
-	pindex.BIndex.Close()
-
-	os.RemoveAll(pindex.Path)
+	return nil
 }

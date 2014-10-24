@@ -17,10 +17,10 @@ import (
 
 // Creates a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
+	indexType, indexName, indexMapping string) error {
 	// TODO: what about auth info to be able to access bucket?
 	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
 	// TODO: what about hints for # of partitions, etc?
-	indexName, indexMapping string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return fmt.Errorf("error: CfgGetIndexDefs err: %v", err)
@@ -40,6 +40,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	uuid := NewUUID()
 
 	indexDef := &IndexDef{
+		Type:       indexType,
 		Name:       indexName,
 		UUID:       uuid,
 		Mapping:    indexMapping,

@@ -28,6 +28,8 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	indexType := "bleve"
+
 	// find the name of the index to create
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
@@ -42,10 +44,14 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	sourceType := "couchbase"
+	sourceName := indexName
+	sourceUUID := ""
+
 	// TODO: bad assumption of bucketName == indexName right now.
 	// TODO: need a bucketUUID, or perhaps "" just means use latest.
-	err = h.mgr.CreateIndex("couchbase", indexName, "",
-		indexName, string(indexMapping))
+	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID,
+		indexType, indexName, string(indexMapping))
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)

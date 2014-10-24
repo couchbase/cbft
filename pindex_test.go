@@ -28,8 +28,10 @@ func TestNewPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
+	// TODO: Should have a blackhole index implementation for testing.
+
 	pindex, err := NewPIndex("fake", "uuid",
-		"indexName", "indexUUID", "",
+		"bleve", "indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
@@ -38,7 +40,7 @@ func TestNewPIndex(t *testing.T) {
 	close(pindex.Stream)
 
 	pindex, err = NewPIndex("fake", "uuid",
-		"indexName", "indexUUID", "{}",
+		"bleve", "indexName", "indexUUID", "{}",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
@@ -46,7 +48,7 @@ func TestNewPIndex(t *testing.T) {
 	}
 
 	pindex, err = NewPIndex("fake", "uuid",
-		"indexName", "indexUUID", "} hey this isn't json :-(",
+		"bleve", "indexName", "indexUUID", "} hey this isn't json :-(",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
