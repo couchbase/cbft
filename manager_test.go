@@ -602,3 +602,30 @@ func TestCfgGetHelpers(t *testing.T) {
 		t.Errorf("expected to fail with errCfg")
 	}
 }
+
+func TestManagerStartNILFeed(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	mgr := NewManager(VERSION, cfg, NewUUID(), ":1000", emptyDir, "some-datasource", nil)
+	if err := mgr.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "nil",
+		"sourceName", "sourceUUID", nil)
+	if err != nil {
+		t.Errorf("expected startFeedByType ok for nil sourceType")
+	}
+	currFeeds, _ := mgr.CurrentMaps()
+	if len(currFeeds) != 1 {
+		t.Errorf("len currFeeds != 1")
+	}
+	f, exists := currFeeds["feedName"]
+	if !exists || f.Name() != "feedName" {
+		t.Errorf("expected a feed")
+	}
+	if _, ok := f.(*NILFeed); !ok {
+		t.Errorf("expected a NILFeed")
+	}
+}

@@ -320,16 +320,10 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		streams[pindex.SourcePartitions] = pindex.Stream
 	}
 
-	// TODO: Make this more extensible one day for more SourceType possibilities.
-	if pindexFirst.SourceType == "couchbase" {
-		// TODO: Should default to DCP feed or projector feed one day.
-		return mgr.startTAPFeed(feedName,
-			pindexFirst.IndexName, pindexFirst.IndexUUID,
-			pindexFirst.SourceName, pindexFirst.SourceUUID, streams)
-	}
-
-	return fmt.Errorf("error: startFeed() got unknown source type: %s",
-		pindexFirst.SourceType)
+	return mgr.startFeedByType(feedName,
+		pindexFirst.IndexName, pindexFirst.IndexUUID,
+		pindexFirst.SourceType, pindexFirst.SourceName, pindexFirst.SourceUUID,
+		streams)
 }
 
 func (mgr *Manager) stopFeed(feed Feed) error {
@@ -345,6 +339,22 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 }
 
 // --------------------------------------------------------
+
+func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
+	sourceType, sourceName, sourceUUID string,
+	streams map[string]Stream) error {
+	if sourceType == "couchbase" {
+		// TODO: Should default to DCP feed or projector feed one day.
+		return mgr.startTAPFeed(feedName, indexName, indexUUID,
+			sourceName, sourceUUID, streams)
+	}
+
+	if sourceType == "nil" {
+		return mgr.registerFeed(NewNILFeed(feedName, streams))
+	}
+
+	return fmt.Errorf("error: startFeed() got unknown source type: %s", sourceType)
+}
 
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 	bucketName, bucketUUID string, streams map[string]Stream) error {
