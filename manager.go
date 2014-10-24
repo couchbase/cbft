@@ -73,15 +73,26 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		}
 	}
 
-	if err := mgr.LoadDataDir(); err != nil {
-		return err
+	tags := map[string]bool{}
+	for _, tag := range mgr.tags {
+		tags[tag] = true
 	}
 
-	go mgr.PlannerLoop()
-	mgr.PlannerKick("start")
+	if mgr.tags == nil || tags["pindex"] {
+		if err := mgr.LoadDataDir(); err != nil {
+			return err
+		}
+	}
 
-	go mgr.JanitorLoop()
-	mgr.JanitorKick("start")
+	if mgr.tags == nil || tags["planner"] {
+		go mgr.PlannerLoop()
+		mgr.PlannerKick("start")
+	}
+
+	if mgr.tags == nil || (tags["pindex"] && tags["janitor-local"]) {
+		go mgr.JanitorLoop()
+		mgr.JanitorKick("start")
+	}
 
 	return nil
 }
