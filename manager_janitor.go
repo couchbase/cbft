@@ -124,7 +124,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	}
 	// Then, (re-)create feeds that we're missing.
 	for addFeedName, targetPIndexes := range addFeeds {
-		err = mgr.StartFeed(targetPIndexes)
+		err = mgr.startFeed(targetPIndexes)
 		if err != nil {
 			return fmt.Errorf("error: janitor adding feed, addFeedName: %s, err: %v",
 				addFeedName, err)
@@ -303,7 +303,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex) error {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
+func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	if len(pindexes) <= 0 {
 		return nil
 	}
@@ -328,7 +328,7 @@ func (mgr *Manager) StartFeed(pindexes []*PIndex) error {
 			pindexFirst.SourceName, pindexFirst.SourceUUID, streams)
 	}
 
-	return fmt.Errorf("error: StartFeed() got unknown source type: %s",
+	return fmt.Errorf("error: startFeed() got unknown source type: %s",
 		pindexFirst.SourceType)
 }
 
