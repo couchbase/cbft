@@ -306,6 +306,9 @@ there should be enough separation of responsibilites in the design
 here so that the later parts of the system don't need to change so
 much.
 
+112 (feedback from Alk) What about huge single terms, like
+"user:gender" or "user:is-root-admin"?
+
 120 The Planners will then save the plans down into the Cfg so
 that later parts of the system can use it as input.
 
@@ -361,6 +364,24 @@ on the subset of the plan related to that cbft-ID.
 
 190 A Janitor can then create or delete local PIndexes (bleve indexes)
 and setup/teardown Feeds as needed to match the subset of the plan.
+
+192 (feedback from Alk) Alk & cluster manager team have found, in
+contrast to the current design thinking, that single orchestrator in a
+cluster is better:
+
+- easier to handle multiple versions, as latest fixes are easier to
+  incorporate by always electing some node that has the latest code to
+  be the master.
+
+- single master orchestrator is easier to debug and reason about
+  rather than concurrent, independent actors.
+
+- for example, when adding new nodes, or new indexes, it's easier to
+  sequence the changes for increased sanity.  And, easier to throttle
+  the changes, perhaps into step by step batches, such as to avoid
+  putting too much load on datasources.
+
+- in short, try to favor design where "nodes are as dumb as possible".
 
 200 Care must be taken so that any inflight queries are handled well
 during these PIndex shutdowns and deletions.
