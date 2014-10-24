@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 
@@ -22,10 +23,11 @@ import (
 )
 
 type Manager struct {
-	uuid      string // Unique to every Manager process instance.
 	startTime time.Time
 	version   string // Our software VERSION.
 	cfg       Cfg
+	uuid      string // Unique to every Manager process instance.
+	tags      []string
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -42,13 +44,13 @@ type ManagerEventHandlers interface {
 	OnUnregisterPIndex(pindex *PIndex)
 }
 
-func NewManager(version string, cfg Cfg, uuid, bindAddr, dataDir string,
-	server string, meh ManagerEventHandlers) *Manager {
+func NewManager(version string, cfg Cfg, uuid string, tags []string,
+	bindAddr, dataDir string, server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
-		uuid:      uuid,
 		startTime: time.Now(),
 		version:   version,
 		cfg:       cfg,
+		uuid:      uuid,
 		bindAddr:  bindAddr,
 		dataDir:   dataDir,
 		server:    server,
@@ -137,13 +139,17 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 					" with different uuid: %s, than our uuid: %s",
 					mgr.bindAddr, nodeDef.UUID, mgr.uuid)
 			}
-			return nil
+			if nodeDef.ImplVersion == mgr.version &&
+				reflect.DeepEqual(nodeDef.Tags, mgr.tags) {
+				return nil // No changes, so leave the existing nodeDef.
+			}
 		}
 
 		nodeDef = &NodeDef{
 			HostPort:    mgr.bindAddr, // TODO: need FQDN:port instead of ":8095".
 			UUID:        mgr.uuid,
 			ImplVersion: mgr.version,
+			Tags:        mgr.tags,
 		}
 
 		nodeDefs.UUID = NewUUID()

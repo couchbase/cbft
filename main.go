@@ -44,7 +44,9 @@ var staticDir = flag.String("staticDir", "static",
 var staticEtag = flag.String("staticEtag", "",
 	"static etag value")
 var server = flag.String("server", "",
-	"url to couchbase server, example: http://localhost:8091")
+	"url to datasource server; couchbase example: http://localhost:8091")
+var tags = flag.String("tags", "",
+	"comma-separated list of tags (or roles) for this node")
 var wanted = flag.Bool("wanted", false,
 	"force this node to be wanted as part of the cluster")
 var cfgProvider = flag.String("cfgProvider", "simple",
@@ -85,7 +87,12 @@ func main() {
 		return
 	}
 
-	router, err := MainStart(cfg, uuid, *bindAddr, *dataDir,
+	var tagsArr []string
+	if *tags != "" {
+		tagsArr = strings.Split(*tags, ",")
+	}
+
+	router, err := MainStart(cfg, uuid, tagsArr, *bindAddr, *dataDir,
 		*staticDir, *server, *wanted, mr)
 	if err != nil {
 		log.Fatal(err)
@@ -127,7 +134,8 @@ func MainUUID(dataDir string) (string, error) {
 	return uuid, nil
 }
 
-func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wanted bool, mr *MsgRing) (
+func MainStart(cfg Cfg, uuid string, tags []string,
+	bindAddr, dataDir, staticDir, server string, wanted bool, mr *MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -139,7 +147,8 @@ func MainStart(cfg Cfg, uuid, bindAddr, dataDir, staticDir, server string, wante
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, uuid, bindAddr, dataDir, server, &MainHandlers{})
+	mgr := NewManager(VERSION, cfg, uuid, tags, bindAddr, dataDir, server,
+		&MainHandlers{})
 	if err = mgr.Start(wanted); err != nil {
 		return nil, err
 	}

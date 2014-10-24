@@ -51,9 +51,10 @@ type NodeDefs struct {
 }
 
 type NodeDef struct {
-	HostPort    string `json:"hostPort"`
-	UUID        string `json:"uuid"`
-	ImplVersion string `json:"implVersion"` // See VERSION.
+	HostPort    string   `json:"hostPort"`
+	UUID        string   `json:"uuid"`
+	ImplVersion string   `json:"implVersion"` // See VERSION.
+	Tags        []string `json:"tags"`
 
 	// TODO: declared ability; not all indexers equal (cpu, ram, disk, etc)
 }
