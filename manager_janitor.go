@@ -92,7 +92,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	// Then, (re-)create pindexes that we're missing.
 	for _, addPlanPIndex := range addPlanPIndexes {
 		log.Printf("janitor adding pindex: %s", addPlanPIndex.Name)
-		err = mgr.StartPIndex(addPlanPIndex)
+		err = mgr.startPIndex(addPlanPIndex)
 		if err != nil {
 			return fmt.Errorf("error: janitor adding pindex: %s, err: %v",
 				addPlanPIndex.Name, err)
@@ -255,7 +255,7 @@ func FeedName(pindex *PIndex) string {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) StartPIndex(planPIndex *PlanPIndex) error {
+func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	pindex, err := NewPIndex(planPIndex.Name, NewUUID(),
 		planPIndex.IndexType,
 		planPIndex.IndexName,
