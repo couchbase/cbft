@@ -55,3 +55,18 @@ func TestNewPIndex(t *testing.T) {
 		t.Errorf("expected NewPIndex to fail with bad json")
 	}
 }
+
+func TestNewPIndexImpl(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	pindexImpl, err := NewPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE", "", emptyDir)
+	if err == nil || pindexImpl != nil {
+		t.Errorf("expected err on unknown impl type")
+	}
+
+	pindexImpl, err = OpenPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE", emptyDir)
+	if err == nil || pindexImpl != nil {
+		t.Errorf("expected err on unknown impl type")
+	}
+}
