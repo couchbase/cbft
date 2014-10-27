@@ -13,7 +13,24 @@ package main
 
 type Stream chan StreamRequest
 
-type StreamRequest interface{}
+type StreamRequest interface {
+}
+
+type StreamEnd struct {
+	doneCh chan error
+}
+
+type StreamFlush struct {
+	doneCh chan error
+}
+
+type StreamRollback struct {
+	doneCh chan error
+}
+
+type StreamSnapshot struct {
+	doneCh chan error
+}
 
 type StreamUpdate struct {
 	id   []byte

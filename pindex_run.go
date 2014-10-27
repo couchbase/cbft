@@ -57,6 +57,28 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			bindex.Index(string(m.Id()), m.Body())
 		case *StreamDelete:
 			bindex.Delete(string(m.Id()))
+		case *StreamEnd:
+			// Perhaps the datasource exited or is restarting?  We'll
+			// keep our stream open in case a new feed is hooked up.
+			if m.doneCh != nil {
+				close(m.doneCh)
+			}
+		case *StreamFlush:
+			// TODO: Need to delete all records here.
+			if m.doneCh != nil {
+				close(m.doneCh)
+			}
+		case *StreamRollback:
+			// TODO: Need to actually roll back bleve here.
+			if m.doneCh != nil {
+				close(m.doneCh)
+			}
+			return true, nil
+		case *StreamSnapshot:
+			// TODO: Need to ACK some snapshot?
+			if m.doneCh != nil {
+				close(m.doneCh)
+			}
 		}
 	}
 
