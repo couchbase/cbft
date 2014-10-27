@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	log "github.com/couchbaselabs/clog"
@@ -627,5 +628,28 @@ func TestManagerStartNILFeed(t *testing.T) {
 	}
 	if _, ok := f.(*NILFeed); !ok {
 		t.Errorf("expected a NILFeed")
+	}
+}
+
+func TestManagerTags(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000",
+		emptyDir, "some-datasource", nil)
+	tm := mgr.Tags()
+	if tm != nil {
+		t.Errorf("expected nil Tags()")
+	}
+
+	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"a", "b"}, ":1000",
+		emptyDir, "some-datasource", nil)
+	tm = mgr.Tags()
+	te := map[string]bool{}
+	te["a"] = true
+	te["b"] = true
+	if tm == nil || !reflect.DeepEqual(tm, te) {
+		t.Errorf("expected equal Tags()")
 	}
 }

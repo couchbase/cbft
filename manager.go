@@ -74,23 +74,20 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		}
 	}
 
-	tags := map[string]bool{}
-	for _, tag := range mgr.tags {
-		tags[tag] = true
-	}
+	tags := mgr.Tags()
 
-	if mgr.tags == nil || tags["pindex"] {
+	if tags == nil || tags["pindex"] {
 		if err := mgr.LoadDataDir(); err != nil {
 			return err
 		}
 	}
 
-	if mgr.tags == nil || tags["planner"] {
+	if tags == nil || tags["planner"] {
 		go mgr.PlannerLoop()
 		mgr.PlannerKick("start")
 	}
 
-	if mgr.tags == nil || (tags["pindex"] && tags["janitor-local"]) {
+	if tags == nil || (tags["pindex"] && tags["janitor-local"]) {
 		go mgr.JanitorLoop()
 		mgr.JanitorKick("start")
 	}
@@ -264,4 +261,15 @@ func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
+}
+
+func (mgr *Manager) Tags() map[string]bool {
+	if mgr.tags == nil {
+		return nil
+	}
+	tags := map[string]bool{}
+	for _, tag := range mgr.tags {
+		tags[tag] = true
+	}
+	return tags
 }
