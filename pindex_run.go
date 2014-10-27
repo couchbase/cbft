@@ -38,7 +38,6 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 	// queries, access and Close() correctly with its own locking.
 	pindex.Impl.Close()
 
-	// Remove files, unless we see a PIndexKeepError.
 	if !keepFiles {
 		os.RemoveAll(pindex.Path)
 	}
