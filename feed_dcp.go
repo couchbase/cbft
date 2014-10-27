@@ -91,7 +91,7 @@ func (t *DCPFeed) feed() (int, error) {
 
 	err = feed.UprRequestStream(
 		uint16(0),          /*vbno - TODO: use the vbno's*/
-		uint32(0),          /*opaque*/
+		uint16(0),          /*opaque*/
 		0,                  /*flag*/
 		0,                  /*vbuuid*/
 		0,                  /*seqStart - TODO: use the seqno's*/
