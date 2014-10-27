@@ -19,20 +19,37 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
+// Wraps an error, but allows Run() implementation to signal that
+// we should keep any files in the PIndex.Path.
+type PIndexKeepError struct {
+	err error
+}
+
+func (e *PIndexKeepError) Error() string {
+	return e.err.Error()
+}
+
 func (pindex *PIndex) Run() {
+	var err error = nil
+
 	if pindex.IndexType == "bleve" {
-		err := RunBleveStream(pindex.Stream, pindex.Impl.(bleve.Index))
+		err = RunBleveStream(pindex.Stream, pindex.Impl.(bleve.Index))
 		if err != nil {
 			log.Printf("error: RunBleveStream, err: %v", err)
 			return
 		}
+	} else {
+		log.Printf("error: PIndex.Run() saw unknown IndexType: %s", pindex.IndexType)
 	}
 
 	// NOTE: We expect the PIndexImpl to handle any inflight, concurrent
 	// queries, access and Close() correctly with its own locking.
 	pindex.Impl.Close()
 
-	os.RemoveAll(pindex.Path)
+	// Remove files, unless we see a PIndexKeepError.
+	if _, ok := err.(*PIndexKeepError); !ok {
+		os.RemoveAll(pindex.Path)
+	}
 }
 
 func RunBleveStream(stream Stream, bindex bleve.Index) error {
