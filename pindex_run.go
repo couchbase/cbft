@@ -19,24 +19,16 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-// Wraps an error, but allows Run() implementation to signal that
-// we should keep any files in the PIndex.Path.
-type PIndexKeepError struct {
-	err error
-}
-
-func (e *PIndexKeepError) Error() string {
-	return e.err.Error()
-}
-
 func (pindex *PIndex) Run(mgr PIndexManager) {
+	var keepFiles bool = false
 	var err error = nil
 
 	if pindex.IndexType == "bleve" {
-		err = RunBleveStream(mgr, pindex, pindex.Stream, pindex.Impl.(bleve.Index))
+		keepFiles, err = RunBleveStream(mgr, pindex, pindex.Stream, pindex.Impl.(bleve.Index))
 		if err != nil {
-			log.Printf("error: RunBleveStream, err: %v", err)
-			return
+			log.Printf("error: RunBleveStream, keepFiles: %b, err: %v", keepFiles, err)
+		} else {
+			log.Printf("done: RunBleveStream, keepFiles: %b", keepFiles)
 		}
 	} else {
 		log.Printf("error: PIndex.Run() saw unknown IndexType: %s", pindex.IndexType)
@@ -47,12 +39,13 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 	pindex.Impl.Close()
 
 	// Remove files, unless we see a PIndexKeepError.
-	if _, ok := err.(*PIndexKeepError); !ok {
+	if !keepFiles {
 		os.RemoveAll(pindex.Path)
 	}
 }
 
-func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream, bindex bleve.Index) error {
+func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
+	bindex bleve.Index) (bool, error) {
 	for m := range stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.
@@ -68,5 +61,5 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream, bindex ble
 		}
 	}
 
-	return nil
+	return false, nil
 }
