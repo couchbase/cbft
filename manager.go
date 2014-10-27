@@ -95,37 +95,7 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 	return nil
 }
 
-// Walk the data dir and register pindexes.
-func (mgr *Manager) LoadDataDir() error {
-	log.Printf("loading dataDir...")
-
-	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
-	if err != nil {
-		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
-			mgr.dataDir, err)
-	}
-
-	for _, dirInfo := range dirEntries {
-		path := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
-		_, ok := mgr.ParsePIndexPath(path)
-		if !ok {
-			continue // Skip the entry that doesn't match the naming pattern.
-		}
-
-		log.Printf("  opening pindex: %s", path)
-		pindex, err := OpenPIndex(path)
-		if err != nil {
-			log.Printf("error: could not open pindex: %s, err: %v",
-				path, err)
-			continue
-		}
-
-		mgr.registerPIndex(pindex)
-	}
-
-	log.Printf("loading dataDir... done")
-	return nil
-}
+// ---------------------------------------------------------------
 
 func (mgr *Manager) SaveNodeDef(kind string) error {
 	if mgr.cfg == nil {
@@ -180,28 +150,44 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 	return nil
 }
 
-func (mgr *Manager) registerFeed(feed Feed) error {
-	mgr.m.Lock()
-	defer mgr.m.Unlock()
+// ---------------------------------------------------------------
 
-	if _, exists := mgr.feeds[feed.Name()]; exists {
-		return fmt.Errorf("error: registered feed already exists, name: %s",
-			feed.Name())
+// Walk the data dir and register pindexes.
+func (mgr *Manager) LoadDataDir() error {
+	log.Printf("loading dataDir...")
+
+	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
+	if err != nil {
+		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
+			mgr.dataDir, err)
 	}
-	mgr.feeds[feed.Name()] = feed
+
+	for _, dirInfo := range dirEntries {
+		path := mgr.dataDir + string(os.PathSeparator) + dirInfo.Name()
+		_, ok := mgr.ParsePIndexPath(path)
+		if !ok {
+			continue // Skip the entry that doesn't match the naming pattern.
+		}
+
+		log.Printf("  opening pindex: %s", path)
+		pindex, err := OpenPIndex(mgr, path)
+		if err != nil {
+			log.Printf("error: could not open pindex: %s, err: %v",
+				path, err)
+			continue
+		}
+
+		mgr.registerPIndex(pindex)
+	}
+
+	log.Printf("loading dataDir... done")
 	return nil
 }
 
-func (mgr *Manager) unregisterFeed(name string) Feed {
-	mgr.m.Lock()
-	defer mgr.m.Unlock()
+// ---------------------------------------------------------------
 
-	rv, ok := mgr.feeds[name]
-	if ok {
-		delete(mgr.feeds, name)
-		return rv
-	}
-	return nil
+func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
+	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "", pindex)
 }
 
 func (mgr *Manager) registerPIndex(pindex *PIndex) error {
@@ -234,6 +220,34 @@ func (mgr *Manager) unregisterPIndex(name string) *PIndex {
 	return nil
 }
 
+// ---------------------------------------------------------------
+
+func (mgr *Manager) registerFeed(feed Feed) error {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	if _, exists := mgr.feeds[feed.Name()]; exists {
+		return fmt.Errorf("error: registered feed already exists, name: %s",
+			feed.Name())
+	}
+	mgr.feeds[feed.Name()] = feed
+	return nil
+}
+
+func (mgr *Manager) unregisterFeed(name string) Feed {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	rv, ok := mgr.feeds[name]
+	if ok {
+		delete(mgr.feeds, name)
+		return rv
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------
+
 // Returns a snapshot copy of the current feeds and pindexes.
 func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
 	feeds := make(map[string]Feed)
@@ -251,6 +265,8 @@ func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
 	return feeds, pindexes
 }
 
+// ---------------------------------------------------------------
+
 func (mgr *Manager) PIndexPath(pindexName string) string {
 	return PIndexPath(mgr.dataDir, pindexName)
 }
@@ -258,6 +274,8 @@ func (mgr *Manager) PIndexPath(pindexName string) string {
 func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 	return ParsePIndexPath(mgr.dataDir, pindexPath)
 }
+
+// ---------------------------------------------------------------
 
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir

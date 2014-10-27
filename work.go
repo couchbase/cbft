@@ -17,11 +17,12 @@ const WORK_KICK = "kick"
 type WorkReq struct {
 	op    string
 	msg   string
+	obj   interface{}
 	resCh chan error
 }
 
-func SyncWorkReq(ch chan *WorkReq, op, msg string) error {
+func SyncWorkReq(ch chan *WorkReq, op, msg string, obj interface{}) error {
 	resCh := make(chan error)
-	ch <- &WorkReq{op: op, msg: msg, resCh: resCh}
+	ch <- &WorkReq{op: op, msg: msg, obj: obj, resCh: resCh}
 	return <-resCh
 }

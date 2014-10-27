@@ -20,12 +20,14 @@ import (
 // A janitor maintains PIndexes and Feeds, creating, deleting &
 // hooking them up as necessary to try to match to latest plans.
 
+const JANITOR_CLOSE_PINDEX = "janitor_close_pindex"
+
 func (mgr *Manager) JanitorNOOP(msg string) {
-	SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg)
+	SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
 }
 
 func (mgr *Manager) JanitorKick(msg string) {
-	SyncWorkReq(mgr.janitorCh, WORK_KICK, msg)
+	SyncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
 }
 
 func (mgr *Manager) JanitorLoop() {
@@ -40,6 +42,8 @@ func (mgr *Manager) JanitorLoop() {
 			}
 		} else if m.op == WORK_NOOP {
 			// NOOP.
+		} else if m.op == JANITOR_CLOSE_PINDEX {
+			mgr.stopPIndex(m.obj.(*PIndex))
 		} else {
 			log.Printf("error: unknown janitor op: %s, m: %#v", m.op, m)
 		}
@@ -256,7 +260,7 @@ func FeedName(pindex *PIndex) string {
 // --------------------------------------------------------
 
 func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
-	pindex, err := NewPIndex(planPIndex.Name, NewUUID(),
+	pindex, err := NewPIndex(mgr, planPIndex.Name, NewUUID(),
 		planPIndex.IndexType,
 		planPIndex.IndexName,
 		planPIndex.IndexUUID,

@@ -18,7 +18,7 @@ import (
 )
 
 func TestOpenPIndex(t *testing.T) {
-	pindex, err := OpenPIndex("not-a-bleve-file")
+	pindex, err := OpenPIndex(nil, "not-a-bleve-file")
 	if pindex != nil || err == nil {
 		t.Errorf("expected OpenPIndex to fail on a bad file")
 	}
@@ -30,7 +30,7 @@ func TestNewPIndex(t *testing.T) {
 
 	// TODO: Should have a blackhole index implementation for testing.
 
-	pindex, err := NewPIndex("fake", "uuid",
+	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
@@ -39,7 +39,7 @@ func TestNewPIndex(t *testing.T) {
 	}
 	close(pindex.Stream)
 
-	pindex, err = NewPIndex("fake", "uuid",
+	pindex, err = NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "{}",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
@@ -47,7 +47,7 @@ func TestNewPIndex(t *testing.T) {
 		t.Errorf("expected NewPIndex to fail with empty json map")
 	}
 
-	pindex, err = NewPIndex("fake", "uuid",
+	pindex, err = NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "} hey this isn't json :-(",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))

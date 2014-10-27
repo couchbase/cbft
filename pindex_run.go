@@ -29,11 +29,11 @@ func (e *PIndexKeepError) Error() string {
 	return e.err.Error()
 }
 
-func (pindex *PIndex) Run() {
+func (pindex *PIndex) Run(mgr PIndexManager) {
 	var err error = nil
 
 	if pindex.IndexType == "bleve" {
-		err = RunBleveStream(pindex.Stream, pindex.Impl.(bleve.Index))
+		err = RunBleveStream(mgr, pindex, pindex.Stream, pindex.Impl.(bleve.Index))
 		if err != nil {
 			log.Printf("error: RunBleveStream, err: %v", err)
 			return
@@ -52,7 +52,7 @@ func (pindex *PIndex) Run() {
 	}
 }
 
-func RunBleveStream(stream Stream, bindex bleve.Index) error {
+func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream, bindex bleve.Index) error {
 	for m := range stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.

@@ -44,7 +44,11 @@ type PIndexImpl interface {
 	Close()
 }
 
-func NewPIndex(name, uuid,
+type PIndexManager interface {
+	ClosePIndex(pindex *PIndex) error
+}
+
+func NewPIndex(mgr PIndexManager, name, uuid,
 	indexType, indexName, indexUUID, indexMapping,
 	sourceType, sourceName, sourceUUID, sourcePartitions,
 	path string) (*PIndex, error) {
@@ -88,11 +92,11 @@ func NewPIndex(name, uuid,
 			" path: %s, err: %v", path, err)
 	}
 
-	go pindex.Run()
+	go pindex.Run(mgr)
 	return pindex, nil
 }
 
-func OpenPIndex(path string) (*PIndex, error) {
+func OpenPIndex(mgr PIndexManager, path string) (*PIndex, error) {
 	// TODO: We're assuming the index impl uses path as a subdirectory.
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
@@ -117,7 +121,7 @@ func OpenPIndex(path string) (*PIndex, error) {
 	pindex.Impl = impl
 	pindex.Stream = make(Stream)
 
-	go pindex.Run()
+	go pindex.Run(mgr)
 	return pindex, nil
 }
 

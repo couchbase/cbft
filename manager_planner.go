@@ -22,11 +22,11 @@ import (
 // or schema changes, following semver rules.
 
 func (mgr *Manager) PlannerNOOP(msg string) {
-	SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg)
+	SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
 }
 
 func (mgr *Manager) PlannerKick(msg string) {
-	SyncWorkReq(mgr.plannerCh, WORK_KICK, msg)
+	SyncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
 }
 
 func (mgr *Manager) PlannerLoop() {
