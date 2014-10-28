@@ -44,7 +44,6 @@ func VersionGTE(x, y string) bool {
 	return len(xa) >= len(ya)
 }
 
-// TODO: replace with proper UUID implementation.
 func NewUUID() string {
 	val1 := rand.Int63()
 	val2 := rand.Int63()
