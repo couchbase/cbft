@@ -33,7 +33,6 @@ const (
 	STREAM_OP_NOOP = iota
 	STREAM_OP_UPDATE
 	STREAM_OP_DELETE
-	STREAM_OP_END
 	STREAM_OP_FLUSH
 	STREAM_OP_ROLLBACK
 	STREAM_OP_SNAPSHOT
@@ -46,7 +45,6 @@ func init() {
 		STREAM_OP_NOOP:     "noop",
 		STREAM_OP_UPDATE:   "update",
 		STREAM_OP_DELETE:   "delete",
-		STREAM_OP_END:      "end",
 		STREAM_OP_FLUSH:    "flush",
 		STREAM_OP_ROLLBACK: "rollback",
 		STREAM_OP_SNAPSHOT: "snapshot",

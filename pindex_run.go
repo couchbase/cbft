@@ -66,10 +66,6 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		case STREAM_OP_DELETE:
 			bindex.Delete(string(req.Key))
 
-		case STREAM_OP_END:
-			// Perhaps the datasource exited or is restarting?  We'll
-			// keep our stream open in case a new feed is hooked up.
-
 		case STREAM_OP_FLUSH:
 			// TODO: Need to delete all records here.  So, why not
 			// implement this the same as rollback to zero?
