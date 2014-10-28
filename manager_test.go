@@ -402,9 +402,10 @@ func TestCheckVersion(t *testing.T) {
 func TestIndexDefs(t *testing.T) {
 	d := NewIndexDefs("1.2.3")
 	buf, _ := json.Marshal(d)
-	d2, err := UnmarshalIndexDefs(buf)
+	d2 := &IndexDefs{}
+	err := json.Unmarshal(buf, d2)
 	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
-		t.Errorf("UnmarshalIndexDefs err or mismatch")
+		t.Errorf("Unmarshal IndexDefs err or mismatch")
 	}
 
 	cfg := NewCfgMem()

@@ -100,14 +100,6 @@ func NewIndexDefs(version string) *IndexDefs {
 	}
 }
 
-func UnmarshalIndexDefs(jsonBytes []byte) (*IndexDefs, error) {
-	rv := &IndexDefs{}
-	if err := json.Unmarshal(jsonBytes, rv); err != nil {
-		return nil, err
-	}
-	return rv, nil
-}
-
 func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 	v, cas, err := cfg.Get(INDEX_DEFS_KEY, 0)
 	if err != nil {
@@ -116,8 +108,8 @@ func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 	if v == nil {
 		return nil, 0, nil
 	}
-	rv, err := UnmarshalIndexDefs(v)
-	if err != nil {
+	rv := &IndexDefs{}
+	if err = json.Unmarshal(v, rv); err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil
