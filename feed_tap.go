@@ -68,7 +68,12 @@ func (t *TAPFeed) Start() error {
 }
 
 func (t *TAPFeed) feed() (int, error) {
-	defer close(t.doneCh)
+	select {
+	case <-t.closeCh:
+		close(t.doneCh)
+		return -1, nil
+	default:
+	}
 
 	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
 	if err != nil {
@@ -93,6 +98,7 @@ func (t *TAPFeed) feed() (int, error) {
 	for {
 		select {
 		case <-t.closeCh:
+			close(t.doneCh)
 			return -1, nil
 
 		case op, ok := <-feed.C:

@@ -68,7 +68,12 @@ func (t *DCPFeed) Start() error {
 }
 
 func (t *DCPFeed) feed() (int, error) {
-	defer close(t.doneCh)
+	select {
+	case <-t.closeCh:
+		close(t.doneCh)
+		return -1, nil
+	default:
+	}
 
 	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
 	if err != nil {
@@ -106,6 +111,7 @@ func (t *DCPFeed) feed() (int, error) {
 	for {
 		select {
 		case <-t.closeCh:
+			close(t.doneCh)
 			return -1, nil
 
 		case uprEvent, ok := <-feed.C:
