@@ -131,6 +131,8 @@ func (t *DCPFeed) feed() (int, error) {
 }
 
 func (t *DCPFeed) Close() error {
+	// TODO: This needs to be synchronous so caller knows we'll no longer
+	// be sending to streams.
 	close(t.closeCh)
 	return nil
 }
