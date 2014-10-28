@@ -82,8 +82,9 @@ type PlanPIndex struct {
 	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // NodeDef.UUID => PLAN_PINDEX_NODE_XXX.
 }
 
-const PLAN_PINDEX_NODE_ACTIVE = "active"
-const PLAN_PINDEX_NODE_PAUSED = "paused"
+// Meant to be concatenated, like "rw"...
+const PLAN_PINDEX_NODE_WRITE = "w"
+const PLAN_PINDEX_NODE_READ = "r"
 
 // ------------------------------------------------------------------------
 

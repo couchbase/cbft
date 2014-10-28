@@ -175,7 +175,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			NodeUUIDs:        make(map[string]string),
 		}
 		for _, nodeDef := range nodeDefs.NodeDefs {
-			planPIndex.NodeUUIDs[nodeDef.UUID] = PLAN_PINDEX_NODE_ACTIVE
+			planPIndex.NodeUUIDs[nodeDef.UUID] =
+				PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
 		}
 
 		planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex

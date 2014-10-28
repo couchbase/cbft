@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -161,9 +162,7 @@ func CalcPIndexesDelta(mgrUUID string,
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
 	nodeUUIDs:
 		for nodeUUID, nodeState := range wantedPlanPIndex.NodeUUIDs {
-			if nodeUUID != mgrUUID ||
-				(nodeState != PLAN_PINDEX_NODE_ACTIVE &&
-					nodeState != PLAN_PINDEX_NODE_PAUSED) {
+			if nodeUUID != mgrUUID || nodeState == "" {
 				continue nodeUUIDs
 			}
 
@@ -223,13 +222,13 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 	addFeeds = make([][]*PIndex, 0)
 	removeFeeds = make([]Feed, 0)
 
-	// Group the active pindexes by their feed names.
+	// Group the writable pindexes by their feed names.  Non-writable
+	// pindexes (such as paused) will have their feeds removed.
 	groupedPIndexes := make(map[string][]*PIndex)
 	for _, pindex := range pindexes {
 		planPIndex, exists := planPIndexes.PlanPIndexes[pindex.Name]
-		if exists &&
-			planPIndex != nil &&
-			planPIndex.NodeUUIDs[nodeUUID] == PLAN_PINDEX_NODE_ACTIVE {
+		if exists && planPIndex != nil &&
+			strings.Contains(planPIndex.NodeUUIDs[nodeUUID], PLAN_PINDEX_NODE_WRITE) {
 			feedName := FeedName(pindex)
 			arr, exists := groupedPIndexes[feedName]
 			if !exists {
