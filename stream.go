@@ -15,53 +15,46 @@ import (
 	"fmt"
 )
 
-type Stream chan StreamRequest
+type Stream chan *StreamRequest
 
-type StreamPartitionFunc func(StreamRequest, map[string]Stream) (Stream, error)
+type StreamPartitionFunc func(*StreamRequest, map[string]Stream) (Stream, error)
 
-type StreamRequest interface{}
-
-// ----------------------------------------------
-
-type StreamEnd struct {
-	DoneCh chan error
+type StreamRequest struct {
+	Op                  int
+	DoneCh              chan error
+	SourcePartition     string
+	SourcePartitionUUID string
+	SeqNo               uint64
+	Key, Val            []byte
+	Misc                interface{}
 }
 
-// ----------------------------------------------
+const (
+	STREAM_OP_NOOP = iota
+	STREAM_OP_UPDATE
+	STREAM_OP_DELETE
+	STREAM_OP_END
+	STREAM_OP_FLUSH
+	STREAM_OP_ROLLBACK
+	STREAM_OP_SNAPSHOT
+)
 
-type StreamFlush struct {
-	DoneCh chan error
+var StreamOpNames map[int]string
+
+func init() {
+	StreamOpNames = map[int]string{
+		STREAM_OP_NOOP:     "noop",
+		STREAM_OP_UPDATE:   "update",
+		STREAM_OP_DELETE:   "delete",
+		STREAM_OP_END:      "end",
+		STREAM_OP_FLUSH:    "flush",
+		STREAM_OP_ROLLBACK: "rollback",
+		STREAM_OP_SNAPSHOT: "snapshot",
+	}
 }
-
-// ----------------------------------------------
-
-type StreamRollback struct {
-	DoneCh chan error
-}
-
-// ----------------------------------------------
-
-type StreamSnapshot struct {
-	DoneCh chan error
-}
-
-// ----------------------------------------------
-
-type StreamUpdate struct {
-	Id   []byte
-	Body []byte
-}
-
-// ----------------------------------------------
-
-type StreamDelete struct {
-	Id []byte
-}
-
-// ----------------------------------------------
 
 // This partition func sends all stream requests to the "" partition.
-func EmptyPartitionFunc(req StreamRequest, streams map[string]Stream) (Stream, error) {
+func EmptyPartitionFunc(req *StreamRequest, streams map[string]Stream) (Stream, error) {
 	stream, exists := streams[""]
 	if !exists || stream == nil {
 		return nil, fmt.Errorf("error: no empty/all partition in streams: %#v", streams)

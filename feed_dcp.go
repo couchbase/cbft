@@ -28,6 +28,8 @@ type DCPFeed struct {
 	streams    map[string]Stream
 	closeCh    chan bool
 	doneCh     chan bool
+	doneErr    error
+	doneMsg    string
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
@@ -41,6 +43,8 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		streams:    streams,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
+		doneErr:    nil,
+		doneMsg:    "",
 	}, nil
 }
 
@@ -70,6 +74,8 @@ func (t *DCPFeed) Start() error {
 func (t *DCPFeed) feed() (int, error) {
 	select {
 	case <-t.closeCh:
+		t.doneErr = nil
+		t.doneMsg = "closeCh closed"
 		close(t.doneCh)
 		return -1, nil
 	default:
@@ -111,24 +117,29 @@ func (t *DCPFeed) feed() (int, error) {
 	for {
 		select {
 		case <-t.closeCh:
+			t.doneErr = nil
+			t.doneMsg = "closeCh closed"
 			close(t.doneCh)
 			return -1, nil
 
-		case uprEvent, ok := <-feed.C:
-			if !ok {
+		case uprEvent, alive := <-feed.C:
+			if !alive {
+				t.waitForClose("source closed", nil)
 				break
 			}
 
 			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
 				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamUpdate{
-					Id:   uprEvent.Key,
-					Body: uprEvent.Value,
+				t.streams[""] <- &StreamRequest{
+					Op:  STREAM_OP_UPDATE,
+					Key: uprEvent.Key,
+					Val: uprEvent.Value,
 				}
 			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
 				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamDelete{
-					Id: uprEvent.Key,
+				t.streams[""] <- &StreamRequest{
+					Op:  STREAM_OP_DELETE,
+					Key: uprEvent.Key,
 				}
 			}
 		}
@@ -137,10 +148,17 @@ func (t *DCPFeed) feed() (int, error) {
 	return 1, nil
 }
 
+func (t *DCPFeed) waitForClose(msg string, err error) {
+	<-t.closeCh
+	t.doneErr = err
+	t.doneMsg = msg
+	close(t.doneCh)
+}
+
 func (t *DCPFeed) Close() error {
 	close(t.closeCh)
 	<-t.doneCh
-	return nil
+	return t.doneErr
 }
 
 func (t *DCPFeed) Streams() map[string]Stream {

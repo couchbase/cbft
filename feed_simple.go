@@ -76,48 +76,23 @@ func (t *SimpleFeed) feed() {
 				return
 			}
 
-			var doneChOrig chan error
-			var doneCh chan error
-			wantWaitForClose := ""
-
-			switch req := req.(type) {
-			case *StreamEnd:
-				doneCh := make(chan error)
-				req.DoneCh, doneChOrig = doneCh, req.DoneCh
-				wantWaitForClose = "source stream end"
-
-			case *StreamFlush:
-				doneCh := make(chan error)
-				req.DoneCh, doneChOrig = doneCh, req.DoneCh
-
-			case *StreamRollback:
-				doneCh := make(chan error)
-				req.DoneCh, doneChOrig = doneCh, req.DoneCh
-				wantWaitForClose = "source stream rollback"
-
-			case *StreamSnapshot:
-				doneCh := make(chan error)
-				req.DoneCh, doneChOrig = doneCh, req.DoneCh
-
-			case *StreamUpdate:
-			case *StreamDelete:
-			}
+			doneChOrig := req.DoneCh
+			doneCh := make(chan error)
+			req.DoneCh = doneCh
 
 			stream <- req
+			err = <-doneCh
 
-			if doneCh != nil {
-				err = <-doneCh
-			}
-
-			if doneChOrig != nil {
+			req.DoneCh = doneChOrig
+			if req.DoneCh != nil {
 				if err != nil {
-					doneChOrig <- err
+					req.DoneCh <- err
 				}
-				close(doneChOrig)
+				close(req.DoneCh)
 			}
 
-			if wantWaitForClose != "" {
-				t.waitForClose(wantWaitForClose, nil)
+			if req.Op == STREAM_OP_ROLLBACK {
+				t.waitForClose("stream rollback", nil)
 				return
 			}
 		}

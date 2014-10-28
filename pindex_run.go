@@ -52,35 +52,29 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 
 func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 	bindex bleve.Index) (bool, bool, error) {
-	for m := range stream {
+	for req := range stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.
 
 		// TODO: maybe need a more batchy API?  Perhaps, yet another
 		// goroutine that clumps up up updates into bigger batches?
 
-		switch m := m.(type) {
-		case *StreamUpdate:
-			bindex.Index(string(m.Id), m.Body)
+		switch req.Op {
+		case STREAM_OP_UPDATE:
+			bindex.Index(string(req.Key), req.Val)
 
-		case *StreamDelete:
-			bindex.Delete(string(m.Id))
+		case STREAM_OP_DELETE:
+			bindex.Delete(string(req.Key))
 
-		case *StreamEnd:
+		case STREAM_OP_END:
 			// Perhaps the datasource exited or is restarting?  We'll
 			// keep our stream open in case a new feed is hooked up.
-			if m.DoneCh != nil {
-				close(m.DoneCh)
-			}
 
-		case *StreamFlush:
+		case STREAM_OP_FLUSH:
 			// TODO: Need to delete all records here.  So, why not
 			// implement this the same as rollback to zero?
-			if m.DoneCh != nil {
-				close(m.DoneCh)
-			}
 
-		case *StreamRollback:
+		case STREAM_OP_ROLLBACK:
 			// TODO: Implement partial rollback one day.
 			//
 			// For now, always rollback to zero, in which we close the
@@ -88,9 +82,10 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			pindex.Impl.Close()
 			os.RemoveAll(pindex.Path)
 
-			// First, respond to the feed so that it can unblock.
-			if m.DoneCh != nil {
-				close(m.DoneCh)
+			// First, respond to the stream source (example: the feed)
+			// so that it can unblock.
+			if req.DoneCh != nil {
+				close(req.DoneCh)
 			}
 
 			// Because, here the manager/janitor will synchronously
@@ -98,12 +93,10 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			mgr.ClosePIndex(pindex)
 
 			return false, false, nil
+		}
 
-		case *StreamSnapshot:
-			// TODO: Need to ACK some snapshot?
-			if m.DoneCh != nil {
-				close(m.DoneCh)
-			}
+		if req.DoneCh != nil {
+			close(req.DoneCh)
 		}
 	}
 

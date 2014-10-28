@@ -28,6 +28,8 @@ type TAPFeed struct {
 	streams    map[string]Stream
 	closeCh    chan bool
 	doneCh     chan bool
+	doneErr    error
+	doneMsg    string
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
@@ -41,6 +43,8 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 		streams:    streams,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
+		doneErr:    nil,
+		doneMsg:    "",
 	}, nil
 }
 
@@ -70,6 +74,8 @@ func (t *TAPFeed) Start() error {
 func (t *TAPFeed) feed() (int, error) {
 	select {
 	case <-t.closeCh:
+		t.doneErr = nil
+		t.doneMsg = "closeCh closed"
 		close(t.doneCh)
 		return -1, nil
 	default:
@@ -98,24 +104,29 @@ func (t *TAPFeed) feed() (int, error) {
 	for {
 		select {
 		case <-t.closeCh:
+			t.doneErr = nil
+			t.doneMsg = "closeCh closed"
 			close(t.doneCh)
 			return -1, nil
 
-		case op, ok := <-feed.C:
-			if !ok {
+		case op, alive := <-feed.C:
+			if !alive {
+				t.waitForClose("source closed", nil)
 				break
 			}
 
 			if op.Opcode == memcached.TapMutation {
 				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamUpdate{
-					Id:   op.Key,
-					Body: op.Value,
+				t.streams[""] <- &StreamRequest{
+					Op:  STREAM_OP_UPDATE,
+					Key: op.Key,
+					Val: op.Value,
 				}
 			} else if op.Opcode == memcached.TapDeletion {
 				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamDelete{
-					Id: op.Key,
+				t.streams[""] <- &StreamRequest{
+					Op:  STREAM_OP_DELETE,
+					Key: op.Key,
 				}
 			}
 		}
@@ -124,10 +135,17 @@ func (t *TAPFeed) feed() (int, error) {
 	return 1, nil
 }
 
+func (t *TAPFeed) waitForClose(msg string, err error) {
+	<-t.closeCh
+	t.doneErr = err
+	t.doneMsg = msg
+	close(t.doneCh)
+}
+
 func (t *TAPFeed) Close() error {
 	close(t.closeCh)
 	<-t.doneCh
-	return nil
+	return t.doneErr
 }
 
 func (t *TAPFeed) Streams() map[string]Stream {
