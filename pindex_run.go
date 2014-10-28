@@ -74,7 +74,8 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			}
 
 		case *StreamFlush:
-			// TODO: Need to delete all records here.
+			// TODO: Need to delete all records here.  So, why not
+			// implement this the same as rollback to zero?
 			if m.doneCh != nil {
 				close(m.doneCh)
 			}
