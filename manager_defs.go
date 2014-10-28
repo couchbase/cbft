@@ -172,14 +172,6 @@ func NewPlanPIndexes(version string) *PlanPIndexes {
 	}
 }
 
-func UnmarshalPlanPIndexes(jsonBytes []byte) (*PlanPIndexes, error) {
-	rv := &PlanPIndexes{}
-	if err := json.Unmarshal(jsonBytes, rv); err != nil {
-		return nil, err
-	}
-	return rv, nil
-}
-
 func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
 	v, cas, err := cfg.Get(PLAN_PINDEXES_KEY, 0)
 	if err != nil {
@@ -188,8 +180,8 @@ func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
 	if v == nil {
 		return nil, 0, nil
 	}
-	rv, err := UnmarshalPlanPIndexes(v)
-	if err != nil {
+	rv := &PlanPIndexes{}
+	if err := json.Unmarshal(v, rv); err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil

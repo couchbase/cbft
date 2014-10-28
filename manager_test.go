@@ -468,7 +468,8 @@ func TestNodeDefs(t *testing.T) {
 func TestPlanPIndexes(t *testing.T) {
 	d := NewPlanPIndexes("1.2.3")
 	buf, _ := json.Marshal(d)
-	d2, err := UnmarshalPlanPIndexes(buf)
+	d2 := &PlanPIndexes{}
+	err := json.Unmarshal(buf, d2)
 	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
 		t.Errorf("UnmarshalPlanPIndexes err or mismatch")
 	}
