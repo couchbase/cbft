@@ -25,6 +25,7 @@ type TAPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
+	pf         StreamPartitionFunc
 	streams    map[string]Stream
 	closeCh    chan bool
 	doneCh     chan bool
@@ -33,13 +34,14 @@ type TAPFeed struct {
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
-	streams map[string]Stream) (*TAPFeed, error) {
+	pf StreamPartitionFunc, streams map[string]Stream) (*TAPFeed, error) {
 	return &TAPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
+		pf:         pf,
 		streams:    streams,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
@@ -109,24 +111,31 @@ func (t *TAPFeed) feed() (int, error) {
 			close(t.doneCh)
 			return -1, nil
 
-		case op, alive := <-feed.C:
+		case req, alive := <-feed.C:
 			if !alive {
 				t.waitForClose("source closed", nil)
 				break
 			}
 
-			if op.Opcode == memcached.TapMutation {
-				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamRequest{
+			partition := fmt.Sprintf("%d", req.VBucket)
+			stream, err := t.pf(req.Key, partition, t.streams)
+			if err != nil {
+				t.waitForClose("partition func error",
+					fmt.Errorf("error: TAPFeed pf on req: %#v, err: %v",
+						req, err))
+				return 1, err
+			}
+
+			if req.Opcode == memcached.TapMutation {
+				stream <- &StreamRequest{
 					Op:  STREAM_OP_UPDATE,
-					Key: op.Key,
-					Val: op.Value,
+					Key: req.Key,
+					Val: req.Value,
 				}
-			} else if op.Opcode == memcached.TapDeletion {
-				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamRequest{
+			} else if req.Opcode == memcached.TapDeletion {
+				stream <- &StreamRequest{
 					Op:  STREAM_OP_DELETE,
-					Key: op.Key,
+					Key: req.Key,
 				}
 			}
 		}

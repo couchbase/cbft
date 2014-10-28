@@ -17,11 +17,11 @@ import (
 
 func TestEmptyPartitionFunc(t *testing.T) {
 	stream := make(Stream)
-	s, err := EmptyPartitionFunc(nil, map[string]Stream{"": stream})
+	s, err := EmptyPartitionFunc(nil, "", map[string]Stream{"": stream})
 	if err != nil || s != stream {
 		t.Errorf("expected TestEmptyPartitionFunc to work")
 	}
-	s, err = EmptyPartitionFunc(nil, map[string]Stream{"foo": stream})
+	s, err = EmptyPartitionFunc(nil, "", map[string]Stream{"foo": stream})
 	if err == nil || s == stream {
 		t.Errorf("expected TestEmptyPartitionFunc to not work")
 	}

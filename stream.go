@@ -17,7 +17,8 @@ import (
 
 type Stream chan *StreamRequest
 
-type StreamPartitionFunc func(*StreamRequest, map[string]Stream) (Stream, error)
+type StreamPartitionFunc func(key []byte, partition string,
+	streams map[string]Stream) (Stream, error)
 
 type StreamRequest struct {
 	Op                  int
@@ -52,7 +53,8 @@ func init() {
 }
 
 // This partition func sends all stream requests to the "" partition.
-func EmptyPartitionFunc(req *StreamRequest, streams map[string]Stream) (Stream, error) {
+func EmptyPartitionFunc(key []byte, partition string,
+	streams map[string]Stream) (Stream, error) {
 	stream, exists := streams[""]
 	if !exists || stream == nil {
 		return nil, fmt.Errorf("error: no empty/all partition in streams: %#v", streams)

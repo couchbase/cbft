@@ -20,26 +20,26 @@ import (
 // datasource.  It's useful, amongst other things, for testing.
 type SimpleFeed struct {
 	name    string
+	pf      StreamPartitionFunc
 	streams map[string]Stream
 	closeCh chan bool
 	doneCh  chan bool
 	doneErr error
 	doneMsg string
 	source  Stream
-	pf      StreamPartitionFunc
 }
 
 func NewSimpleFeed(name string, source Stream, pf StreamPartitionFunc,
 	streams map[string]Stream) (*SimpleFeed, error) {
 	return &SimpleFeed{
 		name:    name,
+		pf:      pf,
 		streams: streams,
 		closeCh: make(chan bool),
 		doneCh:  make(chan bool),
 		doneErr: nil,
 		doneMsg: "",
 		source:  source,
-		pf:      pf,
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func (t *SimpleFeed) feed() {
 				return
 			}
 
-			stream, err := t.pf(req, t.streams)
+			stream, err := t.pf(req.Key, req.SourcePartition, t.streams)
 			if err != nil {
 				t.waitForClose("partition func error",
 					fmt.Errorf("error: SimpleFeed pf on req: %#v, err: %v",

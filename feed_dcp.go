@@ -25,6 +25,7 @@ type DCPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
+	pf         StreamPartitionFunc
 	streams    map[string]Stream
 	closeCh    chan bool
 	doneCh     chan bool
@@ -33,13 +34,14 @@ type DCPFeed struct {
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
-	streams map[string]Stream) (*DCPFeed, error) {
+	pf StreamPartitionFunc, streams map[string]Stream) (*DCPFeed, error) {
 	return &DCPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
+		pf:         pf,
 		streams:    streams,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
@@ -128,16 +130,23 @@ func (t *DCPFeed) feed() (int, error) {
 				break
 			}
 
+			partition := fmt.Sprintf("%d", uprEvent.VBucket)
+			stream, err := t.pf(uprEvent.Key, partition, t.streams)
+			if err != nil {
+				t.waitForClose("partition func error",
+					fmt.Errorf("error: DCPFeed pf on uprEvent: %#v, err: %v",
+						uprEvent, err))
+				return 1, err
+			}
+
 			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
-				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamRequest{
+				stream <- &StreamRequest{
 					Op:  STREAM_OP_UPDATE,
 					Key: uprEvent.Key,
 					Val: uprEvent.Value,
 				}
 			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
-				// TODO: Handle dispatch to streams correctly.
-				t.streams[""] <- &StreamRequest{
+				stream <- &StreamRequest{
 					Op:  STREAM_OP_DELETE,
 					Key: uprEvent.Key,
 				}
