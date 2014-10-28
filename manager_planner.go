@@ -161,7 +161,10 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 		// 1-to-1 case, which is developer preview level requirement.
 		// NOTE: PlanPIndex.Name must be unique across the cluster and
 		// functionally based off of the indexDef.
-		name := indexDef.Name + "_" + indexDef.UUID + "_" + sourcePartitions
+		// NOTE: Can't use SourcePartitions as part of PlanPIndex.Name
+		// because in vbucket/hash partitioning, the string would be
+		// too large where PIndexes would use encode it into paths.
+		name := indexDef.Name + "_" + indexDef.UUID
 
 		planPIndex := &PlanPIndex{
 			// TODO: More advanced planners will probably have to
@@ -180,7 +183,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			NodeUUIDs:        make(map[string]string),
 		}
 		for _, nodeDef := range nodeDefs.NodeDefs {
-			// TODO: better val needed.
+			// TODO: rules around val needed; perhaps "paused"
+			// could be used to encode index ingest pausing.
 			planPIndex.NodeUUIDs[nodeDef.UUID] = "active"
 		}
 
