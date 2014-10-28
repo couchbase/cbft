@@ -27,11 +27,12 @@ type TAPFeed struct {
 	bucketUUID string
 	streams    map[string]Stream
 	closeCh    chan bool
+	doneCh     chan bool
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*TAPFeed, error) {
-	rv := TAPFeed{
+	return &TAPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
@@ -39,8 +40,8 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 		bucketUUID: bucketUUID,
 		streams:    streams,
 		closeCh:    make(chan bool),
-	}
-	return &rv, nil
+		doneCh:     make(chan bool),
+	}, nil
 }
 
 func (t *TAPFeed) Name() string {
@@ -67,7 +68,7 @@ func (t *TAPFeed) Start() error {
 }
 
 func (t *TAPFeed) feed() (int, error) {
-	// TODO: Check closeCh.
+	defer close(t.doneCh)
 
 	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
 	if err != nil {
@@ -118,9 +119,8 @@ func (t *TAPFeed) feed() (int, error) {
 }
 
 func (t *TAPFeed) Close() error {
-	// TODO: This needs to be synchronous so caller knows we'll no longer
-	// be sending to streams.
 	close(t.closeCh)
+	<-t.doneCh
 	return nil
 }
 

@@ -27,11 +27,12 @@ type DCPFeed struct {
 	bucketUUID string
 	streams    map[string]Stream
 	closeCh    chan bool
+	doneCh     chan bool
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	streams map[string]Stream) (*DCPFeed, error) {
-	rv := DCPFeed{
+	return &DCPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
@@ -39,8 +40,8 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		bucketUUID: bucketUUID,
 		streams:    streams,
 		closeCh:    make(chan bool),
-	}
-	return &rv, nil
+		doneCh:     make(chan bool),
+	}, nil
 }
 
 func (t *DCPFeed) Name() string {
@@ -67,7 +68,7 @@ func (t *DCPFeed) Start() error {
 }
 
 func (t *DCPFeed) feed() (int, error) {
-	// TODO: Check closeCh.
+	defer close(t.doneCh)
 
 	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
 	if err != nil {
@@ -131,9 +132,8 @@ func (t *DCPFeed) feed() (int, error) {
 }
 
 func (t *DCPFeed) Close() error {
-	// TODO: This needs to be synchronous so caller knows we'll no longer
-	// be sending to streams.
 	close(t.closeCh)
+	<-t.doneCh
 	return nil
 }
 
