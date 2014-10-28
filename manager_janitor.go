@@ -198,22 +198,6 @@ func CalcPIndexesDelta(mgrUUID string,
 	return addPlanPIndexes, removePIndexes
 }
 
-func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
-	same := pindex.Name == planPIndex.Name &&
-		pindex.IndexName == planPIndex.IndexName &&
-		pindex.IndexUUID == planPIndex.IndexUUID &&
-		pindex.IndexMapping == planPIndex.IndexMapping &&
-		pindex.SourceType == planPIndex.SourceType &&
-		pindex.SourceName == planPIndex.SourceName &&
-		pindex.SourceUUID == planPIndex.SourceUUID &&
-		pindex.SourcePartitions == planPIndex.SourcePartitions
-	if !same {
-		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
-			pindex, planPIndex)
-	}
-	return same
-}
-
 // --------------------------------------------------------
 
 // Functionally determine the delta of which feeds need creation and
