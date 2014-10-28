@@ -38,16 +38,26 @@ func TestNewPIndex(t *testing.T) {
 		t.Errorf("expected NewPIndex to work")
 	}
 	close(pindex.Stream)
+}
 
-	pindex, err = NewPIndex(nil, "fake", "uuid",
+func TestNewPIndexEmptyJSON(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "{}",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
-	if pindex != nil || err == nil {
+	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to fail with empty json map")
 	}
+}
 
-	pindex, err = NewPIndex(nil, "fake", "uuid",
+func TestNewPIndexBadMapping(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "} hey this isn't json :-(",
 		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
