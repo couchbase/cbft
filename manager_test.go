@@ -590,6 +590,27 @@ func TestSamePlanPIndex(t *testing.T) {
 	}
 }
 
+func TestPIndexMatchesPlan(t *testing.T) {
+	plan := &PlanPIndex{
+		Name: "hi",
+		UUID: "111",
+	}
+	px := &PIndex{
+		Name: "hi",
+		UUID: "222",
+	}
+	py := &PIndex{
+		Name: "hello",
+		UUID: "111",
+	}
+	if PIndexMatchesPlan(px, plan) == false {
+		t.Errorf("expected pindex to match the plan")
+	}
+	if PIndexMatchesPlan(py, plan) == true {
+		t.Errorf("expected pindex to not match the plan")
+	}
+}
+
 func TestCfgGetHelpers(t *testing.T) {
 	errCfg := &ErrorOnlyCfg{}
 
@@ -777,25 +798,4 @@ func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
 		t.Errorf("expected simple feed streams to be there")
 	}
 	andThen(m, sf)
-}
-
-func TestPIndexMatchesPlan(t *testing.T) {
-	plan := &PlanPIndex{
-		Name: "hi",
-		UUID: "111",
-	}
-	px := &PIndex{
-		Name: "hi",
-		UUID: "222",
-	}
-	py := &PIndex{
-		Name: "hello",
-		UUID: "111",
-	}
-	if PIndexMatchesPlan(px, plan) == false {
-		t.Errorf("expected pindex to match the plan")
-	}
-	if PIndexMatchesPlan(py, plan) == true {
-		t.Errorf("expected pindex to not match the plan")
-	}
 }
