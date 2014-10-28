@@ -693,6 +693,29 @@ func TestManagerClosePIndex(t *testing.T) {
 	}
 }
 
+func TestManagerStrangeWorkReqs(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	m := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", meh)
+	if err := m.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID",
+		"bleve", "foo", ""); err != nil {
+		t.Errorf("expected simple CreateIndex() to work")
+	}
+	if err := SyncWorkReq(m.plannerCh, "whoa-this-isn't-a-valid-op",
+		"test", nil); err == nil {
+		t.Errorf("expected error on weird work req to planner")
+	}
+	if err := SyncWorkReq(m.janitorCh, "whoa-this-isn't-a-valid-op",
+		"test", nil); err == nil {
+		t.Errorf("expected error on weird work req to janitor")
+	}
+}
+
 func TestManagerCreateSimpleFeed(t *testing.T) {
 	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
 		err := sf.Close()

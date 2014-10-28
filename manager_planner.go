@@ -33,6 +33,7 @@ func (mgr *Manager) PlannerKick(msg string) {
 
 func (mgr *Manager) PlannerLoop() {
 	for m := range mgr.plannerCh {
+		var err error
 		if m.op == WORK_KICK {
 			changed, err := mgr.PlannerOnce(m.msg)
 			if err != nil {
@@ -47,9 +48,12 @@ func (mgr *Manager) PlannerLoop() {
 		} else if m.op == WORK_NOOP {
 			// NOOP.
 		} else {
-			log.Printf("error: unknown planner op: %s, m: %#v", m.op, m)
+			err = fmt.Errorf("error: unknown planner op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
+			if err != nil {
+				m.resCh <- err
+			}
 			close(m.resCh)
 		}
 	}

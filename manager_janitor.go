@@ -33,8 +33,9 @@ func (mgr *Manager) JanitorKick(msg string) {
 
 func (mgr *Manager) JanitorLoop() {
 	for m := range mgr.janitorCh {
+		var err error
 		if m.op == WORK_KICK {
-			err := mgr.JanitorOnce(m.msg)
+			err = mgr.JanitorOnce(m.msg)
 			if err != nil {
 				log.Printf("error: JanitorOnce, err: %v", err)
 				// Keep looping as perhaps it's a transient issue.
@@ -46,9 +47,12 @@ func (mgr *Manager) JanitorLoop() {
 		} else if m.op == JANITOR_CLOSE_PINDEX {
 			mgr.stopPIndex(m.obj.(*PIndex))
 		} else {
-			log.Printf("error: unknown janitor op: %s, m: %#v", m.op, m)
+			err = fmt.Errorf("error: unknown janitor op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
+			if err != nil {
+				m.resCh <- err
+			}
 			close(m.resCh)
 		}
 	}
