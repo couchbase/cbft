@@ -20,15 +20,20 @@ import (
 )
 
 func (pindex *PIndex) Run(mgr PIndexManager) {
-	var keepFiles bool = false
+	close := true
+	cleanup := true
+
 	var err error = nil
 
 	if pindex.IndexType == "bleve" {
-		keepFiles, err = RunBleveStream(mgr, pindex, pindex.Stream, pindex.Impl.(bleve.Index))
+		close, cleanup, err = RunBleveStream(mgr, pindex, pindex.Stream,
+			pindex.Impl.(bleve.Index))
 		if err != nil {
-			log.Printf("error: RunBleveStream, keepFiles: %b, err: %v", keepFiles, err)
+			log.Printf("error: RunBleveStream, close: %b, cleanup: %b, err: %v",
+				close, cleanup, err)
 		} else {
-			log.Printf("done: RunBleveStream, keepFiles: %b", keepFiles)
+			log.Printf("done: RunBleveStream, close: %b, cleanup: %b",
+				close, cleanup)
 		}
 	} else {
 		log.Printf("error: PIndex.Run() saw unknown IndexType: %s", pindex.IndexType)
@@ -36,15 +41,17 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 
 	// NOTE: We expect the PIndexImpl to handle any inflight, concurrent
 	// queries, access and Close() correctly with its own locking.
-	pindex.Impl.Close()
+	if close {
+		pindex.Impl.Close()
+	}
 
-	if !keepFiles {
+	if cleanup {
 		os.RemoveAll(pindex.Path)
 	}
 }
 
 func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
-	bindex bleve.Index) (bool, error) {
+	bindex bleve.Index) (bool, bool, error) {
 	for m := range stream {
 		// TODO: probably need things like stream reset/rollback
 		// and snapshot kinds of ops here, too.
@@ -55,25 +62,37 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		switch m := m.(type) {
 		case *StreamUpdate:
 			bindex.Index(string(m.Id()), m.Body())
+
 		case *StreamDelete:
 			bindex.Delete(string(m.Id()))
+
 		case *StreamEnd:
 			// Perhaps the datasource exited or is restarting?  We'll
 			// keep our stream open in case a new feed is hooked up.
 			if m.doneCh != nil {
 				close(m.doneCh)
 			}
+
 		case *StreamFlush:
 			// TODO: Need to delete all records here.
 			if m.doneCh != nil {
 				close(m.doneCh)
 			}
+
 		case *StreamRollback:
-			// TODO: Need to actually roll back bleve here.
+			// TODO: Implement partial rollback one day.
+			//
+			// For now, always rollback to zero, in which we close the
+			// pindex and have the janitor rebuild from scratch.
+			pindex.Impl.Close()
+			os.RemoveAll(pindex.Path)
+			mgr.ClosePIndex(pindex)
+
 			if m.doneCh != nil {
 				close(m.doneCh)
 			}
-			return true, nil
+			return false, false, nil
+
 		case *StreamSnapshot:
 			// TODO: Need to ACK some snapshot?
 			if m.doneCh != nil {
@@ -82,5 +101,5 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		}
 	}
 
-	return false, nil
+	return true, true, nil
 }
