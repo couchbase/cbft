@@ -105,7 +105,8 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 
 	currFeeds, currPIndexes = mgr.CurrentMaps()
 
-	addFeeds, removeFeeds := CalcFeedsDelta(currFeeds, currPIndexes)
+	addFeeds, removeFeeds :=
+		CalcFeedsDelta(mgr.uuid, planPIndexes, currFeeds, currPIndexes)
 
 	log.Printf("janitor feeds to add:")
 	for _, targetPIndexes := range addFeeds {
@@ -215,21 +216,27 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 
 // Functionally determine the delta of which feeds need creation and
 // which should be shut down.
-func CalcFeedsDelta(currFeeds map[string]Feed, pindexes map[string]*PIndex) (
+func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
+	currFeeds map[string]Feed, pindexes map[string]*PIndex) (
 	addFeeds [][]*PIndex, removeFeeds []Feed) {
 	// Allocate result holders.
 	addFeeds = make([][]*PIndex, 0)
 	removeFeeds = make([]Feed, 0)
 
-	// Group the pindexes by their feed names.
+	// Group the active pindexes by their feed names.
 	groupedPIndexes := make(map[string][]*PIndex)
 	for _, pindex := range pindexes {
-		feedName := FeedName(pindex)
-		arr, exists := groupedPIndexes[feedName]
-		if !exists {
-			arr = make([]*PIndex, 0)
+		planPIndex, exists := planPIndexes.PlanPIndexes[pindex.Name]
+		if exists &&
+			planPIndex != nil &&
+			planPIndex.NodeUUIDs[nodeUUID] == PLAN_PINDEX_NODE_ACTIVE {
+			feedName := FeedName(pindex)
+			arr, exists := groupedPIndexes[feedName]
+			if !exists {
+				arr = make([]*PIndex, 0)
+			}
+			groupedPIndexes[feedName] = append(arr, pindex)
 		}
-		groupedPIndexes[feedName] = append(arr, pindex)
 	}
 
 	for feedName, feedPIndexes := range groupedPIndexes {
