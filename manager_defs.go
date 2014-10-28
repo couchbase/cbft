@@ -137,14 +137,6 @@ func NewNodeDefs(version string) *NodeDefs {
 	}
 }
 
-func UnmarshalNodeDefs(jsonBytes []byte) (*NodeDefs, error) {
-	rv := &NodeDefs{}
-	if err := json.Unmarshal(jsonBytes, rv); err != nil {
-		return nil, err
-	}
-	return rv, nil
-}
-
 func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 	v, cas, err := cfg.Get(NODE_DEFS_KEY+"-"+kind, 0)
 	if err != nil {
@@ -153,8 +145,8 @@ func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 	if v == nil {
 		return nil, 0, nil
 	}
-	rv, err := UnmarshalNodeDefs(v)
-	if err != nil {
+	rv := &NodeDefs{}
+	if err := json.Unmarshal(v, rv); err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil

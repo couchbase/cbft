@@ -435,7 +435,8 @@ func TestIndexDefs(t *testing.T) {
 func TestNodeDefs(t *testing.T) {
 	d := NewNodeDefs("1.2.3")
 	buf, _ := json.Marshal(d)
-	d2, err := UnmarshalNodeDefs(buf)
+	d2 := &NodeDefs{}
+	err := json.Unmarshal(buf, d2)
 	if err != nil || d.UUID != d2.UUID || d.ImplVersion != d2.ImplVersion {
 		t.Errorf("UnmarshalNodeDefs err or mismatch")
 	}
