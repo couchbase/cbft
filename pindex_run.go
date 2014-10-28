@@ -60,6 +60,9 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		// goroutine that clumps up up updates into bigger batches?
 
 		switch req.Op {
+		case STREAM_OP_NOOP:
+			// Do nothing, so stream source can use NOOP like a ping.
+
 		case STREAM_OP_UPDATE:
 			bindex.Index(string(req.Key), req.Val)
 
