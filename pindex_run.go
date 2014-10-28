@@ -29,10 +29,10 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 		close, cleanup, err = RunBleveStream(mgr, pindex, pindex.Stream,
 			pindex.Impl.(bleve.Index))
 		if err != nil {
-			log.Printf("error: RunBleveStream, close: %b, cleanup: %b, err: %v",
+			log.Printf("error: RunBleveStream, close: %t, cleanup: %t, err: %v",
 				close, cleanup, err)
 		} else {
-			log.Printf("done: RunBleveStream, close: %b, cleanup: %b",
+			log.Printf("done: RunBleveStream, close: %t, cleanup: %t",
 				close, cleanup)
 		}
 	} else {

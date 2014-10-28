@@ -125,15 +125,14 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		err = mgr.stopFeed(removeFeed)
 		if err != nil {
 			return fmt.Errorf("error: janitor removing feed name: %s, err: %v",
-				removeFeed.Name, err)
+				removeFeed.Name(), err)
 		}
 	}
 	// Then, (re-)create feeds that we're missing.
-	for addFeedName, targetPIndexes := range addFeeds {
-		err = mgr.startFeed(targetPIndexes)
+	for _, addFeedTargetPIndexes := range addFeeds {
+		err = mgr.startFeed(addFeedTargetPIndexes)
 		if err != nil {
-			return fmt.Errorf("error: janitor adding feed, addFeedName: %s, err: %v",
-				addFeedName, err)
+			return fmt.Errorf("error: janitor adding feed, err: %v", err)
 		}
 	}
 
@@ -356,6 +355,13 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 
 // --------------------------------------------------------
 
+// TODO: need way to track dead cows (non-beef)
+// TODO: need a way to collect these errors so REST api
+// can show them to user ("hey, perhaps you deleted a bucket
+// and should delete these related full-text indexes?
+// or the couchbase cluster is just down.");
+// perhaps as specialized clog writer?
+
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID string,
 	streams map[string]Stream) error {
@@ -363,6 +369,10 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 		// TODO: Should default to DCP feed or projector feed one day.
 		return mgr.startTAPFeed(feedName, indexName, indexUUID,
 			sourceName, sourceUUID, streams)
+	}
+
+	if sourceType == "simple" {
+		return mgr.startSimpleFeed(feedName, streams)
 	}
 
 	if sourceType == "nil" {
@@ -380,23 +390,30 @@ func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
 			mgr.server, bucketName, indexName, err)
-		// TODO: need a way to collect these errors so REST api
-		// can show them to user ("hey, perhaps you deleted a bucket
-		// and should delete these related full-text indexes?
-		// or the couchbase cluster is just down.");
-		// perhaps as specialized clog writer?
-		// TODO: cleanup on error?
 	}
-
 	if err = feed.Start(); err != nil {
-		// TODO: need way to track dead cows (non-beef)
-		// TODO: cleanup?
-		return fmt.Errorf("error: could not start feed, server: %s, err: %v",
+		return fmt.Errorf("error: could not start tap feed, server: %s, err: %v",
 			mgr.server, err)
 	}
-
 	if err = mgr.registerFeed(feed); err != nil {
-		// TODO: cleanup?
+		feed.Close()
+		return err
+	}
+	return nil
+}
+
+func (mgr *Manager) startSimpleFeed(feedName string,
+	streams map[string]Stream) error {
+	feed, err := NewSimpleFeed(feedName, make(Stream), EmptyPartitionFunc, streams)
+	if err != nil {
+		return err
+	}
+	if err = feed.Start(); err != nil {
+		return fmt.Errorf("error: could not start simple feed, server: %s, err: %v",
+			mgr.server, err)
+	}
+	if err = mgr.registerFeed(feed); err != nil {
+		feed.Close()
 		return err
 	}
 

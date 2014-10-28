@@ -29,10 +29,6 @@ type SimpleFeed struct {
 	pf      StreamPartitionFunc
 }
 
-func (t *SimpleFeed) Source() Stream {
-	return t.source
-}
-
 func NewSimpleFeed(name string, source Stream, pf StreamPartitionFunc,
 	streams map[string]Stream) (*SimpleFeed, error) {
 	return &SimpleFeed{
@@ -143,4 +139,8 @@ func (t *SimpleFeed) Close() error {
 
 func (t *SimpleFeed) Streams() map[string]Stream {
 	return t.streams
+}
+
+func (t *SimpleFeed) Source() Stream {
+	return t.source
 }

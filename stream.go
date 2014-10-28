@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	"fmt"
+)
+
 type Stream chan StreamRequest
 
 type StreamPartitionFunc func(StreamRequest, map[string]Stream) (Stream, error)
@@ -52,4 +56,15 @@ type StreamUpdate struct {
 
 type StreamDelete struct {
 	Id []byte
+}
+
+// ----------------------------------------------
+
+// This partition func sends all stream requests to the "" partition.
+func EmptyPartitionFunc(req StreamRequest, streams map[string]Stream) (Stream, error) {
+	stream, exists := streams[""]
+	if !exists || stream == nil {
+		return nil, fmt.Errorf("error: no empty/all partition in streams: %#v", streams)
+	}
+	return stream, nil
 }

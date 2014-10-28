@@ -692,3 +692,63 @@ func TestManagerClosePIndex(t *testing.T) {
 		t.Errorf("meh callbacks were wrong")
 	}
 }
+
+func TestManagerCreateSimpleFeed(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+		err := sf.Close()
+		if err != nil {
+			t.Errorf("expected simple feed close to work")
+		}
+	})
+}
+
+func TestManagerSimpleFeedCloseSource(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+		close(sf.Source())
+		err := sf.Close()
+		if err != nil {
+			t.Errorf("expected simple feed close after source close to work")
+		}
+	})
+}
+
+func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	m := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", meh)
+	if err := m.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID",
+		"bleve", "foo", ""); err != nil {
+		t.Errorf("expected simple CreateIndex() to work")
+	}
+	m.PlannerNOOP("test")
+	m.JanitorNOOP("test")
+	feeds, pindexes := m.CurrentMaps()
+	if len(feeds) != 1 || len(pindexes) != 1 {
+		t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
+			feeds, pindexes)
+	}
+	if meh.lastPIndex == nil {
+		t.Errorf("expected to be meh.lastPIndex")
+	}
+	feedName := FeedName(meh.lastPIndex)
+	feed, exists := feeds[feedName]
+	if !exists || feed == nil {
+		t.Errorf("expected there to be feed: %s", feedName)
+	}
+	sf, ok := feed.(*SimpleFeed)
+	if !ok || sf == nil {
+		t.Errorf("expected feed to be simple")
+	}
+	if sf.Source() == nil {
+		t.Errorf("expected simple feed source to be there")
+	}
+	if sf.Streams() == nil {
+		t.Errorf("expected simple feed streams to be there")
+	}
+	andThen(m, sf)
+}
