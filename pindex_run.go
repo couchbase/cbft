@@ -88,16 +88,15 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			pindex.Impl.Close()
 			os.RemoveAll(pindex.Path)
 
-			// NOTE: Without the goroutine, then deadlock would be
-			// possible in that telling the manager & janitor to close
-			// us means any feeds will also synchronously close -- but
-			// the feed that sent us a StreamRollback request might be
-			// blocked awaiting a reply from us.
-			go mgr.ClosePIndex(pindex)
-
+			// First, respond to the feed so that it can unblock.
 			if m.doneCh != nil {
 				close(m.doneCh)
 			}
+
+			// Because, here the manager/janitor will synchronously
+			// ask the feed to close and we don't want a deadlock.
+			mgr.ClosePIndex(pindex)
+
 			return false, false, nil
 
 		case *StreamSnapshot:
