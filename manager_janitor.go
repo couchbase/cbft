@@ -160,7 +160,9 @@ func CalcPIndexesDelta(mgrUUID string,
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
 	nodeUUIDs:
 		for nodeUUID, nodeState := range wantedPlanPIndex.NodeUUIDs {
-			if nodeUUID != mgrUUID || nodeState != "active" {
+			if nodeUUID != mgrUUID ||
+				(nodeState != PLAN_PINDEX_NODE_ACTIVE &&
+					nodeState != PLAN_PINDEX_NODE_PAUSED) {
 				continue nodeUUIDs
 			}
 

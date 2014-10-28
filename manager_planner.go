@@ -175,9 +175,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			NodeUUIDs:        make(map[string]string),
 		}
 		for _, nodeDef := range nodeDefs.NodeDefs {
-			// TODO: rules around val need definition; perhaps
-			// "paused" could be used to encode index ingest pausing.
-			planPIndex.NodeUUIDs[nodeDef.UUID] = "active"
+			planPIndex.NodeUUIDs[nodeDef.UUID] = PLAN_PINDEX_NODE_ACTIVE
 		}
 
 		planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
