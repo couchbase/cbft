@@ -109,13 +109,13 @@ func (t *TAPFeed) feed() (int, error) {
 			if op.Opcode == memcached.TapMutation {
 				// TODO: Handle dispatch to streams correctly.
 				t.streams[""] <- &StreamUpdate{
-					id:   op.Key,
-					body: op.Value,
+					Id:   op.Key,
+					Body: op.Value,
 				}
 			} else if op.Opcode == memcached.TapDeletion {
 				// TODO: Handle dispatch to streams correctly.
 				t.streams[""] <- &StreamDelete{
-					id: op.Key,
+					Id: op.Key,
 				}
 			}
 		}

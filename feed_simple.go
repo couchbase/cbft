@@ -87,21 +87,21 @@ func (t *SimpleFeed) feed() {
 			switch req := req.(type) {
 			case *StreamEnd:
 				doneCh := make(chan error)
-				req.doneCh, doneChOrig = doneCh, req.doneCh
+				req.DoneCh, doneChOrig = doneCh, req.DoneCh
 				wantWaitForClose = "source stream end"
 
 			case *StreamFlush:
 				doneCh := make(chan error)
-				req.doneCh, doneChOrig = doneCh, req.doneCh
+				req.DoneCh, doneChOrig = doneCh, req.DoneCh
 
 			case *StreamRollback:
 				doneCh := make(chan error)
-				req.doneCh, doneChOrig = doneCh, req.doneCh
+				req.DoneCh, doneChOrig = doneCh, req.DoneCh
 				wantWaitForClose = "source stream rollback"
 
 			case *StreamSnapshot:
 				doneCh := make(chan error)
-				req.doneCh, doneChOrig = doneCh, req.doneCh
+				req.DoneCh, doneChOrig = doneCh, req.DoneCh
 
 			case *StreamUpdate:
 			case *StreamDelete:

@@ -61,23 +61,23 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 		switch m := m.(type) {
 		case *StreamUpdate:
-			bindex.Index(string(m.Id()), m.Body())
+			bindex.Index(string(m.Id), m.Body)
 
 		case *StreamDelete:
-			bindex.Delete(string(m.Id()))
+			bindex.Delete(string(m.Id))
 
 		case *StreamEnd:
 			// Perhaps the datasource exited or is restarting?  We'll
 			// keep our stream open in case a new feed is hooked up.
-			if m.doneCh != nil {
-				close(m.doneCh)
+			if m.DoneCh != nil {
+				close(m.DoneCh)
 			}
 
 		case *StreamFlush:
 			// TODO: Need to delete all records here.  So, why not
 			// implement this the same as rollback to zero?
-			if m.doneCh != nil {
-				close(m.doneCh)
+			if m.DoneCh != nil {
+				close(m.DoneCh)
 			}
 
 		case *StreamRollback:
@@ -89,8 +89,8 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			os.RemoveAll(pindex.Path)
 
 			// First, respond to the feed so that it can unblock.
-			if m.doneCh != nil {
-				close(m.doneCh)
+			if m.DoneCh != nil {
+				close(m.DoneCh)
 			}
 
 			// Because, here the manager/janitor will synchronously
@@ -101,8 +101,8 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 		case *StreamSnapshot:
 			// TODO: Need to ACK some snapshot?
-			if m.doneCh != nil {
-				close(m.doneCh)
+			if m.DoneCh != nil {
+				close(m.DoneCh)
 			}
 		}
 	}

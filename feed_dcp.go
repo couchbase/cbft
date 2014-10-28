@@ -122,13 +122,13 @@ func (t *DCPFeed) feed() (int, error) {
 			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
 				// TODO: Handle dispatch to streams correctly.
 				t.streams[""] <- &StreamUpdate{
-					id:   uprEvent.Key,
-					body: uprEvent.Value,
+					Id:   uprEvent.Key,
+					Body: uprEvent.Value,
 				}
 			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
 				// TODO: Handle dispatch to streams correctly.
 				t.streams[""] <- &StreamDelete{
-					id: uprEvent.Key,
+					Id: uprEvent.Key,
 				}
 			}
 		}

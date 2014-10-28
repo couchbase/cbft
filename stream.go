@@ -20,48 +20,36 @@ type StreamRequest interface{}
 // ----------------------------------------------
 
 type StreamEnd struct {
-	doneCh chan error
+	DoneCh chan error
 }
 
 // ----------------------------------------------
 
 type StreamFlush struct {
-	doneCh chan error
+	DoneCh chan error
 }
 
 // ----------------------------------------------
 
 type StreamRollback struct {
-	doneCh chan error
+	DoneCh chan error
 }
 
 // ----------------------------------------------
 
 type StreamSnapshot struct {
-	doneCh chan error
+	DoneCh chan error
 }
 
 // ----------------------------------------------
 
 type StreamUpdate struct {
-	id   []byte
-	body []byte
-}
-
-func (s *StreamUpdate) Id() []byte {
-	return s.id
-}
-
-func (s *StreamUpdate) Body() []byte {
-	return s.body
+	Id   []byte
+	Body []byte
 }
 
 // ----------------------------------------------
 
 type StreamDelete struct {
-	id []byte
-}
-
-func (s *StreamDelete) Id() []byte {
-	return s.id
+	Id []byte
 }
