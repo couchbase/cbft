@@ -159,12 +159,13 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 
 		// This simple PlanPIndex.Name here only works for simple
 		// 1-to-1 case, which is developer preview level requirement.
+		// The numeric suffix is a monotonic counter for uniqueness.
 		// NOTE: PlanPIndex.Name must be unique across the cluster and
-		// functionally based off of the indexDef.
+		// ideally functionally based off of the indexDef.
 		// NOTE: Can't use SourcePartitions as part of PlanPIndex.Name
 		// because in vbucket/hash partitioning, the string would be
 		// too large where PIndexes would use encode it into paths.
-		name := indexDef.Name + "_" + indexDef.UUID
+		name := indexDef.Name + "_" + indexDef.UUID + "_0"
 
 		planPIndex := &PlanPIndex{
 			// TODO: More advanced planners will probably have to
