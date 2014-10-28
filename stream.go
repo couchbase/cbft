@@ -13,24 +13,35 @@ package main
 
 type Stream chan StreamRequest
 
-type StreamRequest interface {
-}
+type StreamPartitionFunc func(StreamRequest, map[string]Stream) (Stream, error)
+
+type StreamRequest interface{}
+
+// ----------------------------------------------
 
 type StreamEnd struct {
 	doneCh chan error
 }
 
+// ----------------------------------------------
+
 type StreamFlush struct {
 	doneCh chan error
 }
+
+// ----------------------------------------------
 
 type StreamRollback struct {
 	doneCh chan error
 }
 
+// ----------------------------------------------
+
 type StreamSnapshot struct {
 	doneCh chan error
 }
+
+// ----------------------------------------------
 
 type StreamUpdate struct {
 	id   []byte
@@ -44,6 +55,8 @@ func (s *StreamUpdate) Id() []byte {
 func (s *StreamUpdate) Body() []byte {
 	return s.body
 }
+
+// ----------------------------------------------
 
 type StreamDelete struct {
 	id []byte

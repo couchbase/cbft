@@ -16,6 +16,7 @@ type NILFeed struct {
 	streams map[string]Stream
 }
 
+// A NILFeed never feeds any data to its streams.
 func NewNILFeed(name string, streams map[string]Stream) *NILFeed {
 	return &NILFeed{
 		name:    name,
