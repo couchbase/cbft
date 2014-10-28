@@ -13,6 +13,8 @@ package main
 
 import (
 	"fmt"
+	"hash/crc32"
+	"io"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -159,19 +161,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 
 		// This simple PlanPIndex.Name here only works for simple
 		// 1-to-1 case, which is developer preview level requirement.
-		// The numeric suffix is a monotonic counter for uniqueness.
-		// NOTE: PlanPIndex.Name must be unique across the cluster and
-		// ideally functionally based off of the indexDef.
-		// NOTE: Can't use SourcePartitions as part of PlanPIndex.Name
-		// because in vbucket/hash partitioning, the string would be
-		// too large where PIndexes would use encode it into paths.
-		name := indexDef.Name + "_" + indexDef.UUID + "_0"
-
 		planPIndex := &PlanPIndex{
-			// TODO: More advanced planners will probably have to
-			// incorporate SourcePartitions info into the
-			// PlanPIndex.Name.
-			Name:             name,
+			Name:             PlanPIndexName(indexDef, sourcePartitions),
 			UUID:             NewUUID(),
 			IndexType:        indexDef.Type,
 			IndexName:        indexDef.Name,
@@ -184,8 +175,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 			NodeUUIDs:        make(map[string]string),
 		}
 		for _, nodeDef := range nodeDefs.NodeDefs {
-			// TODO: rules around val needed; perhaps "paused"
-			// could be used to encode index ingest pausing.
+			// TODO: rules around val need definition; perhaps
+			// "paused" could be used to encode index ingest pausing.
 			planPIndex.NodeUUIDs[nodeDef.UUID] = "active"
 		}
 
@@ -193,4 +184,19 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPI
 	}
 
 	return planPIndexes, nil
+}
+
+// NOTE: PlanPIndex.Name must be unique across the cluster and ideally
+// functionally based off of the indexDef so that the SamePlanPIndex()
+// comparison works even if concurrent planners are racing to
+// calculate plans.
+//
+// NOTE: We can't use sourcePartitions directly as part of a
+// PlanPIndex.Name suffix because in vbucket/hash partitioning the
+// string would be too long -- since PIndexes might use
+// PlanPIndex.Name for filesystem paths.
+func PlanPIndexName(indexDef *IndexDef, sourcePartitions string) string {
+	h := crc32.NewIEEE()
+	io.WriteString(h, sourcePartitions)
+	return indexDef.Name + "_" + indexDef.UUID + "_" + fmt.Sprintf("%x", h.Sum32())
 }
