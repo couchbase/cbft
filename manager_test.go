@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"runtime"
 	"testing"
 
 	log "github.com/couchbaselabs/clog"
@@ -793,6 +794,10 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 func TestManagerSimpleFeedCloseSource(t *testing.T) {
 	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
 		close(sf.Source())
+
+		// Next, let the feed run a bit to handle the close().
+		runtime.Gosched()
+
 		err := sf.Close()
 		if err != nil {
 			t.Errorf("expected simple feed close after source close to work")
