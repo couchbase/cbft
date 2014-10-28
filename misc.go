@@ -45,12 +45,11 @@ func VersionGTE(x, y string) bool {
 }
 
 // TODO: replace with proper UUID implementation.
-// TODO: returned UUID's might not be same length.
 func NewUUID() string {
 	val1 := rand.Int63()
 	val2 := rand.Int63()
 	uuid := fmt.Sprintf("%x%x", val1, val2)
-	return uuid
+	return uuid[0:16]
 }
 
 // Calls f() in a loop, sleeping in an exponential backoff if needed.
