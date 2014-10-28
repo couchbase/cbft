@@ -740,25 +740,6 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	}
 }
 
-func TestManagerCreateSimpleFeed(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
-		err := sf.Close()
-		if err != nil {
-			t.Errorf("expected simple feed close to work")
-		}
-	})
-}
-
-func TestManagerSimpleFeedCloseSource(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
-		close(sf.Source())
-		err := sf.Close()
-		if err != nil {
-			t.Errorf("expected simple feed close after source close to work")
-		}
-	})
-}
-
 func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -798,4 +779,23 @@ func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
 		t.Errorf("expected simple feed streams to be there")
 	}
 	andThen(m, sf)
+}
+
+func TestManagerCreateSimpleFeed(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+		err := sf.Close()
+		if err != nil {
+			t.Errorf("expected simple feed close to work")
+		}
+	})
+}
+
+func TestManagerSimpleFeedCloseSource(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+		close(sf.Source())
+		err := sf.Close()
+		if err != nil {
+			t.Errorf("expected simple feed close after source close to work")
+		}
+	})
 }
