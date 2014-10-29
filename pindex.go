@@ -46,6 +46,7 @@ type PIndexImpl interface {
 
 type PIndexManager interface {
 	ClosePIndex(pindex *PIndex) error
+	Kick(msg string)
 }
 
 func NewPIndex(mgr PIndexManager, name, uuid,

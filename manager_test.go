@@ -1016,5 +1016,37 @@ func TestBasicStreamMutations(t *testing.T) {
 		if n != 1 {
 			t.Errorf("expected 1 docs in bindex, got: %d", n)
 		}
+		dch = make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_ROLLBACK,
+			DoneCh: dch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to ROLLBACK, err: %v", err)
+		}
+		runtime.Gosched()
+		mgr.PlannerNOOP("after-rollback")
+		mgr.JanitorNOOP("after-rollback")
+		feeds, pindexes := mgr.CurrentMaps()
+		if len(feeds) != 1 || len(pindexes) != 1 {
+			t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
+				feeds, pindexes)
+		}
+		var pindex2 *PIndex
+		for _, p := range pindexes {
+			pindex2 = p
+		}
+		if pindex == pindex2 {
+			t.Errorf("expected new pindex to be re-built")
+		}
+		bindex2 := pindex2.Impl.(bleve.Index)
+		if bindex == bindex2 {
+			t.Errorf("expected new bindex to be re-built")
+		}
+		n = bindex2.DocCount()
+		if n != 0 {
+			t.Errorf("expected 0 docs in bindex2, got: %d", n)
+		}
 	})
 }

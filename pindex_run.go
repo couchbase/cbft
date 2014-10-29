@@ -92,6 +92,7 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			// Because, here the manager/janitor will synchronously
 			// ask the feed to close and we don't want a deadlock.
 			mgr.ClosePIndex(pindex)
+			mgr.Kick("stream-rollback")
 
 			return false, false, nil
 

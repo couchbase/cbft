@@ -186,6 +186,13 @@ func (mgr *Manager) LoadDataDir() error {
 
 // ---------------------------------------------------------------
 
+func (mgr *Manager) Kick(msg string) {
+	mgr.PlannerKick(msg)
+	mgr.JanitorKick(msg)
+}
+
+// ---------------------------------------------------------------
+
 func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
 	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "", pindex)
 }
