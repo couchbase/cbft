@@ -37,6 +37,8 @@ const (
 	STREAM_OP_FLUSH
 	STREAM_OP_ROLLBACK
 	STREAM_OP_SNAPSHOT
+	STREAM_OP_GET_META // StreamRequest.Misc will be a chan []byte.
+	STREAM_OP_SET_META
 )
 
 var StreamOpNames map[int]string
