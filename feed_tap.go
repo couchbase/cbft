@@ -97,10 +97,6 @@ func (t *TAPFeed) feed() (int, error) {
 			t.bucketName, t.bucketUUID, bucket.UUID)
 	}
 
-	// TODO: This is (incorrectly) assuming hash/vbucket partitioning,
-	// and looks like we're missing a level of parameterization of
-	// partitioning: source partitioning (like vbuckets) is different
-	// than stream partitioning.
 	vbuckets := []uint16{}
 	for partition, _ := range t.streams {
 		if partition != "" {
