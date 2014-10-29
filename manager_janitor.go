@@ -71,11 +71,13 @@ func (mgr *Manager) JanitorLoop() {
 func (mgr *Manager) JanitorOnce(reason string) error {
 	log.Printf("janitor awakes, reason: %s", reason)
 
-	// TODO: The janitor should recheck that we're a wanted node.
-
 	if mgr.cfg == nil { // Can occur during testing.
 		return fmt.Errorf("janitor skipped due to nil cfg")
 	}
+
+	// NOTE: The janitor doesn't reconfirm that we're a wanted node
+	// because instead some planner see that & update the plans so
+	// that relevant janitors will close pindexes & feeds.
 
 	planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
 	if err != nil {
