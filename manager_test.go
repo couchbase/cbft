@@ -845,3 +845,15 @@ func TestManagerSimpleFeedCloseSource(t *testing.T) {
 		}
 	})
 }
+
+func TestManagerStartFeedByType(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
+	err := m.startFeedByType("feedName", "indexName", "indexUUID",
+		"sourceType-is-unknown", "sourceName", "sourceUUID", nil)
+	if err == nil {
+		t.Errorf("expected err on unknown source type")
+	}
+}
