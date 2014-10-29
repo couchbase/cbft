@@ -867,6 +867,10 @@ func TestManagerStartPIndex(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected err on unknown index type")
 	}
+	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "a"})
+	if err != nil {
+		t.Errorf("expected new bleve pindex to work, err: %v", err)
+	}
 }
 
 func TestManagerReStartPIndex(t *testing.T) {
