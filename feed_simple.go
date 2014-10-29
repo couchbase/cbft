@@ -68,7 +68,7 @@ func (t *SimpleFeed) feed() {
 				return
 			}
 
-			stream, err := t.pf(req.Key, req.SourcePartition, t.streams)
+			stream, err := t.pf(req.Key, req.Partition, t.streams)
 			if err != nil {
 				t.waitForClose("partition func error",
 					fmt.Errorf("error: SimpleFeed pf on req: %#v, err: %v",

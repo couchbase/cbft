@@ -21,13 +21,12 @@ type StreamPartitionFunc func(key []byte, partition string,
 	streams map[string]Stream) (Stream, error)
 
 type StreamRequest struct {
-	Op                  int
-	DoneCh              chan error
-	SourcePartition     string
-	SourcePartitionUUID string
-	SeqNo               uint64
-	Key, Val            []byte
-	Misc                interface{}
+	Op        int
+	DoneCh    chan error
+	Partition string
+	SeqNo     uint64
+	Key, Val  []byte
+	Misc      interface{}
 }
 
 const (
