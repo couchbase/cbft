@@ -97,19 +97,12 @@ func (t *TAPFeed) feed() (int, error) {
 			t.bucketName, t.bucketUUID, bucket.UUID)
 	}
 
-	vbuckets := []uint16{}
-	for partition, _ := range t.streams {
-		if partition != "" {
-			vbId, err := strconv.Atoi(partition)
-			if err != nil {
-				return -1, fmt.Errorf("error: could not parse partition: %s, err: %v",
-					partition, err)
-			}
-			vbuckets = append(vbuckets, uint16(vbId))
-		}
-	}
-
 	args := memcached.TapArguments{}
+
+	vbuckets, err := ParsePartitionsToVBucketIds(t.streams)
+	if err != nil {
+		return -1, err
+	}
 	if len(vbuckets) > 0 {
 		args.VBuckets = vbuckets
 	}
@@ -176,4 +169,19 @@ func (t *TAPFeed) Close() error {
 
 func (t *TAPFeed) Streams() map[string]Stream {
 	return t.streams
+}
+
+func ParsePartitionsToVBucketIds(streams map[string]Stream) ([]uint16, error) {
+	vbuckets := []uint16{}
+	for partition, _ := range streams {
+		if partition != "" {
+			vbId, err := strconv.Atoi(partition)
+			if err != nil {
+				return nil, fmt.Errorf("error: could not parse partition: %s, err: %v",
+					partition, err)
+			}
+			vbuckets = append(vbuckets, uint16(vbId))
+		}
+	}
+	return vbuckets, nil
 }

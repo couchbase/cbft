@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"testing"
 )
 
 type ErrorOnlyFeed struct {
@@ -33,4 +34,26 @@ func (t *ErrorOnlyFeed) Close() error {
 
 func (t *ErrorOnlyFeed) Streams() map[string]Stream {
 	return nil
+}
+
+func TestParsePartitionsToVBucketIds(t *testing.T) {
+	v, err := ParsePartitionsToVBucketIds(nil)
+	if err != nil || v == nil || len(v) != 0 {
+		t.Errorf("expected empty")
+	}
+	v, err = ParsePartitionsToVBucketIds(map[string]Stream{})
+	if err != nil || v == nil || len(v) != 0 {
+		t.Errorf("expected empty")
+	}
+	v, err = ParsePartitionsToVBucketIds(map[string]Stream{"123": nil})
+	if err != nil || v == nil || len(v) != 1 {
+		t.Errorf("expected one entry")
+	}
+	if v[0] != uint16(123) {
+		t.Errorf("expected 123")
+	}
+	v, err = ParsePartitionsToVBucketIds(map[string]Stream{"!bad": nil})
+	if err == nil || v != nil {
+		t.Errorf("expected error")
+	}
 }
