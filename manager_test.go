@@ -851,7 +851,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	}
 }
 
-func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
+func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed, *PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
@@ -889,11 +889,11 @@ func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed)) {
 	if sf.Streams() == nil {
 		t.Errorf("expected simple feed streams to be there")
 	}
-	andThen(m, sf)
+	andThen(m, sf, meh.lastPIndex)
 }
 
 func TestManagerCreateSimpleFeed(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
 		err := sf.Close()
 		if err != nil {
 			t.Errorf("expected simple feed close to work")
@@ -902,7 +902,7 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 }
 
 func TestManagerSimpleFeedCloseSource(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
 		close(sf.Source())
 
 		// Next, let the feed run a bit to handle the close().
