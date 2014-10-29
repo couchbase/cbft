@@ -113,6 +113,9 @@ func (t *TAPFeed) feed() (int, error) {
 	}
 	defer feed.Close()
 
+	// TODO: maybe TAPFeed should do a rollback to zero if it finds it
+	// needs to do a full backfill.
+
 	for {
 		select {
 		case <-t.closeCh:
