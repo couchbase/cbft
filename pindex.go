@@ -96,8 +96,8 @@ func NewPIndex(mgr PIndexManager, name, uuid,
 	return pindex, nil
 }
 
+// NOTE: Path argument must be a directory.
 func OpenPIndex(mgr PIndexManager, path string) (*PIndex, error) {
-	// TODO: We're assuming the index impl uses path as a subdirectory.
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
 		return nil, fmt.Errorf("error: could not load PINDEX_META_FILENAME,"+
