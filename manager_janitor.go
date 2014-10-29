@@ -241,11 +241,6 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 }
 
 func FeedName(pindex *PIndex) string {
-	// TODO: Different feed types might have different name formulas
-	// depending on whether they have a "single cluster" abstraction
-	// or work on a "node by node" basis (in where stream destinations
-	// need to be part of the name encoding).
-	//
 	// NOTE: We're depending on the IndexName/IndexUUID to
 	// functionally "cover" the SourceType/SourceName/SourceUUID, so
 	// we don't need to encode the source parts into the feed name.
