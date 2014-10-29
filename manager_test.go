@@ -670,6 +670,38 @@ func TestCfgGetHelpers(t *testing.T) {
 	}
 }
 
+func TestManagerStartTAPFeed(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", nil)
+	if err := mgr.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase",
+		"sourceName", "sourceUUID", nil)
+	if err != nil {
+		t.Errorf("expected startFeedByType ok for couchbase sourceType")
+	}
+	currFeeds, _ := mgr.CurrentMaps()
+	if len(currFeeds) != 1 {
+		t.Errorf("len currFeeds != 1")
+	}
+	f, exists := currFeeds["feedName"]
+	if !exists || f.Name() != "feedName" {
+		t.Errorf("expected a feed")
+	}
+	if _, ok := f.(*TAPFeed); !ok {
+		t.Errorf("expected a TAPFeed")
+	}
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase",
+		"sourceName", "sourceUUID", nil)
+	if err == nil {
+		t.Errorf("expected re-startFeedByType to fail")
+	}
+}
+
 func TestManagerStartNILFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -694,6 +726,43 @@ func TestManagerStartNILFeed(t *testing.T) {
 	}
 	if _, ok := f.(*NILFeed); !ok {
 		t.Errorf("expected a NILFeed")
+	}
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "nil",
+		"sourceName", "sourceUUID", nil)
+	if err == nil {
+		t.Errorf("expected re-startFeedByType to fail")
+	}
+}
+
+func TestManagerStartSimpleFeed(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", nil)
+	if err := mgr.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "simple",
+		"sourceName", "sourceUUID", nil)
+	if err != nil {
+		t.Errorf("expected startFeedByType ok for simple sourceType")
+	}
+	currFeeds, _ := mgr.CurrentMaps()
+	if len(currFeeds) != 1 {
+		t.Errorf("len currFeeds != 1")
+	}
+	f, exists := currFeeds["feedName"]
+	if !exists || f.Name() != "feedName" {
+		t.Errorf("expected a feed")
+	}
+	if _, ok := f.(*SimpleFeed); !ok {
+		t.Errorf("expected a SimpleFeed")
+	}
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "simple",
+		"sourceName", "sourceUUID", nil)
+	if err == nil {
+		t.Errorf("expected re-startFeedByType to fail")
 	}
 }
 
