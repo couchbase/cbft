@@ -38,7 +38,7 @@ func (mgr *Manager) JanitorLoop() {
 			mgr.cfg.Subscribe(PLAN_PINDEXES_KEY, ec)
 			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
 			for e := range ec {
-				mgr.PlannerKick("cfg changed, key: " + e.Key)
+				mgr.JanitorKick("cfg changed, key: " + e.Key)
 			}
 		}()
 	}
