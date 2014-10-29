@@ -19,6 +19,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/blevesearch/bleve"
+
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -851,6 +853,48 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	}
 }
 
+func TestManagerStartFeedByType(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
+	err := m.startFeedByType("feedName", "indexName", "indexUUID",
+		"sourceType-is-unknown", "sourceName", "sourceUUID", nil)
+	if err == nil {
+		t.Errorf("expected err on unknown source type")
+	}
+}
+
+func TestManagerStartPIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
+	err := m.startPIndex(&PlanPIndex{IndexType: "unknown-index-type"})
+	if err == nil {
+		t.Errorf("expected err on unknown index type")
+	}
+	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "a"})
+	if err != nil {
+		t.Errorf("expected new bleve pindex to work, err: %v", err)
+	}
+}
+
+func TestManagerReStartPIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
+	err := m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
+	if err != nil {
+		t.Errorf("expected first start to work")
+	}
+	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
+	if err == nil {
+		t.Errorf("expected err on re-registering an index")
+	}
+}
+
 func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed, *PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -915,44 +959,48 @@ func TestManagerSimpleFeedCloseSource(t *testing.T) {
 	})
 }
 
-func TestManagerStartFeedByType(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
-	err := m.startFeedByType("feedName", "indexName", "indexUUID",
-		"sourceType-is-unknown", "sourceName", "sourceUUID", nil)
-	if err == nil {
-		t.Errorf("expected err on unknown source type")
-	}
-}
-
-func TestManagerStartPIndex(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
-	err := m.startPIndex(&PlanPIndex{IndexType: "unknown-index-type"})
-	if err == nil {
-		t.Errorf("expected err on unknown index type")
-	}
-	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "a"})
-	if err != nil {
-		t.Errorf("expected new bleve pindex to work, err: %v", err)
-	}
-}
-
-func TestManagerReStartPIndex(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
-	err := m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
-	if err != nil {
-		t.Errorf("expected first start to work")
-	}
-	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
-	if err == nil {
-		t.Errorf("expected err on re-registering an index")
-	}
+func TestBasicStreamUpdate(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+		s := sf.Source()
+		dch := make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_UPDATE,
+			Key:    []byte("hello"),
+			Val:    []byte("{}"),
+			DoneCh: dch,
+		}
+		err := <-dch
+		if err != nil {
+			t.Errorf("expected no error to update, err: %v", err)
+		}
+		dch = make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_UPDATE,
+			Key:    []byte("goodbye"),
+			Val:    []byte("{}"),
+			DoneCh: dch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to update, err: %v", err)
+		}
+		dch = make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_NOOP,
+			Key:    []byte("ping"),
+			DoneCh: dch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to NOOP, err: %v", err)
+		}
+		bindex, ok := pindex.Impl.(bleve.Index)
+		if !ok || bindex == nil {
+			t.Errorf("expected bleve.Index")
+		}
+		n := bindex.DocCount()
+		if n != 2 {
+			t.Errorf("expected 2 docs in bindex, got: %d", n)
+		}
+	})
 }

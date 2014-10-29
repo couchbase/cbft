@@ -61,12 +61,15 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		switch req.Op {
 		case STREAM_OP_NOOP:
 			// Do nothing, so stream source can use NOOP like a ping.
+			log.Printf("bleve stream noop, key: %s", string(req.Key))
 
 		case STREAM_OP_UPDATE:
-			bindex.Index(string(req.Key), req.Val)
+			log.Printf("bleve stream udpate, key: %s", string(req.Key))
+			err = bindex.Index(string(req.Key), req.Val)
 
 		case STREAM_OP_DELETE:
-			bindex.Delete(string(req.Key))
+			log.Printf("bleve stream delete, key: %s", string(req.Key))
+			err = bindex.Delete(string(req.Key))
 
 		case STREAM_OP_FLUSH:
 			// TODO: Need to delete all records here.  So, why not
@@ -104,6 +107,11 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 		case STREAM_OP_SET_META:
 			err = bindex.SetInternal(req.Key, req.Val)
+		}
+
+		if err != nil {
+			log.Printf("error: bleve stream, op: %s, req: %#v, err: %v",
+				StreamOpNames[req.Op], req, err)
 		}
 
 		if req.DoneCh != nil {

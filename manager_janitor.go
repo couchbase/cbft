@@ -93,11 +93,11 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	addPlanPIndexes, removePIndexes :=
 		CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
 
-	log.Printf("janitor pindexes to add:")
+	log.Printf("janitor pindexes to add: %d", len(addPlanPIndexes))
 	for _, ppi := range addPlanPIndexes {
 		log.Printf("  %+v", ppi)
 	}
-	log.Printf("janitor pindexes to remove:")
+	log.Printf("janitor pindexes to remove: %d", len(removePIndexes))
 	for _, pi := range removePIndexes {
 		log.Printf("  %+v", pi)
 	}
