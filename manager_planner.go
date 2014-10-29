@@ -85,8 +85,6 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 			mgr.version)
 	}
 
-	// TODO: What about downgrades?
-
 	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return false, fmt.Errorf("planner skipped on CfgGetIndexDefs err: %v", err)

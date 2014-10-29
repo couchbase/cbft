@@ -411,3 +411,21 @@ homogeneous, and during their independent Planning and Janitoring,
 that they also don't have to talk to each other but can separately
 work and arrive at the same answers.
 
+-------------------------
+
+TODO: What about downgrades?
+
+Downgrades might happen when a user starts a rolling upgrade her
+cluster of cbft nodes to a latest cbft version.  The new version of
+cbft planners will start update Cfg entries with the latest
+"ImplVersion" field value, which signals to older cbft nodes to stop
+planning (since they might be using an older algorithm).
+
+But, if the user changes her mind and wants to downgrade the cbft
+nodes, those latest Cfg entries will remain incorrectly "prioritized",
+where the remaining old-version cbft nodes won't do any re-planning or
+overwriting.
+
+To solve this, there might be a tool to overwrite the ImplVersion's in
+the Cfg so that old cbft nodes will again start participating in
+planning and Cfg updates.
