@@ -110,9 +110,7 @@ func (c *CfgMem) Subscribe(key string, ch chan<- CfgEvent) error {
 }
 
 func (c *CfgMem) fireEvent(key string, cas uint64) {
-	go func() {
-		for _, c := range c.subscriptions[key] {
-			c <- CfgEvent{Key: key, CAS: cas}
-		}
-	}()
+	for _, c := range c.subscriptions[key] {
+		go func() { c <- CfgEvent{Key: key, CAS: cas} }()
+	}
 }
