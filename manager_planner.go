@@ -38,7 +38,7 @@ func (mgr *Manager) PlannerLoop() {
 			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ec)
 			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
 			for e := range ec {
-				mgr.PlannerKick("planner heard that cfg changed, key: " + e.Key)
+				mgr.PlannerKick("cfg changed, key: " + e.Key)
 			}
 		}()
 	}
