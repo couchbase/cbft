@@ -33,7 +33,7 @@ type IndexDef struct {
 	Type       string `json:"type"` // Like "bleve", "blackhole", etc.
 	Name       string `json:"name"`
 	UUID       string `json:"uuid"`
-	Mapping    string `json:"mapping"`
+	Schema     string `json:"schema"`
 	SourceType string `json:"sourceType"`
 	SourceName string `json:"sourceName"`
 	SourceUUID string `json:"sourceUUID"`
@@ -73,10 +73,10 @@ type PlanPIndexes struct {
 type PlanPIndex struct {
 	Name             string            `json:"name"` // Stable & unique cluster wide.
 	UUID             string            `json:"uuid"`
-	IndexType        string            `json:"indexType"`    // See IndexDef.Type.
-	IndexName        string            `json:"indexName"`    // See IndexDef.Name.
-	IndexUUID        string            `json:"indexUUID"`    // See IndefDef.UUID.
-	IndexMapping     string            `json:"indexMapping"` // See IndexDef.Mapping.
+	IndexType        string            `json:"indexType"`   // See IndexDef.Type.
+	IndexName        string            `json:"indexName"`   // See IndexDef.Name.
+	IndexUUID        string            `json:"indexUUID"`   // See IndefDef.UUID.
+	IndexSchema      string            `json:"indexSchema"` // See IndexDef.Schema.
 	SourceType       string            `json:"sourceType"`
 	SourceName       string            `json:"sourceName"`
 	SourceUUID       string            `json:"sourceUUID"`
@@ -225,7 +225,7 @@ func SamePlanPIndex(a, b *PlanPIndex) bool {
 	if a.Name != b.Name ||
 		a.IndexName != b.IndexName ||
 		a.IndexUUID != b.IndexUUID ||
-		a.IndexMapping != b.IndexMapping ||
+		a.IndexSchema != b.IndexSchema ||
 		a.SourceType != b.SourceType ||
 		a.SourceName != b.SourceName ||
 		a.SourceUUID != b.SourceUUID ||
@@ -241,7 +241,7 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 	same := pindex.Name == planPIndex.Name &&
 		pindex.IndexName == planPIndex.IndexName &&
 		pindex.IndexUUID == planPIndex.IndexUUID &&
-		pindex.IndexMapping == planPIndex.IndexMapping &&
+		pindex.IndexSchema == planPIndex.IndexSchema &&
 		pindex.SourceType == planPIndex.SourceType &&
 		pindex.SourceName == planPIndex.SourceName &&
 		pindex.SourceUUID == planPIndex.SourceUUID &&

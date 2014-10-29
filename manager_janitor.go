@@ -259,7 +259,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 		planPIndex.IndexType,
 		planPIndex.IndexName,
 		planPIndex.IndexUUID,
-		planPIndex.IndexMapping,
+		planPIndex.IndexSchema,
 		planPIndex.SourceType,
 		planPIndex.SourceName,
 		planPIndex.SourceUUID,

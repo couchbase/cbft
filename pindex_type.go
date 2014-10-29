@@ -18,12 +18,11 @@ import (
 	"github.com/blevesearch/bleve"
 )
 
-func NewPIndexImpl(indexType, indexMapping, path string) (PIndexImpl, error) {
+func NewPIndexImpl(indexType, indexSchema, path string) (PIndexImpl, error) {
 	if indexType == "bleve" {
 		bindexMapping := bleve.NewIndexMapping()
-
-		if len(indexMapping) > 0 {
-			if err := json.Unmarshal([]byte(indexMapping), &bindexMapping); err != nil {
+		if len(indexSchema) > 0 {
+			if err := json.Unmarshal([]byte(indexSchema), &bindexMapping); err != nil {
 				return nil, fmt.Errorf("error: could not parse index mapping: %v", err)
 			}
 		}
