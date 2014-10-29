@@ -79,4 +79,9 @@ func TestNewPIndexImpl(t *testing.T) {
 	if err == nil || pindexImpl != nil {
 		t.Errorf("expected err on unknown impl type")
 	}
+
+	pindexImpl, err = NewPIndexImpl("bleve", "", emptyDir)
+	if err == nil || pindexImpl != nil {
+		t.Errorf("expected err on existing dir")
+	}
 }
