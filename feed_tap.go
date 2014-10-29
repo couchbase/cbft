@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/couchbase/gomemcached/client"
 	log "github.com/couchbaselabs/clog"
@@ -91,12 +92,32 @@ func (t *TAPFeed) feed() (int, error) {
 
 	if t.bucketUUID != "" && t.bucketUUID != bucket.UUID {
 		bucket.Close()
-		return -1, fmt.Errorf("mismatched bucket uuid,"+
+		return -1, fmt.Errorf("error: mismatched bucket uuid,"+
 			"bucketName: %s, bucketUUID: %s, bucket.UUID: %s",
 			t.bucketName, t.bucketUUID, bucket.UUID)
 	}
 
+	// TODO: This is (incorrectly) assuming hash/vbucket partitioning,
+	// and looks like we're missing a level of parameterization of
+	// partitioning: source partitioning (like vbuckets) is different
+	// than stream partitioning.
+	vbuckets := []uint16{}
+	for partition, _ := range t.streams {
+		if partition != "" {
+			vbId, err := strconv.Atoi(partition)
+			if err != nil {
+				return -1, fmt.Errorf("error: could not parse partition: %s, err: %v",
+					partition, err)
+			}
+			vbuckets = append(vbuckets, uint16(vbId))
+		}
+	}
+
 	args := memcached.TapArguments{}
+	if len(vbuckets) > 0 {
+		args.VBuckets = vbuckets
+	}
+
 	feed, err := bucket.StartTapFeed(&args)
 	if err != nil {
 		return 0, err
