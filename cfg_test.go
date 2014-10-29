@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-type ErrorOnlyCfg struct{} // For testing.
+type ErrorOnlyCfg struct{}
 
 func (c *ErrorOnlyCfg) Get(key string, cas uint64) (
 	[]byte, uint64, error) {
@@ -32,6 +32,40 @@ func (c *ErrorOnlyCfg) Set(key string, val []byte, cas uint64) (
 
 func (c *ErrorOnlyCfg) Del(key string, cas uint64) error {
 	return fmt.Errorf("error only")
+}
+
+// ------------------------------------------------
+
+type ErrorAfterCfg struct {
+	inner    Cfg
+	numOps   int
+	errAfter int
+}
+
+func (c *ErrorAfterCfg) Get(key string, cas uint64) (
+	[]byte, uint64, error) {
+	c.numOps++
+	if c.numOps > c.errAfter {
+		return nil, 0, fmt.Errorf("error only")
+	}
+	return c.inner.Get(key, cas)
+}
+
+func (c *ErrorAfterCfg) Set(key string, val []byte, cas uint64) (
+	uint64, error) {
+	c.numOps++
+	if c.numOps > c.errAfter {
+		return 0, fmt.Errorf("error only")
+	}
+	return c.inner.Set(key, val, cas)
+}
+
+func (c *ErrorAfterCfg) Del(key string, cas uint64) error {
+	c.numOps++
+	if c.numOps > c.errAfter {
+		return fmt.Errorf("error only")
+	}
+	return c.inner.Del(key, cas)
 }
 
 // ------------------------------------------------

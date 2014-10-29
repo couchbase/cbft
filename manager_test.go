@@ -398,6 +398,28 @@ func TestCheckVersion(t *testing.T) {
 	if err != nil || string(v) != "1.1.0" {
 		t.Errorf("expected version to remain stable on lower version check")
 	}
+
+	for i := 0; i < 3; i++ {
+		cfg = NewCfgMem()
+		eac := &ErrorAfterCfg{
+			inner:    cfg,
+			errAfter: i,
+		}
+		ok, err = CheckVersion(eac, "1.0.0")
+		if err == nil || ok {
+			t.Errorf("expected err when cfg errors on %d'th op", i)
+		}
+	}
+
+	cfg = NewCfgMem()
+	eac := &ErrorAfterCfg{
+		inner:    cfg,
+		errAfter: 3,
+	}
+	ok, err = CheckVersion(eac, "1.0.0")
+	if err != nil || !ok {
+		t.Errorf("expected ok when cfg doesn't error until 3rd op ")
+	}
 }
 
 func TestIndexDefs(t *testing.T) {
