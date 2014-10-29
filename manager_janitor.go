@@ -37,10 +37,9 @@ func (mgr *Manager) JanitorLoop() {
 		if m.op == WORK_KICK {
 			err = mgr.JanitorOnce(m.msg)
 			if err != nil {
-				log.Printf("error: JanitorOnce, err: %v", err)
 				// Keep looping as perhaps it's a transient issue.
-				// TODO: Need a better way to track warnings from errors,
-				// and which need a future, rescheduled janitor kick.
+				// TODO: perhaps need a rescheduled janitor kick.
+				log.Printf("error: JanitorOnce, err: %v", err)
 			}
 		} else if m.op == WORK_NOOP {
 			// NOOP.
@@ -70,8 +69,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		return fmt.Errorf("janitor skipped on CfgGetPlanPIndexes err: %v", err)
 	}
 	if planPIndexes == nil {
-		// Might happen if janitor wins a race.
-		// TODO: Should we reschedule another future janitor kick?
+		// Might happen if janitor wins an initialization race.
 		return fmt.Errorf("janitor skipped on nil planPIndexes")
 	}
 
