@@ -77,6 +77,15 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 		case STREAM_OP_ROLLBACK:
 			// TODO: Implement partial rollback one day.
+			// Implementation sketch: we expect bleve to one day to
+			// provide an additional Snapshot() and Rollback() API,
+			// where Snapshot() returns some opaque and persistable
+			// snapshot ID ("SID"), which cbft can occasionally record
+			// into the bleve's Get/SetInternal() "side" storage.  A
+			// stream rollback operation then needs to loop through
+			// appropriate candidate SID's until a Rollback(SID)
+			// succeeds.  Else, we eventually devolve down to
+			// restarting/rebuilding everything from scratch or zero.
 			//
 			// For now, always rollback to zero, in which we close the
 			// pindex and have the janitor rebuild from scratch.
