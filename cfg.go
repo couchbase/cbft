@@ -20,10 +20,18 @@ type Cfg interface {
 
 	// A zero cas means don't match CAS on Del().
 	Del(key string, cas uint64) error
+
+	// Ephemeral subscriptions to changes to a key.
+	Subscribe(key string, ch chan<- CfgEvent) error
 }
 
 type CfgCASError struct{}
 
 func (e *CfgCASError) Error() string {
 	return "CAS mismatch"
+}
+
+type CfgEvent struct {
+	Key string
+	CAS uint64
 }

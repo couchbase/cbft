@@ -20,9 +20,10 @@ import (
 // for development and testing.
 
 type CfgMem struct {
-	m       sync.Mutex
-	CASNext uint64
-	Entries map[string]*CfgMemEntry
+	m             sync.Mutex
+	CASNext       uint64
+	Entries       map[string]*CfgMemEntry
+	subscriptions map[string][]chan<- CfgEvent
 }
 
 type CfgMemEntry struct {
@@ -32,8 +33,9 @@ type CfgMemEntry struct {
 
 func NewCfgMem() *CfgMem {
 	return &CfgMem{
-		CASNext: 1,
-		Entries: make(map[string]*CfgMemEntry),
+		CASNext:       1,
+		Entries:       make(map[string]*CfgMemEntry),
+		subscriptions: make(map[string][]chan<- CfgEvent),
 	}
 }
 
@@ -76,6 +78,7 @@ func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 	copy(nextEntry.Val, val)
 	c.Entries[key] = nextEntry
 	c.CASNext += 1
+	c.fireEvent(key, nextEntry.CAS)
 	return nextEntry.CAS, nil
 }
 
@@ -90,5 +93,26 @@ func (c *CfgMem) Del(key string, cas uint64) error {
 		}
 	}
 	delete(c.Entries, key)
+	c.fireEvent(key, 0)
 	return nil
+}
+
+func (c *CfgMem) Subscribe(key string, ch chan<- CfgEvent) error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	a, exists := c.subscriptions[key]
+	if !exists || a == nil {
+		a = []chan<- CfgEvent{}
+	}
+	c.subscriptions[key] = append(a, ch)
+	return nil
+}
+
+func (c *CfgMem) fireEvent(key string, cas uint64) {
+	go func() {
+		for _, c := range c.subscriptions[key] {
+			c <- CfgEvent{Key: key, CAS: cas}
+		}
+	}()
 }

@@ -34,6 +34,10 @@ func (c *ErrorOnlyCfg) Del(key string, cas uint64) error {
 	return fmt.Errorf("error only")
 }
 
+func (c *ErrorOnlyCfg) Subscribe(key string, ch chan<- CfgEvent) error {
+	return fmt.Errorf("error only")
+}
+
 // ------------------------------------------------
 
 type ErrorAfterCfg struct {
@@ -66,6 +70,14 @@ func (c *ErrorAfterCfg) Del(key string, cas uint64) error {
 		return fmt.Errorf("error only")
 	}
 	return c.inner.Del(key, cas)
+}
+
+func (c *ErrorAfterCfg) Subscribe(key string, ch chan<- CfgEvent) error {
+	c.numOps++
+	if c.numOps > c.errAfter {
+		return fmt.Errorf("error only")
+	}
+	return c.inner.Subscribe(key, ch)
 }
 
 // ------------------------------------------------
