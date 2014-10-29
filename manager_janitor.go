@@ -32,6 +32,17 @@ func (mgr *Manager) JanitorKick(msg string) {
 }
 
 func (mgr *Manager) JanitorLoop() {
+	if mgr.cfg != nil { // Might be nil for testing.
+		go func() {
+			ec := make(chan CfgEvent)
+			mgr.cfg.Subscribe(PLAN_PINDEXES_KEY, ec)
+			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
+			for e := range ec {
+				mgr.PlannerKick("janitor heard that cfg changed, key: " + e.Key)
+			}
+		}()
+	}
+
 	for m := range mgr.janitorCh {
 		var err error
 		if m.op == WORK_KICK {
@@ -59,6 +70,8 @@ func (mgr *Manager) JanitorLoop() {
 
 func (mgr *Manager) JanitorOnce(reason string) error {
 	log.Printf("janitor awakes, reason: %s", reason)
+
+	// TODO: The janitor should recheck that we're a wanted node.
 
 	if mgr.cfg == nil { // Can occur during testing.
 		return fmt.Errorf("janitor skipped due to nil cfg")

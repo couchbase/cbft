@@ -32,6 +32,17 @@ func (mgr *Manager) PlannerKick(msg string) {
 }
 
 func (mgr *Manager) PlannerLoop() {
+	if mgr.cfg != nil { // Might be nil for testing.
+		go func() {
+			ec := make(chan CfgEvent)
+			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ec)
+			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
+			for e := range ec {
+				mgr.PlannerKick("planner heard that cfg changed, key: " + e.Key)
+			}
+		}()
+	}
+
 	for m := range mgr.plannerCh {
 		var err error
 		if m.op == WORK_KICK {
@@ -40,9 +51,6 @@ func (mgr *Manager) PlannerLoop() {
 				log.Printf("error: PlannerOnce, err: %v", err)
 				// Keep looping as perhaps it's a transient issue.
 			} else if changed {
-				// TODO: need some distributed notify/event facility,
-				// perhaps in the Cfg, to kick any remote janitors.
-				//
 				mgr.JanitorKick("the plans have changed")
 			}
 		} else if m.op == WORK_NOOP {
@@ -63,6 +71,8 @@ func (mgr *Manager) PlannerLoop() {
 
 func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	log.Printf("planner awakes, reason: %s", reason)
+
+	// TODO: Planner should check that we're a wanted node, tagged for planning.
 
 	if mgr.cfg == nil { // Can occur during testing.
 		return false, fmt.Errorf("planner skipped due to nil cfg")

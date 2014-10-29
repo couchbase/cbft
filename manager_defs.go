@@ -137,8 +137,12 @@ func NewNodeDefs(version string) *NodeDefs {
 	}
 }
 
+func CfgNodeDefsKey(kind string) string {
+	return NODE_DEFS_KEY + "-" + kind
+}
+
 func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
-	v, cas, err := cfg.Get(NODE_DEFS_KEY+"-"+kind, 0)
+	v, cas, err := cfg.Get(CfgNodeDefsKey(kind), 0)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -152,12 +156,13 @@ func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 	return rv, cas, nil
 }
 
-func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs, cas uint64) (uint64, error) {
+func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs,
+	cas uint64) (uint64, error) {
 	buf, err := json.Marshal(nodeDefs)
 	if err != nil {
 		return 0, err
 	}
-	return cfg.Set(NODE_DEFS_KEY+"-"+kind, buf, cas)
+	return cfg.Set(CfgNodeDefsKey(kind), buf, cas)
 }
 
 // ------------------------------------------------------------------------
