@@ -959,8 +959,12 @@ func TestManagerSimpleFeedCloseSource(t *testing.T) {
 	})
 }
 
-func TestBasicStreamUpdate(t *testing.T) {
+func TestBasicStreamMutations(t *testing.T) {
 	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+		bindex, ok := pindex.Impl.(bleve.Index)
+		if !ok || bindex == nil {
+			t.Errorf("expected bleve.Index")
+		}
 		s := sf.Source()
 		dch := make(chan error)
 		s <- &StreamRequest{
@@ -994,13 +998,23 @@ func TestBasicStreamUpdate(t *testing.T) {
 		if err != nil {
 			t.Errorf("expected no error to NOOP, err: %v", err)
 		}
-		bindex, ok := pindex.Impl.(bleve.Index)
-		if !ok || bindex == nil {
-			t.Errorf("expected bleve.Index")
-		}
 		n := bindex.DocCount()
 		if n != 2 {
 			t.Errorf("expected 2 docs in bindex, got: %d", n)
+		}
+		dch = make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_DELETE,
+			Key:    []byte("goodbye"),
+			DoneCh: dch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to DELETE, err: %v", err)
+		}
+		n = bindex.DocCount()
+		if n != 1 {
+			t.Errorf("expected 1 docs in bindex, got: %d", n)
 		}
 	})
 }
