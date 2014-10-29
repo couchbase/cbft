@@ -23,7 +23,7 @@ type Cfg interface {
 
 	// Ephemeral subscriptions to changes to a key.
 	// During a deletion, the CfgEvent.CAS will be 0.
-	Subscribe(key string, ch chan<- CfgEvent) error
+	Subscribe(key string, ch chan CfgEvent) error
 }
 
 type CfgCASError struct{}

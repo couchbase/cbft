@@ -97,7 +97,7 @@ func (c *CfgMem) Del(key string, cas uint64) error {
 	return nil
 }
 
-func (c *CfgMem) Subscribe(key string, ch chan<- CfgEvent) error {
+func (c *CfgMem) Subscribe(key string, ch chan CfgEvent) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 

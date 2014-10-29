@@ -98,6 +98,6 @@ func (c *CfgSimple) unlockedSave() error {
 	return ioutil.WriteFile(c.path, buf, 0600)
 }
 
-func (c *CfgSimple) Subscribe(key string, ch chan<- CfgEvent) error {
+func (c *CfgSimple) Subscribe(key string, ch chan CfgEvent) error {
 	return c.cfgMem.Subscribe(key, ch)
 }

@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func (c *ErrorOnlyCfg) Del(key string, cas uint64) error {
 	return fmt.Errorf("error only")
 }
 
-func (c *ErrorOnlyCfg) Subscribe(key string, ch chan<- CfgEvent) error {
+func (c *ErrorOnlyCfg) Subscribe(key string, ch chan CfgEvent) error {
 	return fmt.Errorf("error only")
 }
 
@@ -72,7 +73,7 @@ func (c *ErrorAfterCfg) Del(key string, cas uint64) error {
 	return c.inner.Del(key, cas)
 }
 
-func (c *ErrorAfterCfg) Subscribe(key string, ch chan<- CfgEvent) error {
+func (c *ErrorAfterCfg) Subscribe(key string, ch chan CfgEvent) error {
 	c.numOps++
 	if c.numOps > c.errAfter {
 		return fmt.Errorf("error only")
@@ -244,5 +245,79 @@ func TestCfgSimpleSave(t *testing.T) {
 	cas, err := c1.Set("a", []byte("A"), 0)
 	if err == nil || cas != 0 {
 		t.Errorf("expected Save() to bad dir to fail")
+	}
+}
+
+func TestCfgSimpleSubscribe(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	path := emptyDir + string(os.PathSeparator) + "test.cfg"
+
+	ec := make(chan CfgEvent, 1)
+	ec2 := make(chan CfgEvent, 1)
+
+	c := NewCfgSimple(path)
+	c.Subscribe("a", ec)
+	c.Subscribe("aaa", ec2)
+
+	cas1, err := c.Set("a", []byte("A"), 0)
+	if err != nil || cas1 != 1 {
+		t.Errorf("expected Set() on initial cfg simple")
+	}
+	runtime.Gosched()
+	e := <-ec
+	if e.Key != "a" || e.CAS != 1 {
+		t.Errorf("expected event on Set()")
+	}
+	select {
+	case <-ec2:
+		t.Errorf("expected no events for ec2")
+	default:
+	}
+
+	cas2, err := c.Set("a", []byte("AA"), cas1)
+	if err != nil || cas2 != 2 {
+		t.Errorf("expected Set() on initial cfg simple")
+	}
+	runtime.Gosched()
+	e = <-ec
+	if e.Key != "a" || e.CAS != 2 {
+		t.Errorf("expected event on Set()")
+	}
+	select {
+	case <-ec2:
+		t.Errorf("expected no events for ec2")
+	default:
+	}
+
+	err = c.Del("a", cas2)
+	if err != nil {
+		t.Errorf("expected Del() to work")
+	}
+	runtime.Gosched()
+	e = <-ec
+	if e.Key != "a" || e.CAS != 0 {
+		t.Errorf("expected event on Del()")
+	}
+	select {
+	case <-ec2:
+		t.Errorf("expected no events for ec2")
+	default:
+	}
+
+	cas3, err := c.Set("a", []byte("AA"), 0)
+	if err != nil || cas3 != 3 {
+		t.Errorf("expected Set() on initial cfg simple")
+	}
+	runtime.Gosched()
+	e = <-ec
+	if e.Key != "a" || e.CAS != 3 {
+		t.Errorf("expected event on Set()")
+	}
+	select {
+	case <-ec2:
+		t.Errorf("expected no events for ec2")
+	default:
 	}
 }
