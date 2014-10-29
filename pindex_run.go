@@ -53,8 +53,7 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 	bindex bleve.Index) (bool, bool, error) {
 	for req := range stream {
-		// TODO: probably need things like stream reset/rollback
-		// and snapshot kinds of ops here, too.
+		var err error
 
 		// TODO: maybe need a more batchy API?  Perhaps, yet another
 		// goroutine that clumps up up updates into bigger batches?
@@ -92,9 +91,25 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			mgr.ClosePIndex(pindex)
 
 			return false, false, nil
+
+		case STREAM_OP_GET_META:
+			v, err := bindex.GetInternal(req.Key)
+			if err != nil && req.Misc != nil {
+				c, ok := req.Misc.(chan []byte)
+				if ok && c != nil {
+					c <- v
+					close(c)
+				}
+			}
+
+		case STREAM_OP_SET_META:
+			err = bindex.SetInternal(req.Key, req.Val)
 		}
 
 		if req.DoneCh != nil {
+			if err != nil {
+				req.DoneCh <- err
+			}
 			close(req.DoneCh)
 		}
 	}
