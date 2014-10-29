@@ -22,6 +22,7 @@ type Cfg interface {
 	Del(key string, cas uint64) error
 
 	// Ephemeral subscriptions to changes to a key.
+	// During a deletion, the CfgEvent.CAS will be 0.
 	Subscribe(key string, ch chan<- CfgEvent) error
 }
 
