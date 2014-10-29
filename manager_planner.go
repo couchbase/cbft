@@ -72,8 +72,6 @@ func (mgr *Manager) PlannerLoop() {
 func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	log.Printf("planner awakes, reason: %s", reason)
 
-	// TODO: Planner should check that we're a wanted node, tagged for planning.
-
 	if mgr.cfg == nil { // Can occur during testing.
 		return false, fmt.Errorf("planner skipped due to nil cfg")
 	}
@@ -111,6 +109,34 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
 		return false, fmt.Errorf("planner ended since nodeDefs.ImplVersion: %s"+
 			" > mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
+	}
+
+	nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+	if !exists || nodeDef == nil {
+		return false, fmt.Errorf("planner ended since no NodeDef: %s", mgr.bindAddr)
+	}
+	if nodeDef.UUID != mgr.uuid {
+		return false, fmt.Errorf("planner ended since NodeDef: %s,"+
+			" NodeDef.UUID: %s != mgr.uuid: %s",
+			mgr.bindAddr, nodeDef.UUID, mgr.uuid)
+	}
+	if nodeDef.ImplVersion != mgr.version {
+		return false, fmt.Errorf("planner ended since NodeDef: %s,"+
+			" NodeDef.ImplVersion: %s != mgr.version: %s",
+			mgr.bindAddr, nodeDef.ImplVersion, mgr.version)
+	}
+	isPlanner := true
+	if nodeDef.Tags != nil && len(nodeDef.Tags) > 0 {
+		isPlanner = false
+		for _, tag := range nodeDef.Tags {
+			if tag == "planner" {
+				isPlanner = true
+			}
+		}
+	}
+	if !isPlanner {
+		return false, fmt.Errorf("planner ended since node isn't a planner, tags: %#v",
+			nodeDef.Tags)
 	}
 
 	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(mgr.cfg)

@@ -26,8 +26,8 @@ type Manager struct {
 	startTime time.Time
 	version   string // Our software VERSION.
 	cfg       Cfg
-	uuid      string // Unique to every Manager process instance.
-	tags      []string
+	uuid      string   // Unique to every Manager instance.
+	tags      []string // The tags at Manager start.
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -281,6 +281,9 @@ func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }
 
+// Returns the tags at process start, which may not be same as the
+// tags regsitered in the Cfg.  The tags in the Cfg should take
+// precedence.
 func (mgr *Manager) Tags() map[string]bool {
 	if mgr.tags == nil {
 		return nil
