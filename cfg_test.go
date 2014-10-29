@@ -38,8 +38,8 @@ func (c *ErrorOnlyCfg) Del(key string, cas uint64) error {
 
 type ErrorAfterCfg struct {
 	inner    Cfg
-	numOps   int
 	errAfter int
+	numOps   int
 }
 
 func (c *ErrorAfterCfg) Get(key string, cas uint64) (

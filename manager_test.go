@@ -373,8 +373,13 @@ func TestManagerRegisterFeed(t *testing.T) {
 }
 
 func TestCheckVersion(t *testing.T) {
+	ok, err := CheckVersion(nil, "1.1.0")
+	if err != nil || ok {
+		t.Errorf("expect nil err and not ok on nil cfg")
+	}
+
 	cfg := NewCfgMem()
-	ok, err := CheckVersion(cfg, "1.0.0")
+	ok, err = CheckVersion(cfg, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected first version to win in brand new cfg")
 	}
@@ -419,6 +424,20 @@ func TestCheckVersion(t *testing.T) {
 	ok, err = CheckVersion(eac, "1.0.0")
 	if err != nil || !ok {
 		t.Errorf("expected ok when cfg doesn't error until 3rd op ")
+	}
+
+	cfg = NewCfgMem()
+	eac = &ErrorAfterCfg{
+		inner:    cfg,
+		errAfter: 4,
+	}
+	ok, err = CheckVersion(eac, "1.0.0")
+	if err != nil || !ok {
+		t.Errorf("expected ok on first version init")
+	}
+	ok, err = CheckVersion(eac, "1.1.0")
+	if err == nil || ok {
+		t.Errorf("expected err when forcing cfg Set() error during verison upgrade")
 	}
 }
 
