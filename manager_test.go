@@ -857,3 +857,14 @@ func TestManagerStartFeedByType(t *testing.T) {
 		t.Errorf("expected err on unknown source type")
 	}
 }
+
+func TestManagerStartPIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
+	err := m.startPIndex(&PlanPIndex{IndexType: "unknown-index-type"})
+	if err == nil {
+		t.Errorf("expected err on unknown index type")
+	}
+}
