@@ -926,7 +926,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 }
 
 func testManagerSimpleFeed(t *testing.T,
-	sourceParams string,
+	sourceParams string, planParams PlanParams,
 	andThen func(*Manager, *SimpleFeed, *TestMEH)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -937,7 +937,7 @@ func testManagerSimpleFeed(t *testing.T,
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err != nil {
+		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
 	m.PlannerNOOP("test")
@@ -970,7 +970,7 @@ func testManagerSimpleFeed(t *testing.T,
 
 func TestManagerCreateSimpleFeed(t *testing.T) {
 	sourceParams := ""
-	testManagerSimpleFeed(t, sourceParams,
+	testManagerSimpleFeed(t, sourceParams, PlanParams{},
 		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 			err := sf.Close()
 			if err != nil {
@@ -981,7 +981,7 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 
 func TestManagerSimpleFeedCloseSource(t *testing.T) {
 	sourceParams := ""
-	testManagerSimpleFeed(t, sourceParams,
+	testManagerSimpleFeed(t, sourceParams, PlanParams{},
 		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 			close(sf.Source())
 
@@ -997,7 +997,7 @@ func TestManagerSimpleFeedCloseSource(t *testing.T) {
 
 func TestBasicStreamMutations(t *testing.T) {
 	sourceParams := ""
-	testManagerSimpleFeed(t, sourceParams,
+	testManagerSimpleFeed(t, sourceParams, PlanParams{},
 		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
@@ -1097,7 +1097,7 @@ func TestBasicStreamMutations(t *testing.T) {
 
 func TestStreamGetSetMeta(t *testing.T) {
 	sourceParams := ""
-	testManagerSimpleFeed(t, sourceParams,
+	testManagerSimpleFeed(t, sourceParams, PlanParams{},
 		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
