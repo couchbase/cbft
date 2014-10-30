@@ -37,10 +37,9 @@ type IndexDef struct {
 	SourceType string `json:"sourceType"`
 	SourceName string `json:"sourceName"`
 	SourceUUID string `json:"sourceUUID"`
+	PlanParams string `json:"planParams"`
 
-	// TODO: auth to access datasource?
-	// TODO: hints at creation time for planner, such as partitoning scheme:
-	// none, hash, range, etc?
+	// TODO: recorded auth to access datasource?
 }
 
 // ------------------------------------------------------------------------
