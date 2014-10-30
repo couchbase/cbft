@@ -1004,6 +1004,9 @@ func TestBasicStreamMutations(t *testing.T) {
 			if !ok || bindex == nil {
 				t.Errorf("expected bleve.Index")
 			}
+			if len(sf.Streams()) != 1 {
+				t.Errorf("expected just 1 stream")
+			}
 			s := sf.Source()
 			dch := make(chan error)
 			s <- &StreamRequest{
@@ -1104,6 +1107,9 @@ func TestStreamGetSetMeta(t *testing.T) {
 			if !ok || bindex == nil {
 				t.Errorf("expected bleve.Index")
 			}
+			if len(sf.Streams()) != 1 {
+				t.Errorf("expected just 1 stream")
+			}
 			s := sf.Source()
 			dch := make(chan error)
 			mch := make(chan []byte, 1)
@@ -1147,6 +1153,80 @@ func TestStreamGetSetMeta(t *testing.T) {
 				Key:    []byte("dinner"),
 				DoneCh: dch,
 				Misc:   mch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			v = <-mch
+			if string(v) != "cake" {
+				t.Errorf("expected cake for dinner")
+			}
+			n = bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+			}
+		})
+}
+
+func TestMultiStreamGetSetMeta(t *testing.T) {
+	sourceParams := "{\"numPartitions\":2}"
+	testManagerSimpleFeed(t, sourceParams, PlanParams{},
+		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+			pindex := meh.lastPIndex
+			bindex, ok := pindex.Impl.(bleve.Index)
+			if !ok || bindex == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			if len(sf.Streams()) != 2 {
+				t.Errorf("expected 2 entries in streams")
+			}
+			s := sf.Source()
+			dch := make(chan error)
+			mch := make(chan []byte, 1)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_GET_META,
+				Partition: "0",
+				Key:       []byte("dinner"),
+				DoneCh:    dch,
+				Misc:      mch,
+			}
+			err := <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			v, ok := <-mch
+			if !ok || len(v) != 0 {
+				t.Errorf("expected []byte{} for dinner, got: %#v", v)
+			}
+			n := bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex, got: %d", n)
+			}
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_SET_META,
+				Partition: "0",
+				Key:       []byte("dinner"),
+				Val:       []byte("cake"),
+				DoneCh:    dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			n = bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+			}
+			dch = make(chan error)
+			mch = make(chan []byte, 1)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_GET_META,
+				Partition: "0",
+				Key:       []byte("dinner"),
+				DoneCh:    dch,
+				Misc:      mch,
 			}
 			err = <-dch
 			if err != nil {

@@ -48,7 +48,7 @@ func (t *SimpleFeed) Name() string {
 }
 
 func (t *SimpleFeed) Start() error {
-	log.Printf("SimpleFeed.Start, name: %s", t.Name())
+	log.Printf("SimpleFeed.Start, name: %s, streams: %#v", t.Name(), t.streams)
 	go t.feed()
 	return nil
 }
@@ -70,9 +70,10 @@ func (t *SimpleFeed) feed() {
 
 			stream, err := t.pf(req.Key, req.Partition, t.streams)
 			if err != nil {
-				t.waitForClose("partition func error",
-					fmt.Errorf("error: SimpleFeed pf on req: %#v, err: %v",
-						req, err))
+				err = fmt.Errorf("error: SimpleFeed pf on req: %#v, err: %v",
+					req, err)
+				log.Printf("%v", err)
+				t.waitForClose("partition func error", err)
 				return
 			}
 

@@ -65,6 +65,6 @@ func BasicPartitionFunc(key []byte, partition string,
 	if exists {
 		return stream, nil
 	}
-	return nil, fmt.Errorf("error: no partition for key: %s,"+
-		"partition: %s, streams: %#v", key, partition, streams)
+	return nil, fmt.Errorf("error: no stream for key: %s,"+
+		" partition: %s, streams: %#v", key, partition, streams)
 }
