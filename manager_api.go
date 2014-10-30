@@ -32,7 +32,6 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 		return fmt.Errorf("error: could not create index, indexDefs.ImplVersion: %s"+
 			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
 	}
-
 	if _, exists := indexDefs.IndexDefs[indexName]; exists {
 		return fmt.Errorf("error: index exists, indexName: %s", indexName)
 	}
@@ -80,7 +79,6 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 		return fmt.Errorf("error: could not delete index, indexDefs.ImplVersion: %s"+
 			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
 	}
-
 	if _, exists := indexDefs.IndexDefs[indexName]; !exists {
 		return fmt.Errorf("error: index to delete does not exist, indexName: %s",
 			indexName)
