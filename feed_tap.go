@@ -136,8 +136,8 @@ func (t *TAPFeed) feed() (int, error) {
 			}
 
 			log.Printf("TapFeed: received from url: %s,"+
-				" poolName: %s, bucketName: %s, req: %#v",
-				t.url, t.poolName, t.bucketName, req)
+				" poolName: %s, bucketName: %s, opcode: %s, req: %#v",
+				t.url, t.poolName, t.bucketName, req.Opcode, req)
 
 			partition := fmt.Sprintf("%d", req.VBucket)
 			stream, err := t.pf(req.Key, partition, t.streams)
