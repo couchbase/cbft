@@ -116,6 +116,10 @@ func (t *TAPFeed) feed() (int, error) {
 	// TODO: maybe TAPFeed should do a rollback to zero if it finds it
 	// needs to do a full backfill.
 
+	log.Printf("TapFeed: running, url: %s,"+
+		" poolName: %s, bucketName: %s, vbuckets: %#v",
+		t.url, t.poolName, t.bucketName, vbuckets)
+
 	for {
 		select {
 		case <-t.closeCh:
@@ -175,7 +179,7 @@ func (t *TAPFeed) Streams() map[string]Stream {
 }
 
 func ParsePartitionsToVBucketIds(streams map[string]Stream) ([]uint16, error) {
-	vbuckets := []uint16{}
+	vbuckets := make([]uint16, 0, len(streams))
 	for partition, _ := range streams {
 		if partition != "" {
 			vbId, err := strconv.Atoi(partition)
