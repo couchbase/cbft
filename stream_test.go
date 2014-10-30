@@ -25,4 +25,8 @@ func TestBasicPartitionFunc(t *testing.T) {
 	if err == nil || s == stream {
 		t.Errorf("expected BasicPartitionFunc to not work")
 	}
+	s, err = BasicPartitionFunc(nil, "foo", map[string]Stream{"foo": stream})
+	if err != nil || s != stream {
+		t.Errorf("expected BasicPartitionFunc to work on partition hit")
+	}
 }
