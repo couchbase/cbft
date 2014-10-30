@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"strings"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -215,10 +216,20 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
-		// This simple planner puts every PIndex on every node, so
-		// there is not "real" partitioning.  This is good enough for
-		// developer preview level requirement.
-		sourcePartitions := ""
+		// This simple planner puts every partition onto every PIndex
+		// and also puts every PIndex onto every node.
+		//
+		// TODO: This is not "real" partitioning, but is good enough
+		// for developer preview level requirement.
+		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
+			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams)
+		if err != nil {
+			log.Printf("error: planner could not get partitions,"+
+				" indexDef: %#v, err: %v", indexDef, err)
+			continue
+		}
+
+		sourcePartitions := strings.Join(sourcePartitionsArr, ",")
 
 		// This simple PlanPIndex.Name here only works for simple
 		// 1-to-1 case, which is developer preview level requirement.
