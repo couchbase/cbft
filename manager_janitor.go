@@ -346,8 +346,6 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		return nil
 	}
 
-	// NOTE: This simple algorithm creates 1 feed per pindex.
-
 	pindexFirst := pindexes[0]
 	feedName := FeedName(pindexFirst)
 
