@@ -142,7 +142,8 @@ func (t *TAPFeed) feed() (int, error) {
 			partition := fmt.Sprintf("%d", req.VBucket)
 			stream, err := t.pf(req.Key, partition, t.streams)
 			if err != nil {
-				return 1, fmt.Errorf("TapFeed: partition func error from url: %s,"+
+				return 1, fmt.Errorf("error: TAPFeed:"+
+					" partition func error from url: %s,"+
 					" poolName: %s, bucketName: %s, req: %#v, streams: %#v, err: %v",
 					t.url, t.poolName, t.bucketName, req, t.streams, err)
 			}

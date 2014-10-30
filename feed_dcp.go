@@ -132,7 +132,7 @@ func (t *DCPFeed) feed() (int, error) {
 			partition := fmt.Sprintf("%d", uprEvent.VBucket)
 			stream, err := t.pf(uprEvent.Key, partition, t.streams)
 			if err != nil {
-				return 1, fmt.Errorf("error: TapFeed:"+
+				return 1, fmt.Errorf("error: DCPFeed:"+
 					" partition func error from url: %s,"+
 					" poolName: %s, bucketName: %s, uprEvent: %#v, streams: %#v, err: %v",
 					t.url, t.poolName, t.bucketName, uprEvent, t.streams, err)
