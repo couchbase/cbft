@@ -77,8 +77,8 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	}
 
 	// NOTE: The janitor doesn't reconfirm that we're a wanted node
-	// because instead some planner see that & update the plans so
-	// that relevant janitors will close pindexes & feeds.
+	// because instead some planner will see that & update the plan;
+	// then relevant janitors will react by closing pindexes & feeds.
 
 	planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
 	if err != nil {
