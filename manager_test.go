@@ -1050,3 +1050,68 @@ func TestBasicStreamMutations(t *testing.T) {
 		}
 	})
 }
+
+func TestStreamGetSetMeta(t *testing.T) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+		bindex, ok := pindex.Impl.(bleve.Index)
+		if !ok || bindex == nil {
+			t.Errorf("expected bleve.Index")
+		}
+		s := sf.Source()
+		dch := make(chan error)
+		mch := make(chan []byte, 1)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_GET_META,
+			Key:    []byte("dinner"),
+			DoneCh: dch,
+			Misc:   mch,
+		}
+		err := <-dch
+		if err != nil {
+			t.Errorf("expected no error to update, err: %v", err)
+		}
+		v, ok := <-mch
+		if !ok || len(v) != 0 {
+			t.Errorf("expected []byte{} for dinner, got: %#v", v)
+		}
+		n := bindex.DocCount()
+		if n != 0 {
+			t.Errorf("expected 0 docs in bindex, got: %d", n)
+		}
+		dch = make(chan error)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_SET_META,
+			Key:    []byte("dinner"),
+			Val:    []byte("cake"),
+			DoneCh: dch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to update, err: %v", err)
+		}
+		n = bindex.DocCount()
+		if n != 0 {
+			t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+		}
+		dch = make(chan error)
+		mch = make(chan []byte, 1)
+		s <- &StreamRequest{
+			Op:     STREAM_OP_GET_META,
+			Key:    []byte("dinner"),
+			DoneCh: dch,
+			Misc:   mch,
+		}
+		err = <-dch
+		if err != nil {
+			t.Errorf("expected no error to update, err: %v", err)
+		}
+		v = <-mch
+		if string(v) != "cake" {
+			t.Errorf("expected cake for dinner")
+		}
+		n = bindex.DocCount()
+		if n != 0 {
+			t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+		}
+	})
+}

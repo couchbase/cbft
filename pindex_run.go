@@ -107,7 +107,7 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 		case STREAM_OP_GET_META:
 			v, err := bindex.GetInternal(req.Key)
-			if err != nil && req.Misc != nil {
+			if err == nil && req.Misc != nil {
 				c, ok := req.Misc.(chan []byte)
 				if ok && c != nil {
 					c <- v
