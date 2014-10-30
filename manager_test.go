@@ -884,14 +884,23 @@ func TestManagerReStartPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
-	err := m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
+	meh := &TestMEH{}
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", meh)
+	err := m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
 	if err != nil {
 		t.Errorf("expected first start to work")
 	}
-	err = m.startPIndex(&PlanPIndex{IndexType: "bleve", IndexName: "i"})
+	err = m.stopPIndex(meh.lastPIndex)
+	if err != nil {
+		t.Errorf("expected close pindex to work")
+	}
+	err = m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
+	if err != nil {
+		t.Errorf("expected close+restart pindex to work")
+	}
+	err = m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
 	if err == nil {
-		t.Errorf("expected err on re-registering an index")
+		t.Errorf("expected unclosed restart of different plan pindex to false, err: %v", err)
 	}
 }
 

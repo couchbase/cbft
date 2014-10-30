@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	log "github.com/couchbaselabs/clog"
@@ -263,19 +264,46 @@ func FeedName(pindex *PIndex) string {
 // --------------------------------------------------------
 
 func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
-	pindex, err := NewPIndex(mgr, planPIndex.Name, NewUUID(),
-		planPIndex.IndexType,
-		planPIndex.IndexName,
-		planPIndex.IndexUUID,
-		planPIndex.IndexSchema,
-		planPIndex.SourceType,
-		planPIndex.SourceName,
-		planPIndex.SourceUUID,
-		planPIndex.SourcePartitions,
-		mgr.PIndexPath(planPIndex.Name))
-	if err != nil {
-		return fmt.Errorf("error: NewPIndex, name: %s, err: %v",
-			planPIndex.Name, err)
+	var pindex *PIndex
+	var err error
+
+	path := mgr.PIndexPath(planPIndex.Name)
+
+	// First try reading existing path iwth OpenPIndex(), which
+	// handles the case of rollback.
+	if _, err = os.Stat(path); err == nil {
+		pindex, err = OpenPIndex(mgr, path)
+		if err == nil {
+			if !PIndexMatchesPlan(pindex, planPIndex) {
+				fmt.Printf("pindex does not match plan,"+
+					" cleaning up and trying NewPIndex, path: %s, err: %v",
+					path, err)
+				close(pindex.Stream)
+				os.RemoveAll(path)
+			}
+		} else {
+			fmt.Printf("OpenPIndex error,"+
+				" cleaning up and trying NewPIndex, path: %s, err: %v",
+				path, err)
+			os.RemoveAll(path)
+		}
+	}
+
+	if pindex == nil {
+		pindex, err = NewPIndex(mgr, planPIndex.Name, NewUUID(),
+			planPIndex.IndexType,
+			planPIndex.IndexName,
+			planPIndex.IndexUUID,
+			planPIndex.IndexSchema,
+			planPIndex.SourceType,
+			planPIndex.SourceName,
+			planPIndex.SourceUUID,
+			planPIndex.SourcePartitions,
+			path)
+		if err != nil {
+			return fmt.Errorf("error: NewPIndex, name: %s, err: %v",
+				planPIndex.Name, err)
+		}
 	}
 
 	if err = mgr.registerPIndex(pindex); err != nil {
