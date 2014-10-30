@@ -186,7 +186,7 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 			feeds, pindexes)
 	}
 
-	log.Printf("test will now deleting the index: foo")
+	log.Printf("test will now be deleting the index: foo")
 
 	if err := m.DeleteIndex("foo"); err != nil {
 		t.Errorf("expected DeleteIndex() to work on actual index, err: %v", err)
