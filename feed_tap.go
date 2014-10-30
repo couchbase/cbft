@@ -122,6 +122,7 @@ func (t *TAPFeed) feed() (int, error) {
 		" poolName: %s, bucketName: %s, vbuckets: %#v",
 		t.url, t.poolName, t.bucketName, vbuckets)
 
+loop:
 	for {
 		select {
 		case <-t.closeCh:
@@ -132,7 +133,7 @@ func (t *TAPFeed) feed() (int, error) {
 
 		case req, alive := <-feed.C:
 			if !alive {
-				break
+				break loop
 			}
 
 			log.Printf("TapFeed: received from url: %s,"+
@@ -159,7 +160,6 @@ func (t *TAPFeed) feed() (int, error) {
 					Op:  STREAM_OP_DELETE,
 					Key: req.Key,
 				}
-			} else {
 			}
 		}
 	}

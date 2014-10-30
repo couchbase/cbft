@@ -116,6 +116,7 @@ func (t *DCPFeed) feed() (int, error) {
 		return 0, err
 	}
 
+loop:
 	for {
 		select {
 		case <-t.closeCh:
@@ -126,7 +127,7 @@ func (t *DCPFeed) feed() (int, error) {
 
 		case uprEvent, alive := <-feed.C:
 			if !alive {
-				break
+				break loop
 			}
 
 			partition := fmt.Sprintf("%d", uprEvent.VBucket)
