@@ -12,11 +12,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/couchbaselabs/go-couchbase"
 )
+
+type SimpleSourceParams struct {
+	NumPartitions int `json:"numPartitions"`
+}
 
 func DataSourcePartitions(sourceType, sourceName,
 	sourceUUID, sourceParams, server string) ([]string, error) {
@@ -27,23 +32,22 @@ func DataSourcePartitions(sourceType, sourceName,
 		// TODO: how the halloween does GetBucket() api work without explicit auth?
 		bucket, err := couchbase.GetBucket(server, poolName, bucketName)
 		if err != nil {
-			return nil, fmt.Errorf("error: DataSourcePartitions failed GetBucket,"+
-				" server: %s, poolName: %s, bucketName: %s, err: %v",
+			return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+				" failed GetBucket, server: %s, poolName: %s, bucketName: %s, err: %v",
 				server, poolName, bucketName, err)
 		}
 		defer bucket.Close()
 
 		vbm := bucket.VBServerMap()
 		if vbm == nil {
-			return nil, fmt.Errorf("error: DataSourcePartitions no VBServerMap,"+
-				" server: %s, poolName: %s, bucketName: %s, err: %v",
+			return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+				" no VBServerMap, server: %s, poolName: %s, bucketName: %s, err: %v",
 				server, poolName, bucketName, err)
 		}
 
-		// TODO: big assumption here that vbucket numbers are
-		// continuous integers, starting from 0.
+		// NOTE: We assume that vbucket numbers are continuous
+		// integers starting from 0.
 		numVBuckets := len(vbm.VBucketMap)
-
 		rv := make([]string, numVBuckets)
 		for i := 0; i < numVBuckets; i++ {
 			rv[i] = strconv.Itoa(i)
@@ -52,8 +56,20 @@ func DataSourcePartitions(sourceType, sourceName,
 	}
 
 	if sourceType == "simple" {
-		// TODO: Should look at sourceParams for # of partitions.
-		return []string{}, nil
+		ssp := &SimpleSourceParams{}
+		if sourceParams != "" {
+			err := json.Unmarshal([]byte(sourceParams), ssp)
+			if err != nil {
+				return nil, fmt.Errorf("error: DataSourcePartitions/simple"+
+					" could not parse sourceParams: %s, err: %v", sourceParams, err)
+			}
+		}
+		numPartitions := ssp.NumPartitions
+		rv := make([]string, numPartitions)
+		for i := 0; i < numPartitions; i++ {
+			rv[i] = strconv.Itoa(i)
+		}
+		return rv, nil
 	}
 
 	return nil, fmt.Errorf("error: DataSourcePartitions got unknown sourceType: %s",

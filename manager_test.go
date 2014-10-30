@@ -131,7 +131,8 @@ func TestManagerRestart(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
+	sourceParams := ""
+	if err := m.CreateIndex("simple", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
@@ -167,11 +168,12 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
+	sourceParams := ""
+	if err := m.CreateIndex("simple", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
+	if err := m.CreateIndex("simple", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
@@ -221,9 +223,10 @@ func TestManagerRegisterPIndex(t *testing.T) {
 		t.Errorf("expected no callback events to meh")
 	}
 
+	sourceParams := ""
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", sourceParams, "sourcePartitions",
 		m.PIndexPath("p0"))
 	if err != nil {
 		t.Errorf("expected NewPIndex() to work")
@@ -807,9 +810,10 @@ func TestManagerClosePIndex(t *testing.T) {
 		t.Errorf("expected no callback events to meh")
 	}
 	m.Start(true)
+	sourceParams := ""
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", sourceParams, "sourcePartitions",
 		m.PIndexPath("p0"))
 	m.registerPIndex(p)
 	feeds, pindexes := m.CurrentMaps()
@@ -846,7 +850,8 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", "sourceParams",
+	sourceParams := ""
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
@@ -930,7 +935,8 @@ func testManagerSimpleFeed(t *testing.T,
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", "sourceParams",
+	sourceParams := ""
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
