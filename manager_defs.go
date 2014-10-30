@@ -30,16 +30,23 @@ type IndexDefs struct {
 }
 
 type IndexDef struct {
-	Type       string `json:"type"` // Like "bleve", "blackhole", etc.
-	Name       string `json:"name"`
-	UUID       string `json:"uuid"`
-	Schema     string `json:"schema"`
-	SourceType string `json:"sourceType"`
-	SourceName string `json:"sourceName"`
-	SourceUUID string `json:"sourceUUID"`
-	PlanParams string `json:"planParams"`
+	Type         string     `json:"type"` // Like "bleve", "blackhole", etc.
+	Name         string     `json:"name"`
+	UUID         string     `json:"uuid"`
+	Schema       string     `json:"schema"`
+	SourceType   string     `json:"sourceType"`
+	SourceName   string     `json:"sourceName"`
+	SourceUUID   string     `json:"sourceUUID"`
+	SourceParams string     `json:"sourceParams"` // Optional connection info.
+	PlanParams   PlanParams `json:"planParams"`
 
 	// TODO: recorded auth to access datasource?
+}
+
+type PlanParams struct {
+	// TODO: replication params?
+
+	MaxPartitionsPerPIndex int `json:"maxPartitionsPerPIndex"`
 }
 
 // ------------------------------------------------------------------------
@@ -79,6 +86,7 @@ type PlanPIndex struct {
 	SourceType       string            `json:"sourceType"`
 	SourceName       string            `json:"sourceName"`
 	SourceUUID       string            `json:"sourceUUID"`
+	SourceParams     string            `json:"sourceParams"` // Optional connection info.
 	SourcePartitions string            `json:"sourcePartitions"`
 	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // NodeDef.UUID => PLAN_PINDEX_NODE_XXX.
 }
@@ -233,6 +241,7 @@ func SamePlanPIndex(a, b *PlanPIndex) bool {
 		a.SourceType != b.SourceType ||
 		a.SourceName != b.SourceName ||
 		a.SourceUUID != b.SourceUUID ||
+		!reflect.DeepEqual(a.SourceParams, b.SourceParams) ||
 		a.SourcePartitions != b.SourcePartitions ||
 		!reflect.DeepEqual(a.NodeUUIDs, b.NodeUUIDs) {
 		return false
@@ -249,6 +258,7 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 		pindex.SourceType == planPIndex.SourceType &&
 		pindex.SourceName == planPIndex.SourceName &&
 		pindex.SourceUUID == planPIndex.SourceUUID &&
+		reflect.DeepEqual(pindex.SourceParams, planPIndex.SourceParams) &&
 		pindex.SourcePartitions == planPIndex.SourcePartitions
 	if !same {
 		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",

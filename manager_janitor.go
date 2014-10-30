@@ -299,6 +299,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 			planPIndex.SourceType,
 			planPIndex.SourceName,
 			planPIndex.SourceUUID,
+			planPIndex.SourceParams,
 			planPIndex.SourcePartitions,
 			path)
 		if err != nil {

@@ -207,6 +207,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			SourceType:       indexDef.SourceType,
 			SourceName:       indexDef.SourceName,
 			SourceUUID:       indexDef.SourceUUID,
+			SourceParams:     indexDef.SourceParams,
 			SourcePartitions: sourcePartitions,
 			NodeUUIDs:        make(map[string]string),
 		}

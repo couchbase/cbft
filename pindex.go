@@ -34,6 +34,7 @@ type PIndex struct {
 	SourceType       string     `json:"sourceType"`
 	SourceName       string     `json:"sourceName"`
 	SourceUUID       string     `json:"sourceUUID"`
+	SourceParams     string     `json:"sourceParams"`
 	SourcePartitions string     `json:"sourcePartitions"`
 	Path             string     `json:"-"` // Transient, not persisted.
 	Impl             PIndexImpl `json:"-"` // Transient, not persisted.
@@ -51,7 +52,7 @@ type PIndexManager interface {
 
 func NewPIndex(mgr PIndexManager, name, uuid,
 	indexType, indexName, indexUUID, indexSchema,
-	sourceType, sourceName, sourceUUID, sourcePartitions,
+	sourceType, sourceName, sourceUUID, sourceParams, sourcePartitions string,
 	path string) (*PIndex, error) {
 	impl, err := NewPIndexImpl(indexType, indexSchema, path)
 	if err != nil {
@@ -70,6 +71,7 @@ func NewPIndex(mgr PIndexManager, name, uuid,
 		SourceType:       sourceType,
 		SourceName:       sourceName,
 		SourceUUID:       sourceUUID,
+		SourceParams:     sourceParams,
 		SourcePartitions: sourcePartitions,
 		Path:             path,
 		Impl:             impl,

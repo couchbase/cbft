@@ -16,8 +16,9 @@ import (
 )
 
 // Creates a logical index, which might be comprised of many PIndex objects.
-func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
-	indexType, indexName, indexSchema, planParams string) error {
+func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+	indexType, indexName, indexSchema string,
+	planParams PlanParams) error {
 	// TODO: what about auth info to be able to access bucket?
 	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
 	// TODO: what about hints for # of partitions, etc?
@@ -39,14 +40,15 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID,
 	indexUUID := NewUUID()
 
 	indexDef := &IndexDef{
-		Type:       indexType,
-		Name:       indexName,
-		UUID:       indexUUID,
-		Schema:     indexSchema,
-		SourceType: sourceType,
-		SourceName: sourceName,
-		SourceUUID: sourceUUID,
-		PlanParams: planParams,
+		Type:         indexType,
+		Name:         indexName,
+		UUID:         indexUUID,
+		Schema:       indexSchema,
+		SourceType:   sourceType,
+		SourceName:   sourceName,
+		SourceUUID:   sourceUUID,
+		SourceParams: sourceParams,
+		PlanParams:   planParams,
 	}
 
 	indexDefs.UUID = indexUUID

@@ -131,8 +131,8 @@ func TestManagerRestart(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123",
-		"bleve", "foo", "", ""); err != nil {
+	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	m.PlannerNOOP("test")
@@ -167,12 +167,12 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123",
-		"bleve", "foo", "", ""); err != nil {
+	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123",
-		"bleve", "foo", "", ""); err == nil {
+	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+		"bleve", "foo", "", PlanParams{}); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
 	if err := m.DeleteIndex("not-an-actual-index-name"); err == nil {
@@ -223,7 +223,7 @@ func TestManagerRegisterPIndex(t *testing.T) {
 
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
 		m.PIndexPath("p0"))
 	if err != nil {
 		t.Errorf("expected NewPIndex() to work")
@@ -809,7 +809,7 @@ func TestManagerClosePIndex(t *testing.T) {
 	m.Start(true)
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
 		m.PIndexPath("p0"))
 	m.registerPIndex(p)
 	feeds, pindexes := m.CurrentMaps()
@@ -846,8 +846,8 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID",
-		"bleve", "foo", "", ""); err != nil {
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", "sourceParams",
+		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
 	if err := SyncWorkReq(m.plannerCh, "whoa-this-isn't-a-valid-op",
@@ -930,8 +930,8 @@ func testManagerSimpleFeed(t *testing.T,
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID",
-		"bleve", "foo", "", ""); err != nil {
+	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", "sourceParams",
+		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
 	m.PlannerNOOP("test")

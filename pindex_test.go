@@ -32,7 +32,7 @@ func TestNewPIndex(t *testing.T) {
 
 	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
@@ -46,7 +46,7 @@ func TestNewPIndexEmptyJSON(t *testing.T) {
 
 	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "{}",
-		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to fail with empty json map")
@@ -59,7 +59,7 @@ func TestNewPIndexBadMapping(t *testing.T) {
 
 	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "} hey this isn't json :-(",
-		"sourceType", "sourceName", "sourceUUID", "sourcePartitions",
+		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
 		PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
 		t.Errorf("expected NewPIndex to fail with bad json")

@@ -47,11 +47,13 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	sourceType := "couchbase"
 	sourceName := indexName
 	sourceUUID := ""
+	sourceParams := ""
+	planParams := PlanParams{}
 
 	// TODO: bad assumption of bucketName == indexName right now.
 	// TODO: need a bucketUUID, or perhaps "" just means use latest.
-	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID,
-		indexType, indexName, string(indexSchema), "")
+	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+		indexType, indexName, string(indexSchema), planParams)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)
