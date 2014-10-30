@@ -279,6 +279,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 					" cleaning up and trying NewPIndex, path: %s, err: %v",
 					path, err)
 				close(pindex.Stream)
+				pindex = nil
 				os.RemoveAll(path)
 			}
 		} else {

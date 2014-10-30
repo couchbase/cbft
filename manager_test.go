@@ -902,6 +902,15 @@ func TestManagerReStartPIndex(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected unclosed restart of different plan pindex to false, err: %v", err)
 	}
+	err = m.startPIndex(&PlanPIndex{
+		Name:      "p",
+		IndexType: "bleve",
+		IndexName: "i",
+		IndexUUID: "different",
+	})
+	if err == nil {
+		t.Errorf("expected unclosed restart of different plan pindex to false, err: %v", err)
+	}
 }
 
 func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed, *PIndex)) {
