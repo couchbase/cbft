@@ -115,6 +115,8 @@ func (t *TAPFeed) feed() (int, error) {
 
 	// TODO: maybe TAPFeed should do a rollback to zero if it finds it
 	// needs to do a full backfill.
+	// TODO: this TAPFeed implementation currently only works against
+	// a couchbase cluster that has just a single node.
 
 	log.Printf("TapFeed: running, url: %s,"+
 		" poolName: %s, bucketName: %s, vbuckets: %#v",
