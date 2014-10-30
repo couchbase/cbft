@@ -65,8 +65,6 @@ func (mgr *Manager) PlannerLoop() {
 			close(m.resCh)
 		}
 	}
-
-	close(mgr.janitorCh)
 }
 
 func (mgr *Manager) PlannerOnce(reason string) (bool, error) {

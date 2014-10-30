@@ -128,7 +128,7 @@ func TestManagerRestart(t *testing.T) {
 		"bleve", "foo", ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	close(m.plannerCh)
+	m.PlannerNOOP("test")
 	feeds, pindexes := m.CurrentMaps()
 	if len(feeds) != 1 || len(pindexes) != 1 {
 		t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
@@ -143,7 +143,7 @@ func TestManagerRestart(t *testing.T) {
 	if err := m2.Start(true); err != nil {
 		t.Errorf("expected reload Manager.Start() to work, err: %v", err)
 	}
-	close(m2.plannerCh)
+	m2.PlannerNOOP("test")
 	feeds, pindexes = m2.CurrentMaps()
 	if len(feeds) != 1 || len(pindexes) != 1 {
 		t.Errorf("expected to load 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
