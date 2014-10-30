@@ -926,6 +926,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 }
 
 func testManagerSimpleFeed(t *testing.T,
+	sourceParams string,
 	andThen func(*Manager, *SimpleFeed, *TestMEH)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -935,7 +936,6 @@ func testManagerSimpleFeed(t *testing.T,
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	sourceParams := ""
 	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
@@ -969,188 +969,196 @@ func testManagerSimpleFeed(t *testing.T,
 }
 
 func TestManagerCreateSimpleFeed(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
-		err := sf.Close()
-		if err != nil {
-			t.Errorf("expected simple feed close to work")
-		}
-	})
+	sourceParams := ""
+	testManagerSimpleFeed(t, sourceParams,
+		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+			err := sf.Close()
+			if err != nil {
+				t.Errorf("expected simple feed close to work")
+			}
+		})
 }
 
 func TestManagerSimpleFeedCloseSource(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
-		close(sf.Source())
+	sourceParams := ""
+	testManagerSimpleFeed(t, sourceParams,
+		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+			close(sf.Source())
 
-		// Next, let the feed run a bit to handle the close().
-		runtime.Gosched()
+			// Next, let the feed run a bit to handle the close().
+			runtime.Gosched()
 
-		err := sf.Close()
-		if err != nil {
-			t.Errorf("expected simple feed close after source close to work")
-		}
-	})
+			err := sf.Close()
+			if err != nil {
+				t.Errorf("expected simple feed close after source close to work")
+			}
+		})
 }
 
 func TestBasicStreamMutations(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
-		pindex := meh.lastPIndex
-		bindex, ok := pindex.Impl.(bleve.Index)
-		if !ok || bindex == nil {
-			t.Errorf("expected bleve.Index")
-		}
-		s := sf.Source()
-		dch := make(chan error)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_UPDATE,
-			Key:    []byte("hello"),
-			Val:    []byte("{}"),
-			DoneCh: dch,
-		}
-		err := <-dch
-		if err != nil {
-			t.Errorf("expected no error to update, err: %v", err)
-		}
-		dch = make(chan error)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_UPDATE,
-			Key:    []byte("goodbye"),
-			Val:    []byte("{}"),
-			DoneCh: dch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to update, err: %v", err)
-		}
-		dch = make(chan error)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_NOOP,
-			Key:    []byte("ping"),
-			DoneCh: dch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to NOOP, err: %v", err)
-		}
-		n := bindex.DocCount()
-		if n != 2 {
-			t.Errorf("expected 2 docs in bindex, got: %d", n)
-		}
-		dch = make(chan error)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_DELETE,
-			Key:    []byte("goodbye"),
-			DoneCh: dch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to DELETE, err: %v", err)
-		}
-		n = bindex.DocCount()
-		if n != 1 {
-			t.Errorf("expected 1 docs in bindex, got: %d", n)
-		}
-		mehCh := make(chan bool, 10)
-		meh.ch = mehCh
-		dch = make(chan error, 1)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_ROLLBACK,
-			DoneCh: dch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to ROLLBACK, err: %v", err)
-		}
-		runtime.Gosched()
-		<-mehCh
-		mgr.PlannerNOOP("after-rollback")
-		mgr.JanitorNOOP("after-rollback")
-		runtime.Gosched()
-		<-mehCh
-		feeds, pindexes := mgr.CurrentMaps()
-		if len(feeds) != 1 || len(pindexes) != 1 {
-			t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
-				feeds, pindexes)
-		}
-		var pindex2 *PIndex
-		for _, p := range pindexes {
-			pindex2 = p
-		}
-		if pindex == pindex2 {
-			t.Errorf("expected new pindex to be re-built")
-		}
-		bindex2 := pindex2.Impl.(bleve.Index)
-		if bindex == bindex2 {
-			t.Errorf("expected new bindex to be re-built")
-		}
-		n = bindex2.DocCount()
-		if n != 0 {
-			t.Errorf("expected 0 docs in bindex2, got: %d", n)
-		}
-	})
+	sourceParams := ""
+	testManagerSimpleFeed(t, sourceParams,
+		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+			pindex := meh.lastPIndex
+			bindex, ok := pindex.Impl.(bleve.Index)
+			if !ok || bindex == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			s := sf.Source()
+			dch := make(chan error)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_UPDATE,
+				Key:    []byte("hello"),
+				Val:    []byte("{}"),
+				DoneCh: dch,
+			}
+			err := <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_UPDATE,
+				Key:    []byte("goodbye"),
+				Val:    []byte("{}"),
+				DoneCh: dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_NOOP,
+				Key:    []byte("ping"),
+				DoneCh: dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to NOOP, err: %v", err)
+			}
+			n := bindex.DocCount()
+			if n != 2 {
+				t.Errorf("expected 2 docs in bindex, got: %d", n)
+			}
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_DELETE,
+				Key:    []byte("goodbye"),
+				DoneCh: dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to DELETE, err: %v", err)
+			}
+			n = bindex.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex, got: %d", n)
+			}
+			mehCh := make(chan bool, 10)
+			meh.ch = mehCh
+			dch = make(chan error, 1)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_ROLLBACK,
+				DoneCh: dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to ROLLBACK, err: %v", err)
+			}
+			runtime.Gosched()
+			<-mehCh
+			mgr.PlannerNOOP("after-rollback")
+			mgr.JanitorNOOP("after-rollback")
+			runtime.Gosched()
+			<-mehCh
+			feeds, pindexes := mgr.CurrentMaps()
+			if len(feeds) != 1 || len(pindexes) != 1 {
+				t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
+					feeds, pindexes)
+			}
+			var pindex2 *PIndex
+			for _, p := range pindexes {
+				pindex2 = p
+			}
+			if pindex == pindex2 {
+				t.Errorf("expected new pindex to be re-built")
+			}
+			bindex2 := pindex2.Impl.(bleve.Index)
+			if bindex == bindex2 {
+				t.Errorf("expected new bindex to be re-built")
+			}
+			n = bindex2.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex2, got: %d", n)
+			}
+		})
 }
 
 func TestStreamGetSetMeta(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
-		pindex := meh.lastPIndex
-		bindex, ok := pindex.Impl.(bleve.Index)
-		if !ok || bindex == nil {
-			t.Errorf("expected bleve.Index")
-		}
-		s := sf.Source()
-		dch := make(chan error)
-		mch := make(chan []byte, 1)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_GET_META,
-			Key:    []byte("dinner"),
-			DoneCh: dch,
-			Misc:   mch,
-		}
-		err := <-dch
-		if err != nil {
-			t.Errorf("expected no error to update, err: %v", err)
-		}
-		v, ok := <-mch
-		if !ok || len(v) != 0 {
-			t.Errorf("expected []byte{} for dinner, got: %#v", v)
-		}
-		n := bindex.DocCount()
-		if n != 0 {
-			t.Errorf("expected 0 docs in bindex, got: %d", n)
-		}
-		dch = make(chan error)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_SET_META,
-			Key:    []byte("dinner"),
-			Val:    []byte("cake"),
-			DoneCh: dch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to update, err: %v", err)
-		}
-		n = bindex.DocCount()
-		if n != 0 {
-			t.Errorf("expected 0 docs in bindex after set, got: %d", n)
-		}
-		dch = make(chan error)
-		mch = make(chan []byte, 1)
-		s <- &StreamRequest{
-			Op:     STREAM_OP_GET_META,
-			Key:    []byte("dinner"),
-			DoneCh: dch,
-			Misc:   mch,
-		}
-		err = <-dch
-		if err != nil {
-			t.Errorf("expected no error to update, err: %v", err)
-		}
-		v = <-mch
-		if string(v) != "cake" {
-			t.Errorf("expected cake for dinner")
-		}
-		n = bindex.DocCount()
-		if n != 0 {
-			t.Errorf("expected 0 docs in bindex after set, got: %d", n)
-		}
-	})
+	sourceParams := ""
+	testManagerSimpleFeed(t, sourceParams,
+		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+			pindex := meh.lastPIndex
+			bindex, ok := pindex.Impl.(bleve.Index)
+			if !ok || bindex == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			s := sf.Source()
+			dch := make(chan error)
+			mch := make(chan []byte, 1)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_GET_META,
+				Key:    []byte("dinner"),
+				DoneCh: dch,
+				Misc:   mch,
+			}
+			err := <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			v, ok := <-mch
+			if !ok || len(v) != 0 {
+				t.Errorf("expected []byte{} for dinner, got: %#v", v)
+			}
+			n := bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex, got: %d", n)
+			}
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_SET_META,
+				Key:    []byte("dinner"),
+				Val:    []byte("cake"),
+				DoneCh: dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			n = bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+			}
+			dch = make(chan error)
+			mch = make(chan []byte, 1)
+			s <- &StreamRequest{
+				Op:     STREAM_OP_GET_META,
+				Key:    []byte("dinner"),
+				DoneCh: dch,
+				Misc:   mch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			v = <-mch
+			if string(v) != "cake" {
+				t.Errorf("expected cake for dinner")
+			}
+			n = bindex.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
+			}
+		})
 }
