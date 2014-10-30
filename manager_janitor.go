@@ -255,9 +255,9 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 }
 
 func FeedName(pindex *PIndex) string {
-	// NOTE: We're depending on the IndexName/IndexUUID to
-	// functionally "cover" the SourceType/SourceName/SourceUUID, so
-	// we don't need to encode the source parts into the feed name.
+	// NOTE: We're depending on the IndexName/IndexUUID to "cover" the
+	// SourceType, SourceName, SourceUUID, SourceParams values, so we
+	// don't need to encode those source parts into the feed name.
 	return pindex.IndexName + "_" + pindex.IndexUUID
 }
 
