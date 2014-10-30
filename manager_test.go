@@ -28,16 +28,23 @@ import (
 type TestMEH struct {
 	lastPIndex *PIndex
 	lastCall   string
+	ch         chan bool
 }
 
 func (meh *TestMEH) OnRegisterPIndex(pindex *PIndex) {
 	meh.lastPIndex = pindex
 	meh.lastCall = "OnRegisterPIndex"
+	if meh.ch != nil {
+		meh.ch <- true
+	}
 }
 
 func (meh *TestMEH) OnUnregisterPIndex(pindex *PIndex) {
 	meh.lastPIndex = pindex
 	meh.lastCall = "OnUnregisterPIndex"
+	if meh.ch != nil {
+		meh.ch <- true
+	}
 }
 
 func TestPIndexPath(t *testing.T) {
@@ -913,7 +920,8 @@ func TestManagerReStartPIndex(t *testing.T) {
 	}
 }
 
-func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed, *PIndex)) {
+func testManagerSimpleFeed(t *testing.T,
+	andThen func(*Manager, *SimpleFeed, *TestMEH)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
@@ -951,11 +959,11 @@ func testManagerSimpleFeed(t *testing.T, andThen func(*Manager, *SimpleFeed, *PI
 	if sf.Streams() == nil {
 		t.Errorf("expected simple feed streams to be there")
 	}
-	andThen(m, sf, meh.lastPIndex)
+	andThen(m, sf, meh)
 }
 
 func TestManagerCreateSimpleFeed(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 		err := sf.Close()
 		if err != nil {
 			t.Errorf("expected simple feed close to work")
@@ -964,7 +972,7 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 }
 
 func TestManagerSimpleFeedCloseSource(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
 		close(sf.Source())
 
 		// Next, let the feed run a bit to handle the close().
@@ -978,7 +986,8 @@ func TestManagerSimpleFeedCloseSource(t *testing.T) {
 }
 
 func TestBasicStreamMutations(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		pindex := meh.lastPIndex
 		bindex, ok := pindex.Impl.(bleve.Index)
 		if !ok || bindex == nil {
 			t.Errorf("expected bleve.Index")
@@ -1034,7 +1043,9 @@ func TestBasicStreamMutations(t *testing.T) {
 		if n != 1 {
 			t.Errorf("expected 1 docs in bindex, got: %d", n)
 		}
-		dch = make(chan error)
+		mehCh := make(chan bool, 10)
+		meh.ch = mehCh
+		dch = make(chan error, 1)
 		s <- &StreamRequest{
 			Op:     STREAM_OP_ROLLBACK,
 			DoneCh: dch,
@@ -1044,6 +1055,7 @@ func TestBasicStreamMutations(t *testing.T) {
 			t.Errorf("expected no error to ROLLBACK, err: %v", err)
 		}
 		runtime.Gosched()
+		<-mehCh
 		mgr.PlannerNOOP("after-rollback")
 		mgr.JanitorNOOP("after-rollback")
 		feeds, pindexes := mgr.CurrentMaps()
@@ -1070,7 +1082,8 @@ func TestBasicStreamMutations(t *testing.T) {
 }
 
 func TestStreamGetSetMeta(t *testing.T) {
-	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, pindex *PIndex) {
+	testManagerSimpleFeed(t, func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		pindex := meh.lastPIndex
 		bindex, ok := pindex.Impl.(bleve.Index)
 		if !ok || bindex == nil {
 			t.Errorf("expected bleve.Index")
