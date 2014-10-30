@@ -134,9 +134,17 @@ func (t *TAPFeed) feed() (int, error) {
 				break
 			}
 
+			log.Printf("TapFeed: received from url: %s,"+
+				" poolName: %s, bucketName: %s, req: %#v",
+				t.url, t.poolName, t.bucketName, req)
+
 			partition := fmt.Sprintf("%d", req.VBucket)
 			stream, err := t.pf(req.Key, partition, t.streams)
 			if err != nil {
+				log.Printf("TapFeed: partition func error from url: %s,"+
+					" poolName: %s, bucketName: %s, req: %#v, streams: %#v, err: %v",
+					t.url, t.poolName, t.bucketName, req, t.streams, err)
+
 				t.waitForClose("partition func error",
 					fmt.Errorf("error: TAPFeed pf on req: %#v, err: %v",
 						req, err))
@@ -154,6 +162,7 @@ func (t *TAPFeed) feed() (int, error) {
 					Op:  STREAM_OP_DELETE,
 					Key: req.Key,
 				}
+			} else {
 			}
 		}
 	}

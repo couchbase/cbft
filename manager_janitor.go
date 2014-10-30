@@ -424,7 +424,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 	bucketName, bucketUUID string, streams map[string]Stream) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, EmptyPartitionFunc, streams)
+		bucketName, bucketUUID, BasicPartitionFunc, streams)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -443,7 +443,7 @@ func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 
 func (mgr *Manager) startSimpleFeed(feedName string,
 	streams map[string]Stream) error {
-	feed, err := NewSimpleFeed(feedName, make(Stream), EmptyPartitionFunc, streams)
+	feed, err := NewSimpleFeed(feedName, make(Stream), BasicPartitionFunc, streams)
 	if err != nil {
 		return err
 	}

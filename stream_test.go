@@ -15,14 +15,14 @@ import (
 	"testing"
 )
 
-func TestEmptyPartitionFunc(t *testing.T) {
+func TestBasicPartitionFunc(t *testing.T) {
 	stream := make(Stream)
-	s, err := EmptyPartitionFunc(nil, "", map[string]Stream{"": stream})
+	s, err := BasicPartitionFunc(nil, "", map[string]Stream{"": stream})
 	if err != nil || s != stream {
-		t.Errorf("expected TestEmptyPartitionFunc to work")
+		t.Errorf("expected BasicPartitionFunc to work")
 	}
-	s, err = EmptyPartitionFunc(nil, "", map[string]Stream{"foo": stream})
+	s, err = BasicPartitionFunc(nil, "", map[string]Stream{"foo": stream})
 	if err == nil || s == stream {
-		t.Errorf("expected TestEmptyPartitionFunc to not work")
+		t.Errorf("expected BasicPartitionFunc to not work")
 	}
 }

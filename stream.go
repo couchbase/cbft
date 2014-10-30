@@ -53,12 +53,18 @@ func init() {
 	}
 }
 
-// This partition func sends all stream requests to the "" partition.
-func EmptyPartitionFunc(key []byte, partition string,
+// This basic partition func first tries a direct lookup by partition
+// string, else it tries the "" partition.
+func BasicPartitionFunc(key []byte, partition string,
 	streams map[string]Stream) (Stream, error) {
-	stream, exists := streams[""]
-	if !exists || stream == nil {
-		return nil, fmt.Errorf("error: no empty/all partition in streams: %#v", streams)
+	stream, exists := streams[partition]
+	if exists {
+		return stream, nil
 	}
-	return stream, nil
+	stream, exists = streams[""]
+	if exists {
+		return stream, nil
+	}
+	return nil, fmt.Errorf("error: no partition for key: %s,"+
+		"partition: %s, streams: %#v", key, partition, streams)
 }
