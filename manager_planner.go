@@ -168,8 +168,8 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 }
 
 // Split logical indexes into PIndexes and assign PIndexes to nodes.
-func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs, planPIndexesPrev *PlanPIndexes,
-	version string) (
+func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
+	planPIndexesPrev *PlanPIndexes, version string) (
 	*PlanPIndexes, error) {
 	// First planner attempt here is naive & simple, where every
 	// single Index is "split" into just a single PIndex (so all the
