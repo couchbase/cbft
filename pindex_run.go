@@ -61,14 +61,19 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 		switch req.Op {
 		case STREAM_OP_NOOP:
 			// Do nothing, so stream source can use NOOP like a ping.
-			log.Printf("bleve stream noop, key: %s", string(req.Key))
+			log.Printf("bleve stream noop, partition: %s, key: %s",
+				req.Partition, string(req.Key))
 
 		case STREAM_OP_UPDATE:
-			log.Printf("bleve stream udpate, key: %s", string(req.Key))
+			log.Printf("bleve stream udpate, partition: %s, key: %s",
+				req.Partition, string(req.Key))
+
 			err = bindex.Index(string(req.Key), req.Val)
 
 		case STREAM_OP_DELETE:
-			log.Printf("bleve stream delete, key: %s", string(req.Key))
+			log.Printf("bleve stream delete, partition: %s, key: %s",
+				req.Partition, string(req.Key))
+
 			err = bindex.Delete(string(req.Key))
 
 		case STREAM_OP_FLUSH:
@@ -76,6 +81,9 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			// implement this the same as rollback to zero?
 
 		case STREAM_OP_ROLLBACK:
+			log.Printf("bleve stream rollback, partition: %s",
+				req.Partition)
+
 			// TODO: Implement partial rollback one day.
 			// Implementation sketch: we expect bleve to one day to
 			// provide an additional Snapshot() and Rollback() API,
@@ -106,6 +114,9 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			return false, false, nil
 
 		case STREAM_OP_GET_META:
+			log.Printf("bleve stream get-meta, partition: %s, key: %s",
+				req.Partition, string(req.Key))
+
 			v, err := bindex.GetInternal(req.Key)
 			if req.Misc != nil {
 				c, ok := req.Misc.(chan []byte)
@@ -116,6 +127,9 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 			}
 
 		case STREAM_OP_SET_META:
+			log.Printf("bleve stream set-meta, partition: %s, key: %s",
+				req.Partition, string(req.Key))
+
 			err = bindex.SetInternal(req.Key, req.Val)
 		}
 
