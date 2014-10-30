@@ -269,8 +269,8 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 
 	path := mgr.PIndexPath(planPIndex.Name)
 
-	// First try reading existing path iwth OpenPIndex(), which
-	// handles the case of rollback.
+	// First, try reading the path with OpenPIndex().  An
+	// existing path might happen during a case of rollback.
 	if _, err = os.Stat(path); err == nil {
 		pindex, err = OpenPIndex(mgr, path)
 		if err == nil {
@@ -316,6 +316,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 }
 
 func (mgr *Manager) stopPIndex(pindex *PIndex) error {
+	// First, stop any feeds that might be sending to the pindex's stream.
 	feeds, _ := mgr.CurrentMaps()
 	for _, feed := range feeds {
 		for _, stream := range feed.Streams() {
@@ -374,7 +375,6 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 
 	// NOTE: We're depending on feed to synchronously close, so we
 	// know it'll no longer be sending to any of its streams anymore.
-	//
 	return feed.Close()
 }
 
