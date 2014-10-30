@@ -50,6 +50,8 @@ func init() {
 		STREAM_OP_FLUSH:    "flush",
 		STREAM_OP_ROLLBACK: "rollback",
 		STREAM_OP_SNAPSHOT: "snapshot",
+		STREAM_OP_GET_META: "get-meta",
+		STREAM_OP_SET_META: "set-meta",
 	}
 }
 
