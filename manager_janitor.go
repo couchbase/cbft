@@ -346,6 +346,8 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		return nil
 	}
 
+	// NOTE: This simple algorithm creates 1 feed per pindex.
+
 	pindexFirst := pindexes[0]
 	feedName := FeedName(pindexFirst)
 
@@ -354,12 +356,23 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		if f := FeedName(pindex); f != feedName {
 			panic(fmt.Sprintf("error: unexpected feedName: %s != %s", f, feedName))
 		}
-		if _, exists := streams[pindex.SourcePartitions]; exists {
-			panic(fmt.Sprintf("error: SourcePartitions collision: %s",
-				pindex.SourcePartitions))
+
+		addSourcePartition := func(sourcePartition string) {
+			if _, exists := streams[pindex.SourcePartitions]; exists {
+				panic(fmt.Sprintf("error: startFeed saw sourcePartition collision: %s",
+					sourcePartition))
+			}
+			streams[sourcePartition] = pindex.Stream
 		}
 
-		streams[pindex.SourcePartitions] = pindex.Stream
+		if pindex.SourcePartitions == "" {
+			addSourcePartition("")
+		} else {
+			sourcePartitionsArr := strings.Split(pindex.SourcePartitions, ",")
+			for _, sourcePartition := range sourcePartitionsArr {
+				addSourcePartition(sourcePartition)
+			}
+		}
 	}
 
 	return mgr.startFeedByType(feedName,

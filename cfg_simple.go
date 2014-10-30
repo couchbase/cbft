@@ -81,7 +81,7 @@ func (c *CfgSimple) unlockedLoad() error {
 		return err
 	}
 
-	cfgMem := &CfgMem{}
+	cfgMem := NewCfgMem()
 	if err := json.Unmarshal(buf, cfgMem); err != nil {
 		return err
 	}

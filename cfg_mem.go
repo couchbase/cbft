@@ -103,7 +103,7 @@ func (c *CfgMem) Subscribe(key string, ch chan CfgEvent) error {
 
 	a, exists := c.subscriptions[key]
 	if !exists || a == nil {
-		a = []chan<- CfgEvent{}
+		a = make([]chan<- CfgEvent, 0)
 	}
 	c.subscriptions[key] = append(a, ch)
 	return nil

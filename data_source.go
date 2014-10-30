@@ -13,8 +13,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
-	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
 
@@ -24,21 +24,38 @@ func DataSourcePartitions(sourceType, sourceName,
 		poolName := "default" // TODO: Parameterize poolName.
 		bucketName := sourceName
 
+		// TODO: how the halloween does GetBucket() api work without explicit auth?
 		bucket, err := couchbase.GetBucket(server, poolName, bucketName)
 		if err != nil {
-			log.Printf("NO BUCKET, bucketName: %s, err: %v", bucketName, err)
-			return nil, err
+			return nil, fmt.Errorf("error: DataSourcePartitions failed GetBucket,"+
+				" server: %s, poolName: %s, bucketName: %s, err: %v",
+				server, poolName, bucketName, err)
 		}
 		defer bucket.Close()
 
-		// TODO: get number of vbuckets from bucket.
+		vbm := bucket.VBServerMap()
+		if vbm == nil {
+			return nil, fmt.Errorf("error: DataSourcePartitions no VBServerMap,"+
+				" server: %s, poolName: %s, bucketName: %s, err: %v",
+				server, poolName, bucketName, err)
+		}
 
-		return []string{}, nil
+		// TODO: big assumption here that vbucket numbers are
+		// continuous integers, starting from 0.
+		numVBuckets := len(vbm.VBucketMap)
+
+		rv := make([]string, numVBuckets)
+		for i := 0; i < numVBuckets; i++ {
+			rv[i] = strconv.Itoa(i)
+		}
+		return rv, nil
 	}
+
 	if sourceType == "simple" {
 		// TODO: Should look at sourceParams for # of partitions.
 		return []string{}, nil
 	}
+
 	return nil, fmt.Errorf("error: DataSourcePartitions got unknown sourceType: %s",
 		sourceType)
 }
