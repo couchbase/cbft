@@ -16,7 +16,7 @@ import (
 )
 
 func DataSourcePartitions(sourceType, sourceName,
-	sourceUUID, sourceParams string) ([]string, error) {
+	sourceUUID, sourceParams, server string) ([]string, error) {
 	if sourceType == "couchbase" {
 		// TODO: Should connect to couchbase source and get the number of vbuckets.
 		return []string{}, nil

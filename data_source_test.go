@@ -17,7 +17,7 @@ import (
 
 func TestDataSourcePartitions(t *testing.T) {
 	a, err := DataSourcePartitions("a fake source type",
-		"sourceName", "sourceUUID", "sourceParams")
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
 	if err == nil || a != nil {
 		t.Errorf("expected fake data source type to error")
 	}

@@ -91,7 +91,8 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 		return false, err
 	}
 
-	planPIndexes, err := CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version)
+	planPIndexes, err :=
+		CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version, mgr.server)
 	if err != nil {
 		return false, fmt.Errorf("planner ended on CalcPlan, err: %v", err)
 	}
@@ -195,7 +196,7 @@ func PlannerGetPlanPIndexes(cfg Cfg, version string) (*PlanPIndexes, uint64, err
 
 // Split logical indexes into PIndexes and assign PIndexes to nodes.
 func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
-	planPIndexesPrev *PlanPIndexes, version string) (
+	planPIndexesPrev *PlanPIndexes, version, server string) (
 	*PlanPIndexes, error) {
 	// First planner attempt here is naive & simple, where every
 	// single Index is "split" into just a single PIndex (so all the
@@ -222,7 +223,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// TODO: This is not "real" partitioning, but is good enough
 		// for developer preview level requirement.
 		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
-			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams)
+			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
 		if err != nil {
 			log.Printf("error: planner could not get partitions,"+
 				" indexDef: %#v, err: %v", indexDef, err)
