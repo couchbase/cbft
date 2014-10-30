@@ -1058,6 +1058,8 @@ func TestBasicStreamMutations(t *testing.T) {
 		<-mehCh
 		mgr.PlannerNOOP("after-rollback")
 		mgr.JanitorNOOP("after-rollback")
+		runtime.Gosched()
+		<-mehCh
 		feeds, pindexes := mgr.CurrentMaps()
 		if len(feeds) != 1 || len(pindexes) != 1 {
 			t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
