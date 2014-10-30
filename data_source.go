@@ -13,12 +13,26 @@ package main
 
 import (
 	"fmt"
+
+	log "github.com/couchbaselabs/clog"
+	"github.com/couchbaselabs/go-couchbase"
 )
 
 func DataSourcePartitions(sourceType, sourceName,
 	sourceUUID, sourceParams, server string) ([]string, error) {
 	if sourceType == "couchbase" {
-		// TODO: Should connect to couchbase source and get the number of vbuckets.
+		poolName := "default" // TODO: Parameterize poolName.
+		bucketName := sourceName
+
+		bucket, err := couchbase.GetBucket(server, poolName, bucketName)
+		if err != nil {
+			log.Printf("NO BUCKET, bucketName: %s, err: %v", bucketName, err)
+			return nil, err
+		}
+		defer bucket.Close()
+
+		// TODO: get number of vbuckets from bucket.
+
 		return []string{}, nil
 	}
 	if sourceType == "simple" {

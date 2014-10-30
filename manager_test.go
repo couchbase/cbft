@@ -131,7 +131,7 @@ func TestManagerRestart(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
@@ -167,11 +167,11 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("couchbase", "default", "123", "sourceParams",
+	if err := m.CreateIndex("simple", "default", "123", "sourceParams",
 		"bleve", "foo", "", PlanParams{}); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
@@ -691,7 +691,7 @@ func TestManagerStartTAPFeed(t *testing.T) {
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase",
 		"sourceName", "sourceUUID", nil)
 	if err != nil {
-		t.Errorf("expected startFeedByType ok for couchbase sourceType")
+		t.Errorf("expected startFeedByType ok for simple sourceType")
 	}
 	currFeeds, _ := mgr.CurrentMaps()
 	if len(currFeeds) != 1 {

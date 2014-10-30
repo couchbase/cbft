@@ -21,4 +21,10 @@ func TestDataSourcePartitions(t *testing.T) {
 	if err == nil || a != nil {
 		t.Errorf("expected fake data source type to error")
 	}
+
+	a, err = DataSourcePartitions("couchbase",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected couchbase source type to error on bad server url")
+	}
 }
