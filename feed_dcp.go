@@ -126,17 +126,16 @@ func (t *DCPFeed) feed() (int, error) {
 
 		case uprEvent, alive := <-feed.C:
 			if !alive {
-				t.waitForClose("source closed", nil)
 				break
 			}
 
 			partition := fmt.Sprintf("%d", uprEvent.VBucket)
 			stream, err := t.pf(uprEvent.Key, partition, t.streams)
 			if err != nil {
-				t.waitForClose("partition func error",
-					fmt.Errorf("error: DCPFeed pf on uprEvent: %#v, err: %v",
-						uprEvent, err))
-				return 1, err
+				return 1, fmt.Errorf("error: TapFeed:"+
+					" partition func error from url: %s,"+
+					" poolName: %s, bucketName: %s, uprEvent: %#v, streams: %#v, err: %v",
+					t.url, t.poolName, t.bucketName, uprEvent, t.streams, err)
 			}
 
 			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
@@ -155,13 +154,6 @@ func (t *DCPFeed) feed() (int, error) {
 	}
 
 	return 1, nil
-}
-
-func (t *DCPFeed) waitForClose(msg string, err error) {
-	<-t.closeCh
-	t.doneErr = err
-	t.doneMsg = msg
-	close(t.doneCh)
 }
 
 func (t *DCPFeed) Close() error {

@@ -132,7 +132,6 @@ func (t *TAPFeed) feed() (int, error) {
 
 		case req, alive := <-feed.C:
 			if !alive {
-				t.waitForClose("source closed", nil)
 				break
 			}
 
@@ -143,14 +142,9 @@ func (t *TAPFeed) feed() (int, error) {
 			partition := fmt.Sprintf("%d", req.VBucket)
 			stream, err := t.pf(req.Key, partition, t.streams)
 			if err != nil {
-				log.Printf("TapFeed: partition func error from url: %s,"+
+				return 1, fmt.Errorf("TapFeed: partition func error from url: %s,"+
 					" poolName: %s, bucketName: %s, req: %#v, streams: %#v, err: %v",
 					t.url, t.poolName, t.bucketName, req, t.streams, err)
-
-				t.waitForClose("partition func error",
-					fmt.Errorf("error: TAPFeed pf on req: %#v, err: %v",
-						req, err))
-				return 1, err
 			}
 
 			if req.Opcode == memcached.TapMutation {
@@ -170,13 +164,6 @@ func (t *TAPFeed) feed() (int, error) {
 	}
 
 	return 1, nil
-}
-
-func (t *TAPFeed) waitForClose(msg string, err error) {
-	<-t.closeCh
-	t.doneErr = err
-	t.doneMsg = msg
-	close(t.doneCh)
 }
 
 func (t *TAPFeed) Close() error {
