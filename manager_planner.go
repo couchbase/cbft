@@ -73,78 +73,21 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	if mgr.cfg == nil { // Can occur during testing.
 		return false, fmt.Errorf("planner skipped due to nil cfg")
 	}
-
-	ok, err := CheckVersion(mgr.cfg, mgr.version)
+	err := PlannerCheckVersion(mgr.cfg, mgr.version)
 	if err != nil {
-		return false, fmt.Errorf("planner skipped on CheckVersion err: %v", err)
+		return false, err
 	}
-	if !ok {
-		return false, fmt.Errorf("planner skipped with version too low: %v",
-			mgr.version)
-	}
-
-	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
+	indexDefs, err := PlannerGetIndexDefs(mgr.cfg, mgr.version)
 	if err != nil {
-		return false, fmt.Errorf("planner skipped on CfgGetIndexDefs err: %v", err)
+		return false, err
 	}
-	if indexDefs == nil {
-		return false, fmt.Errorf("planner ended since no IndexDefs")
-	}
-	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		return false, fmt.Errorf("planner ended since indexDefs.ImplVersion: %s"+
-			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
-	}
-
-	nodeDefs, _, err := CfgGetNodeDefs(mgr.cfg, NODE_DEFS_WANTED)
+	nodeDefs, err := PlannerGetNodeDefs(mgr.cfg, mgr.version, mgr.uuid, mgr.bindAddr)
 	if err != nil {
-		return false, fmt.Errorf("planner skipped on CfgGetNodeDefs err: %v", err)
+		return false, err
 	}
-	if nodeDefs == nil {
-		return false, fmt.Errorf("planner ended since no NodeDefs")
-	}
-	if VersionGTE(mgr.version, nodeDefs.ImplVersion) == false {
-		return false, fmt.Errorf("planner ended since nodeDefs.ImplVersion: %s"+
-			" > mgr.version: %s", nodeDefs.ImplVersion, mgr.version)
-	}
-
-	nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
-	if !exists || nodeDef == nil {
-		return false, fmt.Errorf("planner ended since no NodeDef: %s", mgr.bindAddr)
-	}
-	if nodeDef.UUID != mgr.uuid {
-		return false, fmt.Errorf("planner ended since NodeDef: %s,"+
-			" NodeDef.UUID: %s != mgr.uuid: %s",
-			mgr.bindAddr, nodeDef.UUID, mgr.uuid)
-	}
-	if nodeDef.ImplVersion != mgr.version {
-		return false, fmt.Errorf("planner ended since NodeDef: %s,"+
-			" NodeDef.ImplVersion: %s != mgr.version: %s",
-			mgr.bindAddr, nodeDef.ImplVersion, mgr.version)
-	}
-	isPlanner := true
-	if nodeDef.Tags != nil && len(nodeDef.Tags) > 0 {
-		isPlanner = false
-		for _, tag := range nodeDef.Tags {
-			if tag == "planner" {
-				isPlanner = true
-			}
-		}
-	}
-	if !isPlanner {
-		return false, fmt.Errorf("planner ended since node isn't a planner, tags: %#v",
-			nodeDef.Tags)
-	}
-
-	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(mgr.cfg)
+	planPIndexesPrev, cas, err := PlannerGetPlanPIndexes(mgr.cfg, mgr.version)
 	if err != nil {
-		return false, fmt.Errorf("planner skipped on CfgGetPlanPIndexes err: %v", err)
-	}
-	if planPIndexesPrev == nil {
-		planPIndexesPrev = NewPlanPIndexes(mgr.version)
-	}
-	if VersionGTE(mgr.version, planPIndexesPrev.ImplVersion) == false {
-		return false, fmt.Errorf("planner ended on planPIndexesPrev.ImplVersion: %s"+
-			" > mgr.version: %s", planPIndexesPrev.ImplVersion, mgr.version)
+		return false, err
 	}
 
 	planPIndexes, err := CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version)
@@ -163,8 +106,90 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 			" perhaps a concurrent planner won, cas: %d, err: %v",
 			cas, err)
 	}
-
 	return true, nil
+}
+
+func PlannerCheckVersion(cfg Cfg, version string) error {
+	ok, err := CheckVersion(cfg, version)
+	if err != nil {
+		return fmt.Errorf("planner skipped on CheckVersion err: %v", err)
+	}
+	if !ok {
+		return fmt.Errorf("planner skipped with version too low: %v", version)
+	}
+	return nil
+}
+
+func PlannerGetIndexDefs(cfg Cfg, version string) (*IndexDefs, error) {
+	indexDefs, _, err := CfgGetIndexDefs(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("planner skipped on CfgGetIndexDefs err: %v", err)
+	}
+	if indexDefs == nil {
+		return nil, fmt.Errorf("planner ended since no IndexDefs")
+	}
+	if VersionGTE(version, indexDefs.ImplVersion) == false {
+		return nil, fmt.Errorf("planner ended since indexDefs.ImplVersion: %s"+
+			" > version: %s", indexDefs.ImplVersion, version)
+	}
+	return indexDefs, nil
+}
+
+func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (*NodeDefs, error) {
+	nodeDefs, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		return nil, fmt.Errorf("planner skipped on CfgGetNodeDefs err: %v", err)
+	}
+	if nodeDefs == nil {
+		return nil, fmt.Errorf("planner ended since no NodeDefs")
+	}
+	if VersionGTE(version, nodeDefs.ImplVersion) == false {
+		return nil, fmt.Errorf("planner ended since nodeDefs.ImplVersion: %s"+
+			" > version: %s", nodeDefs.ImplVersion, version)
+	}
+	nodeDef, exists := nodeDefs.NodeDefs[bindAddr]
+	if !exists || nodeDef == nil {
+		return nil, fmt.Errorf("planner ended since no NodeDef, bindAddr: %s", bindAddr)
+	}
+	if nodeDef.ImplVersion != version {
+		return nil, fmt.Errorf("planner ended since NodeDef, bindAddr: %s,"+
+			" NodeDef.ImplVersion: %s != version: %s",
+			bindAddr, nodeDef.ImplVersion, version)
+	}
+	if nodeDef.UUID != uuid {
+		return nil, fmt.Errorf("planner ended since NodeDef, bindAddr: %s,"+
+			" NodeDef.UUID: %s != uuid: %s",
+			bindAddr, nodeDef.UUID, uuid)
+	}
+	isPlanner := true
+	if nodeDef.Tags != nil && len(nodeDef.Tags) > 0 {
+		isPlanner = false
+		for _, tag := range nodeDef.Tags {
+			if tag == "planner" {
+				isPlanner = true
+			}
+		}
+	}
+	if !isPlanner {
+		return nil, fmt.Errorf("planner ended since node, bindAddr: %s,"+
+			" is not a planner, tags: %#v", bindAddr, nodeDef.Tags)
+	}
+	return nodeDefs, nil
+}
+
+func PlannerGetPlanPIndexes(cfg Cfg, version string) (*PlanPIndexes, uint64, error) {
+	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		return nil, 0, fmt.Errorf("planner skipped on CfgGetPlanPIndexes err: %v", err)
+	}
+	if planPIndexesPrev == nil {
+		planPIndexesPrev = NewPlanPIndexes(version)
+	}
+	if VersionGTE(version, planPIndexesPrev.ImplVersion) == false {
+		return nil, 0, fmt.Errorf("planner ended on planPIndexesPrev.ImplVersion: %s"+
+			" > version: %s", planPIndexesPrev.ImplVersion, version)
+	}
+	return planPIndexesPrev, cas, nil
 }
 
 // Split logical indexes into PIndexes and assign PIndexes to nodes.
