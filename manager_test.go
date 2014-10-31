@@ -1243,7 +1243,11 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 		})
 }
 
-func TestPartitionedBasicStreamMutations(t *testing.T) {
+func testPartitioning(t *testing.T,
+	sourceParams string,
+	planParams PlanParams,
+	expectedNumPIndexes int,
+	expectedNumStreams int) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1254,10 +1258,6 @@ func TestPartitionedBasicStreamMutations(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 
-	sourceParams := "{\"numPartitions\":2}"
-	planParams := PlanParams{
-		MaxPartitionsPerPIndex: 1,
-	}
 	if err := mgr.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected CreateIndex() to work")
@@ -1269,8 +1269,9 @@ func TestPartitionedBasicStreamMutations(t *testing.T) {
 	if len(feeds) != 1 {
 		t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
 	}
-	if len(pindexes) != 2 {
-		t.Errorf("expected to be 2 pindex, got pindexes: %+v", pindexes)
+	if len(pindexes) != expectedNumPIndexes {
+		t.Errorf("expected to be %d pindex, got pindexes: %+v",
+			expectedNumPIndexes, pindexes)
 	}
 	var feed Feed
 	for _, f := range feeds {
@@ -1280,7 +1281,36 @@ func TestPartitionedBasicStreamMutations(t *testing.T) {
 	if !ok || sf == nil {
 		t.Errorf("expected feed to be simple")
 	}
-	if len(sf.Streams()) != 2 {
-		t.Errorf("expected 2 streams")
+	if len(sf.Streams()) != expectedNumStreams {
+		t.Errorf("expected %d streams", expectedNumStreams)
 	}
+}
+
+func TestPartitioning(t *testing.T) {
+	sourceParams := "{\"numPartitions\":2}"
+	planParams := PlanParams{
+		MaxPartitionsPerPIndex: 1,
+	}
+	expectedNumPIndexes := 2
+	expectedNumStreams := 2
+	testPartitioning(t, sourceParams, planParams,
+		expectedNumPIndexes, expectedNumStreams)
+
+	sourceParams = "{\"numPartitions\":10}"
+	planParams = PlanParams{
+		MaxPartitionsPerPIndex: 1,
+	}
+	expectedNumPIndexes = 10
+	expectedNumStreams = 10
+	testPartitioning(t, sourceParams, planParams,
+		expectedNumPIndexes, expectedNumStreams)
+
+	sourceParams = "{\"numPartitions\":5}"
+	planParams = PlanParams{
+		MaxPartitionsPerPIndex: 2,
+	}
+	expectedNumPIndexes = 3
+	expectedNumStreams = 5
+	testPartitioning(t, sourceParams, planParams,
+		expectedNumPIndexes, expectedNumStreams)
 }
