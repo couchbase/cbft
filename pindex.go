@@ -42,7 +42,7 @@ type PIndex struct {
 }
 
 type PIndexImpl interface {
-	Close()
+	Close() error
 }
 
 type PIndexManager interface {

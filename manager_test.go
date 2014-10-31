@@ -1041,7 +1041,7 @@ func TestBasicStreamMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to NOOP, err: %v", err)
 			}
-			n := bindex.DocCount()
+			n, err := bindex.DocCount()
 			if n != 2 {
 				t.Errorf("expected 2 docs in bindex, got: %d", n)
 			}
@@ -1055,7 +1055,7 @@ func TestBasicStreamMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to DELETE, err: %v", err)
 			}
-			n = bindex.DocCount()
+			n, err = bindex.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex, got: %d", n)
 			}
@@ -1092,7 +1092,7 @@ func TestBasicStreamMutations(t *testing.T) {
 			if bindex == bindex2 {
 				t.Errorf("expected new bindex to be re-built")
 			}
-			n = bindex2.DocCount()
+			n, err = bindex2.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex2, got: %d", n)
 			}
@@ -1128,7 +1128,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 			if !ok || len(v) != 0 {
 				t.Errorf("expected []byte{} for dinner, got: %#v", v)
 			}
-			n := bindex.DocCount()
+			n, err := bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
@@ -1143,7 +1143,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			n = bindex.DocCount()
+			n, err = bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
@@ -1163,7 +1163,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 			if string(v) != "cake" {
 				t.Errorf("expected cake for dinner")
 			}
-			n = bindex.DocCount()
+			n, err = bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
@@ -1200,7 +1200,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			if !ok || len(v) != 0 {
 				t.Errorf("expected []byte{} for dinner, got: %#v", v)
 			}
-			n := bindex.DocCount()
+			n, err := bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
@@ -1216,7 +1216,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			n = bindex.DocCount()
+			n, err = bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
@@ -1237,7 +1237,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			if string(v) != "cake" {
 				t.Errorf("expected cake for dinner")
 			}
-			n = bindex.DocCount()
+			n, err = bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
@@ -1355,11 +1355,11 @@ func TestPartitioningMutations(t *testing.T) {
 			if !ok || bindex1 == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			n := bindex0.DocCount()
+			n, err := bindex0.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -1373,15 +1373,15 @@ func TestPartitioningMutations(t *testing.T) {
 				Val:       []byte("{}"),
 				DoneCh:    dch,
 			}
-			err := <-dch
+			err = <-dch
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			n = bindex0.DocCount()
+			n, err = bindex0.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -1429,11 +1429,11 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if !ok || bindex1 == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			n := bindex0.DocCount()
+			n, err := bindex0.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -1447,15 +1447,15 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				Val:       []byte("{}"),
 				DoneCh:    dch,
 			}
-			err := <-dch
+			err = <-dch
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			n = bindex0.DocCount()
+			n, err = bindex0.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -1472,11 +1472,11 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			n = bindex0.DocCount()
+			n, err = bindex0.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex1, got: %d", n)
 			}
@@ -1525,14 +1525,13 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if !ok || bindex1 == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			n = bindex0.DocCount()
+			n, err = bindex0.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0 after rollback, got: %d", n)
 			}
-			n = bindex1.DocCount()
+			n, err = bindex1.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex1 after rollback, got: %d", n)
 			}
-
 		})
 }
