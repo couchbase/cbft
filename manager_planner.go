@@ -198,18 +198,12 @@ func PlannerGetPlanPIndexes(cfg Cfg, version string) (*PlanPIndexes, uint64, err
 func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexesPrev *PlanPIndexes, version, server string) (
 	*PlanPIndexes, error) {
-	// First planner attempt here is naive & simple, where every
-	// single Index is "split" into just a single PIndex (so all the
-	// datasource partitions (vbuckets) will feed into that single
-	// PIndex).  And, every single node has a replica of that PIndex.
-	// This takes care of the "single node" requirement of a developer
-	// preview.
+	// This simple planner assigns at most MaxPartitionsPerPIndex
+	// number of partitions onto a PIndex.  And then this planner
+	// assigns every PIndex onto every node (so every signle node
+	// has a replica of that PIndex).
 	//
-	// TODO: Implement more advanced planners another day,
-	// - multiple PIndexes per Index.
-	// - different fan-out/fan-in topologies from datasource to
-	//   Feed to PIndex.
-	//
+	// TODO: Assign PIndexes to nodes in a fancier way.
 	if indexDefs == nil || nodeDefs == nil {
 		return nil, nil
 	}
@@ -217,11 +211,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
-		// This simple planner puts every partition onto every PIndex
-		// and also puts every PIndex onto every node.
-		//
-		// TODO: This is not "real" partitioning, but is good enough
-		// for developer preview level requirement.
+		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
+
 		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
 			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
 		if err != nil {
@@ -230,30 +221,46 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			continue
 		}
 
-		sourcePartitions := strings.Join(sourcePartitionsArr, ",")
+		addPlanPIndex := func(sourcePartitionsCurr []string) {
+			sourcePartitions := strings.Join(sourcePartitionsCurr, ",")
 
-		// This simple PlanPIndex.Name here only works for simple
-		// 1-to-1 case, which is developer preview level requirement.
-		planPIndex := &PlanPIndex{
-			Name:             PlanPIndexName(indexDef, sourcePartitions),
-			UUID:             NewUUID(),
-			IndexType:        indexDef.Type,
-			IndexName:        indexDef.Name,
-			IndexUUID:        indexDef.UUID,
-			IndexSchema:      indexDef.Schema,
-			SourceType:       indexDef.SourceType,
-			SourceName:       indexDef.SourceName,
-			SourceUUID:       indexDef.SourceUUID,
-			SourceParams:     indexDef.SourceParams,
-			SourcePartitions: sourcePartitions,
-			NodeUUIDs:        make(map[string]string),
-		}
-		for _, nodeDef := range nodeDefs.NodeDefs {
-			planPIndex.NodeUUIDs[nodeDef.UUID] =
-				PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+			planPIndex := &PlanPIndex{
+				Name:             PlanPIndexName(indexDef, sourcePartitions),
+				UUID:             NewUUID(),
+				IndexType:        indexDef.Type,
+				IndexName:        indexDef.Name,
+				IndexUUID:        indexDef.UUID,
+				IndexSchema:      indexDef.Schema,
+				SourceType:       indexDef.SourceType,
+				SourceName:       indexDef.SourceName,
+				SourceUUID:       indexDef.SourceUUID,
+				SourceParams:     indexDef.SourceParams,
+				SourcePartitions: sourcePartitions,
+				NodeUUIDs:        make(map[string]string),
+			}
+
+			// TODO: Assign PIndexes to nodes in a fancier way.
+			for _, nodeDef := range nodeDefs.NodeDefs {
+				planPIndex.NodeUUIDs[nodeDef.UUID] =
+					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+			}
+
+			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
 		}
 
-		planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
+		sourcePartitionsCurr := []string{}
+		for _, sourcePartition := range sourcePartitionsArr {
+			sourcePartitionsCurr = append(sourcePartitionsCurr, sourcePartition)
+			if maxPartitionsPerPIndex > 0 &&
+				len(sourcePartitionsCurr) >= maxPartitionsPerPIndex {
+				addPlanPIndex(sourcePartitionsCurr)
+				sourcePartitionsCurr = []string{}
+			}
+		}
+
+		if len(sourcePartitionsCurr) > 0 || len(sourcePartitionsArr) <= 0 {
+			addPlanPIndex(sourcePartitionsCurr)
+		}
 	}
 
 	return planPIndexes, nil
