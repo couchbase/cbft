@@ -1,8 +1,10 @@
 <h3>Results</h3>
-<h5>(1 - {{results.hits.length}} of {{results.total_hits}}) took {{results.roundTook}}</h5>
+<h5 class="resultsTop">
+    <span ng-hide="page < 2">Page {{page}} of </span> {{results.total_hits}} results ({{results.roundTook}})
+</h5>
 <div class="pull-right"><input type="checkbox" ng-model="explainScoring">Explain Scoring</div>
 
-<ol>
+<ol start="{{firstResult}}">
         <li ng-repeat="hit in results.hits"><b>{{hit.id}}</b> <span class="badge">{{hit.roundedScore}}</span> 
         <div class="well">
                 <div ng-repeat="(fieldName, fragments) in hit.fragments">
@@ -18,3 +20,16 @@
         </div>
         </li>
 </ol>
+
+<div ng-show="numPages > 1" class="col-lg-12 col-lg-offset-5">
+    <ul class="pagination">
+        <li ng-show="page > 1"><a 
+                ng-click="jumpToPage(page-1, $event)" href="">&laquo;</a>
+        </li>
+        <li ng-repeat="i in validPages" ng-attr-class="{{i == page && 'active' || '' }}"><a ng-show="i != page" href=""
+                ng-click="jumpToPage(i, $event)">{{i}}</a><span
+                ng-hide="i != page">{{i}}</span></li>
+        <li><a ng-show="page < numPages"
+                ng-click="jumpToPage(page+1, $event)" href="">&raquo;</a>
+    </ul>
+</div>
