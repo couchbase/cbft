@@ -10,6 +10,8 @@
 package main
 
 import (
+	"net/http"
+
 	bleveHttp "github.com/blevesearch/bleve/http"
 	"github.com/gorilla/mux"
 )
@@ -31,20 +33,48 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 
 	// the rest are standard bleveHttp handlers
-	r.Handle("/api/{indexName}", bleveHttp.NewGetIndexHandler()).Methods("GET")
 	r.Handle("/api", bleveHttp.NewListIndexesHandler()).Methods("GET")
+
+	getIndexHandler := bleveHttp.NewGetIndexHandler()
+	getIndexHandler.IndexNameLookup = indexNameLookup
+	r.Handle("/api/{indexName}", getIndexHandler).Methods("GET")
 
 	tags := mgr.Tags()
 	if tags == nil || tags["queryer"] {
-		r.Handle("/api/{indexName}/_count", bleveHttp.NewDocCountHandler("")).Methods("GET")
-		r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocGetHandler("")).Methods("GET")
-		// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocIndexHandler("")).Methods("PUT")
-		// r.Handle("/api/{indexName}/{docID}", bleveHttp.NewDocDeleteHandler("")).Methods("DELETE")
-		r.Handle("/api/{indexName}/{docID}/_debug", bleveHttp.NewDebugDocumentHandler("")).Methods("GET")
+		docCountHandler := bleveHttp.NewDocCountHandler("")
+		docCountHandler.IndexNameLookup = indexNameLookup
+		r.Handle("/api/{indexName}/_count", docCountHandler).Methods("GET")
 
-		r.Handle("/api/{indexName}/_search", bleveHttp.NewSearchHandler("")).Methods("POST")
-		r.Handle("/api/{indexName}/_fields", bleveHttp.NewListFieldsHandler("")).Methods("GET")
+		docGetHandler := bleveHttp.NewDocGetHandler("")
+		docGetHandler.IndexNameLookup = indexNameLookup
+		docGetHandler.DocIDLookup = docIDLookup
+		r.Handle("/api/{indexName}/{docID}", docGetHandler).Methods("GET")
+
+		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
+		debugDocHandler.IndexNameLookup = indexNameLookup
+		debugDocHandler.DocIDLookup = docIDLookup
+		r.Handle("/api/{indexName}/{docID}/_debug", debugDocHandler).Methods("GET")
+
+		searchHandler := bleveHttp.NewSearchHandler("")
+		searchHandler.IndexNameLookup = indexNameLookup
+		r.Handle("/api/{indexName}/_search", searchHandler).Methods("POST")
+
+		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
+		listFieldsHandler.IndexNameLookup = indexNameLookup
+		r.Handle("/api/{indexName}/_fields", listFieldsHandler).Methods("GET")
 	}
 
 	return r, nil
+}
+
+func muxVariableLookup(req *http.Request, name string) string {
+	return mux.Vars(req)[name]
+}
+
+func docIDLookup(req *http.Request) string {
+	return muxVariableLookup(req, "docID")
+}
+
+func indexNameLookup(req *http.Request) string {
+	return muxVariableLookup(req, "indexName")
 }
