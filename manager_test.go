@@ -1247,7 +1247,8 @@ func testPartitioning(t *testing.T,
 	sourceParams string,
 	planParams PlanParams,
 	expectedNumPIndexes int,
-	expectedNumStreams int) {
+	expectedNumStreams int,
+	andThen func(sf *SimpleFeed, pindexes map[string]*PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1284,6 +1285,10 @@ func testPartitioning(t *testing.T,
 	if len(sf.Streams()) != expectedNumStreams {
 		t.Errorf("expected %d streams", expectedNumStreams)
 	}
+
+	if andThen != nil {
+		andThen(sf, pindexes)
+	}
 }
 
 func TestPartitioning(t *testing.T) {
@@ -1294,7 +1299,7 @@ func TestPartitioning(t *testing.T) {
 	expectedNumPIndexes := 2
 	expectedNumStreams := 2
 	testPartitioning(t, sourceParams, planParams,
-		expectedNumPIndexes, expectedNumStreams)
+		expectedNumPIndexes, expectedNumStreams, nil)
 
 	sourceParams = "{\"numPartitions\":10}"
 	planParams = PlanParams{
@@ -1303,7 +1308,7 @@ func TestPartitioning(t *testing.T) {
 	expectedNumPIndexes = 10
 	expectedNumStreams = 10
 	testPartitioning(t, sourceParams, planParams,
-		expectedNumPIndexes, expectedNumStreams)
+		expectedNumPIndexes, expectedNumStreams, nil)
 
 	sourceParams = "{\"numPartitions\":5}"
 	planParams = PlanParams{
@@ -1312,5 +1317,72 @@ func TestPartitioning(t *testing.T) {
 	expectedNumPIndexes = 3
 	expectedNumStreams = 5
 	testPartitioning(t, sourceParams, planParams,
-		expectedNumPIndexes, expectedNumStreams)
+		expectedNumPIndexes, expectedNumStreams, nil)
+}
+
+func TestPartitioningMutations(t *testing.T) {
+	sourceParams := "{\"numPartitions\":2}"
+	planParams := PlanParams{
+		MaxPartitionsPerPIndex: 1,
+	}
+	expectedNumPIndexes := 2
+	expectedNumStreams := 2
+	testPartitioning(t, sourceParams, planParams,
+		expectedNumPIndexes, expectedNumStreams,
+		func(sf *SimpleFeed, pindexes map[string]*PIndex) {
+			var pindex0 *PIndex
+			var pindex1 *PIndex
+			for _, pindex := range pindexes {
+				if pindex.SourcePartitions == "0" {
+					pindex0 = pindex
+				}
+				if pindex.SourcePartitions == "1" {
+					pindex1 = pindex
+				}
+			}
+			if pindex0 == nil {
+				t.Errorf("expected pindex0")
+			}
+			if pindex1 == nil {
+				t.Errorf("expected pindex1")
+			}
+			bindex0, ok := pindex0.Impl.(bleve.Index)
+			if !ok || bindex0 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			bindex1, ok := pindex1.Impl.(bleve.Index)
+			if !ok || bindex1 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			n := bindex0.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex0, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex1, got: %d", n)
+			}
+
+			s := sf.Source()
+			dch := make(chan error)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_UPDATE,
+				Partition: "0",
+				Key:       []byte("hello"),
+				Val:       []byte("{}"),
+				DoneCh:    dch,
+			}
+			err := <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			n = bindex0.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex0, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex1, got: %d", n)
+			}
+		})
 }
