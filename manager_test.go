@@ -1489,7 +1489,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			}
 			err = <-dch
 			if err != nil {
-				t.Errorf("expected no error to update, err: %v", err)
+				t.Errorf("expected no error to rollback, err: %v", err)
 			}
 			runtime.Gosched()
 			mgr.PlannerNOOP("after-rollback")

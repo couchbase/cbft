@@ -224,7 +224,8 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 	removeFeeds = make([]Feed, 0)
 
 	// Group the writable pindexes by their feed names.  Non-writable
-	// pindexes (such as paused) will have their feeds removed.
+	// pindexes (such as paused) will have their feeds removed.  Of
+	// note, with this approach, a pindex is never fed by >1 feed.
 	groupedPIndexes := make(map[string][]*PIndex)
 	for _, pindex := range pindexes {
 		planPIndex, exists := planPIndexes.PlanPIndexes[pindex.Name]

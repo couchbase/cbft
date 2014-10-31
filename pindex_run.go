@@ -12,6 +12,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/blevesearch/bleve"
@@ -20,20 +21,20 @@ import (
 )
 
 func (pindex *PIndex) Run(mgr PIndexManager) {
-	close := true
-	cleanup := true
+	closeImpl := true
+	cleanupPath := true
 
 	var err error = nil
 
 	if pindex.IndexType == "bleve" {
-		close, cleanup, err = RunBleveStream(mgr, pindex, pindex.Stream,
+		closeImpl, cleanupPath, err = RunBleveStream(mgr, pindex, pindex.Stream,
 			pindex.Impl.(bleve.Index))
 		if err != nil {
-			log.Printf("error: RunBleveStream, close: %t, cleanup: %t, err: %v",
-				close, cleanup, err)
+			log.Printf("error: RunBleveStream, closeImpl: %t, cleanupPath: %t, err: %v",
+				closeImpl, cleanupPath, err)
 		} else {
-			log.Printf("done: RunBleveStream, close: %t, cleanup: %t",
-				close, cleanup)
+			log.Printf("done: RunBleveStream, closeImpl: %t, cleanupPath: %t",
+				closeImpl, cleanupPath)
 		}
 	} else {
 		log.Printf("error: PIndex.Run() saw unknown IndexType: %s", pindex.IndexType)
@@ -41,12 +42,21 @@ func (pindex *PIndex) Run(mgr PIndexManager) {
 
 	// NOTE: We expect the PIndexImpl to handle any inflight, concurrent
 	// queries, access and Close() correctly with its own locking.
-	if close {
+	if closeImpl {
 		pindex.Impl.Close()
 	}
 
-	if cleanup {
+	if cleanupPath {
 		os.RemoveAll(pindex.Path)
+	}
+
+	// While waiting for a close, reject any incoming req's so that
+	// requestors aren't blocked.
+	for req := range pindex.Stream {
+		if req.DoneCh != nil {
+			req.DoneCh <- fmt.Errorf("error: pindex already done, req: %#v", req)
+			close(req.DoneCh)
+		}
 	}
 }
 
