@@ -1497,6 +1497,14 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			runtime.Gosched()
 			mgr.PlannerNOOP("after-rollback")
 			mgr.JanitorNOOP("after-rollback")
+			feeds, pindexes := mgr.CurrentMaps()
+			if len(feeds) != 1 {
+				t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+			}
+			if len(pindexes) != 2 {
+				t.Errorf("expected to be %d pindex, got pindexes: %+v",
+					2, pindexes)
+			}
 			for _, pindex := range pindexes {
 				if strings.Contains(pindex.SourcePartitions, "0") {
 					pindex0_0 = pindex
