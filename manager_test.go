@@ -17,6 +17,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/blevesearch/bleve"
@@ -1248,7 +1249,7 @@ func testPartitioning(t *testing.T,
 	planParams PlanParams,
 	expectedNumPIndexes int,
 	expectedNumStreams int,
-	andThen func(sf *SimpleFeed, pindexes map[string]*PIndex)) {
+	andThen func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1287,7 +1288,7 @@ func testPartitioning(t *testing.T,
 	}
 
 	if andThen != nil {
-		andThen(sf, pindexes)
+		andThen(mgr, sf, pindexes)
 	}
 }
 
@@ -1329,7 +1330,7 @@ func TestPartitioningMutations(t *testing.T) {
 	expectedNumStreams := 2
 	testPartitioning(t, sourceParams, planParams,
 		expectedNumPIndexes, expectedNumStreams,
-		func(sf *SimpleFeed, pindexes map[string]*PIndex) {
+		func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex) {
 			var pindex0 *PIndex
 			var pindex1 *PIndex
 			for _, pindex := range pindexes {
@@ -1384,5 +1385,154 @@ func TestPartitioningMutations(t *testing.T) {
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
+		})
+}
+
+func TestFanInPartitioningMutations(t *testing.T) {
+	sourceParams := "{\"numPartitions\":3}"
+	planParams := PlanParams{
+		MaxPartitionsPerPIndex: 2,
+	}
+	expectedNumPIndexes := 2
+	expectedNumStreamsEntries := 3
+	testPartitioning(t, sourceParams, planParams,
+		expectedNumPIndexes, expectedNumStreamsEntries,
+		func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex) {
+			var pindex0_0 *PIndex
+			var pindex0_1 *PIndex
+			var pindex1 *PIndex
+			for _, pindex := range pindexes {
+				if strings.Contains(pindex.SourcePartitions, "0") {
+					pindex0_0 = pindex
+				}
+				if strings.Contains(pindex.SourcePartitions, "1") {
+					pindex0_1 = pindex
+				}
+				if pindex.SourcePartitions == "2" {
+					pindex1 = pindex
+				}
+			}
+			if pindex0_0 == nil || pindex0_1 == nil {
+				t.Errorf("expected pindex0_0/1")
+			}
+			if pindex0_0 != pindex0_1 {
+				t.Errorf("expected pindex0 equality")
+			}
+			if pindex1 == nil {
+				t.Errorf("expected pindex1")
+			}
+			bindex0, ok := pindex0_0.Impl.(bleve.Index)
+			if !ok || bindex0 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			bindex1, ok := pindex1.Impl.(bleve.Index)
+			if !ok || bindex1 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			n := bindex0.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex0, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex1, got: %d", n)
+			}
+
+			s := sf.Source()
+			dch := make(chan error)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_UPDATE,
+				Partition: "0",
+				Key:       []byte("hello"),
+				Val:       []byte("{}"),
+				DoneCh:    dch,
+			}
+			err := <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			n = bindex0.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex0, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex1, got: %d", n)
+			}
+
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_UPDATE,
+				Partition: "2",
+				Key:       []byte("hi"),
+				Val:       []byte("{}"),
+				DoneCh:    dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			n = bindex0.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex0, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex1, got: %d", n)
+			}
+
+			dch = make(chan error)
+			s <- &StreamRequest{
+				Op:        STREAM_OP_ROLLBACK,
+				Partition: "1",
+				DoneCh:    dch,
+			}
+			err = <-dch
+			if err != nil {
+				t.Errorf("expected no error to update, err: %v", err)
+			}
+			runtime.Gosched()
+			mgr.PlannerNOOP("after-rollback")
+			mgr.JanitorNOOP("after-rollback")
+			runtime.Gosched()
+			mgr.PlannerNOOP("after-rollback")
+			mgr.JanitorNOOP("after-rollback")
+			for _, pindex := range pindexes {
+				if strings.Contains(pindex.SourcePartitions, "0") {
+					pindex0_0 = pindex
+				}
+				if strings.Contains(pindex.SourcePartitions, "1") {
+					pindex0_1 = pindex
+				}
+				if pindex.SourcePartitions == "2" {
+					pindex1 = pindex
+				}
+			}
+			if pindex0_0 == nil || pindex0_1 == nil {
+				t.Errorf("expected pindex0_0/1")
+			}
+			if pindex0_0 != pindex0_1 {
+				t.Errorf("expected pindex0 equality")
+			}
+			if pindex1 == nil {
+				t.Errorf("expected pindex1")
+			}
+			bindex0, ok = pindex0_0.Impl.(bleve.Index)
+			if !ok || bindex0 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			bindex1, ok = pindex1.Impl.(bleve.Index)
+			if !ok || bindex1 == nil {
+				t.Errorf("expected bleve.Index")
+			}
+			n = bindex0.DocCount()
+			if n != 0 {
+				t.Errorf("expected 0 docs in bindex0 after rollback, got: %d", n)
+			}
+			n = bindex1.DocCount()
+			if n != 1 {
+				t.Errorf("expected 1 docs in bindex1 after rollback, got: %d", n)
+			}
+
 		})
 }

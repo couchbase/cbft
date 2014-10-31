@@ -194,7 +194,7 @@ func (mgr *Manager) Kick(msg string) {
 // ---------------------------------------------------------------
 
 func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
-	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "", pindex)
+	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "api-ClosePIndex", pindex)
 }
 
 func (mgr *Manager) registerPIndex(pindex *PIndex) error {

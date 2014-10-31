@@ -158,6 +158,12 @@ loop:
 }
 
 func (t *DCPFeed) Close() error {
+	select {
+	case <-t.doneCh:
+		return t.doneErr
+	default:
+	}
+
 	close(t.closeCh)
 	<-t.doneCh
 	return t.doneErr

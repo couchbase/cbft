@@ -45,6 +45,8 @@ func (mgr *Manager) JanitorLoop() {
 	}
 
 	for m := range mgr.janitorCh {
+		log.Printf("janitor awakes, reason: %s", m.msg)
+
 		var err error
 		if m.op == WORK_KICK {
 			err = mgr.JanitorOnce(m.msg)
@@ -70,8 +72,6 @@ func (mgr *Manager) JanitorLoop() {
 }
 
 func (mgr *Manager) JanitorOnce(reason string) error {
-	log.Printf("janitor awakes, reason: %s", reason)
-
 	if mgr.cfg == nil { // Can occur during testing.
 		return fmt.Errorf("janitor skipped due to nil cfg")
 	}

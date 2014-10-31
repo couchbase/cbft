@@ -108,6 +108,12 @@ func (t *SimpleFeed) waitForClose(msg string, err error) {
 }
 
 func (t *SimpleFeed) Close() error {
+	select {
+	case <-t.doneCh:
+		return t.doneErr
+	default:
+	}
+
 	close(t.closeCh)
 	<-t.doneCh
 	return t.doneErr
