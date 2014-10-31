@@ -1242,3 +1242,45 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			}
 		})
 }
+
+func TestPartitionedBasicStreamMutations(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", meh)
+	if err := mgr.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+
+	sourceParams := "{\"numPartitions\":2}"
+	planParams := PlanParams{
+		MaxPartitionsPerPIndex: 1,
+	}
+	if err := mgr.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
+		"bleve", "foo", "", planParams); err != nil {
+		t.Errorf("expected CreateIndex() to work")
+	}
+
+	mgr.PlannerNOOP("test")
+	mgr.JanitorNOOP("test")
+	feeds, pindexes := mgr.CurrentMaps()
+	if len(feeds) != 1 {
+		t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+	}
+	if len(pindexes) != 2 {
+		t.Errorf("expected to be 2 pindex, got pindexes: %+v", pindexes)
+	}
+	var feed Feed
+	for _, f := range feeds {
+		feed = f
+	}
+	sf, ok := feed.(*SimpleFeed)
+	if !ok || sf == nil {
+		t.Errorf("expected feed to be simple")
+	}
+	if len(sf.Streams()) != 2 {
+		t.Errorf("expected 2 streams")
+	}
+}

@@ -44,9 +44,9 @@ type IndexDef struct {
 }
 
 type PlanParams struct {
-	// TODO: replication params?
-
 	MaxPartitionsPerPIndex int `json:"maxPartitionsPerPIndex"`
+
+	// TODO: replication params?
 }
 
 // ------------------------------------------------------------------------
