@@ -17,15 +17,24 @@ import (
 
 func TestBasicPartitionFunc(t *testing.T) {
 	stream := make(Stream)
+	stream2 := make(Stream)
 	s, err := BasicPartitionFunc(nil, "", map[string]Stream{"": stream})
 	if err != nil || s != stream {
 		t.Errorf("expected BasicPartitionFunc to work")
+	}
+	s, err = BasicPartitionFunc(nil, "foo", map[string]Stream{"": stream})
+	if err != nil || s != stream {
+		t.Errorf("expected BasicPartitionFunc to hit the catch-all stream")
 	}
 	s, err = BasicPartitionFunc(nil, "", map[string]Stream{"foo": stream})
 	if err == nil || s == stream {
 		t.Errorf("expected BasicPartitionFunc to not work")
 	}
 	s, err = BasicPartitionFunc(nil, "foo", map[string]Stream{"foo": stream})
+	if err != nil || s != stream {
+		t.Errorf("expected BasicPartitionFunc to work on partition hit")
+	}
+	s, err = BasicPartitionFunc(nil, "foo", map[string]Stream{"foo": stream, "": stream2})
 	if err != nil || s != stream {
 		t.Errorf("expected BasicPartitionFunc to work on partition hit")
 	}
