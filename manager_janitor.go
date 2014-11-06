@@ -357,7 +357,7 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		}
 
 		addSourcePartition := func(sourcePartition string) {
-			if _, exists := streams[pindex.SourcePartitions]; exists {
+			if _, exists := streams[sourcePartition]; exists {
 				panic(fmt.Sprintf("error: startFeed saw sourcePartition collision: %s",
 					sourcePartition))
 			}
