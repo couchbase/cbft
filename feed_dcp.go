@@ -39,7 +39,9 @@ type DCPFeed struct {
 	streams    map[string]Stream
 	bds        cbdatasource.BucketDataSource
 
-	m    sync.Mutex
+	m      sync.Mutex
+	closed bool
+
 	errs []error
 	muts []*DCPMutation
 	meta map[uint16][]byte
@@ -93,6 +95,14 @@ func (t *DCPFeed) Start() error {
 }
 
 func (t *DCPFeed) Close() error {
+	t.m.Lock()
+	if t.closed {
+		t.m.Unlock()
+		return fmt.Errorf("already closed")
+	}
+	t.closed = true
+	t.m.Unlock()
+
 	log.Printf("DCPFeed.Close, name: %s", t.Name())
 	return t.bds.Close()
 }
@@ -107,12 +117,15 @@ func (r *DCPFeed) OnError(err error) {
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	// fmt.Printf("  DCPFeed.name: %s: %v\n", r.name, err)
+	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
 	r.errs = append(r.errs, err)
 }
 
 func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
+	log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
+		r.name, vbucketId, key, seq, req)
+
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -127,6 +140,9 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
+	log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
+		r.name, vbucketId, key, seq, req)
+
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -141,6 +157,10 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 	snapStart, snapEnd uint64, snapType uint32) error {
+	log.Printf("DCPFeed.SnapshotStart: %s: vbucketId: %d,"+
+		" snapStart: %d, snapEnd: %d, snapType: %d",
+		r.name, vbucketId, snapStart, snapEnd, snapType)
+
 	r.numSnapshotStarts += 1
 	return nil
 }

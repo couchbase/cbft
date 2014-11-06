@@ -403,12 +403,16 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID string,
 	streams map[string]Stream) error {
-	if sourceType == "couchbase" {
-		// TODO: Should default to DCP feed or projector feed one day.
-		return mgr.startTAPFeed(feedName, indexName, indexUUID,
+	if sourceType == "couchbase" ||
+		sourceType == "couchbase-dcp" {
+		return mgr.startDCPFeed(feedName, indexName, indexUUID,
 			sourceName, sourceUUID, streams)
 	}
 
+	if sourceType == "couchbase-tap" {
+		return mgr.startTAPFeed(feedName, indexName, indexUUID,
+			sourceName, sourceUUID, streams)
+	}
 	if sourceType == "simple" {
 		return mgr.startSimpleFeed(feedName, streams)
 	}
@@ -418,6 +422,26 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	}
 
 	return fmt.Errorf("error: startFeed() got unknown source type: %s", sourceType)
+}
+
+func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
+	bucketName, bucketUUID string, streams map[string]Stream) error {
+	feed, err := NewDCPFeed(feedName, mgr.server, "default",
+		bucketName, bucketUUID, BasicPartitionFunc, streams)
+	if err != nil {
+		return fmt.Errorf("error: could not prepare DCP stream to server: %s,"+
+			" bucketName: %s, indexName: %s, err: %v",
+			mgr.server, bucketName, indexName, err)
+	}
+	if err = feed.Start(); err != nil {
+		return fmt.Errorf("error: could not start dcp feed, server: %s, err: %v",
+			mgr.server, err)
+	}
+	if err = mgr.registerFeed(feed); err != nil {
+		feed.Close()
+		return err
+	}
+	return nil
 }
 
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
