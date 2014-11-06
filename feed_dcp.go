@@ -13,12 +13,22 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/couchbase/gomemcached"
 	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
+
+	"github.com/steveyen/cbdatasource"
 )
 
+type DCPMutation struct {
+	delete    bool
+	vbucketId uint16
+	key       []byte
+	seq       uint64
+}
+
+// Implements both Feed and cbdatasource.Receiver interfaces.
 type DCPFeed struct {
 	name       string
 	url        string
@@ -27,15 +37,33 @@ type DCPFeed struct {
 	bucketUUID string
 	pf         StreamPartitionFunc
 	streams    map[string]Stream
-	closeCh    chan bool
-	doneCh     chan bool
-	doneErr    error
-	doneMsg    string
+	bds        cbdatasource.BucketDataSource
+
+	m    sync.Mutex
+	errs []error
+	muts []*DCPMutation
+	meta map[uint16][]byte
+
+	numSnapshotStarts int
+	numSetMetaDatas   int
+	numGetMetaDatas   int
+	numRollbacks      int
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	pf StreamPartitionFunc, streams map[string]Stream) (*DCPFeed, error) {
-	return &DCPFeed{
+	vbucketIds, err := ParsePartitionsToVBucketIds(streams)
+	if err != nil {
+		return nil, err
+	}
+	if len(vbucketIds) <= 0 {
+		vbucketIds = nil
+	}
+
+	var authFunc cbdatasource.AuthFunc
+	var options *cbdatasource.BucketDataSourceOptions
+
+	feed := &DCPFeed{
 		name:       name,
 		url:        url,
 		poolName:   poolName,
@@ -43,11 +71,16 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		bucketUUID: bucketUUID,
 		pf:         pf,
 		streams:    streams,
-		closeCh:    make(chan bool),
-		doneCh:     make(chan bool),
-		doneErr:    nil,
-		doneMsg:    "",
-	}, nil
+	}
+
+	feed.bds, err = cbdatasource.NewBucketDataSource([]string{url},
+		poolName, bucketName, bucketUUID,
+		vbucketIds, authFunc, feed, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return feed, nil
 }
 
 func (t *DCPFeed) Name() string {
@@ -56,119 +89,92 @@ func (t *DCPFeed) Name() string {
 
 func (t *DCPFeed) Start() error {
 	log.Printf("DCPFeed.Start, name: %s", t.Name())
-
-	go ExponentialBackoffLoop(t.Name(),
-		func() int {
-			progress, err := t.feed()
-			if err != nil {
-				log.Printf("DCPFeed name: %s, progress: %d, err: %v",
-					t.Name(), progress, err)
-			}
-			return progress
-		},
-		FEED_SLEEP_INIT_MS,  // Milliseconds.
-		FEED_BACKOFF_FACTOR, // Backoff.
-		FEED_SLEEP_MAX_MS)
-
-	return nil
-}
-
-func (t *DCPFeed) feed() (int, error) {
-	select {
-	case <-t.closeCh:
-		t.doneErr = nil
-		t.doneMsg = "closeCh closed"
-		close(t.doneCh)
-		return -1, nil
-	default:
-	}
-
-	bucket, err := couchbase.GetBucket(t.url, t.poolName, t.bucketName)
-	if err != nil {
-		return 0, err
-	}
-	defer bucket.Close()
-
-	if t.bucketUUID != "" && t.bucketUUID != bucket.UUID {
-		bucket.Close()
-		return -1, fmt.Errorf("mismatched bucket uuid,"+
-			"bucketName: %s, bucketUUID: %s, bucket.UUID: %s",
-			t.bucketName, t.bucketUUID, bucket.UUID)
-	}
-
-	// TODO: See if UprFeed name is important.
-	feed, err := bucket.StartUprFeed("index" /*name*/, 0)
-	if err != nil {
-		return 0, err
-	}
-	defer feed.Close()
-
-	err = feed.UprRequestStream(
-		uint16(0),          /*vbno - TODO: use the vbno's*/
-		uint16(0),          /*opaque*/
-		0,                  /*flag*/
-		0,                  /*vbuuid*/
-		0,                  /*seqStart - TODO: use the seqno's*/
-		0xFFFFFFFFFFFFFFFF, /*seqEnd*/
-		0,                  /*snaps*/
-		0)
-	if err != nil {
-		return 0, err
-	}
-
-loop:
-	for {
-		select {
-		case <-t.closeCh:
-			t.doneErr = nil
-			t.doneMsg = "closeCh closed"
-			close(t.doneCh)
-			return -1, nil
-
-		case uprEvent, alive := <-feed.C:
-			if !alive {
-				break loop
-			}
-
-			partition := fmt.Sprintf("%d", uprEvent.VBucket)
-			stream, err := t.pf(uprEvent.Key, partition, t.streams)
-			if err != nil {
-				return 1, fmt.Errorf("error: DCPFeed:"+
-					" partition func error from url: %s,"+
-					" poolName: %s, bucketName: %s, uprEvent: %#v, streams: %#v, err: %v",
-					t.url, t.poolName, t.bucketName, uprEvent, t.streams, err)
-			}
-
-			if uprEvent.Opcode == gomemcached.UPR_MUTATION {
-				stream <- &StreamRequest{
-					Op:  STREAM_OP_UPDATE,
-					Key: uprEvent.Key,
-					Val: uprEvent.Value,
-				}
-			} else if uprEvent.Opcode == gomemcached.UPR_DELETION {
-				stream <- &StreamRequest{
-					Op:  STREAM_OP_DELETE,
-					Key: uprEvent.Key,
-				}
-			}
-		}
-	}
-
-	return 1, nil
+	return t.bds.Start()
 }
 
 func (t *DCPFeed) Close() error {
-	select {
-	case <-t.doneCh:
-		return t.doneErr
-	default:
-	}
-
-	close(t.closeCh)
-	<-t.doneCh
-	return t.doneErr
+	log.Printf("DCPFeed.Close, name: %s", t.Name())
+	return t.bds.Close()
 }
 
 func (t *DCPFeed) Streams() map[string]Stream {
 	return t.streams
+}
+
+// --------------------------------------------------------
+
+func (r *DCPFeed) OnError(err error) {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	// fmt.Printf("  DCPFeed.name: %s: %v\n", r.name, err)
+	r.errs = append(r.errs, err)
+}
+
+func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
+	req *gomemcached.MCRequest) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	r.muts = append(r.muts, &DCPMutation{
+		delete:    false,
+		vbucketId: vbucketId,
+		key:       key,
+		seq:       seq,
+	})
+	return nil
+}
+
+func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
+	req *gomemcached.MCRequest) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	r.muts = append(r.muts, &DCPMutation{
+		delete:    true,
+		vbucketId: vbucketId,
+		key:       key,
+		seq:       seq,
+	})
+	return nil
+}
+
+func (r *DCPFeed) SnapshotStart(vbucketId uint16,
+	snapStart, snapEnd uint64, snapType uint32) error {
+	r.numSnapshotStarts += 1
+	return nil
+}
+
+func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	r.numSetMetaDatas += 1
+	if r.meta == nil {
+		r.meta = make(map[uint16][]byte)
+	}
+	r.meta[vbucketId] = value
+	return nil
+}
+
+func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	r.numGetMetaDatas += 1
+	rv := []byte(nil)
+	if r.meta != nil {
+		rv = r.meta[vbucketId]
+	}
+	for i := len(r.muts) - 1; i >= 0; i = i - 1 {
+		if r.muts[i].vbucketId == vbucketId {
+			return rv, r.muts[i].seq, nil
+		}
+	}
+	return rv, 0, nil
+}
+
+func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
+	r.numRollbacks += 1
+	return fmt.Errorf("bad-rollback")
 }
