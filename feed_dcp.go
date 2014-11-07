@@ -113,10 +113,9 @@ func (r *DCPFeed) OnError(err error) {
 	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
 
 	r.m.Lock()
-	defer r.m.Unlock()
 	r.numError += 1
-
 	r.lastErr = err
+	r.m.Unlock()
 }
 
 func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
@@ -188,8 +187,8 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 		r.name, vbucketId, snapStart, snapEnd, snapType)
 
 	r.m.Lock()
-	defer r.m.Unlock()
 	r.numSnapshotStart += 1
+	r.m.Unlock()
 
 	return nil
 }
