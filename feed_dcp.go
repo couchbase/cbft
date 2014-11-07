@@ -124,11 +124,25 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	// log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
 	// r.name, vbucketId, key, seq, req)
 
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.numUpdate += 1
+	partition := fmt.Sprintf("%d", vbucketId)
+	stream, err := r.pf(req.Key, partition, r.streams)
+	if err != nil {
+		return fmt.Errorf("error: DCPFeed: partition func error from url: %s,"+
+			" poolName: %s, bucketName: %s, req: %#v, streams: %#v, err: %v",
+			r.url, r.poolName, r.bucketName, req, r.streams, err)
+	}
 
+	r.m.Lock()
+	r.numUpdate += 1
 	r.updateSeqUnlocked(vbucketId, seq)
+	r.m.Unlock()
+
+	stream <- &StreamRequest{
+		Op:  STREAM_OP_UPDATE,
+		Key: req.Key,
+		Val: req.Body,
+	}
+
 	return nil
 }
 
@@ -137,11 +151,24 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	// log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
 	// r.name, vbucketId, key, seq, req)
 
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.numDelete += 1
+	partition := fmt.Sprintf("%d", vbucketId)
+	stream, err := r.pf(req.Key, partition, r.streams)
+	if err != nil {
+		return fmt.Errorf("error: DCPFeed: partition func error from url: %s,"+
+			" poolName: %s, bucketName: %s, req: %#v, streams: %#v, err: %v",
+			r.url, r.poolName, r.bucketName, req, r.streams, err)
+	}
 
+	r.m.Lock()
+	r.numDelete += 1
 	r.updateSeqUnlocked(vbucketId, seq)
+	r.m.Unlock()
+
+	stream <- &StreamRequest{
+		Op:  STREAM_OP_DELETE,
+		Key: req.Key,
+	}
+
 	return nil
 }
 
