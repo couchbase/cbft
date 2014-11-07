@@ -200,11 +200,25 @@ func ParsePartitionsToVBucketIds(streams map[string]Stream) ([]uint16, error) {
 func VBucketIdToPartitionStream(pf StreamPartitionFunc,
 	streams map[string]Stream, vbucketId uint16, key []byte) (
 	partition string, stream Stream, err error) {
-	partition = fmt.Sprintf("%d", vbucketId)
+	if vbucketId < uint16(len(vbucketIdStrings)) {
+		partition = vbucketIdStrings[vbucketId]
+	}
+	if partition == "" {
+		partition = fmt.Sprintf("%d", vbucketId)
+	}
 	stream, err = pf(key, partition, streams)
 	if err != nil {
 		return "", nil, fmt.Errorf("error: VBucketIdToPartitionStream,"+
 			" partition func, vbucketId: %d, err: %v", vbucketId, err)
 	}
 	return partition, stream, err
+}
+
+var vbucketIdStrings []string
+
+func init() {
+	vbucketIdStrings = make([]string, 1024)
+	for i := 0; i < len(vbucketIdStrings); i++ {
+		vbucketIdStrings[i] = fmt.Sprintf("%d", i)
+	}
 }
