@@ -86,10 +86,6 @@ func RunBleveStream(mgr PIndexManager, pindex *PIndex, stream Stream,
 
 			err = bindex.Delete(string(req.Key))
 
-		case STREAM_OP_FLUSH:
-			// TODO: Need to delete all records here.  So, why not
-			// implement this the same as rollback to zero?
-
 		case STREAM_OP_ROLLBACK:
 			log.Printf("bleve stream rollback, partition: %s",
 				req.Partition)
