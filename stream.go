@@ -26,7 +26,7 @@ type StreamRequest struct {
 	Partition string
 	SeqNo     uint64
 	Key, Val  []byte
-	Misc      interface{}
+	Misc      interface{} // The type of Misc depends on Op.
 }
 
 const (

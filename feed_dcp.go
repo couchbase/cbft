@@ -138,9 +138,11 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	r.m.Unlock()
 
 	stream <- &StreamRequest{
-		Op:  STREAM_OP_UPDATE,
-		Key: req.Key,
-		Val: req.Body,
+		Op:        STREAM_OP_UPDATE,
+		Partition: partition,
+		SeqNo:     seq,
+		Key:       req.Key,
+		Val:       req.Body,
 	}
 
 	return nil
@@ -165,8 +167,10 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	r.m.Unlock()
 
 	stream <- &StreamRequest{
-		Op:  STREAM_OP_DELETE,
-		Key: req.Key,
+		Op:        STREAM_OP_DELETE,
+		Partition: partition,
+		SeqNo:     seq,
+		Key:       req.Key,
 	}
 
 	return nil
