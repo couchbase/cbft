@@ -37,7 +37,6 @@ type DCPFeed struct {
 	lastErr error
 
 	seqs map[uint16]uint64 // To track max seq #'s we received per vbucketId.
-	meta map[uint16][]byte // To track metadata blob's per vbucketId.
 
 	numError         uint64
 	numUpdate        uint64
@@ -198,14 +197,22 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 	log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
 		" value: %s", r.name, vbucketId, value)
 
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.numSetMetaData += 1
-
-	if r.meta == nil {
-		r.meta = make(map[uint16][]byte)
+	partition, stream, err :=
+		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	if err != nil {
+		return err
 	}
-	r.meta[vbucketId] = value
+
+	r.m.Lock()
+	r.numSetMetaData += 1
+	r.m.Unlock()
+
+	stream <- &StreamRequest{
+		Op:        STREAM_OP_SET_META,
+		Partition: partition,
+		Key:       []byte(partition),
+		Val:       value,
+	}
 
 	return nil
 }
@@ -213,18 +220,33 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
 	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
 
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.numGetMetaData += 1
-
-	rv := []byte(nil)
-	if r.meta != nil {
-		rv = r.meta[vbucketId]
+	partition, stream, err :=
+		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	if err != nil {
+		return nil, 0, err
 	}
 
+	r.m.Lock()
+	r.numGetMetaData += 1
 	if r.seqs != nil {
+		// TODO: Need to get this from stream instead of here.
 		lastSeq = r.seqs[vbucketId]
 	}
+	r.m.Unlock()
+
+	rvCh := make(chan []byte)
+	stream <- &StreamRequest{
+		Op:        STREAM_OP_GET_META,
+		Partition: partition,
+		Key:       []byte(partition),
+		Misc:      rvCh,
+	}
+	rv, exists := <-rvCh
+	if !exists {
+		return nil, 0, nil
+	}
+
+	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d, rv: %s", r.name, vbucketId, rv)
 
 	return rv, lastSeq, nil
 }
