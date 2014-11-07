@@ -57,11 +57,11 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		vbucketIds = nil
 	}
 
-	var authFunc cbdatasource.AuthFunc
-	var options *cbdatasource.BucketDataSourceOptions
+	var authFunc cbdatasource.AuthFunc                // TODO: AUTH.
+	var options *cbdatasource.BucketDataSourceOptions // TODO: options.
 
 	feed := &DCPFeed{
-		name:       name,
+		name:       name, // TODO: unique name.
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -70,7 +70,8 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		streams:    streams,
 	}
 
-	feed.bds, err = cbdatasource.NewBucketDataSource([]string{url},
+	feed.bds, err = cbdatasource.NewBucketDataSource(
+		[]string{url}, // TODO: more than 1 seed URL.
 		poolName, bucketName, bucketUUID,
 		vbucketIds, authFunc, feed, options)
 	if err != nil {
