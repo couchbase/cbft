@@ -255,9 +255,21 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 	log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
 		" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
 
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.numRollback += 1
+	partition, stream, err :=
+		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	if err != nil {
+		return err
+	}
 
-	return fmt.Errorf("bad-rollback")
+	r.m.Lock()
+	r.numRollback += 1
+	r.m.Unlock()
+
+	doneCh := make(chan error)
+	stream <- &StreamRequest{
+		Op:        STREAM_OP_ROLLBACK,
+		DoneCh:    doneCh,
+		Partition: partition,
+	}
+	return <-doneCh
 }
