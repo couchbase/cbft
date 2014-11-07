@@ -21,13 +21,6 @@ import (
 	"github.com/steveyen/cbdatasource"
 )
 
-type DCPMutation struct {
-	delete    bool
-	vbucketId uint16
-	key       []byte
-	seq       uint64
-}
-
 // Implements both Feed and cbdatasource.Receiver interfaces.
 type DCPFeed struct {
 	name       string
@@ -39,17 +32,20 @@ type DCPFeed struct {
 	streams    map[string]Stream
 	bds        cbdatasource.BucketDataSource
 
-	m      sync.Mutex
-	closed bool
+	m       sync.Mutex
+	closed  bool
+	lastErr error
 
-	errs []error
-	muts []*DCPMutation
-	meta map[uint16][]byte
+	seqs map[uint16]uint64 // To track max seq #'s we received per vbucketId.
+	meta map[uint16][]byte // To track metadata blob's per vbucketId.
 
-	numSnapshotStarts int
-	numSetMetaDatas   int
-	numGetMetaDatas   int
-	numRollbacks      int
+	numError         uint64
+	numUpdate        uint64
+	numDelete        uint64
+	numSnapshotStart uint64
+	numSetMetaData   uint64
+	numGetMetaData   uint64
+	numRollback      uint64
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
@@ -114,45 +110,48 @@ func (t *DCPFeed) Streams() map[string]Stream {
 // --------------------------------------------------------
 
 func (r *DCPFeed) OnError(err error) {
+	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
+
 	r.m.Lock()
 	defer r.m.Unlock()
+	r.numError += 1
 
-	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
-	r.errs = append(r.errs, err)
+	r.lastErr = err
 }
 
 func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
-		r.name, vbucketId, key, seq, req)
+	// log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
+	// r.name, vbucketId, key, seq, req)
 
 	r.m.Lock()
 	defer r.m.Unlock()
+	r.numUpdate += 1
 
-	r.muts = append(r.muts, &DCPMutation{
-		delete:    false,
-		vbucketId: vbucketId,
-		key:       key,
-		seq:       seq,
-	})
+	r.updateSeqUnlocked(vbucketId, seq)
 	return nil
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
-		r.name, vbucketId, key, seq, req)
+	// log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
+	// r.name, vbucketId, key, seq, req)
 
 	r.m.Lock()
 	defer r.m.Unlock()
+	r.numDelete += 1
 
-	r.muts = append(r.muts, &DCPMutation{
-		delete:    true,
-		vbucketId: vbucketId,
-		key:       key,
-		seq:       seq,
-	})
+	r.updateSeqUnlocked(vbucketId, seq)
 	return nil
+}
+
+func (r *DCPFeed) updateSeqUnlocked(vbucketId uint16, seq uint64) {
+	if r.seqs == nil {
+		r.seqs = make(map[uint16]uint64)
+	}
+	if r.seqs[vbucketId] < seq {
+		r.seqs[vbucketId] = seq // Remember the max seq for GetMetaData().
+	}
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
@@ -161,40 +160,55 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 		" snapStart: %d, snapEnd: %d, snapType: %d",
 		r.name, vbucketId, snapStart, snapEnd, snapType)
 
-	r.numSnapshotStarts += 1
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.numSnapshotStart += 1
+
 	return nil
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
+	log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
+		" value: %s", r.name, vbucketId, value)
+
 	r.m.Lock()
 	defer r.m.Unlock()
+	r.numSetMetaData += 1
 
-	r.numSetMetaDatas += 1
 	if r.meta == nil {
 		r.meta = make(map[uint16][]byte)
 	}
 	r.meta[vbucketId] = value
+
 	return nil
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
+	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
+
 	r.m.Lock()
 	defer r.m.Unlock()
+	r.numGetMetaData += 1
 
-	r.numGetMetaDatas += 1
 	rv := []byte(nil)
 	if r.meta != nil {
 		rv = r.meta[vbucketId]
 	}
-	for i := len(r.muts) - 1; i >= 0; i = i - 1 {
-		if r.muts[i].vbucketId == vbucketId {
-			return rv, r.muts[i].seq, nil
-		}
+
+	if r.seqs != nil {
+		lastSeq = r.seqs[vbucketId]
 	}
-	return rv, 0, nil
+
+	return rv, lastSeq, nil
 }
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
-	r.numRollbacks += 1
+	log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
+		" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
+
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.numRollback += 1
+
 	return fmt.Errorf("bad-rollback")
 }
