@@ -37,7 +37,10 @@ func TestNewPIndex(t *testing.T) {
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
 	}
-	pindex.Close()
+	err = pindex.Close(true)
+	if err != nil {
+		t.Errorf("expected Close to work")
+	}
 }
 
 func TestNewPIndexEmptyJSON(t *testing.T) {

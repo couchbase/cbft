@@ -903,7 +903,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected first start to work")
 	}
-	err = m.stopPIndex(meh.lastPIndex)
+	err = m.stopPIndex(meh.lastPIndex, true)
 	if err != nil {
 		t.Errorf("expected close pindex to work")
 	}

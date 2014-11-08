@@ -41,8 +41,17 @@ type PIndex struct {
 	Dest             Dest       `json:"-"` // Transient, not persisted.
 }
 
-func (p *PIndex) Close() error {
-	return p.Impl.Close()
+func (p *PIndex) Close(remove bool) error {
+	err := p.Impl.Close()
+	if err != nil {
+		return err
+	}
+
+	if remove {
+		os.RemoveAll(p.Path)
+	}
+
+	return nil
 }
 
 type PIndexImpl interface {

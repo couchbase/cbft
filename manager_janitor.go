@@ -23,6 +23,7 @@ import (
 // hooking them up as necessary to try to match to latest plans.
 
 const JANITOR_CLOSE_PINDEX = "janitor_close_pindex"
+const JANITOR_REMOVE_PINDEX = "janitor_remove_pindex"
 
 func (mgr *Manager) JanitorNOOP(msg string) {
 	SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
@@ -58,7 +59,9 @@ func (mgr *Manager) JanitorLoop() {
 		} else if m.op == WORK_NOOP {
 			// NOOP.
 		} else if m.op == JANITOR_CLOSE_PINDEX {
-			mgr.stopPIndex(m.obj.(*PIndex))
+			mgr.stopPIndex(m.obj.(*PIndex), false)
+		} else if m.op == JANITOR_REMOVE_PINDEX {
+			mgr.stopPIndex(m.obj.(*PIndex), true)
 		} else {
 			err = fmt.Errorf("error: unknown janitor op: %s, m: %#v", m.op, m)
 		}
@@ -106,7 +109,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	// First, teardown pindexes that need to be removed.
 	for _, removePIndex := range removePIndexes {
 		log.Printf("janitor removing pindex: %s", removePIndex.Name)
-		err = mgr.stopPIndex(removePIndex)
+		err = mgr.stopPIndex(removePIndex, true)
 		if err != nil {
 			return fmt.Errorf("error: janitor removing pindex: %s, err: %v",
 				removePIndex.Name, err)
@@ -282,9 +285,8 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 			if !PIndexMatchesPlan(pindex, planPIndex) {
 				fmt.Printf("pindex does not match plan, cleaning up and"+
 					" trying NewPIndex, path: %s, err: %v", path, err)
-				pindex.Close()
+				pindex.Close(true)
 				pindex = nil
-				os.RemoveAll(path)
 			}
 		}
 	}
@@ -308,14 +310,14 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	}
 
 	if err = mgr.registerPIndex(pindex); err != nil {
-		pindex.Close()
+		pindex.Close(true)
 		return err
 	}
 
 	return nil
 }
 
-func (mgr *Manager) stopPIndex(pindex *PIndex) error {
+func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 	// First, stop any feeds that might be sending to the pindex's dest.
 	feeds, _ := mgr.CurrentMaps()
 	for _, feed := range feeds {
@@ -333,7 +335,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex) error {
 		panic("unregistered pindex isn't the one we're stopping")
 	}
 
-	return pindex.Close()
+	return pindex.Close(remove)
 }
 
 // --------------------------------------------------------
