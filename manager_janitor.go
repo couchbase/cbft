@@ -274,20 +274,18 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	// existing path might happen during a case of rollback.
 	if _, err = os.Stat(path); err == nil {
 		pindex, err = OpenPIndex(mgr, path)
-		if err == nil {
+		if err != nil {
+			fmt.Printf("OpenPIndex error, cleaning up and"+
+				" trying NewPIndex, path: %s, err: %v", path, err)
+			os.RemoveAll(path)
+		} else {
 			if !PIndexMatchesPlan(pindex, planPIndex) {
-				fmt.Printf("pindex does not match plan,"+
-					" cleaning up and trying NewPIndex, path: %s, err: %v",
-					path, err)
-				close(pindex.Stream)
+				fmt.Printf("pindex does not match plan, cleaning up and"+
+					" trying NewPIndex, path: %s, err: %v", path, err)
+				pindex.Close()
 				pindex = nil
 				os.RemoveAll(path)
 			}
-		} else {
-			fmt.Printf("OpenPIndex error,"+
-				" cleaning up and trying NewPIndex, path: %s, err: %v",
-				path, err)
-			os.RemoveAll(path)
 		}
 	}
 
@@ -310,7 +308,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	}
 
 	if err = mgr.registerPIndex(pindex); err != nil {
-		close(pindex.Stream)
+		pindex.Close()
 		return err
 	}
 
@@ -318,11 +316,11 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 }
 
 func (mgr *Manager) stopPIndex(pindex *PIndex) error {
-	// First, stop any feeds that might be sending to the pindex's stream.
+	// First, stop any feeds that might be sending to the pindex's dest.
 	feeds, _ := mgr.CurrentMaps()
 	for _, feed := range feeds {
-		for _, stream := range feed.Streams() {
-			if stream == pindex.Stream {
+		for _, dest := range feed.Dests() {
+			if dest == pindex.Dest {
 				if err := mgr.stopFeed(feed); err != nil {
 					panic(fmt.Sprintf("error: could not stop feed, err: %v", err))
 				}
@@ -335,9 +333,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex) error {
 		panic("unregistered pindex isn't the one we're stopping")
 	}
 
-	close(pindex.Stream)
-
-	return nil
+	return pindex.Close()
 }
 
 // --------------------------------------------------------
@@ -350,18 +346,18 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	pindexFirst := pindexes[0]
 	feedName := FeedName(pindexFirst)
 
-	streams := make(map[string]Stream)
+	dests := make(map[string]Dest)
 	for _, pindex := range pindexes {
 		if f := FeedName(pindex); f != feedName {
 			panic(fmt.Sprintf("error: unexpected feedName: %s != %s", f, feedName))
 		}
 
 		addSourcePartition := func(sourcePartition string) {
-			if _, exists := streams[sourcePartition]; exists {
+			if _, exists := dests[sourcePartition]; exists {
 				panic(fmt.Sprintf("error: startFeed saw sourcePartition collision: %s",
 					sourcePartition))
 			}
-			streams[sourcePartition] = pindex.Stream
+			dests[sourcePartition] = pindex.Dest
 		}
 
 		if pindex.SourcePartitions == "" {
@@ -377,7 +373,7 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	return mgr.startFeedByType(feedName,
 		pindexFirst.IndexName, pindexFirst.IndexUUID,
 		pindexFirst.SourceType, pindexFirst.SourceName, pindexFirst.SourceUUID,
-		streams)
+		dests)
 }
 
 func (mgr *Manager) stopFeed(feed Feed) error {
@@ -387,7 +383,7 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 	}
 
 	// NOTE: We're depending on feed to synchronously close, so we
-	// know it'll no longer be sending to any of its streams anymore.
+	// know it'll no longer be sending to any of its dests anymore.
 	return feed.Close()
 }
 
@@ -402,32 +398,32 @@ func (mgr *Manager) stopFeed(feed Feed) error {
 
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID string,
-	streams map[string]Stream) error {
+	dests map[string]Dest) error {
 	if sourceType == "couchbase" ||
 		sourceType == "couchbase-dcp" {
 		return mgr.startDCPFeed(feedName, indexName, indexUUID,
-			sourceName, sourceUUID, streams)
+			sourceName, sourceUUID, dests)
 	}
 
 	if sourceType == "couchbase-tap" {
 		return mgr.startTAPFeed(feedName, indexName, indexUUID,
-			sourceName, sourceUUID, streams)
+			sourceName, sourceUUID, dests)
 	}
-	if sourceType == "simple" {
-		return mgr.startSimpleFeed(feedName, streams)
+	if sourceType == "dest" {
+		return mgr.startDestFeed(feedName, dests)
 	}
 
 	if sourceType == "nil" {
-		return mgr.registerFeed(NewNILFeed(feedName, streams))
+		return mgr.registerFeed(NewNILFeed(feedName, dests))
 	}
 
 	return fmt.Errorf("error: startFeed() got unknown source type: %s", sourceType)
 }
 
 func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
-	bucketName, bucketUUID string, streams map[string]Stream) error {
+	bucketName, bucketUUID string, dests map[string]Dest) error {
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, BasicPartitionFunc, streams)
+		bucketName, bucketUUID, BasicPartitionFunc, dests)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare DCP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -445,9 +441,9 @@ func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
 }
 
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
-	bucketName, bucketUUID string, streams map[string]Stream) error {
+	bucketName, bucketUUID string, dests map[string]Dest) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, BasicPartitionFunc, streams)
+		bucketName, bucketUUID, BasicPartitionFunc, dests)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -464,14 +460,14 @@ func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 	return nil
 }
 
-func (mgr *Manager) startSimpleFeed(feedName string,
-	streams map[string]Stream) error {
-	feed, err := NewSimpleFeed(feedName, make(Stream), BasicPartitionFunc, streams)
+func (mgr *Manager) startDestFeed(feedName string,
+	dests map[string]Dest) error {
+	feed, err := NewDestFeed(feedName, BasicPartitionFunc, dests)
 	if err != nil {
 		return err
 	}
 	if err = feed.Start(); err != nil {
-		return fmt.Errorf("error: could not start simple feed, server: %s, err: %v",
+		return fmt.Errorf("error: could not start dest feed, server: %s, err: %v",
 			mgr.server, err)
 	}
 	if err = mgr.registerFeed(feed); err != nil {

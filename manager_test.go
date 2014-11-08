@@ -133,7 +133,7 @@ func TestManagerRestart(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("simple", "default", "123", sourceParams,
+	if err := m.CreateIndex("dest", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
@@ -170,11 +170,11 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("simple", "default", "123", sourceParams,
+	if err := m.CreateIndex("dest", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "default", "123", sourceParams,
+	if err := m.CreateIndex("dest", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
@@ -232,7 +232,6 @@ func TestManagerRegisterPIndex(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected NewPIndex() to work")
 	}
-	defer close(p.Stream)
 	px := m.unregisterPIndex(p.Name)
 	if px != nil {
 		t.Errorf("expected unregisterPIndex() on newborn manager to fail")
@@ -756,7 +755,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 	if err := mgr.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "simple",
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
 		"sourceName", "sourceUUID", nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for simple sourceType")
@@ -769,10 +768,10 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 	if !exists || f.Name() != "feedName" {
 		t.Errorf("expected a feed")
 	}
-	if _, ok := f.(*SimpleFeed); !ok {
+	if _, ok := f.(*DestFeed); !ok {
 		t.Errorf("expected a SimpleFeed")
 	}
-	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "simple",
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
 		"sourceName", "sourceUUID", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
@@ -852,7 +851,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
+	if err := m.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
@@ -899,6 +898,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 
 	meh := &TestMEH{}
 	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", meh)
+
 	err := m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
 	if err != nil {
 		t.Errorf("expected first start to work")
@@ -911,24 +911,11 @@ func TestManagerReStartPIndex(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected close+restart pindex to work")
 	}
-	err = m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
-	if err == nil {
-		t.Errorf("expected unclosed restart of different plan pindex to false, err: %v", err)
-	}
-	err = m.startPIndex(&PlanPIndex{
-		Name:      "p",
-		IndexType: "bleve",
-		IndexName: "i",
-		IndexUUID: "different",
-	})
-	if err == nil {
-		t.Errorf("expected unclosed restart of different plan pindex to false, err: %v", err)
-	}
 }
 
 func testManagerSimpleFeed(t *testing.T,
 	sourceParams string, planParams PlanParams,
-	andThen func(*Manager, *SimpleFeed, *TestMEH)) {
+	andThen func(*Manager, *DestFeed, *TestMEH)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
@@ -937,7 +924,7 @@ func testManagerSimpleFeed(t *testing.T,
 	if err := m.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
+	if err := m.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
@@ -956,15 +943,12 @@ func testManagerSimpleFeed(t *testing.T,
 	if !exists || feed == nil {
 		t.Errorf("expected there to be feed: %s", feedName)
 	}
-	sf, ok := feed.(*SimpleFeed)
+	sf, ok := feed.(*DestFeed)
 	if !ok || sf == nil {
 		t.Errorf("expected feed to be simple")
 	}
-	if sf.Source() == nil {
-		t.Errorf("expected simple feed source to be there")
-	}
-	if sf.Streams() == nil {
-		t.Errorf("expected simple feed streams to be there")
+	if sf.Dests() == nil {
+		t.Errorf("expected simple feed dests to be there")
 	}
 	andThen(m, sf, meh)
 }
@@ -972,7 +956,7 @@ func testManagerSimpleFeed(t *testing.T,
 func TestManagerCreateSimpleFeed(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
 			err := sf.Close()
 			if err != nil {
 				t.Errorf("expected simple feed close to work")
@@ -980,93 +964,54 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 		})
 }
 
-func TestManagerSimpleFeedCloseSource(t *testing.T) {
-	sourceParams := ""
-	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
-			close(sf.Source())
-
-			// Next, let the feed run a bit to handle the close().
-			runtime.Gosched()
-
-			err := sf.Close()
-			if err != nil {
-				t.Errorf("expected simple feed close after source close to work")
-			}
-		})
-}
-
 func TestBasicStreamMutations(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			if len(sf.Streams()) != 1 {
-				t.Errorf("expected just 1 stream")
+			if len(sf.Dests()) != 1 {
+				t.Errorf("expected just 1 dest")
 			}
-			s := sf.Source()
-			dch := make(chan error)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_UPDATE,
-				Key:    []byte("hello"),
-				Val:    []byte("{}"),
-				DoneCh: dch,
-			}
-			err := <-dch
+
+			partition := ""
+			key := []byte("hello")
+			seq := uint64(0)
+			val := []byte("{}")
+			err := sf.OnDataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_UPDATE,
-				Key:    []byte("goodbye"),
-				Val:    []byte("{}"),
-				DoneCh: dch,
-			}
-			err = <-dch
+
+			key = []byte("goodbye")
+			val = []byte("{}")
+			err = sf.OnDataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_NOOP,
-				Key:    []byte("ping"),
-				DoneCh: dch,
-			}
-			err = <-dch
-			if err != nil {
-				t.Errorf("expected no error to NOOP, err: %v", err)
-			}
+
 			n, err := bindex.DocCount()
 			if n != 2 {
 				t.Errorf("expected 2 docs in bindex, got: %d", n)
 			}
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_DELETE,
-				Key:    []byte("goodbye"),
-				DoneCh: dch,
-			}
-			err = <-dch
+
+			key = []byte("goodbye")
+			err = sf.OnDataDelete(partition, key, seq)
 			if err != nil {
 				t.Errorf("expected no error to DELETE, err: %v", err)
 			}
+
 			n, err = bindex.DocCount()
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex, got: %d", n)
 			}
+
 			mehCh := make(chan bool, 10)
 			meh.ch = mehCh
-			dch = make(chan error, 1)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_ROLLBACK,
-				DoneCh: dch,
-			}
-			err = <-dch
+			err = sf.Rollback(partition, seq)
 			if err != nil {
 				t.Errorf("expected no error to ROLLBACK, err: %v", err)
 			}
@@ -1102,44 +1047,30 @@ func TestBasicStreamMutations(t *testing.T) {
 func TestStreamGetSetMeta(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			if len(sf.Streams()) != 1 {
-				t.Errorf("expected just 1 stream")
+			if len(sf.Dests()) != 1 {
+				t.Errorf("expected just 1 dest")
 			}
-			s := sf.Source()
-			dch := make(chan error)
-			mch := make(chan []byte, 1)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_GET_META,
-				Key:    []byte("dinner"),
-				DoneCh: dch,
-				Misc:   mch,
-			}
-			err := <-dch
+
+			partition := "0"
+			v, lastSeq, err := sf.GetOpaque(partition)
 			if err != nil {
-				t.Errorf("expected no error to update, err: %v", err)
+				t.Errorf("expected no error to get, err: %v", err)
 			}
-			v, ok := <-mch
-			if !ok || len(v) != 0 {
-				t.Errorf("expected []byte{} for dinner, got: %#v", v)
+			if v != nil {
+				t.Errorf("expected []byte{nil} for get, got: %s", v)
 			}
 			n, err := bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_SET_META,
-				Key:    []byte("dinner"),
-				Val:    []byte("cake"),
-				DoneCh: dch,
-			}
-			err = <-dch
+
+			err = sf.SetOpaque(partition, []byte("dinner"))
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1147,21 +1078,16 @@ func TestStreamGetSetMeta(t *testing.T) {
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
-			dch = make(chan error)
-			mch = make(chan []byte, 1)
-			s <- &StreamRequest{
-				Op:     STREAM_OP_GET_META,
-				Key:    []byte("dinner"),
-				DoneCh: dch,
-				Misc:   mch,
-			}
-			err = <-dch
+
+			v, lastSeq, err = sf.GetOpaque(partition)
 			if err != nil {
-				t.Errorf("expected no error to update, err: %v", err)
+				t.Errorf("expected no error to get, err: %v", err)
 			}
-			v = <-mch
-			if string(v) != "cake" {
-				t.Errorf("expected cake for dinner")
+			if string(v) != "dinner" {
+				t.Errorf("expected dinner")
+			}
+			if lastSeq != 0 {
+				t.Errorf("expected 0 lastSeq")
 			}
 			n, err = bindex.DocCount()
 			if n != 0 {
@@ -1173,46 +1099,30 @@ func TestStreamGetSetMeta(t *testing.T) {
 func TestMultiStreamGetSetMeta(t *testing.T) {
 	sourceParams := "{\"numPartitions\":2}"
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *SimpleFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
 				t.Errorf("expected bleve.Index")
 			}
-			if len(sf.Streams()) != 2 {
-				t.Errorf("expected 2 entries in streams")
+			if len(sf.Dests()) != 2 {
+				t.Errorf("expected 2 entries in dests")
 			}
-			s := sf.Source()
-			dch := make(chan error)
-			mch := make(chan []byte, 1)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_GET_META,
-				Partition: "0",
-				Key:       []byte("dinner"),
-				DoneCh:    dch,
-				Misc:      mch,
-			}
-			err := <-dch
+
+			partition := "0"
+			v, lastSeq, err := sf.GetOpaque(partition)
 			if err != nil {
-				t.Errorf("expected no error to update, err: %v", err)
+				t.Errorf("expected no error to get, err: %v", err)
 			}
-			v, ok := <-mch
-			if !ok || len(v) != 0 {
-				t.Errorf("expected []byte{} for dinner, got: %#v", v)
+			if v != nil {
+				t.Errorf("expected nil []byte, got: %#v", v)
 			}
 			n, err := bindex.DocCount()
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_SET_META,
-				Partition: "0",
-				Key:       []byte("dinner"),
-				Val:       []byte("cake"),
-				DoneCh:    dch,
-			}
-			err = <-dch
+
+			err = sf.SetOpaque(partition, []byte("dinner"))
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1220,22 +1130,16 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
-			dch = make(chan error)
-			mch = make(chan []byte, 1)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_GET_META,
-				Partition: "0",
-				Key:       []byte("dinner"),
-				DoneCh:    dch,
-				Misc:      mch,
-			}
-			err = <-dch
+
+			v, lastSeq, err = sf.GetOpaque(partition)
 			if err != nil {
-				t.Errorf("expected no error to update, err: %v", err)
+				t.Errorf("expected no error to get, err: %v", err)
 			}
-			v = <-mch
-			if string(v) != "cake" {
-				t.Errorf("expected cake for dinner")
+			if string(v) != "dinner" {
+				t.Errorf("expected dinner, got: %s", v)
+			}
+			if lastSeq != 0 {
+				t.Errorf("expected 0 lastSeq")
 			}
 			n, err = bindex.DocCount()
 			if n != 0 {
@@ -1248,8 +1152,8 @@ func testPartitioning(t *testing.T,
 	sourceParams string,
 	planParams PlanParams,
 	expectedNumPIndexes int,
-	expectedNumStreams int,
-	andThen func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex)) {
+	expectedNumDests int,
+	andThen func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1260,7 +1164,7 @@ func testPartitioning(t *testing.T,
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 
-	if err := mgr.CreateIndex("simple", "sourceName", "sourceUUID", sourceParams,
+	if err := mgr.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected CreateIndex() to work")
 	}
@@ -1279,12 +1183,12 @@ func testPartitioning(t *testing.T,
 	for _, f := range feeds {
 		feed = f
 	}
-	sf, ok := feed.(*SimpleFeed)
+	sf, ok := feed.(*DestFeed)
 	if !ok || sf == nil {
 		t.Errorf("expected feed to be simple")
 	}
-	if len(sf.Streams()) != expectedNumStreams {
-		t.Errorf("expected %d streams", expectedNumStreams)
+	if len(sf.Dests()) != expectedNumDests {
+		t.Errorf("expected %d dests", expectedNumDests)
 	}
 
 	if andThen != nil {
@@ -1330,7 +1234,7 @@ func TestPartitioningMutations(t *testing.T) {
 	expectedNumStreams := 2
 	testPartitioning(t, sourceParams, planParams,
 		expectedNumPIndexes, expectedNumStreams,
-		func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex) {
+		func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex) {
 			var pindex0 *PIndex
 			var pindex1 *PIndex
 			for _, pindex := range pindexes {
@@ -1364,16 +1268,11 @@ func TestPartitioningMutations(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
 
-			s := sf.Source()
-			dch := make(chan error)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_UPDATE,
-				Partition: "0",
-				Key:       []byte("hello"),
-				Val:       []byte("{}"),
-				DoneCh:    dch,
-			}
-			err = <-dch
+			partition := "0"
+			key := []byte("hello")
+			seq := uint64(0)
+			val := []byte("{}")
+			err = sf.OnDataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1397,7 +1296,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 	expectedNumStreamsEntries := 3
 	testPartitioning(t, sourceParams, planParams,
 		expectedNumPIndexes, expectedNumStreamsEntries,
-		func(mgr *Manager, sf *SimpleFeed, pindexes map[string]*PIndex) {
+		func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex) {
 			var pindex0_0 *PIndex
 			var pindex0_1 *PIndex
 			var pindex1 *PIndex
@@ -1438,16 +1337,11 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
 
-			s := sf.Source()
-			dch := make(chan error)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_UPDATE,
-				Partition: "0",
-				Key:       []byte("hello"),
-				Val:       []byte("{}"),
-				DoneCh:    dch,
-			}
-			err = <-dch
+			partition := "0"
+			key := []byte("hello")
+			seq := uint64(0)
+			val := []byte("{}")
+			err = sf.OnDataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1460,15 +1354,10 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
 
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_UPDATE,
-				Partition: "2",
-				Key:       []byte("hi"),
-				Val:       []byte("{}"),
-				DoneCh:    dch,
-			}
-			err = <-dch
+			partition = "2"
+			key = []byte("hi")
+			val = []byte("{}")
+			err = sf.OnDataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1481,13 +1370,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected 1 docs in bindex1, got: %d", n)
 			}
 
-			dch = make(chan error)
-			s <- &StreamRequest{
-				Op:        STREAM_OP_ROLLBACK,
-				Partition: "1",
-				DoneCh:    dch,
-			}
-			err = <-dch
+			err = sf.Rollback("1", 0)
 			if err != nil {
 				t.Errorf("expected no error to rollback, err: %v", err)
 			}

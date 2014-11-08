@@ -38,30 +38,38 @@ type PIndex struct {
 	SourcePartitions string     `json:"sourcePartitions"`
 	Path             string     `json:"-"` // Transient, not persisted.
 	Impl             PIndexImpl `json:"-"` // Transient, not persisted.
-	Stream           Stream     `json:"-"` // Transient, not persisted.
+	Dest             Dest       `json:"-"` // Transient, not persisted.
+}
+
+func (p *PIndex) Close() error {
+	return p.Impl.Close()
 }
 
 type PIndexImpl interface {
 	Close() error
 }
 
-type PIndexManager interface {
-	ClosePIndex(pindex *PIndex) error
-	Kick(msg string)
-}
-
-func NewPIndex(mgr PIndexManager, name, uuid,
+func NewPIndex(mgr *Manager, name, uuid,
 	indexType, indexName, indexUUID, indexSchema,
 	sourceType, sourceName, sourceUUID, sourceParams, sourcePartitions string,
 	path string) (*PIndex, error) {
-	impl, err := NewPIndexImpl(indexType, indexSchema, path)
+	var pindex *PIndex
+
+	restart := func() {
+		go func() {
+			mgr.ClosePIndex(pindex)
+			mgr.Kick("restart-pindex")
+		}()
+	}
+
+	impl, dest, err := NewPIndexImpl(indexType, indexSchema, path, restart)
 	if err != nil {
 		os.RemoveAll(path)
 		return nil, fmt.Errorf("error: new indexType: %s, indexSchema: %s,"+
 			" path: %s, err: %s", indexType, indexSchema, path, err)
 	}
 
-	pindex := &PIndex{
+	pindex = &PIndex{
 		Name:             name,
 		UUID:             uuid,
 		IndexType:        indexType,
@@ -75,7 +83,7 @@ func NewPIndex(mgr PIndexManager, name, uuid,
 		SourcePartitions: sourcePartitions,
 		Path:             path,
 		Impl:             impl,
-		Stream:           make(Stream),
+		Dest:             dest,
 	}
 	buf, err := json.Marshal(pindex)
 	if err != nil {
@@ -88,19 +96,16 @@ func NewPIndex(mgr PIndexManager, name, uuid,
 		buf, 0600)
 	if err != nil {
 		impl.Close()
-
 		os.RemoveAll(path)
-
 		return nil, fmt.Errorf("error: could not save PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
 	}
 
-	go pindex.Run(mgr)
 	return pindex, nil
 }
 
 // NOTE: Path argument must be a directory.
-func OpenPIndex(mgr PIndexManager, path string) (*PIndex, error) {
+func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
 		return nil, fmt.Errorf("error: could not load PINDEX_META_FILENAME,"+
@@ -114,7 +119,14 @@ func OpenPIndex(mgr PIndexManager, path string) (*PIndex, error) {
 			" path: %s, err: %v", path, err)
 	}
 
-	impl, err := OpenPIndexImpl(pindex.IndexType, path)
+	restart := func() {
+		go func() {
+			mgr.ClosePIndex(pindex)
+			mgr.Kick("restart-pindex")
+		}()
+	}
+
+	impl, dest, err := OpenPIndexImpl(pindex.IndexType, path, restart)
 	if err != nil {
 		return nil, fmt.Errorf("error: could not open indexType: %s, path: %s, err: %v",
 			pindex.IndexType, path, err)
@@ -122,9 +134,8 @@ func OpenPIndex(mgr PIndexManager, path string) (*PIndex, error) {
 
 	pindex.Path = path
 	pindex.Impl = impl
-	pindex.Stream = make(Stream)
+	pindex.Dest = dest
 
-	go pindex.Run(mgr)
 	return pindex, nil
 }
 

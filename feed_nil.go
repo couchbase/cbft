@@ -12,15 +12,15 @@
 package main
 
 type NILFeed struct {
-	name    string
-	streams map[string]Stream
+	name  string
+	dests map[string]Dest
 }
 
-// A NILFeed never feeds any data to its streams.
-func NewNILFeed(name string, streams map[string]Stream) *NILFeed {
+// A NILFeed never feeds any data to its dests.
+func NewNILFeed(name string, dests map[string]Dest) *NILFeed {
 	return &NILFeed{
-		name:    name,
-		streams: streams,
+		name:  name,
+		dests: dests,
 	}
 }
 
@@ -36,6 +36,6 @@ func (t *NILFeed) Close() error {
 	return nil
 }
 
-func (t *NILFeed) Streams() map[string]Stream {
-	return t.streams
+func (t *NILFeed) Dests() map[string]Dest {
+	return t.dests
 }

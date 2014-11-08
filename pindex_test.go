@@ -37,7 +37,7 @@ func TestNewPIndex(t *testing.T) {
 	if pindex == nil || err != nil {
 		t.Errorf("expected NewPIndex to work")
 	}
-	close(pindex.Stream)
+	pindex.Close()
 }
 
 func TestNewPIndexEmptyJSON(t *testing.T) {
@@ -70,18 +70,25 @@ func TestNewPIndexImpl(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	pindexImpl, err := NewPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE", "", emptyDir)
-	if err == nil || pindexImpl != nil {
+	restart := func() {
+		t.Errorf("not expecting a restart")
+	}
+
+	indexSchema := ""
+
+	pindexImpl, dest, err := NewPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE",
+		indexSchema, emptyDir, restart)
+	if err == nil || pindexImpl != nil || dest != nil {
 		t.Errorf("expected err on unknown impl type")
 	}
 
-	pindexImpl, err = OpenPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE", emptyDir)
-	if err == nil || pindexImpl != nil {
+	pindexImpl, dest, err = OpenPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE", emptyDir, restart)
+	if err == nil || pindexImpl != nil || dest != nil {
 		t.Errorf("expected err on unknown impl type")
 	}
 
-	pindexImpl, err = NewPIndexImpl("bleve", "", emptyDir)
-	if err == nil || pindexImpl != nil {
+	pindexImpl, dest, err = NewPIndexImpl("bleve", indexSchema, emptyDir, restart)
+	if err == nil || pindexImpl != nil || dest != nil {
 		t.Errorf("expected err on existing dir")
 	}
 }

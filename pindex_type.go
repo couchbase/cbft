@@ -12,37 +12,186 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"os"
+	"sync"
 
 	"github.com/blevesearch/bleve"
+
+	log "github.com/couchbaselabs/clog"
 )
 
-func NewPIndexImpl(indexType, indexSchema, path string) (PIndexImpl, error) {
+func NewPIndexImpl(indexType, indexSchema, path string, restart func()) (
+	PIndexImpl, Dest, error) {
 	if indexType == "bleve" {
 		bindexMapping := bleve.NewIndexMapping()
 		if len(indexSchema) > 0 {
 			if err := json.Unmarshal([]byte(indexSchema), &bindexMapping); err != nil {
-				return nil, fmt.Errorf("error: could not parse index mapping: %v", err)
+				return nil, nil, fmt.Errorf("error: parse bleve index mapping: %v", err)
 			}
 		}
 
 		bindex, err := bleve.New(path, bindexMapping)
 		if err != nil {
-			return nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
+			return nil, nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
 				path, err)
 		}
 
-		return bindex, err
+		return bindex, NewBleveDest(path, bindex, restart), err
 	}
 
-	return nil, fmt.Errorf("error: NewPIndexImpl got unknown indexType: %s", indexType)
+	return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s", indexType)
 }
 
-func OpenPIndexImpl(indexType, path string) (PIndexImpl, error) {
+func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
 	if indexType == "bleve" {
-		return bleve.Open(path)
+		bindex, err := bleve.Open(path)
+		if err != nil {
+			return nil, nil, err
+		}
+		return bindex, NewBleveDest(path, bindex, restart), err
 	}
 
-	return nil, fmt.Errorf("error: OpenPIndexImpl got unknown indexType: %s", indexType)
+	return nil, nil, fmt.Errorf("error: OpenPIndexImpl indexType: %s", indexType)
+}
+
+// ---------------------------------------------------------
+
+type BleveDest struct {
+	path    string
+	restart func()
+
+	m      sync.Mutex
+	bindex bleve.Index
+	seqs   map[string]uint64 // To track max seq #'s we saw per partition.
+
+}
+
+func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
+	return &BleveDest{
+		path:    path,
+		restart: restart,
+		bindex:  bindex,
+		seqs:    map[string]uint64{},
+	}
+}
+
+// TODO: use batching.
+
+func (t *BleveDest) OnDataUpdate(partition string,
+	key []byte, seq uint64, val []byte) error {
+	log.Printf("bleve dest update, partition: %s, key: %s, seq: %d",
+		partition, key, seq)
+
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	err := t.bindex.Index(string(key), val)
+	if err != nil {
+		return err
+	}
+
+	return t.updateSeqUnlocked(partition, seq)
+}
+
+func (t *BleveDest) OnDataDelete(partition string,
+	key []byte, seq uint64) error {
+	log.Printf("bleve dest delete, partition: %s, key: %s, seq: %d",
+		partition, key, seq)
+
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	err := t.bindex.Delete(string(key))
+	if err != nil {
+		return err
+	}
+
+	return t.updateSeqUnlocked(partition, seq)
+}
+
+func (t *BleveDest) updateSeqUnlocked(partition string, seq uint64) error {
+	if t.seqs[partition] < seq {
+		t.seqs[partition] = seq
+
+		seqBuf := make([]byte, 8)
+		binary.BigEndian.PutUint64(seqBuf, seq)
+		return t.bindex.SetInternal([]byte(partition), seqBuf)
+	}
+
+	return nil
+}
+
+func (t *BleveDest) OnSnapshotStart(partition string,
+	snapStart, snapEnd uint64) error {
+	log.Printf("bleve dest snapshot-start, partition: %s, snapStart: %d, snapEnd: %d",
+		partition, snapStart, snapEnd)
+
+	return nil // TODO: optimize batching on snapshot start.
+}
+
+func (t *BleveDest) SetOpaque(partition string,
+	value []byte) error {
+	log.Printf("bleve dest set-opaque, partition: %s, value: %s",
+		partition, value)
+
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	return t.bindex.SetInternal([]byte("o:"+partition), value)
+}
+
+func (t *BleveDest) GetOpaque(partition string) (
+	value []byte, lastSeq uint64, err error) {
+	log.Printf("bleve dest get-opaque, partition: %s", partition)
+
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	value, err = t.bindex.GetInternal([]byte("o:" + partition))
+	if err != nil || value == nil {
+		return nil, 0, err
+	}
+
+	buf, err := t.bindex.GetInternal([]byte(partition))
+	if err != nil || buf == nil {
+		return value, 0, err
+	}
+	if len(buf) < 8 {
+		return nil, 0, err
+	}
+
+	return value, binary.BigEndian.Uint64(buf[0:8]), nil
+}
+
+func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
+	log.Printf("bleve dest get-opaque, partition: %s, rollbackSeq: %d",
+		partition, rollbackSeq)
+
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	// TODO: Implement partial rollback one day.  Implementation
+	// sketch: we expect bleve to one day to provide an additional
+	// Snapshot() and Rollback() API, where Snapshot() returns some
+	// opaque and persistable snapshot ID ("SID"), which cbft can
+	// occasionally record into the bleve's Get/SetInternal() "side"
+	// storage.  A stream rollback operation then needs to loop
+	// through appropriate candidate SID's until a Rollback(SID)
+	// succeeds.  Else, we eventually devolve down to
+	// restarting/rebuilding everything from scratch or zero.
+	//
+	// For now, always rollback to zero, in which we close the
+	// pindex and have the janitor rebuild from scratch.
+	t.seqs = map[string]uint64{}
+
+	t.bindex.Close()
+
+	os.RemoveAll(t.path)
+
+	t.restart()
+
+	return nil
 }

@@ -26,8 +26,8 @@ type TAPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	pf         StreamPartitionFunc
-	streams    map[string]Stream
+	pf         DestPartitionFunc
+	dests      map[string]Dest
 	closeCh    chan bool
 	doneCh     chan bool
 	doneErr    error
@@ -35,7 +35,7 @@ type TAPFeed struct {
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
-	pf StreamPartitionFunc, streams map[string]Stream) (*TAPFeed, error) {
+	pf DestPartitionFunc, dests map[string]Dest) (*TAPFeed, error) {
 	return &TAPFeed{
 		name:       name,
 		url:        url,
@@ -43,7 +43,7 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
 		pf:         pf,
-		streams:    streams,
+		dests:      dests,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
 		doneErr:    nil,
@@ -99,7 +99,7 @@ func (t *TAPFeed) feed() (int, error) {
 
 	args := memcached.TapArguments{}
 
-	vbuckets, err := ParsePartitionsToVBucketIds(t.streams)
+	vbuckets, err := ParsePartitionsToVBucketIds(t.dests)
 	if err != nil {
 		return -1, err
 	}
@@ -140,25 +140,19 @@ loop:
 				" poolName: %s, bucketName: %s, opcode: %s, req: %#v",
 				t.url, t.poolName, t.bucketName, req.Opcode, req)
 
-			partition, stream, err :=
-				VBucketIdToPartitionStream(t.pf, t.streams, req.VBucket, req.Key)
+			partition, dest, err :=
+				VBucketIdToPartitionDest(t.pf, t.dests, req.VBucket, req.Key)
 			if err != nil {
 				return 1, err
 			}
 
 			if req.Opcode == memcached.TapMutation {
-				stream <- &StreamRequest{
-					Op:        STREAM_OP_UPDATE,
-					Partition: partition,
-					Key:       req.Key,
-					Val:       req.Value,
-				}
+				err = dest.OnDataUpdate(partition, req.Key, 0, req.Value)
 			} else if req.Opcode == memcached.TapDeletion {
-				stream <- &StreamRequest{
-					Op:        STREAM_OP_DELETE,
-					Partition: partition,
-					Key:       req.Key,
-				}
+				err = dest.OnDataDelete(partition, req.Key, 0)
+			}
+			if err != nil {
+				return 1, err
 			}
 		}
 	}
@@ -178,13 +172,13 @@ func (t *TAPFeed) Close() error {
 	return t.doneErr
 }
 
-func (t *TAPFeed) Streams() map[string]Stream {
-	return t.streams
+func (t *TAPFeed) Dests() map[string]Dest {
+	return t.dests
 }
 
-func ParsePartitionsToVBucketIds(streams map[string]Stream) ([]uint16, error) {
-	vbuckets := make([]uint16, 0, len(streams))
-	for partition, _ := range streams {
+func ParsePartitionsToVBucketIds(dests map[string]Dest) ([]uint16, error) {
+	vbuckets := make([]uint16, 0, len(dests))
+	for partition, _ := range dests {
 		if partition != "" {
 			vbId, err := strconv.Atoi(partition)
 			if err != nil {
@@ -197,21 +191,21 @@ func ParsePartitionsToVBucketIds(streams map[string]Stream) ([]uint16, error) {
 	return vbuckets, nil
 }
 
-func VBucketIdToPartitionStream(pf StreamPartitionFunc,
-	streams map[string]Stream, vbucketId uint16, key []byte) (
-	partition string, stream Stream, err error) {
+func VBucketIdToPartitionDest(pf DestPartitionFunc,
+	dests map[string]Dest, vbucketId uint16, key []byte) (
+	partition string, dest Dest, err error) {
 	if vbucketId < uint16(len(vbucketIdStrings)) {
 		partition = vbucketIdStrings[vbucketId]
 	}
 	if partition == "" {
 		partition = fmt.Sprintf("%d", vbucketId)
 	}
-	stream, err = pf(key, partition, streams)
+	dest, err = pf(partition, key, dests)
 	if err != nil {
-		return "", nil, fmt.Errorf("error: VBucketIdToPartitionStream,"+
+		return "", nil, fmt.Errorf("error: VBucketIdToPartitionDest,"+
 			" partition func, vbucketId: %d, err: %v", vbucketId, err)
 	}
-	return partition, stream, err
+	return partition, dest, err
 }
 
 var vbucketIdStrings []string

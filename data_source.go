@@ -19,7 +19,7 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
-type SimpleSourceParams struct {
+type DestSourceParams struct {
 	NumPartitions int `json:"numPartitions"`
 }
 
@@ -55,16 +55,16 @@ func DataSourcePartitions(sourceType, sourceName,
 		return rv, nil
 	}
 
-	if sourceType == "simple" {
-		ssp := &SimpleSourceParams{}
+	if sourceType == "dest" {
+		dsp := &DestSourceParams{}
 		if sourceParams != "" {
-			err := json.Unmarshal([]byte(sourceParams), ssp)
+			err := json.Unmarshal([]byte(sourceParams), dsp)
 			if err != nil {
-				return nil, fmt.Errorf("error: DataSourcePartitions/simple"+
+				return nil, fmt.Errorf("error: DataSourcePartitions/dest"+
 					" could not parse sourceParams: %s, err: %v", sourceParams, err)
 			}
 		}
-		numPartitions := ssp.NumPartitions
+		numPartitions := dsp.NumPartitions
 		rv := make([]string, numPartitions)
 		for i := 0; i < numPartitions; i++ {
 			rv[i] = strconv.Itoa(i)

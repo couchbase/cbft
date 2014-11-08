@@ -32,7 +32,7 @@ func (t *ErrorOnlyFeed) Close() error {
 	return fmt.Errorf("ErrorOnlyFeed Close() invoked")
 }
 
-func (t *ErrorOnlyFeed) Streams() map[string]Stream {
+func (t *ErrorOnlyFeed) Dests() map[string]Dest {
 	return nil
 }
 
@@ -41,18 +41,18 @@ func TestParsePartitionsToVBucketIds(t *testing.T) {
 	if err != nil || v == nil || len(v) != 0 {
 		t.Errorf("expected empty")
 	}
-	v, err = ParsePartitionsToVBucketIds(map[string]Stream{})
+	v, err = ParsePartitionsToVBucketIds(map[string]Dest{})
 	if err != nil || v == nil || len(v) != 0 {
 		t.Errorf("expected empty")
 	}
-	v, err = ParsePartitionsToVBucketIds(map[string]Stream{"123": nil})
+	v, err = ParsePartitionsToVBucketIds(map[string]Dest{"123": nil})
 	if err != nil || v == nil || len(v) != 1 {
 		t.Errorf("expected one entry")
 	}
 	if v[0] != uint16(123) {
 		t.Errorf("expected 123")
 	}
-	v, err = ParsePartitionsToVBucketIds(map[string]Stream{"!bad": nil})
+	v, err = ParsePartitionsToVBucketIds(map[string]Dest{"!bad": nil})
 	if err == nil || v != nil {
 		t.Errorf("expected error")
 	}

@@ -28,15 +28,13 @@ type DCPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	pf         StreamPartitionFunc
-	streams    map[string]Stream
+	pf         DestPartitionFunc
+	dests      map[string]Dest
 	bds        cbdatasource.BucketDataSource
 
 	m       sync.Mutex
 	closed  bool
 	lastErr error
-
-	seqs map[uint16]uint64 // To track max seq #'s we received per vbucketId.
 
 	numError         uint64
 	numUpdate        uint64
@@ -48,8 +46,8 @@ type DCPFeed struct {
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
-	pf StreamPartitionFunc, streams map[string]Stream) (*DCPFeed, error) {
-	vbucketIds, err := ParsePartitionsToVBucketIds(streams)
+	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
+	vbucketIds, err := ParsePartitionsToVBucketIds(dests)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
 		pf:         pf,
-		streams:    streams,
+		dests:      dests,
 	}
 
 	feed.bds, err = cbdatasource.NewBucketDataSource(
@@ -103,8 +101,8 @@ func (t *DCPFeed) Close() error {
 	return t.bds.Close()
 }
 
-func (t *DCPFeed) Streams() map[string]Stream {
-	return t.streams
+func (t *DCPFeed) Dests() map[string]Dest {
+	return t.dests
 }
 
 // --------------------------------------------------------
@@ -123,26 +121,17 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	// log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
 	// r.name, vbucketId, key, seq, req)
 
-	partition, stream, err :=
-		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, key)
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
 	if err != nil {
 		return err
 	}
 
 	r.m.Lock()
 	r.numUpdate += 1
-	r.updateSeqUnlocked(vbucketId, seq)
 	r.m.Unlock()
 
-	stream <- &StreamRequest{
-		Op:        STREAM_OP_UPDATE,
-		Partition: partition,
-		SeqNo:     seq,
-		Key:       req.Key,
-		Val:       req.Body,
-	}
-
-	return nil
+	return dest.OnDataUpdate(partition, key, seq, req.Body)
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
@@ -150,34 +139,17 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	// log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
 	// r.name, vbucketId, key, seq, req)
 
-	partition, stream, err :=
-		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, key)
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
 	if err != nil {
 		return err
 	}
 
 	r.m.Lock()
 	r.numDelete += 1
-	r.updateSeqUnlocked(vbucketId, seq)
 	r.m.Unlock()
 
-	stream <- &StreamRequest{
-		Op:        STREAM_OP_DELETE,
-		Partition: partition,
-		SeqNo:     seq,
-		Key:       req.Key,
-	}
-
-	return nil
-}
-
-func (r *DCPFeed) updateSeqUnlocked(vbucketId uint16, seq uint64) {
-	if r.seqs == nil {
-		r.seqs = make(map[uint16]uint64)
-	}
-	if r.seqs[vbucketId] < seq {
-		r.seqs[vbucketId] = seq // Remember the max seq for GetMetaData().
-	}
+	return dest.OnDataDelete(partition, key, seq)
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
@@ -186,19 +158,25 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 		" snapStart: %d, snapEnd: %d, snapType: %d",
 		r.name, vbucketId, snapStart, snapEnd, snapType)
 
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
+	if err != nil {
+		return err
+	}
+
 	r.m.Lock()
 	r.numSnapshotStart += 1
 	r.m.Unlock()
 
-	return nil
+	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 	log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
 		" value: %s", r.name, vbucketId, value)
 
-	partition, stream, err :=
-		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 	if err != nil {
 		return err
 	}
@@ -207,56 +185,31 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 	r.numSetMetaData += 1
 	r.m.Unlock()
 
-	stream <- &StreamRequest{
-		Op:        STREAM_OP_SET_META,
-		Partition: partition,
-		Key:       []byte(partition),
-		Val:       value,
-	}
-
-	return nil
+	return dest.SetOpaque(partition, value)
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
 	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
 
-	partition, stream, err :=
-		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	r.m.Lock()
 	r.numGetMetaData += 1
-	if r.seqs != nil {
-		// TODO: Need to get this from stream instead of here.
-		lastSeq = r.seqs[vbucketId]
-	}
 	r.m.Unlock()
 
-	rvCh := make(chan []byte)
-	stream <- &StreamRequest{
-		Op:        STREAM_OP_GET_META,
-		Partition: partition,
-		Key:       []byte(partition),
-		Misc:      rvCh,
-	}
-	rv, exists := <-rvCh
-	if !exists {
-		return nil, 0, nil
-	}
-
-	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d, rv: %s", r.name, vbucketId, rv)
-
-	return rv, lastSeq, nil
+	return dest.GetOpaque(partition)
 }
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 	log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
 		" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
 
-	partition, stream, err :=
-		VBucketIdToPartitionStream(r.pf, r.streams, vbucketId, nil)
+	partition, dest, err :=
+		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 	if err != nil {
 		return err
 	}
@@ -265,11 +218,5 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 	r.numRollback += 1
 	r.m.Unlock()
 
-	doneCh := make(chan error)
-	stream <- &StreamRequest{
-		Op:        STREAM_OP_ROLLBACK,
-		DoneCh:    doneCh,
-		Partition: partition,
-	}
-	return <-doneCh
+	return dest.Rollback(partition, rollbackSeq)
 }

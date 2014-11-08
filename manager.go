@@ -289,8 +289,7 @@ func (mgr *Manager) DataDir() string {
 }
 
 // Returns the tags at process start, which may not be same as the
-// tags regsitered in the Cfg.  The tags in the Cfg should take
-// precedence.
+// tags regsitered in the Cfg.  The tags in Cfg take precedence.
 func (mgr *Manager) Tags() map[string]bool {
 	if mgr.tags == nil {
 		return nil

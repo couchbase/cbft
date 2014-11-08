@@ -15,7 +15,7 @@ type Feed interface {
 	Name() string
 	Start() error
 	Close() error
-	Streams() map[string]Stream // Key is partition identifier.
+	Dests() map[string]Dest // Key is partition identifier.
 }
 
 const FEED_SLEEP_MAX_MS = 10000
