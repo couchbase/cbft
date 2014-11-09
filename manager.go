@@ -197,6 +197,10 @@ func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
 	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "api-ClosePIndex", pindex)
 }
 
+func (mgr *Manager) RemovePIndex(pindex *PIndex) error {
+	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX, "api-RemovePIndex", pindex)
+}
+
 func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
