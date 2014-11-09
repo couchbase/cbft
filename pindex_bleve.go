@@ -13,8 +13,6 @@ package main
 
 import (
 	"encoding/binary"
-	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 
@@ -22,42 +20,6 @@ import (
 
 	log "github.com/couchbaselabs/clog"
 )
-
-func NewPIndexImpl(indexType, indexSchema, path string, restart func()) (
-	PIndexImpl, Dest, error) {
-	if indexType == "bleve" {
-		bindexMapping := bleve.NewIndexMapping()
-		if len(indexSchema) > 0 {
-			if err := json.Unmarshal([]byte(indexSchema), &bindexMapping); err != nil {
-				return nil, nil, fmt.Errorf("error: parse bleve index mapping: %v", err)
-			}
-		}
-
-		bindex, err := bleve.New(path, bindexMapping)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
-				path, err)
-		}
-
-		return bindex, NewBleveDest(path, bindex, restart), err
-	}
-
-	return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s", indexType)
-}
-
-func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
-	if indexType == "bleve" {
-		bindex, err := bleve.Open(path)
-		if err != nil {
-			return nil, nil, err
-		}
-		return bindex, NewBleveDest(path, bindex, restart), err
-	}
-
-	return nil, nil, fmt.Errorf("error: OpenPIndexImpl indexType: %s", indexType)
-}
-
-// ---------------------------------------------------------
 
 type BleveDest struct {
 	path    string
