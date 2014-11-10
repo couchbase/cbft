@@ -12,7 +12,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/couchbase/gomemcached"
@@ -92,7 +91,7 @@ func (t *DCPFeed) Close() error {
 	t.m.Lock()
 	if t.closed {
 		t.m.Unlock()
-		return fmt.Errorf("already closed")
+		return nil
 	}
 	t.closed = true
 	t.m.Unlock()
