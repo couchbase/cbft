@@ -15,15 +15,15 @@ import (
 	"net/http"
 )
 
-type GetLogsHandler struct {
+type GetLogHandler struct {
 	mr *MsgRing
 }
 
-func NewGetLogsHandler(mr *MsgRing) *GetLogsHandler {
-	return &GetLogsHandler{mr: mr}
+func NewGetLogHandler(mr *MsgRing) *GetLogHandler {
+	return &GetLogHandler{mr: mr}
 }
 
-func (h *GetLogsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *GetLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	messages := h.mr.Messages()
 	stringMessages := make([]string, len(messages))
 	for i, message := range messages {

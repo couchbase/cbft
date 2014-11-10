@@ -6,7 +6,7 @@ function LogsCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 	$scope.updateLogs = function(name, mapping) {
 		$scope.clearErrorMessage();
 		$scope.clearLogMessages();
-		$http.get('/api/logs').success(function(data) {
+		$http.get('/api/log').success(function(data) {
 			for(var i in data.messages) {
 				message = data.messages[i];
 				$scope.logMessages += $sce.trustAsHtml(message);

@@ -28,7 +28,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	})
 
 	// these are custom handlers for cbft
-	r.Handle("/api/logs", NewGetLogsHandler(mr))
+	r.Handle("/api/log", NewGetLogHandler(mr))
 	r.Handle("/api/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 
