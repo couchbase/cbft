@@ -8,7 +8,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
 	};
 
 	$scope.refreshIndexNames = function() {
-		$http.get('/api').success(function(data) {
+		$http.get('/api/index').success(function(data) {
             $scope.indexNames = data.indexes;
         }).
         error(function(data, code) {
@@ -21,7 +21,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
 			return;
 		}
 		$scope.clearErrorMessage();
-		$http.delete('/api/' + name).success(function(data) {
+		$http.delete('/api/index/' + name).success(function(data) {
 			$scope.refreshIndexNames();
 		}).
 		error(function(data, code) {
@@ -45,7 +45,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	$scope.indexDetails = null;
 
 	$scope.loadIndexDetails = function() {
-		$http.get('/api/' + $scope.indexName).success(function(data) {
+		$http.get('/api/index/' + $scope.indexName).success(function(data) {
             $scope.indexDetails = data;
             $scope.mappingFormatted = JSON.stringify(data.mapping, undefined, 2);
         }).
@@ -55,7 +55,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	};
 
 	$scope.loadIndexDocCount = function() {
-		$http.get('/api/' + $scope.indexName + '/_count').success(function(data) {
+		$http.get('/api/index/' + $scope.indexName + '/count').success(function(data) {
             $scope.indexDocCount = data.count;
         }).
         error(function(data, code) {
@@ -73,7 +73,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
 	$scope.indexDocument = function(id, body) {
 		$scope.clearErrorMessage();
-		$http.put('/api/' + $scope.indexName + "/" + id, body).success(function(data) {
+		$http.put('/api/index/' + $scope.indexName + "/doc/" + id, body).success(function(data) {
 			$scope.successMessage = "Indexed Document: " + id;
 		}).
 		error(function(data, code) {
@@ -83,7 +83,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
 	$scope.deleteDocument = function(id) {
 		$scope.clearErrorMessage();
-		$http.delete('/api/' + $scope.indexName + "/" + id).success(function(data) {
+		$http.delete('/api/index/' + $scope.indexName + "/" + id).success(function(data) {
 			$scope.successMessage = "Deleted Document: " + id;
 		}).
 		error(function(data, code) {
@@ -92,7 +92,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	};
 
     $scope.searchSyntax = function(query) {
-        $http.post('/api/' + $scope.indexName + '/_search', {
+        $http.post('/api/index/' + $scope.indexName + '/search', {
             "size": 10,
             "explain": true,
             "highlight":{},
@@ -167,7 +167,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
 	$scope.newIndexNamed = function(name, mapping) {
 		$scope.clearErrorMessage();
-		$http.put('/api/' + name, "").success(function(data) {
+		$http.put('/api/index/' + name, "").success(function(data) {
 			$location.path('/indexes/' + name);
 		}).
 		error(function(data, code) {

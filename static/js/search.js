@@ -10,7 +10,8 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $location.search('p', $scope.page);
         $scope.results = null;
         from = ($scope.page-1)*$scope.resultsPerPage;
-        $http.post('/api/' + $scope.indexName + '/_search', {
+        $http.post('/api/index/' + $scope.indexName + '/search', {
+            "indexName": $scope.indexName,
             "size": $scope.resultsPerPage,
             "from": from,
             "explain": true,

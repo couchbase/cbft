@@ -19,21 +19,21 @@ Running against local Couchbase Server
 
 ```./cbft -server http://localhost:8091 -wanted```
 
-Create a new index (for a bucket that already exists)
+Create a new index (for the default bucket)
 
-```curl -XPUT http://localhost:8095/api/default```
+```curl -XPUT http://localhost:8095/api/index/default```
 
 Check how many documents are indexed
 
-```curl http://localhost:8095/api/default/_count```
+```curl http://localhost:8095/api/index/default/count```
 
 Submit search query
 
-```curl -XPOST http://localhost:8095/api/default/_search -d curl -XPOST http://localhost:8095/api/default/_search -d '{"query": {"query":"searchterm"}}'```
+```curl -XPOST http://localhost:8095/api/index/default/search -d '{"query": {"query":"searchterm"}}'```
 
 Delete index
 
-```curl -XDELETE http://localhost:8095/api/default```
+```curl -XDELETE http://localhost:8095/api/index/default```
 
 ### For cbft developers
 

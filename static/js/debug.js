@@ -10,7 +10,6 @@ function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.processResults(data);
         }).
         error(function(data, code) {
-
         });
     };
 
