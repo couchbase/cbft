@@ -841,6 +841,46 @@ func TestManagerClosePIndex(t *testing.T) {
 	}
 }
 
+func TestManagerRemovePIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+	meh := &TestMEH{}
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", meh)
+	if meh.lastPIndex != nil || meh.lastCall != "" {
+		t.Errorf("expected no callback events to meh")
+	}
+	m.Start(true)
+	sourceParams := ""
+	p, err := NewPIndex(m, "p0", "uuid", "bleve",
+		"indexName", "indexUUID", "",
+		"sourceType", "sourceName", "sourceUUID", sourceParams, "sourcePartitions",
+		m.PIndexPath("p0"))
+	m.registerPIndex(p)
+	feeds, pindexes := m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 1 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+	err = m.RemovePIndex(p)
+	if err != nil {
+		t.Errorf("expected RemovePIndex() to work")
+	}
+	feeds, pindexes = m.CurrentMaps()
+	if feeds == nil || pindexes == nil {
+		t.Errorf("expected current feeds & pindexes to be non-nil")
+	}
+	if len(feeds) != 0 || len(pindexes) != 0 {
+		t.Errorf("wrong counts for current feeds (%d) & pindexes (%d)",
+			len(feeds), len(pindexes))
+	}
+	if meh.lastPIndex != p || meh.lastCall != "OnUnregisterPIndex" {
+		t.Errorf("meh callbacks were wrong")
+	}
+}
+
 func TestManagerStrangeWorkReqs(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
