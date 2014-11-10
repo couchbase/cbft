@@ -21,7 +21,8 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-// Compares two dotted versioning string and returns true when x >= y.
+// Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
+// Returns true when x >= y.
 func VersionGTE(x, y string) bool {
 	xa := strings.Split(x, ".")
 	ya := strings.Split(y, ".")
