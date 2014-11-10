@@ -43,7 +43,6 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	}
 	$scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
 	$scope.indexDetails = null;
-	
 
 	$scope.loadIndexDetails = function() {
 		$http.get('/api/' + $scope.indexName).success(function(data) {
@@ -70,7 +69,6 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	if($scope.tab === "summary") {
 		$scope.loadIndexDocCount();
 	} else if ($scope.tab === "mapping") {
-
 	}
 
 	$scope.indexDocument = function(id, body) {
@@ -107,7 +105,6 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.processResults(data);
         }).
         error(function(data, code) {
-
         });
     };
 

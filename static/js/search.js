@@ -40,8 +40,6 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.searchSyntax();
     }
 
-    
-
     $scope.expl = function(explanation) {
             rv = "" + $scope.roundScore(explanation.value) + " - " + explanation.message;
             rv = rv + "<ul>";
@@ -74,7 +72,6 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         for (i = 1; i <= $scope.numPages; i++) {
             $scope.validPages.push(i);
         }
-
 
         // now see if we have too many pages
         if ($scope.validPages.length > $scope.maxPagesToShow) {
