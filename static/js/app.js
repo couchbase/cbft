@@ -10,13 +10,27 @@ angular.module('myApp', [
   'expvar'
 ]).
 config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
-  $routeProvider.when('/indexes/', {templateUrl: '/static/partials/index/list.html', controller: 'IndexesCtrl'});
-  $routeProvider.when('/indexes/_new', {templateUrl: '/static/partials/index/new.html', controller: 'IndexNewCtrl'});
-  $routeProvider.when('/indexes/:indexName', {templateUrl: '/static/partials/index/index.html', controller: 'IndexCtrl'});
-  $routeProvider.when('/indexes/:indexName/:tabName', {templateUrl: '/static/partials/index/index.html', controller: 'IndexCtrl'});
-  $routeProvider.when('/monitor/', {templateUrl: '/static/partials/monitor.html', controller: 'MonitorCtrl'});
-  $routeProvider.when('/logs/', {templateUrl: '/static/partials/logs.html', controller: 'LogsCtrl'});
-  $routeProvider.when('/search/debug/', {templateUrl: '/static/partials/debug.html', controller: 'DebugCtrl'});
+  $routeProvider.when('/indexes/',
+                      {templateUrl: '/static/partials/index/list.html',
+                       controller: 'IndexesCtrl'});
+  $routeProvider.when('/indexes/_new',
+                      {templateUrl: '/static/partials/index/new.html',
+                       controller: 'IndexNewCtrl'});
+  $routeProvider.when('/indexes/:indexName',
+                      {templateUrl: '/static/partials/index/index.html',
+                       controller: 'IndexCtrl'});
+  $routeProvider.when('/indexes/:indexName/:tabName',
+                      {templateUrl: '/static/partials/index/index.html',
+                       controller: 'IndexCtrl'});
+  $routeProvider.when('/monitor/',
+                      {templateUrl: '/static/partials/monitor.html',
+                       controller: 'MonitorCtrl'});
+  $routeProvider.when('/logs/',
+                      {templateUrl: '/static/partials/logs.html',
+                       controller: 'LogsCtrl'});
+  $routeProvider.when('/search/debug/',
+                      {templateUrl: '/static/partials/debug.html',
+                       controller: 'DebugCtrl'});
   $routeProvider.otherwise({redirectTo: '/indexes'});
   $locationProvider.html5Mode(true);
 }]);
