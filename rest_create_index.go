@@ -47,12 +47,16 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceType := mux.Vars(req)["sourceType"]
 	if sourceType == "" {
-		sourceType = "couchbase"
+		sourceType = "couchbase" // TODO: Revisit default of sourceType as couchbase.
 	}
 
 	sourceName := mux.Vars(req)["sourceName"]
-	if sourceName == "" {
+	if sourceName == "" && sourceType == "couchbase" {
 		sourceName = indexName // TODO: Revisit default of sourceName as indexName.
+	}
+	if sourceName == "" {
+		showError(w, req, "need non-empty sourceName", 400)
+		return
 	}
 
 	sourceUUID := mux.Vars(req)["sourceUUID"]     // Defaults to "".
