@@ -88,6 +88,25 @@ func indexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "indexName")
 }
 
+func indexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
+	// TODO: also add remote pindexes to alias, not just local pindexes.
+	alias := bleve.NewIndexAlias()
+
+	_, pindexes := mgr.CurrentMaps()
+	for _, pindex := range pindexes {
+		if pindex.IndexType == "bleve" &&
+			pindex.IndexName == indexName &&
+			(indexUUID == "" || pindex.IndexUUID == indexUUID) {
+			bindex, ok := pindex.Impl.(bleve.Index)
+			if ok && bindex != nil {
+				alias.Add(bindex)
+			}
+		}
+	}
+
+	return alias, nil
+}
+
 // ---------------------------------------------------
 
 type ListIndexHandler struct {
@@ -182,18 +201,10 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO: also add remote pindexes to alias, not just local pindexes.
-	alias := bleve.NewIndexAlias()
-
-	_, pindexes := h.mgr.CurrentMaps()
-	for _, pindex := range pindexes {
-		// TODO: Check index UUID.
-		if pindex.IndexName == indexName {
-			bindex, ok := pindex.Impl.(bleve.Index)
-			if ok && bindex != nil {
-				alias.Add(bindex)
-			}
-		}
+	alias, err := indexAlias(h.mgr, indexName, "") // TODO: Check index UUID.
+	if err != nil {
+		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
+		return
 	}
 
 	docCount, err := alias.DocCount()
@@ -231,18 +242,10 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	log.Printf("search request: %s", indexName)
 
-	// TODO: also add remote pindexes to alias, not just local pindexes.
-	alias := bleve.NewIndexAlias()
-
-	_, pindexes := h.mgr.CurrentMaps()
-	for _, pindex := range pindexes {
-		// TODO: Check index UUID.
-		if pindex.IndexName == indexName {
-			bindex, ok := pindex.Impl.(bleve.Index)
-			if ok && bindex != nil {
-				alias.Add(bindex)
-			}
-		}
+	alias, err := indexAlias(h.mgr, indexName, "") // TODO: Check index UUID.
+	if err != nil {
+		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
+		return
 	}
 
 	// read the request body
