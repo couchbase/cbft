@@ -22,6 +22,16 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	// TODO: what about auth info to be able to access bucket?
 	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
 	// TODO: what about hints for # of partitions, etc?
+
+	// First, check that the source exists.
+	_, err := DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+		mgr.server)
+	if err != nil {
+		return fmt.Errorf("failed to connect to or retrieve information from source,"+
+			" sourceType: %s, sourceName: %s, sourceUUID: %s",
+			sourceType, sourceName, sourceUUID)
+	}
+
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return fmt.Errorf("error: CfgGetIndexDefs err: %v", err)
