@@ -28,6 +28,7 @@ type DCPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
+	params     string
 	pf         DestPartitionFunc
 	dests      map[string]Dest
 	bds        cbdatasource.BucketDataSource
@@ -45,7 +46,7 @@ type DCPFeed struct {
 	numRollback      uint64
 }
 
-func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
+func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, params string,
 	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
 	vbucketIds, err := ParsePartitionsToVBucketIds(dests)
 	if err != nil {
@@ -64,6 +65,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 		poolName:   poolName,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
+		params:     params,
 		pf:         pf,
 		dests:      dests,
 	}

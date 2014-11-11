@@ -26,6 +26,7 @@ type TAPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
+	params     string
 	pf         DestPartitionFunc
 	dests      map[string]Dest
 	closeCh    chan bool
@@ -34,7 +35,7 @@ type TAPFeed struct {
 	doneMsg    string
 }
 
-func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
+func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, params string,
 	pf DestPartitionFunc, dests map[string]Dest) (*TAPFeed, error) {
 	return &TAPFeed{
 		name:       name,
@@ -42,6 +43,7 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID string,
 		poolName:   poolName,
 		bucketName: bucketName,
 		bucketUUID: bucketUUID,
+		params:     params,
 		pf:         pf,
 		dests:      dests,
 		closeCh:    make(chan bool),

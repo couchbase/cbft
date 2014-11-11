@@ -52,7 +52,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
 	bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, BasicPartitionFunc, dests)
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare DCP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -72,7 +72,7 @@ func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
 	bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, BasicPartitionFunc, dests)
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
 	if err != nil {
 		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
