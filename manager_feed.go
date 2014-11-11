@@ -37,6 +37,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 		return mgr.startTAPFeed(feedName, indexName, indexUUID,
 			sourceName, sourceUUID, dests)
 	}
+
 	if sourceType == "dest" {
 		return mgr.startDestFeed(feedName, dests)
 	}
@@ -102,6 +103,5 @@ func (mgr *Manager) startDestFeed(feedName string,
 		feed.Close()
 		return err
 	}
-
 	return nil
 }
