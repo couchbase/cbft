@@ -305,8 +305,10 @@ func (mgr *Manager) GetIndexDefs(refresh bool) (
 		mgr.lastIndexDefs = indexDefs
 
 		mgr.lastIndexDefsByName = make(map[string]*IndexDef)
-		for _, indexDef := range indexDefs.IndexDefs {
-			mgr.lastIndexDefsByName[indexDef.Name] = indexDef
+		if indexDefs != nil {
+			for _, indexDef := range indexDefs.IndexDefs {
+				mgr.lastIndexDefsByName[indexDef.Name] = indexDef
+			}
 		}
 	}
 
