@@ -11,17 +11,16 @@
 
 package main
 
+// A NILFeed never feeds any data to its dests.  It's useful for
+// testing and for pindexes that are actually primary data sources.
+
 type NILFeed struct {
 	name  string
 	dests map[string]Dest
 }
 
-// A NILFeed never feeds any data to its dests.
 func NewNILFeed(name string, dests map[string]Dest) *NILFeed {
-	return &NILFeed{
-		name:  name,
-		dests: dests,
-	}
+	return &NILFeed{name: name, dests: dests}
 }
 
 func (t *NILFeed) Name() string {
