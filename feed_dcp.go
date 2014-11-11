@@ -56,10 +56,10 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	}
 
 	var authFunc cbdatasource.AuthFunc                // TODO: AUTH.
-	var options *cbdatasource.BucketDataSourceOptions // TODO: options.
+	var options *cbdatasource.BucketDataSourceOptions // TODO: options, w/ random name suffix.
 
 	feed := &DCPFeed{
-		name:       name, // TODO: unique name.
+		name:       name,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,

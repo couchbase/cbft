@@ -707,7 +707,7 @@ func TestManagerStartTAPFeed(t *testing.T) {
 	if _, ok := f.(*TAPFeed); !ok {
 		t.Errorf("expected a TAPFeed")
 	}
-	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase",
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase-tap",
 		"sourceName", "sourceUUID", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
