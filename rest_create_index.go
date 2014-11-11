@@ -12,6 +12,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,16 +45,32 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	sourceType := "couchbase"
-	sourceName := indexName
-	sourceUUID := ""
-	sourceParams := ""
-	planParams := PlanParams{}
+	sourceType := mux.Vars(req)["sourceType"]
+	if sourceType == "" {
+		sourceType = "couchbase"
+	}
 
-	// TODO: bad assumption of bucketName == indexName right now.
-	// TODO: need a bucketUUID, or perhaps "" just means use latest.
+	sourceName := mux.Vars(req)["sourceName"]
+	if sourceName == "" {
+		sourceName = indexName // TODO: Revisit default of sourceName as indexName.
+	}
+
+	sourceUUID := mux.Vars(req)["sourceUUID"]     // Defaults to "".
+	sourceParams := mux.Vars(req)["sourceParams"] // Defaults to "".
+
+	planParams := &PlanParams{}
+	planParamsStr := mux.Vars(req)["planParams"]
+	if planParamsStr != "" {
+		err = json.Unmarshal([]byte(planParamsStr), planParams)
+		if err != nil {
+			showError(w, req, fmt.Sprintf("error parsing planParams: %s, err: %v",
+				planParamsStr, err), 400)
+			return
+		}
+	}
+
 	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-		indexType, indexName, string(indexSchema), planParams)
+		indexType, indexName, string(indexSchema), *planParams)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)

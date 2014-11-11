@@ -169,10 +169,18 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
 	$scope.errorMessage = null;
 
-	$scope.newIndexNamed = function(name, mapping) {
+	$scope.newIndexNamed = function(indexName, mapping) {
 		$scope.clearErrorMessage();
-		$http.put('/api/index/' + name, "").success(function(data) {
-			$location.path('/indexes/' + name);
+		// TODO: looks like mapping isn't getting propagated here.
+		$http.put('/api/index/' + indexName, "", {
+			sourceType: "couchbase",
+			sourceName: indexName,
+			sourceUUID: "",
+			sourceParams: "",
+			planParams: "",
+		}).
+		success(function(data) {
+			$location.path('/indexes/' + indexName);
 		}).
 		error(function(data, code) {
 			$scope.errorMessage = data;
@@ -182,5 +190,4 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 	$scope.clearErrorMessage = function() {
 		$scope.errorMessage = null;
 	};
-
 }
