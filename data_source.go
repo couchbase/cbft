@@ -72,6 +72,10 @@ func DataSourcePartitions(sourceType, sourceName,
 		return rv, nil
 	}
 
+	if sourceType == "nil" {
+		return nil, nil
+	}
+
 	return nil, fmt.Errorf("error: DataSourcePartitions got unknown sourceType: %s",
 		sourceType)
 }
