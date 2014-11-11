@@ -99,7 +99,7 @@ func NewListIndexHandler(mgr *Manager) *ListIndexHandler {
 }
 
 func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexDefs, err := PlannerGetIndexDefs(h.mgr.cfg, h.mgr.version)
+	indexDefs, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		showError(w, req, "could not retrieve index defs", 500)
 		return
@@ -132,7 +132,7 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	indexDefs, err := PlannerGetIndexDefs(h.mgr.cfg, h.mgr.version)
+	indexDefs, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		showError(w, req, "could not retrieve index defs", 500)
 		return

@@ -31,12 +31,15 @@ type Manager struct {
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
+
 	m         sync.Mutex
 	feeds     map[string]Feed    // Key is Feed.Name().
 	pindexes  map[string]*PIndex // Key is PIndex.Name().
 	plannerCh chan *WorkReq      // Used to kick the planner that there's more work.
 	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
+
+	lastIndexDefs *IndexDefs
 }
 
 type ManagerEventHandlers interface {
@@ -90,6 +93,16 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 	if tags == nil || (tags["pindex"] && tags["janitor-local"]) {
 		go mgr.JanitorLoop()
 		mgr.JanitorKick("start")
+	}
+
+	if mgr.cfg != nil {
+		go func() {
+			ec := make(chan CfgEvent)
+			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ec)
+			for _ = range ec {
+				mgr.GetIndexDefs(true)
+			}
+		}()
 	}
 
 	return nil
@@ -274,6 +287,23 @@ func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
 		pindexes[k] = v
 	}
 	return feeds, pindexes
+}
+
+// ---------------------------------------------------------------
+
+func (mgr *Manager) GetIndexDefs(refresh bool) (*IndexDefs, error) {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	if mgr.lastIndexDefs == nil || refresh {
+		indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
+		if err != nil {
+			return nil, err
+		}
+		mgr.lastIndexDefs = indexDefs
+	}
+
+	return mgr.lastIndexDefs, nil
 }
 
 // ---------------------------------------------------------------
