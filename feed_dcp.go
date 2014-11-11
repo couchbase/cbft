@@ -12,6 +12,7 @@
 package main
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/couchbase/gomemcached"
@@ -68,7 +69,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID string,
 	}
 
 	feed.bds, err = cbdatasource.NewBucketDataSource(
-		[]string{url}, // TODO: more than 1 seed URL.
+		strings.Split(url, ";"),
 		poolName, bucketName, bucketUUID,
 		vbucketIds, authFunc, feed, options)
 	if err != nil {
