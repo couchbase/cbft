@@ -292,6 +292,8 @@ func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
 
 // ---------------------------------------------------------------
 
+// Returns read-only snapshot of the IndexDefs, also with IndexDef's
+// organized by name.  Use refresh of true to force a read from Cfg.
 func (mgr *Manager) GetIndexDefs(refresh bool) (
 	*IndexDefs, map[string]*IndexDef, error) {
 	mgr.m.Lock()
