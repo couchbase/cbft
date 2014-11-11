@@ -141,10 +141,9 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, indexDef := range indexDefs.IndexDefs {
 		// TODO: This is inefficient.  Need caching or a lookup map or something.
 		// TODO: What about also checking the indexDef's UUID?
-		// TODO: Ideally, this code should be bleve independent.
 
 		if indexName == indexDef.Name {
-			m := bleve.NewIndexMapping()
+			m := map[string]interface{}{}
 			if indexDef.Schema != "" {
 				if err := json.Unmarshal([]byte(indexDef.Schema), &m); err != nil {
 					showError(w, req, "could not unmarshal mapping", 500)
@@ -153,13 +152,13 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 
 			rv := struct {
-				Status  string              `json:"status"`
-				Name    string              `json:"name"`
-				Mapping *bleve.IndexMapping `json:"mapping"`
+				Status       string                 `json:"status"`
+				IndexDef     *IndexDef              `json:"indexDef"`
+				IndexMapping map[string]interface{} `json:"indexMapping"`
 			}{
-				Status:  "ok",
-				Name:    indexName,
-				Mapping: m, // TODO: Rename from mapping to schema?
+				Status:       "ok",
+				IndexDef:     indexDef,
+				IndexMapping: m, // TODO: Rename from mapping to schema?
 			}
 			mustEncode(w, rv)
 			return
