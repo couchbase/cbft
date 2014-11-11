@@ -182,25 +182,24 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO: get remote pindex doc counts, not just local counts.
-	docCount := uint64(0)
+	// TODO: also add remote pindexes to alias, not just local pindexes.
+	alias := bleve.NewIndexAlias()
 
 	_, pindexes := h.mgr.CurrentMaps()
-
 	for _, pindex := range pindexes {
 		// TODO: Check index UUID.
 		if pindex.IndexName == indexName {
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if ok && bindex != nil {
-				c, err := bindex.DocCount()
-				if err != nil {
-					showError(w, req, fmt.Sprintf("error counting docs: %v", err), 500)
-					return
-				}
-
-				docCount = docCount + c
+				alias.Add(bindex)
 			}
 		}
+	}
+
+	docCount, err := alias.DocCount()
+	if err != nil {
+		showError(w, req, fmt.Sprintf("error counting docs: %v", err), 500)
+		return
 	}
 
 	rv := struct {
@@ -225,6 +224,10 @@ func NewSearchHandler(mgr *Manager) *SearchHandler {
 
 func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
+	if indexName == "" {
+		showError(w, req, "index name is required", 400)
+		return
+	}
 
 	log.Printf("search request: %s", indexName)
 
