@@ -12,6 +12,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -26,7 +27,7 @@ type TAPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	params     string
+	params     *TAPFeedParams
 	pf         DestPartitionFunc
 	dests      map[string]Dest
 	closeCh    chan bool
@@ -35,8 +36,22 @@ type TAPFeed struct {
 	doneMsg    string
 }
 
-func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, params string,
+type TAPFeedParams struct {
+	BackoffFactor float32
+	SleepInitMS   int
+	SleepMaxMS    int
+}
+
+func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest) (*TAPFeed, error) {
+	params := &TAPFeedParams{}
+	if paramsStr != "" {
+		err := json.Unmarshal([]byte(paramsStr), params)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &TAPFeed{
 		name:       name,
 		url:        url,
@@ -60,6 +75,19 @@ func (t *TAPFeed) Name() string {
 func (t *TAPFeed) Start() error {
 	log.Printf("TAPFeed.Start, name: %s", t.Name())
 
+	backoffFactor := t.params.BackoffFactor
+	if backoffFactor <= 0.0 {
+		backoffFactor = FEED_BACKOFF_FACTOR
+	}
+	sleepInitMS := t.params.SleepInitMS
+	if sleepInitMS <= 0 {
+		sleepInitMS = FEED_SLEEP_INIT_MS
+	}
+	sleepMaxMS := t.params.SleepMaxMS
+	if sleepMaxMS <= 0 {
+		sleepMaxMS = FEED_SLEEP_MAX_MS
+	}
+
 	go ExponentialBackoffLoop(t.Name(),
 		func() int {
 			progress, err := t.feed()
@@ -69,9 +97,7 @@ func (t *TAPFeed) Start() error {
 			}
 			return progress
 		},
-		FEED_SLEEP_INIT_MS,  // Milliseconds.
-		FEED_BACKOFF_FACTOR, // Backoff.
-		FEED_SLEEP_MAX_MS)
+		sleepInitMS, backoffFactor, sleepMaxMS)
 
 	return nil
 }

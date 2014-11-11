@@ -691,8 +691,9 @@ func TestManagerStartTAPFeed(t *testing.T) {
 	if err := mgr.Start(true); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
+	sourceParams := ""
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase-tap",
-		"sourceName", "sourceUUID", "sourceParams", nil)
+		"sourceName", "sourceUUID", sourceParams, nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for simple sourceType")
 	}
@@ -708,9 +709,14 @@ func TestManagerStartTAPFeed(t *testing.T) {
 		t.Errorf("expected a TAPFeed")
 	}
 	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase-tap",
-		"sourceName", "sourceUUID", "sourceParams", nil)
+		"sourceName", "sourceUUID", sourceParams, nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
+	}
+	err = mgr.startFeedByType("feedName2", "indexName2", "indexUUID2", "couchbase-tap",
+		"sourceName2", "sourceUUID2", "NOT-VALID-JSON-sourceParams", nil)
+	if err == nil {
+		t.Errorf("expected startFeedByType to fail on non-json sourceParams")
 	}
 }
 

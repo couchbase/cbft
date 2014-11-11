@@ -18,6 +18,7 @@ type Feed interface {
 	Dests() map[string]Dest // Key is partition identifier.
 }
 
+// Default values for feed parameters.
 const FEED_SLEEP_MAX_MS = 10000
 const FEED_SLEEP_INIT_MS = 100
 const FEED_BACKOFF_FACTOR = 1.5
