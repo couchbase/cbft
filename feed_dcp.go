@@ -12,6 +12,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 
@@ -28,7 +31,7 @@ type DCPFeed struct {
 	poolName   string
 	bucketName string
 	bucketUUID string
-	params     string
+	params     *DCPFeedParams
 	pf         DestPartitionFunc
 	dests      map[string]Dest
 	bds        cbdatasource.BucketDataSource
@@ -46,8 +49,45 @@ type DCPFeed struct {
 	numRollback      uint64
 }
 
-func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, params string,
+type DCPFeedParams struct {
+	// Factor (like 1.5) to increase sleep time between retries
+	// in connecting to a cluster manager node.
+	ClusterManagerBackoffFactor float32
+
+	// Initial sleep time (millisecs) before first retry to cluster manager.
+	ClusterManagerSleepInitMS int
+
+	// Maximum sleep time (millisecs) between retries to cluster manager.
+	ClusterManagerSleepMaxMS int
+
+	// Factor (like 1.5) to increase sleep time between retries
+	// in connecting to a data manager node.
+	DataManagerBackoffFactor float32
+
+	// Initial sleep time (millisecs) before first retry to data manager.
+	DataManagerSleepInitMS int
+
+	// Maximum sleep time (millisecs) between retries to data manager.
+	DataManagerSleepMaxMS int
+
+	// Buffer size in bytes provided for UPR flow control.
+	FeedBufferSizeBytes uint32
+
+	// Used for UPR flow control and buffer-ack messages when this
+	// percentage of FeedBufferSizeBytes is reached.
+	FeedBufferAckThreshold float32
+}
+
+func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
+	params := &DCPFeedParams{}
+	if paramsStr != "" {
+		err := json.Unmarshal([]byte(paramsStr), params)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	vbucketIds, err := ParsePartitionsToVBucketIds(dests)
 	if err != nil {
 		return nil, err
@@ -56,8 +96,19 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, params string,
 		vbucketIds = nil
 	}
 
-	var authFunc cbdatasource.AuthFunc                // TODO: AUTH.
-	var options *cbdatasource.BucketDataSourceOptions // TODO: options, w/ random name suffix.
+	var authFunc cbdatasource.AuthFunc // TODO: AUTH.
+
+	options := &cbdatasource.BucketDataSourceOptions{
+		Name: fmt.Sprintf("%s-%x", name, rand.Int31()),
+		ClusterManagerBackoffFactor: params.ClusterManagerBackoffFactor,
+		ClusterManagerSleepInitMS:   params.ClusterManagerSleepInitMS,
+		ClusterManagerSleepMaxMS:    params.ClusterManagerSleepMaxMS,
+		DataManagerBackoffFactor:    params.DataManagerBackoffFactor,
+		DataManagerSleepInitMS:      params.DataManagerSleepInitMS,
+		DataManagerSleepMaxMS:       params.DataManagerSleepMaxMS,
+		FeedBufferSizeBytes:         params.FeedBufferSizeBytes,
+		FeedBufferAckThreshold:      params.FeedBufferAckThreshold,
+	}
 
 	feed := &DCPFeed{
 		name:       name,
