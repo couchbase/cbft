@@ -39,8 +39,10 @@ type Manager struct {
 	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 
-	lastIndexDefs       *IndexDefs
-	lastIndexDefsByName map[string]*IndexDef
+	lastIndexDefs          *IndexDefs
+	lastIndexDefsByName    map[string]*IndexDef
+	lastPlanPIndexes       *PlanPIndexes
+	lastPlanPIndexesByName map[string][]*PlanPIndex
 }
 
 type ManagerEventHandlers interface {
@@ -96,12 +98,19 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		mgr.JanitorKick("start")
 	}
 
-	if mgr.cfg != nil {
+	if mgr.cfg != nil { // TODO: err handling for Cfg subscriptions.
 		go func() {
-			ec := make(chan CfgEvent)
-			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ec)
-			for _ = range ec {
+			ei := make(chan CfgEvent)
+			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ei)
+			for _ = range ei {
 				mgr.GetIndexDefs(true)
+			}
+		}()
+		go func() {
+			ep := make(chan CfgEvent)
+			mgr.cfg.Subscribe(PLAN_PINDEXES_KEY, ep)
+			for _ = range ep {
+				mgr.GetPlanPIndexes(true)
 			}
 		}()
 	}
@@ -315,6 +324,36 @@ func (mgr *Manager) GetIndexDefs(refresh bool) (
 	}
 
 	return mgr.lastIndexDefs, mgr.lastIndexDefsByName, nil
+}
+
+// Returns read-only snapshot of the PlanPIndexes, also with PlanPIndex's
+// organized by IndexName.  Use refresh of true to force a read from Cfg.
+func (mgr *Manager) GetPlanPIndexes(refresh bool) (
+	*PlanPIndexes, map[string][]*PlanPIndex, error) {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	if mgr.lastPlanPIndexes == nil || refresh {
+		planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+		mgr.lastPlanPIndexes = planPIndexes
+
+		mgr.lastPlanPIndexesByName = make(map[string][]*PlanPIndex)
+		if planPIndexes != nil {
+			for _, planPIndex := range planPIndexes.PlanPIndexes {
+				a := mgr.lastPlanPIndexesByName[planPIndex.IndexName]
+				if a == nil {
+					a = make([]*PlanPIndex, 0)
+				}
+				mgr.lastPlanPIndexesByName[planPIndex.IndexName] =
+					append(a, planPIndex)
+			}
+		}
+	}
+
+	return mgr.lastPlanPIndexes, mgr.lastPlanPIndexesByName, nil
 }
 
 // ---------------------------------------------------------------
