@@ -9,7 +9,11 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
 
 	$scope.refreshIndexNames = function() {
 		$http.get('/api/index').success(function(data) {
-            $scope.indexNames = data.indexes;
+            var indexNames = [];
+            for (var indexName in data.indexDefs.indexDefs) {
+                indexNames.push(indexName)
+            }
+            $scope.indexNames = indexNames;
         }).
         error(function(data, code) {
 			$scope.errorMessage = data;

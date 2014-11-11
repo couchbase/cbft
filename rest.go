@@ -105,17 +105,12 @@ func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	indexNames := []string{}
-	for _, indexDef := range indexDefs.IndexDefs {
-		// TODO: What about also returning the indexDef's UUID?
-		indexNames = append(indexNames, indexDef.Name)
-	}
 	rv := struct {
-		Status  string   `json:"status"`
-		Indexes []string `json:"indexes"`
+		Status    string     `json:"status"`
+		IndexDefs *IndexDefs `json:"indexDefs"`
 	}{
-		Status:  "ok",
-		Indexes: indexNames,
+		Status:    "ok",
+		IndexDefs: indexDefs,
 	}
 	mustEncode(w, rv)
 }
