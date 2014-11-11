@@ -375,6 +375,7 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	return mgr.startFeedByType(feedName,
 		pindexFirst.IndexName, pindexFirst.IndexUUID,
 		pindexFirst.SourceType, pindexFirst.SourceName, pindexFirst.SourceUUID,
+		pindexFirst.SourceParams,
 		dests)
 }
 

@@ -25,17 +25,17 @@ import (
 // perhaps as specialized clog writer?
 
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
-	sourceType, sourceName, sourceUUID string,
+	sourceType, sourceName, sourceUUID, sourceParams string,
 	dests map[string]Dest) error {
 	if sourceType == "couchbase" ||
 		sourceType == "couchbase-dcp" {
 		return mgr.startDCPFeed(feedName, indexName, indexUUID,
-			sourceName, sourceUUID, dests)
+			sourceName, sourceUUID, sourceParams, dests)
 	}
 
 	if sourceType == "couchbase-tap" {
 		return mgr.startTAPFeed(feedName, indexName, indexUUID,
-			sourceName, sourceUUID, dests)
+			sourceName, sourceUUID, sourceParams, dests)
 	}
 
 	if sourceType == "dest" {
@@ -50,7 +50,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 }
 
 func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
-	bucketName, bucketUUID string, dests map[string]Dest) error {
+	bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, BasicPartitionFunc, dests)
 	if err != nil {
@@ -70,7 +70,7 @@ func (mgr *Manager) startDCPFeed(feedName, indexName, indexUUID,
 }
 
 func (mgr *Manager) startTAPFeed(feedName, indexName, indexUUID,
-	bucketName, bucketUUID string, dests map[string]Dest) error {
+	bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, BasicPartitionFunc, dests)
 	if err != nil {

@@ -692,7 +692,7 @@ func TestManagerStartTAPFeed(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase-tap",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for simple sourceType")
 	}
@@ -708,7 +708,7 @@ func TestManagerStartTAPFeed(t *testing.T) {
 		t.Errorf("expected a TAPFeed")
 	}
 	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "couchbase-tap",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
 	}
@@ -724,7 +724,7 @@ func TestManagerStartNILFeed(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "nil",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for nil sourceType")
 	}
@@ -740,7 +740,7 @@ func TestManagerStartNILFeed(t *testing.T) {
 		t.Errorf("expected a NILFeed")
 	}
 	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "nil",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
 	}
@@ -756,7 +756,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for simple sourceType")
 	}
@@ -772,7 +772,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 		t.Errorf("expected a SimpleFeed")
 	}
 	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
-		"sourceName", "sourceUUID", nil)
+		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
 	}
@@ -911,7 +911,7 @@ func TestManagerStartFeedByType(t *testing.T) {
 
 	m := NewManager(VERSION, nil, NewUUID(), nil, "", emptyDir, "", nil)
 	err := m.startFeedByType("feedName", "indexName", "indexUUID",
-		"sourceType-is-unknown", "sourceName", "sourceUUID", nil)
+		"sourceType-is-unknown", "sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
 		t.Errorf("expected err on unknown source type")
 	}
