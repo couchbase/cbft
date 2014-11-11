@@ -1061,8 +1061,10 @@ func TestBasicStreamMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to ROLLBACK, err: %v", err)
 			}
+
 			runtime.Gosched()
 			<-mehCh
+			mgr.Kick("after-rollback")
 			mgr.PlannerNOOP("after-rollback")
 			mgr.JanitorNOOP("after-rollback")
 			runtime.Gosched()
