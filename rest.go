@@ -99,7 +99,7 @@ func NewListIndexHandler(mgr *Manager) *ListIndexHandler {
 }
 
 func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexDefs, err := h.mgr.GetIndexDefs(false)
+	indexDefs, _, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		showError(w, req, "could not retrieve index defs", 500)
 		return
@@ -132,40 +132,37 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	indexDefs, err := h.mgr.GetIndexDefs(false)
+	_, indexDefsByName, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		showError(w, req, "could not retrieve index defs", 500)
 		return
 	}
 
-	for _, indexDef := range indexDefs.IndexDefs {
-		// TODO: This is inefficient.  Need caching or a lookup map or something.
-		// TODO: What about also checking the indexDef's UUID?
+	// TODO: Should also check the indexDef's UUID?
+	indexDef, exists := indexDefsByName[indexName]
+	if !exists || indexDef == nil {
+		showError(w, req, "not an index", 400)
+		return
+	}
 
-		if indexName == indexDef.Name {
-			m := map[string]interface{}{}
-			if indexDef.Schema != "" {
-				if err := json.Unmarshal([]byte(indexDef.Schema), &m); err != nil {
-					showError(w, req, "could not unmarshal mapping", 500)
-					return
-				}
-			}
-
-			rv := struct {
-				Status       string                 `json:"status"`
-				IndexDef     *IndexDef              `json:"indexDef"`
-				IndexMapping map[string]interface{} `json:"indexMapping"`
-			}{
-				Status:       "ok",
-				IndexDef:     indexDef,
-				IndexMapping: m, // TODO: Rename from mapping to schema?
-			}
-			mustEncode(w, rv)
+	m := map[string]interface{}{}
+	if indexDef.Schema != "" {
+		if err := json.Unmarshal([]byte(indexDef.Schema), &m); err != nil {
+			showError(w, req, "could not unmarshal mapping", 500)
 			return
 		}
 	}
 
-	showError(w, req, "not an index", 400)
+	rv := struct {
+		Status       string                 `json:"status"`
+		IndexDef     *IndexDef              `json:"indexDef"`
+		IndexMapping map[string]interface{} `json:"indexMapping"`
+	}{
+		Status:       "ok",
+		IndexDef:     indexDef,
+		IndexMapping: m,
+	}
+	mustEncode(w, rv)
 }
 
 // ---------------------------------------------------

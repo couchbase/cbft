@@ -39,7 +39,8 @@ type Manager struct {
 	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
 	meh       ManagerEventHandlers
 
-	lastIndexDefs *IndexDefs
+	lastIndexDefs       *IndexDefs
+	lastIndexDefsByName map[string]*IndexDef
 }
 
 type ManagerEventHandlers interface {
@@ -291,19 +292,25 @@ func (mgr *Manager) CurrentMaps() (map[string]Feed, map[string]*PIndex) {
 
 // ---------------------------------------------------------------
 
-func (mgr *Manager) GetIndexDefs(refresh bool) (*IndexDefs, error) {
+func (mgr *Manager) GetIndexDefs(refresh bool) (
+	*IndexDefs, map[string]*IndexDef, error) {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
 
 	if mgr.lastIndexDefs == nil || refresh {
 		indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		mgr.lastIndexDefs = indexDefs
+
+		mgr.lastIndexDefsByName = make(map[string]*IndexDef)
+		for _, indexDef := range indexDefs.IndexDefs {
+			mgr.lastIndexDefsByName[indexDef.Name] = indexDef
+		}
 	}
 
-	return mgr.lastIndexDefs, nil
+	return mgr.lastIndexDefs, mgr.lastIndexDefsByName, nil
 }
 
 // ---------------------------------------------------------------
