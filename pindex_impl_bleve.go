@@ -57,26 +57,34 @@ func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, De
 	return bindex, NewBleveDest(path, bindex, restart), err
 }
 
+// ---------------------------------------------------------
+
+const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
+const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1500000
+
 type BleveDest struct {
 	path    string
-	restart func()
+	restart func() // Invoked when caller should restart this BleveDest, like on rollback.
 
 	m      sync.Mutex
 	bindex bleve.Index
 	seqs   map[string]uint64 // To track max seq #'s we saw per partition.
 
+	// TODO: Maybe should have a buf & batch per partition?
+	buf      []byte            // The batch points to slices from buf.
+	batch    *bleve.Batch      // Batch applied when too large or hit snapshot end.
+	snapEnds map[string]uint64 // To track snapshot end seq #'s per partition.
 }
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
 	return &BleveDest{
-		path:    path,
-		restart: restart,
-		bindex:  bindex,
-		seqs:    map[string]uint64{},
+		path:     path,
+		restart:  restart,
+		bindex:   bindex,
+		seqs:     map[string]uint64{},
+		snapEnds: map[string]uint64{},
 	}
 }
-
-// TODO: use batching.
 
 func (t *BleveDest) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
@@ -86,7 +94,13 @@ func (t *BleveDest) OnDataUpdate(partition string,
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	err := t.bindex.Index(string(key), val)
+	bufVal := t.appendToBufUnlocked(val)
+	if t.batch == nil {
+		t.batch = bleve.NewBatch()
+	}
+	t.batch.Index(string(key), bufVal) // TODO: The string(key) makes garbage?
+
+	err := t.maybeApplyBatchUnlocked(partition, seq)
 	if err != nil {
 		return err
 	}
@@ -102,7 +116,12 @@ func (t *BleveDest) OnDataDelete(partition string,
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	err := t.bindex.Delete(string(key))
+	if t.batch == nil {
+		t.batch = bleve.NewBatch()
+	}
+	t.batch.Delete(string(key)) // TODO: The string(key) makes garbage?
+
+	err := t.maybeApplyBatchUnlocked(partition, seq)
 	if err != nil {
 		return err
 	}
@@ -110,25 +129,25 @@ func (t *BleveDest) OnDataDelete(partition string,
 	return t.updateSeqUnlocked(partition, seq)
 }
 
-func (t *BleveDest) updateSeqUnlocked(partition string, seq uint64) error {
-	if t.seqs[partition] < seq {
-		t.seqs[partition] = seq
-
-		seqBuf := make([]byte, 8)
-		binary.BigEndian.PutUint64(seqBuf, seq)
-		return t.bindex.SetInternal([]byte(partition), seqBuf)
-	}
-
-	return nil
-}
-
 func (t *BleveDest) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	log.Printf("bleve dest snapshot-start, partition: %s, snapStart: %d, snapEnd: %d",
 		partition, snapStart, snapEnd)
 
-	return nil // TODO: optimize batching on snapshot start.
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	err := t.applyBatchUnlocked()
+	if err != nil {
+		return err
+	}
+
+	t.snapEnds[partition] = snapEnd
+
+	return nil
 }
+
+var opaquePrefix = []byte("o:")
 
 func (t *BleveDest) SetOpaque(partition string,
 	value []byte) error {
@@ -138,6 +157,7 @@ func (t *BleveDest) SetOpaque(partition string,
 	t.m.Lock()
 	defer t.m.Unlock()
 
+	// TODO: The o:key makes garbage, so perhaps use lookup table?
 	return t.bindex.SetInternal([]byte("o:"+partition), value)
 }
 
@@ -148,11 +168,14 @@ func (t *BleveDest) GetOpaque(partition string) (
 	t.m.Lock()
 	defer t.m.Unlock()
 
+	// TODO: The o:key makes garbage, so perhaps use lookup table?
 	value, err = t.bindex.GetInternal([]byte("o:" + partition))
 	if err != nil || value == nil {
 		return nil, 0, err
 	}
 
+	// TODO: Need way to control memory alloc during GetInternal(),
+	// perhaps with optional memory allocator func() parameter?
 	buf, err := t.bindex.GetInternal([]byte(partition))
 	if err != nil || buf == nil {
 		return value, 0, err
@@ -184,6 +207,9 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	// For now, always rollback to zero, in which we close the
 	// pindex and have the janitor rebuild from scratch.
 	t.seqs = map[string]uint64{}
+	t.buf = nil
+	t.batch = nil
+	t.snapEnds = map[string]uint64{}
 
 	t.bindex.Close()
 
@@ -192,4 +218,78 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	t.restart()
 
 	return nil
+}
+
+// ---------------------------------------------------------
+
+func (t *BleveDest) maybeApplyBatchUnlocked(partition string, seq uint64) error {
+	if t.batch == nil || len(t.batch.IndexOps) <= 0 {
+		return nil
+	}
+
+	if len(t.buf) < BLEVE_DEST_APPLY_BUF_SIZE_BYTES &&
+		seq < t.snapEnds[partition] {
+		return nil
+	}
+
+	return t.applyBatchUnlocked()
+}
+
+func (t *BleveDest) applyBatchUnlocked() error {
+	if t.batch != nil {
+		if err := t.bindex.Batch(t.batch); err != nil {
+			return err
+		}
+
+		// TODO: would good to reuse batch; we could just clear its
+		// public maps (IndexOPs & InternalOps), but sounds brittle.
+		t.batch = nil
+	}
+
+	if t.buf != nil {
+		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
+	}
+
+	for partition, _ := range t.snapEnds {
+		delete(t.snapEnds, partition)
+	}
+
+	return nil
+}
+
+var eightBytes = make([]byte, 8)
+
+func (t *BleveDest) updateSeqUnlocked(partition string, seq uint64) error {
+	if t.seqs[partition] < seq {
+		t.seqs[partition] = seq
+
+		// TODO: use re-slicing if there's capacity to get the eight bytes.
+		bufSeq := t.appendToBufUnlocked(eightBytes)
+
+		binary.BigEndian.PutUint64(bufSeq, seq)
+
+		// TODO: Only the last SetInternal() matters for a partition,
+		// so we can reuse the bufSeq memory rather than wasting eight
+		// bytes in t.buf on every mutation.
+		//
+		// NOTE: No copy of partition to buf as it's immutatable string bytes.
+		return t.bindex.SetInternal([]byte(partition), bufSeq)
+	}
+
+	return nil
+}
+
+// Appends b to end of t.buf, and returns that suffix slice of t.buf
+// that has the appended copy of the input b.
+func (t *BleveDest) appendToBufUnlocked(b []byte) []byte {
+	if len(b) <= 0 {
+		return b
+	}
+	if t.buf == nil {
+		// TODO: parameterize initial buf capacity.
+		t.buf = make([]byte, 0, BLEVE_DEST_INITIAL_BUF_SIZE_BYTES)
+	}
+	t.buf = append(t.buf, b...)
+
+	return t.buf[len(t.buf)-len(b):]
 }
