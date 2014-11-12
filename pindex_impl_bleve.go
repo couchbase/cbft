@@ -93,6 +93,9 @@ func (t *BleveDest) OnDataUpdate(partition string,
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
 
 	bufVal := t.appendToBufUnlocked(val)
 	if t.batch == nil {
@@ -115,6 +118,9 @@ func (t *BleveDest) OnDataDelete(partition string,
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
 
 	if t.batch == nil {
 		t.batch = bleve.NewBatch()
@@ -136,6 +142,9 @@ func (t *BleveDest) OnSnapshotStart(partition string,
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
 
 	err := t.applyBatchUnlocked()
 	if err != nil {
@@ -156,6 +165,9 @@ func (t *BleveDest) SetOpaque(partition string,
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
 
 	// TODO: The o:key makes garbage, so perhaps use lookup table?
 	return t.bindex.SetInternal([]byte("o:"+partition), value)
@@ -167,6 +179,9 @@ func (t *BleveDest) GetOpaque(partition string) (
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return nil, 0, fmt.Errorf("BleveDest already closed")
+	}
 
 	// TODO: The o:key makes garbage, so perhaps use lookup table?
 	value, err = t.bindex.GetInternal([]byte("o:" + partition))
@@ -193,6 +208,9 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 
 	t.m.Lock()
 	defer t.m.Unlock()
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
 
 	// TODO: Implement partial rollback one day.  Implementation
 	// sketch: we expect bleve to one day to provide an additional
@@ -211,7 +229,9 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	t.batch = nil
 	t.snapEnds = map[string]uint64{}
 
+	// Use t.bindex == nil to check any late calls to BleveDest.
 	t.bindex.Close()
+	t.bindex = nil
 
 	os.RemoveAll(t.path)
 
