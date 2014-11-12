@@ -157,10 +157,15 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO: Should also check the indexDef's UUID?
 	indexDef, exists := indexDefsByName[indexName]
 	if !exists || indexDef == nil {
 		showError(w, req, "not an index", 400)
+		return
+	}
+
+	indexUUID := req.FormValue("indexUUID")
+	if indexUUID != "" && indexUUID != indexDef.UUID {
+		showError(w, req, "wrong index UUID", 400)
 		return
 	}
 
@@ -201,7 +206,9 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	alias, err := indexAlias(h.mgr, indexName, "") // TODO: Check index UUID.
+	indexUUID := req.FormValue("indexUUID")
+
+	alias, err := indexAlias(h.mgr, indexName, indexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
 		return
@@ -240,9 +247,11 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	indexUUID := req.FormValue("indexUUID")
+
 	log.Printf("search request: %s", indexName)
 
-	alias, err := indexAlias(h.mgr, indexName, "") // TODO: Check index UUID.
+	alias, err := indexAlias(h.mgr, indexName, indexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
 		return
