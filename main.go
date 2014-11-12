@@ -49,8 +49,8 @@ var tags = flag.String("tags", "",
 	"comma-separated list of tags (or roles) for this node")
 var wanted = flag.Bool("wanted", false,
 	"force this node to be wanted as part of the cluster")
-var cfgProvider = flag.String("cfgProvider", "simple",
-	"provider/connection to cluster config")
+var cfgConnect = flag.String("cfgConnect", "simple",
+	"connection string/info to configuration provider")
 
 var expvars = expvar.NewMap("stats")
 
@@ -74,10 +74,10 @@ func main() {
 
 	// TODO: If cfg goes down, should we stop?  How do we reconnect?
 	//
-	cfg, err := MainCfg(*cfgProvider, *dataDir)
+	cfg, err := MainCfg(*cfgConnect, *dataDir)
 	if err != nil {
-		log.Fatalf("error: could not start cfg, cfgProvider: %s, err: %v",
-			*cfgProvider, err)
+		log.Fatalf("error: could not start cfg, cfgConnect: %s, err: %v",
+			*cfgConnect, err)
 		return
 	}
 

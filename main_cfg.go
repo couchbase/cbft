@@ -16,15 +16,15 @@ import (
 	"os"
 )
 
-func MainCfg(provider, dataDir string) (Cfg, error) {
+func MainCfg(connect, dataDir string) (Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
-	if provider == "" || provider == "simple" {
-		return MainCfgSimple(provider, dataDir)
+	if connect == "" || connect == "simple" {
+		return MainCfgSimple(connect, dataDir)
 	}
-	return nil, fmt.Errorf("error: unsupported cfg provider: %s", provider)
+	return nil, fmt.Errorf("error: unsupported cfg connect: %s", connect)
 }
 
-func MainCfgSimple(provider, dataDir string) (Cfg, error) {
+func MainCfgSimple(connect, dataDir string) (Cfg, error) {
 	cfgPath := dataDir + string(os.PathSeparator) + "cbft.cfg"
 	cfgPathExists := false
 	if _, err := os.Stat(cfgPath); err == nil {
