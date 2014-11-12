@@ -29,7 +29,10 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexType := "bleve"
+	indexType := req.FormValue("indexType")
+	if indexType == "" {
+		indexType = "bleve"
+	}
 
 	// find the name of the index to create
 	indexName := mux.Vars(req)["indexName"]
@@ -45,12 +48,12 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	sourceType := mux.Vars(req)["sourceType"]
+	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
 		sourceType = "couchbase" // TODO: Revisit default of sourceType as couchbase.
 	}
 
-	sourceName := mux.Vars(req)["sourceName"]
+	sourceName := req.FormValue("sourceName")
 	if sourceName == "" && sourceType == "couchbase" {
 		sourceName = indexName // TODO: Revisit default of sourceName as indexName.
 	}
@@ -59,11 +62,11 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	sourceUUID := mux.Vars(req)["sourceUUID"]     // Defaults to "".
-	sourceParams := mux.Vars(req)["sourceParams"] // Defaults to "".
+	sourceUUID := req.FormValue("sourceUUID")     // Defaults to "".
+	sourceParams := req.FormValue("sourceParams") // Defaults to "".
 
 	planParams := &PlanParams{}
-	planParamsStr := mux.Vars(req)["planParams"]
+	planParamsStr := req.FormValue("planParams")
 	if planParamsStr != "" {
 		err = json.Unmarshal([]byte(planParamsStr), planParams)
 		if err != nil {
