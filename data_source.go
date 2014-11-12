@@ -23,8 +23,8 @@ type DestSourceParams struct {
 	NumPartitions int `json:"numPartitions"`
 }
 
-func DataSourcePartitions(sourceType, sourceName,
-	sourceUUID, sourceParams, server string) ([]string, error) {
+func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+	server string) ([]string, error) {
 	if sourceType == "couchbase" {
 		poolName := "default" // TODO: Parameterize poolName.
 		bucketName := sourceName

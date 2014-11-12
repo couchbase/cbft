@@ -27,8 +27,8 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 		mgr.server)
 	if err != nil {
 		return fmt.Errorf("failed to connect to or retrieve information from source,"+
-			" sourceType: %s, sourceName: %s, sourceUUID: %s",
-			sourceType, sourceName, sourceUUID)
+			" sourceType: %s, sourceName: %s, sourceUUID: %s, err: %v",
+			sourceType, sourceName, sourceUUID, err)
 	}
 
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
