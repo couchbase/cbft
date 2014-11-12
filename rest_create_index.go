@@ -54,12 +54,11 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	sourceName := req.FormValue("sourceName")
-	if sourceName == "" && sourceType == "couchbase" {
-		sourceName = indexName // TODO: Revisit default of sourceName as indexName.
-	}
 	if sourceName == "" {
-		showError(w, req, "need non-empty sourceName", 400)
-		return
+		// NOTE: Some sourceTypes (like "nil") don't care if sourceName is "".
+		if sourceType == "couchbase" {
+			sourceName = indexName // TODO: Revisit default of sourceName as indexName.
+		}
 	}
 
 	sourceUUID := req.FormValue("sourceUUID")     // Defaults to "".
