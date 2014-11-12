@@ -11,9 +11,17 @@
 
 package main
 
+func init() {
+	RegisterFeedType("nil",
+		func(mgr *Manager, feedName, indexName, indexUUID,
+			sourceType, sourceName, sourceUUID, params string,
+			dests map[string]Dest) error {
+			return mgr.registerFeed(NewNILFeed(feedName, dests))
+		})
+}
+
 // A NILFeed never feeds any data to its dests.  It's useful for
 // testing and for pindexes that are actually primary data sources.
-
 type NILFeed struct {
 	name  string
 	dests map[string]Dest

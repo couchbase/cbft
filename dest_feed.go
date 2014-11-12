@@ -13,8 +13,16 @@ package main
 
 import (
 	"fmt"
-	log "github.com/couchbaselabs/clog"
 )
+
+func init() {
+	RegisterFeedType("dest",
+		func(mgr *Manager, feedName, indexName, indexUUID,
+			sourceType, sourceName, sourceUUID, params string,
+			dests map[string]Dest) error {
+			return mgr.registerFeed(NewDestFeed(feedName, BasicPartitionFunc, dests))
+		})
+}
 
 // A DestFeed implements both the Feed and Dest interfaces, for
 // chainability; and is also useful for testing.
@@ -28,8 +36,7 @@ type DestFeed struct {
 	doneMsg string
 }
 
-func NewDestFeed(name string, pf DestPartitionFunc,
-	dests map[string]Dest) (*DestFeed, error) {
+func NewDestFeed(name string, pf DestPartitionFunc, dests map[string]Dest) *DestFeed {
 	return &DestFeed{
 		name:    name,
 		pf:      pf,
@@ -38,7 +45,7 @@ func NewDestFeed(name string, pf DestPartitionFunc,
 		doneCh:  make(chan bool),
 		doneErr: nil,
 		doneMsg: "",
-	}, nil
+	}
 }
 
 func (t *DestFeed) Name() string {
@@ -46,7 +53,6 @@ func (t *DestFeed) Name() string {
 }
 
 func (t *DestFeed) Start() error {
-	log.Printf("DestFeed.Start, name: %s, dests: %#v", t.Name(), t.dests)
 	return nil
 }
 

@@ -21,6 +21,31 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
+func init() {
+	RegisterFeedType("couchbase-tap", StartTAPFeed)
+}
+
+func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
+	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
+	feed, err := NewTAPFeed(feedName, mgr.server, "default",
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
+	if err != nil {
+		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
+			" bucketName: %s, indexName: %s, err: %v",
+			mgr.server, bucketName, indexName, err)
+	}
+	if err = feed.Start(); err != nil {
+		return fmt.Errorf("error: could not start tap feed, server: %s, err: %v",
+			mgr.server, err)
+	}
+	if err = mgr.registerFeed(feed); err != nil {
+		feed.Close()
+		return err
+	}
+	return nil
+}
+
+// A TAPFeed uses TAP protocol to dump data from a couchbase data source.
 type TAPFeed struct {
 	name       string
 	url        string

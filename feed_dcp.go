@@ -24,7 +24,32 @@ import (
 	"github.com/steveyen/cbdatasource"
 )
 
-// Implements both Feed and cbdatasource.Receiver interfaces.
+func init() {
+	RegisterFeedType("couchbase", StartDCPFeed)
+	RegisterFeedType("couchbase-dcp", StartDCPFeed)
+}
+
+func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
+	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
+	feed, err := NewDCPFeed(feedName, mgr.server, "default",
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
+	if err != nil {
+		return fmt.Errorf("error: could not prepare DCP feed to server: %s,"+
+			" bucketName: %s, indexName: %s, err: %v",
+			mgr.server, bucketName, indexName, err)
+	}
+	if err = feed.Start(); err != nil {
+		return fmt.Errorf("error: could not start dcp feed, server: %s, err: %v",
+			mgr.server, err)
+	}
+	if err = mgr.registerFeed(feed); err != nil {
+		feed.Close()
+		return err
+	}
+	return nil
+}
+
+// A DCPFeed implements both Feed and cbdatasource.Receiver interfaces.
 type DCPFeed struct {
 	name       string
 	url        string

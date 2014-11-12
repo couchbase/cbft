@@ -379,6 +379,25 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		dests)
 }
 
+// TODO: need way to track dead cows (non-beef)
+// TODO: need a way to collect these errors so REST api
+// can show them to user ("hey, perhaps you deleted a bucket
+// and should delete these related full-text indexes?
+// or the couchbase cluster is just down.");
+// perhaps as specialized clog writer?
+
+func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
+	sourceType, sourceName, sourceUUID, sourceParams string,
+	dests map[string]Dest) error {
+	feedStartFunc, exists := feedTypes[sourceType]
+	if !exists || feedStartFunc == nil {
+		return fmt.Errorf("error: unknown sourceType: %s", sourceType)
+	}
+
+	return feedStartFunc(mgr, feedName, indexName, indexUUID,
+		sourceType, sourceName, sourceUUID, sourceParams, dests)
+}
+
 func (mgr *Manager) stopFeed(feed Feed) error {
 	feedUnreg := mgr.unregisterFeed(feed.Name())
 	if feedUnreg != nil && feedUnreg != feed {
