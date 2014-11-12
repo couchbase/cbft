@@ -31,7 +31,7 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexType := req.FormValue("indexType")
 	if indexType == "" {
-		indexType = "bleve"
+		indexType = "bleve" // TODO: Revisit default indexType?  Should be table'ized?
 	}
 
 	// find the name of the index to create
