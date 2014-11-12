@@ -54,10 +54,6 @@ func (p *PIndex) Close(remove bool) error {
 	return nil
 }
 
-type PIndexImpl interface {
-	Close() error
-}
-
 func NewPIndex(mgr *Manager, name, uuid,
 	indexType, indexName, indexUUID, indexSchema,
 	sourceType, sourceName, sourceUUID, sourceParams, sourcePartitions string,

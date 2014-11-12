@@ -15,6 +15,10 @@ import (
 	"fmt"
 )
 
+type PIndexImpl interface {
+	Close() error
+}
+
 type PIndexImplType struct {
 	New  func(indexType, indexSchema, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
