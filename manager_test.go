@@ -682,6 +682,50 @@ func TestCfgGetHelpers(t *testing.T) {
 	}
 }
 
+func TestManagerStartDCPFeed(t *testing.T) {
+	testManagerStartDCPFeed(t, "couchbase")
+	testManagerStartDCPFeed(t, "couchbase-dcp")
+}
+
+func testManagerStartDCPFeed(t *testing.T, sourceType string) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000", emptyDir, "some-datasource", nil)
+	if err := mgr.Start(true); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	sourceParams := ""
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", sourceType,
+		"sourceName", "sourceUUID", sourceParams, nil)
+	if err != nil {
+		t.Errorf("expected startFeedByType ok for sourceType: %s, err: %v",
+			sourceType, err)
+	}
+	currFeeds, _ := mgr.CurrentMaps()
+	if len(currFeeds) != 1 {
+		t.Errorf("len currFeeds != 1")
+	}
+	f, exists := currFeeds["feedName"]
+	if !exists || f.Name() != "feedName" {
+		t.Errorf("expected a feed")
+	}
+	if _, ok := f.(*DCPFeed); !ok {
+		t.Errorf("expected a DCPFeed")
+	}
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", sourceType,
+		"sourceName", "sourceUUID", sourceParams, nil)
+	if err == nil {
+		t.Errorf("expected re-startFeedByType to fail")
+	}
+	err = mgr.startFeedByType("feedName2", "indexName2", "indexUUID2", sourceType,
+		"sourceName2", "sourceUUID2", "NOT-VALID-JSON-sourceParams", nil)
+	if err == nil {
+		t.Errorf("expected startFeedByType to fail on non-json sourceParams")
+	}
+}
+
 func TestManagerStartTAPFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
