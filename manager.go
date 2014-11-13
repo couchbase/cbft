@@ -90,12 +90,12 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 
 	if tags == nil || tags["planner"] {
 		go mgr.PlannerLoop()
-		mgr.PlannerKick("start")
+		go mgr.PlannerKick("start")
 	}
 
 	if tags == nil || (tags["pindex"] && tags["janitor-local"]) {
 		go mgr.JanitorLoop()
-		mgr.JanitorKick("start")
+		go mgr.JanitorKick("start")
 	}
 
 	if mgr.cfg != nil { // TODO: err handling for Cfg subscriptions.
