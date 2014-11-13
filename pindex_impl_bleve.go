@@ -59,31 +59,59 @@ func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, De
 
 // ---------------------------------------------------------
 
-const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
-const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1500000
+const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 20000
+const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 200000
 
 type BleveDest struct {
 	path    string
 	restart func() // Invoked when caller should restart this BleveDest, like on rollback.
 
-	m      sync.Mutex
-	bindex bleve.Index
-	seqs   map[string]uint64 // To track max seq #'s we saw per partition.
+	m          sync.Mutex // Protects the fields that follow.
+	bindex     bleve.Index
+	partitions map[string]*BleveDestPartition
+}
 
-	// TODO: Maybe should have a buf & batch per partition?
-	buf      []byte            // The batch points to slices from buf.
-	batch    *bleve.Batch      // Batch applied when too large or hit snapshot end.
-	snapEnds map[string]uint64 // To track snapshot end seq #'s per partition.
+// Used to track state for a single partition.
+type BleveDestPartition struct {
+	partition       string
+	partitionOpaque string // Key used to implement Set/GetOpaque.
+
+	m          sync.Mutex   // Protects the fields that follow.
+	seqMax     uint64       // Max seq # we've seen for this partition.
+	seqSnapEnd uint64       // To track snapshot end seq #'s.
+	buf        []byte       // The batch points to slices from buf, which we reuse.
+	batch      *bleve.Batch // Batch applied when too large or when we hit seqSnapEnd.
 }
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
 	return &BleveDest{
-		path:     path,
-		restart:  restart,
-		bindex:   bindex,
-		seqs:     map[string]uint64{},
-		snapEnds: map[string]uint64{},
+		path:       path,
+		restart:    restart,
+		bindex:     bindex,
+		partitions: make(map[string]*BleveDestPartition),
 	}
+}
+
+func (t *BleveDest) getPartition(partition string) (
+	*BleveDestPartition, bleve.Index, error) {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	if t.bindex == nil {
+		return nil, nil, fmt.Errorf("BleveDest already closed")
+	}
+
+	bdp, exists := t.partitions[partition]
+	if !exists || bdp == nil {
+		bdp = &BleveDestPartition{
+			partition:       partition,
+			partitionOpaque: "o:" + partition,
+			batch:           bleve.NewBatch(),
+		}
+		t.partitions[partition] = bdp
+	}
+
+	return bdp, t.bindex, nil
 }
 
 func (t *BleveDest) OnDataUpdate(partition string,
@@ -91,24 +119,12 @@ func (t *BleveDest) OnDataUpdate(partition string,
 	log.Printf("bleve dest update, partition: %s, key: %s, seq: %d",
 		partition, key, seq)
 
-	t.m.Lock()
-	defer t.m.Unlock()
-	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
-	}
-
-	bufVal := t.appendToBufUnlocked(val)
-	if t.batch == nil {
-		t.batch = bleve.NewBatch()
-	}
-	t.batch.Index(string(key), bufVal) // TODO: The string(key) makes garbage?
-
-	err := t.maybeApplyBatchUnlocked(partition, seq)
+	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
 		return err
 	}
 
-	return t.updateSeqUnlocked(partition, seq)
+	return bdp.OnDataUpdate(bindex, key, seq, val)
 }
 
 func (t *BleveDest) OnDataDelete(partition string,
@@ -116,23 +132,12 @@ func (t *BleveDest) OnDataDelete(partition string,
 	log.Printf("bleve dest delete, partition: %s, key: %s, seq: %d",
 		partition, key, seq)
 
-	t.m.Lock()
-	defer t.m.Unlock()
-	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
-	}
-
-	if t.batch == nil {
-		t.batch = bleve.NewBatch()
-	}
-	t.batch.Delete(string(key)) // TODO: The string(key) makes garbage?
-
-	err := t.maybeApplyBatchUnlocked(partition, seq)
+	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
 		return err
 	}
 
-	return t.updateSeqUnlocked(partition, seq)
+	return bdp.OnDataDelete(bindex, key, seq)
 }
 
 func (t *BleveDest) OnSnapshotStart(partition string,
@@ -140,94 +145,66 @@ func (t *BleveDest) OnSnapshotStart(partition string,
 	log.Printf("bleve dest snapshot-start, partition: %s, snapStart: %d, snapEnd: %d",
 		partition, snapStart, snapEnd)
 
-	t.m.Lock()
-	defer t.m.Unlock()
-	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
-	}
-
-	err := t.applyBatchUnlocked()
+	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
 		return err
 	}
 
-	t.snapEnds[partition] = snapEnd
-
-	return nil
+	return bdp.OnSnapshotStart(bindex, snapStart, snapEnd)
 }
 
-var opaquePrefix = []byte("o:")
-
-func (t *BleveDest) SetOpaque(partition string,
-	value []byte) error {
+func (t *BleveDest) SetOpaque(partition string, value []byte) error {
 	log.Printf("bleve dest set-opaque, partition: %s, value: %s",
 		partition, value)
 
-	t.m.Lock()
-	defer t.m.Unlock()
-	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
+	bdp, bindex, err := t.getPartition(partition)
+	if err != nil {
+		return err
 	}
 
-	// TODO: The o:key makes garbage, so perhaps use lookup table?
-	return t.bindex.SetInternal([]byte("o:"+partition), value)
+	return bdp.SetOpaque(bindex, value)
 }
 
 func (t *BleveDest) GetOpaque(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	log.Printf("bleve dest get-opaque, partition: %s", partition)
 
-	t.m.Lock()
-	defer t.m.Unlock()
-	if t.bindex == nil {
-		return nil, 0, fmt.Errorf("BleveDest already closed")
-	}
-
-	// TODO: The o:key makes garbage, so perhaps use lookup table?
-	value, err = t.bindex.GetInternal([]byte("o:" + partition))
-	if err != nil || value == nil {
+	bdp, bindex, err := t.getPartition(partition)
+	if err != nil {
 		return nil, 0, err
 	}
 
-	// TODO: Need way to control memory alloc during GetInternal(),
-	// perhaps with optional memory allocator func() parameter?
-	buf, err := t.bindex.GetInternal([]byte(partition))
-	if err != nil || buf == nil {
-		return value, 0, err
-	}
-	if len(buf) < 8 {
-		return nil, 0, err
-	}
-
-	return value, binary.BigEndian.Uint64(buf[0:8]), nil
+	return bdp.GetOpaque(bindex)
 }
 
 func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
-	log.Printf("bleve dest get-opaque, partition: %s, rollbackSeq: %d",
+	log.Printf("bleve dest rollback, partition: %s, rollbackSeq: %d",
 		partition, rollbackSeq)
 
+	// NOTE: A rollback of any partition means a rollback of all
+	// partitions, since they all share a single bleve.Index backend.
+	// That's why we grab and keep BleveDest.m locked.
 	t.m.Lock()
 	defer t.m.Unlock()
+
 	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
+		return fmt.Errorf("BleveDest already closed, can't rollback")
 	}
 
 	// TODO: Implement partial rollback one day.  Implementation
 	// sketch: we expect bleve to one day to provide an additional
 	// Snapshot() and Rollback() API, where Snapshot() returns some
 	// opaque and persistable snapshot ID ("SID"), which cbft can
-	// occasionally record into the bleve's Get/SetInternal() "side"
-	// storage.  A stream rollback operation then needs to loop
-	// through appropriate candidate SID's until a Rollback(SID)
-	// succeeds.  Else, we eventually devolve down to
-	// restarting/rebuilding everything from scratch or zero.
+	// occasionally record into the bleve's Get/SetInternal() storage.
+	// A stream rollback operation then needs to loop through
+	// appropriate candidate SID's until a Rollback(SID) succeeds.
+	// Else, we eventually devolve down to restarting/rebuilding
+	// everything from scratch or zero.
 	//
-	// For now, always rollback to zero, in which we close the
-	// pindex and have the janitor rebuild from scratch.
-	t.seqs = map[string]uint64{}
-	t.buf = nil
-	t.batch = nil
-	t.snapEnds = map[string]uint64{}
+	// For now, always rollback to zero, in which we close the pindex,
+	// erase files and have the janitor rebuild from scratch.
+	//
+	t.partitions = make(map[string]*BleveDestPartition)
 
 	// Use t.bindex == nil to check any late calls to BleveDest.
 	t.bindex.Close()
@@ -242,66 +219,142 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) maybeApplyBatchUnlocked(partition string, seq uint64) error {
-	if t.batch == nil || len(t.batch.IndexOps) <= 0 {
-		return nil
-	}
+func (t *BleveDestPartition) OnDataUpdate(bindex bleve.Index,
+	key []byte, seq uint64, val []byte) error {
+	t.m.Lock()
+	defer t.m.Unlock()
 
-	if len(t.buf) < BLEVE_DEST_APPLY_BUF_SIZE_BYTES &&
-		seq < t.snapEnds[partition] {
-		return nil
-	}
+	bufVal := t.appendToBufUnlocked(val)
 
-	return t.applyBatchUnlocked()
+	t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
+
+	return t.updateSeqUnlocked(bindex, seq)
 }
 
-func (t *BleveDest) applyBatchUnlocked() error {
-	if t.batch != nil {
-		if err := t.bindex.Batch(t.batch); err != nil {
-			return err
-		}
+func (t *BleveDestPartition) OnDataDelete(bindex bleve.Index,
+	key []byte, seq uint64) error {
+	t.m.Lock()
+	defer t.m.Unlock()
 
-		// TODO: would good to reuse batch; we could just clear its
-		// public maps (IndexOPs & InternalOps), but sounds brittle.
-		t.batch = nil
+	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
+
+	return t.updateSeqUnlocked(bindex, seq)
+}
+
+func (t *BleveDestPartition) OnSnapshotStart(bindex bleve.Index,
+	snapStart, snapEnd uint64) error {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	err := t.applyBatchUnlocked(bindex)
+	if err != nil {
+		return err
 	}
 
-	if t.buf != nil {
-		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
-	}
-
-	for partition, _ := range t.snapEnds {
-		delete(t.snapEnds, partition)
-	}
+	t.seqSnapEnd = snapEnd
 
 	return nil
 }
 
+func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	bufVal := t.appendToBufUnlocked(value)
+	t.batch.SetInternal([]byte(t.partitionOpaque), bufVal)
+	return nil
+}
+
+func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) (
+	value []byte, lastSeq uint64, err error) {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	// TODO: We're reading from InternalOps field, which we should
+	// double-check is part of planned bleve public Batch API.
+	value, exists := t.batch.InternalOps[t.partitionOpaque]
+	if !exists || value == nil {
+		value, err = bindex.GetInternal([]byte(t.partitionOpaque))
+		if err != nil || value == nil {
+			return nil, 0, err
+		}
+	}
+
+	buf, exists := t.batch.InternalOps[t.partition]
+	if !exists || buf == nil {
+		// TODO: Need way to control memory alloc during GetInternal(),
+		// perhaps with optional memory allocator func() parameter?
+		buf, err = bindex.GetInternal([]byte(t.partition))
+		if err != nil || buf == nil {
+			return value, 0, err
+		}
+		if len(buf) < 8 {
+			return nil, 0, err
+		}
+	}
+
+	return value, binary.BigEndian.Uint64(buf[0:8]), nil
+}
+
+// ---------------------------------------------------------
+
 var eightBytes = make([]byte, 8)
 
-func (t *BleveDest) updateSeqUnlocked(partition string, seq uint64) error {
-	if t.seqs[partition] < seq {
-		t.seqs[partition] = seq
+func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
+	seq uint64) error {
+	if t.seqMax < seq {
+		t.seqMax = seq
 
 		// TODO: use re-slicing if there's capacity to get the eight bytes.
 		bufSeq := t.appendToBufUnlocked(eightBytes)
 
 		binary.BigEndian.PutUint64(bufSeq, seq)
 
-		// TODO: Only the last SetInternal() matters for a partition,
-		// so we can reuse the bufSeq memory rather than wasting eight
-		// bytes in t.buf on every mutation.
+		// TODO: Only the last SetInternal() matters for a partition, so
+		// we can optimize by reusing the bufSeq memory rather than
+		// wasting eight bytes in t.buf on every mutation.
 		//
 		// NOTE: No copy of partition to buf as it's immutatable string bytes.
-		return t.bindex.SetInternal([]byte(partition), bufSeq)
+		t.batch.SetInternal([]byte(t.partition), bufSeq)
 	}
+
+	// Next, apply the batch if it's big enough or we've hit seqSnapEnd.
+	if len(t.batch.IndexOps) <= 0 && len(t.batch.InternalOps) <= 0 {
+		return nil
+	}
+
+	if len(t.buf) < BLEVE_DEST_APPLY_BUF_SIZE_BYTES &&
+		seq < t.seqSnapEnd {
+		return nil
+	}
+
+	return t.applyBatchUnlocked(bindex)
+}
+
+func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
+	if len(t.batch.IndexOps) > 0 || len(t.batch.InternalOps) > 0 {
+		if err := bindex.Batch(t.batch); err != nil {
+			return err
+		}
+
+		// TODO: would good to reuse batch; we could clear its public
+		// maps (IndexOPs & InternalOps), but that seems brittle;
+		// should ask for a supported API in bleve?
+		t.batch = bleve.NewBatch()
+	}
+
+	if t.buf != nil {
+		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
+	}
+
+	t.seqSnapEnd = 0
 
 	return nil
 }
 
 // Appends b to end of t.buf, and returns that suffix slice of t.buf
 // that has the appended copy of the input b.
-func (t *BleveDest) appendToBufUnlocked(b []byte) []byte {
+func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 	if len(b) <= 0 {
 		return b
 	}
