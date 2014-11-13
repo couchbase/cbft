@@ -74,13 +74,13 @@ type BleveDest struct {
 // Used to track state for a single partition.
 type BleveDestPartition struct {
 	partition       string
-	partitionOpaque string // Key used to implement Set/GetOpaque.
+	partitionOpaque string // Key used to implement SetOpaque/GetOpaque().
 
 	m          sync.Mutex   // Protects the fields that follow.
 	seqMax     uint64       // Max seq # we've seen for this partition.
-	seqSnapEnd uint64       // To track snapshot end seq #'s.
+	seqSnapEnd uint64       // To track snapshot end seq # for this partition.
 	buf        []byte       // The batch points to slices from buf, which we reuse.
-	batch      *bleve.Batch // Batch applied when too large or when we hit seqSnapEnd.
+	batch      *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
 }
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
@@ -261,7 +261,9 @@ func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
 	defer t.m.Unlock()
 
 	bufVal := t.appendToBufUnlocked(value)
+
 	t.batch.SetInternal([]byte(t.partitionOpaque), bufVal)
+
 	return nil
 }
 
@@ -273,27 +275,34 @@ func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) (
 	// TODO: We're reading from InternalOps field, which we should
 	// double-check is part of planned bleve public Batch API.
 	value, exists := t.batch.InternalOps[t.partitionOpaque]
-	if !exists || value == nil {
+	if !exists {
 		value, err = bindex.GetInternal([]byte(t.partitionOpaque))
-		if err != nil || value == nil {
+		if err != nil {
 			return nil, 0, err
 		}
 	}
 
-	buf, exists := t.batch.InternalOps[t.partition]
-	if !exists || buf == nil {
-		// TODO: Need way to control memory alloc during GetInternal(),
-		// perhaps with optional memory allocator func() parameter?
-		buf, err = bindex.GetInternal([]byte(t.partition))
-		if err != nil || buf == nil {
-			return value, 0, err
+	lastSeq = t.seqMax
+	if lastSeq <= 0 {
+		buf, exists := t.batch.InternalOps[t.partition]
+		if !exists {
+			// TODO: Need way to control memory alloc during GetInternal(),
+			// perhaps with optional memory allocator func() parameter?
+			buf, err = bindex.GetInternal([]byte(t.partition))
+			if err != nil {
+				return nil, 0, err
+			}
+		}
+		if len(buf) <= 0 {
+			return value, 0, nil
 		}
 		if len(buf) < 8 {
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("unexpected size for seqMax bytes")
 		}
+		lastSeq = binary.BigEndian.Uint64(buf[0:8])
 	}
 
-	return value, binary.BigEndian.Uint64(buf[0:8]), nil
+	return value, lastSeq, nil
 }
 
 // ---------------------------------------------------------
@@ -347,7 +356,8 @@ func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
 		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
 	}
 
-	t.seqSnapEnd = 0
+	// NOTE: Leave t.seqSnapEnd unchanged in case we're applying the
+	// batch because t.buf got too big.
 
 	return nil
 }
