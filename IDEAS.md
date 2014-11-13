@@ -4,32 +4,29 @@ A file for ideas/notes...
 Requirements
 
 Every requirement listed here has a unique ID for easy reference (like
-"CS1"), where the number suffix doesn't have meaning (especially, does
-not connote priority).
+"CS1"), where the number suffix doesn't mean anything (especially, the
+number does not connote priority).
 
-CS1 - Consistent queries during stable topology.
+# CS1 - Consistent queries during stable topology.
 
 Clients should be able to ask, "I want query results where the
 full-text-indexes have incorporated at least up to this set of
 {vbucket to seq-num} pairings."
 
-For example, the app does some mutations; then the app
-does some full-text query.  The app will want the full-text
-results to have incorporated at least their mutations.
+For example, the app does some mutations; then the app does some
+full-text query.  The app will want the full-text results to have
+incorporated at least their mutations.
 
-Of note, concurrent clients might be racing each other,
-but the idea is that when we simplify to just a single
-client with no system failures, it should work as expected.
+Of note, concurrent clients might be racing each other, but the idea
+is that when we simplify to just a single client with no system
+failures, the client should get expected results.
 
-CR1 - Consistent queries under datasource rebalance.
+# CR1 - Consistent queries under datasource rebalance.
 
-Full-text queries should be consistent even as data source nodes are
-added and removed in a clean rebalance.
+Full-text queries should be consistent even as data source (Couchbase
+Server) nodes are added and removed in a clean rebalance.
 
-Implementation note: maybe the implementation for CS1 will help us
-get CR1 "for free".
-
-CR2 - Consistent queries under cbft topology change.
+# CR2 - Consistent queries under cbft topology change.
 
 Full-text queries should be consistent even as cbft nodes are added
 and removed in a clean takeover fashion.
@@ -38,24 +35,33 @@ Implementation sketch: perhaps don't blow away the index on the old
 node until the new node has built up the index; and perhaps there's
 some takeover handshake?
 
-OC1 - Support optional looser "best effort" options (along a spectrum
-to totally consistent) that's less expensive than a totally consistent
-CR1 implementation.
+# OC1 - Support optional looser "best effort" options (along a
+spectrum from stale=ok to totally consistent) that has lower latency
+than a totally consistent CR1 query.
 
 For example, perhaps the client may want to just ask for consistency
-around just one vbucket.
+around just one vbucket-seqnum.
 
-IA1 - Index aliases.
+# IA1 - Index aliases.
 
-Level of indirection to help split data across multiple indexes, but
-also not change your app all the time.  Example: query from
-'recent-sales' index, but only want to search the most recent quarter
-index of 'sales-2014Q3', which an administrator can dynamically remap
-to the 'sales-2014Q4' index.
+This is a level of indirection to help split data across multiple
+indexes, but also not change your app all the time.  Example: the
+client wants to query from 'last-quarter-sales', but that means a
+search limited to only the most recent quarter index of
+'sales-2014Q3'.  Later, an administrator can dynamically remap the
+'last-quarter-sales' alias to the the newest 'sales-2014Q4' index
+without any client-side application changes.
 
-MQ1 - Multi-index query for a single bucket.
+# MQ1 - Multi-index query for a single bucket.
 
-MQ2 - Multi-index query across multiple buckets.
+This is the ability to query multiple indexes in one request for a
+single bucket, such as the "comments-fti" index and the
+"description-fti" index.
+
+Implementation sketch: an index alias that "fans-out" to multiple
+actual indexes might be useful to support this requirement.
+
+# MQ2 - Multi-index query across multiple buckets.
 
 This is the ability to query multiple indexes across multiple buckets
 in a single query, such as "find any docs from the customer, employee,
@@ -93,14 +99,15 @@ couchbase bucket "container" semantics?
 
 In ES, an index alias can point to multiple indexes to support MQ1.
 
-NI1 - Resilient to datasource node down scenarios.
+# NI1 - Resilient to datasource node down scenarios.
 
 If a data source (couchbase cluster server node) goes down, then the
-subset of cbft that were indexing data from the down node will not
-be able to make indexing progress.  Those cbft instances
-should try to automatically reconnect and resume indexing.
+subset of a cbft cluster that was indexing data from the down node
+will not be able to make indexing progress.  Those cbft instances
+should try to automatically reconnect and resume indexing from where
+they left off.
 
-E1 - The user should be able to see error conditions (e.g., yellow /
+# E1 - The user should be able to see error conditions (e.g., yellow /
 red color) on node down and other error conditions.
 
 Question: how to distinguish between I'm behind (as normal) versus
@@ -113,12 +120,12 @@ In ES, note the frustrating bouncing between yellow, green, red;
 ns-server example, not enough CPU & timeouts leads to status
 bounce-iness.
 
-NQ1 - Querying still possible if datasource node goes down.
+# NQ1 - Querying still possible if datasource node goes down.
 
-Querying of cbft should be able to continue even if
-some datasource nodes are down.
+Querying of a cbft cluster should be able to continue even if some
+datasource nodes are down.
 
-PI1 - Ability to pause/resume indexing.
+# PI1 - Ability to pause/resume indexing.
 
 ---------------------------------------------
 Imaginary N1QL syntax...
@@ -141,72 +148,67 @@ Proposed highlevel design concepts and "subparts"...
 
 Inside a single cbft process...
 
-- PIndex (an "Index Partition" whose input is a single Stream)
+- PIndex - an "Index Partition".
 
-- Stream (a channel of StreamRequest (doc update, doc deleted, &
-          stream management commands))
+- Feed - hooks up to a data source & pushes data + requests
+         into 1 or more PIndexes.
 
-- Feed (hooks up to a data source & pushes data + requests
-        into 1 or more Streams)
+- Manager - manages a set of PIndexes and Feeds;
+            also manages a Planner and Janitor.
 
-- Manager (manages a set of PIndexes, Streams, and Feeds;
-           also manages a Planner and Janitor)
+-- Planner - assigns datasource partitions to PIndexes
+             and then assigns those PIndexes to nodes.
 
--- Planner (assigns datasource partitions to PIndexes
-            and assigns PIndexes to nodes)
+-- Janitor - tries to make reality match the Planner's plan
+             by starting & stopping local PIndexes and Feeds
+             as needed.
 
--- Janitor (tries to make reality match the plan by
-            starting & stopping local PIndexes and
-            Feeds as needed)
+- Queryer - scatter/gathers across relevant PIndexes.
 
-- Queryer (scatter/gathers across relevant PIndexes)
-
-- Cfg (a distributed, consistent config database)
+- Cfg - a distributed, consistent config database
+        where index definitions and plans can be stored.
 
 Every cbft node is homogeneous in order to provide a simple story for
 deployment.
 
-An PIndex (a.k.a, an Index Partition, or a "Physical Index") consumes
-a Stream and maintains a single bleve index.  This PIndex *might* be
-covering just a subset of a larger index, but an PIndex doesn't really
-know.  Higher levels of the system (Manager/Planner/Janitor) have a
-logical index to PIndex mapping.  An PIndex, in contrast, just knows
-about a single Stream as its input, and a PIndex doesn't know about
-couchbase, buckets, vbuckets, or DCP/TAP.  The PIndex interface should
-also allow for different, potential PIndex implementations.
-
-A Stream is a channel of StreamRequest objects, which might represent
-mutations (document updated, deleted), or "administrative" requests
-(like please-shutdown, compact, delete-index, snapshot, negotitate
-rollback/restart, negotiate a checkpoint, etc).
+An PIndex (a.k.a, an Index Partition, or a "Physical Index") will have
+different backend implementation types, and a PIndex of type "bleve"
+maintains a single bleve index.  A PIndex *might* be covering just a
+subset of a larger index, but an PIndex doesn't really know that.
+Higher levels of the system (Manager/Planner/Janitor) have a logical
+index (aka, "LIndex") to PIndex mapping.  A PIndex, in particular,
+doesn't really know about data-source concepts like couchbase cluster,
+buckets, vbuckets, or DCP/TAP.
 
 A Feed is an interface that will have different implementations
-(TAPFeed, DCPFeed, TestFeed, etc) that pumps requests into one or more
-Streams.  A Feed is responsible for connecting (and reconnecting) to a
-data source.  A TestFeed, for example, can send a whole series of
-interesting requests down to its Streams for testing difficult
-scenarios.  During scenarios to flapping or wobbly data sources, it's
-the responsibility of the different Feed implementations to implement
-reconnection backoff strategies.
+(TAPFeed, DCPFeed, TestFeed, etc).  A Feed is responsible for
+connecting to a data source (and reconnecting as necessary).  A Feed
+pumps updates from its data source into one or more PIndexes.  A
+TestFeed, for example, can send a whole series of interesting updates
+to PIndexes for testing difficult scenarios.  Of note, a PIndex
+doesn't know about Feeds, so that any code (like test code) might be
+driving updates to a PIndex's API.  During scenarios to flapping or
+wobbly data sources, it's the responsibility of the different Feed
+implementations to implement reconnection backoff strategies.
 
-A Manager has a collection of PIndex'es, Streams, and Feeds.  It has
-the mapping of buckets and vbuckets/partitions to
-PIndexes/Streams/Feeds.  A Manager singleton will be that single
+A Manager has a collection of PIndexes and Feeds and manages the
+hook-ups between them.  A Manager singleton will be that single
 "global" object in a cbft process rather than having many global
 variables (although for testing, there might be many Manager instances
-in a test process to validate difficult scenarios, etc).  A Manager
-has API to list, create and delete logical indexes for use by higher
-levels of cbft (like admin REST endpoints).
+in a test process to validate difficult cluster scenarios, etc).  A
+Manager has API to list, create and delete logical indexes for use by
+higher levels of cbft (like admin REST endpoints).
 
-The Manager has helpers: Planner & Janitor.  When a new logical "full
-text index" is created for a bucket, for example, the Manager engages
-its Planner to assign partitions/vbuckets to PIndexes and to assign
-those PIndexes across cbft instances.  A Planner, then, decides the
-1-to-1, 1-to-N, N-to-1, N-to-M fan-in-or-out assignment of partitions
-to PIndexes.  The Janitor, in turn, will detect "messes" (divergence
-from plans to reality) and will make moves to help change reality to
-be closer to the plan, such as by creating/deleting PIndexes, Feeds
-and Streams.
+The Manager has helpers: Planner & Janitor.  When a new logical index
+is created, for example, the Manager engages its Planner to assign
+data source partitions to PIndexes and also to assign those PIndexes
+across cbft nodes.  A Planner, then, decides the 1-to-1, 1-to-N,
+N-to-1, N-to-M fan-in-or-out assignment of partitions to PIndexes.
+
+Once the Planner has updated the plans, the Janitor then will detect
+"messes" (divergence from plans to reality) and will make moves to
+help move reality to be closer to the plan, such as by
+creating/deleting PIndexes and Feeds.
 
 A Cfg is some consistent, distributed database; think: gometa, etcd,
 zookeeper kind of system.  It needs a "watcher" ability where clients
@@ -214,15 +216,16 @@ can subscribe to data changes (configuration changes).
 
 A Queryer can query against one or more PIndexes (perhaps even one day
 to remote PIndexes by communicating with remote Queryers).  Initially,
-perhaps it can only do just a single PIndex, but the API and
-interfaces should be multi-PIndex and scatter/gather ready.
+perhaps a simple Queryer can only hit just a single PIndex, but the
+API and interfaces should be multi-PIndex and scatter/gather ready for
+the future.
 
 A HTTP/REST (and next-generation protocol / green-stack) networking
-layer sits on top of all of it for index mgmt and querying endpoints
-that clients can access.  During a query, this networking layer
-accesses a Manager for the relevant mapping and invokes the Queryer
-with the PIndexes that need to be accessed.  This networking layer will
-provide the necessary AUTH checks.
+layer sits on top of all of it for index management and querying
+endpoints that clients can access.  During a query, this networking
+layer accesses a Manager for the relevant mapping and invokes the
+Queryer with the PIndexes that need to be accessed.  This networking
+layer will provide the necessary AUTH checks.
 
 ---------------------------------------------
 What happens when creating a full-text index...
@@ -412,8 +415,7 @@ that they also don't have to talk to each other but can separately
 work and arrive at the same answers.
 
 -------------------------
-
-TODO: What about downgrades?
+What about downgrades?
 
 Downgrades might happen when a user starts a rolling upgrade her
 cluster of cbft nodes to a latest cbft version.  The new version of
@@ -426,6 +428,6 @@ nodes, those latest Cfg entries will remain incorrectly "prioritized",
 where the remaining old-version cbft nodes won't do any re-planning or
 overwriting.
 
-To solve this, there might be a tool to overwrite the ImplVersion's in
-the Cfg so that old cbft nodes will again start participating in
-planning and Cfg updates.
+To solve this, there might need to be a tool (lower priority) to
+overwrite the ImplVersion's in the Cfg so that old cbft nodes will
+again start participating in planning and Cfg updates.
