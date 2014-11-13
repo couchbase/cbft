@@ -30,7 +30,7 @@ type IndexDefs struct {
 }
 
 type IndexDef struct {
-	Type         string     `json:"type"` // Like "bleve", "blackhole", etc.
+	Type         string     `json:"type"` // Ex: "bleve", "alias", "blackhole", etc.
 	Name         string     `json:"name"`
 	UUID         string     `json:"uuid"`
 	Schema       string     `json:"schema"`
