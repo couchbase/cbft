@@ -22,6 +22,11 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
 	// TODO: what about hints for # of partitions, etc?
 
+	_, exists := pindexImplTypes[indexType]
+	if !exists {
+		return fmt.Errorf("error: CreateIndex, unknown indexType: %s", indexType)
+	}
+
 	// First, check that the source exists.
 	_, err := DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 		mgr.server)

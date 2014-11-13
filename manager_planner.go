@@ -200,7 +200,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	*PlanPIndexes, error) {
 	// This simple planner assigns at most MaxPartitionsPerPIndex
 	// number of partitions onto a PIndex.  And then this planner
-	// assigns every PIndex onto every node (so every signle node
+	// assigns every PIndex onto every node (so every single node
 	// has a replica of that PIndex).
 	//
 	// TODO: Assign PIndexes to nodes in a fancier way.
