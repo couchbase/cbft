@@ -78,9 +78,12 @@ type BleveDestPartition struct {
 
 	m          sync.Mutex   // Protects the fields that follow.
 	seqMax     uint64       // Max seq # we've seen for this partition.
+	seqMaxBuf  []byte       // For binary encoded seqMax uint64.
 	seqSnapEnd uint64       // To track snapshot end seq # for this partition.
 	buf        []byte       // The batch points to slices from buf, which we reuse.
 	batch      *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
+
+	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
 }
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
@@ -106,6 +109,7 @@ func (t *BleveDest) getPartition(partition string) (
 		bdp = &BleveDestPartition{
 			partition:       partition,
 			partitionOpaque: "o:" + partition,
+			seqMaxBuf:       make([]byte, 8), // For binary encoded seqMax uint64.
 			batch:           bleve.NewBatch(),
 		}
 		t.partitions[partition] = bdp
@@ -260,71 +264,57 @@ func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	bufVal := t.appendToBufUnlocked(value)
+	t.lastOpaque = append(t.lastOpaque[0:0], value...)
 
-	t.batch.SetInternal([]byte(t.partitionOpaque), bufVal)
+	t.batch.SetInternal([]byte(t.partitionOpaque), t.lastOpaque)
 
 	return nil
 }
 
-func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) (
-	value []byte, lastSeq uint64, err error) {
+func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) ([]byte, uint64, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	// TODO: We're reading from InternalOps field, which we should
-	// double-check is part of planned bleve public Batch API.
-	value, exists := t.batch.InternalOps[t.partitionOpaque]
-	if !exists {
-		value, err = bindex.GetInternal([]byte(t.partitionOpaque))
+	if t.lastOpaque == nil {
+		// TODO: Need way to control memory alloc during GetInternal(),
+		// perhaps with optional memory allocator func() parameter?
+		value, err := bindex.GetInternal([]byte(t.partitionOpaque))
 		if err != nil {
 			return nil, 0, err
 		}
+		t.lastOpaque = append([]byte(nil), value...) // Note: copies value.
 	}
 
-	lastSeq = t.seqMax
-	if lastSeq <= 0 {
-		buf, exists := t.batch.InternalOps[t.partition]
-		if !exists {
-			// TODO: Need way to control memory alloc during GetInternal(),
-			// perhaps with optional memory allocator func() parameter?
-			buf, err = bindex.GetInternal([]byte(t.partition))
-			if err != nil {
-				return nil, 0, err
-			}
+	if t.seqMax <= 0 {
+		// TODO: Need way to control memory alloc during GetInternal(),
+		// perhaps with optional memory allocator func() parameter?
+		buf, err := bindex.GetInternal([]byte(t.partition))
+		if err != nil {
+			return nil, 0, err
 		}
 		if len(buf) <= 0 {
-			return value, 0, nil
+			return t.lastOpaque, 0, nil // No seqMax buf is a valid case.
 		}
-		if len(buf) < 8 {
+		if len(buf) != 8 {
 			return nil, 0, fmt.Errorf("unexpected size for seqMax bytes")
 		}
-		lastSeq = binary.BigEndian.Uint64(buf[0:8])
+		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
+		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
 	}
 
-	return value, lastSeq, nil
+	return t.lastOpaque, t.seqMax, nil
 }
 
 // ---------------------------------------------------------
-
-var eightBytes = make([]byte, 8)
 
 func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
 	seq uint64) error {
 	if t.seqMax < seq {
 		t.seqMax = seq
+		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
 
-		// TODO: use re-slicing if there's capacity to get the eight bytes.
-		bufSeq := t.appendToBufUnlocked(eightBytes)
-
-		binary.BigEndian.PutUint64(bufSeq, seq)
-
-		// TODO: Only the last SetInternal() matters for a partition, so
-		// we can optimize by reusing the bufSeq memory rather than
-		// wasting eight bytes in t.buf on every mutation.
-		//
 		// NOTE: No copy of partition to buf as it's immutatable string bytes.
-		t.batch.SetInternal([]byte(t.partition), bufSeq)
+		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
 	// Next, apply the batch if it's big enough or we've hit seqSnapEnd.
