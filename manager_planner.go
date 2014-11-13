@@ -214,9 +214,12 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
-		_, exists := pindexImplTypes[indexDef.Type]
-		if !exists {
-			continue // Skip indexDef's that have no pindexImplType.
+		pindexImplType, exists := pindexImplTypes[indexDef.Type]
+		if !exists ||
+			pindexImplType == nil ||
+			pindexImplType.New == nil ||
+			pindexImplType.Open == nil {
+			continue // Skip indexDef's with no instantiatable pindexImplType.
 		}
 
 		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
