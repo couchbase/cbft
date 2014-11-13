@@ -204,6 +204,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	// has a replica of that PIndex).
 	//
 	// TODO: Assign PIndexes to nodes in a fancier way.
+	// TODO: This simple planner doesn't handle cbft node membership changes
+	// right, and should instead reassign pindexes on leaving nodes,
+	// and rebalance pindexes on remaining (and newly added) nodes.
 	if indexDefs == nil || nodeDefs == nil {
 		return nil, nil
 	}
