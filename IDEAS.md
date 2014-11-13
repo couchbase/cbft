@@ -232,27 +232,28 @@ What happens when creating a full-text index...
 
 Let's "follow a request" through the system of a user creating a
 logical full-text index.  The user supplies inputs of data source
-bucket, indexName, indexMapping, using a client SDK that eventually
-communicates with some cbft instance (doesn't matter which one).
+bucket, indexType, indexName, indexSchema, using a client SDK that
+eventually communicates with some cbft instance (doesn't matter which
+one).
 
 10 Then Manager.CreateIndex() on that cbft instance is invoked with
 the creation arguments.
 
-20 The Manager saves logical full-text instance configuration data to
-the Cfg system.
+20 The Manager saves logical full-text instance configuration data
+(aka, a new IndexDef) to the Cfg system.
 
 30 The Cfg store should have enough "watcher" or pub/sub capability so
 that any other subscribed cbft instances can hear about the news that
-the configuration changed.
+the Cfg has changed.
 
 40 So, Planners across the various cbft nodes across the cbft cluster
-will get awoken (hey, something changed, there's (re-)planning
-needed!).
+will be awoken (hey, something changed, there's (re-)planning
+needed).
 
 50 ASIDE: By the way, each cbft instance or process has its own
-unique, persistent cbft-ID (likely saved in the dataDir somwhere).
+unique, persistent cbft-ID (likely saved in the dataDir somewhere).
 
-52 And all those cbft-ID's will also listed in the Cfg.
+52 And all those cbft-ID's will also be listed in the Cfg.
 
 53 That is, when a cbft instance starts up it writes its cbft-ID and
 related instance data (like, here's my address, and I have N cpus and
@@ -260,7 +261,9 @@ M amount of RAM here) to the Cfg.
 
 54 Those brand new cbft instances, however, are not engaged right
 away.  Only some subset of cbft-ID's, however, will be explicitly
-listed as "wanted" by the user or sysadmin.
+listed as "wanted" by the user or sysadmin.  This is akin to how
+Couchbase Server has a separate step or state between Add Server and
+Rebalance.
 
 56 The sysadmin can use some API's to mark some subset of the known
 cbft instances as "wanted" in the Cfg.
@@ -270,32 +273,31 @@ cbft instances as "wanted" in the Cfg.
 60 Each awoken (or "kicked") Planner in a cbft instance will work
 independently of its concurrent peers in the cluster.
 
-70 The Planner takes input of logical full-text configuration, the
-list of wanted cbft-instances, the CB cluster vbucket map, and version
-info.
+70 The Planner takes input of logical full-text configuration (the
+IndexDef's), the list of wanted cbft-instances, and version info.
 
 72 If any of the above inputs changes, the Planner needs to be
 re-awoken and re-run.
 
 80 The Planner functionally (in a deterministic, mathematically
-function sense) computes an assignment of partitions or vbuckets to
-PIndexes and also functionally assigns those PIndexes to cbft
-instances.
+function sense) computes an assignment of partitions (in this case,
+vbuckets) to PIndexes and then also functionally assigns those
+PIndexes to cbft instances.
 
 90 So, there are N indepedent Planners running across the cbft cluster
-that independently see something needs to be planned, and assumming the
-planning algorithm is deterministic, each Planner instance should come
-up with the same plan, the same determinstic calculation results, no matter
-where it's running on whatever cbft node.
+that independently see something needs to be planned, and assumming
+the planning algorithm is deterministic, each Planner instance should
+come up with the same plan, the same determinstic calculation results,
+no matter where it's running on whatever cbft node.
 
-92 ASIDE: what about cases of versioning, where some newer
-software versions, not yet deployed and running homogenously on every
-node, have a different, improved Planning algorithm?
+92 ASIDE: what about cases of versioning, where some newer software
+versions, not yet deployed and running homogenously on every node,
+have a different, improved Planning algorithm?
 
-94 For multi-versioning, a Planner must respect their version input.
-A newer deployed version of the Planner writes an updated version into
-the Cfg.  Older Planners should then stop working when they detect
-that their version is outdated.
+94 For multi-versioning, a Planner must respect its version input
+parameter.  A newer deployed version of the Planner writes an updated
+version into the Cfg.  Older Planners should then stop working when
+they detect that their version is outdated.
 
 96 END ASIDE.
 
@@ -308,10 +310,12 @@ requirements of the first Developer Preview).
 110 The hope is if we improve the Planner to be smarter over time,
 there should be enough separation of responsibilites in the design
 here so that the later parts of the system don't need to change so
-much.
+much when a Planner is upgraded.
 
-112 (feedback from Alk) What about huge single terms, like
-"user:gender" or "user:is-root-admin"?
+112 ((feedback from Alk) What about huge single terms, like
+"user:gender" or "user:is-root-admin"?  Sketch answer: it's still
+splittable as docID's are suffx'ed onto term keys, so a future Planner
+can take that into account.)
 
 120 The Planners will then save the plans down into the Cfg so
 that later parts of the system can use it as input.
@@ -320,8 +324,8 @@ that later parts of the system can use it as input.
 to learn of the expected locations of PIndexes across the cbft
 cluster.
 
-130 Some CAS-like facility in Cfg will be necessary to help make this
-work well.
+130 Some CAS-like facility in Cfg will be necessary to make this
+work and have consistent, converging outcomes.
 
 140 There might be some concern that planning won't be deterministic,
 because planning might need to include things like, cpu utilization,
@@ -329,10 +333,10 @@ disk space, number of Pindexes already on a node, etc.
 
 142 The key idea is that re-planning should only be done on topology
 changes (add/remove wanted cbft nodes or logical config changes
-(add/remove logical full-text index).  If CPU utilization changes,
-that is, we won't do replanning, similar to how we don't do an
-automatic rebalance in CB if CPU on just a single CB node temporarily
-spikes.
+(add/remove logical full-text index)).  In contrast, if CPU
+utilization changes, we won't do replanning, similar to how we don't
+do an automatic Rebalance in Couchbase if CPU on just a single
+Couchbase node temporarily spikes.
 
 144 General machine "capability level" (4 cpus vs 32 cpus) can be
 input into Planning, to be able to handle heterogeneous machine types,
@@ -341,7 +345,7 @@ cpu's does change, we won't blithely replan.
 
 146 A related thought is we'd want to keep PIndex assignments across a
 cbft cluster relatively stable (not try to move or rebuild potentially
-large, persisted bleve index files at the drop of a hat).
+large, persisted PIndex files at the drop of a hat).
 
 160 Consider the case where a new cbft node joins and is added to the
 "wanted" list.  Some nodes have seen the news, others haven't yet, so
@@ -356,18 +360,18 @@ any Planners that are racing to save their latest plans.
 
 166 Still, some cbft nodes might be slow in hearing the news, and
 clients must be careful to handle this situation of out-of-date cbft
-nodes, which is guaranteed-to-happen scenario.  (Imagine a cbft node
-that's just overworked and slow.)
+nodes, which is a guaranteed-to-happen scenario.  (Imagine a cbft node
+that's just overworked, slow and out-of-date.)
 
 170 Eventually, a cbft instance / Manager / Planner is going to have a
-new, latest & greatest plan that's different than it's previous plan.
+new, latest & greatest plan that's different than its previous plan.
 Next, responsibility switches to the Janitor.
 
 180 Each Janitor running a cbft node knows its cbft-ID, and can focus
 on the subset of the plan related to that cbft-ID.
 
-190 A Janitor can then create or delete local PIndexes (bleve indexes)
-and setup/teardown Feeds as needed to match the subset of the plan.
+190 A Janitor can then create or delete local PIndexes and
+setup/teardown Feeds as needed to match its subset of the plan.
 
 192 (feedback from Alk) Alk & cluster manager team have found, in
 contrast to the current design thinking, that single orchestrator in a
