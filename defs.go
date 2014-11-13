@@ -241,7 +241,7 @@ func SamePlanPIndex(a, b *PlanPIndex) bool {
 		a.SourceType != b.SourceType ||
 		a.SourceName != b.SourceName ||
 		a.SourceUUID != b.SourceUUID ||
-		!reflect.DeepEqual(a.SourceParams, b.SourceParams) ||
+		a.SourceParams != b.SourceParams ||
 		a.SourcePartitions != b.SourcePartitions ||
 		!reflect.DeepEqual(a.NodeUUIDs, b.NodeUUIDs) {
 		return false
@@ -258,7 +258,7 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 		pindex.SourceType == planPIndex.SourceType &&
 		pindex.SourceName == planPIndex.SourceName &&
 		pindex.SourceUUID == planPIndex.SourceUUID &&
-		reflect.DeepEqual(pindex.SourceParams, planPIndex.SourceParams) &&
+		pindex.SourceParams == planPIndex.SourceParams &&
 		pindex.SourcePartitions == planPIndex.SourcePartitions
 	if !same {
 		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
