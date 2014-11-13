@@ -375,11 +375,15 @@ func (mgr *Manager) DataDir() string {
 // Returns the tags at process start, which may not be same as the
 // tags regsitered in the Cfg.  The tags in Cfg take precedence.
 func (mgr *Manager) Tags() map[string]bool {
-	if mgr.tags == nil {
+	return MapTags(mgr.tags)
+}
+
+func MapTags(tagsArr []string) map[string]bool {
+	if tagsArr == nil {
 		return nil
 	}
 	tags := map[string]bool{}
-	for _, tag := range mgr.tags {
+	for _, tag := range tagsArr {
 		tags[tag] = true
 	}
 	return tags

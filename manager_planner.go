@@ -251,9 +251,13 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			}
 
 			// TODO: Assign PIndexes to nodes in a fancier way.
+			// TODO: Warn if PIndex isn't assigned to any nodes?
 			for _, nodeDef := range nodeDefs.NodeDefs {
-				planPIndex.NodeUUIDs[nodeDef.UUID] =
-					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+				tags := MapTags(nodeDef.Tags)
+				if tags == nil || tags["pindex"] {
+					planPIndex.NodeUUIDs[nodeDef.UUID] =
+						PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+				}
 			}
 
 			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
