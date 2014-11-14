@@ -389,12 +389,12 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID, sourceParams string,
 	dests map[string]Dest) error {
-	feedStartFunc, exists := feedTypes[sourceType]
-	if !exists || feedStartFunc == nil {
+	feedType, exists := feedTypes[sourceType]
+	if !exists || feedType == nil {
 		return fmt.Errorf("error: unknown sourceType: %s", sourceType)
 	}
 
-	return feedStartFunc(mgr, feedName, indexName, indexUUID,
+	return feedType.Start(mgr, feedName, indexName, indexUUID,
 		sourceType, sourceName, sourceUUID, sourceParams, dests)
 }
 

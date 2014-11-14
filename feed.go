@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	"fmt"
+)
+
 type Feed interface {
 	Name() string
 	Start() error
@@ -23,12 +27,30 @@ const FEED_SLEEP_MAX_MS = 10000
 const FEED_SLEEP_INIT_MS = 100
 const FEED_BACKOFF_FACTOR = 1.5
 
+var feedTypes = make(map[string]*FeedType) // Key is sourceType.
+
+type FeedType struct {
+	Start      FeedStartFunc
+	Partitions FeedPartitionsFunc
+}
+
 type FeedStartFunc func(mgr *Manager, feedName, indexName, indexUUID string,
 	sourceType, sourceName, sourceUUID, sourceParams string,
 	dests map[string]Dest) error
 
-var feedTypes = make(map[string]FeedStartFunc)
+type FeedPartitionsFunc func(sourceType, sourceName, sourceUUID, sourceParams,
+	server string) ([]string, error)
 
-func RegisterFeedType(sourceType string, fn FeedStartFunc) {
-	feedTypes[sourceType] = fn
+func RegisterFeedType(sourceType string, f *FeedType) {
+	feedTypes[sourceType] = f
+}
+
+func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+	server string) ([]string, error) {
+	feedType, exists := feedTypes[sourceType]
+	if !exists || feedType == nil {
+		return nil, fmt.Errorf("error: partitions unknown sourceType: %s", sourceType)
+	}
+
+	return feedType.Partitions(sourceType, sourceName, sourceUUID, sourceParams, server)
 }

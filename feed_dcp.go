@@ -25,8 +25,9 @@ import (
 )
 
 func init() {
-	RegisterFeedType("couchbase", StartDCPFeed)
-	RegisterFeedType("couchbase-dcp", StartDCPFeed)
+	f := &FeedType{Start: StartDCPFeed, Partitions: CouchbasePartitions}
+	RegisterFeedType("couchbase", f)
+	RegisterFeedType("couchbase-dcp", f)
 }
 
 func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,

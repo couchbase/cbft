@@ -57,3 +57,53 @@ func TestParsePartitionsToVBucketIds(t *testing.T) {
 		t.Errorf("expected error")
 	}
 }
+
+func TestDataSourcePartitions(t *testing.T) {
+	a, err := DataSourcePartitions("a fake source type",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected fake data source type to error")
+	}
+
+	a, err = DataSourcePartitions("couchbase",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected couchbase source type to error on bad server url")
+	}
+
+	a, err = DataSourcePartitions("couchbase-dcp",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected couchbase source type to error on bad server url")
+	}
+
+	a, err = DataSourcePartitions("couchbase-tap",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected couchbase source type to error on bad server url")
+	}
+
+	a, err = DataSourcePartitions("nil",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err != nil || a != nil {
+		t.Errorf("expected nil source type to work, but have no partitions")
+	}
+
+	a, err = DataSourcePartitions("dest",
+		"sourceName", "sourceUUID", "sourceParams", "serverURL")
+	if err == nil || a != nil {
+		t.Errorf("expected dest source type to error on non-json server params")
+	}
+
+	a, err = DataSourcePartitions("dest",
+		"sourceName", "sourceUUID", "", "serverURL")
+	if err != nil || a == nil {
+		t.Errorf("expected dest source type to ok on empty server params")
+	}
+
+	a, err = DataSourcePartitions("dest",
+		"sourceName", "sourceUUID", "{}", "serverURL")
+	if err != nil || a == nil {
+		t.Errorf("expected dest source type to ok on empty JSON server params")
+	}
+}

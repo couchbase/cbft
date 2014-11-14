@@ -12,12 +12,17 @@
 package main
 
 func init() {
-	RegisterFeedType("nil",
-		func(mgr *Manager, feedName, indexName, indexUUID,
+	RegisterFeedType("nil", &FeedType{
+		Start: func(mgr *Manager, feedName, indexName, indexUUID,
 			sourceType, sourceName, sourceUUID, params string,
 			dests map[string]Dest) error {
 			return mgr.registerFeed(NewNILFeed(feedName, dests))
-		})
+		},
+		Partitions: func(sourceType, sourceName, sourceUUID, sourceParams,
+			server string) ([]string, error) {
+			return nil, nil
+		},
+	})
 }
 
 // A NILFeed never feeds any data to its dests.  It's useful for

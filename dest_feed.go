@@ -12,16 +12,20 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 func init() {
-	RegisterFeedType("dest",
-		func(mgr *Manager, feedName, indexName, indexUUID,
+	RegisterFeedType("dest", &FeedType{
+		Start: func(mgr *Manager, feedName, indexName, indexUUID,
 			sourceType, sourceName, sourceUUID, params string,
 			dests map[string]Dest) error {
 			return mgr.registerFeed(NewDestFeed(feedName, BasicPartitionFunc, dests))
-		})
+		},
+		Partitions: DestFeedPartitions,
+	})
 }
 
 // A DestFeed implements both the Feed and Dest interfaces, for
@@ -62,6 +66,30 @@ func (t *DestFeed) Close() error {
 
 func (t *DestFeed) Dests() map[string]Dest {
 	return t.dests
+}
+
+// -----------------------------------------------------
+
+type DestSourceParams struct {
+	NumPartitions int `json:"numPartitions"`
+}
+
+func DestFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
+	server string) ([]string, error) {
+	dsp := &DestSourceParams{}
+	if sourceParams != "" {
+		err := json.Unmarshal([]byte(sourceParams), dsp)
+		if err != nil {
+			return nil, fmt.Errorf("error: DataSourcePartitions/dest"+
+				" could not parse sourceParams: %s, err: %v", sourceParams, err)
+		}
+	}
+	numPartitions := dsp.NumPartitions
+	rv := make([]string, numPartitions)
+	for i := 0; i < numPartitions; i++ {
+		rv[i] = strconv.Itoa(i)
+	}
+	return rv, nil
 }
 
 // -----------------------------------------------------

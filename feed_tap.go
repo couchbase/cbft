@@ -22,7 +22,8 @@ import (
 )
 
 func init() {
-	RegisterFeedType("couchbase-tap", StartTAPFeed)
+	RegisterFeedType("couchbase-tap",
+		&FeedType{Start: StartTAPFeed, Partitions: CouchbasePartitions})
 }
 
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
@@ -268,4 +269,37 @@ func init() {
 	for i := 0; i < len(vbucketIdStrings); i++ {
 		vbucketIdStrings[i] = fmt.Sprintf("%d", i)
 	}
+}
+
+// ----------------------------------------------------------------
+
+func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+	server string) ([]string, error) {
+	poolName := "default" // TODO: Parameterize poolName.
+	bucketName := sourceName
+
+	// TODO: how the halloween does GetBucket() api work without explicit auth?
+	bucket, err := couchbase.GetBucket(server, poolName, bucketName)
+	if err != nil {
+		return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+			" failed GetBucket, server: %s, poolName: %s, bucketName: %s, err: %v",
+			server, poolName, bucketName, err)
+	}
+	defer bucket.Close()
+
+	vbm := bucket.VBServerMap()
+	if vbm == nil {
+		return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+			" no VBServerMap, server: %s, poolName: %s, bucketName: %s, err: %v",
+			server, poolName, bucketName, err)
+	}
+
+	// NOTE: We assume that vbucket numbers are continuous
+	// integers starting from 0.
+	numVBuckets := len(vbm.VBucketMap)
+	rv := make([]string, numVBuckets)
+	for i := 0; i < numVBuckets; i++ {
+		rv[i] = strconv.Itoa(i)
+	}
+	return rv, nil
 }
