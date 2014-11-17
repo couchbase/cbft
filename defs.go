@@ -40,13 +40,14 @@ type IndexDef struct {
 	SourceParams string     `json:"sourceParams"` // Optional connection info.
 	PlanParams   PlanParams `json:"planParams"`
 
-	// TODO: recorded auth to access datasource?
+	// NOTE: Any auth credentials to access datasource, if any, may be
+	// stored as part of SourceParams.
 }
 
 type PlanParams struct {
 	MaxPartitionsPerPIndex int `json:"maxPartitionsPerPIndex"`
 
-	// TODO: replication params?
+	// TODO: Add replication params here?
 }
 
 // ------------------------------------------------------------------------
@@ -64,7 +65,7 @@ type NodeDef struct {
 	ImplVersion string   `json:"implVersion"` // See VERSION.
 	Tags        []string `json:"tags"`
 
-	// TODO: declared ability; not all indexers equal (cpu, ram, disk, etc)
+	// TODO: declared ability; not all nodes equal (cpu, ram, disk, etc)
 }
 
 // ------------------------------------------------------------------------
