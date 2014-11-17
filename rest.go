@@ -75,6 +75,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = indexNameLookup
 		r.Handle("/api/pindex/{indexName}/fields", listFieldsHandler).Methods("GET")
+
+		r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
 	}
 
 	return r, nil
@@ -296,4 +298,30 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// encode the response
 	mustEncode(w, searchResponse)
+}
+
+// ---------------------------------------------------
+
+type FeedStatsHandler struct {
+	mgr *Manager
+}
+
+func NewFeedStatsHandler(mgr *Manager) *FeedStatsHandler {
+	return &FeedStatsHandler{mgr: mgr}
+}
+
+func (h *FeedStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	feeds, _ := h.mgr.CurrentMaps()
+	w.Write([]byte("[\n"))
+	first := true
+	for feedName, feed := range feeds {
+		if !first {
+			w.Write([]byte(",\n"))
+		}
+		first = false
+		w.Write([]byte(fmt.Sprintf("  {\"feedName\":\"%s\",\"stats\":", feedName)))
+		feed.Stats(w)
+		w.Write([]byte("}\n"))
+	}
+	w.Write([]byte("]\n"))
 }
