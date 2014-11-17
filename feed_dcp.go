@@ -14,6 +14,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"strings"
 	"sync"
@@ -193,6 +194,15 @@ func (t *DCPFeed) Close() error {
 
 func (t *DCPFeed) Dests() map[string]Dest {
 	return t.dests
+}
+
+func (t *DCPFeed) Stats(w io.Writer) error {
+	bdss := cbdatasource.BucketDataSourceStats{}
+	err := t.bds.Stats(&bdss)
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(w).Encode(&bdss)
 }
 
 // --------------------------------------------------------

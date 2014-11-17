@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 )
 
 type Feed interface {
@@ -20,6 +21,9 @@ type Feed interface {
 	Start() error
 	Close() error
 	Dests() map[string]Dest // Key is partition identifier.
+
+	// Writes stats as JSON to the given writer.
+	Stats(io.Writer) error
 }
 
 // Default values for feed parameters.

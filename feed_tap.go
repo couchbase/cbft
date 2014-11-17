@@ -14,6 +14,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/couchbase/gomemcached/client"
@@ -229,6 +230,13 @@ func (t *TAPFeed) Close() error {
 func (t *TAPFeed) Dests() map[string]Dest {
 	return t.dests
 }
+
+func (t *TAPFeed) Stats(w io.Writer) error {
+	_, err := w.Write([]byte("{}"))
+	return err
+}
+
+// ----------------------------------------------------------------
 
 func ParsePartitionsToVBucketIds(dests map[string]Dest) ([]uint16, error) {
 	vbuckets := make([]uint16, 0, len(dests))

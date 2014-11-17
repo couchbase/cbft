@@ -11,6 +11,10 @@
 
 package main
 
+import (
+	"io"
+)
+
 func init() {
 	RegisterFeedType("nil", &FeedType{
 		Start: func(mgr *Manager, feedName, indexName, indexUUID,
@@ -50,4 +54,9 @@ func (t *NILFeed) Close() error {
 
 func (t *NILFeed) Dests() map[string]Dest {
 	return t.dests
+}
+
+func (t *NILFeed) Stats(w io.Writer) error {
+	_, err := w.Write([]byte("{}"))
+	return err
 }

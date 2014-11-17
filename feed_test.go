@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"testing"
 )
 
@@ -34,6 +35,10 @@ func (t *ErrorOnlyFeed) Close() error {
 
 func (t *ErrorOnlyFeed) Dests() map[string]Dest {
 	return nil
+}
+
+func (t *ErrorOnlyFeed) Stats(w io.Writer) error {
+	return fmt.Errorf("ErrorOnlyFeed Stats() invoked")
 }
 
 func TestParsePartitionsToVBucketIds(t *testing.T) {

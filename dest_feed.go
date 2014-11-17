@@ -14,6 +14,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 )
 
@@ -66,6 +67,11 @@ func (t *DestFeed) Close() error {
 
 func (t *DestFeed) Dests() map[string]Dest {
 	return t.dests
+}
+
+func (t *DestFeed) Stats(w io.Writer) error {
+	_, err := w.Write([]byte("{}"))
+	return err
 }
 
 // -----------------------------------------------------
