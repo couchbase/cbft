@@ -77,6 +77,9 @@ type DCPFeed struct {
 }
 
 type DCPFeedParams struct {
+	AuthUser     string // May be "" for no auth.
+	AuthPassword string
+
 	// Factor (like 1.5) to increase sleep time between retries
 	// in connecting to a cluster manager node.
 	ClusterManagerBackoffFactor float32
@@ -105,6 +108,10 @@ type DCPFeedParams struct {
 	FeedBufferAckThreshold float32
 }
 
+func (d *DCPFeedParams) GetCredentials() (string, string) {
+	return d.AuthUser, d.AuthPassword
+}
+
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
 	params := &DCPFeedParams{}
@@ -123,7 +130,10 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 		vbucketIds = nil
 	}
 
-	var auth couchbase.AuthHandler // TODO: AUTH.
+	var auth couchbase.AuthHandler
+	if params.AuthUser != "" {
+		auth = params
+	}
 
 	options := &cbdatasource.BucketDataSourceOptions{
 		Name: fmt.Sprintf("%s-%x", name, rand.Int31()),
