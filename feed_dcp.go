@@ -20,6 +20,7 @@ import (
 
 	"github.com/couchbase/gomemcached"
 	log "github.com/couchbaselabs/clog"
+	"github.com/couchbaselabs/go-couchbase"
 
 	"github.com/steveyen/cbdatasource"
 )
@@ -122,7 +123,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 		vbucketIds = nil
 	}
 
-	var authFunc cbdatasource.AuthFunc // TODO: AUTH.
+	var auth couchbase.AuthHandler // TODO: AUTH.
 
 	options := &cbdatasource.BucketDataSourceOptions{
 		Name: fmt.Sprintf("%s-%x", name, rand.Int31()),
@@ -150,7 +151,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 	feed.bds, err = cbdatasource.NewBucketDataSource(
 		strings.Split(url, ";"),
 		poolName, bucketName, bucketUUID,
-		vbucketIds, authFunc, feed, options)
+		vbucketIds, auth, feed, options)
 	if err != nil {
 		return nil, err
 	}
