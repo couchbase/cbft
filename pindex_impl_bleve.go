@@ -49,6 +49,8 @@ func NewBlevePIndexImpl(indexType, indexSchema, path string, restart func()) (
 }
 
 func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
+	// TODO: boltdb sometimes locks on Open(), so need to investigate,
+	// where perhaps there was a previous missing or race-y Close().
 	bindex, err := bleve.Open(path)
 	if err != nil {
 		return nil, nil, err
