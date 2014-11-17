@@ -38,12 +38,16 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/index/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
 	r.Handle("/api/index/{indexName}", NewGetIndexHandler(mgr)).Methods("GET")
-	r.Handle("/api/index/{indexName}/count", NewCountHandler(mgr)).Methods("GET")
-	r.Handle("/api/index/{indexName}/search", NewSearchHandler(mgr)).Methods("POST")
+
+	tags := mgr.Tags()
+
+	if tags == nil || tags["queryer"] {
+		r.Handle("/api/index/{indexName}/count", NewCountHandler(mgr)).Methods("GET")
+		r.Handle("/api/index/{indexName}/search", NewSearchHandler(mgr)).Methods("POST")
+	}
 
 	// the rest are standard bleveHttp handlers for the lower "pindex" level...
-	tags := mgr.Tags()
-	if tags == nil || tags["queryer"] {
+	if tags == nil || tags["pindex"] {
 		r.Handle("/api/pindex", bleveHttp.NewListIndexesHandler()).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
