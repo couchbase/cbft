@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
@@ -314,13 +315,18 @@ func (h *FeedStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, _ := h.mgr.CurrentMaps()
 	w.Write([]byte("[\n"))
 	first := true
-	for feedName, feed := range feeds {
+	feedNames := make([]string, 0, len(feeds))
+	for feedName := range feeds {
+		feedNames = append(feedNames, feedName)
+	}
+	sort.Strings(feedNames)
+	for _, feedName := range feedNames {
 		if !first {
 			w.Write([]byte(",\n"))
 		}
 		first = false
 		w.Write([]byte(fmt.Sprintf("  {\"feedName\":\"%s\",\"stats\":", feedName)))
-		feed.Stats(w)
+		feeds[feedName].Stats(w)
 		w.Write([]byte("}\n"))
 	}
 	w.Write([]byte("]\n"))
