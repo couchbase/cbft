@@ -26,8 +26,9 @@ type Manager struct {
 	startTime time.Time
 	version   string // Our software VERSION.
 	cfg       Cfg
-	uuid      string   // Unique to every Manager instance.
-	tags      []string // The tags at Manager start.
+	uuid      string          // Unique to every Manager instance.
+	tags      []string        // The tags at Manager start.
+	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -58,6 +59,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		cfg:       cfg,
 		uuid:      uuid,
 		tags:      tags,
+		tagsMap:   StringsToMap(tags),
 		bindAddr:  bindAddr,
 		dataDir:   dataDir,
 		server:    server,
@@ -80,20 +82,18 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		}
 	}
 
-	tags := mgr.Tags()
-
-	if tags == nil || tags["pindex"] {
+	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		if err := mgr.LoadDataDir(); err != nil {
 			return err
 		}
 	}
 
-	if tags == nil || tags["planner"] {
+	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
 		go mgr.PlannerLoop()
 		go mgr.PlannerKick("start")
 	}
 
-	if tags == nil || (tags["pindex"] && tags["janitor-local"]) {
+	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor-local"]) {
 		go mgr.JanitorLoop()
 		go mgr.JanitorKick("start")
 	}
@@ -370,21 +370,4 @@ func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
-}
-
-// Returns the tags at process start, which may not be same as the
-// tags regsitered in the Cfg.  The tags in Cfg take precedence.
-func (mgr *Manager) Tags() map[string]bool {
-	return MapTags(mgr.tags)
-}
-
-func MapTags(tagsArr []string) map[string]bool {
-	if tagsArr == nil {
-		return nil
-	}
-	tags := map[string]bool{}
-	for _, tag := range tagsArr {
-		tags[tag] = true
-	}
-	return tags
 }

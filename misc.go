@@ -85,3 +85,14 @@ func ExponentialBackoffLoop(name string,
 		}
 	}
 }
+
+func StringsToMap(strsArr []string) map[string]bool {
+	if strsArr == nil {
+		return nil
+	}
+	strs := map[string]bool{}
+	for _, str := range strsArr {
+		strs[str] = true
+	}
+	return strs
+}

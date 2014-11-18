@@ -538,14 +538,14 @@ func TestManagerTags(t *testing.T) {
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000",
 		emptyDir, "some-datasource", nil)
-	tm := mgr.Tags()
+	tm := mgr.tagsMap
 	if tm != nil {
 		t.Errorf("expected nil Tags()")
 	}
 
 	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"a", "b"}, ":1000",
 		emptyDir, "some-datasource", nil)
-	tm = mgr.Tags()
+	tm = mgr.tagsMap
 	te := map[string]bool{}
 	te["a"] = true
 	te["b"] = true
