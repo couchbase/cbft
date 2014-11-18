@@ -39,6 +39,10 @@ func (c *ErrorOnlyCfg) Subscribe(key string, ch chan CfgEvent) error {
 	return fmt.Errorf("error only")
 }
 
+func (c *ErrorOnlyCfg) Refresh() error {
+	return fmt.Errorf("error only")
+}
+
 // ------------------------------------------------
 
 type ErrorAfterCfg struct {
@@ -51,7 +55,7 @@ func (c *ErrorAfterCfg) Get(key string, cas uint64) (
 	[]byte, uint64, error) {
 	c.numOps++
 	if c.numOps > c.errAfter {
-		return nil, 0, fmt.Errorf("error only")
+		return nil, 0, fmt.Errorf("error after")
 	}
 	return c.inner.Get(key, cas)
 }
@@ -60,7 +64,7 @@ func (c *ErrorAfterCfg) Set(key string, val []byte, cas uint64) (
 	uint64, error) {
 	c.numOps++
 	if c.numOps > c.errAfter {
-		return 0, fmt.Errorf("error only")
+		return 0, fmt.Errorf("error after")
 	}
 	return c.inner.Set(key, val, cas)
 }
@@ -68,7 +72,7 @@ func (c *ErrorAfterCfg) Set(key string, val []byte, cas uint64) (
 func (c *ErrorAfterCfg) Del(key string, cas uint64) error {
 	c.numOps++
 	if c.numOps > c.errAfter {
-		return fmt.Errorf("error only")
+		return fmt.Errorf("error after")
 	}
 	return c.inner.Del(key, cas)
 }
@@ -76,9 +80,17 @@ func (c *ErrorAfterCfg) Del(key string, cas uint64) error {
 func (c *ErrorAfterCfg) Subscribe(key string, ch chan CfgEvent) error {
 	c.numOps++
 	if c.numOps > c.errAfter {
-		return fmt.Errorf("error only")
+		return fmt.Errorf("error after")
 	}
 	return c.inner.Subscribe(key, ch)
+}
+
+func (c *ErrorAfterCfg) Refresh() error {
+	c.numOps++
+	if c.numOps > c.errAfter {
+		return fmt.Errorf("error after")
+	}
+	return c.inner.Refresh()
 }
 
 // ------------------------------------------------
@@ -319,5 +331,18 @@ func TestCfgSimpleSubscribe(t *testing.T) {
 	case <-ec2:
 		t.Errorf("expected no events for ec2")
 	default:
+	}
+
+	err = c.Refresh()
+	if err != nil {
+		t.Errorf("expected Refresh() to work, got err: %v", err)
+	}
+	e = <-ec
+	if e.Key != "a" || e.CAS != 3 {
+		t.Errorf("expected a event after Refresh()")
+	}
+	e = <-ec2
+	if e.Key != "aaa" || e.CAS != 0 {
+		t.Errorf("expected aaa event after Refresh()")
 	}
 }

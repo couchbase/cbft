@@ -99,5 +99,24 @@ func (c *CfgSimple) unlockedSave() error {
 }
 
 func (c *CfgSimple) Subscribe(key string, ch chan CfgEvent) error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
 	return c.cfgMem.Subscribe(key, ch)
+}
+
+func (c *CfgSimple) Refresh() error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	c2 := NewCfgSimple(c.path)
+	err := c2.Load()
+	if err != nil {
+		return err
+	}
+
+	c.cfgMem.CASNext = c2.cfgMem.CASNext
+	c.cfgMem.Entries = c2.cfgMem.Entries
+
+	return c.cfgMem.Refresh()
 }

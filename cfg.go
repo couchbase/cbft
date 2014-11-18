@@ -13,22 +13,32 @@ package main
 
 // Cfg is the interface that configuration providers must implement.
 type Cfg interface {
-	// A zero cas means don't do a CAS match on Get(), and a non-zero
-	// cas value means the Get() will only succeed if the CAS matches.
+	// Get retrieves an entry from the Cfg.  A zero cas means don't do
+	// a CAS match on Get(), and a non-zero cas value means the Get()
+	// will succeed only if the CAS matches.
 	Get(key string, cas uint64) (val []byte, casSuccess uint64, err error)
 
-	// A zero cas means the Set() operation must be an entry creation.
-	// So, a zero cas Set() will error if the entry already exists.  A
-	// non-zero, non-matching cas value will error.
+	// Set creates or updates an entry in the Cfg.  A non-zero cas
+	// that does not match will result in an error.  A zero cas means
+	// the Set() operation must be an entry creation, where a zero cas
+	// Set() will error if the entry already exists.
 	Set(key string, val []byte, cas uint64) (casSuccess uint64, err error)
 
-	// A zero cas means don't match CAS on Del().  Otherwise, a
-	// non-zero, non-matching cas value will error.
+	// Del removes an entry from the Cfg.  A non-zero cas that does
+	// not match will result in an error.  A zero cas means a CAS
+	// match will be skipped, so that clients can perform a
+	// "don't-care, out-of-the-blue" deletion.
 	Del(key string, cas uint64) error
 
-	// Subscriptions to changes to a key.  During a deletion event,
-	// the CfgEvent.CAS field will be 0.
+	// Subscribe allows clients to receive events on changes to a key.
+	// During a deletion event, the CfgEvent.CAS field will be 0.
 	Subscribe(key string, ch chan CfgEvent) error
+
+	// Refresh forces the Cfg implementation to reload from its
+	// backend-specific data source, clearing any locally cached data.
+	// Any subscribers will receive events on a Refresh, where it's up
+	// to subscribers to detect if there were actual changes or not.
+	Refresh() error
 }
 
 // The error used on mismatches of CAS (compare and set/swap) values.

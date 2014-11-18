@@ -23,7 +23,7 @@ type CfgMem struct {
 	m             sync.Mutex
 	CASNext       uint64
 	Entries       map[string]*CfgMemEntry
-	subscriptions map[string][]chan<- CfgEvent
+	subscriptions map[string][]chan<- CfgEvent // Keyed by key.
 }
 
 type CfgMemEntry struct {
@@ -113,4 +113,20 @@ func (c *CfgMem) fireEvent(key string, cas uint64) {
 	for _, c := range c.subscriptions[key] {
 		go func(c chan<- CfgEvent) { c <- CfgEvent{Key: key, CAS: cas} }(c)
 	}
+}
+
+func (c *CfgMem) Refresh() error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	for key := range c.subscriptions {
+		entry, exists := c.Entries[key]
+		if exists && entry != nil {
+			c.fireEvent(key, entry.CAS)
+		} else {
+			c.fireEvent(key, 0)
+		}
+	}
+
+	return nil
 }
