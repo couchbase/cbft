@@ -16,6 +16,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -61,6 +63,8 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	go dumpOnSignalForPlatform()
 
