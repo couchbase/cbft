@@ -25,6 +25,9 @@ config(['$routeProvider', '$locationProvider', function($routeProvider, $locatio
   $routeProvider.when('/monitor/',
                       {templateUrl: '/static/partials/monitor.html',
                        controller: 'MonitorCtrl'});
+  $routeProvider.when('/manage/',
+                      {templateUrl: '/static/partials/manage.html',
+                       controller: 'ManageCtrl'});
   $routeProvider.when('/logs/',
                       {templateUrl: '/static/partials/logs.html',
                        controller: 'LogsCtrl'});

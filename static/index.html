@@ -4,49 +4,46 @@
   <meta charset="utf-8">
   <title>cbft</title>
   <meta name="description" content="">
+
   <!-- Bootstrap -->
   <link href="/static/css/prism.css" rel="stylesheet"/>
-  
+
   <link href="/static/css/app.css" rel="stylesheet"/>
   <link href="/static/css/bootstrap.css" rel="stylesheet"/>
   <link href="/static/css/dashboard.css" rel="stylesheet"/>
   <link href="/static/css/rickshaw.min.css" rel="stylesheet"/>
 
-
-  
-   <link rel="shortcut icon" href="/static/favicon.ico" />
+  <link rel="shortcut icon" href="/static/favicon.ico"/>
 </head>
 <body>
+  <div class="container">
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
 
-    <div class="container">
-
-      <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <div class="container">
-          <div class="navbar-header">
-
-            <a class="overide-brand" href="/"><img class="logo" src="/static/img/cbft.png"/>cbft</a>
-          </div>
-          <ul class="nav navbar-nav">
-            <li><a href="/indexes/">Indexes</a></li>
-          </ul>
-          <ul class="nav navbar-nav">
-            <li><a href="/monitor/">Monitor</a></li>
-          </ul>
-          <ul class="nav navbar-nav">
-            <li><a href="/logs/">Logs</a></li>
-          </ul>
+          <a class="overide-brand" href="/"><img class="logo" src="/static/img/cbft.png"/>cbft</a>
         </div>
-      </div>
-
-    
-      <div class="row">
-        <div class="col-sm-10 col-sm-offset-1 main">
-          <div ng-view></div>
-        </div>
+        <ul class="nav navbar-nav">
+          <li><a href="/indexes/">Indexes</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/monitor/">Monitor</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/manage/">Manage</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/logs/">Logs</a></li>
+        </ul>
       </div>
     </div>
 
-
+    <div class="row">
+      <div class="col-sm-10 col-sm-offset-1 main">
+        <div ng-view></div>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/lib/jquery/jquery-2.1.1.js"></script>
   <script src="/static/lib/d3.v3.js"></script>
@@ -66,6 +63,7 @@
   <script src="/static/js/search.js"></script>
   <script src="/static/js/index.js"></script>
   <script src="/static/js/monitor.js"></script>
+  <script src="/static/js/manage.js"></script>
   <script src="/static/js/logs.js"></script>
   <script src="/static/js/debug.js"></script>
   <script src="/static/js/b64.js"></script>

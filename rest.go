@@ -31,6 +31,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 		"/indexes",
 		"/analysis",
 		"/monitor",
+		"/manage",
 		"/logs",
 	})
 
