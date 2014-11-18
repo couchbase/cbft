@@ -319,11 +319,6 @@ func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
 		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
-	// Next, apply the batch if it's big enough or we've hit seqSnapEnd.
-	if len(t.batch.IndexOps) <= 0 && len(t.batch.InternalOps) <= 0 {
-		return nil
-	}
-
 	if len(t.buf) < BLEVE_DEST_APPLY_BUF_SIZE_BYTES &&
 		seq < t.seqSnapEnd {
 		return nil
@@ -333,16 +328,13 @@ func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
 }
 
 func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
-	if len(t.batch.IndexOps) > 0 || len(t.batch.InternalOps) > 0 {
-		if err := bindex.Batch(t.batch); err != nil {
-			return err
-		}
-
-		// TODO: would good to reuse batch; we could clear its public
-		// maps (IndexOPs & InternalOps), but that seems brittle;
-		// should ask for a supported API in bleve?
-		t.batch = bleve.NewBatch()
+	if err := bindex.Batch(t.batch); err != nil {
+		return err
 	}
+
+	// TODO: would good to reuse batch; ask for a public Reset() kind
+	// of method on bleve.Batch?
+	t.batch = bleve.NewBatch()
 
 	if t.buf != nil {
 		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
