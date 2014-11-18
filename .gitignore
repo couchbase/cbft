@@ -1,6 +1,7 @@
 #*
 *.out
 *.sublime-*
+*.tmp
 *~
 .#*
 .project
