@@ -93,7 +93,7 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 		go mgr.PlannerKick("start")
 	}
 
-	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor-local"]) {
+	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
 		go mgr.JanitorLoop()
 		go mgr.JanitorKick("start")
 	}

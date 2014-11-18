@@ -25,14 +25,21 @@ import (
 const JANITOR_CLOSE_PINDEX = "janitor_close_pindex"
 const JANITOR_REMOVE_PINDEX = "janitor_remove_pindex"
 
+// JanitorNOOP sends a synchronous NOOP request to the manager's janitor, if any.
 func (mgr *Manager) JanitorNOOP(msg string) {
-	SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
+	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
+		SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
+	}
 }
 
+// JanitorKick synchronously kicks the manager's janitor, if any.
 func (mgr *Manager) JanitorKick(msg string) {
-	SyncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
+	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
+		SyncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
+	}
 }
 
+// JanitorLoop is the main loop for the janitor.
 func (mgr *Manager) JanitorLoop() {
 	if mgr.cfg != nil { // Might be nil for testing.
 		go func() {

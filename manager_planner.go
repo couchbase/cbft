@@ -24,14 +24,21 @@ import (
 // NOTE: You *must* update PLANNER_VERSION if the planning algorithm
 // or schema changes, following semver rules.
 
+// PlannerNOOP sends a synchronous NOOP request to the manager's planner, if any.
 func (mgr *Manager) PlannerNOOP(msg string) {
-	SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
+	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
+		SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
+	}
 }
 
+// PlannerKick synchronously kicks the manager's planner, if any.
 func (mgr *Manager) PlannerKick(msg string) {
-	SyncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
+	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
+		SyncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
+	}
 }
 
+// PlannerLoop is the main loop for the planner.
 func (mgr *Manager) PlannerLoop() {
 	if mgr.cfg != nil { // Might be nil for testing.
 		go func() {
