@@ -18,10 +18,6 @@ import (
 // Creates a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 	indexType, indexName, indexSchema string, planParams PlanParams) error {
-	// TODO: what about auth info to be able to access bucket?
-	// TODO: what if user changes pswd to bucket, but it's the same bucket & uuid?
-	// TODO: what about hints for # of partitions, etc?
-
 	_, exists := pindexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("error: CreateIndex, unknown indexType: %s", indexType)
