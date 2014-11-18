@@ -34,7 +34,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 		"/logs",
 	})
 
-	r.Handle("/api/log", NewGetLogHandler(mr))
+	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
+
 	r.Handle("/api/index", NewListIndexHandler(mgr)).Methods("GET")
 	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/index/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
@@ -77,6 +78,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 
 		r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
 	}
+
+	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 
 	return r, nil
 }
@@ -254,7 +257,7 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	log.Printf("search request: %s", indexName)
+	log.Printf("rest search request: %s", indexName)
 
 	alias, err := indexAlias(h.mgr, indexName, indexUUID)
 	if err != nil {
@@ -269,7 +272,7 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("search request body: %s", requestBody)
+	log.Printf("rest search request body: %s", requestBody)
 
 	// parse the request
 	var searchRequest bleve.SearchRequest
@@ -279,7 +282,7 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("search parsed request %#v", searchRequest)
+	log.Printf("rest search parsed request %#v", searchRequest)
 
 	// varlidate the query
 	err = searchRequest.Query.Validate()
@@ -328,4 +331,21 @@ func (h *FeedStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("}\n"))
 	}
 	w.Write([]byte("]\n"))
+}
+
+// ---------------------------------------------------
+
+type ManagerKickHandler struct {
+	mgr *Manager
+}
+
+func NewManagerKickHandler(mgr *Manager) *ManagerKickHandler {
+	return &ManagerKickHandler{mgr: mgr}
+}
+
+func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.mgr.Kick(req.FormValue("msg"))
+	mustEncode(w, struct {
+		Status string `json:"status"`
+	}{Status: "ok"})
 }

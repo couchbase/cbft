@@ -83,10 +83,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	rv := struct {
+	mustEncode(w, struct {
 		Status string `json:"status"`
-	}{
-		Status: "ok",
-	}
-	mustEncode(w, rv)
+	}{Status: "ok"})
 }
