@@ -2,12 +2,12 @@ function ManageCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.resultCfg = null;
     $scope.resultCfgJSON = null;
+    $scope.resultCfgRefresh = null;
     $scope.resultManagerKick = null;
 
     $scope.managerKick = function(managerKickMsg) {
         $scope.resultManagerKick = null;
-        $http.post('/api/managerKick?msg=' + managerKickMsg).
-        success(function(data) {
+        $http.post('/api/managerKick?msg=' + managerKickMsg).success(function(data) {
             $scope.resultManagerKick = data.status;
         }).
         error(function(data, code) {
@@ -15,7 +15,7 @@ function ManageCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         });
     };
 
-    $scope.refreshCfg = function(name, mapping) {
+    $scope.cfgGet = function(name, mapping) {
         $scope.resultCfg = null;
         $scope.resultCfgJSON = null;
         $http.get('/api/cfg').success(function(data) {
@@ -28,5 +28,16 @@ function ManageCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         });
     };
 
-    $scope.refreshCfg();
+    $scope.cfgRefresh = function(managerKickMsg) {
+        $scope.resultCfgRefresh = null;
+        $http.post('/api/cfgRefresh').success(function(data) {
+            $scope.resultCfgRefresh = data.status;
+            $scope.cfgGet()
+        }).
+        error(function(data, code) {
+            $scope.resultCfgRefresh = data.status;
+        });
+    };
+
+    $scope.cfgGet();
 }

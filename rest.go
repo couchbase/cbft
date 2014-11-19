@@ -36,7 +36,6 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	})
 
 	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
-	r.Handle("/api/cfg", NewGetCfgHandler(mgr)).Methods("GET")
 
 	r.Handle("/api/index", NewListIndexHandler(mgr)).Methods("GET")
 	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
@@ -84,6 +83,9 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 
 		r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
 	}
+
+	r.Handle("/api/cfg", NewCfgGetHandler(mgr)).Methods("GET")
+	r.Handle("/api/cfgRefresh", NewCfgRefreshHandler(mgr)).Methods("POST")
 
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 
@@ -358,15 +360,15 @@ func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 // ---------------------------------------------------
 
-type GetCfgHandler struct {
+type CfgGetHandler struct {
 	mgr *Manager
 }
 
-func NewGetCfgHandler(mgr *Manager) *GetCfgHandler {
-	return &GetCfgHandler{mgr: mgr}
+func NewCfgGetHandler(mgr *Manager) *CfgGetHandler {
+	return &CfgGetHandler{mgr: mgr}
 }
 
-func (h *GetCfgHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *CfgGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// TODO: Might need to scrub auth passwords from this output.
 	cfg := h.mgr.Cfg()
 	indexDefs, indexDefsCAS, indexDefsErr :=
@@ -406,4 +408,21 @@ func (h *GetCfgHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		PlanPIndexesCAS:   planPIndexesCAS,
 		PlanPIndexesErr:   planPIndexesErr,
 	})
+}
+
+// ---------------------------------------------------
+
+type CfgRefreshHandler struct {
+	mgr *Manager
+}
+
+func NewCfgRefreshHandler(mgr *Manager) *CfgRefreshHandler {
+	return &CfgRefreshHandler{mgr: mgr}
+}
+
+func (h *CfgRefreshHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.mgr.Cfg().Refresh()
+	mustEncode(w, struct {
+		Status string `json:"status"`
+	}{Status: "ok"})
 }

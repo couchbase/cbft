@@ -14,7 +14,23 @@
   </li>
 </ul>
 
-<h3>Kick</h3>
+<h3 style="clear: both;">Cfg</h3>
+
+<pre nag-prism source="{{resultCfgJSON}}" class="language-javascript"></pre>
+
+<button type="button" class="btn btn-default pull-right"
+        ng-click="cfgRefresh()">
+  <span class="glyphicon glyphicon-refresh"></span> Refresh Cfg
+</button>
+
+<div ng-show="resultCfgRefresh" style="clear: both;">
+  <br/>
+  <pre>{{resultCfgRefresh}}</pre>
+</div>
+
+<h3 style="clear: both;">Kick</h3>
+
+Re-run the planner and janitor.
 
 <form class="form-horizontal" role="form">
   <div class="form-group">
@@ -37,7 +53,3 @@
 </div>
 
 <br style="clear: both;">
-
-<h3>Cfg</h3>
-
-<pre nag-prism source="{{resultCfgJSON}}" class="language-javascript"></pre>
