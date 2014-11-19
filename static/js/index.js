@@ -50,7 +50,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
 	$scope.loadIndexDetails = function() {
 		$http.get('/api/index/' + $scope.indexName).success(function(data) {
-            $scope.indexDetails = data.indexDef;
+            $scope.indexDetails = JSON.stringify(data.indexDef, undefined, 2);
             $scope.mappingFormatted = JSON.stringify(data.indexMapping, undefined, 2);
         }).
         error(function(data, code) {

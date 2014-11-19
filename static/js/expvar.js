@@ -93,5 +93,4 @@ module.factory('expvar', function($http, $log) {
 	};
 
 	return result;
-
 });

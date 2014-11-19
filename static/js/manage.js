@@ -17,7 +17,7 @@ function ManageCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 	$scope.refreshCfg = function(name, mapping) {
         $scope.resultCfg = null;
 		$http.get('/api/cfg').success(function(data) {
-            $scope.resultCfg = data;
+            $scope.resultCfg = JSON.stringify(data, undefined, 2);
 		}).
 		error(function(data, code) {
             $scope.resultCfg = data;

@@ -2,14 +2,13 @@
 
 /* Directives */
 
-
 angular.module('myApp.directives', []).
   directive('appVersion', ['version', function(version) {
     return function(scope, elm, attrs) {
       elm.text(version);
     };
-  }])
-.directive('nagPrism', ['$compile', function($compile) {
+  }]).
+  directive('nagPrism', ['$compile', function($compile) {
     return {
         restrict: 'A',
         transclude: true,
