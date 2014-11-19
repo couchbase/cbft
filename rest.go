@@ -49,6 +49,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 
 	// the rest are standard bleveHttp handlers for the lower "pindex" level...
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
+		// TODO: need to scrub these plindex handlers to see if they're valid still.
+
 		r.Handle("/api/pindex", bleveHttp.NewListIndexesHandler()).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
@@ -69,6 +71,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 		debugDocHandler.DocIDLookup = docIDLookup
 		r.Handle("/api/pindex/{indexName}/docDebug/{docID}", debugDocHandler).Methods("GET")
 
+		// TODO: need an additional purpose-built pindex search
+		// handler, to handle search consistency across >1 pindex.
 		searchHandler := bleveHttp.NewSearchHandler("")
 		searchHandler.IndexNameLookup = indexNameLookup
 		r.Handle("/api/pindex/{indexName}/search", searchHandler).Methods("POST")
