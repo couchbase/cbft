@@ -90,19 +90,21 @@ build_alias_loop:
 			}
 		}
 
-		// Then, look for a remote node that serves that planPIndex.
+		// Otherwise, look for a remote node that serves that planPIndex.
+		//
+		// TODO: We should favor the most up-to-date node rather than
+		// the first one that we run into here?  But, perhaps the most
+		// up-to-date node is also the most overloaded?
 		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
 			if nodeUUID != selfUUID {
 				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
 				if ok &&
 					strings.Contains(nodeState, PLAN_PINDEX_NODE_READ) {
-					// TODO: Should instead favor the most up-to-date node
-					// rather than the first one that we run into here.
 					baseURL := "http://" + nodeDef.HostPort + "/api/pindex/" + planPIndex.Name
 					// TODO: Propagate auth to bleve client.
 					// TODO: Propagate consistency requirements to bleve client.
 					alias.Add(&BleveClient{
-						SearchURL: baseURL + "/search",
+						SearchURL:   baseURL + "/search",
 						DocCountURL: baseURL + "/count",
 					})
 					continue build_alias_loop

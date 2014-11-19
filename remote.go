@@ -54,7 +54,33 @@ func (r *BleveClient) Document(id string) (*document.Document, error) {
 }
 
 func (r *BleveClient) DocCount() (uint64, error) {
-	return 0, bleveClientUnimplementedErr
+	if r.DocCountURL == "" {
+		return 0, fmt.Errorf("no DocCountURL provided")
+	}
+	resp, err := http.Get(r.DocCountURL)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return 0, fmt.Errorf("bleveClient.DocCount got status code: %d,"+
+			" docCountURL: %s, resp: %#v", resp.StatusCode, r.DocCountURL, resp)
+	}
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("bleveClient.DocCount error reading resp.Body,"+
+			" docCountURL: %s, resp: %#v", r.DocCountURL, resp)
+	}
+	rv := struct {
+		Status string `json:"status"`
+		Count  uint64 `json:"count"`
+	}{}
+	err = json.Unmarshal(respBuf, &rv)
+	if err != nil {
+		return 0, fmt.Errorf("bleveClient.DocCount error parsing respBuf: %s,"+
+			" docCountURL: %s, resp: %#v", respBuf, r.DocCountURL, resp)
+	}
+	return rv.Count, nil
 }
 
 func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
