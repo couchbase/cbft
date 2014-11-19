@@ -368,6 +368,10 @@ func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 
 // ---------------------------------------------------------------
 
+func (mgr *Manager) Cfg() Cfg {
+	return mgr.cfg
+}
+
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }

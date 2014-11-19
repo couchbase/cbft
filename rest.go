@@ -36,6 +36,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	})
 
 	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
+	r.Handle("/api/cfg", NewGetCfgHandler(mgr)).Methods("GET")
 
 	r.Handle("/api/index", NewListIndexHandler(mgr)).Methods("GET")
 	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
@@ -353,4 +354,56 @@ func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	mustEncode(w, struct {
 		Status string `json:"status"`
 	}{Status: "ok"})
+}
+
+// ---------------------------------------------------
+
+type GetCfgHandler struct {
+	mgr *Manager
+}
+
+func NewGetCfgHandler(mgr *Manager) *GetCfgHandler {
+	return &GetCfgHandler{mgr: mgr}
+}
+
+func (h *GetCfgHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// TODO: Might need to scrub auth passwords from this output.
+	cfg := h.mgr.Cfg()
+	indexDefs, indexDefsCAS, indexDefsErr :=
+		CfgGetIndexDefs(cfg)
+	nodeDefsWanted, nodeDefsWantedCAS, nodeDefsWantedErr :=
+		CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nodeDefsKnown, nodeDefsKnownCAS, nodeDefsKnownErr :=
+		CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	planPIndexes, planPIndexesCAS, planPIndexesErr :=
+		CfgGetPlanPIndexes(cfg)
+	mustEncode(w, struct {
+		Status            string        `json:"status"`
+		IndexDefs         *IndexDefs    `json:"indexDefs"`
+		IndexDefsCAS      uint64        `json:"indexDefsCAS"`
+		IndexDefsErr      error         `json:"indexDefsErr"`
+		NodeDefsWanted    *NodeDefs     `json:"nodeDefsWanted"`
+		NodeDefsWantedCAS uint64        `json:"nodeDefsWantedCAS"`
+		NodeDefsWantedErr error         `json:"nodeDefsWantedErr"`
+		NodeDefsKnown     *NodeDefs     `json:"nodeDefsKnown"`
+		NodeDefsKnownCAS  uint64        `json:"nodeDefsKnownCAS"`
+		NodeDefsKnownErr  error         `json:"nodeDefsKnownErr"`
+		PlanPIndexes      *PlanPIndexes `json:"planPIndexes"`
+		PlanPIndexesCAS   uint64        `json:"planPIndexesCAS"`
+		PlanPIndexesErr   error         `json:"planPIndexesErr"`
+	}{
+		Status:            "ok",
+		IndexDefs:         indexDefs,
+		IndexDefsCAS:      indexDefsCAS,
+		IndexDefsErr:      indexDefsErr,
+		NodeDefsWanted:    nodeDefsWanted,
+		NodeDefsWantedCAS: nodeDefsWantedCAS,
+		NodeDefsWantedErr: nodeDefsWantedErr,
+		NodeDefsKnown:     nodeDefsKnown,
+		NodeDefsKnownCAS:  nodeDefsKnownCAS,
+		NodeDefsKnownErr:  nodeDefsKnownErr,
+		PlanPIndexes:      planPIndexes,
+		PlanPIndexesCAS:   planPIndexesCAS,
+		PlanPIndexesErr:   planPIndexesErr,
+	})
 }
