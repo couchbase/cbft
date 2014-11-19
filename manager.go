@@ -372,6 +372,10 @@ func (mgr *Manager) Cfg() Cfg {
 	return mgr.cfg
 }
 
+func (mgr *Manager) UUID() string {
+	return mgr.uuid
+}
+
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }

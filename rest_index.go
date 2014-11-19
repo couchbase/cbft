@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 
@@ -29,19 +30,87 @@ func indexNameLookup(req *http.Request) string {
 }
 
 func indexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
-	// TODO: also add remote pindexes to alias, not just local pindexes.
-	alias := bleve.NewIndexAlias()
+	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve wanted nodeDefs, err: %v", err)
+	}
 
-	_, pindexes := mgr.CurrentMaps()
-	for _, pindex := range pindexes {
-		if pindex.IndexType == "bleve" &&
-			pindex.IndexName == indexName &&
-			(indexUUID == "" || pindex.IndexUUID == indexUUID) {
-			bindex, ok := pindex.Impl.(bleve.Index)
-			if ok && bindex != nil {
-				alias.Add(bindex)
+	// Returns true if the node has the "pindex" tag.
+	nodeDoesPIndexes := func(nodeUUID string) (*NodeDef, bool) {
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			if nodeDef.UUID == nodeUUID {
+				if len(nodeDef.Tags) <= 0 {
+					return nodeDef, true
+				}
+				for _, tag := range nodeDef.Tags {
+					if tag == "pindex" {
+						return nodeDef, true
+					}
+				}
 			}
 		}
+		return nil, false
+	}
+
+	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve allPlanPIndexes, err: %v", err)
+	}
+
+	planPIndexes, exists := allPlanPIndexes[indexName]
+	if !exists || len(planPIndexes) <= 0 {
+		return nil, fmt.Errorf("no planPIndexes for indexName: %s", indexName)
+	}
+
+	_, pindexes := mgr.CurrentMaps()
+
+	selfUUID := mgr.UUID()
+	_, selfDoesPIndexes := nodeDoesPIndexes(selfUUID)
+
+	// TODO: need some abstractions to allow for non-bleve pindexes, perhaps.
+	alias := bleve.NewIndexAlias()
+
+build_alias_loop:
+	for _, planPIndex := range planPIndexes {
+		// First check whether this local node serves that planPIndex.
+		if selfDoesPIndexes &&
+			strings.Contains(planPIndex.NodeUUIDs[selfUUID], PLAN_PINDEX_NODE_READ) {
+			localPIndex, exists := pindexes[planPIndex.Name]
+			if exists &&
+				localPIndex != nil &&
+				localPIndex.Name == planPIndex.Name &&
+				localPIndex.IndexType == "bleve" &&
+				localPIndex.IndexName == indexName &&
+				(indexUUID == "" || localPIndex.IndexUUID == indexUUID) {
+				bindex, ok := localPIndex.Impl.(bleve.Index)
+				if ok && bindex != nil {
+					alias.Add(bindex)
+					continue build_alias_loop
+				}
+			}
+		}
+
+		// Then, look for a remote node that serves that planPIndex.
+		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
+			if nodeUUID != selfUUID {
+				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
+				if ok &&
+					strings.Contains(nodeState, PLAN_PINDEX_NODE_READ) {
+					// TODO: Should instead favor the most up-to-date node
+					// rather than the first one that we run into here.
+					baseURL := "http://" + nodeDef.HostPort + "/api/pindex/" + planPIndex.Name
+					// TODO: Propagate auth to bleve client.
+					// TODO: Propagate consistency requirements to bleve client.
+					alias.Add(&BleveClient{
+						SearchURL: baseURL + "/search",
+						DocCountURL: baseURL + "/count",
+					})
+					continue build_alias_loop
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("no node provides planPIndex: %#v", planPIndex)
 	}
 
 	return alias, nil
