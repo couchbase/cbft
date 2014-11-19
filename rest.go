@@ -20,13 +20,11 @@ import (
 func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Router, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, []string{
-		"/overview",
-		"/search",
 		"/indexes",
-		"/analysis",
 		"/monitor",
 		"/manage",
 		"/logs",
+		"/debug",
 	})
 
 	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
@@ -43,8 +41,6 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 
 	// the rest are standard bleveHttp handlers for the lower "pindex" level...
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
-		// TODO: need to scrub these plindex handlers to see if they're valid still.
-
 		r.Handle("/api/pindex", bleveHttp.NewListIndexesHandler()).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()

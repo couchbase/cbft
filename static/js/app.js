@@ -31,7 +31,7 @@ config(['$routeProvider', '$locationProvider', function($routeProvider, $locatio
   $routeProvider.when('/logs/',
                       {templateUrl: '/static/partials/logs.html',
                        controller: 'LogsCtrl'});
-  $routeProvider.when('/search/debug/',
+  $routeProvider.when('/debug/',
                       {templateUrl: '/static/partials/debug.html',
                        controller: 'DebugCtrl'});
   $routeProvider.otherwise({redirectTo: '/indexes'});
