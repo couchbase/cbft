@@ -5,8 +5,11 @@
 <ul>
   <li class="list-unstyled"
       ng-repeat="(nodeAddr, nodeDef) in resultCfg.nodeDefsKnown.nodeDefs">
-    <i class="glyphicon glyphicon-briefcase"
+    <i class="glyphicon glyphicon-hdd"></i>
+    <i class="glyphicon glyphicon-check"
        ng-if="resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
+    <i class="glyphicon glyphicon-unchecked"
+       ng-if="!resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
     {{nodeAddr}}: {{nodeDef}}
   </li>
 </ul>
