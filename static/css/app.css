@@ -1,17 +1,17 @@
 .highlight {
-	background: yellow;
-	padding:2px 2px;
+  background: yellow;
+  padding:2px 2px;
 }
 
 .logo {
-	margin-top: -8px;
-	vertical-align: top;
+  margin-top: -8px;
+  vertical-align: top;
   width: 32px;
   height: 32px;
 }
 
 .debug {
-	font-family: fixed;
+  font-family: fixed;
 }
 
 .overide-brand {
@@ -33,7 +33,7 @@
 }
 
 .navbar-inverse .overide-brand {
-	color: white;
+  color: white;
 }
 
 .swatch {
@@ -42,21 +42,24 @@
   height: 10px;
   margin: 0 8px 0 0;
 }
+
 .label {
   display: inline-block;
 }
+
 .line {
   display: inline-block;
   margin: 0 0 0 30px;
 }
+
 .legend .label {
   color: black;
 }
 #legend {
   text-align: center;
 }
+
 .rickshaw_graph .detail {
   background: none;
 }
-
 .rickshaw_graph .detail .x_label { display: none }
