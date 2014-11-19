@@ -1,11 +1,12 @@
 function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
 
-	$scope.docid = "";
+	$scope.pindexName = "";
+	$scope.docId = "";
 	$scope.maxKLen = 0;
 	$scope.maxVLen = 0;
 
     $scope.debugDoc = function() {
-        $http.get('/api/debug/'+$scope.docid).
+        $http.get('/api/pindex/'+$scope.pindexName+'/docDebug/'+$scope.docId).
         success(function(data) {
             $scope.processResults(data);
         }).
@@ -32,5 +33,4 @@ function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
         $scope.klentimes = new Array($scope.maxKLen);
         $scope.vlentimes = new Array($scope.maxVLen);
     };
-
 }
