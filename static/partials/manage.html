@@ -1,4 +1,17 @@
-<h3 id="manage">Manage</h3>
+<h2 id="manage">Manage</h2>
+
+<h3>Nodes</h3>
+
+<ul>
+  <li class="list-unstyled"
+      ng-repeat="(nodeAddr, nodeDef) in resultCfg.nodeDefsKnown.nodeDefs">
+    <i class="glyphicon glyphicon-briefcase"
+       ng-if="resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
+    {{nodeAddr}}: {{nodeDef}}
+  </li>
+</ul>
+
+<h3>Kick</h3>
 
 <form class="form-horizontal" role="form">
   <div class="form-group">
@@ -21,7 +34,7 @@
 </div>
 
 <br style="clear: both;">
-<hr/>
 
-<h3 id="cfg">Cfg</h3>
-<pre nag-prism source="{{resultCfg}}" class="language-javascript"></pre>
+<h3>Cfg</h3>
+
+<pre nag-prism source="{{resultCfgJSON}}" class="language-javascript"></pre>
