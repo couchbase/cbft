@@ -2,16 +2,16 @@ function ManageCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.resultCfg = null;
     $scope.resultCfgJSON = null;
-    $scope.resultMessage = null;
+    $scope.resultManagerKick = null;
 
     $scope.managerKick = function(managerKickMsg) {
-        $scope.resultMessage = null;
+        $scope.resultManagerKick = null;
         $http.post('/api/managerKick?msg=' + managerKickMsg).
         success(function(data) {
-            $scope.resultMessage = data.status;
+            $scope.resultManagerKick = data.status;
         }).
         error(function(data, code) {
-            $scope.resultMessage = data.status;
+            $scope.resultManagerKick = data.status;
         });
     };
 
