@@ -207,16 +207,35 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	*PlanPIndexes, error) {
 	// This simple planner assigns at most MaxPartitionsPerPIndex
 	// number of partitions onto a PIndex.  And then this planner
-	// assigns every PIndex onto every node (so every single node
-	// has a replica of that PIndex).
+	// assigns the PIndex onto 1 or more nodes (depending on
+	// NumReplicas setting).
 	//
-	// TODO: Assign PIndexes to nodes in a fancier way.
-	// TODO: This simple planner doesn't handle cbft node membership changes
-	// right, and should instead reassign pindexes on leaving nodes,
-	// and rebalance pindexes on remaining (and newly added) nodes.
+	// It uses a simple, round-robin node assignment algorithm which
+	// will have much too much PIndex movement on changes to cbft node
+	// topology.
+	//
+	// TODO: This simple planner doesn't handle cbft node membership
+	// changes, and should instead reassign pindexes of leaving nodes,
+	// and rebalance pindexes on any remaining (& newly added) nodes.
+	// TODO: Maybe can use consistent hashing algorithm?
 	if indexDefs == nil || nodeDefs == nil {
 		return nil, nil
 	}
+
+	// Consider only the nodeDefs that can support pindexes.
+	nodeDefsArr := make([]*NodeDef, 0, len(nodeDefs.NodeDefs))
+	for _, nodeDef := range nodeDefs.NodeDefs {
+		tags := StringsToMap(nodeDef.Tags)
+		if tags == nil || tags["pindex"] {
+			nodeDefsArr = append(nodeDefsArr, nodeDef)
+		}
+	}
+	if len(nodeDefsArr) <= 0 {
+		// TODO: Warn if there aren't any nodes to assign to?
+		return nil, nil
+	}
+
+	nextAssignedNode := 0
 
 	planPIndexes := NewPlanPIndexes(version)
 
@@ -230,6 +249,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		}
 
 		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
+		numReplicas := indexDef.PlanParams.NumReplicas
 
 		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
 			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
@@ -257,13 +277,19 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 				NodeUUIDs:        make(map[string]string),
 			}
 
-			// TODO: Assign PIndexes to nodes in a fancier way.
-			// TODO: Warn if PIndex isn't assigned to any nodes?
-			for _, nodeDef := range nodeDefs.NodeDefs {
-				tags := StringsToMap(nodeDef.Tags)
-				if tags == nil || tags["pindex"] {
-					planPIndex.NodeUUIDs[nodeDef.UUID] =
-						PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+			// Assign this planPIndex to 1 or more nodes, depending on
+			// the numReplicas setting.
+			//
+			// TODO: have even fancier node assignment that takes into
+			// consideration the node's capabilities and already
+			// assigned load.
+			for i := 0; i < numReplicas+1; i++ {
+				nodeDef := nodeDefsArr[nextAssignedNode]
+				planPIndex.NodeUUIDs[nodeDef.UUID] =
+					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+				nextAssignedNode++
+				if nextAssignedNode >= len(nodeDefsArr) {
+					nextAssignedNode = 0
 				}
 			}
 

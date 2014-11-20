@@ -47,7 +47,11 @@ type IndexDef struct {
 type PlanParams struct {
 	MaxPartitionsPerPIndex int `json:"maxPartitionsPerPIndex"`
 
-	// TODO: Add replication params here?
+	// The first copy is not counted as a replica.  For example, a
+	// NumReplicas setting of 2 means there should be a primary and 2
+	// replicas... so 3 copies in total.  A NumReplicas of 0 means
+	// just the first, primary copy only.
+	NumReplicas int `json:"numReplicas"`
 }
 
 // ------------------------------------------------------------------------
