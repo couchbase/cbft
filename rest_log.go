@@ -15,6 +15,9 @@ import (
 	"net/http"
 )
 
+// TODO: Need to give the entire cbft codebase a scrub of its log
+// messages and fmt.Errorf()'s.
+
 type GetLogHandler struct {
 	mr *MsgRing
 }

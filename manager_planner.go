@@ -217,7 +217,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	// TODO: This simple planner doesn't handle cbft node membership
 	// changes, and should instead reassign pindexes of leaving nodes,
 	// and rebalance pindexes on any remaining (& newly added) nodes.
-	// TODO: Maybe can use consistent hashing algorithm?
+	// TODO: Maybe can use cbgm partition assignment algorithm?
 	if indexDefs == nil || nodeDefs == nil {
 		return nil, nil
 	}
