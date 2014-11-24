@@ -262,8 +262,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			pindexImplType == nil ||
 			pindexImplType.New == nil ||
 			pindexImplType.Open == nil {
-			// TODO: Should we pop up a warning here?
-			continue // Skip indexDef's with no instantiatable pindexImplType.
+			// Skip indexDef's with no instantiatable pindexImplType,
+			// such as index aliases.
+			continue
 		}
 
 		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
