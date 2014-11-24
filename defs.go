@@ -54,7 +54,7 @@ type PlanParams struct {
 	// just the first, primary copy only.
 	NumReplicas int `json:"numReplicas"`
 
-	PartitionModel blance.PartitionModel `json:"partitionModel"`
+	HierarchyRules blance.HierarchyRules `json:"hierarchyRules"`
 }
 
 // ------------------------------------------------------------------------

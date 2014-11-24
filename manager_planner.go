@@ -349,7 +349,6 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// TODO: Leverage these blance features.
 		partitionWeights := map[string]int(nil)
 		stateStickiness := map[string]int(nil)
-		hierarchyRules := blance.HierarchyRules(nil)
 
 		blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
 			nodeUUIDsAll,
@@ -361,7 +360,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			stateStickiness,
 			nodeWeights,
 			nodeHierarchy,
-			hierarchyRules)
+			indexDef.PlanParams.HierarchyRules)
 		for _, warning := range warnings {
 			log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
 				indexDef.Name, warning, indexDef)
