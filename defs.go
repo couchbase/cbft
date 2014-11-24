@@ -212,9 +212,12 @@ func CfgSetPlanPIndexes(cfg Cfg, planPIndexes *PlanPIndexes, cas uint64) (uint64
 	return cfg.Set(PLAN_PINDEXES_KEY, buf, cas)
 }
 
-// Returns true if both PlanPIndexes are the same, ignoring UUID &
-// ImplVersion.
+// Returns true if both PlanPIndexes are the same, where we ignore any
+// differences in UUID or ImplVersion.
 func SamePlanPIndexes(a, b *PlanPIndexes) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
 	if len(a.PlanPIndexes) != len(b.PlanPIndexes) {
 		return false
 	}

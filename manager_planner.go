@@ -17,6 +17,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/couchbaselabs/blance"
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -102,9 +103,6 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 		CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version, mgr.server)
 	if err != nil {
 		return false, fmt.Errorf("planner ended on CalcPlan, err: %v", err)
-	}
-	if planPIndexes == nil {
-		return false, fmt.Errorf("planner found no plans from CalcPlan")
 	}
 	if SamePlanPIndexes(planPIndexes, planPIndexesPrev) {
 		return false, nil
@@ -206,50 +204,55 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexesPrev *PlanPIndexes, version, server string) (
 	*PlanPIndexes, error) {
 	// This simple planner assigns at most MaxPartitionsPerPIndex
-	// number of partitions onto a PIndex.  And then this planner
-	// assigns the PIndex onto 1 or more nodes (depending on
-	// NumReplicas setting).
-	//
-	// It uses a simple, round-robin node assignment algorithm which
-	// will have much too much PIndex movement on changes to cbft node
-	// topology.
-	//
-	// TODO: This simple planner doesn't handle cbft node membership
-	// changes, and should instead reassign pindexes of leaving nodes,
-	// and rebalance pindexes on any remaining (& newly added) nodes.
-	// TODO: Maybe can use cbgm partition assignment algorithm?
+	// number of partitions onto a PIndex.  And then uses blance to
+	// assign the PIndex to 1 or more nodes (based on NumReplicas).
 	if indexDefs == nil || nodeDefs == nil {
 		return nil, nil
 	}
 
 	// Consider only the nodeDefs that can support pindexes.
-	nodeDefsArr := make([]*NodeDef, 0, len(nodeDefs.NodeDefs))
+	nodeUUIDs := make([]string, 0)
 	for _, nodeDef := range nodeDefs.NodeDefs {
 		tags := StringsToMap(nodeDef.Tags)
 		if tags == nil || tags["pindex"] {
-			nodeDefsArr = append(nodeDefsArr, nodeDef)
+			nodeUUIDs = append(nodeUUIDs, nodeDef.UUID)
 		}
 	}
-	if len(nodeDefsArr) <= 0 {
-		// TODO: Warn if there aren't any nodes to assign to?
-		return nil, nil
+
+	// Retrieve the nodeUUID's from the previous plan.
+	nodeUUIDsPrev := make([]string, 0)
+	if planPIndexesPrev != nil {
+		for _, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
+			for nodeUUIDPrev := range planPIndexPrev.NodeUUIDs {
+				nodeUUIDsPrev = append(nodeUUIDsPrev, nodeUUIDPrev)
+			}
+		}
 	}
+	nodeUUIDsPrev = StringsIntersectStrings(nodeUUIDsPrev, nodeUUIDsPrev) // Remove dupes.
 
-	nextAssignedNode := 0
+	// Calculate node deltas (nodes added & nodes removed).
+	nodeUUIDsAll := make([]string, 0)
+	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDs...)
+	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDsPrev...)
+	nodeUUIDsAll = StringsIntersectStrings(nodeUUIDsAll, nodeUUIDsAll) // Remove dupes.
+	nodeUUIDsToAdd := StringsRemoveStrings(nodeUUIDsAll, nodeUUIDsPrev)
+	nodeUUIDsToRemove := StringsRemoveStrings(nodeUUIDsAll, nodeUUIDs)
 
+	// Examine every indexDef...
 	planPIndexes := NewPlanPIndexes(version)
 
 	for _, indexDef := range indexDefs.IndexDefs {
+		// Split each indexDef into 1 or more PlanPIndexes.
 		pindexImplType, exists := pindexImplTypes[indexDef.Type]
 		if !exists ||
 			pindexImplType == nil ||
 			pindexImplType.New == nil ||
 			pindexImplType.Open == nil {
+			// TODO: Should we pop up a warning here?
 			continue // Skip indexDef's with no instantiatable pindexImplType.
 		}
 
 		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
-		numReplicas := indexDef.PlanParams.NumReplicas
 
 		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
 			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
@@ -258,6 +261,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 				" indexDef: %#v, err: %v", indexDef, err)
 			continue
 		}
+
+		planPIndexesForIndex := map[string]*PlanPIndex{}
 
 		addPlanPIndex := func(sourcePartitionsCurr []string) {
 			sourcePartitions := strings.Join(sourcePartitionsCurr, ",")
@@ -277,23 +282,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 				NodeUUIDs:        make(map[string]string),
 			}
 
-			// Assign this planPIndex to 1 or more nodes, depending on
-			// the numReplicas setting.
-			//
-			// TODO: have even fancier node assignment that takes into
-			// consideration the node's capabilities and already
-			// assigned load.
-			for i := 0; i < numReplicas+1; i++ {
-				nodeDef := nodeDefsArr[nextAssignedNode]
-				planPIndex.NodeUUIDs[nodeDef.UUID] =
-					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
-				nextAssignedNode++
-				if nextAssignedNode >= len(nodeDefsArr) {
-					nextAssignedNode = 0
-				}
-			}
-
 			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
+
+			planPIndexesForIndex[planPIndex.Name] = planPIndex
 		}
 
 		sourcePartitionsCurr := []string{}
@@ -306,8 +297,67 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			}
 		}
 
-		if len(sourcePartitionsCurr) > 0 || len(sourcePartitionsArr) <= 0 {
+		if len(sourcePartitionsCurr) > 0 || // Assign any leftover partitions.
+			len(planPIndexesForIndex) <= 0 { // Assign at least 1 PlanPIndex.
 			addPlanPIndex(sourcePartitionsCurr)
+		}
+
+		// Once we have a 1 or more PlanPIndexes for the Index, use
+		// blance to assign the PlanPIndexes to nodes, depending on
+		// the numReplicas setting.
+		blancePrevMap := blance.PartitionMap{}
+		for _, planPIndex := range planPIndexesForIndex {
+			blancePartition := &blance.Partition{
+				Name:         planPIndex.Name,
+				NodesByState: map[string][]string{},
+			}
+			blancePrevMap[planPIndex.Name] = blancePartition
+			if planPIndexesPrev != nil {
+				planPIndexPrev, exists :=
+					planPIndexesPrev.PlanPIndexes[planPIndex.Name]
+				if exists && planPIndexPrev != nil {
+					for nodeUUIDPrev, _ := range planPIndexPrev.NodeUUIDs {
+						blancePartition.NodesByState["master"] =
+							append(blancePartition.NodesByState["master"], nodeUUIDPrev)
+					}
+				}
+			}
+		}
+
+		modelMaster := blance.PartitionModel{
+			"master": &blance.PartitionModelState{Priority: 0},
+		}
+		modelConstraints := map[string]int{
+			"master": indexDef.PlanParams.NumReplicas + 1,
+		}
+		partitionWeights := map[string]int(nil)
+		stateStickiness := map[string]int(nil)
+		nodeWeights := map[string]int(nil)
+		nodeHierarchy := map[string]string(nil)
+		hierarchyRules := blance.HierarchyRules(nil)
+
+		blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
+			nodeUUIDsAll,
+			nodeUUIDsToRemove,
+			nodeUUIDsToAdd,
+			modelMaster,
+			modelConstraints,
+			partitionWeights,
+			stateStickiness,
+			nodeWeights,
+			nodeHierarchy,
+			hierarchyRules)
+		for _, warning := range warnings {
+			log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
+				indexDef.Name, warning, indexDef)
+		}
+
+		for planPIndexName, blancePartition := range blanceNextMap {
+			planPIndex := planPIndexesForIndex[planPIndexName]
+			for _, nodeUUID := range blancePartition.NodesByState["master"] {
+				planPIndex.NodeUUIDs[nodeUUID] =
+					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+			}
 		}
 	}
 

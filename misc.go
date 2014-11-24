@@ -96,3 +96,29 @@ func StringsToMap(strsArr []string) map[string]bool {
 	}
 	return strs
 }
+
+// StringsRemoveStrings returns a copy of stringArr, but with some
+// strings removed, keeping the same order as stringArr.
+func StringsRemoveStrings(stringArr, removeArr []string) []string {
+	removeMap := StringsToMap(removeArr)
+	rv := make([]string, 0, len(stringArr))
+	for _, s := range stringArr {
+		if !removeMap[s] {
+			rv = append(rv, s)
+		}
+	}
+	return rv
+}
+
+// StringsIntersectStrings returns a brand new array that has the
+// intersection of a and b.
+func StringsIntersectStrings(a, b []string) []string {
+	bMap := StringsToMap(b)
+	rv := make([]string, 0, len(a))
+	for _, s := range a {
+		if bMap[s] {
+			rv = append(rv, s)
+		}
+	}
+	return rv
+}
