@@ -69,8 +69,7 @@ type NodeDef struct {
 	ImplVersion string   `json:"implVersion"` // See VERSION.
 	Tags        []string `json:"tags"`
 	Container   string   `json:"container"`
-
-	// TODO: declared ability; not all nodes equal (cpu, ram, disk, etc)
+	Weight      int      `json:"weight"`
 }
 
 // ------------------------------------------------------------------------

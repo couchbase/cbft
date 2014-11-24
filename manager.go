@@ -30,6 +30,7 @@ type Manager struct {
 	tags      []string        // The tags at Manager start.
 	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
 	container string          // Slash ('/') separated containment path (optional).
+	weight    int
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -52,8 +53,9 @@ type ManagerEventHandlers interface {
 	OnUnregisterPIndex(pindex *PIndex)
 }
 
-func NewManager(version string, cfg Cfg, uuid string, tags []string, container,
-	bindAddr, dataDir string, server string, meh ManagerEventHandlers) *Manager {
+func NewManager(version string, cfg Cfg, uuid string, tags []string,
+	container string, weight int, bindAddr, dataDir string, server string,
+	meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		startTime: time.Now(),
 		version:   version,
@@ -62,6 +64,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string, container,
 		tags:      tags,
 		tagsMap:   StringsToMap(tags),
 		container: container,
+		weight:    weight,
 		bindAddr:  bindAddr,
 		dataDir:   dataDir,
 		server:    server,
@@ -153,6 +156,8 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 			UUID:        mgr.uuid,
 			ImplVersion: mgr.version,
 			Tags:        mgr.tags,
+			Container:   mgr.container,
+			Weight:      mgr.weight,
 		}
 
 		nodeDefs.UUID = NewUUID()

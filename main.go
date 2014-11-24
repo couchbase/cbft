@@ -38,7 +38,7 @@ import (
 var bindAddr = flag.String("addr", ":8095",
 	"http listen [address]:port")
 var dataDir = flag.String("dataDir", "data",
-	"directory for index data")
+	"directory for local configuration and index data")
 var logFlags = flag.String("logFlags", "",
 	"comma-separated clog flags, to control logging")
 var staticDir = flag.String("staticDir", "static",
@@ -52,6 +52,8 @@ var tags = flag.String("tags", "",
 var container = flag.String("container", "",
 	"slash separated list of parent containers for this node,"+
 		" such as for shelf/rack/row/zone awareness")
+var weight = flag.Int("weight", 1,
+	"weight of this node (a more capable node has higher weight)")
 var known = flag.Bool("known", false,
 	"force this node to be registered as known to the cluster")
 var wanted = flag.Bool("wanted", false,
@@ -101,7 +103,7 @@ func main() {
 		tagsArr = strings.Split(*tags, ",")
 	}
 
-	router, err := MainStart(cfg, uuid, tagsArr, *container,
+	router, err := MainStart(cfg, uuid, tagsArr, *container, *weight,
 		*bindAddr, *dataDir, *staticDir, *server, *known, *wanted, mr)
 	if err != nil {
 		log.Fatal(err)
@@ -143,8 +145,8 @@ func MainUUID(dataDir string) (string, error) {
 	return uuid, nil
 }
 
-func MainStart(cfg Cfg, uuid string, tags []string, container,
-	bindAddr, dataDir, staticDir, server string,
+func MainStart(cfg Cfg, uuid string, tags []string, container string,
+	weight int, bindAddr, dataDir, staticDir, server string,
 	known, wanted bool, mr *MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
@@ -157,7 +159,7 @@ func MainStart(cfg Cfg, uuid string, tags []string, container,
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, uuid, tags, container,
+	mgr := NewManager(VERSION, cfg, uuid, tags, container, weight,
 		bindAddr, dataDir, server, &MainHandlers{})
 	if err = mgr.Start(known, wanted); err != nil {
 		return nil, err
