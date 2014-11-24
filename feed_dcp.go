@@ -208,6 +208,8 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 // --------------------------------------------------------
 
 func (r *DCPFeed) OnError(err error) {
+	// TODO: Check the type of the error if it's something
+	// serious / not-recoverable / needs user attention.
 	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
 
 	r.m.Lock()

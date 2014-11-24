@@ -305,6 +305,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// Once we have a 1 or more PlanPIndexes for the Index, use
 		// blance to assign the PlanPIndexes to nodes, depending on
 		// the numReplicas setting.
+		//
+		// First, reconstruct previous blance map from planPIndexesPrev.
 		blancePrevMap := blance.PartitionMap{}
 		for _, planPIndex := range planPIndexesForIndex {
 			blancePartition := &blance.Partition{
@@ -313,8 +315,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			}
 			blancePrevMap[planPIndex.Name] = blancePartition
 			if planPIndexesPrev != nil {
-				planPIndexPrev, exists :=
-					planPIndexesPrev.PlanPIndexes[planPIndex.Name]
+				planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 				if exists && planPIndexPrev != nil {
 					for nodeUUIDPrev, _ := range planPIndexPrev.NodeUUIDs {
 						blancePartition.NodesByState["master"] =
@@ -330,6 +331,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		modelConstraints := map[string]int{
 			"master": indexDef.PlanParams.NumReplicas + 1,
 		}
+
+		// TODO: Leverage these blance features.
 		partitionWeights := map[string]int(nil)
 		stateStickiness := map[string]int(nil)
 		nodeWeights := map[string]int(nil)
