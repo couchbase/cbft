@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 )
 
 type PIndexImpl interface {
@@ -22,6 +23,10 @@ type PIndexImpl interface {
 type PIndexImplType struct {
 	New  func(indexType, indexSchema, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
+
+	Count  func(mgr *Manager, indexName, indexUUID string) (uint64, error)
+	Search func(mgr *Manager, indexName, indexUUID string,
+		req []byte, res io.Writer) error
 }
 
 var pindexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
