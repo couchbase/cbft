@@ -24,15 +24,15 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	ring, err := NewMsgRing(nil, 1)
 
 	cfg := NewCfgMem()
-	mgr := NewManager(VERSION, cfg, NewUUID(), nil, ":1000",
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", ":1000",
 		emptyDir, "some-datasource", nil)
 	r, err := NewManagerRESTRouter(mgr, emptyDir, ring)
 	if r == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
 
-	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"}, ":1000",
-		emptyDir, "some-datasource", nil)
+	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"},
+		"", ":1000", emptyDir, "some-datasource", nil)
 	r, err = NewManagerRESTRouter(mgr, emptyDir, ring)
 	if r == nil || err != nil {
 		t.Errorf("expected no errors")

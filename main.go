@@ -49,8 +49,13 @@ var server = flag.String("server", "",
 	"url to datasource server; couchbase example: http://localhost:8091")
 var tags = flag.String("tags", "",
 	"comma-separated list of tags (or roles) for this node")
+var container = flag.String("container", "",
+	"slash separated list of parent containers for this node,"+
+		" such as for shelf/rack/row/zone awareness")
+var known = flag.Bool("known", false,
+	"force this node to be registered as known to the cluster")
 var wanted = flag.Bool("wanted", false,
-	"force this node to be wanted as part of the cluster")
+	"force this node to be registered as wanted as part of the cluster")
 var cfgConnect = flag.String("cfgConnect", "simple",
 	"connection string/info to configuration provider")
 
@@ -96,8 +101,8 @@ func main() {
 		tagsArr = strings.Split(*tags, ",")
 	}
 
-	router, err := MainStart(cfg, uuid, tagsArr, *bindAddr, *dataDir,
-		*staticDir, *server, *wanted, mr)
+	router, err := MainStart(cfg, uuid, tagsArr, *container,
+		*bindAddr, *dataDir, *staticDir, *server, *known, *wanted, mr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -138,8 +143,9 @@ func MainUUID(dataDir string) (string, error) {
 	return uuid, nil
 }
 
-func MainStart(cfg Cfg, uuid string, tags []string,
-	bindAddr, dataDir, staticDir, server string, wanted bool, mr *MsgRing) (
+func MainStart(cfg Cfg, uuid string, tags []string, container,
+	bindAddr, dataDir, staticDir, server string,
+	known, wanted bool, mr *MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -151,9 +157,9 @@ func MainStart(cfg Cfg, uuid string, tags []string,
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, uuid, tags, bindAddr, dataDir, server,
-		&MainHandlers{})
-	if err = mgr.Start(wanted); err != nil {
+	mgr := NewManager(VERSION, cfg, uuid, tags, container,
+		bindAddr, dataDir, server, &MainHandlers{})
+	if err = mgr.Start(known, wanted); err != nil {
 		return nil, err
 	}
 

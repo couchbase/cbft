@@ -29,6 +29,7 @@ type Manager struct {
 	uuid      string          // Unique to every Manager instance.
 	tags      []string        // The tags at Manager start.
 	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
+	container string          // Slash ('/') separated containment path (optional).
 	bindAddr  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -51,7 +52,7 @@ type ManagerEventHandlers interface {
 	OnUnregisterPIndex(pindex *PIndex)
 }
 
-func NewManager(version string, cfg Cfg, uuid string, tags []string,
+func NewManager(version string, cfg Cfg, uuid string, tags []string, container,
 	bindAddr, dataDir string, server string, meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		startTime: time.Now(),
@@ -60,6 +61,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		uuid:      uuid,
 		tags:      tags,
 		tagsMap:   StringsToMap(tags),
+		container: container,
 		bindAddr:  bindAddr,
 		dataDir:   dataDir,
 		server:    server,
@@ -71,13 +73,13 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 	}
 }
 
-func (mgr *Manager) Start(registerAsWanted bool) error {
+func (mgr *Manager) Start(registerAsKnown, registerAsWanted bool) error {
 	// Save our nodeDef (with our UUID) into the Cfg.
-	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN); err != nil {
+	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN, registerAsKnown); err != nil {
 		return err
 	}
 	if registerAsWanted {
-		if err := mgr.SaveNodeDef(NODE_DEFS_WANTED); err != nil {
+		if err := mgr.SaveNodeDef(NODE_DEFS_WANTED, registerAsWanted); err != nil {
 			return err
 		}
 	}
@@ -120,7 +122,7 @@ func (mgr *Manager) Start(registerAsWanted bool) error {
 
 // ---------------------------------------------------------------
 
-func (mgr *Manager) SaveNodeDef(kind string) error {
+func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 	if mgr.cfg == nil {
 		return nil // Occurs during testing.
 	}
@@ -134,8 +136,7 @@ func (mgr *Manager) SaveNodeDef(kind string) error {
 			nodeDefs = NewNodeDefs(mgr.version)
 		}
 		nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
-		if exists {
-			// TODO: need a way to force overwrite other node's UUID?
+		if exists && !force {
 			if nodeDef.UUID != mgr.uuid {
 				return fmt.Errorf("some other node is running at our bindAddr: %v,"+
 					" with different uuid: %s, than our uuid: %s",
