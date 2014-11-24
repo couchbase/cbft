@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 )
@@ -21,6 +22,14 @@ func init() {
 	RegisterPIndexImplType("blackhole", &PIndexImplType{
 		New:  NewBlackHolePIndexImpl,
 		Open: OpenBlackHolePIndexImpl,
+
+		Count: func(mgr *Manager, indexName, indexUUID string) (uint64, error) {
+			return 0, fmt.Errorf("blackhole is uncountable")
+		},
+		Search: func(mgr *Manager, indexName, indexUUID string,
+			req []byte, res io.Writer) error {
+			return fmt.Errorf("blackhole is unsearchable")
+		},
 	})
 }
 
