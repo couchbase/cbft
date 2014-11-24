@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/couchbaselabs/blance"
 	log "github.com/couchbaselabs/clog"
 )
 
@@ -52,6 +53,8 @@ type PlanParams struct {
 	// replicas... so 3 copies in total.  A NumReplicas of 0 means
 	// just the first, primary copy only.
 	NumReplicas int `json:"numReplicas"`
+
+	PartitionModel blance.PartitionModel `json:"partitionModel"`
 }
 
 // ------------------------------------------------------------------------
