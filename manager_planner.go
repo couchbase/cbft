@@ -210,12 +210,26 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		return nil, nil
 	}
 
-	// Consider only the nodeDefs that can support pindexes.
 	nodeUUIDs := make([]string, 0)
+	nodeWeights := make(map[string]int)
+	nodeHierarchy := make(map[string]string)
 	for _, nodeDef := range nodeDefs.NodeDefs {
 		tags := StringsToMap(nodeDef.Tags)
+		// Consider only nodeDef's that can support pindexes.
 		if tags == nil || tags["pindex"] {
 			nodeUUIDs = append(nodeUUIDs, nodeDef.UUID)
+
+			if nodeDef.Weight > 0 {
+				nodeWeights[nodeDef.UUID] = nodeDef.Weight
+			}
+
+			child := nodeDef.UUID
+			for _, ancestor := range strings.Split(nodeDef.Container, "/") {
+				if child != "" && ancestor != "" {
+					nodeHierarchy[child] = ancestor
+				}
+				child = ancestor
+			}
 		}
 	}
 
@@ -335,8 +349,6 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// TODO: Leverage these blance features.
 		partitionWeights := map[string]int(nil)
 		stateStickiness := map[string]int(nil)
-		nodeWeights := map[string]int(nil)
-		nodeHierarchy := map[string]string(nil)
 		hierarchyRules := blance.HierarchyRules(nil)
 
 		blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
