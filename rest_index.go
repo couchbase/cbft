@@ -29,6 +29,12 @@ func indexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "indexName")
 }
 
+// Return an indexAlias that represents all the PIndexes for the index.
+//
+// TODO: But, what if the index is an explicit, user-defined alias?
+// Then, this should instead be an alias to indexes, and we should
+// instead use table-lookup driven logic here to switch behavior based
+// on index type.
 func indexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
