@@ -38,6 +38,7 @@ type FeedType struct {
 	Partitions  FeedPartitionsFunc
 	Public      bool
 	Description string
+	StartSample interface{}
 }
 
 type FeedStartFunc func(mgr *Manager, feedName, indexName, indexUUID string,

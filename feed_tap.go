@@ -29,6 +29,7 @@ func init() {
 			Partitions:  CouchbasePartitions,
 			Public:      true,
 			Description: "Couchbase Server/Cluster data source, via TAP protocol",
+			StartSample: &TAPFeedParams{},
 		})
 }
 

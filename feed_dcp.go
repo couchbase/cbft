@@ -32,6 +32,7 @@ func init() {
 		Partitions:  CouchbasePartitions,
 		Public:      true,
 		Description: "Couchbase Server/Cluster data source",
+		StartSample: &DCPFeedParams{},
 	}
 	RegisterFeedType("couchbase", f)
 	RegisterFeedType("couchbase-dcp", f)

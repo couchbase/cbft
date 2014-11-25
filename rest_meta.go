@@ -29,21 +29,23 @@ type MetaDesc struct {
 }
 
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	structs := map[string]interface{}{
+	startSamples := map[string]interface{}{
+		// TODO: Need to clean this up to only just what we need to expose.
 		"blanceHierarchyRules": &blance.HierarchyRules{},
 		"blanceHierarchyRule":  &blance.HierarchyRule{},
 		"indexDef":             &IndexDef{},
 		"nodeDef":              &NodeDef{},
 		"planParams":           &PlanParams{},
-		"dcpFeedParams":        &DCPFeedParams{},
-		"tapFeedParams":        &TAPFeedParams{},
 	}
 
 	// Key is sourceType, value is description.
-	sourceTypes := map[string]string{}
+	sourceTypes := map[string]*MetaDesc{}
 	for sourceType, f := range feedTypes {
 		if f.Public {
-			sourceTypes[sourceType] = f.Description
+			sourceTypes[sourceType] = &MetaDesc{
+				Description: f.Description,
+				StartSample: f.StartSample,
+			}
 		}
 	}
 
@@ -57,14 +59,14 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	mustEncode(w, struct {
-		Status      string                 `json:"status"`
-		Structs     map[string]interface{} `json:"structs"`
-		SourceTypes map[string]string      `json:"sourceTypes"`
-		IndexTypes  map[string]*MetaDesc   `json:"indexTypes"`
+		Status       string                 `json:"status"`
+		StartSamples map[string]interface{} `json:"startSamples"`
+		SourceTypes  map[string]*MetaDesc   `json:"sourceTypes"`
+		IndexTypes   map[string]*MetaDesc   `json:"indexTypes"`
 	}{
-		Status:      "ok",
-		Structs:     structs,
-		SourceTypes: sourceTypes,
-		IndexTypes:  indexTypes,
+		Status:       "ok",
+		StartSamples: startSamples,
+		SourceTypes:  sourceTypes,
+		IndexTypes:   indexTypes,
 	})
 }
