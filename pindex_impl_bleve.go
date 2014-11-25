@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/blevesearch/bleve"
@@ -413,92 +412,32 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // implementation might have a race where old pindexes with a matching
 // (but invalid) indexUUID might be hit.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
-	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
+	localPIndexes, remotePlanPIndexes, err :=
+		mgr.CoveringPIndexes(indexName, indexUUID, PLAN_PINDEX_NODE_READ)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve wanted nodeDefs, err: %v", err)
+		return nil, fmt.Errorf("bleveIndexAlias, err: %v", err)
 	}
 
-	// Returns true if the node has the "pindex" tag.
-	nodeDoesPIndexes := func(nodeUUID string) (*NodeDef, bool) {
-		for _, nodeDef := range nodeDefs.NodeDefs {
-			if nodeDef.UUID == nodeUUID {
-				if len(nodeDef.Tags) <= 0 {
-					return nodeDef, true
-				}
-				for _, tag := range nodeDef.Tags {
-					if tag == "pindex" {
-						return nodeDef, true
-					}
-				}
-			}
-		}
-		return nil, false
-	}
-
-	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve allPlanPIndexes, err: %v", err)
-	}
-
-	planPIndexes, exists := allPlanPIndexes[indexName]
-	if !exists || len(planPIndexes) <= 0 {
-		return nil, fmt.Errorf("no planPIndexes for indexName: %s", indexName)
-	}
-
-	_, pindexes := mgr.CurrentMaps()
-
-	selfUUID := mgr.UUID()
-	_, selfDoesPIndexes := nodeDoesPIndexes(selfUUID)
-
-	// TODO: need some abstractions to allow for non-bleve pindexes, perhaps.
 	alias := bleve.NewIndexAlias()
 
-build_alias_loop:
-	for _, planPIndex := range planPIndexes {
-		// First check whether this local node serves that planPIndex.
-		if selfDoesPIndexes &&
-			strings.Contains(planPIndex.NodeUUIDs[selfUUID], PLAN_PINDEX_NODE_READ) {
-			localPIndex, exists := pindexes[planPIndex.Name]
-			if exists &&
-				localPIndex != nil &&
-				localPIndex.Name == planPIndex.Name &&
-				localPIndex.IndexType == "bleve" &&
-				localPIndex.IndexName == indexName &&
-				(indexUUID == "" || localPIndex.IndexUUID == indexUUID) {
-				bindex, ok := localPIndex.Impl.(bleve.Index)
-				if ok && bindex != nil {
-					alias.Add(bindex)
-					continue build_alias_loop
-				}
-			}
+	for _, localPIndex := range localPIndexes {
+		bindex, ok := localPIndex.Impl.(bleve.Index)
+		if ok && bindex != nil && localPIndex.IndexType == "bleve" {
+			alias.Add(bindex)
+		} else {
+			return nil, fmt.Errorf("bleveIndexAlias localPIndex wasn't bleve")
 		}
+	}
 
-		// Otherwise, look for a remote node that serves that planPIndex.
-		//
-		// TODO: We should favor the most up-to-date node rather than
-		// the first one that we run into here?  But, perhaps the most
-		// up-to-date node is also the most overloaded?  Or, perhaps
-		// the planner may be trying to rebalance away the most
-		// up-to-date node and hitting it with load just makes the
-		// rebalance take longer?
-		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
-			if nodeUUID != selfUUID {
-				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
-				if ok &&
-					strings.Contains(nodeState, PLAN_PINDEX_NODE_READ) {
-					baseURL := "http://" + nodeDef.HostPort + "/api/pindex/" + planPIndex.Name
-					// TODO: Propagate auth to bleve client.
-					// TODO: Propagate consistency requirements to bleve client.
-					alias.Add(&BleveClient{
-						SearchURL:   baseURL + "/search",
-						DocCountURL: baseURL + "/count",
-					})
-					continue build_alias_loop
-				}
-			}
-		}
-
-		return nil, fmt.Errorf("no node provides planPIndex: %#v", planPIndex)
+	for _, remotePlanPIndex := range remotePlanPIndexes {
+		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
+			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
+		// TODO: Propagate auth to bleve client.
+		// TODO: Propagate consistency requirements to bleve client.
+		alias.Add(&BleveClient{
+			SearchURL:   baseURL + "/search",
+			DocCountURL: baseURL + "/count",
+		})
 	}
 
 	return alias, nil
