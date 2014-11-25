@@ -36,10 +36,10 @@ func init() {
 // across multiple real indexes (e.g., to query across customer
 // records, product catalog, call-center records, etc, in one shot).
 type AliasSchema struct {
-	Targets map[string]*AliasTarget `json:"targets"` // Keyed by indexName.
+	Targets map[string]*AliasSchemaTarget `json:"targets"` // Keyed by indexName.
 }
 
-type AliasTarget struct {
+type AliasSchemaTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
 }
 
