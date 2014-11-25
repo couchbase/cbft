@@ -10,8 +10,6 @@
 package main
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -60,16 +58,4 @@ func showError(w http.ResponseWriter, r *http.Request,
 	msg string, code int) {
 	log.Printf("error: http: %v/%v", code, msg)
 	http.Error(w, msg, code)
-}
-
-func mustEncode(w io.Writer, i interface{}) {
-	if headered, ok := w.(http.ResponseWriter); ok {
-		headered.Header().Set("Cache-Control", "no-cache")
-		headered.Header().Set("Content-type", "application/json")
-	}
-
-	e := json.NewEncoder(w)
-	if err := e.Encode(i); err != nil {
-		panic(err)
-	}
 }

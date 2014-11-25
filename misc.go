@@ -12,8 +12,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -121,4 +124,16 @@ func StringsIntersectStrings(a, b []string) []string {
 		}
 	}
 	return rv
+}
+
+func mustEncode(w io.Writer, i interface{}) {
+	if headered, ok := w.(http.ResponseWriter); ok {
+		headered.Header().Set("Cache-Control", "no-cache")
+		headered.Header().Set("Content-type", "application/json")
+	}
+
+	e := json.NewEncoder(w)
+	if err := e.Encode(i); err != nil {
+		panic(err)
+	}
 }

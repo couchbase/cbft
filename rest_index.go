@@ -14,9 +14,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
-
-	"github.com/blevesearch/bleve"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -27,101 +24,6 @@ func docIDLookup(req *http.Request) string {
 
 func indexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "indexName")
-}
-
-// Return an indexAlias that represents all the PIndexes for the index.
-//
-// TODO: But, what if the index is an explicit, user-defined alias?
-// Then, this should instead be an alias to indexes, and we should
-// instead use table-lookup driven logic here to switch behavior based
-// on index type.
-func indexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
-	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve wanted nodeDefs, err: %v", err)
-	}
-
-	// Returns true if the node has the "pindex" tag.
-	nodeDoesPIndexes := func(nodeUUID string) (*NodeDef, bool) {
-		for _, nodeDef := range nodeDefs.NodeDefs {
-			if nodeDef.UUID == nodeUUID {
-				if len(nodeDef.Tags) <= 0 {
-					return nodeDef, true
-				}
-				for _, tag := range nodeDef.Tags {
-					if tag == "pindex" {
-						return nodeDef, true
-					}
-				}
-			}
-		}
-		return nil, false
-	}
-
-	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve allPlanPIndexes, err: %v", err)
-	}
-
-	planPIndexes, exists := allPlanPIndexes[indexName]
-	if !exists || len(planPIndexes) <= 0 {
-		return nil, fmt.Errorf("no planPIndexes for indexName: %s", indexName)
-	}
-
-	_, pindexes := mgr.CurrentMaps()
-
-	selfUUID := mgr.UUID()
-	_, selfDoesPIndexes := nodeDoesPIndexes(selfUUID)
-
-	// TODO: need some abstractions to allow for non-bleve pindexes, perhaps.
-	alias := bleve.NewIndexAlias()
-
-build_alias_loop:
-	for _, planPIndex := range planPIndexes {
-		// First check whether this local node serves that planPIndex.
-		if selfDoesPIndexes &&
-			strings.Contains(planPIndex.NodeUUIDs[selfUUID], PLAN_PINDEX_NODE_READ) {
-			localPIndex, exists := pindexes[planPIndex.Name]
-			if exists &&
-				localPIndex != nil &&
-				localPIndex.Name == planPIndex.Name &&
-				localPIndex.IndexType == "bleve" &&
-				localPIndex.IndexName == indexName &&
-				(indexUUID == "" || localPIndex.IndexUUID == indexUUID) {
-				bindex, ok := localPIndex.Impl.(bleve.Index)
-				if ok && bindex != nil {
-					alias.Add(bindex)
-					continue build_alias_loop
-				}
-			}
-		}
-
-		// Otherwise, look for a remote node that serves that planPIndex.
-		//
-		// TODO: We should favor the most up-to-date node rather than
-		// the first one that we run into here?  But, perhaps the most
-		// up-to-date node is also the most overloaded?
-		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
-			if nodeUUID != selfUUID {
-				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
-				if ok &&
-					strings.Contains(nodeState, PLAN_PINDEX_NODE_READ) {
-					baseURL := "http://" + nodeDef.HostPort + "/api/pindex/" + planPIndex.Name
-					// TODO: Propagate auth to bleve client.
-					// TODO: Propagate consistency requirements to bleve client.
-					alias.Add(&BleveClient{
-						SearchURL:   baseURL + "/search",
-						DocCountURL: baseURL + "/count",
-					})
-					continue build_alias_loop
-				}
-			}
-		}
-
-		return nil, fmt.Errorf("no node provides planPIndex: %#v", planPIndex)
-	}
-
-	return alias, nil
 }
 
 // ------------------------------------------------------------------
@@ -225,15 +127,32 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	alias, err := indexAlias(h.mgr, indexName, indexUUID)
+	indexDefs, _, err := CfgGetIndexDefs(h.mgr.cfg)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
+		showError(w, req, fmt.Sprintf("rest.Count,"+
+			" could not get indexDefs, indexName: %s, err: %v",
+			indexName, err), 400)
+		return
+	}
+	indexDef := indexDefs.IndexDefs[indexName]
+	if indexDef == nil {
+		showError(w, req, fmt.Sprintf("rest.Count,"+
+			" no indexDef, indexName: %s", indexName), 400)
+		return
+	}
+	pindexImplType := pindexImplTypes[indexDef.Type]
+	if pindexImplType == nil ||
+		pindexImplType.Count == nil {
+		showError(w, req, fmt.Sprintf("rest.Count,"+
+			" no pindexImplType, indexName: %s, indexDef.Type: %s",
+			indexName, indexDef.Type), 400)
 		return
 	}
 
-	docCount, err := alias.DocCount()
+	count, err := pindexImplType.Count(h.mgr, indexName, indexUUID)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error counting docs: %v", err), 500)
+		showError(w, req, fmt.Sprintf("rest.Count,"+
+			" indexName: %s1, err: %v", indexName, err), 500)
 		return
 	}
 
@@ -242,7 +161,7 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Count  uint64 `json:"count"`
 	}{
 		Status: "ok",
-		Count:  docCount,
+		Count:  count,
 	}
 	mustEncode(w, rv)
 }
@@ -266,47 +185,43 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	log.Printf("rest search request: %s", indexName)
-
-	alias, err := indexAlias(h.mgr, indexName, indexUUID)
+	indexDefs, _, err := CfgGetIndexDefs(h.mgr.cfg)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("index alias: %v", err), 500)
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" could not get indexDefs, indexName: %s, err: %v",
+			indexName, err), 400)
+		return
+	}
+	indexDef := indexDefs.IndexDefs[indexName]
+	if indexDef == nil {
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" no indexDef, indexName: %s", indexName), 400)
+		return
+	}
+	pindexImplType := pindexImplTypes[indexDef.Type]
+	if pindexImplType == nil ||
+		pindexImplType.Query == nil {
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" no pindexImplType, indexName: %s, indexDef.Type: %s",
+			indexName, indexDef.Type), 400)
 		return
 	}
 
-	// read the request body
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error reading request body: %v", err), 400)
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" could not read request body, indexName: %s, indexDef.Type: %s",
+			indexName, indexDef.Type), 400)
 		return
 	}
+	log.Printf("rest.Search indexName: %s, indexDef.Type: %s,"+
+		" requestBody: %s", indexName, indexDef.Type, requestBody)
 
-	log.Printf("rest search request body: %s", requestBody)
-
-	// parse the request
-	var searchRequest bleve.SearchRequest
-	err = json.Unmarshal(requestBody, &searchRequest)
+	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error parsing query: %v", err), 400)
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" indexName: %s, indexDef.Type: %s, requestBody: %s, err: %v",
+			indexName, indexDef.Type, requestBody, err), 400)
 		return
 	}
-
-	log.Printf("rest search parsed request %#v", searchRequest)
-
-	// varlidate the query
-	err = searchRequest.Query.Validate()
-	if err != nil {
-		showError(w, req, fmt.Sprintf("error validating query: %v", err), 400)
-		return
-	}
-
-	// execute the query
-	searchResponse, err := alias.Search(&searchRequest)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("error executing query: %v", err), 500)
-		return
-	}
-
-	// encode the response
-	mustEncode(w, searchResponse)
 }

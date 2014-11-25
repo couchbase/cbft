@@ -24,8 +24,8 @@ type PIndexImplType struct {
 	New  func(indexType, indexSchema, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
 
-	Count  func(mgr *Manager, indexName, indexUUID string) (uint64, error)
-	Search func(mgr *Manager, indexName, indexUUID string,
+	Count func(mgr *Manager, indexName, indexUUID string) (uint64, error)
+	Query func(mgr *Manager, indexName, indexUUID string,
 		req []byte, res io.Writer) error
 }
 
