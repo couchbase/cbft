@@ -120,6 +120,15 @@ func TestSamePlanPIndexes(t *testing.T) {
 	b := NewPlanPIndexes("0.0.1")
 	c := NewPlanPIndexes("0.1.0")
 
+	if !SamePlanPIndexes(nil, nil) {
+		t.Errorf("expected same nil to nil")
+	}
+	if SamePlanPIndexes(a, nil) {
+		t.Errorf("expected not same to nil")
+	}
+	if SamePlanPIndexes(nil, a) {
+		t.Errorf("expected not same to nil")
+	}
 	if !SamePlanPIndexes(a, b) {
 		t.Errorf("expected same, a: %v, b: %v", a, b)
 	}
