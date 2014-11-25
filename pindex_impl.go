@@ -27,6 +27,8 @@ type PIndexImplType struct {
 	Count func(mgr *Manager, indexName, indexUUID string) (uint64, error)
 	Query func(mgr *Manager, indexName, indexUUID string,
 		req []byte, res io.Writer) error
+
+	Description string
 }
 
 var pindexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.

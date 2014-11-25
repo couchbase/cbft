@@ -29,6 +29,8 @@ func init() {
 			req []byte, res io.Writer) error {
 			return fmt.Errorf("blackhole is unqueryable")
 		},
+		Description: "blackhole index type drops all incoming data" +
+			" and is not queryable; used for testing",
 	})
 }
 

@@ -30,6 +30,8 @@ func init() {
 		Open:  OpenBlevePIndexImpl,
 		Count: CountBlevePIndexImpl,
 		Query: QueryBlevePIndexImpl,
+
+		Description: "bleve index type is powered by the bleve full-text-search engine",
 	})
 }
 

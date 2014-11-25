@@ -17,15 +17,15 @@ import (
 	"github.com/couchbaselabs/blance"
 )
 
-type ManagerStructsHandler struct {
+type ManagerMetaHandler struct {
 	mgr *Manager
 }
 
-func NewManagerStructsHandler(mgr *Manager) *ManagerStructsHandler {
-	return &ManagerStructsHandler{mgr: mgr}
+func NewManagerMetaHandler(mgr *Manager) *ManagerMetaHandler {
+	return &ManagerMetaHandler{mgr: mgr}
 }
 
-func (h *ManagerStructsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	structs := map[string]interface{}{
 		"aliasSchema":          &AliasSchema{},
 		"aliasSchemaTarget":    &AliasSchemaTarget{},
@@ -47,13 +47,21 @@ func (h *ManagerStructsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		}
 	}
 
+	// Key is indexType, value is description.
+	indexTypes := map[string]string{}
+	for indexType, t := range pindexImplTypes {
+		indexTypes[indexType] = t.Description
+	}
+
 	mustEncode(w, struct {
 		Status      string                 `json:"status"`
 		Structs     map[string]interface{} `json:"structs"`
 		SourceTypes map[string]string      `json:"sourceTypes"`
+		IndexTypes  map[string]string      `json:"indexTypes"`
 	}{
 		Status:      "ok",
 		Structs:     structs,
 		SourceTypes: sourceTypes,
+		IndexTypes:  indexTypes,
 	})
 }

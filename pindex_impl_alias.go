@@ -25,6 +25,8 @@ func init() {
 	RegisterPIndexImplType("alias", &PIndexImplType{
 		Count: CountAlias,
 		Query: QueryAlias,
+		Description: "alias index type supports fan-out of queries" +
+			" to multiple index targets",
 	})
 }
 

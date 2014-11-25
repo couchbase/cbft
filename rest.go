@@ -78,7 +78,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 	r.Handle("/api/cfgRefresh", NewCfgRefreshHandler(mgr)).Methods("POST")
 
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
-	r.Handle("/api/managerStructs", NewManagerStructsHandler(mgr)).Methods("GET")
+	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
 
 	return r, nil
 }
