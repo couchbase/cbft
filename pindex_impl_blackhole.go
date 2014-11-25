@@ -49,7 +49,8 @@ func NewBlackHolePIndexImpl(indexType, indexSchema, path string, restart func())
 	return dest, dest, nil
 }
 
-func OpenBlackHolePIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
+func OpenBlackHolePIndexImpl(indexType, path string, restart func()) (
+	PIndexImpl, Dest, error) {
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "black.hole")
 	if err != nil {
 		return nil, nil, err

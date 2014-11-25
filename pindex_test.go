@@ -93,3 +93,36 @@ func TestNewPIndexImpl(t *testing.T) {
 		t.Errorf("expected err on existing dir")
 	}
 }
+
+func TestBlackholePIndexImpl(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	restart := func() {
+		t.Errorf("not expecting a restart")
+	}
+
+	pindex, dest, err := NewBlackHolePIndexImpl("blackhole", "", emptyDir, restart)
+	if err != nil || pindex == nil || dest == nil {
+		t.Errorf("expected NewBlackHolePIndexImpl to work")
+	}
+
+	pindex, dest, err = OpenBlackHolePIndexImpl("blackhole", emptyDir, restart)
+	if err != nil || pindex == nil || dest == nil {
+		t.Errorf("expected OpenBlackHolePIndexImpl to work")
+	}
+
+	if pindex.Close() != nil ||
+		dest.OnDataUpdate("", nil, 0, nil) != nil ||
+		dest.OnDataDelete("", nil, 0) != nil ||
+		dest.OnSnapshotStart("", 0, 0) != nil ||
+		dest.SetOpaque("", nil) != nil ||
+		dest.Rollback("", 0) != nil {
+		t.Errorf("expected no errors from a blackhole pindex impl")
+	}
+
+	v, lastSeq, err := dest.GetOpaque("")
+	if err != nil || v != nil || lastSeq != 0 {
+		t.Errorf("expected nothing from blackhole.GetOpaque()")
+	}
+}
