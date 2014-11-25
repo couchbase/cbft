@@ -27,7 +27,7 @@ func init() {
 			return nil, nil
 		},
 		Public:      true,
-		Description: "a NO-OP data source (useful for index aliases and testing)",
+		Description: "nil - a NO-OP data source, used for index aliases and testing",
 	})
 }
 

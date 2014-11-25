@@ -101,6 +101,9 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+	$http.get('/api/managerMeta').success(function(data) {
+		$scope.meta = data;
+	})
 
 	$scope.errorMessage = null;
 

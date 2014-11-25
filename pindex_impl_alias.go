@@ -23,10 +23,9 @@ func init() {
 	// Register alias with empty instantiation functions,
 	// so that "alias" will show up in valid index types.
 	RegisterPIndexImplType("alias", &PIndexImplType{
-		Count: CountAlias,
-		Query: QueryAlias,
-		Description: "alias index type supports fan-out of queries" +
-			" to multiple index targets",
+		Count:       CountAlias,
+		Query:       QueryAlias,
+		Description: "alias - supports fan-out of queries to multiple index targets",
 		StartSample: &AliasSchema{
 			Targets: map[string]*AliasSchemaTarget{
 				"yourIndexName": &AliasSchemaTarget{},
