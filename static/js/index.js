@@ -101,14 +101,34 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+    $scope.newSourceParams = {};
+    $scope.newIndexParams = {};
+    $scope.newPlanParams = "";
+    $scope.paramNumLines = {};
+
 	$http.get('/api/managerMeta').success(function(data) {
 		$scope.meta = data;
+
+        for (var k in data.sourceTypes) {
+            $scope.newSourceParams[k] =
+                JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
+            $scope.paramNumLines[k] = $scope.newSourceParams[k].split("\n").length;
+        }
+
+        for (var k in data.indexTypes) {
+            $scope.newIndexParams[k] =
+                JSON.stringify(data.indexTypes[k].startSample, undefined, 2);
+            $scope.paramNumLines[k] = $scope.newIndexParams[k].split("\n").length;
+        }
+
+        $scope.newPlanParams = JSON.stringify(data.startSamples["planParams"], undefined, 2);
+        $scope.paramNumLines["planParams"] = $scope.newPlanParams.split("\n").length;
 	})
 
 	$scope.errorMessage = null;
 
 	$scope.newIndexNamed = function(sourceType, sourceName, sourceUUID, sourceParams,
-									indexType, indexName, indexSchema,
+									indexType, indexName, indexParams,
 									planParams) {
 		$scope.clearErrorMessage();
 		$http.put('/api/index/' + indexName, "", {
@@ -116,10 +136,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 			    sourceType: sourceType,
 			    sourceName: sourceName,
 			    sourceUUID: sourceUUID || "",
-			    sourceParams: sourceParams,
+			    sourceParams: sourceParams[sourceType],
 			    indexType: indexType || "bleve",
 			    indexName: indexName,
-                indexSchema: indexSchema,
+                indexSchema: indexParams[indexType],
 			    planParams: planParams,
 		    }
 		}).

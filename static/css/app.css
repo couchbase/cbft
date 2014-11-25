@@ -63,3 +63,7 @@
   background: none;
 }
 .rickshaw_graph .detail .x_label { display: none }
+
+textarea.inactive {
+    display: none;
+}
