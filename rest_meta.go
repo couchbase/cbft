@@ -12,8 +12,6 @@ package main
 import (
 	"net/http"
 
-	"github.com/blevesearch/bleve"
-
 	"github.com/couchbaselabs/blance"
 )
 
@@ -25,13 +23,15 @@ func NewManagerMetaHandler(mgr *Manager) *ManagerMetaHandler {
 	return &ManagerMetaHandler{mgr: mgr}
 }
 
+type MetaDesc struct {
+	Description string      `json:"description"`
+	StartSample interface{} `json:"startSample"`
+}
+
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	structs := map[string]interface{}{
-		"aliasSchema":          &AliasSchema{},
-		"aliasSchemaTarget":    &AliasSchemaTarget{},
 		"blanceHierarchyRules": &blance.HierarchyRules{},
 		"blanceHierarchyRule":  &blance.HierarchyRule{},
-		"bleveIndexMapping":    bleve.NewIndexMapping(),
 		"indexDef":             &IndexDef{},
 		"nodeDef":              &NodeDef{},
 		"planParams":           &PlanParams{},
@@ -48,16 +48,19 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Key is indexType, value is description.
-	indexTypes := map[string]string{}
+	indexTypes := map[string]*MetaDesc{}
 	for indexType, t := range pindexImplTypes {
-		indexTypes[indexType] = t.Description
+		indexTypes[indexType] = &MetaDesc{
+			Description: t.Description,
+			StartSample: t.StartSample,
+		}
 	}
 
 	mustEncode(w, struct {
 		Status      string                 `json:"status"`
 		Structs     map[string]interface{} `json:"structs"`
 		SourceTypes map[string]string      `json:"sourceTypes"`
-		IndexTypes  map[string]string      `json:"indexTypes"`
+		IndexTypes  map[string]*MetaDesc   `json:"indexTypes"`
 	}{
 		Status:      "ok",
 		Structs:     structs,

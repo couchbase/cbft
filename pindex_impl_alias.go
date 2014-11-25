@@ -27,6 +27,11 @@ func init() {
 		Query: QueryAlias,
 		Description: "alias index type supports fan-out of queries" +
 			" to multiple index targets",
+		StartSample: &AliasSchema{
+			Targets: map[string]*AliasSchemaTarget{
+				"yourIndexName": &AliasSchemaTarget{},
+			},
+		},
 	})
 }
 

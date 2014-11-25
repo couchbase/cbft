@@ -29,6 +29,7 @@ type PIndexImplType struct {
 		req []byte, res io.Writer) error
 
 	Description string
+	StartSample interface{}
 }
 
 var pindexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.

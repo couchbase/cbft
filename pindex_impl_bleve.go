@@ -32,6 +32,7 @@ func init() {
 		Query: QueryBlevePIndexImpl,
 
 		Description: "bleve index type is powered by the bleve full-text-search engine",
+		StartSample: bleve.NewIndexMapping(),
 	})
 }
 
