@@ -28,8 +28,6 @@ func TestNewPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	// TODO: Should have a blackhole index implementation for testing.
-
 	pindex, err := NewPIndex(nil, "fake", "uuid",
 		"bleve", "indexName", "indexUUID", "",
 		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
