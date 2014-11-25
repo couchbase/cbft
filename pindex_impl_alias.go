@@ -28,19 +28,18 @@ func init() {
 	})
 }
 
-// AliasSourceSchema holds the source definition for a user-defined
-// index alias.  An index alias can be used as a level of indirection
-// (the "LastQuartersSales" alias points currently to the
-// "2014-Q3-Sales" index, but the administrator might repoint it in
-// the future without changing the application) or to scatter-gather
-// or fan-out a query across multiple real indexes (e.g., to query
-// across customer records, product catalog, call-center records, etc,
-// in one shot).
-type AliasSourceSchema struct {
-	Sources map[string]*AliasSource `json:"sources"` // Keyed by indexName.
+// AliasSchema holds the definition for a user-defined index alias.  A
+// user-defined index alias can be used as a level of indirection (the
+// "LastQuartersSales" alias points currently to the "2014-Q3-Sales"
+// index, but the administrator might repoint it in the future without
+// changing the application) or to scatter-gather or fan-out a query
+// across multiple real indexes (e.g., to query across customer
+// records, product catalog, call-center records, etc, in one shot).
+type AliasSchema struct {
+	Targets map[string]*AliasTarget `json:"targets"` // Keyed by indexName.
 }
 
-type AliasSource struct {
+type AliasTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
 }
 
@@ -99,14 +98,14 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 		return nil, fmt.Errorf("could not get indexDef, indexName: %s", indexName)
 	}
 
-	schema := AliasSourceSchema{}
+	schema := AliasSchema{}
 	err = json.Unmarshal([]byte(indexDef.Schema), &schema)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse indexDef.Schema: %s, indexName: %s",
 			indexDef.Schema, indexName)
 	}
 
-	for indexName, source := range schema.Sources {
+	for indexName, source := range schema.Targets {
 		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID)
 		if err != nil {
 			return nil, fmt.Errorf("could not get subAlias, indexName: %s,"+
