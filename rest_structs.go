@@ -39,11 +39,21 @@ func (h *ManagerStructsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		"tapFeedParams":        &TAPFeedParams{},
 	}
 
+	// Key is sourceType, value is description.
+	sourceTypes := map[string]string{}
+	for sourceType, f := range feedTypes {
+		if f.Public {
+			sourceTypes[sourceType] = f.Description
+		}
+	}
+
 	mustEncode(w, struct {
-		Status  string                 `json:"status"`
-		Structs map[string]interface{} `json:"structs"`
+		Status      string                 `json:"status"`
+		Structs     map[string]interface{} `json:"structs"`
+		SourceTypes map[string]string      `json:"sourceTypes"`
 	}{
-		Status:  "ok",
-		Structs: structs,
+		Status:      "ok",
+		Structs:     structs,
+		SourceTypes: sourceTypes,
 	})
 }

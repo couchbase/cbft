@@ -24,7 +24,12 @@ import (
 
 func init() {
 	RegisterFeedType("couchbase-tap",
-		&FeedType{Start: StartTAPFeed, Partitions: CouchbasePartitions})
+		&FeedType{
+			Start:       StartTAPFeed,
+			Partitions:  CouchbasePartitions,
+			Public:      true,
+			Description: "Couchbase Server/Cluster data source, via TAP protocol",
+		})
 }
 
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,

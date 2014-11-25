@@ -34,8 +34,10 @@ const FEED_BACKOFF_FACTOR = 1.5
 var feedTypes = make(map[string]*FeedType) // Key is sourceType.
 
 type FeedType struct {
-	Start      FeedStartFunc
-	Partitions FeedPartitionsFunc
+	Start       FeedStartFunc
+	Partitions  FeedPartitionsFunc
+	Public      bool
+	Description string
 }
 
 type FeedStartFunc func(mgr *Manager, feedName, indexName, indexUUID string,

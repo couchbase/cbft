@@ -27,7 +27,12 @@ import (
 )
 
 func init() {
-	f := &FeedType{Start: StartDCPFeed, Partitions: CouchbasePartitions}
+	f := &FeedType{
+		Start:       StartDCPFeed,
+		Partitions:  CouchbasePartitions,
+		Public:      true,
+		Description: "Couchbase Server/Cluster data source",
+	}
 	RegisterFeedType("couchbase", f)
 	RegisterFeedType("couchbase-dcp", f)
 }
