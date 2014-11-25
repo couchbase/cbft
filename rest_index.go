@@ -127,25 +127,10 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	indexDefs, _, err := CfgGetIndexDefs(h.mgr.cfg)
-	if err != nil {
+	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
+	if err != nil || pindexImplType.Count == nil {
 		showError(w, req, fmt.Sprintf("rest.Count,"+
-			" could not get indexDefs, indexName: %s, err: %v",
-			indexName, err), 400)
-		return
-	}
-	indexDef := indexDefs.IndexDefs[indexName]
-	if indexDef == nil {
-		showError(w, req, fmt.Sprintf("rest.Count,"+
-			" no indexDef, indexName: %s", indexName), 400)
-		return
-	}
-	pindexImplType := pindexImplTypes[indexDef.Type]
-	if pindexImplType == nil ||
-		pindexImplType.Count == nil {
-		showError(w, req, fmt.Sprintf("rest.Count,"+
-			" no pindexImplType, indexName: %s, indexDef.Type: %s",
-			indexName, indexDef.Type), 400)
+			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
 		return
 	}
 
@@ -185,43 +170,26 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	indexDefs, _, err := CfgGetIndexDefs(h.mgr.cfg)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" could not get indexDefs, indexName: %s, err: %v",
-			indexName, err), 400)
-		return
-	}
-	indexDef := indexDefs.IndexDefs[indexName]
-	if indexDef == nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" no indexDef, indexName: %s", indexName), 400)
-		return
-	}
-	pindexImplType := pindexImplTypes[indexDef.Type]
-	if pindexImplType == nil ||
-		pindexImplType.Query == nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" no pindexImplType, indexName: %s, indexDef.Type: %s",
-			indexName, indexDef.Type), 400)
-		return
-	}
-
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" could not read request body, indexName: %s, indexDef.Type: %s",
-			indexName, indexDef.Type), 400)
+			" could not read request body, indexName: %s", indexName), 400)
 		return
 	}
-	log.Printf("rest.Search indexName: %s, indexDef.Type: %s,"+
-		" requestBody: %s", indexName, indexDef.Type, requestBody)
+
+	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
+	if err != nil || pindexImplType.Query == nil {
+		showError(w, req, fmt.Sprintf("rest.Search,"+
+			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
+		return
+	}
+
+	log.Printf("rest.Search indexName: %s, requestBody: %s", indexName, requestBody)
 
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" indexName: %s, indexDef.Type: %s, requestBody: %s, err: %v",
-			indexName, indexDef.Type, requestBody, err), 400)
+			" indexName: %s, requestBody: %s, err: %v", indexName, requestBody, err), 400)
 		return
 	}
 }

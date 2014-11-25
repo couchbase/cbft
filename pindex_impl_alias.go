@@ -83,9 +83,10 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 }
 
 // The indexName/indexUUID is for a user-defined index alias.
+//
+// TODO: One day support user-defined aliases for non-bleve indexes.
 func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	indexName, indexUUID string) (bleve.IndexAlias, error) {
-	// TODO: One day should support user-defined aliases for non-bleve indexes.
 	alias := bleve.NewIndexAlias()
 
 	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)

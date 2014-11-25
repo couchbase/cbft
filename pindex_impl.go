@@ -53,3 +53,21 @@ func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, e
 
 	return t.Open(indexType, path, restart)
 }
+
+func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) {
+	indexDefs, _, err := CfgGetIndexDefs(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("could not get indexDefs, indexName: %s, err: %v",
+			indexName, err)
+	}
+	indexDef := indexDefs.IndexDefs[indexName]
+	if indexDef == nil {
+		return nil, fmt.Errorf("no indexDef, indexName: %s", indexName)
+	}
+	pindexImplType := pindexImplTypes[indexDef.Type]
+	if pindexImplType == nil {
+		return nil, fmt.Errorf("no pindexImplType, indexName: %s, indexDef.Type: %s",
+			indexName, indexDef.Type)
+	}
+	return pindexImplType, nil
+}
