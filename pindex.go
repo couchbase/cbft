@@ -161,3 +161,108 @@ func ParsePIndexPath(dataDir, pindexPath string) (string, bool) {
 	pindexName = pindexName[0 : len(pindexName)-len(pindexPathSuffix)]
 	return pindexName, true
 }
+
+// ---------------------------------------------------------
+
+type RemotePlanPIndex struct {
+	PlanPIndex *PlanPIndex
+	NodeDef    *NodeDef
+}
+
+// Returns a non-overlapping, disjoint set (or cut) of PIndexes
+// (either local or remote) that cover all the partitons of an index
+// so that the caller can perform scatter/gather queries, etc.  Only
+// PlanPIndexes on wanted nodes that have the given wantNodeState
+// (like, PLAN_PINDEX_NODE_READ) will be returned.
+//
+// TODO: Perhaps need a tighter check around indexUUID, as the current
+// implementation might have a race where old pindexes with a matching
+// (but outdated) indexUUID might be chosen.
+//
+// TODO: This implementation currently always favors the local node's
+// pindex, but should it?  Perhaps a remote node is more up-to-date
+// than the local pindex?
+//
+// TODO: We should favor the most up-to-date node rather than
+// the first one that we run into here?  But, perhaps the most
+// up-to-date node is also the most overloaded?  Or, perhaps
+// the planner may be trying to rebalance away the most
+// up-to-date node and hitting it with load just makes the
+// rebalance take longer?
+func (mgr *Manager) CoveringPIndexes(indexName, indexUUID, wantNodeState string) (
+	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
+	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not retrieve wanted nodeDefs, err: %v", err)
+	}
+
+	// Returns true if the node has the "pindex" tag.
+	nodeDoesPIndexes := func(nodeUUID string) (*NodeDef, bool) {
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			if nodeDef.UUID == nodeUUID {
+				if len(nodeDef.Tags) <= 0 {
+					return nodeDef, true
+				}
+				for _, tag := range nodeDef.Tags {
+					if tag == "pindex" {
+						return nodeDef, true
+					}
+				}
+			}
+		}
+		return nil, false
+	}
+
+	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not retrieve allPlanPIndexes, err: %v", err)
+	}
+
+	planPIndexes, exists := allPlanPIndexes[indexName]
+	if !exists || len(planPIndexes) <= 0 {
+		return nil, nil, fmt.Errorf("no planPIndexes for indexName: %s", indexName)
+	}
+
+	localPIndexes = make([]*PIndex, 0)
+	remotePlanPIndexes = make([]*RemotePlanPIndex, 0)
+
+	_, pindexes := mgr.CurrentMaps()
+
+	selfUUID := mgr.UUID()
+	_, selfDoesPIndexes := nodeDoesPIndexes(selfUUID)
+
+build_alias_loop:
+	for _, planPIndex := range planPIndexes {
+		// First check whether this local node serves that planPIndex.
+		if selfDoesPIndexes &&
+			strings.Contains(planPIndex.NodeUUIDs[selfUUID], wantNodeState) {
+			localPIndex, exists := pindexes[planPIndex.Name]
+			if exists &&
+				localPIndex != nil &&
+				localPIndex.Name == planPIndex.Name &&
+				localPIndex.IndexName == indexName &&
+				(indexUUID == "" || localPIndex.IndexUUID == indexUUID) {
+				localPIndexes = append(localPIndexes, localPIndex)
+				continue build_alias_loop
+			}
+		}
+
+		// Otherwise, look for a remote node that serves that planPIndex.
+		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
+			if nodeUUID != selfUUID {
+				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
+				if ok && strings.Contains(nodeState, wantNodeState) {
+					remotePlanPIndexes = append(remotePlanPIndexes, &RemotePlanPIndex{
+						PlanPIndex: planPIndex,
+						NodeDef:    nodeDef,
+					})
+					continue build_alias_loop
+				}
+			}
+		}
+
+		return nil, nil, fmt.Errorf("no node covers planPIndex: %#v", planPIndex)
+	}
+
+	return localPIndexes, remotePlanPIndexes, nil
+}
