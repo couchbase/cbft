@@ -17,7 +17,7 @@ import (
 
 // NOTE: You *must* update VERSION if you change what's stored in the
 // Cfg (such as the JSON/struct definitions or planning algorithms).
-const VERSION = "0.4.0"
+const VERSION = "1.0.0"
 const VERSION_KEY = "version"
 
 // Returns true if a given version is modern enough to modify the Cfg.

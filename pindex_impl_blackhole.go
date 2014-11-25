@@ -34,7 +34,7 @@ func init() {
 	})
 }
 
-func NewBlackHolePIndexImpl(indexType, indexSchema, path string, restart func()) (
+func NewBlackHolePIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {

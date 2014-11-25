@@ -17,7 +17,7 @@ import (
 
 // Creates a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-	indexType, indexName, indexSchema string, planParams PlanParams) error {
+	indexType, indexName, indexParams string, planParams PlanParams) error {
 	_, exists := pindexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("error: CreateIndex, unknown indexType: %s", indexType)
@@ -53,7 +53,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 		Type:         indexType,
 		Name:         indexName,
 		UUID:         indexUUID,
-		Schema:       indexSchema,
+		Params:       indexParams,
 		SourceType:   sourceType,
 		SourceName:   sourceName,
 		SourceUUID:   sourceUUID,

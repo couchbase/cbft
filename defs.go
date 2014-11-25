@@ -34,7 +34,7 @@ type IndexDef struct {
 	Type         string     `json:"type"` // Ex: "bleve", "alias", "blackhole", etc.
 	Name         string     `json:"name"`
 	UUID         string     `json:"uuid"`
-	Schema       string     `json:"schema"`
+	Params       string     `json:"params"`
 	SourceType   string     `json:"sourceType"`
 	SourceName   string     `json:"sourceName"`
 	SourceUUID   string     `json:"sourceUUID"`
@@ -90,7 +90,7 @@ type PlanPIndex struct {
 	IndexType        string            `json:"indexType"`   // See IndexDef.Type.
 	IndexName        string            `json:"indexName"`   // See IndexDef.Name.
 	IndexUUID        string            `json:"indexUUID"`   // See IndefDef.UUID.
-	IndexSchema      string            `json:"indexSchema"` // See IndexDef.Schema.
+	IndexParams      string            `json:"indexParams"` // See IndexDef.Params.
 	SourceType       string            `json:"sourceType"`
 	SourceName       string            `json:"sourceName"`
 	SourceUUID       string            `json:"sourceUUID"`
@@ -248,7 +248,7 @@ func SamePlanPIndex(a, b *PlanPIndex) bool {
 	if a.Name != b.Name ||
 		a.IndexName != b.IndexName ||
 		a.IndexUUID != b.IndexUUID ||
-		a.IndexSchema != b.IndexSchema ||
+		a.IndexParams != b.IndexParams ||
 		a.SourceType != b.SourceType ||
 		a.SourceName != b.SourceName ||
 		a.SourceUUID != b.SourceUUID ||
@@ -265,7 +265,7 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 	same := pindex.Name == planPIndex.Name &&
 		pindex.IndexName == planPIndex.IndexName &&
 		pindex.IndexUUID == planPIndex.IndexUUID &&
-		pindex.IndexSchema == planPIndex.IndexSchema &&
+		pindex.IndexParams == planPIndex.IndexParams &&
 		pindex.SourceType == planPIndex.SourceType &&
 		pindex.SourceName == planPIndex.SourceName &&
 		pindex.SourceUUID == planPIndex.SourceUUID &&

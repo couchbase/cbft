@@ -232,7 +232,7 @@ What happens when creating a full-text index...
 
 Let's "follow a request" through the system of a user creating a
 logical full-text index.  The user supplies inputs of data source
-bucket, indexType, indexName, indexSchema, using a client SDK that
+bucket, indexType, indexName, indexParams, using a client SDK that
 eventually communicates with some cbft instance (doesn't matter which
 one).
 

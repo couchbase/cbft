@@ -75,10 +75,10 @@ func TestNewPIndexImpl(t *testing.T) {
 		t.Errorf("not expecting a restart")
 	}
 
-	indexSchema := ""
+	indexParams := ""
 
 	pindexImpl, dest, err := NewPIndexImpl("AN UNKNOWN PINDEX IMPL TYPE",
-		indexSchema, emptyDir, restart)
+		indexParams, emptyDir, restart)
 	if err == nil || pindexImpl != nil || dest != nil {
 		t.Errorf("expected err on unknown impl type")
 	}
@@ -88,7 +88,7 @@ func TestNewPIndexImpl(t *testing.T) {
 		t.Errorf("expected err on unknown impl type")
 	}
 
-	pindexImpl, dest, err = NewPIndexImpl("bleve", indexSchema, emptyDir, restart)
+	pindexImpl, dest, err = NewPIndexImpl("bleve", indexParams, emptyDir, restart)
 	if err == nil || pindexImpl != nil || dest != nil {
 		t.Errorf("expected err on existing dir")
 	}

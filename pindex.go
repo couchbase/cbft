@@ -30,7 +30,7 @@ type PIndex struct {
 	IndexType        string     `json:"indexType"`
 	IndexName        string     `json:"indexName"`
 	IndexUUID        string     `json:"indexUUID"`
-	IndexSchema      string     `json:"indexSchema"`
+	IndexParams      string     `json:"indexParams"`
 	SourceType       string     `json:"sourceType"`
 	SourceName       string     `json:"sourceName"`
 	SourceUUID       string     `json:"sourceUUID"`
@@ -55,7 +55,7 @@ func (p *PIndex) Close(remove bool) error {
 }
 
 func NewPIndex(mgr *Manager, name, uuid,
-	indexType, indexName, indexUUID, indexSchema,
+	indexType, indexName, indexUUID, indexParams,
 	sourceType, sourceName, sourceUUID, sourceParams, sourcePartitions string,
 	path string) (*PIndex, error) {
 	var pindex *PIndex
@@ -67,11 +67,11 @@ func NewPIndex(mgr *Manager, name, uuid,
 		}()
 	}
 
-	impl, dest, err := NewPIndexImpl(indexType, indexSchema, path, restart)
+	impl, dest, err := NewPIndexImpl(indexType, indexParams, path, restart)
 	if err != nil {
 		os.RemoveAll(path)
-		return nil, fmt.Errorf("error: new indexType: %s, indexSchema: %s,"+
-			" path: %s, err: %s", indexType, indexSchema, path, err)
+		return nil, fmt.Errorf("error: new indexType: %s, indexParams: %s,"+
+			" path: %s, err: %s", indexType, indexParams, path, err)
 	}
 
 	pindex = &PIndex{
@@ -80,7 +80,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 		IndexType:        indexType,
 		IndexName:        indexName,
 		IndexUUID:        indexUUID,
-		IndexSchema:      indexSchema,
+		IndexParams:      indexParams,
 		SourceType:       sourceType,
 		SourceName:       sourceName,
 		SourceUUID:       sourceUUID,

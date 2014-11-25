@@ -89,21 +89,21 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	m := map[string]interface{}{}
-	if indexDef.Schema != "" {
-		if err := json.Unmarshal([]byte(indexDef.Schema), &m); err != nil {
+	if indexDef.Params != "" {
+		if err := json.Unmarshal([]byte(indexDef.Params), &m); err != nil {
 			showError(w, req, "could not unmarshal mapping", 500)
 			return
 		}
 	}
 
 	rv := struct {
-		Status       string                 `json:"status"`
-		IndexDef     *IndexDef              `json:"indexDef"`
-		IndexMapping map[string]interface{} `json:"indexMapping"`
+		Status      string                 `json:"status"`
+		IndexDef    *IndexDef              `json:"indexDef"`
+		IndexParams map[string]interface{} `json:"indexParams"`
 	}{
-		Status:       "ok",
-		IndexDef:     indexDef,
-		IndexMapping: m,
+		Status:      "ok",
+		IndexDef:    indexDef,
+		IndexParams: m,
 	}
 	mustEncode(w, rv)
 }

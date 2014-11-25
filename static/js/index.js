@@ -40,18 +40,18 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
 	$scope.indexName = $routeParams.indexName;
 	$scope.indexDocCount = 0;
-	$scope.mappingFormatted = "";
+	$scope.indexDefStr = "";
+	$scope.indexParamsStr = "";
 	$scope.tab = $routeParams.tabName;
 	if($scope.tab === undefined || $scope.tab === "") {
 		$scope.tab = "summary";
 	}
 	$scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
-	$scope.indexDetails = null;
 
 	$scope.loadIndexDetails = function() {
 		$http.get('/api/index/' + $scope.indexName).success(function(data) {
-            $scope.indexDetails = JSON.stringify(data.indexDef, undefined, 2);
-            $scope.mappingFormatted = JSON.stringify(data.indexMapping, undefined, 2);
+            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
+            $scope.indexParamsStr = JSON.stringify(data.indexParams, undefined, 2);
         }).
         error(function(data, code) {
 			$scope.errorMessage = data;
@@ -139,7 +139,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 			    sourceParams: sourceParams[sourceType],
 			    indexType: indexType || "bleve",
 			    indexName: indexName,
-                indexSchema: indexParams[indexType],
+                indexParams: indexParams[indexType],
 			    planParams: planParams,
 		    }
 		}).

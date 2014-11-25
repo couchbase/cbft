@@ -21,7 +21,7 @@ type PIndexImpl interface {
 }
 
 type PIndexImplType struct {
-	New  func(indexType, indexSchema, path string, restart func()) (PIndexImpl, Dest, error)
+	New  func(indexType, indexParams, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
 
 	Count func(mgr *Manager, indexName, indexUUID string) (uint64, error)
@@ -38,14 +38,14 @@ func RegisterPIndexImplType(indexType string, t *PIndexImplType) {
 	pindexImplTypes[indexType] = t
 }
 
-func NewPIndexImpl(indexType, indexSchema, path string, restart func()) (
+func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := pindexImplTypes[indexType]
 	if !exists || t == nil {
 		return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s", indexType)
 	}
 
-	return t.New(indexType, indexSchema, path, restart)
+	return t.New(indexType, indexParams, path, restart)
 }
 
 func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {

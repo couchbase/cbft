@@ -303,7 +303,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 			planPIndex.IndexType,
 			planPIndex.IndexName,
 			planPIndex.IndexUUID,
-			planPIndex.IndexSchema,
+			planPIndex.IndexParams,
 			planPIndex.SourceType,
 			planPIndex.SourceName,
 			planPIndex.SourceUUID,

@@ -41,8 +41,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// TODO: Need to validate indexSchema based on the indexType.
-	indexSchema := req.FormValue("indexSchema")
+	// TODO: Need to validate indexParams based on the indexType.
+	indexParams := req.FormValue("indexParams")
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
@@ -74,7 +74,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-		indexType, indexName, string(indexSchema), *planParams)
+		indexType, indexName, string(indexParams), *planParams)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
 			indexName, err), 500)

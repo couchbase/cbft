@@ -36,11 +36,11 @@ func init() {
 	})
 }
 
-func NewBlevePIndexImpl(indexType, indexSchema, path string, restart func()) (
+func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	bindexMapping := bleve.NewIndexMapping()
-	if len(indexSchema) > 0 {
-		if err := json.Unmarshal([]byte(indexSchema), &bindexMapping); err != nil {
+	if len(indexParams) > 0 {
+		if err := json.Unmarshal([]byte(indexParams), &bindexMapping); err != nil {
 			return nil, nil, fmt.Errorf("error: parse bleve index mapping: %v", err)
 		}
 	}

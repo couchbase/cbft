@@ -26,26 +26,26 @@ func init() {
 		Count:       CountAlias,
 		Query:       QueryAlias,
 		Description: "alias - supports fan-out of queries to multiple index targets",
-		StartSample: &AliasSchema{
-			Targets: map[string]*AliasSchemaTarget{
-				"yourIndexName": &AliasSchemaTarget{},
+		StartSample: &AliasParams{
+			Targets: map[string]*AliasParamsTarget{
+				"yourIndexName": &AliasParamsTarget{},
 			},
 		},
 	})
 }
 
-// AliasSchema holds the definition for a user-defined index alias.  A
+// AliasParams holds the definition for a user-defined index alias.  A
 // user-defined index alias can be used as a level of indirection (the
 // "LastQuartersSales" alias points currently to the "2014-Q3-Sales"
 // index, but the administrator might repoint it in the future without
 // changing the application) or to scatter-gather or fan-out a query
 // across multiple real indexes (e.g., to query across customer
 // records, product catalog, call-center records, etc, in one shot).
-type AliasSchema struct {
-	Targets map[string]*AliasSchemaTarget `json:"targets"` // Keyed by indexName.
+type AliasParams struct {
+	Targets map[string]*AliasParamsTarget `json:"targets"` // Keyed by indexName.
 }
 
-type AliasSchemaTarget struct {
+type AliasParamsTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
 }
 
@@ -105,14 +105,14 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 		return nil, fmt.Errorf("could not get indexDef, indexName: %s", indexName)
 	}
 
-	schema := AliasSchema{}
-	err = json.Unmarshal([]byte(indexDef.Schema), &schema)
+	params := AliasParams{}
+	err = json.Unmarshal([]byte(indexDef.Params), &params)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse indexDef.Schema: %s, indexName: %s",
-			indexDef.Schema, indexName)
+		return nil, fmt.Errorf("could not parse indexDef.Params: %s, indexName: %s",
+			indexDef.Params, indexName)
 	}
 
-	for indexName, source := range schema.Targets {
+	for indexName, source := range params.Targets {
 		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID)
 		if err != nil {
 			return nil, fmt.Errorf("could not get subAlias, indexName: %s,"+
