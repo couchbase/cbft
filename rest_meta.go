@@ -11,8 +11,6 @@ package main
 
 import (
 	"net/http"
-
-	"github.com/couchbaselabs/blance"
 )
 
 type ManagerMetaHandler struct {
@@ -30,12 +28,7 @@ type MetaDesc struct {
 
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	startSamples := map[string]interface{}{
-		// TODO: Need to clean this up to only just what we need to expose.
-		"blanceHierarchyRules": &blance.HierarchyRules{},
-		"blanceHierarchyRule":  &blance.HierarchyRule{},
-		"indexDef":             &IndexDef{},
-		"nodeDef":              &NodeDef{},
-		"planParams":           &PlanParams{},
+		"planParams": &PlanParams{},
 	}
 
 	// Key is sourceType, value is description.
