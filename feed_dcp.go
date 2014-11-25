@@ -78,35 +78,35 @@ type DCPFeed struct {
 }
 
 type DCPFeedParams struct {
-	AuthUser     string // May be "" for no auth.
-	AuthPassword string
+	AuthUser     string `json:"authUser"` // May be "" for no auth.
+	AuthPassword string `json:"authPassword"`
 
 	// Factor (like 1.5) to increase sleep time between retries
 	// in connecting to a cluster manager node.
-	ClusterManagerBackoffFactor float32
+	ClusterManagerBackoffFactor float32 `json:"clusterManagerBackoffFactor"`
 
 	// Initial sleep time (millisecs) before first retry to cluster manager.
-	ClusterManagerSleepInitMS int
+	ClusterManagerSleepInitMS int `json:"clusterManagerSleepInitMS"`
 
 	// Maximum sleep time (millisecs) between retries to cluster manager.
-	ClusterManagerSleepMaxMS int
+	ClusterManagerSleepMaxMS int `json:"clusterManagerSleepMaxMS"`
 
 	// Factor (like 1.5) to increase sleep time between retries
 	// in connecting to a data manager node.
-	DataManagerBackoffFactor float32
+	DataManagerBackoffFactor float32 `json:"dataManagerBackoffFactor"`
 
 	// Initial sleep time (millisecs) before first retry to data manager.
-	DataManagerSleepInitMS int
+	DataManagerSleepInitMS int `json:"dataManagerSleepInitMS"`
 
 	// Maximum sleep time (millisecs) between retries to data manager.
-	DataManagerSleepMaxMS int
+	DataManagerSleepMaxMS int `json:"dataManagerSleepMaxMS"`
 
 	// Buffer size in bytes provided for UPR flow control.
-	FeedBufferSizeBytes uint32
+	FeedBufferSizeBytes uint32 `json:"feedBufferSizeBytes"`
 
 	// Used for UPR flow control and buffer-ack messages when this
 	// percentage of FeedBufferSizeBytes is reached.
-	FeedBufferAckThreshold float32
+	FeedBufferAckThreshold float32 `json:"feedBufferAckThreshold"`
 }
 
 func (d *DCPFeedParams) GetCredentials() (string, string) {

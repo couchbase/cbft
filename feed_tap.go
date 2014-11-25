@@ -64,9 +64,9 @@ type TAPFeed struct {
 }
 
 type TAPFeedParams struct {
-	BackoffFactor float32
-	SleepInitMS   int
-	SleepMaxMS    int
+	BackoffFactor float32 `json:"backoffFactor"`
+	SleepInitMS   int     `json:"sleepInitMS"`
+	SleepMaxMS    int     `json:"sleepMaxMS"`
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
