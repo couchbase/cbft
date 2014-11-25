@@ -102,7 +102,12 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		t.Errorf("not expecting a restart")
 	}
 
-	pindex, dest, err := NewBlackHolePIndexImpl("blackhole", "", emptyDir, restart)
+	pindex, dest, err := OpenBlackHolePIndexImpl("blackhole", emptyDir, restart)
+	if err == nil || pindex != nil || dest != nil {
+		t.Errorf("expected OpenBlackHolePIndexImpl to error on emptyDir")
+	}
+
+	pindex, dest, err = NewBlackHolePIndexImpl("blackhole", "", emptyDir, restart)
 	if err != nil || pindex == nil || dest == nil {
 		t.Errorf("expected NewBlackHolePIndexImpl to work")
 	}
@@ -124,5 +129,21 @@ func TestBlackholePIndexImpl(t *testing.T) {
 	v, lastSeq, err := dest.GetOpaque("")
 	if err != nil || v != nil || lastSeq != 0 {
 		t.Errorf("expected nothing from blackhole.GetOpaque()")
+	}
+
+	bt := pindexImplTypes["blackhole"]
+	if bt == nil {
+		t.Errorf("expected blackhole in pindexImplTypes")
+	}
+	if bt.New == nil || bt.Open == nil {
+		t.Errorf("blackhole should have open and new funcs")
+	}
+	count, err := bt.Count(nil, "", "")
+	if err == nil || count != 0 {
+		t.Errorf("expected blackhole count to err")
+	}
+	err = bt.Query(nil, "", "", nil, nil)
+	if err == nil {
+		t.Errorf("expected blackhole query to err")
 	}
 }
