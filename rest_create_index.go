@@ -14,7 +14,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -29,6 +28,7 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// TODO: Need more input validation (check the UUID's, name lengths, etc).
 	indexType := req.FormValue("indexType")
 	if indexType == "" {
 		indexType = "bleve" // TODO: Revisit default indexType?  Should be table'ized?
@@ -41,12 +41,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// read the request body, which is treated as index mapping JSON bytes
-	indexSchema, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("error reading request body: %v", err), 400)
-		return
-	}
+	// TODO: Need to validate indexSchema based on the indexType.
+	indexSchema := req.FormValue("indexSchema")
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
@@ -61,13 +57,15 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	sourceUUID := req.FormValue("sourceUUID")     // Defaults to "".
+	sourceUUID := req.FormValue("sourceUUID") // Defaults to "".
+
+	// TODO: Need to validate sourceParams based on the sourceType.
 	sourceParams := req.FormValue("sourceParams") // Defaults to "".
 
 	planParams := &PlanParams{}
 	planParamsStr := req.FormValue("planParams")
 	if planParamsStr != "" {
-		err = json.Unmarshal([]byte(planParamsStr), planParams)
+		err := json.Unmarshal([]byte(planParamsStr), planParams)
 		if err != nil {
 			showError(w, req, fmt.Sprintf("error parsing planParams: %s, err: %v",
 				planParamsStr, err), 400)
@@ -75,7 +73,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 		indexType, indexName, string(indexSchema), *planParams)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",

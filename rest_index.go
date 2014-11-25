@@ -152,7 +152,7 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	count, err := pindexImplType.Count(h.mgr, indexName, indexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest.Count,"+
-			" indexName: %s1, err: %v", indexName, err), 500)
+			" indexName: %s, err: %v", indexName, err), 500)
 		return
 	}
 
