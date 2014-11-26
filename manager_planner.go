@@ -375,6 +375,20 @@ func blancePlanPIndexes(indexDef *IndexDef,
 	nodeUUIDsToRemove []string,
 	nodeWeights map[string]int,
 	nodeHierarchy map[string]string) {
+	// We're using multiple model states to better utilize blance's
+	// node hierarchy features (shelf/rack/zone/row awareness).
+	model := blance.PartitionModel{
+		"primary": &blance.PartitionModelState{
+			Priority:    0,
+			Constraints: 1,
+		},
+		"secondary": &blance.PartitionModelState{
+			Priority:    1,
+			Constraints: indexDef.PlanParams.NumReplicas,
+		},
+	}
+	modelConstraints := map[string]int(nil)
+
 	// First, reconstruct previous blance map from planPIndexesPrev.
 	blancePrevMap := blance.PartitionMap{}
 	for _, planPIndex := range planPIndexesForIndex {
@@ -386,21 +400,16 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		if planPIndexesPrev != nil {
 			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 			if exists && planPIndexPrev != nil {
-				for nodeUUIDPrev, _ := range planPIndexPrev.Nodes {
-					blancePartition.NodesByState["master"] =
-						append(blancePartition.NodesByState["master"], nodeUUIDPrev)
+				for nodeUUIDPrev, planPIndexNode := range planPIndexPrev.Nodes {
+					state := "secondary"
+					if planPIndexNode.Priority <= 0 {
+						state = "primary"
+					}
+					blancePartition.NodesByState[state] =
+						append(blancePartition.NodesByState[state], nodeUUIDPrev)
 				}
 			}
 		}
-	}
-
-	// TODO: Should instead leverage multiple states to be
-	// able to use blance's node hierarchy features better.
-	modelMaster := blance.PartitionModel{
-		"master": &blance.PartitionModelState{Priority: 0},
-	}
-	modelConstraints := map[string]int{
-		"master": indexDef.PlanParams.NumReplicas + 1,
 	}
 
 	// TODO: Leverage these blance features.
@@ -408,11 +417,8 @@ func blancePlanPIndexes(indexDef *IndexDef,
 	stateStickiness := map[string]int(nil)
 
 	blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
-		nodeUUIDsAll,
-		nodeUUIDsToRemove,
-		nodeUUIDsToAdd,
-		modelMaster,
-		modelConstraints,
+		nodeUUIDsAll, nodeUUIDsToRemove, nodeUUIDsToAdd,
+		model, modelConstraints,
 		partitionWeights,
 		stateStickiness,
 		nodeWeights,
@@ -425,10 +431,18 @@ func blancePlanPIndexes(indexDef *IndexDef,
 
 	for planPIndexName, blancePartition := range blanceNextMap {
 		planPIndex := planPIndexesForIndex[planPIndexName]
-		for _, nodeUUID := range blancePartition.NodesByState["master"] {
+		for _, nodeUUID := range blancePartition.NodesByState["primary"] {
 			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
 				CanRead:  true,
 				CanWrite: true,
+				Priority: 0,
+			}
+		}
+		for i, nodeUUID := range blancePartition.NodesByState["secondary"] {
+			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
+				CanRead:  true,
+				CanWrite: true,
+				Priority: i + 1,
 			}
 		}
 	}
