@@ -23,8 +23,11 @@ import (
 	"github.com/steveyen/cbdatasource"
 )
 
-// Implementation of Cfg that uses a couchbase bucket.
-
+// CfgCB is an implementation of Cfg that uses a couchbase bucket.
+//
+// TODO: This current implementation is race-y!  Instead of storing
+// everything as a single uber key/value, we should instead be storing
+// individual key/value's on every get/set/del operation.
 type CfgCB struct {
 	m      sync.Mutex
 	url    string
