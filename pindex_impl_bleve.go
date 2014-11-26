@@ -427,6 +427,10 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlia
 		bindex, ok := localPIndex.Impl.(bleve.Index)
 		if ok && bindex != nil && localPIndex.IndexType == "bleve" {
 			alias.Add(bindex)
+
+			// TODO: About here is right place to check or register
+			// with the localPIndex.Dest if we need to handle
+			// stale=false consistency, perhaps with a wait group.
 		} else {
 			return nil, fmt.Errorf("bleveIndexAlias localPIndex wasn't bleve")
 		}
