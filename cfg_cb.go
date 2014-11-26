@@ -13,10 +13,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/couchbase/gomemcached"
+	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
+
+	"github.com/steveyen/cbdatasource"
 )
 
 // Implementation of Cfg that uses a couchbase bucket.
@@ -27,14 +31,34 @@ type CfgCB struct {
 	bucket string
 	b      *couchbase.Bucket
 	cfgMem *CfgMem
+
+	bds  cbdatasource.BucketDataSource
+	bdsm sync.Mutex
+	seqs map[uint16]uint64 // To track max seq #'s we received per vbucketId.
+	meta map[uint16][]byte // To track metadata blob's per vbucketId.
 }
 
-func NewCfgCB(url, bucket string) *CfgCB {
-	return &CfgCB{
+func NewCfgCB(url, bucket string) (*CfgCB, error) {
+	c := &CfgCB{
 		url:    url,
 		bucket: bucket,
 		cfgMem: NewCfgMem(),
 	}
+
+	bds, err := cbdatasource.NewBucketDataSource(
+		[]string{url},
+		"default", bucket, "", nil, c, c, nil)
+	if err != nil {
+		return nil, err
+	}
+	c.bds = bds
+
+	err = bds.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func (c *CfgCB) Get(key string, cas uint64) (
@@ -109,7 +133,14 @@ func (c *CfgCB) unlockedLoad() error {
 		}
 	}
 
+	cfgMemPrev := c.cfgMem
+	cfgMemPrev.m.Lock()
+	defer cfgMemPrev.m.Unlock()
+
+	cfgMem.subscriptions = cfgMemPrev.subscriptions
+
 	c.cfgMem = cfgMem
+
 	return nil
 }
 
@@ -133,8 +164,12 @@ func (c *CfgCB) Refresh() error {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	c2 := NewCfgCB(c.url, c.bucket)
-	err := c2.Load()
+	c2, err := NewCfgCB(c.url, c.bucket)
+	if err != nil {
+		return err
+	}
+
+	err = c2.Load()
 	if err != nil {
 		return err
 	}
@@ -143,4 +178,92 @@ func (c *CfgCB) Refresh() error {
 	c.cfgMem.Entries = c2.cfgMem.Entries
 
 	return c.cfgMem.Refresh()
+}
+
+// ----------------------------------------------------------------
+
+func (a *CfgCB) GetCredentials() (string, string) {
+	return a.bucket, ""
+}
+
+// ----------------------------------------------------------------
+
+func (r *CfgCB) OnError(err error) {
+	log.Printf("cfg-cb, error: %v", err)
+}
+
+func (r *CfgCB) DataUpdate(vbucketId uint16, key []byte, seq uint64,
+	req *gomemcached.MCRequest) error {
+	if string(key) == "cfg" {
+		go func() {
+			r.Load()
+			r.cfgMem.Refresh()
+		}()
+	}
+	r.updateSeq(vbucketId, seq)
+	return nil
+}
+
+func (r *CfgCB) DataDelete(vbucketId uint16, key []byte, seq uint64,
+	req *gomemcached.MCRequest) error {
+	if string(key) == "cfg" {
+		go func() {
+			r.Load()
+			r.cfgMem.Refresh()
+		}()
+	}
+	r.updateSeq(vbucketId, seq)
+	return nil
+}
+
+func (r *CfgCB) SnapshotStart(vbucketId uint16,
+	snapStart, snapEnd uint64, snapType uint32) error {
+	return nil
+}
+
+func (r *CfgCB) SetMetaData(vbucketId uint16, value []byte) error {
+	r.bdsm.Lock()
+	defer r.bdsm.Unlock()
+
+	if r.meta == nil {
+		r.meta = make(map[uint16][]byte)
+	}
+	r.meta[vbucketId] = value
+
+	return nil
+}
+
+func (r *CfgCB) GetMetaData(vbucketId uint16) (
+	value []byte, lastSeq uint64, err error) {
+	r.bdsm.Lock()
+	defer r.bdsm.Unlock()
+
+	value = []byte(nil)
+	if r.meta != nil {
+		value = r.meta[vbucketId]
+	}
+
+	if r.seqs != nil {
+		lastSeq = r.seqs[vbucketId]
+	}
+
+	return value, lastSeq, nil
+}
+
+func (r *CfgCB) Rollback(vbucketId uint16, rollbackSeq uint64) error {
+	return fmt.Errorf("unimpl-rollback")
+}
+
+// ----------------------------------------------------------------
+
+func (r *CfgCB) updateSeq(vbucketId uint16, seq uint64) {
+	r.bdsm.Lock()
+	defer r.bdsm.Unlock()
+
+	if r.seqs == nil {
+		r.seqs = make(map[uint16]uint64)
+	}
+	if r.seqs[vbucketId] < seq {
+		r.seqs[vbucketId] = seq // Remember the max seq for GetMetaData().
+	}
 }

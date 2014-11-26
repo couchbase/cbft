@@ -58,7 +58,11 @@ func MainCfgCB(urlStr, dataDir string) (Cfg, error) {
 		bucket = u.User.Username()
 	}
 
-	cfg := NewCfgCB(urlStr, bucket)
+	cfg, err := NewCfgCB(urlStr, bucket)
+	if err != nil {
+		return nil, err
+	}
+
 	err = cfg.Load()
 	if err != nil {
 		return nil, err
