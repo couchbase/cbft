@@ -13,13 +13,18 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 )
 
 func MainCfg(connect, dataDir string) (Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
 	if connect == "" || connect == "simple" {
 		return MainCfgSimple(connect, dataDir)
+	}
+	if strings.HasPrefix(connect, "couchbase:") {
+		return MainCfgCB(connect[len("couchbase:"):], dataDir)
 	}
 	return nil, fmt.Errorf("error: unsupported cfg connect: %s", connect)
 }
@@ -37,6 +42,26 @@ func MainCfgSimple(connect, dataDir string) (Cfg, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return cfg, nil
+}
+
+func MainCfgCB(urlStr, dataDir string) (Cfg, error) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket := "default"
+	if u.User != nil && u.User.Username() != "" {
+		bucket = u.User.Username()
+	}
+
+	cfg := NewCfgCB(urlStr, bucket)
+	err = cfg.Load()
+	if err != nil {
+		return nil, err
 	}
 
 	return cfg, nil
