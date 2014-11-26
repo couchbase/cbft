@@ -125,6 +125,8 @@ func NewCfgRefreshHandler(mgr *Manager) *CfgRefreshHandler {
 
 func (h *CfgRefreshHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	h.mgr.Cfg().Refresh()
+	h.mgr.GetIndexDefs(true)
+	h.mgr.GetPlanPIndexes(true)
 	mustEncode(w, struct {
 		Status string `json:"status"`
 	}{Status: "ok"})
