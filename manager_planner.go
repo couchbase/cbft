@@ -394,6 +394,8 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		}
 	}
 
+	// TODO: Should instead leverage multiple states to be
+	// able to use blance's node hierarchy features better.
 	modelMaster := blance.PartitionModel{
 		"master": &blance.PartitionModelState{Priority: 0},
 	}
