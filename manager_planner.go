@@ -279,7 +279,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			addPlanPIndex(sourcePartitionsCurr)
 		}
 
-		// Once we have a 1 or more PlanPIndexes for the Index, use
+		// Once we have a 1 or more PlanPIndexes for an IndexDef, use
 		// blance to assign the PlanPIndexes to nodes, depending on
 		// the numReplicas setting.
 		//
