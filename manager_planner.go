@@ -284,7 +284,7 @@ func getNodesLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	nodeUUIDsPrev := make([]string, 0)
 	if planPIndexesPrev != nil {
 		for _, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
-			for nodeUUIDPrev := range planPIndexPrev.NodeUUIDs {
+			for nodeUUIDPrev := range planPIndexPrev.Nodes {
 				nodeUUIDsPrev = append(nodeUUIDsPrev, nodeUUIDPrev)
 			}
 		}
@@ -341,7 +341,7 @@ func splitIndexDefIntoPlanPIndexes(indexDef *IndexDef, server string,
 			SourceUUID:       indexDef.SourceUUID,
 			SourceParams:     indexDef.SourceParams,
 			SourcePartitions: sourcePartitions,
-			NodeUUIDs:        make(map[string]string),
+			Nodes:            make(map[string]*PlanPIndexNode),
 		}
 
 		planPIndexesOut.PlanPIndexes[planPIndex.Name] = planPIndex
@@ -386,7 +386,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		if planPIndexesPrev != nil {
 			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 			if exists && planPIndexPrev != nil {
-				for nodeUUIDPrev, _ := range planPIndexPrev.NodeUUIDs {
+				for nodeUUIDPrev, _ := range planPIndexPrev.Nodes {
 					blancePartition.NodesByState["master"] =
 						append(blancePartition.NodesByState["master"], nodeUUIDPrev)
 				}
@@ -426,8 +426,10 @@ func blancePlanPIndexes(indexDef *IndexDef,
 	for planPIndexName, blancePartition := range blanceNextMap {
 		planPIndex := planPIndexesForIndex[planPIndexName]
 		for _, nodeUUID := range blancePartition.NodesByState["master"] {
-			planPIndex.NodeUUIDs[nodeUUID] =
-				PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
+				CanRead:  true,
+				CanWrite: true,
+			}
 		}
 	}
 }

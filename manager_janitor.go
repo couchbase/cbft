@@ -188,8 +188,8 @@ func CalcPIndexesDelta(mgrUUID string,
 	// different, then schedule to add.
 	for _, wantedPlanPIndex := range wantedPlanPIndexes.PlanPIndexes {
 	nodeUUIDs:
-		for nodeUUID, nodeState := range wantedPlanPIndex.NodeUUIDs {
-			if nodeUUID != mgrUUID || nodeState == "" {
+		for nodeUUID, planPIndexNode := range wantedPlanPIndex.Nodes {
+			if nodeUUID != mgrUUID || planPIndexNode == nil {
 				continue nodeUUIDs
 			}
 
@@ -234,13 +234,13 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 	removeFeeds = make([]Feed, 0)
 
 	// Group the writable pindexes by their feed names.  Non-writable
-	// pindexes (such as paused) will have their feeds removed.  Of
-	// note, with this approach, a pindex is never fed by >1 feed.
+	// pindexes (perhaps index ingest is paused) will have their feeds
+	// removed.  Of note, currently, a pindex is never fed by >1 feed.
 	groupedPIndexes := make(map[string][]*PIndex)
 	for _, pindex := range pindexes {
 		planPIndex, exists := planPIndexes.PlanPIndexes[pindex.Name]
 		if exists && planPIndex != nil &&
-			strings.Contains(planPIndex.NodeUUIDs[nodeUUID], PLAN_PINDEX_NODE_WRITE) {
+			PlanPIndexNodeCanWrite(planPIndex.Nodes[nodeUUID]) {
 			feedName := FeedName(pindex)
 			arr, exists := groupedPIndexes[feedName]
 			if !exists {

@@ -190,7 +190,7 @@ func TestSamePlanPIndex(t *testing.T) {
 		SourceName:       "x",
 		SourceUUID:       "x",
 		SourcePartitions: "x",
-		NodeUUIDs:        make(map[string]string),
+		Nodes:            make(map[string]*PlanPIndexNode),
 	}
 	ppi1 := &PlanPIndex{
 		Name:             "1",
@@ -202,7 +202,7 @@ func TestSamePlanPIndex(t *testing.T) {
 		SourceName:       "x",
 		SourceUUID:       "x",
 		SourcePartitions: "x",
-		NodeUUIDs:        make(map[string]string),
+		Nodes:            make(map[string]*PlanPIndexNode),
 	}
 
 	if !SamePlanPIndex(ppi0, ppi0) {

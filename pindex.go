@@ -172,8 +172,8 @@ type RemotePlanPIndex struct {
 // Returns a non-overlapping, disjoint set (or cut) of PIndexes
 // (either local or remote) that cover all the partitons of an index
 // so that the caller can perform scatter/gather queries, etc.  Only
-// PlanPIndexes on wanted nodes that have the given wantNodeState
-// (like, PLAN_PINDEX_NODE_READ) will be returned.
+// PlanPIndexes on wanted nodes that pass the wantNode filter will be
+// returned.
 //
 // TODO: Perhaps need a tighter check around indexUUID, as the current
 // implementation might have a race where old pindexes with a matching
@@ -189,7 +189,8 @@ type RemotePlanPIndex struct {
 // the planner may be trying to rebalance away the most
 // up-to-date node and hitting it with load just makes the
 // rebalance take longer?
-func (mgr *Manager) CoveringPIndexes(indexName, indexUUID, wantNodeState string) (
+func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
+	wantNode func(*PlanPIndexNode) bool) (
 	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
@@ -235,7 +236,7 @@ build_alias_loop:
 	for _, planPIndex := range planPIndexes {
 		// First check whether this local node serves that planPIndex.
 		if selfDoesPIndexes &&
-			strings.Contains(planPIndex.NodeUUIDs[selfUUID], wantNodeState) {
+			wantNode(planPIndex.Nodes[selfUUID]) {
 			localPIndex, exists := pindexes[planPIndex.Name]
 			if exists &&
 				localPIndex != nil &&
@@ -248,10 +249,10 @@ build_alias_loop:
 		}
 
 		// Otherwise, look for a remote node that serves that planPIndex.
-		for nodeUUID, nodeState := range planPIndex.NodeUUIDs {
+		for nodeUUID, planPIndexNode := range planPIndex.Nodes {
 			if nodeUUID != selfUUID {
 				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
-				if ok && strings.Contains(nodeState, wantNodeState) {
+				if ok && wantNode(planPIndexNode) {
 					remotePlanPIndexes = append(remotePlanPIndexes, &RemotePlanPIndex{
 						PlanPIndex: planPIndex,
 						NodeDef:    nodeDef,

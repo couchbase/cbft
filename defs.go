@@ -85,23 +85,34 @@ type PlanPIndexes struct {
 }
 
 type PlanPIndex struct {
-	Name             string            `json:"name"` // Stable & unique cluster wide.
-	UUID             string            `json:"uuid"`
-	IndexType        string            `json:"indexType"`   // See IndexDef.Type.
-	IndexName        string            `json:"indexName"`   // See IndexDef.Name.
-	IndexUUID        string            `json:"indexUUID"`   // See IndefDef.UUID.
-	IndexParams      string            `json:"indexParams"` // See IndexDef.Params.
-	SourceType       string            `json:"sourceType"`
-	SourceName       string            `json:"sourceName"`
-	SourceUUID       string            `json:"sourceUUID"`
-	SourceParams     string            `json:"sourceParams"` // Optional connection info.
-	SourcePartitions string            `json:"sourcePartitions"`
-	NodeUUIDs        map[string]string `json:"nodeUUIDs"` // NodeDef.UUID => PLAN_PINDEX_NODE_XXX.
+	Name             string `json:"name"` // Stable & unique cluster wide.
+	UUID             string `json:"uuid"`
+	IndexType        string `json:"indexType"`   // See IndexDef.Type.
+	IndexName        string `json:"indexName"`   // See IndexDef.Name.
+	IndexUUID        string `json:"indexUUID"`   // See IndefDef.UUID.
+	IndexParams      string `json:"indexParams"` // See IndexDef.Params.
+	SourceType       string `json:"sourceType"`
+	SourceName       string `json:"sourceName"`
+	SourceUUID       string `json:"sourceUUID"`
+	SourceParams     string `json:"sourceParams"` // Optional connection info.
+	SourcePartitions string `json:"sourcePartitions"`
+
+	Nodes map[string]*PlanPIndexNode `json:"nodes"` // Keyed by NodeDef.UUID.
 }
 
-// Meant to be concatenated, like "rw"...
-const PLAN_PINDEX_NODE_WRITE = "w"
-const PLAN_PINDEX_NODE_READ = "r"
+type PlanPIndexNode struct {
+	CanRead  bool `json:"canRead"`
+	CanWrite bool `json:"canWrite"`
+	Priority int  `json:"priority"`
+}
+
+func PlanPIndexNodeCanRead(p *PlanPIndexNode) bool {
+	return p != nil && p.CanRead
+}
+
+func PlanPIndexNodeCanWrite(p *PlanPIndexNode) bool {
+	return p != nil && p.CanWrite
+}
 
 // ------------------------------------------------------------------------
 
@@ -254,7 +265,7 @@ func SamePlanPIndex(a, b *PlanPIndex) bool {
 		a.SourceUUID != b.SourceUUID ||
 		a.SourceParams != b.SourceParams ||
 		a.SourcePartitions != b.SourcePartitions ||
-		!reflect.DeepEqual(a.NodeUUIDs, b.NodeUUIDs) {
+		!reflect.DeepEqual(a.Nodes, b.Nodes) {
 		return false
 	}
 	return true

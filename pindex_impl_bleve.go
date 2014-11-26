@@ -416,7 +416,7 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // (but invalid) indexUUID might be hit.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, PLAN_PINDEX_NODE_READ)
+		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
 		return nil, fmt.Errorf("bleveIndexAlias, err: %v", err)
 	}
