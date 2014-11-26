@@ -214,9 +214,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		nodeWeights, nodeHierarchy :=
 		getNodesLayout(indexDefs, nodeDefs, planPIndexesPrev)
 
-	// Examine every indexDef...
 	planPIndexes := NewPlanPIndexes(version)
 
+	// Examine every indexDef...
 	for _, indexDef := range indexDefs.IndexDefs {
 		// Split each indexDef into 1 or more PlanPIndexes.
 		pindexImplType, exists := pindexImplTypes[indexDef.Type]
@@ -240,60 +240,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// Once we have a 1 or more PlanPIndexes for an IndexDef, use
 		// blance to assign the PlanPIndexes to nodes, depending on
 		// the numReplicas setting.
-		//
-		// First, reconstruct previous blance map from planPIndexesPrev.
-		blancePrevMap := blance.PartitionMap{}
-		for _, planPIndex := range planPIndexesForIndex {
-			blancePartition := &blance.Partition{
-				Name:         planPIndex.Name,
-				NodesByState: map[string][]string{},
-			}
-			blancePrevMap[planPIndex.Name] = blancePartition
-			if planPIndexesPrev != nil {
-				planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
-				if exists && planPIndexPrev != nil {
-					for nodeUUIDPrev, _ := range planPIndexPrev.NodeUUIDs {
-						blancePartition.NodesByState["master"] =
-							append(blancePartition.NodesByState["master"], nodeUUIDPrev)
-					}
-				}
-			}
-		}
-
-		modelMaster := blance.PartitionModel{
-			"master": &blance.PartitionModelState{Priority: 0},
-		}
-		modelConstraints := map[string]int{
-			"master": indexDef.PlanParams.NumReplicas + 1,
-		}
-
-		// TODO: Leverage these blance features.
-		partitionWeights := map[string]int(nil)
-		stateStickiness := map[string]int(nil)
-
-		blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
-			nodeUUIDsAll,
-			nodeUUIDsToRemove,
-			nodeUUIDsToAdd,
-			modelMaster,
-			modelConstraints,
-			partitionWeights,
-			stateStickiness,
-			nodeWeights,
-			nodeHierarchy,
-			indexDef.PlanParams.HierarchyRules)
-		for _, warning := range warnings {
-			log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
-				indexDef.Name, warning, indexDef)
-		}
-
-		for planPIndexName, blancePartition := range blanceNextMap {
-			planPIndex := planPIndexesForIndex[planPIndexName]
-			for _, nodeUUID := range blancePartition.NodesByState["master"] {
-				planPIndex.NodeUUIDs[nodeUUID] =
-					PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
-			}
-		}
+		blancePlanPIndexes(indexDef, planPIndexesForIndex, planPIndexesPrev,
+			nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
+			nodeWeights, nodeHierarchy)
 	}
 
 	return planPIndexes, nil
@@ -416,6 +365,69 @@ func splitIndexDefIntoPlanPIndexes(indexDef *IndexDef, server string,
 	}
 
 	return planPIndexesForIndex, nil
+}
+
+func blancePlanPIndexes(indexDef *IndexDef,
+	planPIndexesForIndex map[string]*PlanPIndex,
+	planPIndexesPrev *PlanPIndexes,
+	nodeUUIDsAll []string,
+	nodeUUIDsToAdd []string,
+	nodeUUIDsToRemove []string,
+	nodeWeights map[string]int,
+	nodeHierarchy map[string]string) {
+	// First, reconstruct previous blance map from planPIndexesPrev.
+	blancePrevMap := blance.PartitionMap{}
+	for _, planPIndex := range planPIndexesForIndex {
+		blancePartition := &blance.Partition{
+			Name:         planPIndex.Name,
+			NodesByState: map[string][]string{},
+		}
+		blancePrevMap[planPIndex.Name] = blancePartition
+		if planPIndexesPrev != nil {
+			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
+			if exists && planPIndexPrev != nil {
+				for nodeUUIDPrev, _ := range planPIndexPrev.NodeUUIDs {
+					blancePartition.NodesByState["master"] =
+						append(blancePartition.NodesByState["master"], nodeUUIDPrev)
+				}
+			}
+		}
+	}
+
+	modelMaster := blance.PartitionModel{
+		"master": &blance.PartitionModelState{Priority: 0},
+	}
+	modelConstraints := map[string]int{
+		"master": indexDef.PlanParams.NumReplicas + 1,
+	}
+
+	// TODO: Leverage these blance features.
+	partitionWeights := map[string]int(nil)
+	stateStickiness := map[string]int(nil)
+
+	blanceNextMap, warnings := blance.PlanNextMap(blancePrevMap,
+		nodeUUIDsAll,
+		nodeUUIDsToRemove,
+		nodeUUIDsToAdd,
+		modelMaster,
+		modelConstraints,
+		partitionWeights,
+		stateStickiness,
+		nodeWeights,
+		nodeHierarchy,
+		indexDef.PlanParams.HierarchyRules)
+	for _, warning := range warnings {
+		log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
+			indexDef.Name, warning, indexDef)
+	}
+
+	for planPIndexName, blancePartition := range blanceNextMap {
+		planPIndex := planPIndexesForIndex[planPIndexName]
+		for _, nodeUUID := range blancePartition.NodesByState["master"] {
+			planPIndex.NodeUUIDs[nodeUUID] =
+				PLAN_PINDEX_NODE_READ + PLAN_PINDEX_NODE_WRITE
+		}
+	}
 }
 
 // NOTE: PlanPIndex.Name must be unique across the cluster and ideally
