@@ -72,7 +72,6 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 	// tab specific loading
 	if($scope.tab === "summary") {
 		$scope.loadIndexDocCount();
-	} else if ($scope.tab === "params") {
 	}
 
 	$scope.indexDocument = function(id, body) {
