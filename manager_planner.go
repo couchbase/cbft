@@ -229,54 +229,12 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			continue
 		}
 
-		maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
-
-		sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
-			indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
+		planPIndexesForIndex, err :=
+			splitIndexDefIntoPlanPIndexes(indexDef, server, planPIndexes)
 		if err != nil {
-			log.Printf("error: planner could not get partitions,"+
-				" indexDef: %#v, err: %v", indexDef, err)
-			continue
-		}
-
-		planPIndexesForIndex := map[string]*PlanPIndex{}
-
-		addPlanPIndex := func(sourcePartitionsCurr []string) {
-			sourcePartitions := strings.Join(sourcePartitionsCurr, ",")
-
-			planPIndex := &PlanPIndex{
-				Name:             PlanPIndexName(indexDef, sourcePartitions),
-				UUID:             NewUUID(),
-				IndexType:        indexDef.Type,
-				IndexName:        indexDef.Name,
-				IndexUUID:        indexDef.UUID,
-				IndexParams:      indexDef.Params,
-				SourceType:       indexDef.SourceType,
-				SourceName:       indexDef.SourceName,
-				SourceUUID:       indexDef.SourceUUID,
-				SourceParams:     indexDef.SourceParams,
-				SourcePartitions: sourcePartitions,
-				NodeUUIDs:        make(map[string]string),
-			}
-
-			planPIndexes.PlanPIndexes[planPIndex.Name] = planPIndex
-
-			planPIndexesForIndex[planPIndex.Name] = planPIndex
-		}
-
-		sourcePartitionsCurr := []string{}
-		for _, sourcePartition := range sourcePartitionsArr {
-			sourcePartitionsCurr = append(sourcePartitionsCurr, sourcePartition)
-			if maxPartitionsPerPIndex > 0 &&
-				len(sourcePartitionsCurr) >= maxPartitionsPerPIndex {
-				addPlanPIndex(sourcePartitionsCurr)
-				sourcePartitionsCurr = []string{}
-			}
-		}
-
-		if len(sourcePartitionsCurr) > 0 || // Assign any leftover partitions.
-			len(planPIndexesForIndex) <= 0 { // Assign at least 1 PlanPIndex.
-			addPlanPIndex(sourcePartitionsCurr)
+			log.Printf("error: planner could not splitIndexDefIntoPlanPIndexes,"+
+				" indexDef: %#v, server: %s, err: %v", indexDef, server, err)
+			continue // Keep planning the other IndexDefs.
 		}
 
 		// Once we have a 1 or more PlanPIndexes for an IndexDef, use
@@ -394,6 +352,70 @@ func getNodeLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 
 	return nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
 		nodeWeights, nodeHierarchy
+}
+
+// Split an IndexDef into 1 or more PlanPIndex'es, assigning data
+// source partitions from the IndexDef to a PlanPIndex based on
+// modulus of MaxPartitionsPerPIndex.
+//
+// NOTE: if MaxPartitionsPerPIndex isn't a clean divisor of the total
+// number of data source partitions (like 1024 split into clumps of
+// 10), then one PIndex assigned to the remainder will be smaller than
+// the other PIndexes (such as having only a remainder of 4 partitions
+// rather than the usual 10 partitions per PIndex).
+func splitIndexDefIntoPlanPIndexes(indexDef *IndexDef, server string,
+	planPIndexesOut *PlanPIndexes) (
+	map[string]*PlanPIndex, error) {
+	maxPartitionsPerPIndex := indexDef.PlanParams.MaxPartitionsPerPIndex
+
+	sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
+		indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
+	if err != nil {
+		return nil, fmt.Errorf("planner could not get partitions,"+
+			" indexDef: %#v, server: %s, err: %v", indexDef, server, err)
+	}
+
+	planPIndexesForIndex := map[string]*PlanPIndex{}
+
+	addPlanPIndex := func(sourcePartitionsCurr []string) {
+		sourcePartitions := strings.Join(sourcePartitionsCurr, ",")
+
+		planPIndex := &PlanPIndex{
+			Name:             PlanPIndexName(indexDef, sourcePartitions),
+			UUID:             NewUUID(),
+			IndexType:        indexDef.Type,
+			IndexName:        indexDef.Name,
+			IndexUUID:        indexDef.UUID,
+			IndexParams:      indexDef.Params,
+			SourceType:       indexDef.SourceType,
+			SourceName:       indexDef.SourceName,
+			SourceUUID:       indexDef.SourceUUID,
+			SourceParams:     indexDef.SourceParams,
+			SourcePartitions: sourcePartitions,
+			NodeUUIDs:        make(map[string]string),
+		}
+
+		planPIndexesOut.PlanPIndexes[planPIndex.Name] = planPIndex
+
+		planPIndexesForIndex[planPIndex.Name] = planPIndex
+	}
+
+	sourcePartitionsCurr := []string{}
+	for _, sourcePartition := range sourcePartitionsArr {
+		sourcePartitionsCurr = append(sourcePartitionsCurr, sourcePartition)
+		if maxPartitionsPerPIndex > 0 &&
+			len(sourcePartitionsCurr) >= maxPartitionsPerPIndex {
+			addPlanPIndex(sourcePartitionsCurr)
+			sourcePartitionsCurr = []string{}
+		}
+	}
+
+	if len(sourcePartitionsCurr) > 0 || // Assign any leftover partitions.
+		len(planPIndexesForIndex) <= 0 { // Assign at least 1 PlanPIndex.
+		addPlanPIndex(sourcePartitionsCurr)
+	}
+
+	return planPIndexesForIndex, nil
 }
 
 // NOTE: PlanPIndex.Name must be unique across the cluster and ideally
