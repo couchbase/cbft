@@ -53,7 +53,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             data.indexDef.params = JSON.parse(data.indexDef.params)
             data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams)
             $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
-            $scope.indexParamsStr = JSON.stringify(data.indexParams, undefined, 2);
+            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
         }).
         error(function(data, code) {
 			$scope.errorMessage = data;

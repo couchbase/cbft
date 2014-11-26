@@ -10,7 +10,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -88,24 +87,13 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	m := map[string]interface{}{}
-	if indexDef.Params != "" {
-		if err := json.Unmarshal([]byte(indexDef.Params), &m); err != nil {
-			showError(w, req, "could not unmarshal mapping", 500)
-			return
-		}
-	}
-
-	rv := struct {
-		Status      string                 `json:"status"`
-		IndexDef    *IndexDef              `json:"indexDef"`
-		IndexParams map[string]interface{} `json:"indexParams"`
+	mustEncode(w, struct {
+		Status   string    `json:"status"`
+		IndexDef *IndexDef `json:"indexDef"`
 	}{
-		Status:      "ok",
-		IndexDef:    indexDef,
-		IndexParams: m,
-	}
-	mustEncode(w, rv)
+		Status:   "ok",
+		IndexDef: indexDef,
+	})
 }
 
 // ---------------------------------------------------
