@@ -210,47 +210,9 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		return nil, nil
 	}
 
-	nodeUUIDs := make([]string, 0)
-	nodeWeights := make(map[string]int)
-	nodeHierarchy := make(map[string]string)
-	for _, nodeDef := range nodeDefs.NodeDefs {
-		tags := StringsToMap(nodeDef.Tags)
-		// Consider only nodeDef's that can support pindexes.
-		if tags == nil || tags["pindex"] {
-			nodeUUIDs = append(nodeUUIDs, nodeDef.UUID)
-
-			if nodeDef.Weight > 0 {
-				nodeWeights[nodeDef.UUID] = nodeDef.Weight
-			}
-
-			child := nodeDef.UUID
-			for _, ancestor := range strings.Split(nodeDef.Container, "/") {
-				if child != "" && ancestor != "" {
-					nodeHierarchy[child] = ancestor
-				}
-				child = ancestor
-			}
-		}
-	}
-
-	// Retrieve the nodeUUID's from the previous plan.
-	nodeUUIDsPrev := make([]string, 0)
-	if planPIndexesPrev != nil {
-		for _, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
-			for nodeUUIDPrev := range planPIndexPrev.NodeUUIDs {
-				nodeUUIDsPrev = append(nodeUUIDsPrev, nodeUUIDPrev)
-			}
-		}
-	}
-	nodeUUIDsPrev = StringsIntersectStrings(nodeUUIDsPrev, nodeUUIDsPrev) // Remove dupes.
-
-	// Calculate node deltas (nodes added & nodes removed).
-	nodeUUIDsAll := make([]string, 0)
-	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDs...)
-	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDsPrev...)
-	nodeUUIDsAll = StringsIntersectStrings(nodeUUIDsAll, nodeUUIDsAll) // Remove dupes.
-	nodeUUIDsToAdd := StringsRemoveStrings(nodeUUIDsAll, nodeUUIDsPrev)
-	nodeUUIDsToRemove := StringsRemoveStrings(nodeUUIDsAll, nodeUUIDs)
+	nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
+		nodeWeights, nodeHierarchy :=
+		getNodeLayout(indexDefs, nodeDefs, planPIndexesPrev)
 
 	// Examine every indexDef...
 	planPIndexes := NewPlanPIndexes(version)
@@ -377,6 +339,61 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	}
 
 	return planPIndexes, nil
+}
+
+func getNodeLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
+	planPIndexesPrev *PlanPIndexes) (
+	nodeUUIDsAll []string,
+	nodeUUIDsToAdd []string,
+	nodeUUIDsToRemove []string,
+	nodeWeights map[string]int,
+	nodeHierarchy map[string]string,
+) {
+	// Retrieve nodeUUID's, weights, and hierarchy from the current nodeDefs.
+	nodeUUIDs := make([]string, 0)
+	nodeWeights = make(map[string]int)
+	nodeHierarchy = make(map[string]string)
+	for _, nodeDef := range nodeDefs.NodeDefs {
+		tags := StringsToMap(nodeDef.Tags)
+		// Consider only nodeDef's that can support pindexes.
+		if tags == nil || tags["pindex"] {
+			nodeUUIDs = append(nodeUUIDs, nodeDef.UUID)
+
+			if nodeDef.Weight > 0 {
+				nodeWeights[nodeDef.UUID] = nodeDef.Weight
+			}
+
+			child := nodeDef.UUID
+			for _, ancestor := range strings.Split(nodeDef.Container, "/") {
+				if child != "" && ancestor != "" {
+					nodeHierarchy[child] = ancestor
+				}
+				child = ancestor
+			}
+		}
+	}
+
+	// Retrieve nodeUUID's from the previous plan.
+	nodeUUIDsPrev := make([]string, 0)
+	if planPIndexesPrev != nil {
+		for _, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
+			for nodeUUIDPrev := range planPIndexPrev.NodeUUIDs {
+				nodeUUIDsPrev = append(nodeUUIDsPrev, nodeUUIDPrev)
+			}
+		}
+	}
+	nodeUUIDsPrev = StringsIntersectStrings(nodeUUIDsPrev, nodeUUIDsPrev) // Remove dupes.
+
+	// Calculate node deltas (nodes added & nodes removed).
+	nodeUUIDsAll = make([]string, 0)
+	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDs...)
+	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDsPrev...)
+	nodeUUIDsAll = StringsIntersectStrings(nodeUUIDsAll, nodeUUIDsAll) // Remove dupes.
+	nodeUUIDsToAdd = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDsPrev)
+	nodeUUIDsToRemove = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDs)
+
+	return nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
+		nodeWeights, nodeHierarchy
 }
 
 // NOTE: PlanPIndex.Name must be unique across the cluster and ideally
