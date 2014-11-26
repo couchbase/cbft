@@ -212,7 +212,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 
 	nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
 		nodeWeights, nodeHierarchy :=
-		getNodeLayout(indexDefs, nodeDefs, planPIndexesPrev)
+		getNodesLayout(indexDefs, nodeDefs, planPIndexesPrev)
 
 	// Examine every indexDef...
 	planPIndexes := NewPlanPIndexes(version)
@@ -299,7 +299,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	return planPIndexes, nil
 }
 
-func getNodeLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
+func getNodesLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	planPIndexesPrev *PlanPIndexes) (
 	nodeUUIDsAll []string,
 	nodeUUIDsToAdd []string,
