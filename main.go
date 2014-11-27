@@ -35,8 +35,8 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
-var bindAddr = flag.String("addr", ":8095",
-	"http listen [address]:port")
+var bindAddr = flag.String("addr", "localhost:8095",
+	"http listen address:port")
 var dataDir = flag.String("dataDir", "data",
 	"directory for local configuration and index data")
 var logFlags = flag.String("logFlags", "",
@@ -50,14 +50,12 @@ var server = flag.String("server", "",
 var tags = flag.String("tags", "",
 	"comma-separated list of tags (or roles) for this node")
 var container = flag.String("container", "",
-	"slash separated list of parent containers for this node,"+
-		" such as for shelf/rack/row/zone awareness")
+	"slash separated path of parent containers for this node,"+
+		" for shelf/rack/row/zone awareness")
 var weight = flag.Int("weight", 1,
 	"weight of this node (a more capable node has higher weight)")
-var known = flag.Bool("known", false,
-	"force this node to be registered as known to the cluster")
-var wanted = flag.Bool("wanted", false,
-	"force this node to be registered as wanted as part of the cluster")
+var register = flag.String("register", "wanted",
+	"register this node as wanted, wantedForce, known, knownForce or notRegistered")
 var cfgConnect = flag.String("cfgConnect", "simple",
 	"connection string/info to configuration provider")
 
@@ -104,7 +102,7 @@ func main() {
 	}
 
 	router, err := MainStart(cfg, uuid, tagsArr, *container, *weight,
-		*bindAddr, *dataDir, *staticDir, *server, *known, *wanted, mr)
+		*bindAddr, *dataDir, *staticDir, *server, *register, mr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +145,7 @@ func MainUUID(dataDir string) (string, error) {
 
 func MainStart(cfg Cfg, uuid string, tags []string, container string,
 	weight int, bindAddr, dataDir, staticDir, server string,
-	known, wanted bool, mr *MsgRing) (
+	register string, mr *MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -161,7 +159,7 @@ func MainStart(cfg Cfg, uuid string, tags []string, container string,
 
 	mgr := NewManager(VERSION, cfg, uuid, tags, container, weight,
 		bindAddr, dataDir, server, &MainHandlers{})
-	if err = mgr.Start(known, wanted); err != nil {
+	if err = mgr.Start(register); err != nil {
 		return nil, err
 	}
 

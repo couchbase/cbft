@@ -65,7 +65,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		tagsMap:   StringsToMap(tags),
 		container: container,
 		weight:    weight,
-		bindAddr:  bindAddr,
+		bindAddr:  bindAddr, // TODO: need FQDN:port instead of ":8095".
 		dataDir:   dataDir,
 		server:    server,
 		feeds:     make(map[string]Feed),
@@ -76,14 +76,25 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 	}
 }
 
-func (mgr *Manager) Start(registerAsKnown, registerAsWanted bool) error {
-	// Save our nodeDef (with our UUID) into the Cfg.
-	if err := mgr.SaveNodeDef(NODE_DEFS_KNOWN, registerAsKnown); err != nil {
-		return err
-	}
-	if registerAsWanted {
-		if err := mgr.SaveNodeDef(NODE_DEFS_WANTED, registerAsWanted); err != nil {
-			return err
+func (mgr *Manager) Start(register string) error {
+	if register != "notRegistered" {
+		if register == "known" ||
+			register == "knownForce" ||
+			register == "wanted" ||
+			register == "wantedForce" {
+			// Save our nodeDef (with our UUID) into the Cfg as a known node.
+			err := mgr.SaveNodeDef(NODE_DEFS_KNOWN, register == "knownForce")
+			if err != nil {
+				return err
+			}
+		}
+		if register == "wanted" ||
+			register == "wantedForce" {
+			// Save our nodeDef (with our UUID) into the Cfg as a wanted node.
+			err := mgr.SaveNodeDef(NODE_DEFS_WANTED, register == "wantedForce")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -130,6 +141,15 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		return nil // Occurs during testing.
 	}
 
+	nodeDef := &NodeDef{
+		HostPort:    mgr.bindAddr,
+		UUID:        mgr.uuid,
+		ImplVersion: mgr.version,
+		Tags:        mgr.tags,
+		Container:   mgr.container,
+		Weight:      mgr.weight,
+	}
+
 	for {
 		nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
 		if err != nil {
@@ -138,26 +158,18 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		if nodeDefs == nil {
 			nodeDefs = NewNodeDefs(mgr.version)
 		}
-		nodeDef, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindAddr]
 		if exists && !force {
-			if nodeDef.UUID != mgr.uuid {
-				return fmt.Errorf("some other node is running at our bindAddr: %v,"+
-					" with different uuid: %s, than our uuid: %s",
-					mgr.bindAddr, nodeDef.UUID, mgr.uuid)
+			// If a previous entry exists, do some double-checking
+			// before we overwrite the entry with our entry.
+			if nodeDefPrev.UUID != mgr.uuid {
+				return fmt.Errorf("some other node is running at our bindAddr: %s,"+
+					" with a different uuid: %s, than our uuid: %s",
+					mgr.bindAddr, nodeDefPrev.UUID, mgr.uuid)
 			}
-			if nodeDef.ImplVersion == mgr.version &&
-				reflect.DeepEqual(nodeDef.Tags, mgr.tags) {
+			if reflect.DeepEqual(nodeDefPrev, nodeDef) {
 				return nil // No changes, so leave the existing nodeDef.
 			}
-		}
-
-		nodeDef = &NodeDef{
-			HostPort:    mgr.bindAddr, // TODO: need FQDN:port instead of ":8095".
-			UUID:        mgr.uuid,
-			ImplVersion: mgr.version,
-			Tags:        mgr.tags,
-			Container:   mgr.container,
-			Weight:      mgr.weight,
 		}
 
 		nodeDefs.UUID = NewUUID()

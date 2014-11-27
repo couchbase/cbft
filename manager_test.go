@@ -70,7 +70,7 @@ func TestPIndexPath(t *testing.T) {
 
 func TestManagerStart(t *testing.T) {
 	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "dir", "not-a-real-svr", nil)
-	if m.Start(false, false) == nil {
+	if m.Start("") == nil {
 		t.Errorf("expected NewManager() with bad svr should fail")
 	}
 	if m.DataDir() != "dir" {
@@ -78,7 +78,7 @@ func TestManagerStart(t *testing.T) {
 	}
 
 	m = NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "not-a-real-dir", "", nil)
-	if m.Start(false, false) == nil {
+	if m.Start("") == nil {
 		t.Errorf("expected NewManager() with bad dir should fail")
 	}
 	if m.DataDir() != "not-a-real-dir" {
@@ -89,13 +89,13 @@ func TestManagerStart(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	m = NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", emptyDir, "", nil)
-	if err := m.Start(false, false); err != nil {
+	if err := m.Start(""); err != nil {
 		t.Errorf("expected NewManager() with empty dir to work, err: %v", err)
 	}
 
 	cfg := NewCfgMem()
 	m = NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := m.Start(false, false); err != nil {
+	if err := m.Start("known"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	nd, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
@@ -109,7 +109,7 @@ func TestManagerStart(t *testing.T) {
 
 	cfg = NewCfgMem()
 	m = NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := m.Start(true, true); err != nil {
+	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
@@ -128,7 +128,7 @@ func TestManagerRestart(t *testing.T) {
 
 	cfg := NewCfgMem()
 	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := m.Start(true, true); err != nil {
+	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
@@ -149,7 +149,7 @@ func TestManagerRestart(t *testing.T) {
 
 	m2 := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
 	m2.uuid = m.uuid
-	if err := m2.Start(true, true); err != nil {
+	if err := m2.Start("wanted"); err != nil {
 		t.Errorf("expected reload Manager.Start() to work, err: %v", err)
 	}
 	m2.Kick("test2")
@@ -167,7 +167,7 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 
 	cfg := NewCfgMem()
 	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := m.Start(true, true); err != nil {
+	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
@@ -396,7 +396,7 @@ func testManagerStartDCPFeed(t *testing.T, sourceType string) {
 
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := mgr.Start(true, true); err != nil {
+	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
@@ -435,7 +435,7 @@ func TestManagerStartTAPFeed(t *testing.T) {
 
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := mgr.Start(true, true); err != nil {
+	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
@@ -473,7 +473,7 @@ func TestManagerStartNILFeed(t *testing.T) {
 
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := mgr.Start(true, true); err != nil {
+	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "nil",
@@ -505,7 +505,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
-	if err := mgr.Start(true, true); err != nil {
+	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
@@ -562,7 +562,7 @@ func TestManagerClosePIndex(t *testing.T) {
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
-	m.Start(true, true)
+	m.Start("wanted")
 	sourceParams := ""
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
@@ -602,7 +602,7 @@ func TestManagerRemovePIndex(t *testing.T) {
 	if meh.lastPIndex != nil || meh.lastCall != "" {
 		t.Errorf("expected no callback events to meh")
 	}
-	m.Start(true, true)
+	m.Start("wanted")
 	sourceParams := ""
 	p, err := NewPIndex(m, "p0", "uuid", "bleve",
 		"indexName", "indexUUID", "",
@@ -640,7 +640,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
-	if err := m.Start(true, true); err != nil {
+	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
@@ -714,7 +714,7 @@ func testManagerSimpleFeed(t *testing.T,
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
-	if err := m.Start(true, true); err != nil {
+	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	if err := m.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
@@ -955,7 +955,7 @@ func testPartitioning(t *testing.T,
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
-	if err := mgr.Start(true, true); err != nil {
+	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 
