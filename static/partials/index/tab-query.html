@@ -1,15 +1,19 @@
 <div ng-controller="SearchCtrl">
-<form class="navbar-form searchbox" role="search" >
-    <div class="input-group col-lg-12 col-lg-offset-1">
-        <input ng-model="syntax" type="text" class="form-control" placeholder="Search" name="srch-term" id="srch-term">
-        <div class="input-group-btn">
-            <button class="btn btn-primary" type="submit" ng-click="searchSyntax(syntax)"><i class="glyphicon glyphicon-search"></i></button>
-        </div>
+<form class="navbar-form searchbox" role="search">
+  <div class="input-group col-lg-12 col-lg-offset-1">
+    <input ng-model="syntax" type="text" class="form-control"
+           placeholder="Search" name="srch-term" id="srch-term"/>
+    <div class="input-group-btn">
+      <button class="btn btn-primary" type="submit"
+              ng-click="searchSyntax(syntax)">
+        <i class="glyphicon glyphicon-search"></i>
+      </button>
     </div>
-    <span class="help-block col-lg-offset-1"></span>
+  </div>
+  <span class="help-block col-lg-offset-1"></span>
 </form>
 
-<div ng-show="results.hits.length < 1" ng-include src="'/static/partials/index/search-noresults.html'"></div>
-<div ng-show="results.hits.length > 0" ng-include src="'/static/partials/index/search-results.html'">
-
-</div>
+<div ng-show="results.hits.length < 1" ng-include
+     src="'/static/partials/index/search-noresults.html'"></div>
+<div ng-show="results.hits.length > 0" ng-include
+     src="'/static/partials/index/search-results.html'"></div>
