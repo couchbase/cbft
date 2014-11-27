@@ -1,7 +1,8 @@
 <div ng-controller="SearchCtrl">
 <form class="navbar-form searchbox" role="search">
-  <div class="input-group col-lg-12 col-lg-offset-1">
-    <input ng-model="syntax" type="text" class="form-control"
+  <div class="input-group col-lg-12">
+    <input ng-model="syntax"
+           type="text" class="form-control"
            placeholder="Search" name="srch-term" id="srch-term"/>
     <div class="input-group-btn">
       <button class="btn btn-primary" type="submit"
@@ -11,9 +12,29 @@
     </div>
   </div>
   <span class="help-block col-lg-offset-1"></span>
+  <div>
+    <div class="col-lg-offset-9">
+      <label>Advanced:</label>
+      <input ng-model="searchAdvancedToggle" type="checkbox"/>
+    </div>
+    <div ng-show="searchAdvancedToggle" class="col-lg-offset-1">
+      <div class="row">
+        <label class="col-lg-3">Consistency Level:</label>
+        <input ng-model="consistencyLevel" id="consistencyLevel"
+               class="form-control col-lg-8"/>
+      </div>
+      <div class="row">
+        <label class="col-lg-3">Consistency Vector:</label>
+        <input ng-model="consistencyVector" id="consistencyVector"
+               class="form-control col-lg-8"/>
+      </div>
+    </div>
+  </div>
 </form>
 
-<div ng-show="results.hits.length < 1" ng-include
+<div ng-show="results.hits.length < 1"
+     ng-include
      src="'/static/partials/index/search-noresults.html'"></div>
-<div ng-show="results.hits.length > 0" ng-include
+<div ng-show="results.hits.length > 0"
+     ng-include
      src="'/static/partials/index/search-results.html'"></div>
