@@ -20,7 +20,9 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 "boost": 1.0,
                 "query": $scope.syntax,
             },
-            "fields": ["*"]
+            "fields": ["*"],
+            "consistencyLevel": $scope.consistencyLevel,
+            "consistencyVector": $scope.consistencyVector,
         }).
         success(function(data) {
             $scope.processResults(data);
