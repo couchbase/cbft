@@ -31,13 +31,13 @@ func init() {
 		Start:       StartDCPFeed,
 		Partitions:  CouchbasePartitions,
 		Public:      true,
-		Description: "couchbase - Couchbase Server/Cluster data source (same as couchbase-dcp)",
+		Description: "couchbase - Couchbase Server/Cluster data source",
 		StartSample: &DCPFeedParams{},
 	})
 	RegisterFeedType("couchbase-dcp", &FeedType{
 		Start:       StartDCPFeed,
 		Partitions:  CouchbasePartitions,
-		Public:      true,
+		Public:      false, // Won't be listed in /api/managerMeta output.
 		Description: "couchbase-dcp - Couchbase Server/Cluster data source, via DCP protocol",
 		StartSample: &DCPFeedParams{},
 	})
