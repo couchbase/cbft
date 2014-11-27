@@ -9,34 +9,6 @@
 
 <form class="form-horizontal" role="form">
   <div class="form-group">
-    <label for="inputSourceName" class="col-sm-2 control-label">Source Name</label>
-    <div class="col-sm-10">
-      <input ng-model="newSourceName" type="text" class="form-control" id="inputSourceName" placeholder="bucket-name">
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inputSourceUUID" class="col-sm-2 control-label">Source UUID</label>
-    <div class="col-sm-10">
-      <input ng-model="newSourceUUID" type="text" class="form-control" id="inputSourceUUID" placeholder="(optional bucket-uuid)">
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inputSourceType" class="col-sm-2 control-label">Source Type</label>
-    <div class="col-sm-10">
-      <select ng-model="newSourceType"
-        ng-options="sourceType as t.description for (sourceType, t) in meta.sourceTypes">
-        <option value="">-- choose source type --</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inputSourceParams" class="col-sm-2 control-label">Source Params</label>
-    <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-10">
-      <textarea ng-model="newSourceParams[sourceType]" rows="{{paramNumLines[sourceType]}}"
-                ng-attr-class="{{newSourceType == sourceType && 'active form-control' || 'inactive form-control' }}"></textarea>
-    </div>
-  </div>
-  <div class="form-group">
     <label for="inputIndexName" class="col-sm-2 control-label">Index Name</label>
     <div class="col-sm-10">
       <input ng-model="newIndexName" type="text" class="form-control" id="inputIndexName" placeholder="index-name">
@@ -56,6 +28,34 @@
     <div ng-repeat="(indexType, p) in newIndexParams" class="col-sm-10">
       <textarea ng-model="newIndexParams[indexType]" rows="{{paramNumLines[indexType]}}"
                 ng-attr-class="{{newIndexType == indexType && 'active form-control' || 'inactive form-control' }}"></textarea>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputSourceType" class="col-sm-2 control-label">Source Type</label>
+    <div class="col-sm-10">
+      <select ng-model="newSourceType"
+        ng-options="sourceType as t.description for (sourceType, t) in meta.sourceTypes">
+        <option value="">-- choose source type --</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputSourceParams" class="col-sm-2 control-label">Source Params</label>
+    <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-10">
+      <textarea ng-model="newSourceParams[sourceType]" rows="{{paramNumLines[sourceType]}}"
+                ng-attr-class="{{newSourceType == sourceType && 'active form-control' || 'inactive form-control' }}"></textarea>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputSourceName" class="col-sm-2 control-label">Source Name</label>
+    <div class="col-sm-10">
+      <input ng-model="newSourceName" type="text" class="form-control" id="inputSourceName" placeholder="bucket-name">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputSourceUUID" class="col-sm-2 control-label">Source UUID</label>
+    <div class="col-sm-10">
+      <input ng-model="newSourceUUID" type="text" class="form-control" id="inputSourceUUID" placeholder="(optional bucket-uuid)">
     </div>
   </div>
   <div class="form-group">
