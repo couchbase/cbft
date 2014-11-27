@@ -67,3 +67,6 @@
 textarea.inactive {
     display: none;
 }
+div.inactive {
+    display: none;
+}
