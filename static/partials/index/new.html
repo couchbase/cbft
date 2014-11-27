@@ -23,11 +23,14 @@
       </select>
     </div>
   </div>
-  <div ng-attr-class="{{newIndexType && newIndexType != 'blackhole' && 'form-group' || 'inactive'}}">
+  <div class="form-group"
+       ng-show="newIndexType && newIndexType != 'blackhole'">
     <label for="inputDoc" class="col-sm-2 control-label">Index Params</label>
     <div ng-repeat="(indexType, p) in newIndexParams" class="col-sm-10">
-      <textarea ng-model="newIndexParams[indexType]" rows="{{paramNumLines[indexType]}}"
-                ng-attr-class="{{newIndexType == indexType && 'active form-control' || 'inactive form-control' }}"></textarea>
+      <textarea ng-model="newIndexParams[indexType]"
+                rows="{{paramNumLines[indexType]}}"
+                class="form-control"
+                ng-show="newIndexType == indexType"></textarea>
     </div>
   </div>
   <div class="form-group">
@@ -39,23 +42,28 @@
       </select>
     </div>
   </div>
-  <div ng-attr-class="{{newSourceType && newSourceType != 'nil' && 'form-group' || 'inactive'}}">
+  <div class="form-group"
+       ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceName" class="col-sm-2 control-label">Source Name</label>
     <div class="col-sm-10">
       <input ng-model="newSourceName" type="text" class="form-control" id="inputSourceName" placeholder="bucket-name">
     </div>
   </div>
-  <div ng-attr-class="{{newSourceType && newSourceType != 'nil' && 'form-group' || 'inactive'}}">
+  <div class="form-group"
+       ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceUUID" class="col-sm-2 control-label">Source UUID</label>
     <div class="col-sm-10">
       <input ng-model="newSourceUUID" type="text" class="form-control" id="inputSourceUUID" placeholder="(optional bucket-uuid)">
     </div>
   </div>
-  <div ng-attr-class="{{newSourceType && newSourceType != 'nil' && 'form-group' || 'inactive'}}">
+  <div class="form-group"
+       ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceParams" class="col-sm-2 control-label">Source Params</label>
     <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-10">
-      <textarea ng-model="newSourceParams[sourceType]" rows="{{paramNumLines[sourceType]}}"
-                ng-attr-class="{{newSourceType == sourceType && 'active form-control' || 'inactive form-control' }}"></textarea>
+      <textarea ng-model="newSourceParams[sourceType]"
+                rows="{{paramNumLines[sourceType]}}"
+                class="form-control"
+                ng-show="newSourceType == sourceType"></textarea>
     </div>
   </div>
   <div class="form-group">
