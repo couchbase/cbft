@@ -66,7 +66,7 @@ func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, De
 }
 
 func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, error) {
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID)
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil)
 	if err != nil {
 		return 0, fmt.Errorf("CountBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -77,7 +77,13 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID)
+	var consistencyParams ConsistencyParams
+	err := json.Unmarshal(req, &consistencyParams)
+	if err != nil {
+		return fmt.Errorf("QueryBlevePIndexImpl parsing consistencyParams, err: %v", err)
+	}
+
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, &consistencyParams)
 	if err != nil {
 		return fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -414,7 +420,8 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // TODO: Perhaps need a tighter check around indexUUID, as the current
 // implementation might have a race where old pindexes with a matching
 // (but invalid) indexUUID might be hit.
-func bleveIndexAlias(mgr *Manager, indexName, indexUUID string) (bleve.IndexAlias, error) {
+func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
+	consistencyParams *ConsistencyParams) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {

@@ -15,14 +15,14 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             "size": $scope.resultsPerPage,
             "from": from,
             "explain": true,
-            "highlight":{},
+            "highlight": {},
             "query": {
                 "boost": 1.0,
                 "query": $scope.syntax,
             },
             "fields": ["*"],
             "consistencyLevel": $scope.consistencyLevel,
-            "consistencyVector": $scope.consistencyVector,
+            "consistencyVectors": JSON.parse($scope.consistencyVectors || "null"),
         }).
         success(function(data) {
             $scope.processResults(data);

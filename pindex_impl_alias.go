@@ -50,7 +50,7 @@ type AliasParamsTarget struct {
 }
 
 func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
-	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID)
+	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID, nil)
 	if err != nil {
 		return 0, fmt.Errorf("CountAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -61,7 +61,14 @@ func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 
 func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID)
+	var consistencyParams ConsistencyParams
+	err := json.Unmarshal(req, &consistencyParams)
+	if err != nil {
+		return fmt.Errorf("QueryAlias parsing consistencyParams, err: %v", err)
+	}
+
+	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
+		&consistencyParams)
 	if err != nil {
 		return fmt.Errorf("QueryAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -92,7 +99,8 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 //
 // TODO: One day support user-defined aliases for non-bleve indexes.
 func bleveIndexAliasForUserIndexAlias(mgr *Manager,
-	indexName, indexUUID string) (bleve.IndexAlias, error) {
+	indexName, indexUUID string, consistencyParams *ConsistencyParams) (
+	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 
 	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
@@ -113,7 +121,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	}
 
 	for indexName, source := range params.Targets {
-		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID)
+		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID,
+			consistencyParams)
 		if err != nil {
 			return nil, fmt.Errorf("could not get subAlias, indexName: %s,"+
 				" source: %#v, err: %v", indexName, source, err)
