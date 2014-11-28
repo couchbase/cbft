@@ -267,3 +267,17 @@ build_alias_loop:
 
 	return localPIndexes, remotePlanPIndexes, nil
 }
+
+// --------------------------------------------------------
+
+type ConsistencyParams struct {
+	ConsistencyLevel string `json:"consistencyLevel"`
+
+	// Keyed by indexName, value is {partition => seqNum}.
+	ConsistencyVectors map[string]map[string]uint64 `json:"consistencyVectors"`
+}
+
+func (p *PIndex) ConsistencyWaitForAtLeast(
+	consistencyVectors map[string]uint64) error {
+	return nil // TODO.
+}

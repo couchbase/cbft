@@ -430,14 +430,24 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	alias := bleve.NewIndexAlias()
 
+	var wg sync.WaitGroup
+
 	for _, localPIndex := range localPIndexes {
 		bindex, ok := localPIndex.Impl.(bleve.Index)
 		if ok && bindex != nil && localPIndex.IndexType == "bleve" {
 			alias.Add(bindex)
 
-			// TODO: About here is right place to check or register
-			// with the localPIndex.Dest if we need to handle
-			// stale=false consistency, perhaps with a wait group.
+			if consistencyParams != nil &&
+				consistencyParams.ConsistencyLevel == "atPlus" {
+				cv := consistencyParams.ConsistencyVectors[indexName]
+				if cv != nil {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						localPIndex.ConsistencyWaitForAtLeast(cv)
+					}()
+				}
+			}
 		} else {
 			return nil, fmt.Errorf("bleveIndexAlias localPIndex wasn't bleve")
 		}
@@ -447,12 +457,15 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 		// TODO: Propagate auth to bleve client.
-		// TODO: Propagate consistency requirements to bleve client.
 		alias.Add(&BleveClient{
-			SearchURL:   baseURL + "/search",
-			DocCountURL: baseURL + "/count",
+			SearchURL:         baseURL + "/search",
+			DocCountURL:       baseURL + "/count",
+			ConsistencyParams: consistencyParams,
 		})
 	}
+
+	// TODO: Should kickoff remote queries concurrently before we wait.
+	wg.Wait()
 
 	return alias, nil
 }

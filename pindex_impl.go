@@ -74,12 +74,3 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 	}
 	return pindexImplType, nil
 }
-
-// --------------------------------------------------------
-
-type ConsistencyParams struct {
-	ConsistencyLevel string `json:"consistencyLevel"`
-
-	// Keyed by indexName, value is {partition => seqNum}.
-	ConsistencyVectors map[string]map[string]uint64 `json:"consistencyVectors"`
-}

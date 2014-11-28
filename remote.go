@@ -26,15 +26,12 @@ var bleveClientUnimplementedErr = errors.New("unimplemented")
 // BleveClient implements the Search() and DocCount() subset of the
 // bleve.Index interface.  It's a HTTP/REST client that retrieves
 // results from a HTTP server that's providing bleveHttp endpoints.
+//
+// TODO: What about auth?
 type BleveClient struct {
-	SearchURL   string
-	DocCountURL string
-
-	// TODO: What about auth?
-
-	// TODO: There are probably pindex consistency params needed here,
-	// too, so figure how to unmix those from bleve http concerns.
-	// Perhaps this should be RemotePIndexClient or just PIndexClient.
+	SearchURL         string
+	DocCountURL       string
+	ConsistencyParams *ConsistencyParams
 }
 
 func (r *BleveClient) Index(id string, data interface{}) error {
@@ -87,6 +84,7 @@ func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, err
 	if r.SearchURL == "" {
 		return nil, fmt.Errorf("no SearchURL provided")
 	}
+	// TODO: need to also add r.ConsistencyParams to buf.
 	buf, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
