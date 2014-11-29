@@ -276,10 +276,14 @@ type ConsistencyParams struct {
 	// Keyed by indexName, value is {partition => seqNum}.
 	Vectors map[string]map[string]uint64 `json:"vectors"`
 
-	// TODO: what about changes to vbucket UUID?
+	// TODO: Can user specify certain partition UUID (like vbucket UUID)?
 }
 
 func (p *PIndex) ConsistencyWaitForAtLeast(
 	consistencyVectors map[string]uint64) error {
-	return nil // TODO.
+	if len(consistencyVectors) <= 0 {
+		return nil
+	}
+	// TODO.
+	return nil
 }
