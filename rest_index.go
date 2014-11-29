@@ -141,15 +141,15 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
-type SearchHandler struct {
+type QueryHandler struct {
 	mgr *Manager
 }
 
-func NewSearchHandler(mgr *Manager) *SearchHandler {
-	return &SearchHandler{mgr: mgr}
+func NewQueryHandler(mgr *Manager) *QueryHandler {
+	return &QueryHandler{mgr: mgr}
 }
 
-func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
@@ -160,24 +160,25 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
+		showError(w, req, fmt.Sprintf("rest.Query,"+
 			" could not read request body, indexName: %s", indexName), 400)
 		return
 	}
 
 	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
 	if err != nil || pindexImplType.Query == nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
+		showError(w, req, fmt.Sprintf("rest.Query,"+
 			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
 		return
 	}
 
-	log.Printf("rest.Search indexName: %s, requestBody: %s", indexName, requestBody)
+	log.Printf("rest.Query indexName: %s, requestBody: %s", indexName, requestBody)
 
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.Search,"+
-			" indexName: %s, requestBody: %s, err: %v", indexName, requestBody, err), 400)
+		showError(w, req, fmt.Sprintf("rest.Query,"+
+			" indexName: %s, requestBody: %s, req: %#v, err: %v",
+			indexName, requestBody, req, err), 400)
 		return
 	}
 }

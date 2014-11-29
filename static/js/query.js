@@ -1,28 +1,32 @@
-function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.maxPagesToShow = 5;
     $scope.resultsPerPage = 10;
     $scope.page = 1;
 
-    $scope.searchSyntax = function() {
+    $scope.query = function() {
         $scope.numPages = 0;
         $location.search('q', $scope.syntax);
         $location.search('p', $scope.page);
         $scope.results = null;
         from = ($scope.page-1)*$scope.resultsPerPage;
-        $http.post('/api/index/' + $scope.indexName + '/search', {
-            "indexName": $scope.indexName,
-            "size": $scope.resultsPerPage,
-            "from": from,
-            "explain": true,
-            "highlight": {},
+        $http.post('/api/index/' + $scope.indexName + '/query', {
             "query": {
-                "boost": 1.0,
-                "query": $scope.syntax,
+                "indexName": $scope.indexName,
+                "size": $scope.resultsPerPage,
+                "from": from,
+                "explain": true,
+                "highlight": {},
+                "query": {
+                    "boost": 1.0,
+                    "query": $scope.syntax,
+                },
+                "fields": ["*"],
             },
-            "fields": ["*"],
-            "consistencyLevel": $scope.consistencyLevel,
-            "consistencyVectors": JSON.parse($scope.consistencyVectors || "null"),
+            "consistency": {
+                "level": $scope.consistencyLevel,
+                "vectors": JSON.parse($scope.consistencyVectors || "null"),
+            },
         }).
         success(function(data) {
             $scope.processResults(data);
@@ -40,7 +44,7 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     }
     if($location.search().q !== undefined) {
         $scope.syntax = $location.search().q;
-        $scope.searchSyntax();
+        $scope.query();
     }
 
     $scope.expl = function(explanation) {
@@ -135,7 +139,7 @@ function SearchCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         }
 
         $scope.page = pageNum;
-        $scope.searchSyntax();
+        $scope.query();
     };
 
 }

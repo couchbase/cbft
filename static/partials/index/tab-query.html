@@ -1,12 +1,11 @@
-<div ng-controller="SearchCtrl">
-<form class="navbar-form searchbox" role="search">
+<div ng-controller="QueryCtrl">
+<form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
     <input ng-model="syntax"
-           type="text" class="form-control"
-           placeholder="Search" name="srch-term" id="srch-term"/>
+           type="text" class="form-control" placeholder="Query"/>
     <div class="input-group-btn">
       <button class="btn btn-primary" type="submit"
-              ng-click="searchSyntax()">
+              ng-click="query()">
         <i class="glyphicon glyphicon-search"></i>
       </button>
     </div>
@@ -15,9 +14,9 @@
   <div>
     <div class="col-lg-offset-9">
       <label>Advanced:</label>
-      <input ng-model="searchAdvancedToggle" type="checkbox"/>
+      <input ng-model="queryAdvancedToggle" type="checkbox"/>
     </div>
-    <div ng-show="searchAdvancedToggle" class="col-lg-offset-1">
+    <div ng-show="queryAdvancedToggle" class="col-lg-offset-1">
       <div class="row">
         <label class="col-lg-3">Consistency Level:</label>
         <input ng-model="consistencyLevel" id="consistencyLevel"
@@ -34,7 +33,7 @@
 
 <div ng-show="results.hits.length < 1"
      ng-include
-     src="'/static/partials/index/search-noresults.html'"></div>
+     src="'/static/partials/index/query-noresults.html'"></div>
 <div ng-show="results.hits.length > 0"
      ng-include
-     src="'/static/partials/index/search-results.html'"></div>
+     src="'/static/partials/index/query-results.html'"></div>

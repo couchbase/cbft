@@ -61,31 +61,25 @@ func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 
 func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	var consistencyParams ConsistencyParams
-	err := json.Unmarshal(req, &consistencyParams)
+	var bleveQueryParams BleveQueryParams
+	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("QueryAlias parsing consistencyParams, err: %v", err)
+		return fmt.Errorf("QueryAlias parsing bleveQueryParams, err: %v", err)
 	}
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
-		&consistencyParams)
+		bleveQueryParams.Consistency)
 	if err != nil {
 		return fmt.Errorf("QueryAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
-	var searchRequest bleve.SearchRequest
-	err = json.Unmarshal(req, &searchRequest)
-	if err != nil {
-		return fmt.Errorf("QueryBlevePIndexImpl parsing req, err: %v", err)
-	}
-
-	err = searchRequest.Query.Validate()
+	err = bleveQueryParams.Query.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	searchResponse, err := alias.Search(&searchRequest)
+	searchResponse, err := alias.Search(bleveQueryParams.Query)
 	if err != nil {
 		return err
 	}

@@ -75,32 +75,33 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 	return alias.DocCount()
 }
 
+type BleveQueryParams struct {
+	Query       *bleve.SearchRequest `json:"query"`
+	Consistency *ConsistencyParams   `json:"consistency"`
+}
+
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	var consistencyParams ConsistencyParams
-	err := json.Unmarshal(req, &consistencyParams)
+	var bleveQueryParams BleveQueryParams
+	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("QueryBlevePIndexImpl parsing consistencyParams, err: %v", err)
+		return fmt.Errorf("QueryBlevePIndexImpl parsing bleveQueryParams,"+
+			" req: %s, err: %v", req, err)
 	}
 
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, &consistencyParams)
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
+		bleveQueryParams.Consistency)
 	if err != nil {
 		return fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
-	var searchRequest bleve.SearchRequest
-	err = json.Unmarshal(req, &searchRequest)
-	if err != nil {
-		return fmt.Errorf("QueryBlevePIndexImpl parsing req, err: %v", err)
-	}
-
-	err = searchRequest.Query.Validate()
+	err = bleveQueryParams.Query.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	searchResponse, err := alias.Search(&searchRequest)
+	searchResponse, err := alias.Search(bleveQueryParams.Query)
 	if err != nil {
 		return err
 	}
@@ -438,8 +439,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			alias.Add(bindex)
 
 			if consistencyParams != nil &&
-				consistencyParams.ConsistencyLevel == "atPlus" {
-				cv := consistencyParams.ConsistencyVectors[indexName]
+				consistencyParams.Level == "atPlus" {
+				cv := consistencyParams.Vectors[indexName]
 				if cv != nil {
 					wg.Add(1)
 					go func() {

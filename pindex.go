@@ -271,10 +271,12 @@ build_alias_loop:
 // --------------------------------------------------------
 
 type ConsistencyParams struct {
-	ConsistencyLevel string `json:"consistencyLevel"`
+	Level string `json:"level"`
 
 	// Keyed by indexName, value is {partition => seqNum}.
-	ConsistencyVectors map[string]map[string]uint64 `json:"consistencyVectors"`
+	Vectors map[string]map[string]uint64 `json:"vectors"`
+
+	// TODO: what about changes to vbucket UUID?
 }
 
 func (p *PIndex) ConsistencyWaitForAtLeast(

@@ -36,7 +36,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (*mux.Rou
 
 	if mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
 		r.Handle("/api/index/{indexName}/count", NewCountHandler(mgr)).Methods("GET")
-		r.Handle("/api/index/{indexName}/search", NewSearchHandler(mgr)).Methods("POST")
+		r.Handle("/api/index/{indexName}/query", NewQueryHandler(mgr)).Methods("POST")
 	}
 
 	// the rest are standard bleveHttp handlers for the lower "pindex" level...

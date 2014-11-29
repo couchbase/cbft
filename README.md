@@ -25,7 +25,7 @@ Check how many documents are indexed
 
 Submit search query
 
-```curl -XPOST http://localhost:8095/api/index/default/search -d '{"query": {"query":"searchterm"}}'```
+```curl -XPOST -d '{"query":{"query":{"query":"your-search-term"}}}' --header Content-Type:text/json http://localhost:9090/api/index/default-ft/query```
 
 Delete index
 
