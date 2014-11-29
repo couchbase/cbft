@@ -39,6 +39,8 @@ type PIndex struct {
 	Path             string     `json:"-"` // Transient, not persisted.
 	Impl             PIndexImpl `json:"-"` // Transient, not persisted.
 	Dest             Dest       `json:"-"` // Transient, not persisted.
+
+	sourcePartitionsArr []string // Non-persisted memoization.
 }
 
 func (p *PIndex) Close(remove bool) error {
@@ -89,6 +91,8 @@ func NewPIndex(mgr *Manager, name, uuid,
 		Path:             path,
 		Impl:             impl,
 		Dest:             dest,
+
+		sourcePartitionsArr: strings.Split(sourcePartitions, ","),
 	}
 	buf, err := json.Marshal(pindex)
 	if err != nil {
@@ -266,24 +270,4 @@ build_alias_loop:
 	}
 
 	return localPIndexes, remotePlanPIndexes, nil
-}
-
-// --------------------------------------------------------
-
-type ConsistencyParams struct {
-	Level string `json:"level"`
-
-	// Keyed by indexName, value is {partition => seqNum}.
-	Vectors map[string]map[string]uint64 `json:"vectors"`
-
-	// TODO: Can user specify certain partition UUID (like vbucket UUID)?
-}
-
-func (p *PIndex) ConsistencyWaitForAtLeast(
-	consistencyVectors map[string]uint64) error {
-	if len(consistencyVectors) <= 0 {
-		return nil
-	}
-	// TODO.
-	return nil
 }

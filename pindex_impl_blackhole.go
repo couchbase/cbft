@@ -103,3 +103,10 @@ func (t *BlackHole) GetOpaque(partition string) (
 func (t *BlackHole) Rollback(partition string, rollbackSeq uint64) error {
 	return nil
 }
+
+func (t *BlackHole) ConsistencyWait(partition string,
+	consistencyLevel string,
+	consistencySeq uint64,
+	cancelCh chan struct{}) error {
+	return nil
+}

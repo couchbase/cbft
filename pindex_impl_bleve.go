@@ -275,6 +275,14 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	return nil
 }
 
+func (t *BleveDest) ConsistencyWait(partition string,
+	consistencyLevel string,
+	consistencySeq uint64,
+	cancelCh chan struct{}) error {
+	// TODO.
+	return nil
+}
+
 // ---------------------------------------------------------
 
 func (t *BleveDestPartition) OnDataUpdate(bindex bleve.Index,
@@ -432,20 +440,30 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	alias := bleve.NewIndexAlias()
 
 	var wg sync.WaitGroup
+	var cancelCh chan struct{}
 
 	for _, localPIndex := range localPIndexes {
 		bindex, ok := localPIndex.Impl.(bleve.Index)
 		if ok && bindex != nil && localPIndex.IndexType == "bleve" {
 			alias.Add(bindex)
 
-			if consistencyParams != nil &&
-				consistencyParams.Level == "atPlus" {
-				cv := consistencyParams.Vectors[indexName]
-				if cv != nil {
+			if localPIndex.Dest != nil &&
+				consistencyParams != nil &&
+				consistencyParams.Level != "" {
+				consistencyVector := consistencyParams.Vectors[indexName]
+				if consistencyVector != nil {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
-						localPIndex.ConsistencyWaitForAtLeast(cv)
+						for _, partition := range localPIndex.sourcePartitionsArr {
+							consistencySeq := consistencyVector[partition]
+							if consistencySeq > 0 {
+								localPIndex.Dest.ConsistencyWait(partition,
+									consistencyParams.Level,
+									consistencySeq,
+									cancelCh)
+							}
+						}
 					}()
 				}
 			}

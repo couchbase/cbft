@@ -47,6 +47,13 @@ func (s *TestDest) Rollback(partition string,
 	return nil
 }
 
+func (s *TestDest) ConsistencyWait(partition string,
+	consistencyLevel string,
+	consistencySeq uint64,
+	cancelCh chan struct{}) error {
+	return nil
+}
+
 func TestBasicPartitionFunc(t *testing.T) {
 	dest := &TestDest{}
 	dest2 := &TestDest{}

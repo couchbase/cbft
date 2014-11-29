@@ -20,6 +20,20 @@ type PIndexImpl interface {
 	Close() error
 }
 
+// Key is partition, value is seq.
+type ConsistencyVector map[string]uint64
+
+type ConsistencyParams struct {
+	Level string `json:"level"`
+
+	// Keyed by indexName.
+	Vectors map[string]ConsistencyVector `json:"vectors"`
+
+	// TODO: Can user specify certain partition UUID (like vbucket UUID)?
+}
+
+// ---------------------------------------------------------------
+
 type PIndexImplType struct {
 	New  func(indexType, indexParams, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)

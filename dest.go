@@ -58,6 +58,14 @@ type Dest interface {
 	// note, the Dest is allowed to rollback even further, even all
 	// the way back to the start or to zero.
 	Rollback(partition string, rollbackSeq uint64) error
+
+	// Blocks the calling goroutine until the Dest has reached the
+	// desired consistency for the partition or until the cancelCh is
+	// closed by some goroutine related to the calling goroutine.
+	ConsistencyWait(partition string,
+		consistencyLevel string,
+		consistencySeq uint64,
+		cancelCh chan struct{}) error
 }
 
 type DestPartitionFunc func(partition string, key []byte,
