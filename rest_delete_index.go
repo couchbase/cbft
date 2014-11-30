@@ -36,7 +36,7 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	err := h.mgr.DeleteIndex(indexName)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error deleting index, err: %v", err), 500)
+		showError(w, req, fmt.Sprintf("error deleting index, err: %v", err), 400)
 		return
 	}
 

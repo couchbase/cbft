@@ -52,7 +52,15 @@ func TestHandlers(t *testing.T) {
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
 		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
 	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
 
 	tests := []struct {
 		Desc          string
@@ -85,6 +93,28 @@ func TestHandlers(t *testing.T) {
 			Status:       http.StatusOK,
 			ResponseBody: []byte(`{"status":"ok","indexDefs":null}`),
 		},
+		{
+			Desc:         "try to get a nonexistent index",
+			Handler:      NewGetIndexHandler(mgr),
+			Path:         "/api/index/NOT-AN-INDEX",
+			Method:       "GET",
+			Params:       nil,
+			Body:         nil,
+			Status:       400,
+			ResponseBody: []byte(`not an index`),
+		},
+		{
+			Desc:    "try to delete a nonexistent index when no indexes",
+			Handler: NewDeleteIndexHandler(mgr),
+			Path:    "/api/index/NOT-AN-INDEX",
+			Method:  "DELETE",
+			Params:  nil,
+			Body:    nil,
+			Status:  400,
+			ResponseMatch: map[string]bool{
+				`indexes do not exist`: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -95,7 +125,7 @@ func TestHandlers(t *testing.T) {
 			Form:   test.Params,
 			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
 		}
-		test.Handler.ServeHTTP(record, req)
+		router.ServeHTTP(record, req)
 		if got, want := record.Code, test.Status; got != want {
 			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
 			t.Errorf("%s: response body = %s", test.Desc, record.Body)
