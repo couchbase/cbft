@@ -106,7 +106,7 @@ func TestHandlers(t *testing.T) {
 		{
 			Desc:    "try to create a default index with bad server",
 			Handler: NewCreateIndexHandler(mgr),
-			Path:    "/api/index/default-idx-to-bad-server",
+			Path:    "/api/index/index-on-a-bad-server",
 			Method:  "PUT",
 			Params:  nil,
 			Body:    nil,
@@ -125,6 +125,30 @@ func TestHandlers(t *testing.T) {
 			Status:  400,
 			ResponseMatch: map[string]bool{
 				`indexes do not exist`: true,
+			},
+		},
+		{
+			Desc:    "try to count a nonexistent index when no indexes",
+			Handler: NewCountHandler(mgr),
+			Path:    "/api/index/NOT-AN-INDEX/count",
+			Method:  "GET",
+			Params:  nil,
+			Body:    nil,
+			Status:  400,
+			ResponseMatch: map[string]bool{
+				`could not get indexDefs`: true,
+			},
+		},
+		{
+			Desc:    "try to query a nonexistent index when no indexes",
+			Handler: NewQueryHandler(mgr),
+			Path:    "/api/index/NOT-AN-INDEX/query",
+			Method:  "POST",
+			Params:  nil,
+			Body:    nil,
+			Status:  400,
+			ResponseMatch: map[string]bool{
+				`could not get indexDefs`: true,
 			},
 		},
 	}

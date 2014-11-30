@@ -76,7 +76,7 @@ func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, e
 
 func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
-	if err != nil {
+	if err != nil || indexDefs == nil {
 		return nil, fmt.Errorf("could not get indexDefs, indexName: %s, err: %v",
 			indexName, err)
 	}
