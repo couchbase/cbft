@@ -370,7 +370,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		return err
 	}
 
-	bdp.cwrCh <- cwr
+	bdp.cwrCh <- cwr // Want getPartitionUnlocked() & cwr send under lock.
 
 	t.m.Unlock()
 
