@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 )
 
 type Dest interface {
@@ -62,12 +63,17 @@ type Dest interface {
 	// the way back to the start or to zero.
 	Rollback(partition string, rollbackSeq uint64) error
 
-	// Blocks the calling goroutine until the Dest has reached the
-	// desired consistency for the partition or until the cancelCh is
-	// closed by some goroutine related to the calling goroutine.
+	// Blocks until the Dest has reached the desired consistency for
+	// the partition or until the cancelCh is closed by some goroutine
+	// related to the calling goroutine.
 	ConsistencyWait(partition string,
 		consistencyLevel string,
 		consistencySeq uint64,
+		cancelCh chan struct{}) error
+
+	// Queries the underlying pindex implementation, blocking if
+	// needed for the Dest to reach the desired consistency.
+	Query(pindex *PIndex, req []byte, w io.Writer,
 		cancelCh chan struct{}) error
 }
 

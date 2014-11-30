@@ -12,6 +12,7 @@
 package main
 
 import (
+	"io"
 	"testing"
 )
 
@@ -54,6 +55,11 @@ func (s *TestDest) Rollback(partition string,
 func (s *TestDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
+	cancelCh chan struct{}) error {
+	return nil
+}
+
+func (t *TestDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan struct{}) error {
 	return nil
 }

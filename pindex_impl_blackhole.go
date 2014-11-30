@@ -110,3 +110,8 @@ func (t *BlackHole) ConsistencyWait(partition string,
 	cancelCh chan struct{}) error {
 	return nil
 }
+
+func (t *BlackHole) Query(pindex *PIndex, req []byte, w io.Writer,
+	cancelCh chan struct{}) error {
+	return nil
+}

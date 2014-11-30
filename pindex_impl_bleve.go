@@ -391,6 +391,63 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	return err
 }
 
+func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
+	cancelCh chan struct{}) error {
+	if pindex == nil ||
+		pindex.Impl == nil ||
+		pindex.IndexType != "bleve" {
+		return fmt.Errorf("BleveDest.Query bad pindex: %#v", pindex)
+	}
+
+	bindex, ok := pindex.Impl.(bleve.Index)
+	if !ok || bindex == nil {
+		return fmt.Errorf("BleveDest.Query pindex not a bleve.Index: %#v", pindex)
+	}
+
+	var bleveQueryParams BleveQueryParams
+	err := json.Unmarshal(req, &bleveQueryParams)
+	if err != nil {
+		return fmt.Errorf("BleveDest.Query parsing bleveQueryParams,"+
+			" req: %s, err: %v", req, err)
+	}
+
+	consistencyParams := bleveQueryParams.Consistency
+	if consistencyParams != nil &&
+		consistencyParams.Level != "" &&
+		consistencyParams.Vectors != nil {
+		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
+		if consistencyVector != nil {
+			for _, partition := range pindex.sourcePartitionsArr {
+				consistencySeq := consistencyVector[partition]
+				if consistencySeq > 0 {
+					err := t.ConsistencyWait(partition,
+						consistencyParams.Level,
+						consistencySeq,
+						cancelCh)
+					if err != nil {
+						return fmt.Errorf("BleveDest.Query cancelled,"+
+							" req: %s, err: %v", req, err)
+					}
+				}
+			}
+		}
+	}
+
+	err = bleveQueryParams.Query.Query.Validate()
+	if err != nil {
+		return err
+	}
+
+	searchResponse, err := bindex.Search(bleveQueryParams.Query)
+	if err != nil {
+		return err
+	}
+
+	mustEncode(res, searchResponse)
+
+	return nil
+}
+
 // ---------------------------------------------------------
 
 func (t *BleveDestPartition) run() {
@@ -607,7 +664,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 			if localPIndex.Dest != nil &&
 				consistencyParams != nil &&
-				consistencyParams.Level != "" {
+				consistencyParams.Level != "" &&
+				consistencyParams.Vectors != nil {
 				consistencyVector := consistencyParams.Vectors[indexName]
 				if consistencyVector != nil {
 					wg.Add(1)
@@ -616,7 +674,6 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 						for _, partition := range localPIndex.sourcePartitionsArr {
 							consistencySeq := consistencyVector[partition]
-
 							if consistencySeq > 0 {
 								err := localPIndex.Dest.ConsistencyWait(partition,
 									consistencyParams.Level,
@@ -640,11 +697,11 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		// TODO: Propagate auth to bleve client.
 		alias.Add(&BleveClient{
-			QueryURL:          baseURL + "/query",
-			CountURL:          baseURL + "/count",
-			ConsistencyParams: consistencyParams,
+			QueryURL:    baseURL + "/query",
+			CountURL:    baseURL + "/count",
+			Consistency: consistencyParams,
+			// TODO: Propagate auth to bleve client.
 		})
 	}
 

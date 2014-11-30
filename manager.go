@@ -242,6 +242,13 @@ func (mgr *Manager) RemovePIndex(pindex *PIndex) error {
 	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX, "api-RemovePIndex", pindex)
 }
 
+func (mgr *Manager) GetPIndex(pindexName string) *PIndex {
+	mgr.m.Lock()
+	defer mgr.m.Unlock()
+
+	return mgr.pindexes[pindexName]
+}
+
 func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()

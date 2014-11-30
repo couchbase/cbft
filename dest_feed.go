@@ -165,3 +165,8 @@ func (t *DestFeed) ConsistencyWait(partition string,
 	return dest.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)
 }
+
+func (t *DestFeed) Query(pindex *PIndex, req []byte, w io.Writer,
+	cancelCh chan struct{}) error {
+	return fmt.Errorf("DestFeed.Query unimplemented")
+}

@@ -184,3 +184,64 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	log.Printf("rest.Query indexName: %s, DONE, requestBody: %s", indexName, requestBody)
 }
+
+// ---------------------------------------------------
+
+type QueryPIndexHandler struct {
+	mgr *Manager
+}
+
+func NewQueryPIndexHandler(mgr *Manager) *QueryPIndexHandler {
+	return &QueryPIndexHandler{mgr: mgr}
+}
+
+func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	pindexName := indexNameLookup(req) // TODO: pindexName vs indexName distinction.
+	if pindexName == "" {
+		showError(w, req, "index name is required", 400)
+		return
+	}
+
+	pindexUUID := req.FormValue("pindexUUID")
+
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" could not read request body, pindexName: %s", pindexName), 400)
+		return
+	}
+
+	pindex := h.mgr.GetPIndex(pindexName)
+	if pindex == nil {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" no pindex, pindexName: %s", pindexName), 400)
+		return
+	}
+	if pindexUUID != "" && pindex.UUID != pindexUUID {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" wrong pindexUUID: %s, pindex.UUID: %s, pindexName: %s",
+			pindexUUID, pindex.UUID, pindexName), 400)
+		return
+	}
+	if pindex.Dest == nil {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" no pindex.Dest, pindexName: %s", pindexName), 400)
+		return
+	}
+
+	var cancelCh chan struct{} // TODO: Support request timeout and cancellation.
+
+	log.Printf("rest.QueryPIndex pindexName: %s, requestBody: %s",
+		pindexName, requestBody)
+
+	err = pindex.Dest.Query(pindex, requestBody, w, cancelCh)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" pindexName: %s, requestBody: %s, req: %#v, err: %v",
+			pindexName, requestBody, req, err), 400)
+		return
+	}
+
+	log.Printf("rest.QueryPIndex pindexName: %s, DONE, requestBody: %s",
+		pindexName, requestBody)
+}

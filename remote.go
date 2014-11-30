@@ -31,9 +31,9 @@ var bleveClientUnimplementedErr = errors.New("unimplemented")
 //
 // TODO: Implement consistency and auth in BleveClient.
 type BleveClient struct {
-	QueryURL          string
-	CountURL          string
-	ConsistencyParams *ConsistencyParams
+	QueryURL    string
+	CountURL    string
+	Consistency *ConsistencyParams
 }
 
 func (r *BleveClient) Index(id string, data interface{}) error {
@@ -86,8 +86,13 @@ func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, err
 	if r.QueryURL == "" {
 		return nil, fmt.Errorf("no QueryURL provided")
 	}
-	// TODO: need to also add r.ConsistencyParams to buf.
-	buf, err := json.Marshal(req)
+
+	bleveQueryParams := &BleveQueryParams{
+		Query:       req,
+		Consistency: r.Consistency,
+	}
+
+	buf, err := json.Marshal(bleveQueryParams)
 	if err != nil {
 		return nil, err
 	}
