@@ -12,6 +12,7 @@
 package main
 
 import (
+	"container/heap"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -66,7 +67,7 @@ func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, De
 }
 
 func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, error) {
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil)
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("CountBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -90,7 +91,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	}
 
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
-		bleveQueryParams.Consistency)
+		bleveQueryParams.Consistency, nil) // TOOD: get cancelCh from caller.
 	if err != nil {
 		return fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -130,15 +131,55 @@ type BleveDestPartition struct {
 	partition       string
 	partitionOpaque string // Key used to implement SetOpaque/GetOpaque().
 
-	m          sync.Mutex   // Protects the fields that follow.
-	seqMax     uint64       // Max seq # we've seen for this partition.
-	seqMaxBuf  []byte       // For binary encoded seqMax uint64.
-	seqSnapEnd uint64       // To track snapshot end seq # for this partition.
-	buf        []byte       // The batch points to slices from buf, which we reuse.
-	batch      *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
+	m           sync.Mutex   // Protects the fields that follow.
+	seqMax      uint64       // Max seq # we've seen for this partition.
+	seqMaxBuf   []byte       // For binary encoded seqMax uint64.
+	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
+	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
+	buf         []byte       // The batch points to slices from buf, which we reuse.
+	batch       *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
 
 	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
+
+	cwrCh    chan *consistencyWaitReq
+	cwrQueue cwrQueue
 }
+
+type consistencyWaitReq struct {
+	consistencyLevel string
+	consistencySeq   uint64
+	cancelCh         chan struct{}
+	doneCh           chan error
+}
+
+// ---------------------------------------------------------
+
+// A cwrQueue implements heap.Interface for consistencyWaitReq's.
+type cwrQueue []*consistencyWaitReq
+
+func (pq cwrQueue) Len() int { return len(pq) }
+
+func (pq cwrQueue) Less(i, j int) bool {
+	return pq[i].consistencySeq < pq[j].consistencySeq
+}
+
+func (pq cwrQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *cwrQueue) Push(x interface{}) {
+	*pq = append(*pq, x.(*consistencyWaitReq))
+}
+
+func (pq *cwrQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
+}
+
+// ---------------------------------------------------------
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
 	return &BleveDest{
@@ -163,14 +204,22 @@ func (t *BleveDest) getPartition(partition string) (
 		bdp = &BleveDestPartition{
 			partition:       partition,
 			partitionOpaque: "o:" + partition,
-			seqMaxBuf:       make([]byte, 8), // For binary encoded seqMax uint64.
+			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           bleve.NewBatch(),
+			cwrCh:           make(chan *consistencyWaitReq, 1),
+			cwrQueue:        cwrQueue{},
 		}
+		heap.Init(&bdp.cwrQueue)
+
+		go bdp.run()
+
 		t.partitions[partition] = bdp
 	}
 
 	return bdp, t.bindex, nil
 }
+
+// ---------------------------------------------------------
 
 func (t *BleveDest) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
@@ -261,7 +310,10 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	//
 	// For now, always rollback to zero, in which we close the pindex,
 	// erase files and have the janitor rebuild from scratch.
-	//
+	for _, bdp := range t.partitions {
+		close(bdp.cwrCh)
+	}
+
 	t.partitions = make(map[string]*BleveDestPartition)
 
 	// Use t.bindex == nil to check any late calls to BleveDest.
@@ -279,8 +331,36 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh chan struct{}) error {
-	// TODO.
-	return nil
+	cwr := &consistencyWaitReq{
+		consistencyLevel: consistencyLevel,
+		consistencySeq:   consistencySeq,
+		cancelCh:         cancelCh,
+	}
+
+	t.m.Lock()
+
+	bdp, _, err := t.getPartition(partition)
+	if err != nil {
+		t.m.Unlock()
+		return err
+	}
+
+	bdp.cwrCh <- cwr
+
+	t.m.Unlock()
+
+	// TODO: Need stats to see how many inflight waits we have.
+
+	if cancelCh != nil {
+		select {
+		case <-cancelCh:
+			return fmt.Errorf("cancelled")
+		case err = <-cwr.doneCh:
+			return err
+		}
+	}
+
+	return <-cwr.doneCh
 }
 
 // ---------------------------------------------------------
@@ -392,6 +472,17 @@ func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
 		return err
 	}
 
+	t.seqMaxBatch = t.seqMax
+
+	for t.cwrQueue.Len() > 0 &&
+		t.cwrQueue[0].consistencySeq <= t.seqMaxBatch {
+		cwr := heap.Pop(&t.cwrQueue).(*consistencyWaitReq)
+		if cwr != nil &&
+			cwr.doneCh != nil {
+			close(cwr.doneCh)
+		}
+	}
+
 	// TODO: would good to reuse batch; ask for a public Reset() kind
 	// of method on bleve.Batch?
 	t.batch = bleve.NewBatch()
@@ -423,6 +514,33 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 
 // ---------------------------------------------------------
 
+func (t *BleveDestPartition) run() {
+	for cwr := range t.cwrCh {
+		t.m.Lock()
+
+		if cwr.consistencyLevel == "" {
+			close(cwr.doneCh) // Same as stale=ok, so we're done.
+		} else if cwr.consistencyLevel == "atPlus" {
+			if cwr.consistencySeq > t.seqMaxBatch {
+				heap.Push(&t.cwrQueue, cwr)
+			} else {
+				close(cwr.doneCh)
+			}
+		} else {
+			cwr.doneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
+				" cwr: %#v", cwr.consistencyLevel, cwr)
+			close(cwr.doneCh)
+		}
+
+		t.m.Unlock()
+	}
+
+	// TODO: If we reach here, then we should cancel/error any callers
+	// waiting for consistency.
+}
+
+// ---------------------------------------------------------
+
 // Returns a bleve.IndexAlias that represents all the PIndexes for the
 // index, including perhaps bleve remote client PIndexes.
 //
@@ -430,7 +548,8 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // implementation might have a race where old pindexes with a matching
 // (but invalid) indexUUID might be hit.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
-	consistencyParams *ConsistencyParams) (bleve.IndexAlias, error) {
+	consistencyParams *ConsistencyParams,
+	cancelCh chan struct{}) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
@@ -440,7 +559,6 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	alias := bleve.NewIndexAlias()
 
 	var wg sync.WaitGroup
-	var cancelCh chan struct{}
 
 	for _, localPIndex := range localPIndexes {
 		bindex, ok := localPIndex.Impl.(bleve.Index)
@@ -485,6 +603,14 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 	wg.Wait()
+
+	if cancelCh != nil {
+		select {
+		case <-cancelCh:
+			return nil, fmt.Errorf("cancelled")
+		default:
+		}
+	}
 
 	return alias, nil
 }
