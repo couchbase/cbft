@@ -11,6 +11,10 @@ LICENSE: Apache 2.0
 
 ### Usage
 
+Getting
+
+```go get -u github.com/couchbaselabs/cbft```
+
 Running against local Couchbase Server
 
 ```./cbft -server http://localhost:8091 -wanted```
@@ -32,6 +36,16 @@ Delete index
 ```curl -XDELETE http://localhost:8095/api/index/default```
 
 ### For cbft developers
+
+Getting
+
+		mkdir -p $GOPATH/src/github.com/couchbaelabs
+		cd $GOPATH/src/github.com/couchbaelabs
+		git clone git://github.com/couchbaselabs/cbft.git
+
+Building
+
+```go build```
 
 To get local coverage reports with heatmaps...
 
