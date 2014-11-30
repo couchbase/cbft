@@ -24,10 +24,12 @@ import (
 var bleveClientUnimplementedErr = errors.New("unimplemented")
 
 // BleveClient implements the Search() and DocCount() subset of the
-// bleve.Index interface.  It's a HTTP/REST client that retrieves
-// results from a HTTP server that's providing bleveHttp endpoints.
+// bleve.Index interface by accessing a remote cbft server via REST
+// protocol.  This allows callers to add a BleveClient as a target of
+// a bleve.IndexAlias, and implements cbft protocol features like
+// query consistency and auth.
 //
-// TODO: What about auth?
+// TODO: Implement consistency and auth in BleveClient.
 type BleveClient struct {
 	SearchURL         string
 	DocCountURL       string
