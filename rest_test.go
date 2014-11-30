@@ -73,7 +73,7 @@ func TestHandlers(t *testing.T) {
 		ResponseMatch map[string]bool
 	}{
 		{
-			Desc:         "log",
+			Desc:         "log on empty msg ring",
 			Path:         "/api/log",
 			Method:       "GET",
 			Params:       nil,
@@ -82,7 +82,7 @@ func TestHandlers(t *testing.T) {
 			ResponseBody: []byte(`{"messages":[]}`),
 		},
 		{
-			Desc:   "cfg",
+			Desc:   "cfg on empty manaager",
 			Path:   "/api/cfg",
 			Method: "GET",
 			Params: nil,
@@ -97,7 +97,7 @@ func TestHandlers(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "cfg refresh",
+			Desc:   "cfg refresh on empty, unchanged manager",
 			Path:   "/api/cfgRefresh",
 			Method: "POST",
 			Params: nil,
@@ -108,7 +108,7 @@ func TestHandlers(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "manager kick",
+			Desc:   "manager kick on empty, unchanged manager",
 			Path:   "/api/managerKick",
 			Method: "POST",
 			Params: nil,
@@ -128,6 +128,18 @@ func TestHandlers(t *testing.T) {
 			ResponseMatch: map[string]bool{
 				`"status":"ok"`:    true,
 				`"startSamples":{`: true,
+			},
+		},
+		{
+			Desc:   "feed stats when no feeds",
+			Path:   "/api/feedStats",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`[`: true,
+				`]`: true,
 			},
 		},
 		{
