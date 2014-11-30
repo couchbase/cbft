@@ -397,7 +397,7 @@ func (t *BleveDestPartition) run() {
 		t.m.Lock()
 
 		if cwr.consistencyLevel == "" {
-			close(cwr.doneCh) // Same as stale=ok, so we're done.
+			close(cwr.doneCh) // We treat "" like stale=ok, so we're done.
 		} else if cwr.consistencyLevel == "atPlus" {
 			if cwr.consistencySeq > t.seqMaxBatch {
 				heap.Push(&t.cwrQueue, cwr)
