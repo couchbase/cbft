@@ -104,6 +104,18 @@ func TestHandlers(t *testing.T) {
 			ResponseBody: []byte(`not an index`),
 		},
 		{
+			Desc:    "try to create a default index with bad server",
+			Handler: NewCreateIndexHandler(mgr),
+			Path:    "/api/index/default-idx-to-bad-server",
+			Method:  "PUT",
+			Params:  nil,
+			Body:    nil,
+			Status:  500,
+			ResponseMatch: map[string]bool{
+				`failed to connect`: true,
+			},
+		},
+		{
 			Desc:    "try to delete a nonexistent index when no indexes",
 			Handler: NewDeleteIndexHandler(mgr),
 			Path:    "/api/index/NOT-AN-INDEX",
