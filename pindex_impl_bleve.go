@@ -592,6 +592,9 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 		return nil, fmt.Errorf("bleveIndexAlias, err: %v", err)
 	}
 
+	var errConsistencyM sync.Mutex
+	var errConsistency error
+
 	alias := bleve.NewIndexAlias()
 
 	var wg sync.WaitGroup
@@ -619,13 +622,9 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 									consistencySeq,
 									cancelCh)
 								if err != nil {
-									// TODO: Do something more with error as
-									// we probably don't want the query to continue.
-									log.Printf("ConsistencyWait, partition: %s,"+
-										" consistencyParams.Level: %s,"+
-										" consistencySeq: %d, err: %#v",
-										partition, consistencyParams.Level,
-										consistencySeq, err)
+									errConsistencyM.Lock()
+									errConsistency = err
+									errConsistencyM.Unlock()
 								}
 							}
 						}
@@ -650,6 +649,11 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 	wg.Wait()
+
+	if errConsistency != nil {
+		return nil, fmt.Errorf("bleveIndexAlias consistency wait, err: %v",
+			errConsistency)
+	}
 
 	if cancelCh != nil {
 		select {
