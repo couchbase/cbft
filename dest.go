@@ -16,6 +16,9 @@ import (
 )
 
 type Dest interface {
+	// Invoked by PIndex.Close().
+	Close() error
+
 	// Invoked when there's a new mutation from a data source for a
 	// partition.  Dest implementation is responsible for making its
 	// own copies of the key and val data.

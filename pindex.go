@@ -44,12 +44,18 @@ type PIndex struct {
 }
 
 func (p *PIndex) Close(remove bool) error {
-	// TODO: Need a close/cleanup protocol for p.Dest's, as some Dest
-	// implementations have resources or goroutines that need cleanup.
+	if p.Dest != nil {
+		err := p.Dest.Close()
+		if err != nil {
+			return err
+		}
+	}
 
-	err := p.Impl.Close()
-	if err != nil {
-		return err
+	if p.Impl != nil {
+		err := p.Impl.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	if remove {

@@ -17,6 +17,10 @@ import (
 
 type TestDest struct{}
 
+func (s *TestDest) Close() error {
+	return nil
+}
+
 func (s *TestDest) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	return nil

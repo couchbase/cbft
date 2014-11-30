@@ -4,6 +4,9 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.resultsPerPage = 10;
     $scope.page = 1;
 
+    $scope.consistencyLevel = "";
+    $scope.consistencyVectors = "{}";
+
     $scope.query = function() {
         $scope.numPages = 0;
         $location.search('q', $scope.syntax);

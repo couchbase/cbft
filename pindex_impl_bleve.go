@@ -219,6 +219,33 @@ func (t *BleveDest) getPartition(partition string) (
 	return bdp, t.bindex, nil
 }
 
+func (t *BleveDest) Close() error {
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	return t.closeUnlocked()
+}
+
+func (t *BleveDest) closeUnlocked() error {
+	if t.bindex == nil {
+		return fmt.Errorf("BleveDest already closed")
+	}
+
+	for _, bdp := range t.partitions {
+		close(bdp.cwrCh)
+	}
+	t.partitions = make(map[string]*BleveDestPartition)
+
+	err := t.bindex.Close()
+	if err != nil {
+		return err
+	}
+
+	t.bindex = nil
+
+	return nil
+}
+
 // ---------------------------------------------------------
 
 func (t *BleveDest) OnDataUpdate(partition string,
@@ -288,16 +315,13 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	log.Printf("bleve dest rollback, partition: %s, rollbackSeq: %d",
 		partition, rollbackSeq)
 
-	// NOTE: A rollback of any partition means a rollback of all
-	// partitions, since they all share a single bleve.Index backend.
-	// That's why we grab and keep BleveDest.m locked.
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed, can't rollback")
-	}
-
+	// NOTE: A rollback of any partition means a rollback of all
+	// partitions, since they all share a single bleve.Index backend.
+	// That's why we grab and keep BleveDest.m locked.
+	//
 	// TODO: Implement partial rollback one day.  Implementation
 	// sketch: we expect bleve to one day to provide an additional
 	// Snapshot() and Rollback() API, where Snapshot() returns some
@@ -310,15 +334,11 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	//
 	// For now, always rollback to zero, in which we close the pindex,
 	// erase files and have the janitor rebuild from scratch.
-	for _, bdp := range t.partitions {
-		close(bdp.cwrCh)
+
+	err := t.closeUnlocked()
+	if err != nil {
+		return fmt.Errorf("BleveDest can't close during rollback, err: %v", err)
 	}
-
-	t.partitions = make(map[string]*BleveDestPartition)
-
-	// Use t.bindex == nil to check any late calls to BleveDest.
-	t.bindex.Close()
-	t.bindex = nil
 
 	os.RemoveAll(t.path)
 
