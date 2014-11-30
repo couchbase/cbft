@@ -195,6 +195,11 @@ func (t *BleveDest) getPartition(partition string) (
 	t.m.Lock()
 	defer t.m.Unlock()
 
+	return t.getPartitionUnlocked(partition)
+}
+
+func (t *BleveDest) getPartitionUnlocked(partition string) (
+	*BleveDestPartition, bleve.Index, error) {
 	if t.bindex == nil {
 		return nil, nil, fmt.Errorf("BleveDest already closed")
 	}
@@ -359,7 +364,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 	t.m.Lock()
 
-	bdp, _, err := t.getPartition(partition)
+	bdp, _, err := t.getPartitionUnlocked(partition)
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -380,7 +385,45 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		}
 	}
 
-	return <-cwr.doneCh
+	err = <-cwr.doneCh
+
+	return err
+}
+
+// ---------------------------------------------------------
+
+func (t *BleveDestPartition) run() {
+	for cwr := range t.cwrCh {
+		t.m.Lock()
+
+		if cwr.consistencyLevel == "" {
+			close(cwr.doneCh) // Same as stale=ok, so we're done.
+		} else if cwr.consistencyLevel == "atPlus" {
+			if cwr.consistencySeq > t.seqMaxBatch {
+				heap.Push(&t.cwrQueue, cwr)
+			} else {
+				close(cwr.doneCh)
+			}
+		} else {
+			cwr.doneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
+				" cwr: %#v", cwr.consistencyLevel, cwr)
+			close(cwr.doneCh)
+		}
+
+		t.m.Unlock()
+	}
+
+	// If we reach here, then we're closing down so cancel/error any
+	// callers waiting for consistency.
+	t.m.Lock()
+	defer t.m.Unlock()
+
+	err := fmt.Errorf("consistency wait closed")
+
+	for _, cwr := range t.cwrQueue {
+		cwr.doneCh <- err
+		close(cwr.doneCh)
+	}
 }
 
 // ---------------------------------------------------------
@@ -534,33 +577,6 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) run() {
-	for cwr := range t.cwrCh {
-		t.m.Lock()
-
-		if cwr.consistencyLevel == "" {
-			close(cwr.doneCh) // Same as stale=ok, so we're done.
-		} else if cwr.consistencyLevel == "atPlus" {
-			if cwr.consistencySeq > t.seqMaxBatch {
-				heap.Push(&t.cwrQueue, cwr)
-			} else {
-				close(cwr.doneCh)
-			}
-		} else {
-			cwr.doneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
-				" cwr: %#v", cwr.consistencyLevel, cwr)
-			close(cwr.doneCh)
-		}
-
-		t.m.Unlock()
-	}
-
-	// TODO: If we reach here, then we should cancel/error any callers
-	// waiting for consistency.
-}
-
-// ---------------------------------------------------------
-
 // Returns a bleve.IndexAlias that represents all the PIndexes for the
 // index, including perhaps bleve remote client PIndexes.
 //
@@ -593,13 +609,24 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
+
 						for _, partition := range localPIndex.sourcePartitionsArr {
 							consistencySeq := consistencyVector[partition]
+
 							if consistencySeq > 0 {
-								localPIndex.Dest.ConsistencyWait(partition,
+								err := localPIndex.Dest.ConsistencyWait(partition,
 									consistencyParams.Level,
 									consistencySeq,
 									cancelCh)
+								if err != nil {
+									// TODO: Do something more with error as
+									// we probably don't want the query to continue.
+									log.Printf("ConsistencyWait, partition: %s,"+
+										" consistencyParams.Level: %s,"+
+										" consistencySeq: %d, err: %#v",
+										partition, consistencyParams.Level,
+										consistencySeq, err)
+								}
 							}
 						}
 					}()

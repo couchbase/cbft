@@ -153,6 +153,7 @@ func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	pindex.Path = path
 	pindex.Impl = impl
 	pindex.Dest = dest
+	pindex.sourcePartitionsArr = strings.Split(pindex.SourcePartitions, ",")
 
 	return pindex, nil
 }

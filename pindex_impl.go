@@ -20,10 +20,10 @@ type PIndexImpl interface {
 	Close() error
 }
 
-// Key is partition, value is seq.
-type ConsistencyVector map[string]uint64
-
 type ConsistencyParams struct {
+	// A Level value of "" means stale is ok; "atPlus" means we need
+	// consistency at least at or beyond the consistency vector but
+	// not before.
 	Level string `json:"level"`
 
 	// Keyed by indexName.
@@ -31,6 +31,9 @@ type ConsistencyParams struct {
 
 	// TODO: Can user specify certain partition UUID (like vbucket UUID)?
 }
+
+// Key is partition, value is seq.
+type ConsistencyVector map[string]uint64
 
 // ---------------------------------------------------------------
 

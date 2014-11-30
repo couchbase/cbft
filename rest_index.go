@@ -181,4 +181,6 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			indexName, requestBody, req, err), 400)
 		return
 	}
+
+	log.Printf("rest.Query indexName: %s, DONE, requestBody: %s", indexName, requestBody)
 }
