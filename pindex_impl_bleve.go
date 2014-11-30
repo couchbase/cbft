@@ -642,8 +642,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 		// TODO: Propagate auth to bleve client.
 		alias.Add(&BleveClient{
-			SearchURL:         baseURL + "/search",
-			DocCountURL:       baseURL + "/count",
+			QueryURL:          baseURL + "/query",
+			CountURL:          baseURL + "/count",
 			ConsistencyParams: consistencyParams,
 		})
 	}

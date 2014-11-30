@@ -31,8 +31,8 @@ var bleveClientUnimplementedErr = errors.New("unimplemented")
 //
 // TODO: Implement consistency and auth in BleveClient.
 type BleveClient struct {
-	SearchURL         string
-	DocCountURL       string
+	QueryURL          string
+	CountURL          string
 	ConsistencyParams *ConsistencyParams
 }
 
@@ -53,22 +53,22 @@ func (r *BleveClient) Document(id string) (*document.Document, error) {
 }
 
 func (r *BleveClient) DocCount() (uint64, error) {
-	if r.DocCountURL == "" {
-		return 0, fmt.Errorf("no DocCountURL provided")
+	if r.CountURL == "" {
+		return 0, fmt.Errorf("no CountURL provided")
 	}
-	resp, err := http.Get(r.DocCountURL)
+	resp, err := http.Get(r.CountURL)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return 0, fmt.Errorf("bleveClient.DocCount got status code: %d,"+
-			" docCountURL: %s, resp: %#v", resp.StatusCode, r.DocCountURL, resp)
+			" docCountURL: %s, resp: %#v", resp.StatusCode, r.CountURL, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return 0, fmt.Errorf("bleveClient.DocCount error reading resp.Body,"+
-			" docCountURL: %s, resp: %#v", r.DocCountURL, resp)
+			" docCountURL: %s, resp: %#v", r.CountURL, resp)
 	}
 	rv := struct {
 		Status string `json:"status"`
@@ -77,21 +77,21 @@ func (r *BleveClient) DocCount() (uint64, error) {
 	err = json.Unmarshal(respBuf, &rv)
 	if err != nil {
 		return 0, fmt.Errorf("bleveClient.DocCount error parsing respBuf: %s,"+
-			" docCountURL: %s, resp: %#v", respBuf, r.DocCountURL, resp)
+			" docCountURL: %s, resp: %#v", respBuf, r.CountURL, resp)
 	}
 	return rv.Count, nil
 }
 
 func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
-	if r.SearchURL == "" {
-		return nil, fmt.Errorf("no SearchURL provided")
+	if r.QueryURL == "" {
+		return nil, fmt.Errorf("no QueryURL provided")
 	}
 	// TODO: need to also add r.ConsistencyParams to buf.
 	buf, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post(r.SearchURL, "application/json", bytes.NewBuffer(buf))
+	resp, err := http.Post(r.QueryURL, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
 	}
@@ -99,20 +99,20 @@ func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, err
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("bleveClient.Search got status code: %d,"+
 			" searchURL: %s, req: %#v, resp: %#v",
-			resp.StatusCode, r.SearchURL, req, resp)
+			resp.StatusCode, r.QueryURL, req, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("bleveClient.Search error reading resp.Body,"+
 			" searchURL: %s, req: %#v, resp: %#v",
-			r.SearchURL, req, resp)
+			r.QueryURL, req, resp)
 	}
 	rv := &bleve.SearchResult{}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("bleveClient.Search error parsing respBuf: %s,"+
 			" searchURL: %s, req: %#v, resp: %#v",
-			respBuf, r.SearchURL, req, resp)
+			respBuf, r.QueryURL, req, resp)
 	}
 	return rv, nil
 }
