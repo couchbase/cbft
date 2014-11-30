@@ -381,12 +381,13 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		case <-cancelCh:
 			return fmt.Errorf("cancelled")
 		case err = <-cwr.doneCh:
+			// TODO: track stats.
 			return err
 		}
 	}
 
 	err = <-cwr.doneCh
-
+	// TODO: track stats.
 	return err
 }
 
