@@ -41,6 +41,9 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 	}
 
 	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
+	//
+	// TODO: Need to cleanly separate the /api/pindex and
+	// /api/pindex-bleve endpoints.
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
 		r.Handle("/api/pindex", listIndexesHandler).Methods("GET")
@@ -76,9 +79,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 		r.Handle("/api/pindex-bleve/{indexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
-		// We have cbft purpose-built pindex query handler, instead of
-		// just using bleveHttp, to handle auth and query consistency
-		// across >1 pindex.
+		// We have a purpose-built pindex query handler, instead of
+		// just using bleveHttp, to handle auth and query consistency.
 		r.Handle("/api/pindex/{indexName}/query",
 			NewQueryPIndexHandler(mgr)).Methods("POST")
 
