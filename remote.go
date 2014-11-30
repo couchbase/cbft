@@ -29,7 +29,7 @@ var bleveClientUnimplementedErr = errors.New("unimplemented")
 // a bleve.IndexAlias, and implements cbft protocol features like
 // query consistency and auth.
 //
-// TODO: Implement consistency and auth in BleveClient.
+// TODO: Implement propagating auth info in BleveClient.
 type BleveClient struct {
 	QueryURL    string
 	CountURL    string
