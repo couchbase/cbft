@@ -84,6 +84,22 @@ func TestHandlers(t *testing.T) {
 			ResponseBody: []byte(`{"messages":[]}`),
 		},
 		{
+			Desc:    "cfg",
+			Handler: NewCfgGetHandler(mgr),
+			Path:    "/api/cfg",
+			Method:  "GET",
+			Params:  nil,
+			Body:    nil,
+			Status:  http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"status":"ok"`: true,
+				`"indexDefs":null`: true,
+				`"nodeDefsKnown":{`: true,
+				`"nodeDefsWanted":{`: true,
+				`"planPIndexes":null`: true,
+			},
+		},
+		{
 			Desc:         "list empty indexes",
 			Handler:      NewListIndexHandler(mgr),
 			Path:         "/api/index",
