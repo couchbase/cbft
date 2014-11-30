@@ -17,7 +17,7 @@ Getting
 
 Running against local Couchbase Server
 
-```./cbft -server http://localhost:8091 -wanted```
+```./cbft -server http://localhost:8091```
 
 Create a new index (for the default bucket)
 
