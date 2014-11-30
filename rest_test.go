@@ -12,8 +12,13 @@
 package main
 
 import (
+	"bytes"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -36,5 +41,80 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	r, err = NewManagerRESTRouter(mgr, emptyDir, ring)
 	if r == nil || err != nil {
 		t.Errorf("expected no errors")
+	}
+}
+
+func TestHandlers(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	tests := []struct {
+		Desc          string
+		Handler       http.Handler
+		Path          string
+		Method        string
+		Params        url.Values
+		Body          []byte
+		Status        int
+		ResponseBody  []byte
+		ResponseMatch map[string]bool
+	}{
+		{
+			Desc:         "log",
+			Handler:      NewGetLogHandler(mr),
+			Path:         "/api/log",
+			Method:       "GET",
+			Params:       nil,
+			Body:         nil,
+			Status:       http.StatusOK,
+			ResponseBody: []byte(`{"messages":[]}`),
+		},
+		{
+			Desc:         "list empty indexes",
+			Handler:      NewListIndexHandler(mgr),
+			Path:         "/api/index",
+			Method:       "GET",
+			Params:       nil,
+			Body:         nil,
+			Status:       http.StatusOK,
+			ResponseBody: []byte(`{"status":"ok","indexDefs":null}`),
+		},
+	}
+
+	for _, test := range tests {
+		record := httptest.NewRecorder()
+		req := &http.Request{
+			Method: test.Method,
+			URL:    &url.URL{Path: test.Path},
+			Form:   test.Params,
+			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
+		}
+		test.Handler.ServeHTTP(record, req)
+		if got, want := record.Code, test.Status; got != want {
+			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
+			t.Errorf("%s: response body = %s", test.Desc, record.Body)
+		}
+
+		got := bytes.TrimRight(record.Body.Bytes(), "\n")
+		if test.ResponseBody != nil {
+			if !reflect.DeepEqual(got, test.ResponseBody) {
+				t.Errorf("%s: expected: '%s', got: '%s'",
+					test.Desc, test.ResponseBody, got)
+			}
+		}
+		for pattern, shouldMatch := range test.ResponseMatch {
+			didMatch := bytes.Contains(got, []byte(pattern))
+			if didMatch != shouldMatch {
+				t.Errorf("%s: expected match %t for pattern %s, got %t",
+					test.Desc, shouldMatch, pattern, didMatch)
+				t.Errorf("%s: response body was: %s", test.Desc, got)
+			}
+		}
 	}
 }
