@@ -398,7 +398,7 @@ func TestHandlersForOneIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "try to get idx0 on a 1 index manager",
+			Desc:   "get idx0 on a 1 index manager",
 			Path:   "/api/index/idx0",
 			Method: "GET",
 			Params: nil,
@@ -409,7 +409,7 @@ func TestHandlersForOneIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "try to count empty idx0 on a 1 index manager",
+			Desc:   "count empty idx0 on a 1 index manager",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
 			Params: nil,
@@ -420,7 +420,7 @@ func TestHandlersForOneIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "try to query empty idx0 on a 1 index manager with missing args",
+			Desc:   "query empty idx0 on a 1 index manager with missing args",
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
@@ -428,6 +428,17 @@ func TestHandlersForOneIndex(t *testing.T) {
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`unexpected end of JSON input`: true,
+			},
+		},
+		{
+			Desc:   "no-hit query of empty idx0 on a 1 index manager",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"query":{"query":"foo"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
 			},
 		},
 	}
