@@ -29,7 +29,7 @@ Check how many documents are indexed
 
 Submit search query
 
-```curl -XPOST -d '{"query":{"query":{"query":"your-search-term"}}}' --header Content-Type:text/json http://localhost:9090/api/index/default/query```
+```curl -XPOST -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' --header Content-Type:text/json http://localhost:9090/api/index/default/query```
 
 Delete index
 

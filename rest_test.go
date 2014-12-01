@@ -713,7 +713,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"query":{"query":"bar"}}}`),
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -724,7 +724,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"query":{"query":"baz"}}}`),
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"baz"}}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -736,7 +736,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"query":{"query":"wow"}}}`),
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
