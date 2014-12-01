@@ -419,6 +419,17 @@ func TestHandlersForOneIndex(t *testing.T) {
 				`{"status":"ok","count":0}`: true,
 			},
 		},
+		{
+			Desc:   "try to query empty idx0 on a 1 index manager with missing args",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`unexpected end of JSON input`: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
