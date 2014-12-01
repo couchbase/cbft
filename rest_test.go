@@ -761,7 +761,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 		},
 
 		// ------------------------------------------------------
-		// Now let's also test index aliases.
+		// Now let's test a 1-to-1 index alias.
 		{
 			Desc:   "create an index alias with bad indexParams",
 			Path:   "/api/index/aa0",
@@ -778,7 +778,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "create an index alias with bad indexParams",
+			Desc:   "create an index alias with 1 target",
 			Path:   "/api/index/aa0",
 			Method: "PUT",
 			Params: url.Values{
