@@ -559,6 +559,22 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 				`error creating index`: true,
 			},
 		},
+		{
+			Desc:   "create an index bad planParams",
+			Path:   "/api/index/idxBadPlanParams",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"blackhole"},
+				"indexParams": []string{},
+				"sourceType":  []string{"nil"},
+				"planParams":  []string{">>>this isn't json<<<"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error parsing planParams`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
