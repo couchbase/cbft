@@ -110,28 +110,82 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 		return nil, fmt.Errorf("could not get indexDefs, indexName: %s, err: %v",
 			indexName, err)
 	}
-	indexDef := indexDefs.IndexDefs[indexName]
-	if indexDef == nil {
-		return nil, fmt.Errorf("could not get indexDef, indexName: %s", indexName)
-	}
 
-	params := AliasParams{}
-	err = json.Unmarshal([]byte(indexDef.Params), &params)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse indexDef.Params: %s, indexName: %s",
-			indexDef.Params, indexName)
-	}
+	num := 0
 
-	for indexName, source := range params.Targets {
-		// TODO: Support aliases for aliases; currently only aliases
-		// of bleve indexes is supported.  But, beware of cycles!
-		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID,
-			consistencyParams, cancelCh)
-		if err != nil {
-			return nil, fmt.Errorf("could not get subAlias, indexName: %s,"+
-				" source: %#v, err: %v", indexName, source, err)
+	var fillAlias func(aliasName, aliasUUID string) error
+
+	fillAlias = func(aliasName, aliasUUID string) error {
+		aliasDef := indexDefs.IndexDefs[aliasName]
+		if aliasDef == nil {
+			return fmt.Errorf("could not get aliasDef, aliasName: %s, indexName: %s",
+				aliasName, indexName)
 		}
-		alias.Add(subAlias)
+		if aliasDef.Type != "alias" {
+			return fmt.Errorf("not alias type: %s, aliasName: %s, indexName: %s",
+				aliasDef.Type, aliasName, indexName)
+		}
+		if aliasUUID != "" &&
+			aliasUUID != aliasDef.UUID {
+			return fmt.Errorf("mismatched aliasUUID: %s, aliasDef.UUID: %s,"+
+				" aliasName: %s, indexName: %s", aliasUUID, aliasDef.UUID,
+				aliasName, indexName)
+		}
+
+		params := AliasParams{}
+		err := json.Unmarshal([]byte(aliasDef.Params), &params)
+		if err != nil {
+			return fmt.Errorf("could not parse aliasDef.Params: %s, aliasName: %s,"+
+				" indexName: %s", aliasDef.Params, aliasName, indexName)
+		}
+
+		for targetName, targetSpec := range params.Targets {
+			if num > 50000 {
+				return fmt.Errorf("too many alias targets,"+
+					" perhaps there's a cycle, aliasName: %s, indexName: %s",
+					aliasName, indexName)
+			}
+			targetDef := indexDefs.IndexDefs[targetName]
+			if targetDef == nil {
+				return fmt.Errorf("no indexDef for targetName: %s, aliasName: %s,"+
+					" indexName: %s", targetName, aliasName, indexName)
+			}
+			if targetSpec.IndexUUID != "" &&
+				targetSpec.IndexUUID != targetDef.UUID {
+				return fmt.Errorf("mismatched targetSpec.UUID: %s, targetDef.UUID: %s,"+
+					" targetName: %s, aliasName: %s, indexName: %s",
+					targetSpec.IndexUUID, targetDef.UUID, targetName, aliasName, indexName)
+			}
+
+			// TODO: Perhaps convert to registered callbacks instead of if-else-if.
+			if targetDef.Type == "alias" {
+				err = fillAlias(targetName, targetSpec.IndexUUID)
+				if err != nil {
+					return err
+				}
+			} else if targetDef.Type == "bleve" {
+				subAlias, err := bleveIndexAlias(mgr, targetName,
+					targetSpec.IndexUUID, consistencyParams, cancelCh)
+				if err != nil {
+					return fmt.Errorf("bleveIndexAlias, indexName: %s,"+
+						" targetName: %s, targetSpec: %#v, err: %v",
+						indexName, targetName, targetSpec, err)
+				}
+				alias.Add(subAlias)
+				num += 1
+			} else {
+				return fmt.Errorf("unsupported alias target type: %s,"+
+					" targetName: %s, aliasName: %s, indexName: %s",
+					targetDef.Type, targetName, aliasName, indexName)
+			}
+		}
+
+		return nil
+	}
+
+	err = fillAlias(indexName, indexUUID)
+	if err != nil {
+		return nil, err
 	}
 
 	return alias, nil
