@@ -44,7 +44,7 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	}
 }
 
-func TestHandlers(t *testing.T) {
+func TestHandlersForEmptyManager(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -202,6 +202,199 @@ func TestHandlers(t *testing.T) {
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`could not get indexDefs`: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		record := httptest.NewRecorder()
+		req := &http.Request{
+			Method: test.Method,
+			URL:    &url.URL{Path: test.Path},
+			Form:   test.Params,
+			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
+		}
+		router.ServeHTTP(record, req)
+		if got, want := record.Code, test.Status; got != want {
+			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
+			t.Errorf("%s: response body = %s", test.Desc, record.Body)
+		}
+
+		got := bytes.TrimRight(record.Body.Bytes(), "\n")
+		if test.ResponseBody != nil {
+			if !reflect.DeepEqual(got, test.ResponseBody) {
+				t.Errorf("%s: expected: '%s', got: '%s'",
+					test.Desc, test.ResponseBody, got)
+			}
+		}
+		for pattern, shouldMatch := range test.ResponseMatch {
+			didMatch := bytes.Contains(got, []byte(pattern))
+			if didMatch != shouldMatch {
+				t.Errorf("%s: expected match %t for pattern %s, got %t",
+					test.Desc, shouldMatch, pattern, didMatch)
+				t.Errorf("%s: response body was: %s", test.Desc, got)
+			}
+		}
+	}
+}
+
+func TestHandlersForOneIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []struct {
+		Desc          string
+		Path          string
+		Method        string
+		Params        url.Values
+		Body          []byte
+		Status        int
+		ResponseBody  []byte
+		ResponseMatch map[string]bool
+	}{
+		{
+			Desc:   "create an index with nil feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"bleve"},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "cfg on a 1 index manaager",
+			Path:   "/api/cfg",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"status":"ok"`:       true,
+				`"indexDefs":null`:    false,
+				`"nodeDefsKnown":{`:   true,
+				`"nodeDefsWanted":{`:  true,
+				`"planPIndexes":null`: false,
+			},
+		},
+		{
+			Desc:   "cfg refresh on a 1 index manager",
+			Path:   "/api/cfgRefresh",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "manager kick on a 1 index manager",
+			Path:   "/api/managerKick",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "manager meta on a 1 index manager",
+			Path:   "/api/managerMeta",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"status":"ok"`:    true,
+				`"startSamples":{`: true,
+			},
+		},
+		{
+			Desc:   "feed stats on a 1 index manager",
+			Path:   "/api/feedStats",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`[`:                  true,
+				`{"feedName":"idx0_`: true,
+				`]`:                  true,
+			},
+		},
+		{
+			Desc:   "list on a 1 index manager",
+			Path:   "/api/index",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","indexDefs":{"uuid":`:                                                                                                                                true,
+				`"indexDefs":{"idx0":{"type":"bleve","name":"idx0","uuid":"`:                                                                                                         true,
+				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null}}}`: true,
+			},
+		},
+		{
+			Desc:         "try to get a nonexistent index on a 1 index manager",
+			Path:         "/api/index/NOT-AN-INDEX",
+			Method:       "GET",
+			Params:       nil,
+			Body:         nil,
+			Status:       400,
+			ResponseBody: []byte(`not an index`),
+		},
+		{
+			Desc:   "try to delete a nonexistent index on a 1 index manager",
+			Path:   "/api/index/NOT-AN-INDEX",
+			Method: "DELETE",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`index to delete does not exist`: true,
+			},
+		},
+		{
+			Desc:   "try to count a nonexistent index on a 1 index manager",
+			Path:   "/api/index/NOT-AN-INDEX/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: no indexDef, indexName: NOT-AN-INDEX`: true,
+			},
+		},
+		{
+			Desc:   "try to query a nonexistent index on a 1 index manager",
+			Path:   "/api/index/NOT-AN-INDEX/query",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: no indexDef, indexName: NOT-AN-INDEX`: true,
 			},
 		},
 	}
