@@ -19,6 +19,8 @@ import (
 	"github.com/blevesearch/bleve"
 )
 
+var maxAliasTargets = 50000
+
 func init() {
 	// Register alias with empty instantiation functions,
 	// so that "alias" will show up in valid index types.
@@ -140,7 +142,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 		}
 
 		for targetName, targetSpec := range params.Targets {
-			if num > 50000 {
+			if num > maxAliasTargets {
 				return fmt.Errorf("too many alias targets,"+
 					" perhaps there's a cycle, aliasName: %s, indexName: %s",
 					aliasName, indexName)
