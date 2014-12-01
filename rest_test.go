@@ -55,10 +55,16 @@ type RESTHandlerTest struct {
 	Status        int
 	ResponseBody  []byte
 	ResponseMatch map[string]bool
+
+	Before func()
+	After  func()
 }
 
 func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router) {
 	for _, test := range tests {
+		if test.Before != nil {
+			test.Before()
+		}
 		record := httptest.NewRecorder()
 		req := &http.Request{
 			Method: test.Method,
@@ -86,6 +92,9 @@ func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router
 					test.Desc, shouldMatch, pattern, didMatch)
 				t.Errorf("%s: response body was: %s", test.Desc, got)
 			}
+		}
+		if test.After != nil {
+			test.After()
 		}
 	}
 }
