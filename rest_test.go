@@ -252,6 +252,20 @@ func TestHandlersForEmptyManager(t *testing.T) {
 				`could not get indexDefs`: true,
 			},
 		},
+		{
+			Desc:   "create an index with bogus indexType",
+			Path:   "/api/index/idxBogusIndexType",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"not-a-real-index-type"},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
