@@ -89,13 +89,13 @@ func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router
 			test.Before()
 		}
 		if test.Method != "NOOP" {
-			record := httptest.NewRecorder()
 			req := &http.Request{
 				Method: test.Method,
 				URL:    &url.URL{Path: test.Path},
 				Form:   test.Params,
 				Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
 			}
+			record := httptest.NewRecorder()
 			router.ServeHTTP(record, req)
 			test.check(t, record)
 		}
@@ -808,6 +808,42 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				`"total_hits":2`: true,
 			},
 		},
+		{
+			Desc:   "direct pindex query",
+			Method: "NOOP",
+			After: func() {
+				var pindex *PIndex
+				_, pindexes := mgr.CurrentMaps()
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, p := range pindexes {
+					pindex = p
+				}
+				if pindex == nil {
+					t.Errorf("expected to be a pindex")
+				}
+				body := []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`)
+				req := &http.Request{
+					Method: "POST",
+					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
+					Form:   url.Values(nil),
+					Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+				}
+				record := httptest.NewRecorder()
+				router.ServeHTTP(record, req)
+				test := &RESTHandlerTest{
+					Desc:   "direct pindex query check",
+					Status: http.StatusOK,
+					ResponseMatch: map[string]bool{
+						`"id":"hello"`:   true,
+						`"id":"world"`:   true,
+						`"total_hits":2`: true,
+					},
+				}
+				test.check(t, record)
+			},
+		},
 
 		// ------------------------------------------------------
 		// Now let's test a consistency wait.
@@ -831,13 +867,13 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				doneCh = make(chan *httptest.ResponseRecorder)
 				go func() {
 					body := []byte(`{"query":{"size":10,"query":{"query":"boof"}},"consistency":{"level":"atPlus","vectors":{"idx0":{"0":11}}}}`)
-					record := httptest.NewRecorder()
 					req := &http.Request{
 						Method: "POST",
 						URL:    &url.URL{Path: "/api/index/idx0/query"},
 						Form:   url.Values(nil),
 						Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
 					}
+					record := httptest.NewRecorder()
 					router.ServeHTTP(record, req)
 					doneCh <- record
 				}()
