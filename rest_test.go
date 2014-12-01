@@ -278,7 +278,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "shelf/rack/row", 1, ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
