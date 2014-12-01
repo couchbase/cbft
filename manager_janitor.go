@@ -282,7 +282,8 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 
 	// First, try reading the path with OpenPIndex().  An
 	// existing path might happen during a case of rollback.
-	if _, err = os.Stat(path); err == nil {
+	_, err = os.Stat(path)
+	if err == nil {
 		pindex, err = OpenPIndex(mgr, path)
 		if err != nil {
 			fmt.Printf("OpenPIndex error, cleaning up and"+
@@ -316,7 +317,8 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 		}
 	}
 
-	if err = mgr.registerPIndex(pindex); err != nil {
+	err = mgr.registerPIndex(pindex)
+	if err != nil {
 		pindex.Close(true)
 		return err
 	}

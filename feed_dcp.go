@@ -52,11 +52,13 @@ func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 			" bucketName: %s, indexName: %s, err: %v",
 			mgr.server, bucketName, indexName, err)
 	}
-	if err = feed.Start(); err != nil {
+	err = feed.Start()
+	if err != nil {
 		return fmt.Errorf("error: could not start dcp feed, server: %s, err: %v",
 			mgr.server, err)
 	}
-	if err = mgr.registerFeed(feed); err != nil {
+	err = mgr.registerFeed(feed)
+	if err != nil {
 		feed.Close()
 		return err
 	}

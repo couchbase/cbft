@@ -135,7 +135,8 @@ func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 		return nil, 0, nil
 	}
 	rv := &IndexDefs{}
-	if err = json.Unmarshal(v, rv); err != nil {
+	err = json.Unmarshal(v, rv)
+	if err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil
@@ -176,7 +177,8 @@ func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 		return nil, 0, nil
 	}
 	rv := &NodeDefs{}
-	if err := json.Unmarshal(v, rv); err != nil {
+	err = json.Unmarshal(v, rv)
+	if err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil
@@ -212,7 +214,8 @@ func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
 		return nil, 0, nil
 	}
 	rv := &PlanPIndexes{}
-	if err := json.Unmarshal(v, rv); err != nil {
+	err = json.Unmarshal(v, rv)
+	if err != nil {
 		return nil, 0, err
 	}
 	return rv, cas, nil

@@ -159,7 +159,8 @@ func MainStart(cfg Cfg, uuid string, tags []string, container string,
 
 	mgr := NewManager(VERSION, cfg, uuid, tags, container, weight,
 		bindAddr, dataDir, server, &MainHandlers{})
-	if err = mgr.Start(register); err != nil {
+	err = mgr.Start(register)
+	if err != nil {
 		return nil, err
 	}
 

@@ -133,7 +133,8 @@ func mustEncode(w io.Writer, i interface{}) {
 	}
 
 	e := json.NewEncoder(w)
-	if err := e.Encode(i); err != nil {
+	err := e.Encode(i)
+	if err != nil {
 		panic(err)
 	}
 }

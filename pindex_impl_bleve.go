@@ -51,7 +51,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	bindexMapping := bleve.NewIndexMapping()
 	if len(indexParams) > 0 {
-		if err := json.Unmarshal([]byte(indexParams), &bindexMapping); err != nil {
+		err := json.Unmarshal([]byte(indexParams), &bindexMapping)
+		if err != nil {
 			return nil, nil, fmt.Errorf("error: parse bleve index mapping: %v", err)
 		}
 	}
@@ -600,7 +601,8 @@ func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
 }
 
 func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
-	if err := bindex.Batch(t.batch); err != nil {
+	err := bindex.Batch(t.batch)
+	if err != nil {
 		return err
 	}
 

@@ -99,7 +99,8 @@ func (mgr *Manager) Start(register string) error {
 	}
 
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
-		if err := mgr.LoadDataDir(); err != nil {
+		err := mgr.LoadDataDir()
+		if err != nil {
 			return err
 		}
 	}

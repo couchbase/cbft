@@ -136,7 +136,8 @@ func (c *CfgCB) unlockedLoad() error {
 
 	cfgMem := NewCfgMem()
 	if buf != nil {
-		if err = json.Unmarshal(buf, cfgMem); err != nil {
+		err = json.Unmarshal(buf, cfgMem)
+		if err != nil {
 			return err
 		}
 	}
