@@ -145,6 +145,9 @@ func TestManagerRestart(t *testing.T) {
 	}
 	for _, pindex := range pindexes {
 		pindex.Impl.Close()
+		if m.GetPIndex(pindex.Name) != pindex {
+			t.Errorf("expected GetPIndex() to match")
+		}
 	}
 
 	m2 := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
