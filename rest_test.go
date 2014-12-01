@@ -452,6 +452,74 @@ func TestHandlersForOneIndex(t *testing.T) {
 				`{"status":"ok"}`: true,
 			},
 		},
+		{
+			Desc:   "list indexes after delete one & only index",
+			Path:   "/api/index",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok",`: true,
+				`"indexDefs":{}`:  true,
+			},
+		},
+		{
+			Desc:         "try to get a deleted index",
+			Path:         "/api/index/idx0",
+			Method:       "GET",
+			Params:       nil,
+			Body:         nil,
+			Status:       400,
+			ResponseBody: []byte(`not an index`),
+		},
+		{
+			Desc:   "try to delete a deleted index",
+			Path:   "/api/index/idx0",
+			Method: "DELETE",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`index to delete does not exist, indexName: idx0`: true,
+			},
+		},
+		{
+			Desc:   "try to count a deleted index",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`no indexDef, indexName: idx0`: true,
+			},
+		},
+		{
+			Desc:   "try to query a deleted index",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`no indexDef, indexName: idx0`: true,
+			},
+		},
+		{
+			Desc:   "re-create a deleted index with nil feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"bleve"},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
