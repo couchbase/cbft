@@ -123,6 +123,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	}
 
 	for indexName, source := range params.Targets {
+		// TODO: Support aliases for aliases; currently only aliases
+		// of bleve indexes is supported.  But, beware of cycles!
 		subAlias, err := bleveIndexAlias(mgr, indexName, source.IndexUUID,
 			consistencyParams, cancelCh)
 		if err != nil {
