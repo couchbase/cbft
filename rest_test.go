@@ -56,6 +56,8 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	mgr.Kick("test-start-kick")
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr.Write([]byte("hello"))
+	mr.Write([]byte("world"))
 
 	router, err := NewManagerRESTRouter(mgr, "static", mr)
 	if err != nil || router == nil {
@@ -79,7 +81,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Params:       nil,
 			Body:         nil,
 			Status:       http.StatusOK,
-			ResponseBody: []byte(`{"messages":[]}`),
+			ResponseBody: []byte(`{"messages":["hello","world"]}`),
 		},
 		{
 			Desc:   "cfg on empty manaager",
