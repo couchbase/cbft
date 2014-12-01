@@ -71,7 +71,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	indexDefs.IndexDefs[indexName] = indexDef
 	indexDefs.ImplVersion = mgr.version
 
-	// NOTE: if our ImplVersion is still too old due to a race, we
+	// NOTE: If our ImplVersion is still too old due to a race, we
 	// expect a more modern planner to catch it later.
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)

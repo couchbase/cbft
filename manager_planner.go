@@ -307,7 +307,7 @@ func getNodesLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 // source partitions from the IndexDef to a PlanPIndex based on
 // modulus of MaxPartitionsPerPIndex.
 //
-// NOTE: if MaxPartitionsPerPIndex isn't a clean divisor of the total
+// NOTE: If MaxPartitionsPerPIndex isn't a clean divisor of the total
 // number of data source partitions (like 1024 split into clumps of
 // 10), then one PIndex assigned to the remainder will be smaller than
 // the other PIndexes (such as having only a remainder of 4 partitions
