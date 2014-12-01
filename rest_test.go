@@ -754,6 +754,17 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "query with bad args",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`>>>not json<<<`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: QueryBlevePIndexImpl parsing bleveQueryParams`: true,
+			},
+		},
+		{
 			Desc:   "query for 0 hit",
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
@@ -831,6 +842,17 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`{"status":"ok","count":2}`: true,
+			},
+		},
+		{
+			Desc:   "query with bogus args",
+			Path:   "/api/index/aa0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`>>>not json<<<`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: QueryAlias parsing bleveQueryParams`: true,
 			},
 		},
 		{
