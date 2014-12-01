@@ -893,6 +893,29 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				`error`: true,
 			},
 		},
+
+		// ------------------------------------------------------
+		// Now let's delete the index.
+		{
+			Desc:   "delete idx0 with dest feed",
+			Path:   "/api/index/idx0",
+			Method: "DELETE",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+			After: func() {
+				feeds, pindexes := mgr.CurrentMaps()
+				if len(feeds) != 0 {
+					t.Errorf("expected to be 0 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 0 {
+					t.Errorf("expected to be 0 pindex, got pindexes: %+v", pindexes)
+				}
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
