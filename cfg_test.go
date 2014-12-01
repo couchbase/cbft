@@ -346,3 +346,12 @@ func TestCfgSimpleSubscribe(t *testing.T) {
 		t.Errorf("expected aaa event after Refresh()")
 	}
 }
+
+// ------------------------------------------------
+
+func TestCfgCB(t *testing.T) {
+	c, err := NewCfgCB("a bad url", "some bogus bucket")
+	if err == nil || c != nil {
+		t.Errorf("expected NewCfgCB to fail on bogus url")
+	}
+}

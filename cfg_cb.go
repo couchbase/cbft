@@ -48,6 +48,11 @@ func NewCfgCB(url, bucket string) (*CfgCB, error) {
 		cfgMem: NewCfgMem(),
 	}
 
+	_, err := c.getBucket()
+	if err != nil {
+		return nil, err
+	}
+
 	bds, err := cbdatasource.NewBucketDataSource(
 		[]string{url},
 		"default", bucket, "", nil, c, c, nil)
