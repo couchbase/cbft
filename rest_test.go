@@ -839,6 +839,46 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				`"total_hits":2`: true,
 			},
 		},
+
+		// ------------------------------------------------------
+		// Now let's test a 1-to-1 index alias to a bogus target.
+		{
+			Desc:   "create an index alias with 1 target",
+			Path:   "/api/index/aaBadTarget",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"alias"},
+				"indexParams": []string{`{"targets":{"idxNotReal":{}}}`},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"status":"ok"`: true,
+			},
+		},
+		{
+			Desc:   "count aaBadTarget should be 2 when 1st snapshot ended",
+			Path:   "/api/index/aaBadTarget/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: 500,
+			ResponseMatch: map[string]bool{
+				`error`: true,
+			},
+		},
+		{
+			Desc:   "query for 0 hit",
+			Path:   "/api/index/aaBadTarget/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
