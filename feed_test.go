@@ -112,3 +112,9 @@ func TestDataSourcePartitions(t *testing.T) {
 		t.Errorf("expected dest source type to ok on empty JSON server params")
 	}
 }
+
+func TestNilFeedStart(t *testing.T) {
+	if NewNILFeed("", nil).Start() != nil {
+		t.Errorf("expected NILFeed.Start() to work")
+	}
+}
