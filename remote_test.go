@@ -26,6 +26,10 @@ func TestNegativeBleveClient(t *testing.T) {
 	if bc.Batch(nil) != bleveClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
+	d, err := bc.Document("")
+	if err != bleveClientUnimplementedErr || d != nil {
+		t.Errorf("expected unimplemented")
+	}
 	c, err := bc.DocCount()
 	if err == nil || c != 0 {
 		t.Errorf("expected count error on empty CountURL")
