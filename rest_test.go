@@ -441,6 +441,17 @@ func TestHandlersForOneIndex(t *testing.T) {
 				`"hits":[],"total_hits":0`: true,
 			},
 		},
+		{
+			Desc:   "delete idx0 on a 1 index manager",
+			Path:   "/api/index/idx0",
+			Method: "DELETE",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
