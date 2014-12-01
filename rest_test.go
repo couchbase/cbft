@@ -792,6 +792,53 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				`"status":"ok"`: true,
 			},
 		},
+		{
+			Desc:   "count aa0 should be 2 when 1st snapshot ended",
+			Path:   "/api/index/aa0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":2}`: true,
+			},
+		},
+		{
+			Desc:   "query for 0 hit",
+			Path:   "/api/index/aa0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
+			},
+		},
+		{
+			Desc:   "query for 1 hit",
+			Path:   "/api/index/aa0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"baz"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"id":"hello"`:   true,
+				`"total_hits":1`: true,
+			},
+		},
+		{
+			Desc:   "query for 2 hits",
+			Path:   "/api/index/aa0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"id":"hello"`:   true,
+				`"id":"world"`:   true,
+				`"total_hits":2`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
