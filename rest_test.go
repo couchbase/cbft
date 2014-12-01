@@ -397,6 +397,28 @@ func TestHandlersForOneIndex(t *testing.T) {
 				`err: no indexDef, indexName: NOT-AN-INDEX`: true,
 			},
 		},
+		{
+			Desc:   "try to get idx0 on a 1 index manager",
+			Path:   "/api/index/idx0",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"status":"ok","indexDef":{"type":"bleve","name":"idx0","uuid":`: true,
+			},
+		},
+		{
+			Desc:   "try to count empty idx0 on a 1 index manager",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
 	}
 
 	for _, test := range tests {
