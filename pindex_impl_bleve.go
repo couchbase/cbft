@@ -370,6 +370,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		consistencyLevel: consistencyLevel,
 		consistencySeq:   consistencySeq,
 		cancelCh:         cancelCh,
+		doneCh:           make(chan error),
 	}
 
 	t.m.Lock()

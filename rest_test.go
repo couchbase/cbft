@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -60,38 +61,43 @@ type RESTHandlerTest struct {
 	After  func()
 }
 
+func (test *RESTHandlerTest) check(t *testing.T, record *httptest.ResponseRecorder) {
+	if got, want := record.Code, test.Status; got != want {
+		t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
+		t.Errorf("%s: response body = %s", test.Desc, record.Body)
+	}
+	got := bytes.TrimRight(record.Body.Bytes(), "\n")
+	if test.ResponseBody != nil {
+		if !reflect.DeepEqual(got, test.ResponseBody) {
+			t.Errorf("%s: expected: '%s', got: '%s'",
+				test.Desc, test.ResponseBody, got)
+		}
+	}
+	for pattern, shouldMatch := range test.ResponseMatch {
+		didMatch := bytes.Contains(got, []byte(pattern))
+		if didMatch != shouldMatch {
+			t.Errorf("%s: expected match %t for pattern %s, got %t",
+				test.Desc, shouldMatch, pattern, didMatch)
+			t.Errorf("%s: response body was: %s", test.Desc, got)
+		}
+	}
+}
+
 func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router) {
 	for _, test := range tests {
 		if test.Before != nil {
 			test.Before()
 		}
-		record := httptest.NewRecorder()
-		req := &http.Request{
-			Method: test.Method,
-			URL:    &url.URL{Path: test.Path},
-			Form:   test.Params,
-			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
-		}
-		router.ServeHTTP(record, req)
-		if got, want := record.Code, test.Status; got != want {
-			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
-			t.Errorf("%s: response body = %s", test.Desc, record.Body)
-		}
-
-		got := bytes.TrimRight(record.Body.Bytes(), "\n")
-		if test.ResponseBody != nil {
-			if !reflect.DeepEqual(got, test.ResponseBody) {
-				t.Errorf("%s: expected: '%s', got: '%s'",
-					test.Desc, test.ResponseBody, got)
+		if test.Method != "NOOP" {
+			record := httptest.NewRecorder()
+			req := &http.Request{
+				Method: test.Method,
+				URL:    &url.URL{Path: test.Path},
+				Form:   test.Params,
+				Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
 			}
-		}
-		for pattern, shouldMatch := range test.ResponseMatch {
-			didMatch := bytes.Contains(got, []byte(pattern))
-			if didMatch != shouldMatch {
-				t.Errorf("%s: expected match %t for pattern %s, got %t",
-					test.Desc, shouldMatch, pattern, didMatch)
-				t.Errorf("%s: response body was: %s", test.Desc, got)
-			}
+			router.ServeHTTP(record, req)
+			test.check(t, record)
 		}
 		if test.After != nil {
 			test.After()
@@ -598,6 +604,8 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 		t.Errorf("no mux router")
 	}
 
+	var doneCh chan *httptest.ResponseRecorder
+
 	var feed *DestFeed
 
 	tests := []*RESTHandlerTest{
@@ -802,6 +810,115 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 		},
 
 		// ------------------------------------------------------
+		// Now let's test a consistency wait.
+		{
+			Desc:   "query with consistency params in the past",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"atPlus","vectors":{"idx0":{"0":1}}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"id":"hello"`:   true,
+				`"id":"world"`:   true,
+				`"total_hits":2`: true,
+			},
+		},
+		{
+			Desc:   "query with consistency params in the future",
+			Method: "NOOP",
+			Before: func() {
+				doneCh = make(chan *httptest.ResponseRecorder)
+				go func() {
+					body := []byte(`{"query":{"size":10,"query":{"query":"boof"}},"consistency":{"level":"atPlus","vectors":{"idx0":{"0":11}}}}`)
+					record := httptest.NewRecorder()
+					req := &http.Request{
+						Method: "POST",
+						URL:    &url.URL{Path: "/api/index/idx0/query"},
+						Form:   url.Values(nil),
+						Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+					}
+					router.ServeHTTP(record, req)
+					doneCh <- record
+				}()
+			},
+			After: func() {
+				runtime.Gosched()
+				select {
+				case <-doneCh:
+					t.Errorf("expected query to block waiting for more mutations")
+				default:
+				}
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("whee")
+				seq := uint64(11)
+				val := []byte(`{"foo":"boof","yow":"wXw"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 2 since snapshot 2 is still open" +
+				" (mutation, so only 2 keys) but snapshot not ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":2}`: true,
+			},
+			After: func() {
+				runtime.Gosched()
+				select {
+				case <-doneCh:
+					t.Errorf("expected query still blocked with snapshot still open")
+				default:
+				}
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				snapStart := uint64(21)
+				snapEnd := uint64(30)
+				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				if err != nil {
+					t.Errorf("expected no err on snapshot-start")
+				}
+			},
+			Desc:   "count idx0 should be 3 when 2st snapshot ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":3}`: true,
+			},
+			After: func() {
+				runtime.Gosched()
+				record, ok := <-doneCh
+				if record == nil || !ok {
+					t.Errorf("expected a record: %#v, ok: %v", record, ok)
+				}
+				test := &RESTHandlerTest{
+					Desc:   "test consistency wait got right result",
+					Status: http.StatusOK,
+					ResponseMatch: map[string]bool{
+						`"id":"whee"`:    true,
+						`"total_hits":1`: true,
+					},
+				}
+				test.check(t, record)
+			},
+		},
+
+		// ------------------------------------------------------
 		// Now let's test a 1-to-1 index alias.
 		{
 			Desc:   "create an index alias with bad indexParams",
@@ -841,7 +958,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok","count":2}`: true,
+				`{"status":"ok","count":3}`: true,
 			},
 		},
 		{
@@ -910,7 +1027,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "count aaBadTarget should be 2 when 1st snapshot ended",
+			Desc:   "count aaBadTarget should be error",
 			Path:   "/api/index/aaBadTarget/count",
 			Method: "GET",
 			Params: nil,
