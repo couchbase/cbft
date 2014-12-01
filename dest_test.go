@@ -12,6 +12,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"testing"
 )
@@ -86,5 +87,48 @@ func TestBasicPartitionFunc(t *testing.T) {
 	s, err = BasicPartitionFunc("foo", nil, map[string]Dest{"foo": dest, "": dest2})
 	if err != nil || s != dest {
 		t.Errorf("expected BasicPartitionFunc to work on partition hit")
+	}
+}
+
+func TestDestFeed(t *testing.T) {
+	df := NewDestFeed("", BasicPartitionFunc, map[string]Dest{})
+	if df.Start() != nil {
+		t.Errorf("expected DestFeed start to work")
+	}
+
+	buf := make([]byte, 0, 100)
+	err := df.Stats(bytes.NewBuffer(buf))
+	if err != nil {
+		t.Errorf("expected DestFeed stats to work")
+	}
+
+	key := []byte("k")
+	seq := uint64(123)
+	val := []byte("v")
+
+	if df.OnDataUpdate("unknown-partition", key, seq, val) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.OnDataDelete("unknown-partition", key, seq) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.OnSnapshotStart("unknown-partition", seq, seq) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.SetOpaque("unknown-partition", val) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	_, _, err = df.GetOpaque("unknown-partition")
+	if err == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.Rollback("unknown-partition", seq) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.ConsistencyWait("unknown-partition", "level", seq, nil) == nil {
+		t.Errorf("expected err on bad partition")
+	}
+	if df.Query(nil, nil, nil, nil) == nil {
+		t.Errorf("expected err on querying a dest feed")
 	}
 }
