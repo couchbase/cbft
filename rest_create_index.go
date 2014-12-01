@@ -77,7 +77,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		indexType, indexName, string(indexParams), *planParams)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
-			indexName, err), 500)
+			indexName, err), 400)
 		return
 	}
 

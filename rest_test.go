@@ -214,7 +214,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Method: "PUT",
 			Params: nil,
 			Body:   nil,
-			Status: 500,
+			Status: 400,
 			ResponseMatch: map[string]bool{
 				`failed to connect`: true,
 			},
@@ -257,7 +257,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersForOneIndex(t *testing.T) {
+func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -528,6 +528,220 @@ func TestHandlersForOneIndex(t *testing.T) {
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`{"status":"ok"}`: true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
+
+func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	var feed *DestFeed
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create an index with dest feed with bad sourceParams",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"dest"},
+				"sourceParams": []string{"-}totally n0t json{-"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`could not parse sourceParams`: true,
+			},
+		},
+		{
+			Desc:   "create an index with dest feed with bad sourceParams",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"dest"},
+				"sourceParams": []string{`{"numPartitions":1}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+			After: func() {
+				feeds, pindexes := mgr.CurrentMaps()
+				if len(feeds) != 1 {
+					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, f := range feeds {
+					var ok bool
+					feed, ok = f.(*DestFeed)
+					if !ok {
+						t.Errorf("expected the 1 feed to be a DestFeed")
+					}
+				}
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				snapStart := uint64(1)
+				snapEnd := uint64(10)
+				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				if err != nil {
+					t.Errorf("expected no err on snapshot-start")
+				}
+			},
+			Desc:   "count idx0 should be 0 when snapshot just started",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("hello")
+				seq := uint64(1)
+				val := []byte(`{"foo":"bar","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got an update (doc created)" +
+				" but snapshot not ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("world")
+				seq := uint64(2)
+				val := []byte(`{"foo":"bing","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got 2nd update (another doc created)" +
+				" but snapshot not ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("hello")
+				seq := uint64(3)
+				val := []byte(`{"foo":"baz","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got 3rd update" +
+				" (mutation, so only 2 keys) but snapshot not ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				snapStart := uint64(11)
+				snapEnd := uint64(20)
+				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				if err != nil {
+					t.Errorf("expected no err on snapshot-start")
+				}
+			},
+			Desc:   "count idx0 should be 2 when 1st snapshot ended",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":2}`: true,
+			},
+		},
+		{
+			Desc:   "query for 0 hit",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"query":{"query":"bar"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
+			},
+		},
+		{
+			Desc:   "query for 1 hit",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"query":{"query":"baz"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"id":"hello"`:   true,
+				`"total_hits":1`: true,
+			},
+		},
+		{
+			Desc:   "query for 2 hits",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"query":{"query":"wow"}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"id":"hello"`:   true,
+				`"id":"world"`:   true,
+				`"total_hits":2`: true,
 			},
 		},
 	}
