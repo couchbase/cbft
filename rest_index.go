@@ -206,30 +206,30 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	pindexUUID := req.FormValue("pindexUUID")
-
-	requestBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
-			" could not read request body, pindexName: %s", pindexName), 400)
-		return
-	}
-
 	pindex := h.mgr.GetPIndex(pindexName)
 	if pindex == nil {
 		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
 			" no pindex, pindexName: %s", pindexName), 400)
 		return
 	}
+	if pindex.Dest == nil {
+		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+			" no pindex.Dest, pindexName: %s", pindexName), 400)
+		return
+	}
+
+	pindexUUID := req.FormValue("pindexUUID")
 	if pindexUUID != "" && pindex.UUID != pindexUUID {
 		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
 			" wrong pindexUUID: %s, pindex.UUID: %s, pindexName: %s",
 			pindexUUID, pindex.UUID, pindexName), 400)
 		return
 	}
-	if pindex.Dest == nil {
+
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
 		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
-			" no pindex.Dest, pindexName: %s", pindexName), 400)
+			" could not read request body, pindexName: %s", pindexName), 400)
 		return
 	}
 
