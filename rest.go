@@ -50,54 +50,51 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 		r.Handle("/api/pindex-bleve", listIndexesHandler).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
-		getIndexHandler.IndexNameLookup = indexNameLookup
-		r.Handle("/api/pindex/{indexName}",
+		getIndexHandler.IndexNameLookup = pindexNameLookup
+		r.Handle("/api/pindex/{pindexName}",
 			getIndexHandler).Methods("GET")
-		r.Handle("/api/pindex-bleve/{indexName}",
+		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
-		docCountHandler.IndexNameLookup = indexNameLookup
-		r.Handle("/api/pindex/{indexName}/count",
+		docCountHandler.IndexNameLookup = pindexNameLookup
+		r.Handle("/api/pindex/{pindexName}/count",
 			docCountHandler).Methods("GET")
-		r.Handle("/api/pindex-bleve/{indexName}/count",
+		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
-		docGetHandler.IndexNameLookup = indexNameLookup
+		docGetHandler.IndexNameLookup = pindexNameLookup
 		docGetHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex/{indexName}/doc/{docID}",
+		r.Handle("/api/pindex/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
-		r.Handle("/api/pindex-bleve/{indexName}/doc/{docID}",
+		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = indexNameLookup
+		debugDocHandler.IndexNameLookup = pindexNameLookup
 		debugDocHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex/{indexName}/docDebug/{docID}",
+		r.Handle("/api/pindex/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
-		r.Handle("/api/pindex-bleve/{indexName}/docDebug/{docID}",
+		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
 		// We have a purpose-built pindex query handler, instead of
 		// just using bleveHttp, to handle auth and query consistency.
-		r.Handle("/api/pindex/{indexName}/query",
+		r.Handle("/api/pindex/{pindexName}/query",
 			NewQueryPIndexHandler(mgr)).Methods("POST")
 
 		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = indexNameLookup
-		r.Handle("/api/pindex-bleve/{indexName}/query",
+		searchHandler.IndexNameLookup = pindexNameLookup
+		r.Handle("/api/pindex-bleve/{pindexName}/query",
 			searchHandler).Methods("POST")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-		listFieldsHandler.IndexNameLookup = indexNameLookup
-		r.Handle("/api/pindex/{indexName}/fields",
+		listFieldsHandler.IndexNameLookup = pindexNameLookup
+		r.Handle("/api/pindex/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
-		r.Handle("/api/pindex-bleve/{indexName}/fields",
+		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
-
-		r.Handle("/api/feedStats",
-			NewFeedStatsHandler(mgr)).Methods("GET")
 	}
 
 	r.Handle("/api/cfg", NewCfgGetHandler(mgr)).Methods("GET")
@@ -105,6 +102,8 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
+
+	r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
 
 	return r, nil
 }

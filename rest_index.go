@@ -25,6 +25,10 @@ func indexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "indexName")
 }
 
+func pindexNameLookup(req *http.Request) string {
+	return muxVariableLookup(req, "pindexName")
+}
+
 // ------------------------------------------------------------------
 
 type ListIndexHandler struct {
@@ -196,9 +200,9 @@ func NewQueryPIndexHandler(mgr *Manager) *QueryPIndexHandler {
 }
 
 func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := indexNameLookup(req) // TODO: pindexName vs indexName distinction.
+	pindexName := pindexNameLookup(req)
 	if pindexName == "" {
-		showError(w, req, "index name is required", 400)
+		showError(w, req, "pindex name is required", 400)
 		return
 	}
 
