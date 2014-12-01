@@ -18,9 +18,15 @@ import (
 // Creates a logical index, which might be comprised of many PIndex objects.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 	indexType, indexName, indexParams string, planParams PlanParams) error {
-	_, exists := pindexImplTypes[indexType]
+	pindexImplType, exists := pindexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("error: CreateIndex, unknown indexType: %s", indexType)
+	}
+	if pindexImplType.Validate != nil {
+		err := pindexImplType.Validate(indexType, indexName, indexParams)
+		if err != nil {
+			return fmt.Errorf("error: CreateIndex, invalid, err: %v", err)
+		}
 	}
 
 	// First, check that the source exists.

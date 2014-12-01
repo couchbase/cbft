@@ -27,6 +27,8 @@ import (
 
 func init() {
 	RegisterPIndexImplType("bleve", &PIndexImplType{
+		Validate: ValidateBlevePIndexImpl,
+
 		New:   NewBlevePIndexImpl,
 		Open:  OpenBlevePIndexImpl,
 		Count: CountBlevePIndexImpl,
@@ -35,6 +37,14 @@ func init() {
 		Description: "bleve - full-text index powered by the bleve full-text-search engine",
 		StartSample: bleve.NewIndexMapping(),
 	})
+}
+
+func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
+	bindexMapping := bleve.NewIndexMapping()
+	if len(indexParams) > 0 {
+		return json.Unmarshal([]byte(indexParams), &bindexMapping)
+	}
+	return nil
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (

@@ -23,6 +23,7 @@ func init() {
 	// Register alias with empty instantiation functions,
 	// so that "alias" will show up in valid index types.
 	RegisterPIndexImplType("alias", &PIndexImplType{
+		Validate:    ValidateAlias,
 		Count:       CountAlias,
 		Query:       QueryAlias,
 		Description: "alias - supports fan-out of queries to multiple index targets",
@@ -47,6 +48,11 @@ type AliasParams struct {
 
 type AliasParamsTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
+}
+
+func ValidateAlias(indexType, indexName, indexParams string) error {
+	params := AliasParams{}
+	return json.Unmarshal([]byte(indexParams), &params)
 }
 
 func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {

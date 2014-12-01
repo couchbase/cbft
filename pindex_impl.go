@@ -38,6 +38,8 @@ type ConsistencyVector map[string]uint64
 // ---------------------------------------------------------------
 
 type PIndexImplType struct {
+	Validate func(indexType, indexName, indexParams string) error
+
 	New  func(indexType, indexParams, path string, restart func()) (PIndexImpl, Dest, error)
 	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
 

@@ -530,6 +530,21 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 				`{"status":"ok"}`: true,
 			},
 		},
+		{
+			Desc:   "create an index bad inputParams",
+			Path:   "/api/index/idxBadInputParams",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"bleve"},
+				"indexParams": []string{"}}totally n0t json{{"},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error creating index`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
@@ -742,6 +757,39 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				`"id":"hello"`:   true,
 				`"id":"world"`:   true,
 				`"total_hits":2`: true,
+			},
+		},
+
+		// ------------------------------------------------------
+		// Now let's also test index aliases.
+		{
+			Desc:   "create an index alias with bad indexParams",
+			Path:   "/api/index/aa0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"alias"},
+				"indexParams": []string{`}--<not json>--{`},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error creating index`: true,
+			},
+		},
+		{
+			Desc:   "create an index alias with bad indexParams",
+			Path:   "/api/index/aa0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"alias"},
+				"indexParams": []string{`{"targets":{"idx0":{}}}`},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"status":"ok"`: true,
 			},
 		},
 	}
