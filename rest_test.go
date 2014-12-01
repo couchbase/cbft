@@ -20,6 +20,8 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 func TestNewManagerRESTRouter(t *testing.T) {
@@ -44,6 +46,50 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	}
 }
 
+type RESTHandlerTest struct {
+	Desc          string
+	Path          string
+	Method        string
+	Params        url.Values
+	Body          []byte
+	Status        int
+	ResponseBody  []byte
+	ResponseMatch map[string]bool
+}
+
+func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router) {
+	for _, test := range tests {
+		record := httptest.NewRecorder()
+		req := &http.Request{
+			Method: test.Method,
+			URL:    &url.URL{Path: test.Path},
+			Form:   test.Params,
+			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
+		}
+		router.ServeHTTP(record, req)
+		if got, want := record.Code, test.Status; got != want {
+			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
+			t.Errorf("%s: response body = %s", test.Desc, record.Body)
+		}
+
+		got := bytes.TrimRight(record.Body.Bytes(), "\n")
+		if test.ResponseBody != nil {
+			if !reflect.DeepEqual(got, test.ResponseBody) {
+				t.Errorf("%s: expected: '%s', got: '%s'",
+					test.Desc, test.ResponseBody, got)
+			}
+		}
+		for pattern, shouldMatch := range test.ResponseMatch {
+			didMatch := bytes.Contains(got, []byte(pattern))
+			if didMatch != shouldMatch {
+				t.Errorf("%s: expected match %t for pattern %s, got %t",
+					test.Desc, shouldMatch, pattern, didMatch)
+				t.Errorf("%s: response body was: %s", test.Desc, got)
+			}
+		}
+	}
+}
+
 func TestHandlersForEmptyManager(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
@@ -64,16 +110,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 		t.Errorf("no mux router")
 	}
 
-	tests := []struct {
-		Desc          string
-		Path          string
-		Method        string
-		Params        url.Values
-		Body          []byte
-		Status        int
-		ResponseBody  []byte
-		ResponseMatch map[string]bool
-	}{
+	tests := []*RESTHandlerTest{
 		{
 			Desc:         "log on empty msg ring",
 			Path:         "/api/log",
@@ -208,36 +245,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		record := httptest.NewRecorder()
-		req := &http.Request{
-			Method: test.Method,
-			URL:    &url.URL{Path: test.Path},
-			Form:   test.Params,
-			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
-		}
-		router.ServeHTTP(record, req)
-		if got, want := record.Code, test.Status; got != want {
-			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
-			t.Errorf("%s: response body = %s", test.Desc, record.Body)
-		}
-
-		got := bytes.TrimRight(record.Body.Bytes(), "\n")
-		if test.ResponseBody != nil {
-			if !reflect.DeepEqual(got, test.ResponseBody) {
-				t.Errorf("%s: expected: '%s', got: '%s'",
-					test.Desc, test.ResponseBody, got)
-			}
-		}
-		for pattern, shouldMatch := range test.ResponseMatch {
-			didMatch := bytes.Contains(got, []byte(pattern))
-			if didMatch != shouldMatch {
-				t.Errorf("%s: expected match %t for pattern %s, got %t",
-					test.Desc, shouldMatch, pattern, didMatch)
-				t.Errorf("%s: response body was: %s", test.Desc, got)
-			}
-		}
-	}
+	testRESTHandlers(t, tests, router)
 }
 
 func TestHandlersForOneIndex(t *testing.T) {
@@ -258,16 +266,7 @@ func TestHandlersForOneIndex(t *testing.T) {
 		t.Errorf("no mux router")
 	}
 
-	tests := []struct {
-		Desc          string
-		Path          string
-		Method        string
-		Params        url.Values
-		Body          []byte
-		Status        int
-		ResponseBody  []byte
-		ResponseMatch map[string]bool
-	}{
+	tests := []*RESTHandlerTest{
 		{
 			Desc:   "create an index with nil feed",
 			Path:   "/api/index/idx0",
@@ -524,34 +523,5 @@ func TestHandlersForOneIndex(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		record := httptest.NewRecorder()
-		req := &http.Request{
-			Method: test.Method,
-			URL:    &url.URL{Path: test.Path},
-			Form:   test.Params,
-			Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
-		}
-		router.ServeHTTP(record, req)
-		if got, want := record.Code, test.Status; got != want {
-			t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
-			t.Errorf("%s: response body = %s", test.Desc, record.Body)
-		}
-
-		got := bytes.TrimRight(record.Body.Bytes(), "\n")
-		if test.ResponseBody != nil {
-			if !reflect.DeepEqual(got, test.ResponseBody) {
-				t.Errorf("%s: expected: '%s', got: '%s'",
-					test.Desc, test.ResponseBody, got)
-			}
-		}
-		for pattern, shouldMatch := range test.ResponseMatch {
-			didMatch := bytes.Contains(got, []byte(pattern))
-			if didMatch != shouldMatch {
-				t.Errorf("%s: expected match %t for pattern %s, got %t",
-					test.Desc, shouldMatch, pattern, didMatch)
-				t.Errorf("%s: response body was: %s", test.Desc, got)
-			}
-		}
-	}
+	testRESTHandlers(t, tests, router)
 }
