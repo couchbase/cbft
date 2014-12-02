@@ -953,6 +953,17 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "query with bogus consistency params vectors",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":["array","not","legal"]}}`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: json: cannot unmarshal array into Go value of type map[string]main.ConsistencyVector`: true,
+			},
+		},
+		{
 			Desc:   "query with consistency params in the future",
 			Method: "NOOP",
 			Before: func() {
