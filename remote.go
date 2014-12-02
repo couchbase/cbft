@@ -21,6 +21,9 @@ import (
 	"github.com/blevesearch/bleve/document"
 )
 
+var httpPost = http.Post
+var httpGet = http.Get
+
 var bleveClientUnimplementedErr = errors.New("unimplemented")
 
 // BleveClient implements the Search() and DocCount() subset of the
@@ -56,7 +59,7 @@ func (r *BleveClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
 		return 0, fmt.Errorf("no CountURL provided")
 	}
-	resp, err := http.Get(r.CountURL)
+	resp, err := httpGet(r.CountURL)
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +99,7 @@ func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post(r.QueryURL, "application/json", bytes.NewBuffer(buf))
+	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
 	}
