@@ -820,6 +820,42 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "direct pindex query on mismatched pindex UUID",
+			Method: "NOOP",
+			After: func() {
+				var pindex *PIndex
+				_, pindexes := mgr.CurrentMaps()
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, p := range pindexes {
+					pindex = p
+				}
+				if pindex == nil {
+					t.Errorf("expected to be a pindex")
+				}
+				body := []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`)
+				req := &http.Request{
+					Method: "POST",
+					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
+					Form: url.Values{
+						"pindexUUID": []string{"not the right pindex UUID"},
+					},
+					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
+				}
+				record := httptest.NewRecorder()
+				router.ServeHTTP(record, req)
+				test := &RESTHandlerTest{
+					Desc:   "direct pindex query on mismatched pindex UUID check",
+					Status: 400,
+					ResponseMatch: map[string]bool{
+						`wrong pindexUUID`: true,
+					},
+				}
+				test.check(t, record)
+			},
+		},
+		{
 			Desc:   "direct pindex query",
 			Method: "NOOP",
 			After: func() {
