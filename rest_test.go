@@ -1563,6 +1563,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					t.Errorf("expected cfg refresh to work")
 				}
 
+				runtime.Gosched()
+
 				mgr0.Kick("kick after index create")
 				mgr1.Kick("kick after index create")
 
@@ -1684,6 +1686,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				if cfg.Refresh() != nil {
 					t.Errorf("expected cfg refresh to work")
 				}
+
+				runtime.Gosched()
 
 				mgr0.Kick("kick after alias create")
 				mgr1.Kick("kick after alias create")
