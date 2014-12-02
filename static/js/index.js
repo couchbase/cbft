@@ -35,9 +35,10 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 
     $scope.cloneIndex = function(name) {
-        cloneName = prompt("Please enter a name for a new index" +
-                           " that will be cloned from index '"
-                           + name + "':");
+        cloneName = prompt("Please enter a name for the new index" +
+                           " whose definition will be cloned" +
+                           " from the definition of index '" +
+                           name + "':");
         if (!cloneName) {
             return;
         }
