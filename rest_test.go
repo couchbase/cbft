@@ -13,6 +13,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -1445,7 +1446,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersWithTwoNodes(t *testing.T) {
+func TestCreateIndexTwoNodes(t *testing.T) {
 	cfg := NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
@@ -1456,9 +1457,10 @@ func TestHandlersWithTwoNodes(t *testing.T) {
 	meh0 := &TestMEH{}
 	meh1 := &TestMEH{}
 	mgr0 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "me:1000", emptyDir0, "some-datasource", meh0)
+		nil, "", 1, "localhost:1000", emptyDir0, "some-datasource", meh0)
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "me:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+
 	mgr0.Start("wanted")
 	mgr1.Start("wanted")
 	mgr0.Kick("test-start-kick")
@@ -1491,4 +1493,95 @@ func TestHandlersWithTwoNodes(t *testing.T) {
 	if len(nd.NodeDefs) != 2 {
 		t.Errorf("expected 2 node defs wanted")
 	}
+
+	if cfg.Refresh() != nil {
+		t.Errorf("expected cfg refresh to work")
+	}
+
+	mgr0.Kick("test-start-kick-again")
+	mgr1.Kick("test-start-kick-again")
+
+	var feed0 *DestFeed
+	var feed1 *DestFeed
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create an index with dest feed with 2 partitions, 2 nodes",
+			Path:   "/api/index/myIdx",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"dest"},
+				"sourceParams": []string{`{"numPartitions":2}`},
+				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+			After: func() {
+				if cfg.Refresh() != nil {
+					t.Errorf("expected cfg refresh to work")
+				}
+
+				mgr0.Kick("kick after index create")
+				mgr1.Kick("kick after index create")
+
+				feeds, pindexes := mgr0.CurrentMaps()
+				if len(feeds) != 1 {
+					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, f := range feeds {
+					var ok bool
+					feed0, ok = f.(*DestFeed)
+					if !ok {
+						t.Errorf("expected the 1 feed to be a DestFeed")
+					}
+				}
+				for _, p := range pindexes {
+					fmt.Printf("mgr0 pindexes: %#v\n", p)
+					if p.IndexName != "myIdx" {
+						t.Errorf("expected p.IndexName to match on mgr0")
+					}
+				}
+
+				feeds, pindexes = mgr1.CurrentMaps()
+				if len(feeds) != 1 {
+					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, f := range feeds {
+					var ok bool
+					feed1, ok = f.(*DestFeed)
+					if !ok {
+						t.Errorf("expected the 1 feed to be a DestFeed")
+					}
+				}
+				for _, p := range pindexes {
+					fmt.Printf("mgr1 pindexes: %#v\n", p)
+					if p.IndexName != "myIdx" {
+						t.Errorf("expected p.IndexName to match on mgr1")
+					}
+				}
+
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if len(indexDefs.IndexDefs) != 1 {
+					t.Errorf("expected 1 indexDef")
+				}
+				for _, indexDef := range indexDefs.IndexDefs {
+					if indexDef.Name != "myIdx" {
+						t.Errorf("expected 1 indexDef named myIdx")
+					}
+				}
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router0)
 }
