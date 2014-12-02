@@ -13,7 +13,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -1543,7 +1542,6 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					}
 				}
 				for _, p := range pindexes {
-					fmt.Printf("mgr0 pindexes: %#v\n", p)
 					if p.IndexName != "myIdx" {
 						t.Errorf("expected p.IndexName to match on mgr0")
 					}
@@ -1564,7 +1562,6 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					}
 				}
 				for _, p := range pindexes {
-					fmt.Printf("mgr1 pindexes: %#v\n", p)
 					if p.IndexName != "myIdx" {
 						t.Errorf("expected p.IndexName to match on mgr1")
 					}
