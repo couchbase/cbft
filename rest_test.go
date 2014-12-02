@@ -13,6 +13,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -1503,6 +1504,25 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	var feed0 *DestFeed
 	var feed1 *DestFeed
 
+	httpPostPrev := httpPost
+	defer func() { httpPost = httpPostPrev }()
+
+	httpPost = func(urlStr string, bodyType string, body io.Reader) (
+		resp *http.Response, err error) {
+		u, _ := url.Parse(urlStr)
+		req := &http.Request{
+			Method: "POST",
+			URL:    u,
+			Body:   ioutil.NopCloser(body),
+		}
+		record := httptest.NewRecorder()
+		router1.ServeHTTP(record, req)
+		return &http.Response{
+			StatusCode: record.Code,
+			Body:       ioutil.NopCloser(record.Body),
+		}, nil
+	}
+
 	tests := []*RESTHandlerTest{
 		{
 			Desc:   "create an index with dest feed with 2 partitions, 2 nodes",
@@ -1576,6 +1596,17 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 						t.Errorf("expected 1 indexDef named myIdx")
 					}
 				}
+			},
+		},
+		{
+			Desc:   "query myIdx should have 0 hits, 2 nodes",
+			Path:   "/api/index/myIdx/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
 			},
 		},
 	}
