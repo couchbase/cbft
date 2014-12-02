@@ -1647,6 +1647,70 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				`"hits":[],"total_hits":0`: true,
 			},
 		},
+
+		// ----------------------------------
+		// Now test some aliases.
+		{
+			Desc:   "create 2nd index with 2 partitions, 2 nodes",
+			Path:   "/api/index/yourIdx",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"dest"},
+				"sourceParams": []string{`{"numPartitions":8}`},
+				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "create an alias, 2 nodes",
+			Path:   "/api/index/myAlias",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"alias"},
+				"indexParams": []string{`{"targets":{"myIdx":{},"yourIdx":{}}}`},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "count myAlias should be 0, 2 nodes",
+			Path:   "/api/index/myAlias/count",
+			Method: "GET",
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "count myAlias should be 0, 2 nodes, with consistency params",
+			Path:   "/api/index/myAlias/count",
+			Method: "GET",
+			Body:   []byte(`{"consistency":{"level":"at_plus","vectors":{"myAlias":{"0":0},"myIdx":{"0":0}}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "query myAlias should have 0 hits, 2 nodes",
+			Path:   "/api/index/myAlias/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router0)
