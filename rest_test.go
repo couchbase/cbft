@@ -1680,6 +1680,14 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			ResponseMatch: map[string]bool{
 				`{"status":"ok"}`: true,
 			},
+			After: func() {
+				if cfg.Refresh() != nil {
+					t.Errorf("expected cfg refresh to work")
+				}
+
+				mgr0.Kick("kick after alias create")
+				mgr1.Kick("kick after alias create")
+			},
 		},
 		{
 			Desc:   "count myAlias should be 0, 2 nodes",
