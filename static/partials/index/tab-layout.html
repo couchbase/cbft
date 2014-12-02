@@ -1,10 +1,10 @@
-<table>
+<table class="table">
   <tr>
     <th>Index Partition</th><th>Source Partitions</th><th>Nodes</th>
   </tr>
   <tr ng-repeat="planPIndex in planPIndexes">
     <td>{{planPIndex.name}}</td>
-    <td>{{planPIndex.sourcePartitions}}</td>
+    <td>{{planPIndex.sourcePartitionsStr}}</td>
     <td>
       <ul>
         <li ng-repeat="(nodeUUID, nodeSpec) in planPIndex.nodes">

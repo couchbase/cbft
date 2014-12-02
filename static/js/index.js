@@ -104,6 +104,13 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2)
             $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2)
             $scope.planPIndexes = data.planPIndexes
+            for (var k in $scope.planPIndexes) {
+                var planPIndex = $scope.planPIndexes[k];
+                planPIndex.sourcePartitionsArr =
+                    planPIndex.sourcePartitions.split(",")
+                planPIndex.sourcePartitionsStr =
+                    planPIndex.sourcePartitionsArr.join(", ")
+            }
         }).
         error(function(data, code) {
             $scope.errorMessage = data;
