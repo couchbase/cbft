@@ -52,8 +52,9 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 		$http.get('/api/index/' + $scope.indexName).success(function(data) {
             data.indexDef.params = JSON.parse(data.indexDef.params)
             data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams)
-            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
-            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
+            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2)
+            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2)
+            $scope.indexLayoutStr = JSON.stringify(data.planPIndexes, undefined, 2)
         }).
         error(function(data, code) {
 			$scope.errorMessage = data;

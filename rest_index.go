@@ -91,12 +91,19 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	_, planPIndexesByName, err := h.mgr.GetPlanPIndexes(false)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("GetPlanPIndexes, err: %v", err), 400)
+	}
+
 	mustEncode(w, struct {
-		Status   string    `json:"status"`
-		IndexDef *IndexDef `json:"indexDef"`
+		Status       string        `json:"status"`
+		IndexDef     *IndexDef     `json:"indexDef"`
+		PlanPIndexes []*PlanPIndex `json:"planPIndexes"`
 	}{
-		Status:   "ok",
-		IndexDef: indexDef,
+		Status:       "ok",
+		IndexDef:     indexDef,
+		PlanPIndexes: planPIndexesByName[indexName],
 	})
 }
 

@@ -1,5 +1,14 @@
 <ul class="nav nav-tabs" role="tablist">
-  <li ng-attr-class="{{tab == 'summary' && 'active' || 'inactive' }}"><a href="/indexes/{{indexName}}">Summary</a></li>
-  <li ng-attr-class="{{tab == 'params' && 'active' || 'inactive' }}"><a href="/indexes/{{indexName}}/params">Params</a></li>
-  <li ng-attr-class="{{tab == 'query' && 'active' || 'inactive' }}"><a href="/indexes/{{indexName}}/query">Query</a></li>
+  <li ng-attr-class="{{tab == 'summary' && 'active' || 'inactive' }}">
+    <a href="/indexes/{{indexName}}">Summary</a>
+  </li>
+  <li ng-attr-class="{{tab == 'params' && 'active' || 'inactive' }}">
+    <a href="/indexes/{{indexName}}/params">Params</a>
+  </li>
+  <li ng-attr-class="{{tab == 'layout' && 'active' || 'inactive' }}">
+    <a href="/indexes/{{indexName}}/layout">Layout</a>
+  </li>
+  <li ng-attr-class="{{tab == 'query' && 'active' || 'inactive' }}">
+    <a href="/indexes/{{indexName}}/query">Query</a>
+  </li>
 </ul>
