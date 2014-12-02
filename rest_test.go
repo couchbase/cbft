@@ -809,6 +809,17 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "direct pindex query on bogus pindex",
+			Path:   "/api/pindex/not-a-pindex/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`no pindex`: true,
+			},
+		},
+		{
 			Desc:   "direct pindex query",
 			Method: "NOOP",
 			After: func() {
