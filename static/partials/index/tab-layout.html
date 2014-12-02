@@ -1,2 +1,21 @@
+<table>
+  <tr>
+    <th>Index Partition</th><th>Source Partitions</th><th>Nodes</th>
+  </tr>
+  <tr ng-repeat="planPIndex in planPIndexes">
+    <td>{{planPIndex.name}}</td>
+    <td>{{planPIndex.sourcePartitions}}</td>
+    <td>
+      <ul>
+        <li ng-repeat="(nodeUUID, nodeSpec) in planPIndex.nodes">
+          {{nodeDefsByUUID[nodeUUID].hostPort}}:
+          {{nodeSpec.canRead && 'R'}}
+          {{nodeSpec.canWrite && 'W'}}
+          - priority: {{nodeSpec.priority}}
+        </li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-<pre nag-prism source="{{indexLayoutStr}}" class="language-javascript"></pre>
+<pre nag-prism source="{{planPIndexesStr}}" class="language-javascript"></pre>
