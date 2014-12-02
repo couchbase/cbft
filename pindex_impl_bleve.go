@@ -468,7 +468,7 @@ func (t *BleveDestPartition) run() {
 
 		if cwr.consistencyLevel == "" {
 			close(cwr.doneCh) // We treat "" like stale=ok, so we're done.
-		} else if cwr.consistencyLevel == "atPlus" {
+		} else if cwr.consistencyLevel == "at_plus" {
 			if cwr.consistencySeq > t.seqMaxBatch {
 				heap.Push(&t.cwrQueue, cwr)
 			} else {

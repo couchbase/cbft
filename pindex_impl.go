@@ -21,7 +21,7 @@ type PIndexImpl interface {
 }
 
 type ConsistencyParams struct {
-	// A Level value of "" means stale is ok; "atPlus" means we need
+	// A Level value of "" means stale is ok; "at_plus" means we need
 	// consistency at least at or beyond the consistency vector but
 	// not before.
 	Level string `json:"level"`
