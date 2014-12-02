@@ -1444,3 +1444,51 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 
 	testRESTHandlers(t, tests, router)
 }
+
+func TestHandlersWithTwoNodes(t *testing.T) {
+	cfg := NewCfgMem()
+
+	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir0)
+	defer os.RemoveAll(emptyDir1)
+
+	meh0 := &TestMEH{}
+	meh1 := &TestMEH{}
+	mgr0 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "me:1000", emptyDir0, "some-datasource", meh0)
+	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "me:2000", emptyDir1, "some-datasource", meh1)
+	mgr0.Start("wanted")
+	mgr1.Start("wanted")
+	mgr0.Kick("test-start-kick")
+	mgr1.Kick("test-start-kick")
+
+	mr0, _ := NewMsgRing(os.Stderr, 1000)
+	mr1, _ := NewMsgRing(os.Stderr, 1000)
+
+	router0, err := NewManagerRESTRouter(mgr0, "static", mr0)
+	if err != nil || router0 == nil {
+		t.Errorf("no mux router")
+	}
+	router1, err := NewManagerRESTRouter(mgr1, "static", mr1)
+	if err != nil || router1 == nil {
+		t.Errorf("no mux router")
+	}
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs wanted")
+	}
+}
