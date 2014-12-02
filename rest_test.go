@@ -1504,6 +1504,25 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	var feed0 *DestFeed
 	var feed1 *DestFeed
 
+	httpGetPrev := httpGet
+	defer func() { httpGet = httpGetPrev }()
+
+	httpGet = func(urlStr string) (
+		resp *http.Response, err error) {
+		u, _ := url.Parse(urlStr)
+		req := &http.Request{
+			Method: "GET",
+			URL:    u,
+			Body:   ioutil.NopCloser(bytes.NewBuffer([]byte{})),
+		}
+		record := httptest.NewRecorder()
+		router1.ServeHTTP(record, req)
+		return &http.Response{
+			StatusCode: record.Code,
+			Body:       ioutil.NopCloser(record.Body),
+		}, nil
+	}
+
 	httpPostPrev := httpPost
 	defer func() { httpPost = httpPostPrev }()
 
@@ -1596,6 +1615,25 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 						t.Errorf("expected 1 indexDef named myIdx")
 					}
 				}
+			},
+		},
+		{
+			Desc:   "count myIdx should be 0, 2 nodes",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "count myIdx should be 0, 2 nodes, with consistency params",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Body:   []byte(`{"consistency":{"level":"at_plus","vectors":{"idx0":{"0":0}}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
 			},
 		},
 		{

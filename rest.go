@@ -56,12 +56,25 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
+		// We have a purpose-built pindex count handler, instead of
+		// just using bleveHttp, to handle auth and count consistency.
+		r.Handle("/api/pindex/{pindexName}/count",
+			NewCountPIndexHandler(mgr)).Methods("GET")
+
 		docCountHandler := bleveHttp.NewDocCountHandler("")
 		docCountHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex/{pindexName}/count",
-			docCountHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
+
+		// We have a purpose-built pindex query handler, instead of
+		// just using bleveHttp, to handle auth and query consistency.
+		r.Handle("/api/pindex/{pindexName}/query",
+			NewQueryPIndexHandler(mgr)).Methods("POST")
+
+		searchHandler := bleveHttp.NewSearchHandler("")
+		searchHandler.IndexNameLookup = pindexNameLookup
+		r.Handle("/api/pindex-bleve/{pindexName}/query",
+			searchHandler).Methods("POST")
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
 		docGetHandler.IndexNameLookup = pindexNameLookup
@@ -78,16 +91,6 @@ func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
 			debugDocHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
-
-		// We have a purpose-built pindex query handler, instead of
-		// just using bleveHttp, to handle auth and query consistency.
-		r.Handle("/api/pindex/{pindexName}/query",
-			NewQueryPIndexHandler(mgr)).Methods("POST")
-
-		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/query",
-			searchHandler).Methods("POST")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = pindexNameLookup

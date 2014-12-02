@@ -71,6 +71,9 @@ type Dest interface {
 		consistencySeq uint64,
 		cancelCh chan struct{}) error
 
+	// Counts the underlying pindex implementation.
+	Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error)
+
 	// Queries the underlying pindex implementation, blocking if
 	// needed for the Dest to reach the desired consistency.
 	Query(pindex *PIndex, req []byte, w io.Writer,

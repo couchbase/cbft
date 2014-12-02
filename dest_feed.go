@@ -166,6 +166,11 @@ func (t *DestFeed) ConsistencyWait(partition string,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
+func (t *DestFeed) Count(pindex *PIndex, cancelCh chan struct{}) (
+	uint64, error) {
+	return 0, fmt.Errorf("DestFeed.Count unimplemented")
+}
+
 func (t *DestFeed) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan struct{}) error {
 	return fmt.Errorf("DestFeed.Query unimplemented")

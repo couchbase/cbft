@@ -403,6 +403,21 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	return err
 }
 
+func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
+	if pindex == nil ||
+		pindex.Impl == nil ||
+		pindex.IndexType != "bleve" {
+		return 0, fmt.Errorf("BleveDest.Count bad pindex: %#v", pindex)
+	}
+
+	bindex, ok := pindex.Impl.(bleve.Index)
+	if !ok || bindex == nil {
+		return 0, fmt.Errorf("BleveDest.Count pindex not a bleve.Index: %#v", pindex)
+	}
+
+	return bindex.DocCount()
+}
+
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan struct{}) error {
 	if pindex == nil ||

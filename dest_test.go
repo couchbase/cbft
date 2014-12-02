@@ -60,6 +60,11 @@ func (s *TestDest) ConsistencyWait(partition string,
 	return nil
 }
 
+func (t *TestDest) Count(pindex *PIndex,
+	cancelCh chan struct{}) (uint64, error) {
+	return 0, nil
+}
+
 func (t *TestDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan struct{}) error {
 	return nil

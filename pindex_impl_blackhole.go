@@ -111,6 +111,11 @@ func (t *BlackHole) ConsistencyWait(partition string,
 	return nil
 }
 
+func (t *BlackHole) Count(pindex *PIndex,
+	cancelCh chan struct{}) (uint64, error) {
+	return 0, nil
+}
+
 func (t *BlackHole) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan struct{}) error {
 	return nil

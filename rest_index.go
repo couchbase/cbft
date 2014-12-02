@@ -198,6 +198,64 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+type CountPIndexHandler struct {
+	mgr *Manager
+}
+
+func NewCountPIndexHandler(mgr *Manager) *CountPIndexHandler {
+	return &CountPIndexHandler{mgr: mgr}
+}
+
+func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	pindexName := pindexNameLookup(req)
+	if pindexName == "" {
+		showError(w, req, "pindex name is required", 400)
+		return
+	}
+
+	pindex := h.mgr.GetPIndex(pindexName)
+	if pindex == nil {
+		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+			" no pindex, pindexName: %s", pindexName), 400)
+		return
+	}
+	if pindex.Dest == nil {
+		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+			" no pindex.Dest, pindexName: %s", pindexName), 400)
+		return
+	}
+
+	pindexUUID := req.FormValue("pindexUUID")
+	if pindexUUID != "" && pindex.UUID != pindexUUID {
+		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+			" wrong pindexUUID: %s, pindex.UUID: %s, pindexName: %s",
+			pindexUUID, pindex.UUID, pindexName), 400)
+		return
+	}
+
+	var cancelCh chan struct{} // TODO: Support request timeout and cancellation.
+
+	log.Printf("rest.CountPIndex pindexName: %s", pindexName)
+
+	count, err := pindex.Dest.Count(pindex, cancelCh)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+			" pindexName: %s, req: %#v, err: %v", pindexName, req, err), 400)
+		return
+	}
+
+	rv := struct {
+		Status string `json:"status"`
+		Count  uint64 `json:"count"`
+	}{
+		Status: "ok",
+		Count:  count,
+	}
+	mustEncode(w, rv)
+}
+
+// ---------------------------------------------------
+
 type QueryPIndexHandler struct {
 	mgr *Manager
 }
