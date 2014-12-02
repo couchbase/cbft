@@ -625,7 +625,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "create an index with dest feed with bad sourceParams",
+			Desc:   "create an index with dest feed with 1 partition",
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
@@ -942,6 +942,17 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "query with bogus consistency params level",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"this is not your level","vectors":{"idx0":{"0":1}}}}`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err: consistency wait unsupported level: this is not your level`: true,
+			},
+		},
+		{
 			Desc:   "query with consistency params in the future",
 			Method: "NOOP",
 			Before: func() {
@@ -1186,6 +1197,236 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				if len(pindexes) != 0 {
 					t.Errorf("expected to be 0 pindex, got pindexes: %+v", pindexes)
 				}
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
+
+func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	var doneCh chan *httptest.ResponseRecorder
+
+	var feed *DestFeed
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create an index with dest feed with 1 partition for rollback",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"dest"},
+				"sourceParams": []string{`{"numPartitions":1}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+			After: func() {
+				feeds, pindexes := mgr.CurrentMaps()
+				if len(feeds) != 1 {
+					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, f := range feeds {
+					var ok bool
+					feed, ok = f.(*DestFeed)
+					if !ok {
+						t.Errorf("expected the 1 feed to be a DestFeed")
+					}
+				}
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				snapStart := uint64(1)
+				snapEnd := uint64(10)
+				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				if err != nil {
+					t.Errorf("expected no err on snapshot-start")
+				}
+			},
+			Desc:   "count idx0 should be 0 when snapshot just started, pre-rollback",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("hello")
+				seq := uint64(1)
+				val := []byte(`{"foo":"bar","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got an update (doc created)" +
+				" but snapshot not ended, pre-rollback",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("world")
+				seq := uint64(2)
+				val := []byte(`{"foo":"bing","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got 2nd update (another doc created)" +
+				" but snapshot not ended, pre-rollback",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				key := []byte("hello")
+				seq := uint64(3)
+				val := []byte(`{"foo":"baz","yow":"wow"}`)
+				err = feed.OnDataUpdate(partition, key, seq, val)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+			},
+			Desc: "count idx0 should be 0 when got 3rd update" +
+				" (mutation, so only 2 keys) but snapshot not ended, pre-rollback",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				snapStart := uint64(11)
+				snapEnd := uint64(20)
+				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				if err != nil {
+					t.Errorf("expected no err on snapshot-start")
+				}
+			},
+			Desc:   "count idx0 should be 2 when 1st snapshot ended, pre-rollback",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":2}`: true,
+			},
+		},
+		{
+			Desc:   "query with consistency params in the future, pre-rollback",
+			Method: "NOOP",
+			Before: func() {
+				doneCh = make(chan *httptest.ResponseRecorder)
+				go func() {
+					body := []byte(`{"query":{"size":10,"query":{"query":"boof"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0":11}}}}`)
+					req := &http.Request{
+						Method: "POST",
+						URL:    &url.URL{Path: "/api/index/idx0/query"},
+						Form:   url.Values(nil),
+						Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+					}
+					record := httptest.NewRecorder()
+					router.ServeHTTP(record, req)
+					doneCh <- record
+				}()
+			},
+			After: func() {
+				runtime.Gosched()
+				select {
+				case <-doneCh:
+					t.Errorf("expected query to block waiting for more mutations")
+				default:
+				}
+			},
+		},
+		{
+			Before: func() {
+				partition := "0"
+				seq := uint64(0)
+				err = feed.Rollback(partition, seq)
+				if err != nil {
+					t.Errorf("expected no err on data-udpate")
+				}
+				// TODO: We should test right after rollback but before
+				// we get a kick, but unfortunately results will be race-y.
+				mgr.Kick("after-rollback")
+			},
+			Desc:   "count idx0 should be 0 since we rolled back to 0",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+			After: func() {
+				runtime.Gosched()
+				record, ok := <-doneCh
+				if record == nil || !ok {
+					t.Errorf("expected a record: %#v, ok: %v", record, ok)
+				}
+				test := &RESTHandlerTest{
+					Desc:   "test consistency wait got right result",
+					Status: 400,
+					ResponseMatch: map[string]bool{
+						`err: bleveIndexAlias consistency wait`: true,
+						`err: consistency wait closed`:          true,
+					},
+				}
+				test.check(t, record)
 			},
 		},
 	}
