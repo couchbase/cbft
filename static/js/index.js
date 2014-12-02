@@ -181,10 +181,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.errorMessage = null;
 
-    $scope.newIndexNamed = function(sourceType, sourceName,
-                                    sourceUUID, sourceParams,
-                                    indexType, indexName, indexParams,
-                                    planParams) {
+    $scope.newIndex = function(indexName, indexType, indexParams,
+                               sourceType, sourceName,
+                               sourceUUID, sourceParams,
+                               planParams) {
         $scope.clearErrorMessage();
         $http.put('/api/index/' + indexName, "", {
             params: {
