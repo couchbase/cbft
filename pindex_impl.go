@@ -40,10 +40,15 @@ type ConsistencyVector map[string]uint64
 type PIndexImplType struct {
 	Validate func(indexType, indexName, indexParams string) error
 
-	New  func(indexType, indexParams, path string, restart func()) (PIndexImpl, Dest, error)
-	Open func(indexType, path string, restart func()) (PIndexImpl, Dest, error)
+	New func(indexType, indexParams, path string, restart func()) (
+		PIndexImpl, Dest, error)
 
-	Count func(mgr *Manager, indexName, indexUUID string) (uint64, error)
+	Open func(indexType, path string, restart func()) (
+		PIndexImpl, Dest, error)
+
+	Count func(mgr *Manager, indexName, indexUUID string) (
+		uint64, error)
+
 	Query func(mgr *Manager, indexName, indexUUID string,
 		req []byte, res io.Writer) error
 
