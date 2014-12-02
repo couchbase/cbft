@@ -3,18 +3,23 @@
   <li><a href="#">Indexes</a></li>
 </ol>
 
-<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert"> {{errorMessage}}
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
 </div>
 
 <table class="table table-striped">
 	<tr>
-		<th>Name</th>
-		<th width="5%"></th>
+		<th width="99%">Name</th>
+		<th></th>
 	</tr>
 	<tr ng-repeat="indexName in indexNames">
 		<td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
-		<td>
-			<button ng-click="deleteIndexNamed(indexName)"
+		<td style="white-space: nowrap;">
+			<button ng-click="cloneIndex(indexName)"
+			         type="button" class="btn btn-default btn-sm">
+				<span class="glyphicon glyphicon-plus-sign"></span> clone
+			</button>
+			<button ng-click="deleteIndex(indexName)"
 			         type="button" class="btn btn-default btn-sm">
 				<span class="glyphicon glyphicon-trash"></span>
 			</button>

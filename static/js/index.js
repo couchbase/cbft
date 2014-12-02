@@ -1,4 +1,4 @@
-function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
+function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.indexNames = [];
     $scope.errorMessage = null;
@@ -20,7 +20,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
         });
     };
 
-    $scope.deleteIndexNamed = function(name) {
+    $scope.deleteIndex = function(name) {
         if(!confirm("Are you sure you want to permanenty delete the index '"
                     + name + "'?")) {
             return;
@@ -32,6 +32,40 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce) {
         error(function(data, code) {
             $scope.errorMessage = data;
         });
+    };
+
+    $scope.cloneIndex = function(name) {
+        cloneName = prompt("Please enter a name for a new index" +
+                           " that will be cloned from index '"
+                           + name + "':");
+        if (!cloneName) {
+            return;
+        }
+        $scope.clearErrorMessage();
+        $http.get('/api/index/' + name).
+        success(function(data) {
+            $http.put('/api/index/' + cloneName, "", {
+                params: {
+                    indexName: cloneName,
+                    indexType: data.indexDef.type,
+                    indexParams: data.indexDef.params,
+                    sourceType: data.indexDef.sourceType,
+                    sourceName: data.indexDef.sourceName,
+                    sourceUUID: data.indexDef.sourceUUID,
+                    sourceParams: data.indexDef.sourceParams,
+                    planParams: data.indexDef.planParams,
+                }
+            }).
+            success(function(data) {
+                $location.path('/indexes/' + cloneName);
+            }).
+            error(function(data, code) {
+                $scope.errorMessage = data;
+            })
+        }).
+        error(function(data, code) {
+            $scope.errorMessage = data;
+        })
     };
 
     $scope.refreshIndexNames();
@@ -154,13 +188,13 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.clearErrorMessage();
         $http.put('/api/index/' + indexName, "", {
             params: {
+                indexName: indexName,
+                indexType: indexType || "bleve",
+                indexParams: indexParams[indexType],
                 sourceType: sourceType,
                 sourceName: sourceName,
                 sourceUUID: sourceUUID || "",
                 sourceParams: sourceParams[sourceType],
-                indexType: indexType || "bleve",
-                indexName: indexName,
-                indexParams: indexParams[indexType],
                 planParams: planParams,
             }
         }).
