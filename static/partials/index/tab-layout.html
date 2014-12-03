@@ -8,7 +8,10 @@
     <td>
       <ul>
         <li ng-repeat="(nodeUUID, nodeSpec) in planPIndex.nodes">
-          {{nodeDefsByUUID[nodeUUID].hostPort}}:
+          <i class="glyphicon glyphicon-hdd"></i>
+          <a href="/nodes/{{nodeDefsByUUID[nodeUUID].hostPort}}">
+            {{nodeDefsByUUID[nodeUUID].hostPort}}
+          </a>
           {{nodeSpec.canRead && 'R'}}
           {{nodeSpec.canWrite && 'W'}}
           - priority: {{nodeSpec.priority}}

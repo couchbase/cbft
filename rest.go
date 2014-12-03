@@ -22,6 +22,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
+		"/nodes",
 		"/monitor",
 		"/manage",
 		"/logs",
