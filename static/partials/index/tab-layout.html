@@ -1,10 +1,11 @@
 <table class="table">
   <tr>
-    <th>Index Partition</th><th>Source Partitions</th><th>Nodes</th>
+    <th>Index Partition</th>
+    <th>Nodes</th>
+    <th>Source Partitions</th>
   </tr>
-  <tr ng-repeat="planPIndex in planPIndexes">
+  <tr ng-repeat="planPIndex in planPIndexes" class="planPIndex">
     <td>{{planPIndex.name}}</td>
-    <td>{{planPIndex.sourcePartitionsStr}}</td>
     <td>
       <ul>
         <li ng-repeat="(nodeUUID, nodeSpec) in planPIndex.nodes">
@@ -18,7 +19,14 @@
         </li>
       </ul>
     </td>
+    <td>{{planPIndex.sourcePartitionsStr}}</td>
   </tr>
 </table>
+
+<style>
+tr.planPIndex td {
+  white-space: nowrap;
+}
+</style>
 
 <pre nag-prism source="{{planPIndexesStr}}" class="language-javascript"></pre>
