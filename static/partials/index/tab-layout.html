@@ -2,23 +2,21 @@
   <tr>
     <th>Index Partition</th>
     <th>Nodes</th>
+    <th ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
+      <a href="/nodes/{{nodeAddr}}">{{nodeAddr}}</a>
+      <div>&nbsp;&nbsp;</div>
+    </th>
     <th>Source Partitions</th>
   </tr>
   <tr ng-repeat="planPIndex in planPIndexes" class="planPIndex">
     <td>{{planPIndex.name}}</td>
-    <td>
-      <ul>
-        <li ng-repeat="(nodeUUID, nodeSpec) in planPIndex.nodes">
-          <i class="glyphicon glyphicon-hdd"></i>
-          <a href="/nodes/{{nodeDefsByUUID[nodeUUID].hostPort}}">
-            {{nodeDefsByUUID[nodeUUID].hostPort}}
-          </a>
-          {{nodeSpec.canRead && 'R'}}
-          {{nodeSpec.canWrite && 'W'}}
-          - priority: {{nodeSpec.priority}}
-        </li>
-      </ul>
-    </td>
+    <td></td>
+    <td ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
+      <div ng-if="planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid]"
+           class="nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
+        {{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canRead && 'r') || '&nbsp;'}}{{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canWrite && 'w') || '&nbsp;'}}
+      </div>
+      </td>
     <td>{{planPIndex.sourcePartitionsStr}}</td>
   </tr>
 </table>
@@ -26,6 +24,31 @@
 <style>
 tr.planPIndex td {
   white-space: nowrap;
+}
+
+th.nodeAddr {
+  position: relative;
+}
+th.nodeAddr a {
+  display: block;
+  position: absolute;
+
+  -ms-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+  -webkit-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+  transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+}
+td.nodeAddr div {
+  white-space: collapse;
+}
+th.nodeAddr div, td.nodeAddr div {
+  font-family: monospace;
+  padding: 3px 4px 3px 4px;
+}
+.nodeSpecPriority-0 {
+  background-color: #71C671;
+}
+.nodeSpecPriority-1 {
+  background-color: #FFDEAD;
 }
 </style>
 

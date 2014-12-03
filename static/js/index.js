@@ -75,6 +75,8 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
     $scope.nodeDefsByUUID = null;
+    $scope.nodeDefsByAddr = null;
+    $scope.nodeAddrsArr = null;
 
     $scope.indexName = $routeParams.indexName;
     $scope.indexDocCount = 0;
@@ -90,10 +92,15 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
     $http.get('/api/cfg').success(function(data) {
         $scope.nodeDefsByUUID = {}
-        for (var k in data.nodeDefsKnown.nodeDefs) {
-            var nodeDef = data.nodeDefsKnown.nodeDefs[k]
+        $scope.nodeDefsByAddr = {}
+        $scope.nodeAddrsArr = []
+        for (var k in data.nodeDefsWanted.nodeDefs) {
+            var nodeDef = data.nodeDefsWanted.nodeDefs[k]
             $scope.nodeDefsByUUID[nodeDef.uuid] = nodeDef
+            $scope.nodeDefsByAddr[nodeDef.hostPort] = nodeDef
+            $scope.nodeAddrsArr.push(nodeDef.hostPort);
         }
+        $scope.nodeAddrsArr.sort();
         $scope.loadIndexDetails()
     })
 
@@ -105,12 +112,20 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2)
             $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2)
             $scope.planPIndexes = data.planPIndexes
+
+            var nodeAddrs = {};
             for (var k in $scope.planPIndexes) {
                 var planPIndex = $scope.planPIndexes[k];
                 planPIndex.sourcePartitionsArr =
                     planPIndex.sourcePartitions.split(",")
                 planPIndex.sourcePartitionsStr =
                     planPIndex.sourcePartitionsArr.join(", ")
+                for (var nodeUUID in planPIndex.nodes) {
+                    var nodeAddr = $scope.nodeDefsByUUID[nodeUUID].hostPort
+                    if (nodeAddr) {
+                        nodeAddrs[nodeAddr] = nodeUUID;
+                    }
+                }
             }
         }).
         error(function(data, code) {
