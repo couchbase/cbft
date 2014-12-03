@@ -9,7 +9,7 @@
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
 
-package main
+package cbft
 
 import (
 	"bytes"
@@ -35,14 +35,14 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000",
 		emptyDir, "some-datasource", nil)
-	r, err := NewManagerRESTRouter(mgr, emptyDir, ring)
+	r, err := NewManagerRESTRouter(mgr, emptyDir, "", ring)
 	if r == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
 
 	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"},
 		"", 1, ":1000", emptyDir, "some-datasource", nil)
-	r, err = NewManagerRESTRouter(mgr, emptyDir, ring)
+	r, err = NewManagerRESTRouter(mgr, emptyDir, "", ring)
 	if r == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
@@ -121,7 +121,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -291,7 +291,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -600,7 +600,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -961,7 +961,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":["array","not","legal"]}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: json: cannot unmarshal array into Go value of type map[string]main.ConsistencyVector`: true,
+				`err: json: cannot unmarshal array into Go value of type map[string]cbft.ConsistencyVector`: true,
 			},
 		},
 		{
@@ -1229,7 +1229,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter(mgr, "static", mr)
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -1468,11 +1468,11 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mr0, _ := NewMsgRing(os.Stderr, 1000)
 	mr1, _ := NewMsgRing(os.Stderr, 1000)
 
-	router0, err := NewManagerRESTRouter(mgr0, "static", mr0)
+	router0, err := NewManagerRESTRouter(mgr0, "static", "", mr0)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
-	router1, err := NewManagerRESTRouter(mgr1, "static", mr1)
+	router1, err := NewManagerRESTRouter(mgr1, "static", "", mr1)
 	if err != nil || router1 == nil {
 		t.Errorf("no mux router")
 	}

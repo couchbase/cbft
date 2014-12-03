@@ -16,9 +16,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/couchbaselabs/cbft"
 )
 
-func MainCfg(connect, dataDir string) (Cfg, error) {
+func MainCfg(connect, dataDir string) (cbft.Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
 	if connect == "" || connect == "simple" {
 		return MainCfgSimple(connect, dataDir)
@@ -29,14 +31,14 @@ func MainCfg(connect, dataDir string) (Cfg, error) {
 	return nil, fmt.Errorf("error: unsupported cfg connect: %s", connect)
 }
 
-func MainCfgSimple(connect, dataDir string) (Cfg, error) {
+func MainCfgSimple(connect, dataDir string) (cbft.Cfg, error) {
 	cfgPath := dataDir + string(os.PathSeparator) + "cbft.cfg"
 	cfgPathExists := false
 	if _, err := os.Stat(cfgPath); err == nil {
 		cfgPathExists = true
 	}
 
-	cfg := NewCfgSimple(cfgPath)
+	cfg := cbft.NewCfgSimple(cfgPath)
 	if cfgPathExists {
 		err := cfg.Load()
 		if err != nil {
@@ -47,7 +49,7 @@ func MainCfgSimple(connect, dataDir string) (Cfg, error) {
 	return cfg, nil
 }
 
-func MainCfgCB(urlStr, dataDir string) (Cfg, error) {
+func MainCfgCB(urlStr, dataDir string) (cbft.Cfg, error) {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
@@ -58,7 +60,7 @@ func MainCfgCB(urlStr, dataDir string) (Cfg, error) {
 		bucket = u.User.Username()
 	}
 
-	cfg, err := NewCfgCB(urlStr, bucket)
+	cfg, err := cbft.NewCfgCB(urlStr, bucket)
 	if err != nil {
 		return nil, err
 	}

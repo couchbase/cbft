@@ -31,6 +31,7 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 
+	"github.com/couchbaselabs/cbft"
 	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
 )
@@ -43,7 +44,7 @@ var logFlags = flag.String("logFlags", "",
 	"comma-separated clog flags, to control logging")
 var staticDir = flag.String("staticDir", "static",
 	"directory for static web UI content")
-var staticEtag = flag.String("staticEtag", "",
+var staticETag = flag.String("staticETag", "",
 	"static etag value")
 var server = flag.String("server", "",
 	"url to datasource server; couchbase example: http://localhost:8091")
@@ -73,7 +74,7 @@ func main() {
 
 	go dumpOnSignalForPlatform()
 
-	mr, err := NewMsgRing(os.Stderr, 1000)
+	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
 		log.Fatalf("error: could not create MsgRing, err: %v", err)
 	}
@@ -102,7 +103,7 @@ func main() {
 	}
 
 	router, err := MainStart(cfg, uuid, tagsArr, *container, *weight,
-		*bindAddr, *dataDir, *staticDir, *server, *register, mr)
+		*bindAddr, *dataDir, *staticDir, *staticETag, *server, *register, mr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,7 +123,7 @@ func MainWelcome() {
 }
 
 func MainUUID(dataDir string) (string, error) {
-	uuid := NewUUID()
+	uuid := cbft.NewUUID()
 	uuidPath := dataDir + string(os.PathSeparator) + "cbft.uuid"
 	uuidBuf, err := ioutil.ReadFile(uuidPath)
 	if err == nil {
@@ -143,9 +144,9 @@ func MainUUID(dataDir string) (string, error) {
 	return uuid, nil
 }
 
-func MainStart(cfg Cfg, uuid string, tags []string, container string,
-	weight int, bindAddr, dataDir, staticDir, server string,
-	register string, mr *MsgRing) (
+func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
+	weight int, bindAddr, dataDir, staticDir, staticETag, server string,
+	register string, mr *cbft.MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -157,26 +158,26 @@ func MainStart(cfg Cfg, uuid string, tags []string, container string,
 			server, err)
 	}
 
-	mgr := NewManager(VERSION, cfg, uuid, tags, container, weight,
+	mgr := cbft.NewManager(cbft.VERSION, cfg, uuid, tags, container, weight,
 		bindAddr, dataDir, server, &MainHandlers{})
 	err = mgr.Start(register)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewManagerRESTRouter(mgr, staticDir, mr)
+	return cbft.NewManagerRESTRouter(mgr, staticDir, staticETag, mr)
 }
 
 type MainHandlers struct{}
 
-func (meh *MainHandlers) OnRegisterPIndex(pindex *PIndex) {
+func (meh *MainHandlers) OnRegisterPIndex(pindex *cbft.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
 		bleveHttp.RegisterIndexName(pindex.Name, bindex)
 	}
 }
 
-func (meh *MainHandlers) OnUnregisterPIndex(pindex *PIndex) {
+func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbft.PIndex) {
 	bleveHttp.UnregisterIndexByName(pindex.Name)
 }
 

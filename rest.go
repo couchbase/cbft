@@ -7,7 +7,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-package main
+package cbft
 
 import (
 	"net/http"
@@ -17,10 +17,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewManagerRESTRouter(mgr *Manager, staticDir string, mr *MsgRing) (
+func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, error) {
 	// create a router to serve static files
-	r := staticFileRouter(staticDir, []string{
+	r := staticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
 		"/monitor",
 		"/manage",

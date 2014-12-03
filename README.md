@@ -45,11 +45,15 @@ Getting
 
 Building
 
-```go build```
+```make```
+
+Unit tests
+
+```make test```
 
 To get local coverage reports with heatmaps...
 
-    go test -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
+```make coverage```
 
 To get more coverage reports that include dependencies like the bleve library...
 

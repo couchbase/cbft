@@ -7,7 +7,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-package main
+package cbft
 
 import (
 	"net/http"
@@ -17,13 +17,13 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-func staticFileRouter(staticDir string, pages []string) *mux.Router {
+func staticFileRouter(staticDir, staticETag string, pages []string) *mux.Router {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
 	// static
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
-		myFileHandler{http.FileServer(http.Dir(staticDir))}))
+		myFileHandler{http.FileServer(http.Dir(staticDir)), staticETag}))
 
 	for _, p := range pages {
 		// if you try to use index.html it will redirect...poorly
@@ -37,12 +37,13 @@ func staticFileRouter(staticDir string, pages []string) *mux.Router {
 }
 
 type myFileHandler struct {
-	h http.Handler
+	h    http.Handler
+	etag string
 }
 
 func (mfh myFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if *staticEtag != "" {
-		w.Header().Set("Etag", *staticEtag)
+	if mfh.etag != "" {
+		w.Header().Set("Etag", mfh.etag)
 	}
 	mfh.h.ServeHTTP(w, r)
 }
