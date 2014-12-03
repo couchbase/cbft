@@ -1411,7 +1411,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
-				// TODO: We should test right after rollback but before
+				// NOTE: We might check right after rollback but before
 				// we get a kick, but unfortunately results will be race-y.
 				mgr.Kick("after-rollback")
 			},
@@ -1435,7 +1435,6 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 					Status: 400,
 					ResponseMatch: map[string]bool{
 						`err: bleveIndexAlias consistency wait`: true,
-						`err: consistency wait closed`:          true,
 					},
 				}
 				test.check(t, record)
