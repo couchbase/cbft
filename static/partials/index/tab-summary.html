@@ -1,8 +1,9 @@
-<h3>{{indexName}}</h3>
+<dl class="dl-horizontal">
+  <dt>Document Count:</dt>
+  <dd>{{indexDocCount}}</dd>
 
-<ul>
-	<li><b>Document Count:</b> {{indexDocCount}}</li>
-	<li><b>Index Definition:</b>
-		<pre nag-prism source="{{indexDefStr}}" class="language-javascript"></pre>
-	</li>
-</ul>
+  <dt>Index Definition:</dt>
+  <dd>
+    <pre nag-prism source="{{indexDefStr}}" class="language-javascript"></pre>
+  </dd>
+</dl>
