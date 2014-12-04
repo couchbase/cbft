@@ -8,7 +8,21 @@
        ng-if="!resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
     <a href="/nodes/{{nodeAddr}}">{{nodeAddr}}</a>
   </dd>
-  <dt>Definition:</dt>
+  <br/>
+
+  <dt>Version:</dt>
+  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].implVersion}}</dd>
+  <dt>UUID:</dt>
+  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].uuid}}</dd>
+  <dt>Tags:</dt>
+  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].tags}}</dd>
+  <dt>Container:</dt>
+  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].container}}</dd>
+  <dt>Weight:</dt>
+  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].weight}}</dd>
+  <br/>
+
+  <dt>JSON:</dt>
   <dd>
     <pre nag-prism
          source="{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr]}}"
