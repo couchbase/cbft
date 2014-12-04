@@ -382,7 +382,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 			Priority:    0,
 			Constraints: 1,
 		},
-		"secondary": &blance.PartitionModelState{
+		"replica": &blance.PartitionModelState{
 			Priority:    1,
 			Constraints: indexDef.PlanParams.NumReplicas,
 		},
@@ -401,7 +401,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 			if exists && planPIndexPrev != nil {
 				for nodeUUIDPrev, planPIndexNode := range planPIndexPrev.Nodes {
-					state := "secondary"
+					state := "replica"
 					if planPIndexNode.Priority <= 0 {
 						state = "primary"
 					}
@@ -438,7 +438,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 				Priority: 0,
 			}
 		}
-		for i, nodeUUID := range blancePartition.NodesByState["secondary"] {
+		for i, nodeUUID := range blancePartition.NodesByState["replica"] {
 			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
 				CanRead:  true,
 				CanWrite: true,
