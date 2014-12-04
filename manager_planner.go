@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/couchbaselabs/blance"
@@ -299,6 +300,10 @@ func getNodesLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	nodeUUIDsToAdd = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDsPrev)
 	nodeUUIDsToRemove = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDs)
 
+	sort.Strings(nodeUUIDsAll)
+	sort.Strings(nodeUUIDsToAdd)
+	sort.Strings(nodeUUIDsToRemove)
+
 	return nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
 		nodeWeights, nodeHierarchy
 }
@@ -400,13 +405,23 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		if planPIndexesPrev != nil {
 			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 			if exists && planPIndexPrev != nil {
+				// Sort by planPIndexNode.Priority for stability.
+				planPIndexNodeRefs := PlanPIndexNodeRefs{}
 				for nodeUUIDPrev, planPIndexNode := range planPIndexPrev.Nodes {
+					planPIndexNodeRefs = append(planPIndexNodeRefs, &PlanPIndexNodeRef{
+						UUID: nodeUUIDPrev,
+						Node: planPIndexNode,
+					})
+				}
+				sort.Sort(planPIndexNodeRefs)
+
+				for _, planPIndexNodeRef := range planPIndexNodeRefs {
 					state := "replica"
-					if planPIndexNode.Priority <= 0 {
+					if planPIndexNodeRef.Node.Priority <= 0 {
 						state = "primary"
 					}
 					blancePartition.NodesByState[state] =
-						append(blancePartition.NodesByState[state], nodeUUIDPrev)
+						append(blancePartition.NodesByState[state], planPIndexNodeRef.UUID)
 				}
 			}
 		}
@@ -461,4 +476,25 @@ func PlanPIndexName(indexDef *IndexDef, sourcePartitions string) string {
 	h := crc32.NewIEEE()
 	io.WriteString(h, sourcePartitions)
 	return indexDef.Name + "_" + indexDef.UUID + "_" + fmt.Sprintf("%x", h.Sum32())
+}
+
+// --------------------------------------------------------
+
+type PlanPIndexNodeRef struct {
+	UUID string
+	Node *PlanPIndexNode
+}
+
+type PlanPIndexNodeRefs []*PlanPIndexNodeRef
+
+func (pms PlanPIndexNodeRefs) Len() int {
+	return len(pms)
+}
+
+func (pms PlanPIndexNodeRefs) Less(i, j int) bool {
+	return pms[i].Node.Priority < pms[j].Node.Priority
+}
+
+func (pms PlanPIndexNodeRefs) Swap(i, j int) {
+	pms[i], pms[j] = pms[j], pms[i]
 }
