@@ -112,20 +112,12 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2)
             $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2)
             $scope.planPIndexes = data.planPIndexes
-
-            var nodeAddrs = {};
             for (var k in $scope.planPIndexes) {
                 var planPIndex = $scope.planPIndexes[k];
                 planPIndex.sourcePartitionsArr =
                     planPIndex.sourcePartitions.split(",")
                 planPIndex.sourcePartitionsStr =
                     planPIndex.sourcePartitionsArr.join(", ")
-                for (var nodeUUID in planPIndex.nodes) {
-                    var nodeAddr = $scope.nodeDefsByUUID[nodeUUID].hostPort
-                    if (nodeAddr) {
-                        nodeAddrs[nodeAddr] = nodeUUID;
-                    }
-                }
             }
         }).
         error(function(data, code) {
