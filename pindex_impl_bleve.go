@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/blevesearch/bleve"
 
@@ -90,6 +91,7 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 type BleveQueryParams struct {
 	Query       *bleve.SearchRequest `json:"query"`
 	Consistency *ConsistencyParams   `json:"consistency"`
+	Timeout     int64                `json:"timeout"`
 }
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
@@ -101,8 +103,17 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 			" req: %s, err: %v", req, err)
 	}
 
+	var cancelCh chan struct{} // TOOD: get cancelCh from caller.
+	if bleveQueryParams.Timeout > 0 {
+		cancelCh = make(chan struct{})
+		go func() {
+			time.Sleep(time.Duration(bleveQueryParams.Timeout) * time.Millisecond)
+			close(cancelCh)
+		}()
+	}
+
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
-		bleveQueryParams.Consistency, nil) // TOOD: get cancelCh from caller.
+		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)

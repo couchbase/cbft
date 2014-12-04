@@ -3,7 +3,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.maxPagesToShow = 5;
     $scope.resultsPerPage = 10;
     $scope.page = 1;
-
+    $scope.timeout = 0;
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
 
@@ -30,6 +30,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 "level": $scope.consistencyLevel,
                 "vectors": JSON.parse($scope.consistencyVectors || "null"),
             },
+            "timeout": parseInt($scope.timeout) || 0,
         }).
         success(function(data) {
             $scope.processResults(data);

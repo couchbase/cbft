@@ -16,7 +16,12 @@
       <label>Advanced:</label>
       <input ng-model="queryAdvancedToggle" type="checkbox"/>
     </div>
-    <div ng-show="queryAdvancedToggle" class="col-lg-offset-1">
+    <div ng-show="queryAdvancedToggle" class="col-lg-offset-1 queryAdvanced">
+      <div class="row">
+        <label class="col-lg-3">Timeout (msecs):</label>
+        <input ng-model="timeout" id="timeout"
+               class="form-control col-lg-8"/>
+      </div>
       <div class="row">
         <label class="col-lg-3">Consistency Level:</label>
         <input ng-model="consistencyLevel" id="consistencyLevel"
@@ -30,6 +35,12 @@
     </div>
   </div>
 </form>
+
+<style>
+.queryAdvanced .row label {
+  text-align: right;
+}
+</style>
 
 <div ng-show="results.hits.length < 1"
      ng-include
