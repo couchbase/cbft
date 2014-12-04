@@ -20,16 +20,29 @@
       <i class="glyphicon glyphicon-unchecked"
          ng-if="!resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
       <a href="/nodes/{{nodeAddr}}">{{nodeAddr}}</a>
-      <span class="nodeDefContainer">
-        {{nodeDef.container}}
-      </span>
+      <ul class="nodeDefContainer">
+        <li ng-repeat="nodeDefContainerPart in nodeDef.containerArr"
+            class="nodeDefContainerPart">
+          <div ng-attr-style="border-left: 8px solid {{containerPartColor(nodeDefContainerPart)}}">
+            {{nodeDefContainerPart}}
+          </div>
+        </li>
+      </ul>
     </td>
   </tr>
 </table>
 
 <style>
-.nodeDefContainer {
+ul.nodeDefContainer {
+  display: inline-block;
   margin-left: 1.5em;
+}
+ul.nodeDefContainer li {
+  display: inline-block;
+}
+ul.nodeDefContainer li div {
+  display: inline-block;
+  padding: 0 5px 0 5px;
 }
 </style>
 

@@ -17,7 +17,16 @@
   <dt>Tags:</dt>
   <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].tags}}</dd>
   <dt>Container:</dt>
-  <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].container}}</dd>
+  <dd>
+    <ul class="nodeDefContainer">
+      <li ng-repeat="nodeDefContainerPart in resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].containerArr"
+          class="nodeDefContainerPart">
+        <div ng-attr-style="border-left: 8px solid {{containerPartColor(nodeDefContainerPart)}}">
+            {{nodeDefContainerPart}}
+        </div>
+      </li>
+    </ul>
+  </dd>
   <dt>Weight:</dt>
   <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].weight}}</dd>
   <br/>
@@ -29,3 +38,16 @@
          class="language-javascript"></pre>
   </dd>
 </dl>
+
+<style>
+ul.nodeDefContainer {
+  padding-left: 0;
+}
+ul.nodeDefContainer li {
+  display: inline-block;
+}
+ul.nodeDefContainer li div {
+  display: inline-block;
+  padding: 0 5px 0 5px;
+}
+</style>
