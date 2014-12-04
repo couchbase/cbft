@@ -20,6 +20,16 @@
       <i class="glyphicon glyphicon-unchecked"
          ng-if="!resultCfg.nodeDefsWanted.nodeDefs[nodeAddr]"></i>
       <a href="/nodes/{{nodeAddr}}">{{nodeAddr}}</a>
+      <span class="nodeDefContainer">
+        {{nodeDef.container}}
+      </span>
     </td>
   </tr>
 </table>
+
+<style>
+.nodeDefContainer {
+  margin-left: 1.5em;
+}
+</style>
+
