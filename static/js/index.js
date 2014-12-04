@@ -115,9 +115,11 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             for (var k in $scope.planPIndexes) {
                 var planPIndex = $scope.planPIndexes[k];
                 planPIndex.sourcePartitionsArr =
-                    planPIndex.sourcePartitions.split(",")
+                    planPIndex.sourcePartitions.split(",").sort(
+                        function(x, y) { return parseInt(x) - parseInt(y); }
+                    );
                 planPIndex.sourcePartitionsStr =
-                    planPIndex.sourcePartitionsArr.join(", ")
+                    collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
             }
         }).
         error(function(data, code) {
@@ -224,4 +226,25 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.clearErrorMessage = function() {
         $scope.errorMessage = null;
     };
+}
+
+function collapseNeighbors(arr) {
+    var prevBeg = null;
+    var prevEnd = null;
+    var r = [];
+    for (var i = 0; i < arr.length; i++) {
+        var v = parseInt(arr[i]);
+        if (v == NaN) {
+            return arr;
+        }
+        if (prevEnd != null && prevEnd + 1 == v) {
+            prevEnd = v;
+            r[r.length - 1] = prevBeg + '-' + prevEnd;
+        } else {
+            r.push(arr[i])
+            prevBeg = v;
+            prevEnd = v;
+        }
+    }
+    return r;
 }
