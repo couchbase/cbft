@@ -2,7 +2,6 @@
   <tr>
     <th>Index Partition</th>
     <th>Source Partitions</th>
-    <th>Nodes</th>
     <th ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
       <a href="/nodes/{{nodeAddr}}">{{nodeAddr}}</a>
       <div>&nbsp;&nbsp;</div>
@@ -11,7 +10,6 @@
   <tr ng-repeat="planPIndex in planPIndexes" class="planPIndex">
     <td>{{planPIndex.name}}</td>
     <td>{{planPIndex.sourcePartitionsStr}}</td>
-    <td></td>
     <td ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
       <div ng-if="planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid]"
            class="nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
