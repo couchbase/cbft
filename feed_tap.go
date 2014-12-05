@@ -27,7 +27,7 @@ func init() {
 		&FeedType{
 			Start:       StartTAPFeed,
 			Partitions:  CouchbasePartitions,
-			Public:      true,
+			Public:      false,
 			Description: "couchbase-tap - Couchbase Server/Cluster data source, via TAP protocol",
 			StartSample: &TAPFeedParams{},
 		})
