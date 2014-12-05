@@ -1,6 +1,7 @@
 default: build
 
 build:
+	go build ./...
 	go build -o ./cbft ./cmd/cbft
 
 test:

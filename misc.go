@@ -117,9 +117,11 @@ func StringsRemoveStrings(stringArr, removeArr []string) []string {
 // intersection of a and b.
 func StringsIntersectStrings(a, b []string) []string {
 	bMap := StringsToMap(b)
+	rMap := map[string]bool{}
 	rv := make([]string, 0, len(a))
 	for _, s := range a {
-		if bMap[s] {
+		if bMap[s] && !rMap[s] {
+			rMap[s] = true
 			rv = append(rv, s)
 		}
 	}
