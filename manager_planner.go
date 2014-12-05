@@ -446,6 +446,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 
 	for planPIndexName, blancePartition := range blanceNextMap {
 		planPIndex := planPIndexesForIndex[planPIndexName]
+		planPIndex.Nodes = map[string]*PlanPIndexNode{}
 		for _, nodeUUID := range blancePartition.NodesByState["primary"] {
 			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
 				CanRead:  true,
