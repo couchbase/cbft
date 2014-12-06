@@ -241,9 +241,16 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		// Once we have a 1 or more PlanPIndexes for an IndexDef, use
 		// blance to assign the PlanPIndexes to nodes, depending on
 		// the numReplicas setting.
-		blancePlanPIndexes(indexDef, planPIndexesForIndex, planPIndexesPrev,
+		warnings := blancePlanPIndexes(indexDef,
+			planPIndexesForIndex, planPIndexesPrev,
 			nodeUUIDsAll, nodeUUIDsToAdd, nodeUUIDsToRemove,
 			nodeWeights, nodeHierarchy)
+		planPIndexes.Warnings[indexDef.Name] = warnings
+
+		for _, warning := range warnings {
+			log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
+				indexDef.Name, warning, indexDef)
+		}
 	}
 
 	return planPIndexes, nil
@@ -379,7 +386,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 	nodeUUIDsToAdd []string,
 	nodeUUIDsToRemove []string,
 	nodeWeights map[string]int,
-	nodeHierarchy map[string]string) {
+	nodeHierarchy map[string]string) []string {
 	// We're using multiple model states to better utilize blance's
 	// node hierarchy features (shelf/rack/zone/row awareness).
 	model := blance.PartitionModel{
@@ -439,11 +446,6 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		nodeWeights,
 		nodeHierarchy,
 		indexDef.PlanParams.HierarchyRules)
-	for _, warning := range warnings {
-		// TODO: Should save warnings along with the plan so UI can display them.
-		log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
-			indexDef.Name, warning, indexDef)
-	}
 
 	for planPIndexName, blancePartition := range blanceNextMap {
 		planPIndex := planPIndexesForIndex[planPIndexName]
@@ -463,6 +465,8 @@ func blancePlanPIndexes(indexDef *IndexDef,
 			}
 		}
 	}
+
+	return warnings
 }
 
 // NOTE: PlanPIndex.Name must be unique across the cluster and ideally

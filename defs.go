@@ -82,6 +82,7 @@ type PlanPIndexes struct {
 	UUID         string                 `json:"uuid"`
 	PlanPIndexes map[string]*PlanPIndex `json:"planPIndexes"` // Key is PlanPIndex.Name.
 	ImplVersion  string                 `json:"implVersion"`  // See VERSION.
+	Warnings     map[string][]string    `json:"warnings"`     // Key is IndexDef.Name.
 }
 
 type PlanPIndex struct {
@@ -202,6 +203,7 @@ func NewPlanPIndexes(version string) *PlanPIndexes {
 		UUID:         NewUUID(),
 		PlanPIndexes: make(map[string]*PlanPIndex),
 		ImplVersion:  version,
+		Warnings:     make(map[string][]string),
 	}
 }
 

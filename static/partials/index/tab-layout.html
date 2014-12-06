@@ -1,3 +1,11 @@
+<div ng-show="warnings" class="alert alert-warning ng-cloak" role="alert">
+  <ul>
+    <li ng-repeat="warning in warnings">
+      {{warning}}
+    </li>
+  </ul>
+</div>
+
 <table class="table">
   <tr>
     <th>Index Partition</th>

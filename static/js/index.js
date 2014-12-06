@@ -84,6 +84,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
     $scope.indexParamsStr = "";
     $scope.planPIndexes = null;
     $scope.planPIndexesStr = ""
+    $scope.warnings = null;
     $scope.tab = $routeParams.tabName;
     if($scope.tab === undefined || $scope.tab === "") {
         $scope.tab = "summary";
@@ -128,6 +129,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
                 planPIndex.sourcePartitionsStr =
                     collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
             }
+            $scope.warnings = data.warnings;
         }).
         error(function(data, code) {
             $scope.errorMessage = data;
