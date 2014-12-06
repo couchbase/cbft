@@ -440,6 +440,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		nodeHierarchy,
 		indexDef.PlanParams.HierarchyRules)
 	for _, warning := range warnings {
+		// TODO: Should save warnings along with the plan so UI can display them.
 		log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
 			indexDef.Name, warning, indexDef)
 	}
