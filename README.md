@@ -39,9 +39,11 @@ Delete index
 
 Getting
 
-		mkdir -p $GOPATH/src/github.com/couchbaelabs
-		cd $GOPATH/src/github.com/couchbaelabs
-		git clone git://github.com/couchbaselabs/cbft.git
+
+    mkdir -p $GOPATH/src/github.com/couchbaselabs
+    cd $GOPATH/src/github.com/couchbaselabs
+    git clone git://github.com/couchbaselabs/cbft.git
+
 
 Building
 
@@ -58,4 +60,3 @@ To get local coverage reports with heatmaps...
 To get more coverage reports that include dependencies like the bleve library...
 
     go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
-
