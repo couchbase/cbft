@@ -39,7 +39,6 @@ Delete index
 
 Getting
 
-
     mkdir -p $GOPATH/src/github.com/couchbaselabs
     cd $GOPATH/src/github.com/couchbaselabs
     git clone git://github.com/couchbaselabs/cbft.git
@@ -47,15 +46,15 @@ Getting
 
 Building
 
-```make```
+    make
 
 Unit tests
 
-```make test```
+    make test
 
 To get local coverage reports with heatmaps...
 
-```make coverage```
+    make coverage
 
 To get more coverage reports that include dependencies like the bleve library...
 
