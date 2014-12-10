@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -35,7 +36,21 @@ func init() {
 		Count: CountBlevePIndexImpl,
 		Query: QueryBlevePIndexImpl,
 
-		Description: "bleve - full-text index powered by the bleve full-text-search engine",
+		Description: "bleve - full-text index" +
+			" powered by the bleve full-text-search engine",
+		StartSample: bleve.NewIndexMapping(),
+	})
+
+	RegisterPIndexImplType("bleve-mem", &PIndexImplType{
+		Validate: ValidateBlevePIndexImpl,
+
+		New:   NewBlevePIndexImpl,
+		Open:  OpenBlevePIndexImpl,
+		Count: CountBlevePIndexImpl,
+		Query: QueryBlevePIndexImpl,
+
+		Description: "bleve-mem - full-text index" +
+			" powered by bleve (in memory only)",
 		StartSample: bleve.NewIndexMapping(),
 	})
 }
@@ -48,8 +63,8 @@ func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
 	return nil
 }
 
-func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (
-	PIndexImpl, Dest, error) {
+func NewBlevePIndexImpl(indexType, indexParams, path string,
+	restart func()) (PIndexImpl, Dest, error) {
 	bindexMapping := bleve.NewIndexMapping()
 	if len(indexParams) > 0 {
 		err := json.Unmarshal([]byte(indexParams), &bindexMapping)
@@ -58,7 +73,21 @@ func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (
 		}
 	}
 
-	bindex, err := bleve.New(path, bindexMapping)
+	blevePath := path
+	if indexType == "bleve-mem" {
+		blevePath = "" // Force bleve to use memory-only storage.
+
+		// For a normal, non-empty path, bleve will create the
+		// directory (and also expects path not to exist yet
+		// beforehand).  And, for an empty path, we need to create the
+		// directory here because bleve won't do so.
+		err := os.MkdirAll(path, 0700)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	bindex, err := bleve.New(blevePath, bindexMapping)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
 			path, err)
@@ -67,7 +96,12 @@ func NewBlevePIndexImpl(indexType, indexParams, path string, restart func()) (
 	return bindex, NewBleveDest(path, bindex, restart), err
 }
 
-func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
+func OpenBlevePIndexImpl(indexType, path string,
+	restart func()) (PIndexImpl, Dest, error) {
+	if indexType == "bleve-mem" {
+		return nil, nil, fmt.Errorf("error: cannot re-open bleve-mem, path: %s", path)
+	}
+
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
 	// where perhaps there was a previous missing or race-y Close().
 	bindex, err := bleve.Open(path)
@@ -78,6 +112,8 @@ func OpenBlevePIndexImpl(indexType, path string, restart func()) (PIndexImpl, De
 	return bindex, NewBleveDest(path, bindex, restart), err
 }
 
+// ---------------------------------------------------------------
+
 func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil, nil)
 	if err != nil {
@@ -87,6 +123,8 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 
 	return alias.DocCount()
 }
+
+// ---------------------------------------------------------------
 
 type BleveQueryParams struct {
 	Query       *bleve.SearchRequest `json:"query"`
@@ -698,7 +736,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	for _, localPIndex := range localPIndexes {
 		bindex, ok := localPIndex.Impl.(bleve.Index)
-		if ok && bindex != nil && localPIndex.IndexType == "bleve" {
+		if ok && bindex != nil &&
+			strings.HasPrefix(localPIndex.IndexType, "bleve") {
 			alias.Add(bindex)
 
 			if localPIndex.Dest != nil &&

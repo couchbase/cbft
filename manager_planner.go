@@ -455,7 +455,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 			canWrite := true
 			nodePlanParam :=
 				GetNodePlanParam(indexDef.PlanParams.NodePlanParams,
-				nodeUUID, indexDef.Name, planPIndexName)
+					nodeUUID, indexDef.Name, planPIndexName)
 			if nodePlanParam != nil {
 				canRead = nodePlanParam.CanRead
 				canWrite = nodePlanParam.CanWrite
@@ -472,7 +472,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 			canWrite := true
 			nodePlanParam :=
 				GetNodePlanParam(indexDef.PlanParams.NodePlanParams,
-				nodeUUID, indexDef.Name, planPIndexName)
+					nodeUUID, indexDef.Name, planPIndexName)
 			if nodePlanParam != nil {
 				canRead = nodePlanParam.CanRead
 				canWrite = nodePlanParam.CanWrite
