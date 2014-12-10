@@ -22,8 +22,7 @@ import (
 	"github.com/couchbase/gomemcached"
 	log "github.com/couchbaselabs/clog"
 	"github.com/couchbaselabs/go-couchbase"
-
-	"github.com/steveyen/cbdatasource"
+	"github.com/couchbaselabs/go-couchbase/cbdatasource"
 )
 
 func init() {
@@ -122,8 +121,9 @@ type DCPFeedParams struct {
 	FeedBufferAckThreshold float32 `json:"feedBufferAckThreshold"`
 }
 
-func (d *DCPFeedParams) GetCredentials() (string, string) {
-	return d.AuthUser, d.AuthPassword
+func (d *DCPFeedParams) GetCredentials() (string, string, string) {
+	// TODO: bucketName not necessarily userName.
+	return d.AuthUser, d.AuthPassword, d.AuthUser
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
