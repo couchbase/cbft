@@ -189,7 +189,7 @@ type BleveDest struct {
 // Used to track state for a single partition.
 type BleveDestPartition struct {
 	partition       string
-	partitionOpaque string // Key used to implement SetOpaque/GetOpaque().
+	partitionOpaque []byte // Key used to implement SetOpaque/GetOpaque().
 
 	m           sync.Mutex   // Protects the fields that follow.
 	seqMax      uint64       // Max seq # we've seen for this partition.
@@ -268,7 +268,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 	if !exists || bdp == nil {
 		bdp = &BleveDestPartition{
 			partition:       partition,
-			partitionOpaque: "o:" + partition,
+			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           bleve.NewBatch(),
 			cwrCh:           make(chan *consistencyWaitReq, 1),
@@ -605,7 +605,7 @@ func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
 
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
 
-	t.batch.SetInternal([]byte(t.partitionOpaque), t.lastOpaque)
+	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
 
 	return nil
 }
@@ -617,7 +617,7 @@ func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) ([]byte, uint64, erro
 	if t.lastOpaque == nil {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
-		value, err := bindex.GetInternal([]byte(t.partitionOpaque))
+		value, err := bindex.GetInternal(t.partitionOpaque)
 		if err != nil {
 			return nil, 0, err
 		}
