@@ -27,6 +27,9 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
+const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
+const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1800000
+
 func init() {
 	RegisterPIndexImplType("bleve", &PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
@@ -174,9 +177,6 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 // ---------------------------------------------------------
 
-const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 20000
-const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 200000
-
 type BleveDest struct {
 	path    string
 	restart func() // Invoked when caller should restart this BleveDest, like on rollback.
@@ -315,8 +315,8 @@ func (t *BleveDest) closeUnlocked() error {
 
 func (t *BleveDest) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
-	log.Printf("bleve dest update, partition: %s, key: %s, seq: %d",
-		partition, key, seq)
+	// log.Printf("bleve dest update, partition: %s, key: %s, seq: %d",
+	//	partition, key, seq)
 
 	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
@@ -328,8 +328,8 @@ func (t *BleveDest) OnDataUpdate(partition string,
 
 func (t *BleveDest) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
-	log.Printf("bleve dest delete, partition: %s, key: %s, seq: %d",
-		partition, key, seq)
+	// log.Printf("bleve dest delete, partition: %s, key: %s, seq: %d",
+	//	partition, key, seq)
 
 	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
@@ -353,8 +353,8 @@ func (t *BleveDest) OnSnapshotStart(partition string,
 }
 
 func (t *BleveDest) SetOpaque(partition string, value []byte) error {
-	log.Printf("bleve dest set-opaque, partition: %s, value: %s",
-		partition, value)
+	// log.Printf("bleve dest set-opaque, partition: %s, value: %s",
+	//	partition, value)
 
 	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {
@@ -366,7 +366,7 @@ func (t *BleveDest) SetOpaque(partition string, value []byte) error {
 
 func (t *BleveDest) GetOpaque(partition string) (
 	value []byte, lastSeq uint64, err error) {
-	log.Printf("bleve dest get-opaque, partition: %s", partition)
+	// log.Printf("bleve dest get-opaque, partition: %s", partition)
 
 	bdp, bindex, err := t.getPartition(partition)
 	if err != nil {

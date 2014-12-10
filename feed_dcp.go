@@ -269,9 +269,9 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 	snapStart, snapEnd uint64, snapType uint32) error {
-	log.Printf("DCPFeed.SnapshotStart: %s: vbucketId: %d,"+
-		" snapStart: %d, snapEnd: %d, snapType: %d",
-		r.name, vbucketId, snapStart, snapEnd, snapType)
+	// log.Printf("DCPFeed.SnapshotStart: %s: vbucketId: %d,"+
+	// 	" snapStart: %d, snapEnd: %d, snapType: %d",
+	// 	r.name, vbucketId, snapStart, snapEnd, snapType)
 
 	partition, dest, err :=
 		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
@@ -287,8 +287,8 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
-	log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
-		" value: %s", r.name, vbucketId, value)
+	// log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
+	// 	" value: %s", r.name, vbucketId, value)
 
 	partition, dest, err :=
 		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
@@ -304,7 +304,7 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
-	log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
+	// log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
 
 	partition, dest, err :=
 		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
