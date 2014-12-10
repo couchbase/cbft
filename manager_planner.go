@@ -451,16 +451,36 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		planPIndex := planPIndexesForIndex[planPIndexName]
 		planPIndex.Nodes = map[string]*PlanPIndexNode{}
 		for _, nodeUUID := range blancePartition.NodesByState["primary"] {
+			canRead := true
+			canWrite := true
+			nodePlanParam :=
+				GetNodePlanParam(indexDef.PlanParams.NodePlanParams,
+				nodeUUID, indexDef.Name, planPIndexName)
+			if nodePlanParam != nil {
+				canRead = nodePlanParam.CanRead
+				canWrite = nodePlanParam.CanWrite
+			}
+
 			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
-				CanRead:  true,
-				CanWrite: true,
+				CanRead:  canRead,
+				CanWrite: canWrite,
 				Priority: 0,
 			}
 		}
 		for i, nodeUUID := range blancePartition.NodesByState["replica"] {
+			canRead := true
+			canWrite := true
+			nodePlanParam :=
+				GetNodePlanParam(indexDef.PlanParams.NodePlanParams,
+				nodeUUID, indexDef.Name, planPIndexName)
+			if nodePlanParam != nil {
+				canRead = nodePlanParam.CanRead
+				canWrite = nodePlanParam.CanWrite
+			}
+
 			planPIndex.Nodes[nodeUUID] = &PlanPIndexNode{
-				CanRead:  true,
-				CanWrite: true,
+				CanRead:  canRead,
+				CanWrite: canWrite,
 				Priority: i + 1,
 			}
 		}
@@ -481,7 +501,8 @@ func blancePlanPIndexes(indexDef *IndexDef,
 func PlanPIndexName(indexDef *IndexDef, sourcePartitions string) string {
 	h := crc32.NewIEEE()
 	io.WriteString(h, sourcePartitions)
-	return indexDef.Name + "_" + indexDef.UUID + "_" + fmt.Sprintf("%x", h.Sum32())
+	return indexDef.Name + "_" + indexDef.UUID + "_" +
+		fmt.Sprintf("%x", h.Sum32())
 }
 
 // --------------------------------------------------------

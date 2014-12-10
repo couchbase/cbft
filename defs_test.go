@@ -253,3 +253,42 @@ func TestCfgGetHelpers(t *testing.T) {
 		t.Errorf("expected to fail with errCfg")
 	}
 }
+
+func TestGetNodePlanParam(t *testing.T) {
+	if GetNodePlanParam(nil, "", "", "") != nil {
+		t.Errorf("expected nil to nil")
+	}
+	if GetNodePlanParam(map[string]map[string]*NodePlanParam{
+		"nodeUUID0": map[string]*NodePlanParam{
+		},
+	}, "wrong-nodeUUID", "indexDefName", "planPIndexName") != nil {
+		t.Errorf("expected nil")
+	}
+	if GetNodePlanParam(map[string]map[string]*NodePlanParam{
+		"nodeUUID0": map[string]*NodePlanParam{
+		},
+	}, "nodeUUID0", "indexDefName", "planPIndexName") != nil {
+		t.Errorf("expected nil")
+	}
+	if GetNodePlanParam(map[string]map[string]*NodePlanParam{
+		"nodeUUID0": map[string]*NodePlanParam{
+			"indexDefName": nil,
+		},
+	}, "nodeUUID0", "indexDefName", "planPIndexName") != nil {
+		t.Errorf("expected nil")
+	}
+	if GetNodePlanParam(map[string]map[string]*NodePlanParam{
+		"nodeUUID0": map[string]*NodePlanParam{
+			"indexDefName": &NodePlanParam{},
+		},
+	}, "nodeUUID0", "indexDefName", "planPIndexName") == nil {
+		t.Errorf("expected not nil")
+	}
+	if GetNodePlanParam(map[string]map[string]*NodePlanParam{
+		"nodeUUID0": map[string]*NodePlanParam{
+			"planPIndexName": &NodePlanParam{},
+		},
+	}, "nodeUUID0", "indexDefName", "planPIndexName") == nil {
+		t.Errorf("expected not nil")
+	}
+}

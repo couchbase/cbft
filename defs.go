@@ -173,6 +173,23 @@ func CfgSetIndexDefs(cfg Cfg, indexDefs *IndexDefs, cas uint64) (uint64, error) 
 
 // ------------------------------------------------------------------------
 
+func GetNodePlanParam(nodePlanParams map[string]map[string]*NodePlanParam,
+	nodeUUID, indexDefName, planPIndexName string) *NodePlanParam {
+	var nodePlanParam *NodePlanParam
+	if nodePlanParams != nil {
+		m := nodePlanParams[nodeUUID]
+		if m != nil {
+			nodePlanParam = m[indexDefName]
+			if nodePlanParam == nil {
+				nodePlanParam = m[planPIndexName]
+			}
+		}
+	}
+	return nodePlanParam
+}
+
+// ------------------------------------------------------------------------
+
 const NODE_DEFS_KEY = "nodeDefs"
 const NODE_DEFS_KNOWN = "known"
 const NODE_DEFS_WANTED = "wanted"
