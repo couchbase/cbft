@@ -46,15 +46,35 @@ type IndexDef struct {
 }
 
 type PlanParams struct {
+	// MaxPartitionsPerPIndex controls the maximum number of source
+	// partitions the planner can assign to or clump into a PIndex (or
+	// index partition).
 	MaxPartitionsPerPIndex int `json:"maxPartitionsPerPIndex"`
 
-	// The first copy is not counted as a replica.  For example, a
-	// NumReplicas setting of 2 means there should be a primary and 2
-	// replicas... so 3 copies in total.  A NumReplicas of 0 means
-	// just the first, primary copy only.
+	// NumReplicas controls the number of replicas for a PIndex, over
+	// the first copy.  The first copy is not counted as a replica.
+	// For example, a NumReplicas setting of 2 means there should be a
+	// primary and 2 replicas... so 3 copies in total.  A NumReplicas
+	// of 0 means just the first, primary copy only.
 	NumReplicas int `json:"numReplicas"`
 
+	// HierarchyRules defines the policy the planner should follow
+	// when assigning PIndexes to nodes, especially for replica
+	// placement.  Through the HierarchyRules, a user can specify, for
+	// example, that the first replica should be not on the same rack
+	// and zone as the first copy.
 	HierarchyRules blance.HierarchyRules `json:"hierarchyRules"`
+
+	// NodePlanParams allows users to specify per-node input to the
+	// planner, such as whether PIndexes assigned to different nodes
+	// can be readable or writable.  Keyed by node UUID.  Value is
+	// keyed by planPIndex.Name or indexDef.Name.
+	NodePlanParams map[string]map[string]*NodePlanParam `json:"nodePlanParams"`
+}
+
+type NodePlanParam struct {
+	CanRead  bool `json:"canRead"`
+	CanWrite bool `json:"canWrite"`
 }
 
 // ------------------------------------------------------------------------

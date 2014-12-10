@@ -381,9 +381,9 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok","indexDefs":{"uuid":`:                                                                                                                                true,
-				`"indexDefs":{"idx0":{"type":"bleve","name":"idx0","uuid":"`:                                                                                                         true,
-				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null}}}`: true,
+				`{"status":"ok","indexDefs":{"uuid":`:                                                                                                                                                      true,
+				`"indexDefs":{"idx0":{"type":"bleve","name":"idx0","uuid":"`:                                                                                                                               true,
+				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null,"nodePlanParams":null}}}`: true,
 			},
 		},
 		{
