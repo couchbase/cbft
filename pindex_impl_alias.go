@@ -78,11 +78,12 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 		return fmt.Errorf("QueryAlias parsing bleveQueryParams, err: %v", err)
 	}
 
-	var cancelCh chan struct{} // TOOD: get cancelCh from caller.
+	var cancelCh chan string // TOOD: get cancelCh from caller.
 	if bleveQueryParams.Timeout > 0 {
-		cancelCh = make(chan struct{})
+		cancelCh = make(chan string, 1)
 		go func() {
 			time.Sleep(time.Duration(bleveQueryParams.Timeout) * time.Millisecond)
+			cancelCh <- "timeout"
 			close(cancelCh)
 		}()
 	}
@@ -121,7 +122,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 // TODO: One day support user-defined aliases for non-bleve indexes.
 func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	indexName, indexUUID string, consistencyParams *ConsistencyParams,
-	cancelCh chan struct{}) (
+	cancelCh chan string) (
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 

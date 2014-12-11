@@ -144,11 +144,12 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 			" req: %s, err: %v", req, err)
 	}
 
-	var cancelCh chan struct{} // TOOD: get cancelCh from caller.
+	var cancelCh chan string // TOOD: get cancelCh from caller.
 	if bleveQueryParams.Timeout > 0 {
-		cancelCh = make(chan struct{})
+		cancelCh = make(chan string, 1)
 		go func() {
 			time.Sleep(time.Duration(bleveQueryParams.Timeout) * time.Millisecond)
+			cancelCh <- "timeout"
 			close(cancelCh)
 		}()
 	}
@@ -207,7 +208,7 @@ type BleveDestPartition struct {
 type consistencyWaitReq struct {
 	consistencyLevel string
 	consistencySeq   uint64
-	cancelCh         chan struct{}
+	cancelCh         chan string
 	doneCh           chan error
 }
 
@@ -414,7 +415,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) error {
+	cancelCh chan string) error {
 	cwr := &consistencyWaitReq{
 		consistencyLevel: consistencyLevel,
 		consistencySeq:   consistencySeq,
@@ -446,12 +447,17 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 	if cancelCh != nil {
 		select {
-		case <-cancelCh:
+		case status := <-cancelCh:
+			if status == "" { // For example, the status might be "timeout".
+				status = "cancelled"
+			}
+
 			// TODO: track stats.
 			rv := map[string][]uint64{}
 			rv[partition] = []uint64{seqMaxBatchStart, currSeq()}
 			return &ErrorConsistencyWait{
 				Err:          fmt.Errorf("ConsistencyWait cancelled"),
+				Status:       status,
 				StartEndSeqs: rv,
 			}
 
@@ -467,7 +473,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
-	cancelCh chan struct{}) error {
+	cancelCh chan string) error {
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
@@ -481,7 +487,7 @@ func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
 	return nil
 }
 
-func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
+func (t *BleveDest) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
 		!strings.HasPrefix(pindex.IndexType, "bleve") {
@@ -497,7 +503,7 @@ func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error
 }
 
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan struct{}) error {
+	cancelCh chan string) error {
 	if pindex == nil ||
 		pindex.Impl == nil ||
 		!strings.HasPrefix(pindex.IndexType, "bleve") {
@@ -745,7 +751,7 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // activities.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
-	cancelCh chan struct{}) (bleve.IndexAlias, error) {
+	cancelCh chan string) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
@@ -812,8 +818,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	if cancelCh != nil {
 		select {
-		case <-cancelCh:
-			return nil, fmt.Errorf("cancelled")
+		case status := <-cancelCh:
+			return nil, fmt.Errorf("cancelled, status: %s", status)
 		default:
 		}
 	}

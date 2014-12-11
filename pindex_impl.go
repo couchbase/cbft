@@ -36,7 +36,10 @@ type ConsistencyParams struct {
 type ConsistencyVector map[string]uint64
 
 type ErrorConsistencyWait struct {
-	Err          error
+	Err    error  // The underlying, wrapped error.
+	Status string // Short status reason, like "timeout", "cancelled", etc.
+
+	// Keyed by partitionId, value is pair of start/end seq's.
 	StartEndSeqs map[string][]uint64
 }
 

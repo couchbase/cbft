@@ -195,8 +195,7 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				Message      string              `json:"message"`
 				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 			}{
-				// TODO: Need a better status code.
-				Status: "consistency-wait",
+				Status: errCW.Status,
 				Message: fmt.Sprintf("rest.Query,"+
 					" indexName: %s, requestBody: %s, req: %#v, err: %v",
 					indexName, requestBody, req, err),
@@ -252,7 +251,7 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh chan struct{} // TODO: Support request timeout and cancellation.
+	var cancelCh chan string // TODO: Support request timeout and cancellation.
 
 	log.Printf("rest.CountPIndex pindexName: %s", pindexName)
 
@@ -317,7 +316,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh chan struct{} // TODO: Support request timeout and cancellation.
+	var cancelCh chan string // TODO: Support request timeout and cancellation.
 
 	log.Printf("rest.QueryPIndex pindexName: %s, requestBody: %s",
 		pindexName, requestBody)
@@ -330,8 +329,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				Message      string              `json:"message"`
 				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 			}{
-				// TODO: Need a better status code.
-				Status: "consistency-wait",
+				Status: errCW.Status,
 				Message: fmt.Sprintf("rest.QueryPIndex,"+
 					" pindexName: %s, requestBody: %s, req: %#v, err: %v",
 					pindexName, requestBody, req, err),

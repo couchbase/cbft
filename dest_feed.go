@@ -157,7 +157,7 @@ func (t *DestFeed) Rollback(partition string,
 func (t *DestFeed) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) error {
+	cancelCh chan string) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
 		return fmt.Errorf("error: DestFeed pf, err: %v", err)
@@ -166,12 +166,12 @@ func (t *DestFeed) ConsistencyWait(partition string,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *DestFeed) Count(pindex *PIndex, cancelCh chan struct{}) (
+func (t *DestFeed) Count(pindex *PIndex, cancelCh chan string) (
 	uint64, error) {
 	return 0, fmt.Errorf("DestFeed.Count unimplemented")
 }
 
 func (t *DestFeed) Query(pindex *PIndex, req []byte, w io.Writer,
-	cancelCh chan struct{}) error {
+	cancelCh chan string) error {
 	return fmt.Errorf("DestFeed.Query unimplemented")
 }
