@@ -415,7 +415,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) error {
+	cancelCh chan struct{}) (uint64, uint64, error) {
 	cwr := &consistencyWaitReq{
 		consistencyLevel: consistencyLevel,
 		consistencySeq:   consistencySeq,
@@ -428,12 +428,20 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	bdp, _, err := t.getPartitionUnlocked(partition)
 	if err != nil {
 		t.m.Unlock()
-		return err
+		return 0, 0, err
 	}
 
 	bdp.cwrCh <- cwr // Want getPartitionUnlocked() & cwr send under lock.
 
 	t.m.Unlock()
+
+	currSeq := func() uint64 {
+		bdp.m.Lock()
+		defer bdp.m.Unlock()
+		return bdp.seqMaxBatch
+	}
+
+	seqMaxBatchStart := currSeq()
 
 	// TODO: Need stats to see how many inflight waits we have.
 
@@ -447,33 +455,37 @@ func (t *BleveDest) ConsistencyWait(partition string,
 			// TODO: We should also return the starting seq number
 			// right when we started waiting, so that the
 			// caller/client can compute ingest velocity.
-			return fmt.Errorf("cancelled")
+			return seqMaxBatchStart, currSeq(), fmt.Errorf("cancelled")
+
 		case err = <-cwr.doneCh:
 			// TODO: track stats.
-			return err
+			return seqMaxBatchStart, currSeq(), err
 		}
 	}
 
 	err = <-cwr.doneCh
+
 	// TODO: track stats.
-	return err
+	return seqMaxBatchStart, currSeq(), err
 }
 
 func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
-	cancelCh chan struct{}) error {
+	cancelCh chan struct{}) (map[string][]uint64, error) {
+	rv := map[string][]uint64{}
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
-			err := t.ConsistencyWait(partition,
+			seqStart, seqEnd, err := t.ConsistencyWait(partition,
 				consistencyLevel, consistencySeq, cancelCh)
+			rv[partition] = []uint64{seqStart, seqEnd}
 			if err != nil {
-				return err
+				return rv, err
 			}
 		}
 	}
-	return nil
+	return rv, nil
 }
 
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
@@ -517,11 +529,13 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 		consistencyParams.Vectors != nil {
 		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
 		if consistencyVector != nil {
-			err := t.ConsistencyWaitPartitions(pindex.sourcePartitionsArr,
+			startEndSeqs, err := t.ConsistencyWaitPartitions(
+				pindex.sourcePartitionsArr,
 				consistencyParams.Level, consistencyVector, cancelCh)
 			if err != nil {
 				return fmt.Errorf("BleveDest.Query cancelled,"+
-					" req: %s, err: %v", req, err)
+					" req: %s, startEndSeqs: %#v, err: %v",
+					req, startEndSeqs, err)
 			}
 		}
 	}
@@ -750,6 +764,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	var errConsistencyM sync.Mutex
 	var errConsistency error
+	var errStartEndSeqs map[string][]uint64
 
 	alias := bleve.NewIndexAlias()
 
@@ -772,12 +787,13 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 					go func() {
 						defer wg.Done()
 
-						err := bdest.ConsistencyWaitPartitions(
+						startEndSeqs, err := bdest.ConsistencyWaitPartitions(
 							localPIndex.sourcePartitionsArr,
 							consistencyParams.Level, consistencyVector, cancelCh)
 						if err != nil {
 							errConsistencyM.Lock()
 							errConsistency = err
+							errStartEndSeqs = startEndSeqs
 							errConsistencyM.Unlock()
 						}
 					}()
@@ -803,8 +819,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	wg.Wait()
 
 	if errConsistency != nil {
-		return nil, fmt.Errorf("bleveIndexAlias consistency wait, err: %v",
-			errConsistency)
+		return nil, fmt.Errorf("bleveIndexAlias consistency wait,"+
+			" startEndSeqs: %#v, err: %v", errStartEndSeqs, errConsistency)
 	}
 
 	if cancelCh != nil {

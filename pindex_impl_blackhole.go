@@ -113,8 +113,8 @@ func (t *BlackHole) Rollback(partition string, rollbackSeq uint64) error {
 func (t *BlackHole) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) error {
-	return nil
+	cancelCh chan struct{}) (uint64, uint64, error) {
+	return 0, 0, nil
 }
 
 func (t *BlackHole) Count(pindex *PIndex,

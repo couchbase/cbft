@@ -65,11 +65,15 @@ type Dest interface {
 
 	// Blocks until the Dest has reached the desired consistency for
 	// the partition or until the cancelCh is closed by some goroutine
-	// related to the calling goroutine.
+	// related to the calling goroutine.  The seqStart is the seq
+	// number when the operation started waiting and the seqEnd is the
+	// seq number at the end of operation (even when cancelled or
+	// error), so that the caller can get a rough idea of ingest
+	// velocity.
 	ConsistencyWait(partition string,
 		consistencyLevel string,
 		consistencySeq uint64,
-		cancelCh chan struct{}) error
+		cancelCh chan struct{}) (seqStart uint64, seqEnd uint64, err error)
 
 	// Counts the underlying pindex implementation.
 	Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error)
