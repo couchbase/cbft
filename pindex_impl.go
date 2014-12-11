@@ -35,6 +35,16 @@ type ConsistencyParams struct {
 // Key is partition, value is seq.
 type ConsistencyVector map[string]uint64
 
+type ErrorConsistencyWait struct {
+	Err          error
+	StartEndSeqs map[string][]uint64
+}
+
+func (e *ErrorConsistencyWait) Error() string {
+	return fmt.Sprintf("ErrorConsistencyWait, startEndSeqs: %#v,"+
+		" err: %v", e.StartEndSeqs, e.Err)
+}
+
 // ---------------------------------------------------------------
 
 type PIndexImplType struct {

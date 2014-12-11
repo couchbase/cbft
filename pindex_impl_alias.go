@@ -90,8 +90,15 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
 		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
-		return fmt.Errorf("QueryAlias indexAlias error,"+
+		errRV := fmt.Errorf("QueryAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
+		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+			return &ErrorConsistencyWait{
+				Err:          errRV,
+				StartEndSeqs: errCW.StartEndSeqs,
+			}
+		}
+		return errRV
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()
@@ -167,7 +174,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				targetSpec.IndexUUID != targetDef.UUID {
 				return fmt.Errorf("mismatched targetSpec.UUID: %s, targetDef.UUID: %s,"+
 					" targetName: %s, aliasName: %s, indexName: %s",
-					targetSpec.IndexUUID, targetDef.UUID, targetName, aliasName, indexName)
+					targetSpec.IndexUUID, targetDef.UUID, targetName,
+					aliasName, indexName)
 			}
 
 			// TODO: Perhaps convert to registered callbacks instead of if-else-if.
@@ -180,9 +188,16 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				subAlias, err := bleveIndexAlias(mgr, targetName,
 					targetSpec.IndexUUID, consistencyParams, cancelCh)
 				if err != nil {
-					return fmt.Errorf("bleveIndexAlias, indexName: %s,"+
+					errRV := fmt.Errorf("bleveIndexAlias, indexName: %s,"+
 						" targetName: %s, targetSpec: %#v, err: %v",
 						indexName, targetName, targetSpec, err)
+					if errCW, ok := err.(*ErrorConsistencyWait); ok {
+						return &ErrorConsistencyWait{
+							Err:          errRV,
+							StartEndSeqs: errCW.StartEndSeqs,
+						}
+					}
+					return errRV
 				}
 				alias.Add(subAlias)
 				num += 1

@@ -130,9 +130,9 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 // ---------------------------------------------------------------
 
 type BleveQueryParams struct {
-	Query       *bleve.SearchRequest `json:"query"`
-	Consistency *ConsistencyParams   `json:"consistency"`
 	Timeout     int64                `json:"timeout"`
+	Consistency *ConsistencyParams   `json:"consistency"`
+	Query       *bleve.SearchRequest `json:"query"`
 }
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
@@ -156,8 +156,15 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
 		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
-		return fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
+		errRV := fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
+		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+			return &ErrorConsistencyWait{
+				Err:          errRV,
+				StartEndSeqs: errCW.StartEndSeqs,
+			}
+		}
+		return errRV
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()
@@ -448,14 +455,9 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	if cancelCh != nil {
 		select {
 		case <-cancelCh:
-			// TODO: If we're cancelled (such as due to a timeout),
-			// here might be a good place to grab and return any
-			// current "up to" seq numbers.
-			//
-			// TODO: We should also return the starting seq number
-			// right when we started waiting, so that the
-			// caller/client can compute ingest velocity.
-			return seqMaxBatchStart, currSeq(), fmt.Errorf("cancelled")
+			// TODO: track stats.
+			return seqMaxBatchStart, currSeq(),
+				fmt.Errorf("ConsistencyWait cancelled")
 
 		case err = <-cwr.doneCh:
 			// TODO: track stats.
@@ -533,9 +535,12 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 				pindex.sourcePartitionsArr,
 				consistencyParams.Level, consistencyVector, cancelCh)
 			if err != nil {
-				return fmt.Errorf("BleveDest.Query cancelled,"+
-					" req: %s, startEndSeqs: %#v, err: %v",
-					req, startEndSeqs, err)
+				return &ErrorConsistencyWait{
+					Err: fmt.Errorf("BleveDest.Query cancelled,"+
+						" req: %s, startEndSeqs: %#v, err: %v",
+						req, startEndSeqs, err),
+					StartEndSeqs: startEndSeqs,
+				}
 			}
 		}
 	}
@@ -819,8 +824,16 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	wg.Wait()
 
 	if errConsistency != nil {
-		return nil, fmt.Errorf("bleveIndexAlias consistency wait,"+
-			" startEndSeqs: %#v, err: %v", errStartEndSeqs, errConsistency)
+		if errStartEndSeqs != nil {
+			return nil, &ErrorConsistencyWait{
+				Err: fmt.Errorf("bleveIndexAlias consistency wait,"+
+					" startEndSeqs: %#v, err: %v",
+					errStartEndSeqs, errConsistency),
+				StartEndSeqs: errStartEndSeqs,
+			}
+		}
+		return nil, fmt.Errorf("bleveIndexAlias during consistency wait,"+
+			" err: %v", errConsistency)
 	}
 
 	if cancelCh != nil {

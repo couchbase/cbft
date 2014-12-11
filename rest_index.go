@@ -189,6 +189,23 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
+		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+			rv := struct {
+				Status       string              `json:"status"`
+				Message      string              `json:"message"`
+				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
+			}{
+				// TODO: Need a better status code.
+				Status: "consistency-wait",
+				Message: fmt.Sprintf("rest.Query,"+
+					" indexName: %s, requestBody: %s, req: %#v, err: %v",
+					indexName, requestBody, req, err),
+				StartEndSeqs: errCW.StartEndSeqs,
+			}
+			mustEncode(w, rv)
+			return
+		}
+
 		showError(w, req, fmt.Sprintf("rest.Query,"+
 			" indexName: %s, requestBody: %s, req: %#v, err: %v",
 			indexName, requestBody, req, err), 400)
@@ -307,6 +324,23 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	err = pindex.Dest.Query(pindex, requestBody, w, cancelCh)
 	if err != nil {
+		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+			rv := struct {
+				Status       string              `json:"status"`
+				Message      string              `json:"message"`
+				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
+			}{
+				// TODO: Need a better status code.
+				Status: "consistency-wait",
+				Message: fmt.Sprintf("rest.QueryPIndex,"+
+					" pindexName: %s, requestBody: %s, req: %#v, err: %v",
+					pindexName, requestBody, req, err),
+				StartEndSeqs: errCW.StartEndSeqs,
+			}
+			mustEncode(w, rv)
+			return
+		}
+
 		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
 			" pindexName: %s, requestBody: %s, req: %#v, err: %v",
 			pindexName, requestBody, req, err), 400)
