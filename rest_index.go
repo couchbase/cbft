@@ -10,6 +10,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -201,8 +202,11 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					indexName, requestBody, req, err),
 				StartEndSeqs: errCW.StartEndSeqs,
 			}
-			mustEncode(w, rv)
-			return
+			buf, err := json.Marshal(rv)
+			if err != nil {
+				showError(w, req, string(buf), 408)
+				return
+			}
 		}
 
 		showError(w, req, fmt.Sprintf("rest.Query,"+
@@ -335,8 +339,11 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 					pindexName, requestBody, req, err),
 				StartEndSeqs: errCW.StartEndSeqs,
 			}
-			mustEncode(w, rv)
-			return
+			buf, err := json.Marshal(rv)
+			if err != nil {
+				showError(w, req, string(buf), 408)
+				return
+			}
 		}
 
 		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+

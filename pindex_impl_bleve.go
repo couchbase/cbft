@@ -455,8 +455,9 @@ func (t *BleveDest) ConsistencyWait(partition string,
 			// TODO: track stats.
 			rv := map[string][]uint64{}
 			rv[partition] = []uint64{seqMaxBatchStart, currSeq()}
+			err = fmt.Errorf("ConsistencyWait cancelled, status: %s", status)
 			return &ErrorConsistencyWait{
-				Err:          fmt.Errorf("ConsistencyWait cancelled"),
+				Err:          err,
 				Status:       status,
 				StartEndSeqs: rv,
 			}

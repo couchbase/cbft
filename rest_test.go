@@ -1113,7 +1113,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "query for 0 hit",
+			Desc:   "query for 0 hit aa0 query",
 			Path:   "/api/index/aa0/query",
 			Method: "POST",
 			Params: nil,
@@ -1178,14 +1178,14 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "query for 0 hit",
+			Desc:   "query for 0 hit aaBadTargetQuery",
 			Path:   "/api/index/aaBadTarget/query",
 			Method: "POST",
 			Params: nil,
 			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`error`: true,
+				`err: no indexDef for targetName: idxNotReal`: true,
 			},
 		},
 

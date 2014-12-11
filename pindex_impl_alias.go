@@ -91,15 +91,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
 		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
-		errRV := fmt.Errorf("QueryAlias indexAlias error,"+
-			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
-		if errCW, ok := err.(*ErrorConsistencyWait); ok {
-			return &ErrorConsistencyWait{
-				Err:          errRV,
-				StartEndSeqs: errCW.StartEndSeqs,
-			}
-		}
-		return errRV
+		return err
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()
@@ -189,16 +181,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				subAlias, err := bleveIndexAlias(mgr, targetName,
 					targetSpec.IndexUUID, consistencyParams, cancelCh)
 				if err != nil {
-					errRV := fmt.Errorf("bleveIndexAlias, indexName: %s,"+
-						" targetName: %s, targetSpec: %#v, err: %v",
-						indexName, targetName, targetSpec, err)
-					if errCW, ok := err.(*ErrorConsistencyWait); ok {
-						return &ErrorConsistencyWait{
-							Err:          errRV,
-							StartEndSeqs: errCW.StartEndSeqs,
-						}
-					}
-					return errRV
+					return err
 				}
 				alias.Add(subAlias)
 				num += 1
