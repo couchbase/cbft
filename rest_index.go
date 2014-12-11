@@ -203,7 +203,7 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				StartEndSeqs: errCW.StartEndSeqs,
 			}
 			buf, err := json.Marshal(rv)
-			if err != nil {
+			if err == nil && buf != nil {
 				showError(w, req, string(buf), 408)
 				return
 			}
@@ -340,7 +340,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				StartEndSeqs: errCW.StartEndSeqs,
 			}
 			buf, err := json.Marshal(rv)
-			if err != nil {
+			if err == nil && buf != nil {
 				showError(w, req, string(buf), 408)
 				return
 			}
