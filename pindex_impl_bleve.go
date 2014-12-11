@@ -455,7 +455,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
-		pindex.IndexType != "bleve" {
+		strings.HasPrefix(pindex.IndexType, "bleve") {
 		return 0, fmt.Errorf("BleveDest.Count bad pindex: %#v", pindex)
 	}
 
@@ -471,7 +471,7 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan struct{}) error {
 	if pindex == nil ||
 		pindex.Impl == nil ||
-		pindex.IndexType != "bleve" {
+		strings.HasPrefix(pindex.IndexType, "bleve") {
 		return fmt.Errorf("BleveDest.Query bad pindex: %#v", pindex)
 	}
 

@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -175,7 +176,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				if err != nil {
 					return err
 				}
-			} else if targetDef.Type == "bleve" {
+			} else if strings.HasPrefix(targetDef.Type, "bleve") {
 				subAlias, err := bleveIndexAlias(mgr, targetName,
 					targetSpec.IndexUUID, consistencyParams, cancelCh)
 				if err != nil {
