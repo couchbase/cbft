@@ -215,7 +215,8 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("rest.Query indexName: %s, DONE, requestBody: %s", indexName, requestBody)
+	log.Printf("rest.Query indexName: %s, DONE, requestBody: %s",
+		indexName, requestBody)
 }
 
 // ---------------------------------------------------
