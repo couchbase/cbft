@@ -718,6 +718,10 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // TODO: Perhaps need a tighter check around indexUUID, as the current
 // implementation might have a race where old pindexes with a matching
 // (but invalid) indexUUID might be hit.
+//
+// TODO: If this returns an error, perhaps the caller somewhere up the
+// chain should close the cancelCh to help stop any other inflight
+// activities.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
 	cancelCh chan struct{}) (bleve.IndexAlias, error) {
