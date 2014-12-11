@@ -440,6 +440,13 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	if cancelCh != nil {
 		select {
 		case <-cancelCh:
+			// TODO: If we're cancelled (such as due to a timeout),
+			// here might be a good place to grab and return any
+			// current "up to" seq numbers.
+			//
+			// TODO: We should also return the starting seq number
+			// right when we started waiting, so that the
+			// caller/client can compute ingest velocity.
 			return fmt.Errorf("cancelled")
 		case err = <-cwr.doneCh:
 			// TODO: track stats.
@@ -807,6 +814,13 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 		default:
 		}
 	}
+
+	// TODO: There's likely a race here where at this point we've now
+	// waited for all the (local) pindexes to reach the requested
+	// consistency levels, but before we actually can use the
+	// constructed alias and kick off a query, an adversary does a
+	// rollback.  Using the alias to query after that might now be
+	// incorrectly running against data some time back in the past.
 
 	return alias, nil
 }
