@@ -452,6 +452,23 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	return err
 }
 
+func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
+	consistencyLevel string,
+	consistencyVector map[string]uint64,
+	cancelCh chan struct{}) error {
+	for _, partition := range partitions {
+		consistencySeq := consistencyVector[partition]
+		if consistencySeq > 0 {
+			err := t.ConsistencyWait(partition,
+				consistencyLevel, consistencySeq, cancelCh)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
@@ -493,18 +510,11 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 		consistencyParams.Vectors != nil {
 		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
 		if consistencyVector != nil {
-			for _, partition := range pindex.sourcePartitionsArr {
-				consistencySeq := consistencyVector[partition]
-				if consistencySeq > 0 {
-					err := t.ConsistencyWait(partition,
-						consistencyParams.Level,
-						consistencySeq,
-						cancelCh)
-					if err != nil {
-						return fmt.Errorf("BleveDest.Query cancelled,"+
-							" req: %s, err: %v", req, err)
-					}
-				}
+			err := t.ConsistencyWaitPartitions(pindex.sourcePartitionsArr,
+				consistencyParams.Level, consistencyVector, cancelCh)
+			if err != nil {
+				return fmt.Errorf("BleveDest.Query cancelled,"+
+					" req: %s, err: %v", req, err)
 			}
 		}
 	}
@@ -744,7 +754,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			strings.HasPrefix(localPIndex.IndexType, "bleve") {
 			alias.Add(bindex)
 
-			if localPIndex.Dest != nil &&
+			bdest, ok := localPIndex.Dest.(*BleveDest)
+			if ok && bdest != nil &&
 				consistencyParams != nil &&
 				consistencyParams.Level != "" &&
 				consistencyParams.Vectors != nil {
@@ -754,19 +765,13 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 					go func() {
 						defer wg.Done()
 
-						for _, partition := range localPIndex.sourcePartitionsArr {
-							consistencySeq := consistencyVector[partition]
-							if consistencySeq > 0 {
-								err := localPIndex.Dest.ConsistencyWait(partition,
-									consistencyParams.Level,
-									consistencySeq,
-									cancelCh)
-								if err != nil {
-									errConsistencyM.Lock()
-									errConsistency = err
-									errConsistencyM.Unlock()
-								}
-							}
+						err := bdest.ConsistencyWaitPartitions(
+							localPIndex.sourcePartitionsArr,
+							consistencyParams.Level, consistencyVector, cancelCh)
+						if err != nil {
+							errConsistencyM.Lock()
+							errConsistency = err
+							errConsistencyM.Unlock()
 						}
 					}()
 				}
