@@ -19,6 +19,9 @@ config(['$routeProvider', '$locationProvider', function($routeProvider, $locatio
   $routeProvider.when('/indexes/:indexName',
                       {templateUrl: '/static/partials/index/index.html',
                        controller: 'IndexCtrl'});
+  $routeProvider.when('/indexes/:indexName/_clone',
+                      {templateUrl: '/static/partials/index/new.html',
+                       controller: 'IndexNewCtrl'});
   $routeProvider.when('/indexes/:indexName/:tabName',
                       {templateUrl: '/static/partials/index/index.html',
                        controller: 'IndexCtrl'});
