@@ -1431,10 +1431,10 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 					t.Errorf("expected a record: %#v, ok: %v", record, ok)
 				}
 				test := &RESTHandlerTest{
-					Desc:   "test consistency wait got right result",
+					Desc:   "test consistency wait had right result",
 					Status: 400,
 					ResponseMatch: map[string]bool{
-						`err: bleveIndexAlias consistency wait`: true,
+						`err: consistency wait`: true,
 					},
 				}
 				test.check(t, record)

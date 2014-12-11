@@ -156,15 +156,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
 		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
-		errRV := fmt.Errorf("QueryBlevePIndexImpl indexAlias error,"+
-			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
-		if errCW, ok := err.(*ErrorConsistencyWait); ok {
-			return &ErrorConsistencyWait{
-				Err:          errRV,
-				StartEndSeqs: errCW.StartEndSeqs,
-			}
-		}
-		return errRV
+		return err
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()
@@ -422,7 +414,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) (uint64, uint64, error) {
+	cancelCh chan struct{}) error {
 	cwr := &consistencyWaitReq{
 		consistencyLevel: consistencyLevel,
 		consistencySeq:   consistencySeq,
@@ -435,7 +427,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	bdp, _, err := t.getPartitionUnlocked(partition)
 	if err != nil {
 		t.m.Unlock()
-		return 0, 0, err
+		return err
 	}
 
 	bdp.cwrCh <- cwr // Want getPartitionUnlocked() & cwr send under lock.
@@ -456,38 +448,37 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		select {
 		case <-cancelCh:
 			// TODO: track stats.
-			return seqMaxBatchStart, currSeq(),
-				fmt.Errorf("ConsistencyWait cancelled")
+			rv := map[string][]uint64{}
+			rv[partition] = []uint64{seqMaxBatchStart, currSeq()}
+			return &ErrorConsistencyWait{
+				Err:          fmt.Errorf("ConsistencyWait cancelled"),
+				StartEndSeqs: rv,
+			}
 
 		case err = <-cwr.doneCh:
-			// TODO: track stats.
-			return seqMaxBatchStart, currSeq(), err
+			return err // TODO: track stats.
 		}
 	}
 
 	err = <-cwr.doneCh
-
-	// TODO: track stats.
-	return seqMaxBatchStart, currSeq(), err
+	return err // TODO: track stats.
 }
 
 func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
-	cancelCh chan struct{}) (map[string][]uint64, error) {
-	rv := map[string][]uint64{}
+	cancelCh chan struct{}) error {
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
-			seqStart, seqEnd, err := t.ConsistencyWait(partition,
+			err := t.ConsistencyWait(partition,
 				consistencyLevel, consistencySeq, cancelCh)
-			rv[partition] = []uint64{seqStart, seqEnd}
 			if err != nil {
-				return rv, err
+				return err
 			}
 		}
 	}
-	return rv, nil
+	return nil
 }
 
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error) {
@@ -531,16 +522,10 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 		consistencyParams.Vectors != nil {
 		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
 		if consistencyVector != nil {
-			startEndSeqs, err := t.ConsistencyWaitPartitions(
-				pindex.sourcePartitionsArr,
+			err := t.ConsistencyWaitPartitions(pindex.sourcePartitionsArr,
 				consistencyParams.Level, consistencyVector, cancelCh)
 			if err != nil {
-				return &ErrorConsistencyWait{
-					Err: fmt.Errorf("BleveDest.Query cancelled,"+
-						" req: %s, startEndSeqs: %#v, err: %v",
-						req, startEndSeqs, err),
-					StartEndSeqs: startEndSeqs,
-				}
+				return err
 			}
 		}
 	}
@@ -769,7 +754,6 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	var errConsistencyM sync.Mutex
 	var errConsistency error
-	var errStartEndSeqs map[string][]uint64
 
 	alias := bleve.NewIndexAlias()
 
@@ -792,13 +776,12 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 					go func() {
 						defer wg.Done()
 
-						startEndSeqs, err := bdest.ConsistencyWaitPartitions(
+						err := bdest.ConsistencyWaitPartitions(
 							localPIndex.sourcePartitionsArr,
 							consistencyParams.Level, consistencyVector, cancelCh)
 						if err != nil {
 							errConsistencyM.Lock()
 							errConsistency = err
-							errStartEndSeqs = startEndSeqs
 							errConsistencyM.Unlock()
 						}
 					}()
@@ -824,16 +807,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	wg.Wait()
 
 	if errConsistency != nil {
-		if errStartEndSeqs != nil {
-			return nil, &ErrorConsistencyWait{
-				Err: fmt.Errorf("bleveIndexAlias consistency wait,"+
-					" startEndSeqs: %#v, err: %v",
-					errStartEndSeqs, errConsistency),
-				StartEndSeqs: errStartEndSeqs,
-			}
-		}
-		return nil, fmt.Errorf("bleveIndexAlias during consistency wait,"+
-			" err: %v", errConsistency)
+		return nil, errConsistency
 	}
 
 	if cancelCh != nil {

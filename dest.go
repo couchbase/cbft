@@ -73,7 +73,7 @@ type Dest interface {
 	ConsistencyWait(partition string,
 		consistencyLevel string,
 		consistencySeq uint64,
-		cancelCh chan struct{}) (seqStart uint64, seqEnd uint64, err error)
+		cancelCh chan struct{}) error
 
 	// Counts the underlying pindex implementation.
 	Count(pindex *PIndex, cancelCh chan struct{}) (uint64, error)

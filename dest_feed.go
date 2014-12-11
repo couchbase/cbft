@@ -157,10 +157,10 @@ func (t *DestFeed) Rollback(partition string,
 func (t *DestFeed) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) (uint64, uint64, error) {
+	cancelCh chan struct{}) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return 0, 0, fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: DestFeed pf, err: %v", err)
 	}
 	return dest.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)

@@ -56,8 +56,8 @@ func (s *TestDest) Rollback(partition string,
 func (s *TestDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan struct{}) (uint64, uint64, error) {
-	return 0, 0, nil
+	cancelCh chan struct{}) error {
+	return nil
 }
 
 func (t *TestDest) Count(pindex *PIndex,
@@ -130,9 +130,7 @@ func TestDestFeed(t *testing.T) {
 	if df.Rollback("unknown-partition", seq) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	seqStart, seqEnd, err :=
-		df.ConsistencyWait("unknown-partition", "level", seq, nil)
-	if err == nil || seqStart != 0 || seqEnd != 0 {
+	if df.ConsistencyWait("unknown-partition", "level", seq, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
 	if df.Query(nil, nil, nil, nil) == nil {
