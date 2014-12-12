@@ -259,7 +259,7 @@ func (t *BleveDest) Close() error {
 
 func (t *BleveDest) closeUnlocked() error {
 	if t.bindex == nil {
-		return fmt.Errorf("BleveDest already closed")
+		return nil // Already closed.
 	}
 
 	for _, bdp := range t.partitions {
