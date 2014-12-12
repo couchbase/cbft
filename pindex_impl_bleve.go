@@ -201,7 +201,7 @@ type BleveDestPartition struct {
 
 	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
 
-	cwrCh    chan *consistencyWaitReq
+	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
 }
 
@@ -237,7 +237,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           bleve.NewBatch(),
-			cwrCh:           make(chan *consistencyWaitReq, 1),
+			cwrCh:           make(chan *ConsistencyWaitReq, 1),
 			cwrQueue:        cwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
@@ -382,11 +382,11 @@ func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh chan string) error {
-	cwr := &consistencyWaitReq{
-		consistencyLevel: consistencyLevel,
-		consistencySeq:   consistencySeq,
-		cancelCh:         cancelCh,
-		doneCh:           make(chan error),
+	cwr := &ConsistencyWaitReq{
+		ConsistencyLevel: consistencyLevel,
+		ConsistencySeq:   consistencySeq,
+		CancelCh:         cancelCh,
+		DoneCh:           make(chan error),
 	}
 
 	t.m.Lock()
@@ -403,7 +403,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 	t.m.Unlock()
 
-	return ConsistencyWaitDone(partition, cancelCh, cwr.doneCh, func() uint64 {
+	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh, func() uint64 {
 		bdp.m.Lock()
 		defer bdp.m.Unlock()
 		return bdp.seqMaxBatch
@@ -497,18 +497,18 @@ func (t *BleveDestPartition) run() {
 	for cwr := range t.cwrCh {
 		t.m.Lock()
 
-		if cwr.consistencyLevel == "" {
-			close(cwr.doneCh) // We treat "" like stale=ok, so we're done.
-		} else if cwr.consistencyLevel == "at_plus" {
-			if cwr.consistencySeq > t.seqMaxBatch {
+		if cwr.ConsistencyLevel == "" {
+			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
+		} else if cwr.ConsistencyLevel == "at_plus" {
+			if cwr.ConsistencySeq > t.seqMaxBatch {
 				heap.Push(&t.cwrQueue, cwr)
 			} else {
-				close(cwr.doneCh)
+				close(cwr.DoneCh)
 			}
 		} else {
-			cwr.doneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
-				" cwr: %#v", cwr.consistencyLevel, cwr)
-			close(cwr.doneCh)
+			cwr.DoneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
+				" cwr: %#v", cwr.ConsistencyLevel, cwr)
+			close(cwr.DoneCh)
 		}
 
 		t.m.Unlock()
@@ -522,8 +522,8 @@ func (t *BleveDestPartition) run() {
 	err := fmt.Errorf("consistency wait closed")
 
 	for _, cwr := range t.cwrQueue {
-		cwr.doneCh <- err
-		close(cwr.doneCh)
+		cwr.DoneCh <- err
+		close(cwr.DoneCh)
 	}
 }
 
@@ -640,11 +640,11 @@ func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
 	t.seqMaxBatch = t.seqMax
 
 	for t.cwrQueue.Len() > 0 &&
-		t.cwrQueue[0].consistencySeq <= t.seqMaxBatch {
-		cwr := heap.Pop(&t.cwrQueue).(*consistencyWaitReq)
+		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
+		cwr := heap.Pop(&t.cwrQueue).(*ConsistencyWaitReq)
 		if cwr != nil &&
-			cwr.doneCh != nil {
-			close(cwr.doneCh)
+			cwr.DoneCh != nil {
+			close(cwr.DoneCh)
 		}
 	}
 

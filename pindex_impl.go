@@ -114,11 +114,11 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 
 // ---------------------------------------------------------
 
-type consistencyWaitReq struct {
-	consistencyLevel string
-	consistencySeq   uint64
-	cancelCh         chan string
-	doneCh           chan error
+type ConsistencyWaitReq struct {
+	ConsistencyLevel string
+	ConsistencySeq   uint64
+	CancelCh         chan string
+	DoneCh           chan error
 }
 
 func ConsistencyWaitDone(partition string, cancelCh chan string,
@@ -151,12 +151,12 @@ func ConsistencyWaitDone(partition string, cancelCh chan string,
 
 // A cwrQueue is a consistency wait request queue, implementing the
 // heap.Interface for consistencyWaitReq's.
-type cwrQueue []*consistencyWaitReq
+type cwrQueue []*ConsistencyWaitReq
 
 func (pq cwrQueue) Len() int { return len(pq) }
 
 func (pq cwrQueue) Less(i, j int) bool {
-	return pq[i].consistencySeq < pq[j].consistencySeq
+	return pq[i].ConsistencySeq < pq[j].ConsistencySeq
 }
 
 func (pq cwrQueue) Swap(i, j int) {
@@ -164,7 +164,7 @@ func (pq cwrQueue) Swap(i, j int) {
 }
 
 func (pq *cwrQueue) Push(x interface{}) {
-	*pq = append(*pq, x.(*consistencyWaitReq))
+	*pq = append(*pq, x.(*ConsistencyWaitReq))
 }
 
 func (pq *cwrQueue) Pop() interface{} {
