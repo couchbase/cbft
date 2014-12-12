@@ -397,44 +397,17 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		return err
 	}
 
-	bdp.cwrCh <- cwr // Want getPartitionUnlocked() & cwr send under lock.
+	// We want getPartitionUnlocked() & cwr send under the same lock
+	// so that another goroutine can't concurrently close the cwrCh.
+	bdp.cwrCh <- cwr
 
 	t.m.Unlock()
 
-	currSeq := func() uint64 {
+	return ConsistencyWaitDone(partition, cancelCh, cwr.doneCh, func() uint64 {
 		bdp.m.Lock()
 		defer bdp.m.Unlock()
 		return bdp.seqMaxBatch
-	}
-
-	seqMaxBatchStart := currSeq()
-
-	// TODO: Need stats to see how many inflight waits we have.
-
-	if cancelCh != nil {
-		select {
-		case status := <-cancelCh:
-			if status == "" { // For example, the status might be "timeout".
-				status = "cancelled"
-			}
-
-			// TODO: track stats.
-			rv := map[string][]uint64{}
-			rv[partition] = []uint64{seqMaxBatchStart, currSeq()}
-			err = fmt.Errorf("ConsistencyWait cancelled, status: %s", status)
-			return &ErrorConsistencyWait{
-				Err:          err,
-				Status:       status,
-				StartEndSeqs: rv,
-			}
-
-		case err = <-cwr.doneCh:
-			return err // TODO: track stats.
-		}
-	}
-
-	err = <-cwr.doneCh
-	return err // TODO: track stats.
+	})
 }
 
 func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,

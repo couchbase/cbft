@@ -121,6 +121,34 @@ type consistencyWaitReq struct {
 	doneCh           chan error
 }
 
+func ConsistencyWaitDone(partition string, cancelCh chan string,
+	doneCh chan error, currSeq func() uint64) error {
+	seqStart := currSeq()
+
+	select {
+	case status := <-cancelCh:
+		if status == "" { // For example, status might be "timeout".
+			status = "cancelled"
+		}
+
+		rv := map[string][]uint64{}
+		rv[partition] = []uint64{seqStart, currSeq()}
+
+		err := fmt.Errorf("ConsistencyWaitDone cancelled, status: %s", status)
+
+		return &ErrorConsistencyWait{ // TODO: track stats.
+			Err:          err,
+			Status:       status,
+			StartEndSeqs: rv,
+		}
+
+	case err := <-doneCh:
+		return err // TODO: track stats.
+	}
+}
+
+// ---------------------------------------------------------
+
 // A cwrQueue is a consistency wait request queue, implementing the
 // heap.Interface for consistencyWaitReq's.
 type cwrQueue []*consistencyWaitReq
