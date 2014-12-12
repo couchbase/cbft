@@ -182,7 +182,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 $scope.newSourceName = data.indexDef.sourceName;
                 $scope.newSourceUUID = data.indexDef.sourceUUID;
                 $scope.newSourceParams[data.indexDef.sourceType] = data.indexDef.sourceParams;
-                $scope.newPlanParams = data.indexDef.newPlanParams;
+                $scope.newPlanParams = JSON.stringify(data.indexDef.planParams, undefined, 2);
             }).
             error(function(data, code) {
                 $scope.errorMessage = data;
