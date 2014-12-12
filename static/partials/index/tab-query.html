@@ -1,11 +1,11 @@
 <div ng-controller="QueryCtrl">
 <form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
-    <input ng-model="syntax"
+    <input ng-model="query"
            type="text" class="form-control" placeholder="Query"/>
     <div class="input-group-btn">
       <button class="btn btn-primary" type="submit"
-              ng-click="query()">
+              ng-click="runQuery()">
         <i class="glyphicon glyphicon-search"></i>
       </button>
     </div>

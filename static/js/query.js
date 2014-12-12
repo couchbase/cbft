@@ -7,9 +7,9 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
 
-    $scope.query = function() {
+    $scope.runQuery = function() {
         $scope.numPages = 0;
-        $location.search('q', $scope.syntax);
+        $location.search('q', $scope.query);
         $location.search('p', $scope.page);
         $scope.results = null;
         from = ($scope.page-1)*$scope.resultsPerPage;
@@ -22,7 +22,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 "highlight": {},
                 "query": {
                     "boost": 1.0,
-                    "query": $scope.syntax,
+                    "query": $scope.query,
                 },
                 "fields": ["*"],
             },
@@ -46,27 +46,31 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.page = page;
         }
     }
+
     if($location.search().q !== undefined) {
-        $scope.syntax = $location.search().q;
-        $scope.query();
+        $scope.query = $location.search().q;
+        $scope.runQuery();
     }
 
     $scope.expl = function(explanation) {
-            rv = "" + $scope.roundScore(explanation.value) + " - " + explanation.message;
-            rv = rv + "<ul>";
-            for(var i in explanation.children) {
-                    child = explanation.children[i];
-                    rv = rv + "<li>" + $scope.expl(child) + "</li>";
-            }
-            rv = rv + "</ul>";
-            return rv;
+        rv = "" + $scope.roundScore(explanation.value) + " - " + explanation.message;
+        rv = rv + "<ul>";
+        for(var i in explanation.children) {
+            child = explanation.children[i];
+            rv = rv + "<li>" + $scope.expl(child) + "</li>";
+        }
+        rv = rv + "</ul>";
+        return rv;
     };
 
     $scope.roundScore = function(score) {
-            return Math.round(score*1000)/1000;
+        return Math.round(score*1000)/1000;
     };
 
     $scope.roundTook = function(took) {
+        if (!took || took <= 0) {
+            return "";
+        }
         if (took < 1000 * 1000) {
             return "<1ms";
         } else if (took < 1000 * 1000 * 1000) {
@@ -110,29 +114,29 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.results = data;
         $scope.setupPager($scope.results);
         for(var i in $scope.results.hits) {
-                hit = $scope.results.hits[i];
-                hit.roundedScore = $scope.roundScore(hit.score);
-                hit.explanationString = $scope.expl(hit.explanation);
-                hit.explanationStringSafe = $sce.trustAsHtml(hit.explanationString);
-                for(var ff in hit.fragments) {
-                    fragments = hit.fragments[ff];
-                    newFragments = [];
-                    for(var ffi in fragments) {
-                        fragment = fragments[ffi];
-                        safeFragment = $sce.trustAsHtml(fragment);
-                        newFragments.push(safeFragment);
-                    }
-                    hit.fragments[ff] = newFragments;
+            hit = $scope.results.hits[i];
+            hit.roundedScore = $scope.roundScore(hit.score);
+            hit.explanationString = $scope.expl(hit.explanation);
+            hit.explanationStringSafe = $sce.trustAsHtml(hit.explanationString);
+            for(var ff in hit.fragments) {
+                fragments = hit.fragments[ff];
+                newFragments = [];
+                for(var ffi in fragments) {
+                    fragment = fragments[ffi];
+                    safeFragment = $sce.trustAsHtml(fragment);
+                    newFragments.push(safeFragment);
                 }
-                if (!hit.fragments) {
-                    hit.fragments = {};
+                hit.fragments[ff] = newFragments;
+            }
+            if (!hit.fragments) {
+                hit.fragments = {};
+            }
+            for(var fv in hit.fields) {
+                fieldval = hit.fields[fv];
+                if (hit.fragments[fv] === undefined) {
+                    hit.fragments[fv] = [$sce.trustAsHtml(""+fieldval)];
                 }
-                for(var fv in hit.fields) {
-                    fieldval = hit.fields[fv];
-                    if (hit.fragments[fv] === undefined) {
-                        hit.fragments[fv] = [$sce.trustAsHtml(""+fieldval)];
-                    }
-                }
+            }
         }
         $scope.results.roundTook = $scope.roundTook(data.took);
     };
@@ -143,7 +147,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         }
 
         $scope.page = pageNum;
-        $scope.query();
+        $scope.runQuery();
     };
 
 }
