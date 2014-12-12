@@ -14,6 +14,7 @@ package cbft
 import (
 	"fmt"
 	"io"
+	"time"
 )
 
 type PIndexImpl interface {
@@ -173,4 +174,19 @@ func (pq *cwrQueue) Pop() interface{} {
 	item := old[n-1]
 	*pq = old[0 : n-1]
 	return item
+}
+
+// ---------------------------------------------------------
+
+func TimeoutCancelChan(timeout int64) chan string {
+	if timeout > 0 {
+		cancelCh := make(chan string, 1)
+		go func() {
+			time.Sleep(time.Duration(timeout) * time.Millisecond)
+			cancelCh <- "timeout"
+			close(cancelCh)
+		}()
+		return cancelCh
+	}
+	return nil
 }

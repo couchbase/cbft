@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/blevesearch/bleve"
 )
@@ -78,15 +77,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 		return fmt.Errorf("QueryAlias parsing bleveQueryParams, err: %v", err)
 	}
 
-	var cancelCh chan string // TOOD: get cancelCh from caller.
-	if bleveQueryParams.Timeout > 0 {
-		cancelCh = make(chan string, 1)
-		go func() {
-			time.Sleep(time.Duration(bleveQueryParams.Timeout) * time.Millisecond)
-			cancelCh <- "timeout"
-			close(cancelCh)
-		}()
-	}
+	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
 		bleveQueryParams.Consistency, cancelCh)
