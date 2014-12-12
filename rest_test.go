@@ -1185,7 +1185,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: no indexDef for targetName: idxNotReal`: true,
+				`err`: true,
 			},
 		},
 
@@ -1434,7 +1434,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 					Desc:   "test consistency wait had right result",
 					Status: 400,
 					ResponseMatch: map[string]bool{
-						`err: consistency wait`: true,
+						`err`: true,
 					},
 				}
 				test.check(t, record)
