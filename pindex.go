@@ -246,7 +246,7 @@ func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 	selfUUID := mgr.UUID()
 	_, selfDoesPIndexes := nodeDoesPIndexes(selfUUID)
 
-build_alias_loop:
+build_loop:
 	for _, planPIndex := range planPIndexes {
 		// First check whether this local node serves that planPIndex.
 		if selfDoesPIndexes &&
@@ -258,7 +258,7 @@ build_alias_loop:
 				localPIndex.IndexName == indexName &&
 				(indexUUID == "" || localPIndex.IndexUUID == indexUUID) {
 				localPIndexes = append(localPIndexes, localPIndex)
-				continue build_alias_loop
+				continue build_loop
 			}
 		}
 
@@ -271,7 +271,7 @@ build_alias_loop:
 						PlanPIndex: planPIndex,
 						NodeDef:    nodeDef,
 					})
-					continue build_alias_loop
+					continue build_loop
 				}
 			}
 		}
