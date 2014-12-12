@@ -205,40 +205,6 @@ type BleveDestPartition struct {
 	cwrQueue cwrQueue
 }
 
-type consistencyWaitReq struct {
-	consistencyLevel string
-	consistencySeq   uint64
-	cancelCh         chan string
-	doneCh           chan error
-}
-
-// ---------------------------------------------------------
-
-// A cwrQueue implements heap.Interface for consistencyWaitReq's.
-type cwrQueue []*consistencyWaitReq
-
-func (pq cwrQueue) Len() int { return len(pq) }
-
-func (pq cwrQueue) Less(i, j int) bool {
-	return pq[i].consistencySeq < pq[j].consistencySeq
-}
-
-func (pq cwrQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *cwrQueue) Push(x interface{}) {
-	*pq = append(*pq, x.(*consistencyWaitReq))
-}
-
-func (pq *cwrQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
-}
-
 // ---------------------------------------------------------
 
 func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
