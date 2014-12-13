@@ -36,6 +36,8 @@ import (
 // TODO: Snapshots, so that snapshots aren't visible yet until commited/flushed.
 // TODO: Partial rollback.
 
+var VLiteFileService = NewFileService(30)
+
 func init() {
 	RegisterPIndexImplType("vlite", &PIndexImplType{
 		Validate: ValidateVLitePIndexImpl,
@@ -73,7 +75,7 @@ type VLiteParams struct {
 type VLite struct {
 	params     *VLiteParams
 	path       string
-	file       *os.File
+	file       FileLike
 	store      *gkvlite.Store
 	mainColl   *gkvlite.Collection // Keyed by $secondaryIndexValue\xff$docId.
 	backColl   *gkvlite.Collection // Keyed by docId.
@@ -154,11 +156,12 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 	}
 
 	var pathStore string
-	var f *os.File
+	var f FileLike
 
 	if indexType != "vlite-mem" {
 		pathStore = path + string(os.PathSeparator) + "store.gkvlite"
-		f, err = os.OpenFile(pathStore, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+		f, err = VLiteFileService.OpenFile(pathStore,
+			os.O_RDWR|os.O_CREATE|os.O_EXCL)
 		if err != nil {
 			os.Remove(pathMeta)
 			return nil, nil, err
@@ -198,7 +201,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 	}
 
 	pathStore := path + string(os.PathSeparator) + "store.gkvlite"
-	f, err := os.OpenFile(pathStore, os.O_RDWR, 0666)
+	f, err := VLiteFileService.OpenFile(pathStore, os.O_RDWR)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -214,7 +217,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 
 // ---------------------------------------------------------------
 
-func NewVLite(vliteParams *VLiteParams, path string, file *os.File,
+func NewVLite(vliteParams *VLiteParams, path string, file FileLike,
 	restart func()) (*VLite, error) {
 	store, err := gkvlite.NewStore(file)
 	if err != nil {
