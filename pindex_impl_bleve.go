@@ -29,6 +29,55 @@ import (
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
 const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1800000
 
+type BleveDest struct {
+	path string
+
+	// Invoked when mgr should restart this BleveDest, like on rollback.
+	restart func()
+
+	m          sync.Mutex // Protects the fields that follow.
+	bindex     bleve.Index
+	partitions map[string]*BleveDestPartition
+}
+
+// Used to track state for a single partition.
+type BleveDestPartition struct {
+	bdest           *BleveDest
+	bindex          bleve.Index
+	partition       string
+	partitionOpaque []byte // Key used to implement SetOpaque/GetOpaque().
+
+	m           sync.Mutex   // Protects the fields that follow.
+	seqMax      uint64       // Max seq # we've seen for this partition.
+	seqMaxBuf   []byte       // For binary encoded seqMax uint64.
+	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
+	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
+	buf         []byte       // The batch points to slices from buf, which we reuse.
+	batch       *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
+
+	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
+
+	cwrCh    chan *ConsistencyWaitReq
+	cwrQueue cwrQueue
+}
+
+type BleveQueryParams struct {
+	Timeout     int64                `json:"timeout"`
+	Consistency *ConsistencyParams   `json:"consistency"`
+	Query       *bleve.SearchRequest `json:"query"`
+}
+
+func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
+	return &BleveDest{
+		path:       path,
+		restart:    restart,
+		bindex:     bindex,
+		partitions: make(map[string]*BleveDestPartition),
+	}
+}
+
+// ---------------------------------------------------------
+
 func init() {
 	RegisterPIndexImplType("bleve", &PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
@@ -120,7 +169,8 @@ func OpenBlevePIndexImpl(indexType, path string,
 
 // ---------------------------------------------------------------
 
-func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, error) {
+func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
+	uint64, error) {
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("CountBlevePIndexImpl indexAlias error,"+
@@ -128,14 +178,6 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (uint64, er
 	}
 
 	return alias.DocCount()
-}
-
-// ---------------------------------------------------------------
-
-type BleveQueryParams struct {
-	Timeout     int64                `json:"timeout"`
-	Consistency *ConsistencyParams   `json:"consistency"`
-	Query       *bleve.SearchRequest `json:"query"`
 }
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
@@ -171,49 +213,6 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 }
 
 // ---------------------------------------------------------
-
-type BleveDest struct {
-	path string
-
-	// Invoked when mgr should restart this BleveDest, like on rollback.
-	restart func()
-
-	m          sync.Mutex // Protects the fields that follow.
-	bindex     bleve.Index
-	partitions map[string]*BleveDestPartition
-}
-
-// Used to track state for a single partition.
-type BleveDestPartition struct {
-	bdest           *BleveDest
-	bindex          bleve.Index
-	partition       string
-	partitionOpaque []byte // Key used to implement SetOpaque/GetOpaque().
-
-	m           sync.Mutex   // Protects the fields that follow.
-	seqMax      uint64       // Max seq # we've seen for this partition.
-	seqMaxBuf   []byte       // For binary encoded seqMax uint64.
-	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
-	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
-	buf         []byte       // The batch points to slices from buf, which we reuse.
-	batch       *bleve.Batch // Batch is applied when too big or when we hit seqSnapEnd.
-
-	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
-
-	cwrCh    chan *ConsistencyWaitReq
-	cwrQueue cwrQueue
-}
-
-// ---------------------------------------------------------
-
-func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
-	return &BleveDest{
-		path:       path,
-		restart:    restart,
-		bindex:     bindex,
-		partitions: make(map[string]*BleveDestPartition),
-	}
-}
 
 func (t *BleveDest) Dest(partition string) (Dest, error) {
 	t.m.Lock()

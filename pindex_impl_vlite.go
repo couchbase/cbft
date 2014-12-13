@@ -38,34 +38,6 @@ import (
 
 var VLiteFileService = NewFileService(30)
 
-func init() {
-	RegisterPIndexImplType("vlite", &PIndexImplType{
-		Validate: ValidateVLitePIndexImpl,
-
-		New:   NewVLitePIndexImpl,
-		Open:  OpenVLitePIndexImpl,
-		Count: CountVLitePIndexImpl,
-		Query: QueryVLitePIndexImpl,
-
-		Description: "vlite - lightweight, view-like index",
-		StartSample: VLiteParams{},
-	})
-
-	RegisterPIndexImplType("vlite-mem", &PIndexImplType{
-		Validate: ValidateVLitePIndexImpl,
-
-		New:   NewVLitePIndexImpl,
-		Open:  OpenVLitePIndexImpl,
-		Count: CountVLitePIndexImpl,
-		Query: QueryVLitePIndexImpl,
-
-		Description: "vlite-mem - lightweight, view-like index (in memory only)",
-		StartSample: VLiteParams{},
-	})
-}
-
-// ---------------------------------------------------------
-
 type VLiteParams struct {
 	// Path is a jsonpointer path used to retrieve the indexed
 	// secondary value from each document.
@@ -125,7 +97,54 @@ type VLiteGatherer struct {
 
 var EMPTY_BYTES = []byte{}
 
+func NewVLite(vliteParams *VLiteParams, path string, file FileLike,
+	restart func()) (*VLite, error) {
+	store, err := gkvlite.NewStore(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return &VLite{
+		params:     vliteParams,
+		path:       path,
+		file:       file,
+		store:      store,
+		mainColl:   store.SetCollection("main", nil),
+		backColl:   store.SetCollection("back", nil),
+		opaqueColl: store.SetCollection("opaque", nil),
+		seqColl:    store.SetCollection("seq", nil),
+		restart:    restart,
+		partitions: make(map[string]*VLitePartition),
+	}, nil
+}
+
 // ---------------------------------------------------------
+
+func init() {
+	RegisterPIndexImplType("vlite", &PIndexImplType{
+		Validate: ValidateVLitePIndexImpl,
+
+		New:   NewVLitePIndexImpl,
+		Open:  OpenVLitePIndexImpl,
+		Count: CountVLitePIndexImpl,
+		Query: QueryVLitePIndexImpl,
+
+		Description: "vlite - lightweight, view-like index",
+		StartSample: VLiteParams{},
+	})
+
+	RegisterPIndexImplType("vlite-mem", &PIndexImplType{
+		Validate: ValidateVLitePIndexImpl,
+
+		New:   NewVLitePIndexImpl,
+		Open:  OpenVLitePIndexImpl,
+		Count: CountVLitePIndexImpl,
+		Query: QueryVLitePIndexImpl,
+
+		Description: "vlite-mem - lightweight, view-like index (in memory only)",
+		StartSample: VLiteParams{},
+	})
+}
 
 func ValidateVLitePIndexImpl(indexType, indexName, indexParams string) error {
 	vliteParams := VLiteParams{}
@@ -218,29 +237,6 @@ func OpenVLitePIndexImpl(indexType, path string,
 	}
 
 	return vlite, &DestForwarder{DestProvider: vlite}, nil
-}
-
-// ---------------------------------------------------------------
-
-func NewVLite(vliteParams *VLiteParams, path string, file FileLike,
-	restart func()) (*VLite, error) {
-	store, err := gkvlite.NewStore(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return &VLite{
-		params:     vliteParams,
-		path:       path,
-		file:       file,
-		store:      store,
-		mainColl:   store.SetCollection("main", nil),
-		backColl:   store.SetCollection("back", nil),
-		opaqueColl: store.SetCollection("opaque", nil),
-		seqColl:    store.SetCollection("seq", nil),
-		restart:    restart,
-		partitions: make(map[string]*VLitePartition),
-	}, nil
 }
 
 // ---------------------------------------------------------------
