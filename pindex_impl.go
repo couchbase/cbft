@@ -12,8 +12,10 @@
 package cbft
 
 import (
+	"container/heap"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -200,6 +202,44 @@ func (pq *cwrQueue) Pop() interface{} {
 	item := old[n-1]
 	*pq = old[0 : n-1]
 	return item
+}
+
+func RunConsistencyWaitQueue(
+	cwrCh chan *ConsistencyWaitReq,
+	m *sync.Mutex,
+	cwrQueue *cwrQueue,
+	currSeq func() uint64) {
+	for cwr := range cwrCh {
+		m.Lock()
+
+		if cwr.ConsistencyLevel == "" {
+			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
+		} else if cwr.ConsistencyLevel == "at_plus" {
+			if cwr.ConsistencySeq > currSeq() {
+				heap.Push(cwrQueue, cwr)
+			} else {
+				close(cwr.DoneCh)
+			}
+		} else {
+			cwr.DoneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
+				" cwr: %#v", cwr.ConsistencyLevel, cwr)
+			close(cwr.DoneCh)
+		}
+
+		m.Unlock()
+	}
+
+	// If we reach here, then we're closing down so cancel/error any
+	// callers waiting for consistency.
+	m.Lock()
+	defer m.Unlock()
+
+	err := fmt.Errorf("consistency wait closed")
+
+	for _, cwr := range *cwrQueue {
+		cwr.DoneCh <- err
+		close(cwr.DoneCh)
+	}
 }
 
 // ---------------------------------------------------------

@@ -294,7 +294,8 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 		}
 		heap.Init(&bdp.cwrQueue)
 
-		go bdp.run()
+		go RunConsistencyWaitQueue(bdp.cwrCh, &bdp.m, &bdp.cwrQueue,
+			func() uint64 { return bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
 	}
@@ -552,42 +553,6 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer) error {
 	w.Write([]byte("]}"))
 
 	return err
-}
-
-// ---------------------------------------------------------
-
-func (t *VLitePartition) run() {
-	for cwr := range t.cwrCh {
-		t.m.Lock()
-
-		if cwr.ConsistencyLevel == "" {
-			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
-		} else if cwr.ConsistencyLevel == "at_plus" {
-			if cwr.ConsistencySeq > t.seqMaxBatch {
-				heap.Push(&t.cwrQueue, cwr)
-			} else {
-				close(cwr.DoneCh)
-			}
-		} else {
-			cwr.DoneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
-				" cwr: %#v", cwr.ConsistencyLevel, cwr)
-			close(cwr.DoneCh)
-		}
-
-		t.m.Unlock()
-	}
-
-	// If we reach here, then we're closing down so cancel/error any
-	// callers waiting for consistency.
-	t.m.Lock()
-	defer t.m.Unlock()
-
-	err := fmt.Errorf("consistency wait closed")
-
-	for _, cwr := range t.cwrQueue {
-		cwr.DoneCh <- err
-		close(cwr.DoneCh)
-	}
 }
 
 // ---------------------------------------------------------
