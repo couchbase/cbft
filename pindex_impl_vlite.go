@@ -706,8 +706,6 @@ func (t *VLitePartition) applyBatchUnlocked() error {
 // Returns a VLiteGatherer that represents all the PIndexes for the
 // index, including perhaps VLite remote client PIndexes.
 //
-// TODO: Need to implement remote part of this.
-//
 // TODO: Perhaps need a tighter check around indexUUID, as the current
 // implementation might have a race where old pindexes with a matching
 // (but invalid) indexUUID might be hit.
@@ -724,44 +722,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 		return nil, fmt.Errorf("vliteGatherer, err: %v", err)
 	}
 
-	var errConsistencyM sync.Mutex
-	var errConsistency error
-
 	rv := &VLiteGatherer{}
-
-	var wg sync.WaitGroup
-
-	for _, localPIndex := range localPIndexes {
-		vlite, ok := localPIndex.Impl.(*VLite)
-		if ok && vlite != nil &&
-			strings.HasPrefix(localPIndex.IndexType, "vlite") {
-			rv.localVLites = append(rv.localVLites, vlite)
-
-			if consistencyParams != nil &&
-				consistencyParams.Level != "" &&
-				consistencyParams.Vectors != nil {
-				consistencyVector := consistencyParams.Vectors[indexName]
-				if consistencyVector != nil {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-
-						err := ConsistencyWaitPartitions(localPIndex.Dest,
-							localPIndex.sourcePartitionsArr,
-							consistencyParams.Level, consistencyVector, cancelCh)
-						if err != nil {
-							errConsistencyM.Lock()
-							errConsistency = err
-							errConsistencyM.Unlock()
-						}
-					}()
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("vliteGatherer,"+
-				" localPIndex is not vlite: %#v", localPIndex)
-		}
-	}
 
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
@@ -775,26 +736,21 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
-	wg.Wait()
 
-	if errConsistency != nil {
-		return nil, errConsistency
+	err = ConsistencyWaitGroup(indexName, consistencyParams,
+		cancelCh, localPIndexes,
+		func(localPIndex *PIndex) error {
+			vlite, ok := localPIndex.Impl.(*VLite)
+			if !ok || vlite == nil ||
+				!strings.HasPrefix(localPIndex.IndexType, "vlite") {
+				return fmt.Errorf("wrong type, localPIndex: %#v", localPIndex)
+			}
+			rv.localVLites = append(rv.localVLites, vlite)
+			return nil
+		})
+	if err != nil {
+		return nil, err
 	}
-
-	if cancelCh != nil {
-		select {
-		case status := <-cancelCh:
-			return nil, fmt.Errorf("cancelled, status: %s", status)
-		default:
-		}
-	}
-
-	// TODO: There's likely a race here where at this point we've now
-	// waited for all the (local) pindexes to reach the requested
-	// consistency levels, but before we actually can use the
-	// constructed alias and kick off a query, an adversary does a
-	// rollback.  Using the alias to query after that might now be
-	// incorrectly running against data some time back in the past.
 
 	return rv, nil
 }

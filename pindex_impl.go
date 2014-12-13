@@ -192,6 +192,70 @@ func ConsistencyWaitPartitions(
 	return nil
 }
 
+func ConsistencyWaitGroup(indexName string,
+	consistencyParams *ConsistencyParams, cancelCh chan string,
+	localPIndexes []*PIndex,
+	addLocalPIndex func(*PIndex) error) error {
+	var errConsistencyM sync.Mutex
+	var errConsistency error
+
+	var wg sync.WaitGroup
+
+	for _, localPIndex := range localPIndexes {
+		err := addLocalPIndex(localPIndex)
+		if err != nil {
+			return err
+		}
+
+		if consistencyParams != nil &&
+			consistencyParams.Level != "" &&
+			consistencyParams.Vectors != nil {
+			consistencyVector := consistencyParams.Vectors[indexName]
+			if consistencyVector != nil {
+				wg.Add(1)
+				go func(localPIndex *PIndex,
+					consistencyVector map[string]uint64) {
+					defer wg.Done()
+
+					err := ConsistencyWaitPartitions(localPIndex.Dest,
+						localPIndex.sourcePartitionsArr,
+						consistencyParams.Level,
+						consistencyVector,
+						cancelCh)
+					if err != nil {
+						errConsistencyM.Lock()
+						errConsistency = err
+						errConsistencyM.Unlock()
+					}
+				}(localPIndex, consistencyVector)
+			}
+		}
+	}
+
+	wg.Wait()
+
+	if errConsistency != nil {
+		return errConsistency
+	}
+
+	if cancelCh != nil {
+		select {
+		case status := <-cancelCh:
+			return fmt.Errorf("cancelled, status: %s", status)
+		default:
+		}
+	}
+
+	// TODO: There's likely a race here where at this point we've now
+	// waited for all the (local) pindexes to reach the requested
+	// consistency levels, but before we actually can use the
+	// constructed alias and kick off a query, an adversary does a
+	// rollback.  Using the alias to query after that might now be
+	// incorrectly running against data some time back in the past.
+
+	return nil
+}
+
 // ---------------------------------------------------------
 
 // A cwrQueue is a consistency wait request queue, implementing the
