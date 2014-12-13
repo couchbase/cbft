@@ -1,3 +1,31 @@
+function bleveQuery(scope) {
+    var from = (scope.page-1) * scope.resultsPerPage;
+    return { "query": {
+        "indexName": scope.indexName,
+        "size": scope.resultsPerPage,
+        "from": from,
+        "explain": true,
+        "highlight": {},
+        "query": {
+            "boost": 1.0,
+            "query": scope.query,
+        },
+        "fields": ["*"],
+    } }
+}
+
+function vliteQuery(scope) {
+    return { "key": scope.query };
+}
+
+var prepQueryRequest = {
+    "bleve": bleveQuery,
+    "bleve-mem": bleveQuery,
+    "alias": bleveQuery, // TODO: make aliases more generic.
+    "vlite": vliteQuery,
+    "vlite-mem": vliteQuery
+};
+
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.maxPagesToShow = 5;
@@ -8,30 +36,24 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyVectors = "{}";
 
     $scope.runQuery = function() {
+        $scope.results = null;
         $scope.numPages = 0;
+
+        if (!$scope.indexDef) {
+            return
+        }
+
         $location.search('q', $scope.query);
         $location.search('p', $scope.page);
-        $scope.results = null;
-        from = ($scope.page-1)*$scope.resultsPerPage;
-        $http.post('/api/index/' + $scope.indexName + '/query', {
-            "query": {
-                "indexName": $scope.indexName,
-                "size": $scope.resultsPerPage,
-                "from": from,
-                "explain": true,
-                "highlight": {},
-                "query": {
-                    "boost": 1.0,
-                    "query": $scope.query,
-                },
-                "fields": ["*"],
-            },
-            "consistency": {
-                "level": $scope.consistencyLevel,
-                "vectors": JSON.parse($scope.consistencyVectors || "null"),
-            },
-            "timeout": parseInt($scope.timeout) || 0,
-        }).
+
+        var req = prepQueryRequest[$scope.indexDef.type]($scope);
+        req.consistency = {
+            "level": $scope.consistencyLevel,
+            "vectors": JSON.parse($scope.consistencyVectors || "null"),
+        }
+        req.timeout = parseInt($scope.timeout) || 0
+
+        $http.post('/api/index/' + $scope.indexName + '/query', req).
         success(function(data) {
             $scope.processResults(data);
         }).
@@ -41,7 +63,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 
     if($location.search().p !== undefined) {
-        page = parseInt($location.search().p,10);
+        var page = parseInt($location.search().p, 10);
         if (typeof page == 'number' && !isNaN(page) && isFinite(page) && page > 0 ){
             $scope.page = page;
         }
@@ -53,10 +75,11 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     }
 
     $scope.expl = function(explanation) {
-        rv = "" + $scope.roundScore(explanation.value) + " - " + explanation.message;
+        var rv = "" + $scope.roundScore(explanation.value) +
+            " - " + explanation.message;
         rv = rv + "<ul>";
         for(var i in explanation.children) {
-            child = explanation.children[i];
+            var child = explanation.children[i];
             rv = rv + "<li>" + $scope.expl(child) + "</li>";
         }
         rv = rv + "</ul>";
@@ -82,19 +105,25 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 	};
 
     $scope.setupPager = function(results) {
+        if (!results.total_hits) {
+            return;
+        }
+
         $scope.numPages = Math.ceil(results.total_hits/$scope.resultsPerPage);
         $scope.validPages = [];
-        for (i = 1; i <= $scope.numPages; i++) {
+        for(var i = 1; i <= $scope.numPages; i++) {
             $scope.validPages.push(i);
         }
 
         // now see if we have too many pages
         if ($scope.validPages.length > $scope.maxPagesToShow) {
-            numPagesToRemove = $scope.validPages.length - $scope.maxPagesToShow;
-            frontPagesToRemove = backPagesToRemove = 0;
+            var numPagesToRemove = $scope.validPages.length - $scope.maxPagesToShow;
+            var frontPagesToRemove = 0
+            var backPagesToRemove = 0;
             while (numPagesToRemove - frontPagesToRemove - backPagesToRemove > 0) {
-                numPagesBefore = $scope.page - 1 - frontPagesToRemove;
-                numPagesAfter = $scope.validPages.length - $scope.page - backPagesToRemove;
+                var numPagesBefore = $scope.page - 1 - frontPagesToRemove;
+                var numPagesAfter =
+                    $scope.validPages.length - $scope.page - backPagesToRemove;
                 if (numPagesAfter > numPagesBefore) {
                     backPagesToRemove++;
                 } else {
@@ -114,16 +143,16 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.results = data;
         $scope.setupPager($scope.results);
         for(var i in $scope.results.hits) {
-            hit = $scope.results.hits[i];
+            var hit = $scope.results.hits[i];
             hit.roundedScore = $scope.roundScore(hit.score);
             hit.explanationString = $scope.expl(hit.explanation);
             hit.explanationStringSafe = $sce.trustAsHtml(hit.explanationString);
             for(var ff in hit.fragments) {
-                fragments = hit.fragments[ff];
-                newFragments = [];
+                var fragments = hit.fragments[ff];
+                var newFragments = [];
                 for(var ffi in fragments) {
-                    fragment = fragments[ffi];
-                    safeFragment = $sce.trustAsHtml(fragment);
+                    var fragment = fragments[ffi];
+                    var safeFragment = $sce.trustAsHtml(fragment);
                     newFragments.push(safeFragment);
                 }
                 hit.fragments[ff] = newFragments;
@@ -132,13 +161,15 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 hit.fragments = {};
             }
             for(var fv in hit.fields) {
-                fieldval = hit.fields[fv];
+                var fieldval = hit.fields[fv];
                 if (hit.fragments[fv] === undefined) {
                     hit.fragments[fv] = [$sce.trustAsHtml(""+fieldval)];
                 }
             }
         }
-        $scope.results.roundTook = $scope.roundTook(data.took);
+        if (data.took) {
+            $scope.results.roundTook = $scope.roundTook(data.took);
+        }
     };
 
     $scope.jumpToPage = function(pageNum, $event) {

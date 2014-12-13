@@ -1,4 +1,5 @@
 <div ng-controller="QueryCtrl">
+
 <form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
     <input ng-model="query"
@@ -42,9 +43,23 @@
 }
 </style>
 
-<div ng-show="results.hits.length < 1"
-     ng-include
-     src="'/static/partials/index/query-noresults.html'"></div>
-<div ng-show="results.hits.length > 0"
-     ng-include
-     src="'/static/partials/index/query-results.html'"></div>
+<div ng-show="results && results.hits">
+  <div ng-show="results.hits.length < 1"
+       ng-include
+       src="'/static/partials/index/query-noresults.html'"></div>
+  <div ng-show="results && results.hits.length > 0"
+       ng-include
+       src="'/static/partials/index/query-results.html'"></div>
+</div>
+
+<div ng-show="results && results.results">
+  <ul>
+    <li ng-repeat="result in results.results">
+      <div class="well">
+        {{result}}
+      </div>
+    </li>
+  </ul>
+</div>
+
+</div>
