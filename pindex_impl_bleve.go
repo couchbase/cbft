@@ -676,7 +676,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
-			// TODO: Propagate auth to bleve client.
+			// TODO: Propagate auth to remote client.
 		})
 	}
 

@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 )
 
 type PIndexImpl interface {
@@ -257,19 +256,4 @@ func RunConsistencyWaitQueue(
 		cwr.DoneCh <- err
 		close(cwr.DoneCh)
 	}
-}
-
-// ---------------------------------------------------------
-
-func TimeoutCancelChan(timeout int64) chan string {
-	if timeout > 0 {
-		cancelCh := make(chan string, 1)
-		go func() {
-			time.Sleep(time.Duration(timeout) * time.Millisecond)
-			cancelCh <- "timeout"
-			close(cancelCh)
-		}()
-		return cancelCh
-	}
-	return nil
 }

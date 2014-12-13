@@ -91,6 +91,7 @@ type VLite struct {
 
 // Used to track state for a single partition.
 type VLitePartition struct {
+	vlite        *VLite
 	partition    string
 	partitionBuf []byte // Key used for opaqueColl and seqColl.
 
@@ -120,6 +121,8 @@ type VLiteGatherer struct {
 	localVLites  []*VLite
 	remoteVLites []*PIndexClient
 }
+
+var EMPTY_BYTES = []byte{}
 
 // ---------------------------------------------------------
 
@@ -181,7 +184,7 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 		return nil, nil, err
 	}
 
-	return vlite, vlite, nil
+	return vlite, &DestForwarder{DestProvider: vlite}, nil
 }
 
 func OpenVLitePIndexImpl(indexType, path string,
@@ -213,7 +216,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 		return nil, nil, err
 	}
 
-	return vlite, vlite, nil
+	return vlite, &DestForwarder{DestProvider: vlite}, nil
 }
 
 // ---------------------------------------------------------------
@@ -252,8 +255,6 @@ func CountVLitePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	return vg.Count(nil)
 }
 
-// ---------------------------------------------------------------
-
 func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
 	vliteQueryParams := NewVLiteQueryParams()
@@ -276,7 +277,7 @@ func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 // ---------------------------------------------------------
 
-func (t *VLite) getPartition(partition string) (*VLitePartition, error) {
+func (t *VLite) Dest(partition string) (Dest, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
@@ -291,6 +292,7 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 	bdp, exists := t.partitions[partition]
 	if !exists || bdp == nil {
 		bdp = &VLitePartition{
+			vlite:        t,
 			partition:    partition,
 			partitionBuf: []byte(partition),
 			cwrCh:        make(chan *ConsistencyWaitReq, 1),
@@ -306,6 +308,8 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 
 	return bdp, nil
 }
+
+// ---------------------------------------------------------
 
 func (t *VLite) Close() error {
 	t.m.Lock()
@@ -331,55 +335,6 @@ func (t *VLite) closeUnlocked() error {
 }
 
 // ---------------------------------------------------------
-
-func (t *VLite) OnDataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
-	bdp, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnDataUpdate(t, key, seq, val)
-}
-
-func (t *VLite) OnDataDelete(partition string,
-	key []byte, seq uint64) error {
-	bdp, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnDataDelete(t, key, seq)
-}
-
-func (t *VLite) OnSnapshotStart(partition string,
-	snapStart, snapEnd uint64) error {
-	bdp, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnSnapshotStart(t, snapStart, snapEnd)
-}
-
-func (t *VLite) SetOpaque(partition string, value []byte) error {
-	bdp, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.SetOpaque(t, value)
-}
-
-func (t *VLite) GetOpaque(partition string) (
-	value []byte, lastSeq uint64, err error) {
-	bdp, err := t.getPartition(partition)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return bdp.GetOpaque(t)
-}
 
 func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 	log.Printf("vlite dest rollback, partition: %s, rollbackSeq: %d",
@@ -411,6 +366,8 @@ func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 
 	return nil
 }
+
+// ---------------------------------------------------------
 
 func (t *VLite) ConsistencyWait(partition string,
 	consistencyLevel string,
@@ -445,6 +402,8 @@ func (t *VLite) ConsistencyWait(partition string,
 		})
 }
 
+// ---------------------------------------------------------
+
 func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
@@ -459,6 +418,8 @@ func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 
 	return vlite.CountStore(cancelCh)
 }
+
+// ---------------------------------------------------------
 
 func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
@@ -552,19 +513,21 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer) error {
 
 // ---------------------------------------------------------
 
-var EMPTY_BYTES = []byte{}
+func (t *VLitePartition) Close() error {
+	return t.vlite.Close()
+}
 
-func (t *VLitePartition) OnDataUpdate(vlite *VLite,
+func (t *VLitePartition) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
-	secVal, err := jsonpointer.Find(val, vlite.params.Path)
+	secVal, err := jsonpointer.Find(val, t.vlite.params.Path)
 	if err != nil {
 		log.Printf("jsonpointer path: %s, key: %s, val: %s, err: %v",
-			vlite.params.Path, key, val, err)
+			t.vlite.params.Path, key, val, err)
 		return nil // TODO: Return or report error here?
 	}
 	if len(secVal) <= 0 {
 		log.Printf("no matching path: %s, key: %s, val: %s",
-			vlite.params.Path, key, val)
+			t.vlite.params.Path, key, val)
 		return nil // TODO: Return or report error here?
 	}
 	if len(secVal) >= 2 && secVal[0] == '"' && secVal[len(secVal)-1] == '"' {
@@ -585,52 +548,52 @@ func (t *VLitePartition) OnDataUpdate(vlite *VLite,
 
 	// TODO: All these deletes and insert need to be atomic?
 
-	backKey, err := vlite.backColl.Get(key)
+	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
-		_, err := vlite.mainColl.Delete(backKey)
+		_, err := t.vlite.mainColl.Delete(backKey)
 		if err != nil {
 			log.Printf("mainColl.Delete err: %v", err)
 		}
-		_, err = vlite.backColl.Delete(key)
+		_, err = t.vlite.backColl.Delete(key)
 		if err != nil {
 			log.Printf("backColl.Delete err: %v", err)
 		}
 	}
 
-	err = vlite.mainColl.Set(secKey, EMPTY_BYTES)
+	err = t.vlite.mainColl.Set(secKey, EMPTY_BYTES)
 	if err != nil {
 		log.Printf("mainColl.Set err: %v", err)
 	}
-	err = vlite.backColl.Set(key, secKey)
+	err = t.vlite.backColl.Set(key, secKey)
 	if err != nil {
 		log.Printf("backColl.Set err: %v", err)
 	}
 
-	return t.updateSeqUnlocked(vlite, seq)
+	return t.updateSeqUnlocked(seq)
 }
 
-func (t *VLitePartition) OnDataDelete(vlite *VLite,
+func (t *VLitePartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
 	// TODO: All these deletes need to be atomic?
 
-	backKey, err := vlite.backColl.Get(key)
+	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
-		vlite.mainColl.Delete(backKey)
-		vlite.backColl.Delete(key)
+		t.vlite.mainColl.Delete(backKey)
+		t.vlite.backColl.Delete(key)
 	}
 
-	return t.updateSeqUnlocked(vlite, seq)
+	return t.updateSeqUnlocked(seq)
 }
 
-func (t *VLitePartition) OnSnapshotStart(vlite *VLite,
+func (t *VLitePartition) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	err := t.applyBatchUnlocked(vlite)
+	err := t.applyBatchUnlocked()
 	if err != nil {
 		return err
 	}
@@ -640,24 +603,24 @@ func (t *VLitePartition) OnSnapshotStart(vlite *VLite,
 	return nil
 }
 
-func (t *VLitePartition) SetOpaque(vlite *VLite, value []byte) error {
+func (t *VLitePartition) SetOpaque(partition string, value []byte) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	return vlite.opaqueColl.Set(t.partitionBuf, append([]byte(nil), value...))
+	return t.vlite.opaqueColl.Set(t.partitionBuf, append([]byte(nil), value...))
 }
 
-func (t *VLitePartition) GetOpaque(vlite *VLite) ([]byte, uint64, error) {
+func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	opaqueBuf, err := vlite.opaqueColl.Get(t.partitionBuf)
+	opaqueBuf, err := t.vlite.opaqueColl.Get(t.partitionBuf)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if t.seqMax <= 0 {
-		seqBuf, err := vlite.seqColl.Get(t.partitionBuf)
+		seqBuf, err := t.vlite.seqColl.Get(t.partitionBuf)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -673,31 +636,52 @@ func (t *VLitePartition) GetOpaque(vlite *VLite) ([]byte, uint64, error) {
 	return opaqueBuf, t.seqMax, nil
 }
 
+func (t *VLitePartition) Rollback(partition string, rollbackSeq uint64) error {
+	return t.vlite.Rollback(partition, rollbackSeq)
+}
+
+func (t *VLitePartition) ConsistencyWait(partition string,
+	consistencyLevel string,
+	consistencySeq uint64,
+	cancelCh chan string) error {
+	return t.vlite.ConsistencyWait(partition,
+		consistencyLevel, consistencySeq, cancelCh)
+}
+
+func (t *VLitePartition) Count(pindex *PIndex, cancelCh chan string) (
+	uint64, error) {
+	return t.vlite.Count(pindex, cancelCh)
+}
+
+func (t *VLitePartition) Query(pindex *PIndex, req []byte, res io.Writer,
+	cancelCh chan string) error {
+	return t.vlite.Query(pindex, req, res, cancelCh)
+}
+
 // ---------------------------------------------------------
 
-func (t *VLitePartition) updateSeqUnlocked(vlite *VLite,
-	seq uint64) error {
+func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 	if t.seqMax < seq {
 		t.seqMax = seq
 
 		seqMaxBuf := make([]byte, 8)
 		binary.BigEndian.PutUint64(seqMaxBuf, t.seqMax)
 
-		vlite.seqColl.Set(t.partitionBuf, seqMaxBuf)
+		t.vlite.seqColl.Set(t.partitionBuf, seqMaxBuf)
 	}
 
 	if seq < t.seqSnapEnd {
 		return nil
 	}
 
-	return t.applyBatchUnlocked(vlite)
+	return t.applyBatchUnlocked()
 }
 
-func (t *VLitePartition) applyBatchUnlocked(vlite *VLite) error {
+func (t *VLitePartition) applyBatchUnlocked() error {
 	// TODO: Locking!  What if store == nil!
 
-	if vlite.file != nil { // When not memory-only.
-		err := vlite.store.Flush()
+	if t.vlite.file != nil { // When not memory-only.
+		err := t.vlite.store.Flush()
 		if err != nil {
 			return err
 		}

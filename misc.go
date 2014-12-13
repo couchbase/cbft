@@ -128,6 +128,19 @@ func StringsIntersectStrings(a, b []string) []string {
 	return rv
 }
 
+func TimeoutCancelChan(timeout int64) chan string {
+	if timeout > 0 {
+		cancelCh := make(chan string, 1)
+		go func() {
+			time.Sleep(time.Duration(timeout) * time.Millisecond)
+			cancelCh <- "timeout"
+			close(cancelCh)
+		}()
+		return cancelCh
+	}
+	return nil
+}
+
 func mustEncode(w io.Writer, i interface{}) {
 	if headered, ok := w.(http.ResponseWriter); ok {
 		headered.Header().Set("Cache-Control", "no-cache")

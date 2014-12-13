@@ -168,33 +168,3 @@ func TestNewPIndexBleveMem(t *testing.T) {
 		t.Errorf("expected Close to work")
 	}
 }
-
-func TestTimeoutCancelChan(t *testing.T) {
-	c := TimeoutCancelChan(0)
-	if c != nil {
-		t.Errorf("expected nil")
-	}
-	c = TimeoutCancelChan(-1)
-	if c != nil {
-		t.Errorf("expected nil")
-	}
-	c = TimeoutCancelChan(1)
-	if c == nil {
-		t.Errorf("expected non-nil")
-	}
-	msg := <-c
-	if msg != "timeout" {
-		t.Errorf("expected timeout")
-	}
-	select {
-	case msg, ok := <-c:
-		if ok {
-			t.Errorf("expected closed")
-		}
-		if msg != "" {
-			t.Errorf("expected empty msg on closed")
-		}
-	default:
-		t.Errorf("expected closed")
-	}
-}
