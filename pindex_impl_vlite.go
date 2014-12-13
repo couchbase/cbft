@@ -476,18 +476,9 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 			" req: %s, err: %v", req, err)
 	}
 
-	consistencyParams := vliteQueryParams.Consistency
-	if consistencyParams != nil &&
-		consistencyParams.Level != "" &&
-		consistencyParams.Vectors != nil {
-		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
-		if consistencyVector != nil {
-			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsArr,
-				consistencyParams.Level, consistencyVector, cancelCh)
-			if err != nil {
-				return err
-			}
-		}
+	err = ConsistencyWait(pindex, t, vliteQueryParams.Consistency, cancelCh)
+	if err != nil {
+		return err
 	}
 
 	return vlite.QueryStore(vliteQueryParams, res)
@@ -745,13 +736,39 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 		return nil, fmt.Errorf("vliteGatherer, err: %v", err)
 	}
 
+	var errConsistencyM sync.Mutex
+	var errConsistency error
+
 	rv := &VLiteGatherer{}
+
+	var wg sync.WaitGroup
 
 	for _, localPIndex := range localPIndexes {
 		vlite, ok := localPIndex.Impl.(*VLite)
 		if ok && vlite != nil &&
 			strings.HasPrefix(localPIndex.IndexType, "vlite") {
 			rv.localVLites = append(rv.localVLites, vlite)
+
+			if consistencyParams != nil &&
+				consistencyParams.Level != "" &&
+				consistencyParams.Vectors != nil {
+				consistencyVector := consistencyParams.Vectors[indexName]
+				if consistencyVector != nil {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+
+						err := ConsistencyWaitPartitions(vlite,
+							localPIndex.sourcePartitionsArr,
+							consistencyParams.Level, consistencyVector, cancelCh)
+						if err != nil {
+							errConsistencyM.Lock()
+							errConsistency = err
+							errConsistencyM.Unlock()
+						}
+					}()
+				}
+			}
 		} else {
 			return nil, fmt.Errorf("vliteGatherer,"+
 				" localPIndex is not vlite: %#v", localPIndex)
@@ -761,6 +778,28 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	for _, remotePIndex := range remotePlanPIndexes {
 		fmt.Printf("do something with remotePIndex: %v", remotePIndex) // TODO.
 	}
+
+	// TODO: Should kickoff remote queries concurrently before we wait.
+	wg.Wait()
+
+	if errConsistency != nil {
+		return nil, errConsistency
+	}
+
+	if cancelCh != nil {
+		select {
+		case status := <-cancelCh:
+			return nil, fmt.Errorf("cancelled, status: %s", status)
+		default:
+		}
+	}
+
+	// TODO: There's likely a race here where at this point we've now
+	// waited for all the (local) pindexes to reach the requested
+	// consistency levels, but before we actually can use the
+	// constructed alias and kick off a query, an adversary does a
+	// rollback.  Using the alias to query after that might now be
+	// incorrectly running against data some time back in the past.
 
 	return rv, nil
 }

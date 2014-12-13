@@ -438,18 +438,9 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 			" req: %s, err: %v", req, err)
 	}
 
-	consistencyParams := bleveQueryParams.Consistency
-	if consistencyParams != nil &&
-		consistencyParams.Level != "" &&
-		consistencyParams.Vectors != nil {
-		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
-		if consistencyVector != nil {
-			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsArr,
-				consistencyParams.Level, consistencyVector, cancelCh)
-			if err != nil {
-				return err
-			}
-		}
+	err = ConsistencyWait(pindex, t, bleveQueryParams.Consistency, cancelCh)
+	if err != nil {
+		return err
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()

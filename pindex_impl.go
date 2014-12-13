@@ -157,6 +157,23 @@ type ConsistencyWaiter interface {
 		cancelCh chan string) error
 }
 
+func ConsistencyWait(pindex *PIndex, t ConsistencyWaiter,
+	consistencyParams *ConsistencyParams, cancelCh chan string) error {
+	if consistencyParams != nil &&
+		consistencyParams.Level != "" &&
+		consistencyParams.Vectors != nil {
+		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
+		if consistencyVector != nil {
+			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsArr,
+				consistencyParams.Level, consistencyVector, cancelCh)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func ConsistencyWaitPartitions(
 	t ConsistencyWaiter,
 	partitions []string,
