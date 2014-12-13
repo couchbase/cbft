@@ -394,11 +394,12 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 	t.m.Unlock()
 
-	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh, func() uint64 {
-		bdp.m.Lock()
-		defer bdp.m.Unlock()
-		return bdp.seqMaxBatch
-	})
+	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
+		func() uint64 {
+			bdp.m.Lock()
+			defer bdp.m.Unlock()
+			return bdp.seqMaxBatch
+		})
 }
 
 func (t *BleveDest) ConsistencyWaitPartitions(partitions []string,
