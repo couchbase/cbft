@@ -117,7 +117,8 @@ type VLiteQueryParams struct {
 func NewVLiteQueryParams() *VLiteQueryParams { return &VLiteQueryParams{} }
 
 type VLiteGatherer struct {
-	localVLites []*VLite
+	localVLites  []*VLite
+	remoteVLites []*PIndexClient
 }
 
 // ---------------------------------------------------------
@@ -778,8 +779,15 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 		}
 	}
 
-	for _, remotePIndex := range remotePlanPIndexes {
-		fmt.Printf("do something with remotePIndex: %v", remotePIndex) // TODO.
+	for _, remotePlanPIndex := range remotePlanPIndexes {
+		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
+			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
+		rv.remoteVLites = append(rv.remoteVLites, &PIndexClient{
+			QueryURL:    baseURL + "/query",
+			CountURL:    baseURL + "/count",
+			Consistency: consistencyParams,
+			// TODO: Propagate auth to remote client.
+		})
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
