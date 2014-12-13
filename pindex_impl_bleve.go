@@ -95,7 +95,9 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			path, err)
 	}
 
-	return bindex, NewBleveDest(path, bindex, restart), err
+	return bindex, &DestForwarder{
+		DestProvider: NewBleveDest(path, bindex, restart),
+	}, nil
 }
 
 func OpenBlevePIndexImpl(indexType, path string,
@@ -111,7 +113,9 @@ func OpenBlevePIndexImpl(indexType, path string,
 		return nil, nil, err
 	}
 
-	return bindex, NewBleveDest(path, bindex, restart), err
+	return bindex, &DestForwarder{
+		DestProvider: NewBleveDest(path, bindex, restart),
+	}, nil
 }
 
 // ---------------------------------------------------------------
@@ -169,8 +173,10 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 // ---------------------------------------------------------
 
 type BleveDest struct {
-	path    string
-	restart func() // Invoked when caller should restart this BleveDest, like on rollback.
+	path string
+
+	// Invoked when mgr should restart this BleveDest, like on rollback.
+	restart func()
 
 	m          sync.Mutex // Protects the fields that follow.
 	bindex     bleve.Index
@@ -179,6 +185,8 @@ type BleveDest struct {
 
 // Used to track state for a single partition.
 type BleveDestPartition struct {
+	bdest           *BleveDest
+	bindex          bleve.Index
 	partition       string
 	partitionOpaque []byte // Key used to implement SetOpaque/GetOpaque().
 
@@ -198,7 +206,7 @@ type BleveDestPartition struct {
 
 // ---------------------------------------------------------
 
-func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
+func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
 	return &BleveDest{
 		path:       path,
 		restart:    restart,
@@ -207,8 +215,7 @@ func NewBleveDest(path string, bindex bleve.Index, restart func()) Dest {
 	}
 }
 
-func (t *BleveDest) getPartition(partition string) (
-	*BleveDestPartition, bleve.Index, error) {
+func (t *BleveDest) Dest(partition string) (Dest, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
@@ -216,14 +223,16 @@ func (t *BleveDest) getPartition(partition string) (
 }
 
 func (t *BleveDest) getPartitionUnlocked(partition string) (
-	*BleveDestPartition, bleve.Index, error) {
+	*BleveDestPartition, error) {
 	if t.bindex == nil {
-		return nil, nil, fmt.Errorf("BleveDest already closed")
+		return nil, fmt.Errorf("BleveDest already closed")
 	}
 
 	bdp, exists := t.partitions[partition]
 	if !exists || bdp == nil {
 		bdp = &BleveDestPartition{
+			bdest:           t,
+			bindex:          t.bindex,
 			partition:       partition,
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
@@ -239,8 +248,10 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 		t.partitions[partition] = bdp
 	}
 
-	return bdp, t.bindex, nil
+	return bdp, nil
 }
+
+// ---------------------------------------------------------
 
 func (t *BleveDest) Close() error {
 	t.m.Lock()
@@ -270,69 +281,6 @@ func (t *BleveDest) closeUnlocked() error {
 }
 
 // ---------------------------------------------------------
-
-func (t *BleveDest) OnDataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
-	// log.Printf("bleve dest update, partition: %s, key: %s, seq: %d",
-	//	partition, key, seq)
-
-	bdp, bindex, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnDataUpdate(bindex, key, seq, val)
-}
-
-func (t *BleveDest) OnDataDelete(partition string,
-	key []byte, seq uint64) error {
-	// log.Printf("bleve dest delete, partition: %s, key: %s, seq: %d",
-	//	partition, key, seq)
-
-	bdp, bindex, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnDataDelete(bindex, key, seq)
-}
-
-func (t *BleveDest) OnSnapshotStart(partition string,
-	snapStart, snapEnd uint64) error {
-	log.Printf("bleve dest snapshot-start, partition: %s, snapStart: %d, snapEnd: %d",
-		partition, snapStart, snapEnd)
-
-	bdp, bindex, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.OnSnapshotStart(bindex, snapStart, snapEnd)
-}
-
-func (t *BleveDest) SetOpaque(partition string, value []byte) error {
-	// log.Printf("bleve dest set-opaque, partition: %s, value: %s",
-	//	partition, value)
-
-	bdp, bindex, err := t.getPartition(partition)
-	if err != nil {
-		return err
-	}
-
-	return bdp.SetOpaque(bindex, value)
-}
-
-func (t *BleveDest) GetOpaque(partition string) (
-	value []byte, lastSeq uint64, err error) {
-	// log.Printf("bleve dest get-opaque, partition: %s", partition)
-
-	bdp, bindex, err := t.getPartition(partition)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return bdp.GetOpaque(bindex)
-}
 
 func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	log.Printf("bleve dest rollback, partition: %s, rollbackSeq: %d",
@@ -370,6 +318,8 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	return nil
 }
 
+// ---------------------------------------------------------
+
 func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
@@ -383,7 +333,7 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 	t.m.Lock()
 
-	bdp, _, err := t.getPartitionUnlocked(partition)
+	bdp, err := t.getPartitionUnlocked(partition)
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -403,6 +353,8 @@ func (t *BleveDest) ConsistencyWait(partition string,
 		})
 }
 
+// ---------------------------------------------------------
+
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
@@ -417,6 +369,8 @@ func (t *BleveDest) Count(pindex *PIndex, cancelCh chan string) (uint64, error) 
 
 	return bindex.DocCount()
 }
+
+// ---------------------------------------------------------
 
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
@@ -460,7 +414,11 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) OnDataUpdate(bindex bleve.Index,
+func (t *BleveDestPartition) Close() error {
+	return t.bdest.Close()
+}
+
+func (t *BleveDestPartition) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	t.m.Lock()
 	defer t.m.Unlock()
@@ -469,25 +427,25 @@ func (t *BleveDestPartition) OnDataUpdate(bindex bleve.Index,
 
 	t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
 
-	return t.updateSeqUnlocked(bindex, seq)
+	return t.updateSeqUnlocked(seq)
 }
 
-func (t *BleveDestPartition) OnDataDelete(bindex bleve.Index,
+func (t *BleveDestPartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
 
-	return t.updateSeqUnlocked(bindex, seq)
+	return t.updateSeqUnlocked(seq)
 }
 
-func (t *BleveDestPartition) OnSnapshotStart(bindex bleve.Index,
+func (t *BleveDestPartition) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	err := t.applyBatchUnlocked(bindex)
+	err := t.applyBatchUnlocked()
 	if err != nil {
 		return err
 	}
@@ -497,7 +455,7 @@ func (t *BleveDestPartition) OnSnapshotStart(bindex bleve.Index,
 	return nil
 }
 
-func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
+func (t *BleveDestPartition) SetOpaque(partition string, value []byte) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
@@ -508,14 +466,14 @@ func (t *BleveDestPartition) SetOpaque(bindex bleve.Index, value []byte) error {
 	return nil
 }
 
-func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) ([]byte, uint64, error) {
+func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
 	if t.lastOpaque == nil {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
-		value, err := bindex.GetInternal(t.partitionOpaque)
+		value, err := t.bindex.GetInternal(t.partitionOpaque)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -525,7 +483,7 @@ func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) ([]byte, uint64, erro
 	if t.seqMax <= 0 {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
-		buf, err := bindex.GetInternal([]byte(t.partition))
+		buf, err := t.bindex.GetInternal([]byte(t.partition))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -542,10 +500,31 @@ func (t *BleveDestPartition) GetOpaque(bindex bleve.Index) ([]byte, uint64, erro
 	return t.lastOpaque, t.seqMax, nil
 }
 
+func (t *BleveDestPartition) Rollback(partition string, rollbackSeq uint64) error {
+	return t.bdest.Rollback(partition, rollbackSeq)
+}
+
+func (t *BleveDestPartition) ConsistencyWait(partition string,
+	consistencyLevel string,
+	consistencySeq uint64,
+	cancelCh chan string) error {
+	return t.bdest.ConsistencyWait(partition,
+		consistencyLevel, consistencySeq, cancelCh)
+}
+
+func (t *BleveDestPartition) Count(pindex *PIndex, cancelCh chan string) (
+	uint64, error) {
+	return t.bdest.Count(pindex, cancelCh)
+}
+
+func (t *BleveDestPartition) Query(pindex *PIndex, req []byte, res io.Writer,
+	cancelCh chan string) error {
+	return t.bdest.Query(pindex, req, res, cancelCh)
+}
+
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
-	seq uint64) error {
+func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 	if t.seqMax < seq {
 		t.seqMax = seq
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
@@ -559,11 +538,11 @@ func (t *BleveDestPartition) updateSeqUnlocked(bindex bleve.Index,
 		return nil
 	}
 
-	return t.applyBatchUnlocked(bindex)
+	return t.applyBatchUnlocked()
 }
 
-func (t *BleveDestPartition) applyBatchUnlocked(bindex bleve.Index) error {
-	err := bindex.Batch(t.batch)
+func (t *BleveDestPartition) applyBatchUnlocked() error {
+	err := t.bindex.Batch(t.batch)
 	if err != nil {
 		return err
 	}
@@ -642,9 +621,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			strings.HasPrefix(localPIndex.IndexType, "bleve") {
 			alias.Add(bindex)
 
-			bdest, ok := localPIndex.Dest.(*BleveDest)
-			if ok && bdest != nil &&
-				consistencyParams != nil &&
+			if consistencyParams != nil &&
 				consistencyParams.Level != "" &&
 				consistencyParams.Vectors != nil {
 				consistencyVector := consistencyParams.Vectors[indexName]
@@ -653,7 +630,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 					go func() {
 						defer wg.Done()
 
-						err := ConsistencyWaitPartitions(bdest,
+						err := ConsistencyWaitPartitions(localPIndex.Dest,
 							localPIndex.sourcePartitionsArr,
 							consistencyParams.Level, consistencyVector, cancelCh)
 						if err != nil {

@@ -746,7 +746,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 					go func() {
 						defer wg.Done()
 
-						err := ConsistencyWaitPartitions(vlite,
+						err := ConsistencyWaitPartitions(localPIndex.Dest,
 							localPIndex.sourcePartitionsArr,
 							consistencyParams.Level, consistencyVector, cancelCh)
 						if err != nil {
