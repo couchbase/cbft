@@ -356,35 +356,13 @@ func (t *BleveDest) ConsistencyWait(partition string,
 // ---------------------------------------------------------
 
 func (t *BleveDest) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
-	if pindex == nil ||
-		pindex.Impl == nil ||
-		!strings.HasPrefix(pindex.IndexType, "bleve") {
-		return 0, fmt.Errorf("BleveDest.Count bad pindex: %#v", pindex)
-	}
-
-	bindex, ok := pindex.Impl.(bleve.Index)
-	if !ok || bindex == nil {
-		return 0, fmt.Errorf("BleveDest.Count pindex not a bleve.Index: %#v", pindex)
-	}
-
-	return bindex.DocCount()
+	return t.bindex.DocCount()
 }
 
 // ---------------------------------------------------------
 
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
-	if pindex == nil ||
-		pindex.Impl == nil ||
-		!strings.HasPrefix(pindex.IndexType, "bleve") {
-		return fmt.Errorf("BleveDest.Query bad pindex: %#v", pindex)
-	}
-
-	bindex, ok := pindex.Impl.(bleve.Index)
-	if !ok || bindex == nil {
-		return fmt.Errorf("BleveDest.Query pindex not a bleve.Index: %#v", pindex)
-	}
-
 	var bleveQueryParams BleveQueryParams
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
@@ -402,7 +380,7 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	searchResponse, err := bindex.Search(bleveQueryParams.Query)
+	searchResponse, err := t.bindex.Search(bleveQueryParams.Query)
 	if err != nil {
 		return err
 	}

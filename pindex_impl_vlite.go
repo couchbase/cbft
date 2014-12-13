@@ -405,35 +405,13 @@ func (t *VLite) ConsistencyWait(partition string,
 // ---------------------------------------------------------
 
 func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
-	if pindex == nil ||
-		pindex.Impl == nil ||
-		!strings.HasPrefix(pindex.IndexType, "vlite") {
-		return 0, fmt.Errorf("VLite.Count bad pindex: %#v", pindex)
-	}
-
-	vlite, ok := pindex.Impl.(*VLite)
-	if !ok || vlite == nil {
-		return 0, fmt.Errorf("VLite.Count pindex not a vlite.Index: %#v", pindex)
-	}
-
-	return vlite.CountStore(cancelCh)
+	return t.CountStore(cancelCh)
 }
 
 // ---------------------------------------------------------
 
 func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
-	if pindex == nil ||
-		pindex.Impl == nil ||
-		!strings.HasPrefix(pindex.IndexType, "vlite") {
-		return fmt.Errorf("VLite.Query bad pindex: %#v", pindex)
-	}
-
-	vlite, ok := pindex.Impl.(*VLite)
-	if !ok || vlite == nil {
-		return fmt.Errorf("VLite.Query pindex not a vlite.Index: %#v", pindex)
-	}
-
 	vliteQueryParams := NewVLiteQueryParams()
 	err := json.Unmarshal(req, vliteQueryParams)
 	if err != nil {
@@ -446,7 +424,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	return vlite.QueryStore(vliteQueryParams, res)
+	return t.QueryStore(vliteQueryParams, res)
 }
 
 // ---------------------------------------------------------
