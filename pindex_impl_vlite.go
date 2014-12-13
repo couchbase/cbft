@@ -466,7 +466,7 @@ func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 		return 0, fmt.Errorf("VLite.Count pindex not a vlite.Index: %#v", pindex)
 	}
 
-	return vlite.CountIndex(cancelCh)
+	return vlite.CountStore(cancelCh)
 }
 
 func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
@@ -503,12 +503,12 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 		}
 	}
 
-	return vlite.QueryIndex(vliteQueryParams, res)
+	return vlite.QueryStore(vliteQueryParams, res)
 }
 
 // ---------------------------------------------------------
 
-func (t *VLite) CountIndex(cancelCh chan string) (uint64, error) {
+func (t *VLite) CountStore(cancelCh chan string) (uint64, error) {
 	numItems, _, err := t.backColl.GetTotals()
 	if err != nil {
 		return 0, fmt.Errorf("VLite.Count get totals err: %v", err)
@@ -517,7 +517,7 @@ func (t *VLite) CountIndex(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryIndex(p *VLiteQueryParams, w io.Writer) error {
+func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
 
@@ -526,11 +526,11 @@ func (t *VLite) QueryIndex(p *VLiteQueryParams, w io.Writer) error {
 		endExclusive = []byte(p.Key + "\xff\xff")
 	}
 
-	log.Printf("QueryIndex startInclusive: %s, endExclusive: %s",
+	log.Printf("QueryStore startInclusive: %s, endExclusive: %s",
 		startInclusive, endExclusive)
 
-	entryBeforeSep := []byte("\n,{\"key\":\"")
 	entryBefore := []byte("{\"key\":\"")
+	entryBeforeSep := append([]byte("\n,"), entryBefore...)
 	entryMiddle := []byte("\", \"id\":\"")
 	entryAfter := []byte("\"}")
 
@@ -800,10 +800,10 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 
 func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 	// TODO: Implement scatter/gather.
-	return vg.localVLites[0].CountIndex(cancelCh)
+	return vg.localVLites[0].CountStore(cancelCh)
 }
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer) error {
 	// TODO: Implement scatter/gather.
-	return vg.localVLites[0].QueryIndex(p, w)
+	return vg.localVLites[0].QueryStore(p, w)
 }
