@@ -33,6 +33,8 @@ import (
 // TODO: Compaction!
 // TODO: Scatter/gather against local vlite PIndexes.
 // TODO: Remote client vlite.
+// TODO: Snapshots, so that snapshots aren't visible yet until commited/flushed.
+// TODO: Partial rollback.
 
 func init() {
 	RegisterPIndexImplType("vlite", &PIndexImplType{
@@ -90,9 +92,10 @@ type VLitePartition struct {
 	partition    string
 	partitionBuf []byte // Key used for opaqueColl and seqColl.
 
-	m          sync.Mutex // Protects the fields that follow.
-	seqMax     uint64     // Max seq # we've seen for this partition.
-	seqSnapEnd uint64     // To track snapshot end seq # for this partition.
+	m           sync.Mutex // Protects the fields that follow.
+	seqMax      uint64     // Max seq # we've seen for this partition.
+	seqMaxBatch uint64     // Max seq # that got through batch apply/commit.
+	seqSnapEnd  uint64     // To track snapshot end seq # for this partition.
 
 	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
@@ -433,7 +436,7 @@ func (t *VLite) ConsistencyWait(partition string,
 		func() uint64 {
 			bdp.m.Lock()
 			defer bdp.m.Unlock()
-			return bdp.seqMax
+			return bdp.seqMaxBatch
 		})
 }
 
@@ -577,7 +580,7 @@ func (t *VLitePartition) run() {
 		if cwr.ConsistencyLevel == "" {
 			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
 		} else if cwr.ConsistencyLevel == "at_plus" {
-			if cwr.ConsistencySeq > t.seqMax {
+			if cwr.ConsistencySeq > t.seqMaxBatch {
 				heap.Push(&t.cwrQueue, cwr)
 			} else {
 				close(cwr.DoneCh)
@@ -748,11 +751,27 @@ func (t *VLitePartition) updateSeqUnlocked(vlite *VLite,
 }
 
 func (t *VLitePartition) applyBatchUnlocked(vlite *VLite) error {
-	if vlite.file == nil {
-		return nil // Memory only, so no flushing.
+	// TODO: Locking!  What if store == nil!
+
+	if vlite.file != nil { // When not memory-only.
+		err := vlite.store.Flush()
+		if err != nil {
+			return err
+		}
 	}
 
-	return vlite.store.Flush() // TODO: Locking!  What if store == nil!
+	t.seqMaxBatch = t.seqMax
+
+	for t.cwrQueue.Len() > 0 &&
+		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
+		cwr := heap.Pop(&t.cwrQueue).(*ConsistencyWaitReq)
+		if cwr != nil &&
+			cwr.DoneCh != nil {
+			close(cwr.DoneCh)
+		}
+	}
+
+	return nil
 }
 
 // ---------------------------------------------------------
