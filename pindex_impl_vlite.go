@@ -33,7 +33,7 @@ import (
 // TODO: Compaction!
 // TODO: Scatter/gather against local vlite PIndexes.
 // TODO: Remote client vlite.
-// TODO: Snapshots, so that snapshots aren't visible yet until commited/flushed.
+// TODO: Snapshots, so that queries don't see mutations until commited/flushed.
 // TODO: Partial rollback.
 
 var VLiteFileService = NewFileService(30)
@@ -73,20 +73,21 @@ type VLiteParams struct {
 }
 
 type VLite struct {
-	params     *VLiteParams
-	path       string
-	file       FileLike
-	store      *gkvlite.Store
-	mainColl   *gkvlite.Collection // Keyed by $secondaryIndexValue\xff$docId.
-	backColl   *gkvlite.Collection // Keyed by docId.
-	opaqueColl *gkvlite.Collection // Keyed by partitionId.
-	seqColl    *gkvlite.Collection // Keyed by partitionId.
+	params *VLiteParams
+	path   string
+	file   FileLike
 
 	// Called when we want mgr to restart the VLite, like on rollback.
 	restart func()
 
 	m          sync.Mutex // Protects the fields that follow.
 	partitions map[string]*VLitePartition
+
+	store      *gkvlite.Store
+	mainColl   *gkvlite.Collection // Keyed by $secondaryIndexValue\xff$docId.
+	backColl   *gkvlite.Collection // Keyed by docId.
+	opaqueColl *gkvlite.Collection // Keyed by partitionId.
+	seqColl    *gkvlite.Collection // Keyed by partitionId.
 }
 
 // Used to track state for a single partition.
@@ -459,7 +460,14 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer) error {
 
 	totVisits := uint64(0)
 
-	err := t.mainColl.VisitItemsAscend(startInclusive, false,
+	t.m.Lock()
+	storeRO := t.store.Snapshot()
+	t.m.Unlock()
+	defer storeRO.Close()
+
+	mainCollRO := storeRO.GetCollection("main")
+
+	err := mainCollRO.VisitItemsAscend(startInclusive, false,
 		func(i *gkvlite.Item) bool {
 			ok := len(endExclusive) <= 0 ||
 				bytes.Compare(i.Key, endExclusive) < 0
@@ -524,8 +532,6 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	// TODO: All these deletes and insert need to be atomic?
-
 	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
 		_, err := t.vlite.mainColl.Delete(backKey)
@@ -554,8 +560,6 @@ func (t *VLitePartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.m.Lock()
 	defer t.m.Unlock()
-
-	// TODO: All these deletes need to be atomic?
 
 	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
