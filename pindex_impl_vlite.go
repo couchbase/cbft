@@ -273,7 +273,7 @@ func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 		return err
 	}
 
-	return vg.Query(vliteQueryParams, res)
+	return vg.Query(vliteQueryParams, res, cancelCh)
 }
 
 // ---------------------------------------------------------
@@ -420,12 +420,13 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 			" req: %s, err: %v", req, err)
 	}
 
-	err = ConsistencyWaitPIndex(pindex, t, vliteQueryParams.Consistency, cancelCh)
+	err = ConsistencyWaitPIndex(pindex, t,
+		vliteQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
 
-	return t.QueryStore(vliteQueryParams, res)
+	return t.QueryStore(vliteQueryParams, res, cancelCh)
 }
 
 // ---------------------------------------------------------
@@ -439,7 +440,8 @@ func (t *VLite) CountStore(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer) error {
+func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer,
+	cancelCh chan string) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
 
@@ -742,7 +744,8 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 	return vg.localVLites[0].CountStore(cancelCh)
 }
 
-func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer) error {
+func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
+	cancelCh chan string) error {
 	// TODO: Implement scatter/gather.
-	return vg.localVLites[0].QueryStore(p, w)
+	return vg.localVLites[0].QueryStore(p, w, cancelCh)
 }
