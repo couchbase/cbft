@@ -15,19 +15,19 @@ import (
 	"testing"
 )
 
-func TestNegativeBleveClient(t *testing.T) {
-	bc := &BleveClient{}
-	if bc.Index("", nil) != bleveClientUnimplementedErr {
+func TestNegativePIndexClient(t *testing.T) {
+	bc := &PIndexClient{}
+	if bc.Index("", nil) != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.Delete("") != bleveClientUnimplementedErr {
+	if bc.Delete("") != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.Batch(nil) != bleveClientUnimplementedErr {
+	if bc.Batch(nil) != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 	d, err := bc.Document("")
-	if err != bleveClientUnimplementedErr || d != nil {
+	if err != pindexClientUnimplementedErr || d != nil {
 		t.Errorf("expected unimplemented")
 	}
 	c, err := bc.DocCount()
@@ -39,7 +39,7 @@ func TestNegativeBleveClient(t *testing.T) {
 		t.Errorf("expected search error on empty QueryURL")
 	}
 	f, err := bc.Fields()
-	if err != bleveClientUnimplementedErr || f != nil {
+	if err != pindexClientUnimplementedErr || f != nil {
 		t.Errorf("expected unimplemented")
 	}
 	if bc.DumpAll() != nil {
@@ -51,7 +51,7 @@ func TestNegativeBleveClient(t *testing.T) {
 	if bc.DumpFields() != nil {
 		t.Errorf("expected nil")
 	}
-	if bc.Close() != bleveClientUnimplementedErr {
+	if bc.Close() != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 	if bc.Mapping() != nil {
@@ -61,19 +61,19 @@ func TestNegativeBleveClient(t *testing.T) {
 		t.Errorf("expected nil")
 	}
 	val, err := bc.GetInternal(nil)
-	if err != bleveClientUnimplementedErr || val != nil {
+	if err != pindexClientUnimplementedErr || val != nil {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.SetInternal(nil, nil) != bleveClientUnimplementedErr {
+	if bc.SetInternal(nil, nil) != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.DeleteInternal(nil) != bleveClientUnimplementedErr {
+	if bc.DeleteInternal(nil) != pindexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 }
 
-func TestBadURLsBleveClient(t *testing.T) {
-	bc := &BleveClient{
+func TestBadURLsPIndexClient(t *testing.T) {
+	bc := &PIndexClient{
 		CountURL: "bogus url",
 		QueryURL: "fake url",
 	}

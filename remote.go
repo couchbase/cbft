@@ -24,38 +24,38 @@ import (
 var httpPost = http.Post
 var httpGet = http.Get
 
-var bleveClientUnimplementedErr = errors.New("unimplemented")
+var pindexClientUnimplementedErr = errors.New("unimplemented")
 
-// BleveClient implements the Search() and DocCount() subset of the
+// PIndexClient implements the Search() and DocCount() subset of the
 // bleve.Index interface by accessing a remote cbft server via REST
-// protocol.  This allows callers to add a BleveClient as a target of
+// protocol.  This allows callers to add a PIndexClient as a target of
 // a bleve.IndexAlias, and implements cbft protocol features like
 // query consistency and auth.
 //
-// TODO: Implement propagating auth info in BleveClient.
-type BleveClient struct {
+// TODO: Implement propagating auth info in PIndexClient.
+type PIndexClient struct {
 	QueryURL    string
 	CountURL    string
 	Consistency *ConsistencyParams
 }
 
-func (r *BleveClient) Index(id string, data interface{}) error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) Index(id string, data interface{}) error {
+	return pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) Delete(id string) error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) Delete(id string) error {
+	return pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) Batch(b *bleve.Batch) error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) Batch(b *bleve.Batch) error {
+	return pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) Document(id string) (*document.Document, error) {
-	return nil, bleveClientUnimplementedErr
+func (r *PIndexClient) Document(id string) (*document.Document, error) {
+	return nil, pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) DocCount() (uint64, error) {
+func (r *PIndexClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
 		return 0, fmt.Errorf("no CountURL provided")
 	}
@@ -65,12 +65,12 @@ func (r *BleveClient) DocCount() (uint64, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return 0, fmt.Errorf("bleveClient.DocCount got status code: %d,"+
+		return 0, fmt.Errorf("pindexClient.DocCount got status code: %d,"+
 			" docCountURL: %s, resp: %#v", resp.StatusCode, r.CountURL, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return 0, fmt.Errorf("bleveClient.DocCount error reading resp.Body,"+
+		return 0, fmt.Errorf("pindexClient.DocCount error reading resp.Body,"+
 			" docCountURL: %s, resp: %#v", r.CountURL, resp)
 	}
 	rv := struct {
@@ -79,13 +79,13 @@ func (r *BleveClient) DocCount() (uint64, error) {
 	}{}
 	err = json.Unmarshal(respBuf, &rv)
 	if err != nil {
-		return 0, fmt.Errorf("bleveClient.DocCount error parsing respBuf: %s,"+
+		return 0, fmt.Errorf("pindexClient.DocCount error parsing respBuf: %s,"+
 			" docCountURL: %s, resp: %#v", respBuf, r.CountURL, resp)
 	}
 	return rv.Count, nil
 }
 
-func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 	if r.QueryURL == "" {
 		return nil, fmt.Errorf("no QueryURL provided")
 	}
@@ -105,62 +105,62 @@ func (r *BleveClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("bleveClient.Search got status code: %d,"+
+		return nil, fmt.Errorf("pindexClient.Search got status code: %d,"+
 			" searchURL: %s, req: %#v, resp: %#v",
 			resp.StatusCode, r.QueryURL, req, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("bleveClient.Search error reading resp.Body,"+
+		return nil, fmt.Errorf("pindexClient.Search error reading resp.Body,"+
 			" searchURL: %s, req: %#v, resp: %#v",
 			r.QueryURL, req, resp)
 	}
 	rv := &bleve.SearchResult{}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
-		return nil, fmt.Errorf("bleveClient.Search error parsing respBuf: %s,"+
+		return nil, fmt.Errorf("pindexClient.Search error parsing respBuf: %s,"+
 			" searchURL: %s, req: %#v, resp: %#v",
 			respBuf, r.QueryURL, req, resp)
 	}
 	return rv, nil
 }
 
-func (r *BleveClient) Fields() ([]string, error) {
-	return nil, bleveClientUnimplementedErr
+func (r *PIndexClient) Fields() ([]string, error) {
+	return nil, pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) DumpAll() chan interface{} {
+func (r *PIndexClient) DumpAll() chan interface{} {
 	return nil
 }
 
-func (r *BleveClient) DumpDoc(id string) chan interface{} {
+func (r *PIndexClient) DumpDoc(id string) chan interface{} {
 	return nil
 }
 
-func (r *BleveClient) DumpFields() chan interface{} {
+func (r *PIndexClient) DumpFields() chan interface{} {
 	return nil
 }
 
-func (r *BleveClient) Close() error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) Close() error {
+	return pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) Mapping() *bleve.IndexMapping {
+func (r *PIndexClient) Mapping() *bleve.IndexMapping {
 	return nil
 }
 
-func (r *BleveClient) Stats() *bleve.IndexStat {
+func (r *PIndexClient) Stats() *bleve.IndexStat {
 	return nil
 }
 
-func (r *BleveClient) GetInternal(key []byte) ([]byte, error) {
-	return nil, bleveClientUnimplementedErr
+func (r *PIndexClient) GetInternal(key []byte) ([]byte, error) {
+	return nil, pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) SetInternal(key, val []byte) error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) SetInternal(key, val []byte) error {
+	return pindexClientUnimplementedErr
 }
 
-func (r *BleveClient) DeleteInternal(key []byte) error {
-	return bleveClientUnimplementedErr
+func (r *PIndexClient) DeleteInternal(key []byte) error {
+	return pindexClientUnimplementedErr
 }
