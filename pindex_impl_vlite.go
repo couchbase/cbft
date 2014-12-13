@@ -441,7 +441,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 			" req: %s, err: %v", req, err)
 	}
 
-	err = ConsistencyWait(pindex, t, vliteQueryParams.Consistency, cancelCh)
+	err = ConsistencyWaitPIndex(pindex, t, vliteQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
