@@ -440,23 +440,6 @@ func (t *VLite) ConsistencyWait(partition string,
 		})
 }
 
-func (t *VLite) ConsistencyWaitPartitions(partitions []string,
-	consistencyLevel string,
-	consistencyVector map[string]uint64,
-	cancelCh chan string) error {
-	for _, partition := range partitions {
-		consistencySeq := consistencyVector[partition]
-		if consistencySeq > 0 {
-			err := t.ConsistencyWait(partition,
-				consistencyLevel, consistencySeq, cancelCh)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 	if pindex == nil ||
 		pindex.Impl == nil ||
@@ -498,7 +481,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 		consistencyParams.Vectors != nil {
 		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
 		if consistencyVector != nil {
-			err := t.ConsistencyWaitPartitions(pindex.sourcePartitionsArr,
+			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsArr,
 				consistencyParams.Level, consistencyVector, cancelCh)
 			if err != nil {
 				return err

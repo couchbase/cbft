@@ -148,6 +148,32 @@ func ConsistencyWaitDone(partition string, cancelCh chan string,
 	}
 }
 
+type ConsistencyWaiter interface {
+	ConsistencyWait(partition string,
+		consistencyLevel string,
+		consistencySeq uint64,
+		cancelCh chan string) error
+}
+
+func ConsistencyWaitPartitions(
+	t ConsistencyWaiter,
+	partitions []string,
+	consistencyLevel string,
+	consistencyVector map[string]uint64,
+	cancelCh chan string) error {
+	for _, partition := range partitions {
+		consistencySeq := consistencyVector[partition]
+		if consistencySeq > 0 {
+			err := t.ConsistencyWait(partition,
+				consistencyLevel, consistencySeq, cancelCh)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // ---------------------------------------------------------
 
 // A cwrQueue is a consistency wait request queue, implementing the
