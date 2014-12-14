@@ -407,7 +407,12 @@ func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 
 // ---------------------------------------------------------
 
-func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
+var entryBefore = []byte("{\"key\":\"")
+var entryBeforeSep = append([]byte("\n,"), entryBefore...)
+var entryMiddle = []byte("\", \"id\":\"")
+var entryAfter = []byte("\"}")
+
+func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan string) error {
 	vliteQueryParams := NewVLiteQueryParams()
 	err := json.Unmarshal(req, vliteQueryParams)
@@ -422,7 +427,27 @@ func (t *VLite) Query(pindex *PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	return t.QueryStore(vliteQueryParams, res, cancelCh)
+	w.Write([]byte(`{"results":[`))
+
+	first := true
+
+	err = t.QueryStore(vliteQueryParams, cancelCh, func(key []byte) {
+		if first {
+			w.Write(entryBefore)
+			first = false
+		} else {
+			w.Write(entryBeforeSep)
+		}
+		parts := bytes.Split(key, []byte{0xff})
+		w.Write(parts[0]) // TODO: Proper encoding of secKey.
+		w.Write(entryMiddle)
+		w.Write(parts[1]) // TODO: Proper encoding of docId.
+		w.Write(entryAfter)
+	})
+
+	w.Write([]byte("]}"))
+
+	return err
 }
 
 // ---------------------------------------------------------
@@ -436,8 +461,8 @@ func (t *VLite) CountStore(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer,
-	cancelCh chan string) error {
+func (t *VLite) QueryStore(p *VLiteQueryParams, cancelCh chan string,
+	cb func([]byte)) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
 
@@ -449,13 +474,6 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer,
 	log.Printf("QueryStore startInclusive: %s, endExclusive: %s",
 		startInclusive, endExclusive)
 
-	entryBefore := []byte("{\"key\":\"")
-	entryBeforeSep := append([]byte("\n,"), entryBefore...)
-	entryMiddle := []byte("\", \"id\":\"")
-	entryAfter := []byte("\"}")
-
-	w.Write([]byte(`{"results":[`))
-
 	totVisits := uint64(0)
 
 	t.m.Lock()
@@ -465,7 +483,7 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer,
 
 	mainCollRO := storeRO.GetCollection("main")
 
-	err := mainCollRO.VisitItemsAscend(startInclusive, false,
+	return mainCollRO.VisitItemsAscend(startInclusive, false,
 		func(i *gkvlite.Item) bool {
 			ok := len(endExclusive) <= 0 ||
 				bytes.Compare(i.Key, endExclusive) < 0
@@ -475,24 +493,11 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, w io.Writer,
 
 			totVisits++
 			if totVisits > p.Skip {
-				if totVisits <= p.Skip+1 {
-					w.Write(entryBefore)
-				} else {
-					w.Write(entryBeforeSep)
-				}
-				parts := bytes.Split(i.Key, []byte{0xff})
-				w.Write(parts[0]) // TODO: Proper encoding of secKey.
-				w.Write(entryMiddle)
-				w.Write(parts[1]) // TODO: Proper encoding of docId.
-				w.Write(entryAfter)
+				cb(i.Key)
 			}
 
 			return p.Limit <= 0 || (totVisits < p.Skip+p.Limit)
 		})
-
-	w.Write([]byte("]}"))
-
-	return err
 }
 
 // ---------------------------------------------------------
@@ -765,6 +770,59 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	cancelCh chan string) error {
-	// TODO: Implement scatter/gather.
-	return vg.localVLites[0].QueryStore(p, w, cancelCh)
+	w.Write([]byte(`{"results":[`))
+
+	first := true
+
+	err := vg.localVLites[0].QueryStore(p, cancelCh, func(key []byte) {
+		if first {
+			w.Write(entryBefore)
+			first = false
+		} else {
+			w.Write(entryBeforeSep)
+		}
+		parts := bytes.Split(key, []byte{0xff})
+		w.Write(parts[0]) // TODO: Proper encoding of secKey.
+		w.Write(entryMiddle)
+		w.Write(parts[1]) // TODO: Proper encoding of docId.
+		w.Write(entryAfter)
+	})
+
+	w.Write([]byte("]}"))
+
+	return err
+}
+
+// ---------------------------------------------------------
+
+type ScanCursor interface {
+	Done() bool
+	Key() []byte
+	Val() []byte
+	Next() error
+}
+
+// ScanCursors implements the heap.Interface for easy merging.
+type ScanCursors []ScanCursor
+
+func (pq ScanCursors) Len() int { return len(pq) }
+
+func (pq ScanCursors) Less(i, j int) bool {
+	return bytes.Compare(pq[i].Key(), pq[j].Key()) < 0
+}
+
+func (pq ScanCursors) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *ScanCursors) Push(x interface{}) {
+	*pq = append(*pq, x.(ScanCursor))
+}
+
+func (pq *ScanCursors) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
 }
