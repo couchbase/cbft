@@ -269,11 +269,7 @@ func (t *BleveDest) closeUnlocked() error {
 	}
 	t.partitions = make(map[string]*BleveDestPartition)
 
-	err := t.bindex.Close()
-	if err != nil {
-		return err
-	}
-
+	t.bindex.Close()
 	t.bindex = nil
 
 	return nil
