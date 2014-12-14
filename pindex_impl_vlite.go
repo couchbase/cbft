@@ -402,7 +402,7 @@ func (t *VLite) ConsistencyWait(partition string,
 // ---------------------------------------------------------
 
 func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
-	return t.CountStore(cancelCh)
+	return t.CountMain(cancelCh)
 }
 
 // ---------------------------------------------------------
@@ -431,7 +431,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 	first := true
 
-	err = t.QueryStore(vliteQueryParams, cancelCh, func(key []byte) {
+	err = t.QueryMain(vliteQueryParams, cancelCh, func(key []byte) {
 		if first {
 			w.Write(entryBefore)
 			first = false
@@ -452,8 +452,15 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 // ---------------------------------------------------------
 
-func (t *VLite) CountStore(cancelCh chan string) (uint64, error) {
-	numItems, _, err := t.backColl.GetTotals()
+func (t *VLite) CountMain(cancelCh chan string) (uint64, error) {
+	t.m.Lock()
+	storeRO := t.store.Snapshot()
+	t.m.Unlock()
+	defer storeRO.Close()
+
+	mainCollRO := storeRO.GetCollection("main")
+
+	numItems, _, err := mainCollRO.GetTotals()
 	if err != nil {
 		return 0, fmt.Errorf("VLite.Count get totals err: %v", err)
 	}
@@ -461,7 +468,7 @@ func (t *VLite) CountStore(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryStore(p *VLiteQueryParams, cancelCh chan string,
+func (t *VLite) QueryMain(p *VLiteQueryParams, cancelCh chan string,
 	cb func([]byte)) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
@@ -471,7 +478,7 @@ func (t *VLite) QueryStore(p *VLiteQueryParams, cancelCh chan string,
 		endExclusive = []byte(p.Key + "\xff\xff")
 	}
 
-	log.Printf("QueryStore startInclusive: %s, endExclusive: %s",
+	log.Printf("QueryMain startInclusive: %s, endExclusive: %s",
 		startInclusive, endExclusive)
 
 	totVisits := uint64(0)
@@ -752,7 +759,7 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 		go func(localVLite *VLite) {
 			defer wg.Done()
 
-			localTotal, err := localVLite.CountStore(cancelCh)
+			localTotal, err := localVLite.CountMain(cancelCh)
 			totalM.Lock()
 			if err == nil {
 				total += localTotal
@@ -774,7 +781,7 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 
 	first := true
 
-	err := vg.localVLites[0].QueryStore(p, cancelCh, func(key []byte) {
+	err := vg.localVLites[0].QueryMain(p, cancelCh, func(key []byte) {
 		if first {
 			w.Write(entryBefore)
 			first = false
