@@ -736,8 +736,31 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 }
 
 func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
-	// TODO: Implement scatter/gather.
-	return vg.localVLites[0].CountStore(cancelCh)
+	var totalM sync.Mutex
+	var totalErr error
+	var total uint64
+
+	var wg sync.WaitGroup
+
+	for _, localVLite := range vg.localVLites {
+		wg.Add(1)
+		go func(localVLite *VLite) {
+			defer wg.Done()
+
+			localTotal, err := localVLite.CountStore(cancelCh)
+			totalM.Lock()
+			if err == nil {
+				total += localTotal
+			} else {
+				totalErr = err
+			}
+			totalM.Unlock()
+		}(localVLite)
+	}
+
+	wg.Wait()
+
+	return total, totalErr
 }
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
