@@ -99,28 +99,17 @@ func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, er
 	if err != nil {
 		return nil, err
 	}
-	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
+
+	respBuf, err := r.Query(buf)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("pindexClient.Search got status code: %d,"+
-			" searchURL: %s, req: %#v, resp: %#v",
-			resp.StatusCode, r.QueryURL, req, resp)
-	}
-	respBuf, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("pindexClient.Search error reading resp.Body,"+
-			" searchURL: %s, req: %#v, resp: %#v",
-			r.QueryURL, req, resp)
-	}
+
 	rv := &bleve.SearchResult{}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("pindexClient.Search error parsing respBuf: %s,"+
-			" searchURL: %s, req: %#v, resp: %#v",
-			respBuf, r.QueryURL, req, resp)
+			" queryURL: %s", respBuf, r.QueryURL)
 	}
 	return rv, nil
 }
@@ -163,4 +152,26 @@ func (r *PIndexClient) SetInternal(key, val []byte) error {
 
 func (r *PIndexClient) DeleteInternal(key []byte) error {
 	return pindexClientUnimplementedErr
+}
+
+// -----------------------------------------------------
+
+func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
+	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("pindexClient.Search got status code: %d,"+
+			" searchURL: %s, buf: %s, resp: %#v",
+			resp.StatusCode, r.QueryURL, buf, resp)
+	}
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("pindexClient.Search error reading resp.Body,"+
+			" searchURL: %s, buf: %s, resp: %#v",
+			r.QueryURL, buf, resp)
+	}
+	return respBuf, err
 }
