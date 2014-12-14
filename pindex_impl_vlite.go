@@ -402,7 +402,7 @@ func (t *VLite) ConsistencyWait(partition string,
 // ---------------------------------------------------------
 
 func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
-	return t.CountMain(cancelCh)
+	return t.CountMainColl(cancelCh)
 }
 
 // ---------------------------------------------------------
@@ -431,18 +431,19 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 	first := true
 
-	err = t.QueryMain(vliteQueryParams, cancelCh, func(key []byte) {
+	err = t.QueryMainColl(vliteQueryParams, cancelCh, func(i *gkvlite.Item) bool {
 		if first {
 			w.Write(entryBefore)
 			first = false
 		} else {
 			w.Write(entryBeforeSep)
 		}
-		parts := bytes.Split(key, []byte{0xff})
+		parts := bytes.Split(i.Key, []byte{0xff})
 		w.Write(parts[0]) // TODO: Proper encoding of secKey.
 		w.Write(entryMiddle)
 		w.Write(parts[1]) // TODO: Proper encoding of docId.
 		w.Write(entryAfter)
+		return true
 	})
 
 	w.Write([]byte("]}"))
@@ -452,7 +453,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 // ---------------------------------------------------------
 
-func (t *VLite) CountMain(cancelCh chan string) (uint64, error) {
+func (t *VLite) CountMainColl(cancelCh chan string) (uint64, error) {
 	t.m.Lock()
 	storeRO := t.store.Snapshot()
 	t.m.Unlock()
@@ -468,8 +469,8 @@ func (t *VLite) CountMain(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryMain(p *VLiteQueryParams, cancelCh chan string,
-	cb func([]byte)) error {
+func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
+	cb func(*gkvlite.Item) bool) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
 
@@ -500,7 +501,9 @@ func (t *VLite) QueryMain(p *VLiteQueryParams, cancelCh chan string,
 
 			totVisits++
 			if totVisits > p.Skip {
-				cb(i.Key)
+				if !cb(i) {
+					return false
+				}
 			}
 
 			return p.Limit <= 0 || (totVisits < p.Skip+p.Limit)
@@ -759,7 +762,7 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 		go func(localVLite *VLite) {
 			defer wg.Done()
 
-			localTotal, err := localVLite.CountMain(cancelCh)
+			localTotal, err := localVLite.CountMainColl(cancelCh)
 			totalM.Lock()
 			if err == nil {
 				total += localTotal
@@ -777,59 +780,124 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	cancelCh chan string) error {
+	n := len(vg.localVLites) + len(vg.remoteVLites)
+	errCh := make(chan error, n)
+	doneCh := make(chan struct{})
+
+	scanCursors := ScanCursors{}
+	heap.Init(&scanCursors)
+
+	for _, localVLite := range vg.localVLites {
+		resultCh := make(chan *gkvlite.Item, 1)
+
+		go func(localVLite *VLite, resultCh chan *gkvlite.Item) {
+			defer close(resultCh)
+
+			err := localVLite.QueryMainColl(p, cancelCh,
+				func(i *gkvlite.Item) bool {
+					select {
+					case <-doneCh:
+						close(resultCh)
+						return false
+					case resultCh <- i:
+					}
+					return true
+				})
+			if err != nil {
+				errCh <- err
+			}
+		}(localVLite, resultCh)
+
+		scanCursor := &VLiteScanCursor{resultCh: resultCh}
+		if scanCursor.Next() {
+			heap.Push(&scanCursors, scanCursor)
+		}
+	}
+
 	w.Write([]byte(`{"results":[`))
 
 	first := true
 
-	err := vg.localVLites[0].QueryMain(p, cancelCh, func(key []byte) {
-		if first {
-			w.Write(entryBefore)
-			first = false
-		} else {
-			w.Write(entryBeforeSep)
+	for len(scanCursors) > 0 {
+		// TODO: Limit and skip.  Need to use 0 skip/limit in child
+		// QueryMainColl()'s and do the skip/limit processing here.
+		scanCursor := heap.Pop(&scanCursors).(ScanCursor)
+		if !scanCursor.Done() {
+			if first {
+				w.Write(entryBefore)
+				first = false
+			} else {
+				w.Write(entryBeforeSep)
+			}
+			parts := bytes.Split(scanCursor.Key(), []byte{0xff})
+			w.Write(parts[0]) // TODO: Proper encoding of secKey.
+			w.Write(entryMiddle)
+			w.Write(parts[1]) // TODO: Proper encoding of docId.
+			w.Write(entryAfter)
+
+			if scanCursor.Next() {
+				heap.Push(&scanCursors, scanCursor)
+			}
 		}
-		parts := bytes.Split(key, []byte{0xff})
-		w.Write(parts[0]) // TODO: Proper encoding of secKey.
-		w.Write(entryMiddle)
-		w.Write(parts[1]) // TODO: Proper encoding of docId.
-		w.Write(entryAfter)
-	})
+	}
 
 	w.Write([]byte("]}"))
+
+	close(doneCh)
+
+	go func() {
+		for _, scanCursor := range scanCursors {
+			for scanCursor.Next() {
+				// Eat results to clear out QueryMainColl() goroutines.
+			}
+		}
+	}()
+
+	var err error
+	select {
+	case err = <-errCh:
+	default:
+	}
 
 	return err
 }
 
 // ---------------------------------------------------------
 
-type ScanCursor interface {
-	Done() bool
-	Key() []byte
-	Val() []byte
-	Next() error
+type VLiteScanCursor struct {
+	resultCh chan *gkvlite.Item
+	done     bool
+	curr     *gkvlite.Item
 }
 
-// ScanCursors implements the heap.Interface for easy merging.
-type ScanCursors []ScanCursor
-
-func (pq ScanCursors) Len() int { return len(pq) }
-
-func (pq ScanCursors) Less(i, j int) bool {
-	return bytes.Compare(pq[i].Key(), pq[j].Key()) < 0
+func (c *VLiteScanCursor) Done() bool {
+	return c.done
 }
 
-func (pq ScanCursors) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
+func (c *VLiteScanCursor) Key() []byte {
+	if c.curr == nil {
+		return nil
+	}
+	return c.curr.Key
 }
 
-func (pq *ScanCursors) Push(x interface{}) {
-	*pq = append(*pq, x.(ScanCursor))
+func (c *VLiteScanCursor) Val() []byte {
+	if c.curr == nil {
+		return nil
+	}
+	return c.curr.Val
 }
 
-func (pq *ScanCursors) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
+func (c *VLiteScanCursor) Next() bool {
+	c.curr = nil
+	if c.done {
+		return false
+	}
+	i, ok := <-c.resultCh
+	if !ok {
+		c.done = true
+		return false
+	}
+	c.curr = i
+	return true
 }
