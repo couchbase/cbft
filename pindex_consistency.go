@@ -32,6 +32,20 @@ type ConsistencyParams struct {
 // Key is partition, value is seq.
 type ConsistencyVector map[string]uint64
 
+type ConsistencyWaiter interface {
+	ConsistencyWait(partition string,
+		consistencyLevel string,
+		consistencySeq uint64,
+		cancelCh chan string) error
+}
+
+type ConsistencyWaitReq struct {
+	ConsistencyLevel string
+	ConsistencySeq   uint64
+	CancelCh         chan string
+	DoneCh           chan error
+}
+
 type ErrorConsistencyWait struct {
 	Err    error  // The underlying, wrapped error.
 	Status string // Short status reason, like "timeout", "cancelled", etc.
@@ -43,20 +57,6 @@ type ErrorConsistencyWait struct {
 func (e *ErrorConsistencyWait) Error() string {
 	return fmt.Sprintf("ErrorConsistencyWait, startEndSeqs: %#v,"+
 		" err: %v", e.StartEndSeqs, e.Err)
-}
-
-type ConsistencyWaitReq struct {
-	ConsistencyLevel string
-	ConsistencySeq   uint64
-	CancelCh         chan string
-	DoneCh           chan error
-}
-
-type ConsistencyWaiter interface {
-	ConsistencyWait(partition string,
-		consistencyLevel string,
-		consistencySeq uint64,
-		cancelCh chan string) error
 }
 
 // ---------------------------------------------------------
