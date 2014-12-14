@@ -365,7 +365,8 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 			" req: %s, err: %v", req, err)
 	}
 
-	err = ConsistencyWaitPIndex(pindex, t, bleveQueryParams.Consistency, cancelCh)
+	err = ConsistencyWaitPIndex(pindex, t,
+		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
