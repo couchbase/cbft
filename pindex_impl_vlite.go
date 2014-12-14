@@ -66,7 +66,7 @@ type VLite struct {
 type VLitePartition struct {
 	vlite        *VLite
 	partition    string
-	partitionBuf []byte // Key used for opaqueColl and seqColl.
+	partitionKey []byte // Key used for opaqueColl and seqColl.
 
 	m           sync.Mutex // Protects the fields that follow.
 	seqMax      uint64     // Max seq # we've seen for this partition.
@@ -291,7 +291,7 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 		bdp = &VLitePartition{
 			vlite:        t,
 			partition:    partition,
-			partitionBuf: []byte(partition),
+			partitionKey: []byte(partition),
 			cwrCh:        make(chan *ConsistencyWaitReq, 1),
 			cwrQueue:     cwrQueue{},
 		}
@@ -587,20 +587,20 @@ func (t *VLitePartition) SetOpaque(partition string, value []byte) error {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	return t.vlite.opaqueColl.Set(t.partitionBuf, append([]byte(nil), value...))
+	return t.vlite.opaqueColl.Set(t.partitionKey, append([]byte(nil), value...))
 }
 
 func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	opaqueBuf, err := t.vlite.opaqueColl.Get(t.partitionBuf)
+	opaqueBuf, err := t.vlite.opaqueColl.Get(t.partitionKey)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if t.seqMax <= 0 {
-		seqBuf, err := t.vlite.seqColl.Get(t.partitionBuf)
+		seqBuf, err := t.vlite.seqColl.Get(t.partitionKey)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -647,7 +647,7 @@ func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 		seqMaxBuf := make([]byte, 8)
 		binary.BigEndian.PutUint64(seqMaxBuf, t.seqMax)
 
-		t.vlite.seqColl.Set(t.partitionBuf, seqMaxBuf)
+		t.vlite.seqColl.Set(t.partitionKey, seqMaxBuf)
 	}
 
 	if seq < t.seqSnapEnd {
