@@ -19,22 +19,23 @@ import (
 )
 
 func init() {
-	RegisterFeedType("dest", &FeedType{
+	RegisterFeedType("primary", &FeedType{
 		Start: func(mgr *Manager, feedName, indexName, indexUUID,
 			sourceType, sourceName, sourceUUID, params string,
 			dests map[string]Dest) error {
-			return mgr.registerFeed(NewDestFeed(feedName, BasicPartitionFunc, dests))
+			return mgr.registerFeed(NewPrimaryFeed(feedName,
+				BasicPartitionFunc, dests))
 		},
-		Partitions:  DestFeedPartitions,
+		Partitions:  PrimaryFeedPartitions,
 		Public:      true,
-		Description: "dest - a primary data source",
+		Description: "primary - a primary data source",
 		StartSample: &DestSourceParams{},
 	})
 }
 
-// A DestFeed implements both the Feed and Dest interfaces, for
+// A PrimaryFeed implements both the Feed and Dest interfaces, for
 // chainability; and is also useful for testing.
-type DestFeed struct {
+type PrimaryFeed struct {
 	name    string
 	pf      DestPartitionFunc
 	dests   map[string]Dest
@@ -44,8 +45,9 @@ type DestFeed struct {
 	doneMsg string
 }
 
-func NewDestFeed(name string, pf DestPartitionFunc, dests map[string]Dest) *DestFeed {
-	return &DestFeed{
+func NewPrimaryFeed(name string, pf DestPartitionFunc,
+	dests map[string]Dest) *PrimaryFeed {
+	return &PrimaryFeed{
 		name:    name,
 		pf:      pf,
 		dests:   dests,
@@ -56,23 +58,23 @@ func NewDestFeed(name string, pf DestPartitionFunc, dests map[string]Dest) *Dest
 	}
 }
 
-func (t *DestFeed) Name() string {
+func (t *PrimaryFeed) Name() string {
 	return t.name
 }
 
-func (t *DestFeed) Start() error {
+func (t *PrimaryFeed) Start() error {
 	return nil
 }
 
-func (t *DestFeed) Close() error {
+func (t *PrimaryFeed) Close() error {
 	return nil
 }
 
-func (t *DestFeed) Dests() map[string]Dest {
+func (t *PrimaryFeed) Dests() map[string]Dest {
 	return t.dests
 }
 
-func (t *DestFeed) Stats(w io.Writer) error {
+func (t *PrimaryFeed) Stats(w io.Writer) error {
 	_, err := w.Write([]byte("{}"))
 	return err
 }
@@ -83,7 +85,7 @@ type DestSourceParams struct {
 	NumPartitions int `json:"numPartitions"`
 }
 
-func DestFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
+func PrimaryFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
 	dsp := &DestSourceParams{}
 	if sourceParams != "" {
@@ -103,78 +105,78 @@ func DestFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 
 // -----------------------------------------------------
 
-func (t *DestFeed) OnDataUpdate(partition string,
+func (t *PrimaryFeed) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnDataUpdate(partition, key, seq, val)
 }
 
-func (t *DestFeed) OnDataDelete(partition string,
+func (t *PrimaryFeed) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnDataDelete(partition, key, seq)
 }
 
-func (t *DestFeed) OnSnapshotStart(partition string,
+func (t *PrimaryFeed) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
 }
 
-func (t *DestFeed) SetOpaque(partition string,
+func (t *PrimaryFeed) SetOpaque(partition string,
 	value []byte) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.SetOpaque(partition, value)
 }
 
-func (t *DestFeed) GetOpaque(partition string) (
+func (t *PrimaryFeed) GetOpaque(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return nil, 0, fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.GetOpaque(partition)
 }
 
-func (t *DestFeed) Rollback(partition string,
+func (t *PrimaryFeed) Rollback(partition string,
 	rollbackSeq uint64) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.Rollback(partition, rollbackSeq)
 }
 
-func (t *DestFeed) ConsistencyWait(partition string,
+func (t *PrimaryFeed) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh chan string) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: DestFeed pf, err: %v", err)
+		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *DestFeed) Count(pindex *PIndex, cancelCh chan string) (
+func (t *PrimaryFeed) Count(pindex *PIndex, cancelCh chan string) (
 	uint64, error) {
-	return 0, fmt.Errorf("DestFeed.Count unimplemented")
+	return 0, fmt.Errorf("PrimaryFeed.Count unimplemented")
 }
 
-func (t *DestFeed) Query(pindex *PIndex, req []byte, w io.Writer,
+func (t *PrimaryFeed) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan string) error {
-	return fmt.Errorf("DestFeed.Query unimplemented")
+	return fmt.Errorf("PrimaryFeed.Query unimplemented")
 }

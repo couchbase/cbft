@@ -132,7 +132,7 @@ func TestManagerRestart(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("dest", "default", "123", sourceParams,
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
@@ -174,11 +174,11 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("dest", "default", "123", sourceParams,
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("dest", "default", "123", sourceParams,
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
@@ -511,7 +511,7 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 	if err := mgr.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
+	err := mgr.startFeedByType("feedName", "indexName", "indexUUID", "primary",
 		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err != nil {
 		t.Errorf("expected startFeedByType ok for simple sourceType")
@@ -524,10 +524,10 @@ func TestManagerStartSimpleFeed(t *testing.T) {
 	if !exists || f.Name() != "feedName" {
 		t.Errorf("expected a feed")
 	}
-	if _, ok := f.(*DestFeed); !ok {
+	if _, ok := f.(*PrimaryFeed); !ok {
 		t.Errorf("expected a SimpleFeed")
 	}
-	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "dest",
+	err = mgr.startFeedByType("feedName", "indexName", "indexUUID", "primary",
 		"sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
 		t.Errorf("expected re-startFeedByType to fail")
@@ -647,7 +647,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	sourceParams := ""
-	if err := m.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
+	if err := m.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", PlanParams{}); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
@@ -711,7 +711,7 @@ func TestManagerReStartPIndex(t *testing.T) {
 
 func testManagerSimpleFeed(t *testing.T,
 	sourceParams string, planParams PlanParams,
-	andThen func(*Manager, *DestFeed, *TestMEH)) {
+	andThen func(*Manager, *PrimaryFeed, *TestMEH)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
@@ -720,7 +720,7 @@ func testManagerSimpleFeed(t *testing.T,
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
-	if err := m.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
+	if err := m.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
@@ -739,7 +739,7 @@ func testManagerSimpleFeed(t *testing.T,
 	if !exists || feed == nil {
 		t.Errorf("expected there to be feed: %s", feedName)
 	}
-	sf, ok := feed.(*DestFeed)
+	sf, ok := feed.(*PrimaryFeed)
 	if !ok || sf == nil {
 		t.Errorf("expected feed to be simple")
 	}
@@ -752,7 +752,7 @@ func testManagerSimpleFeed(t *testing.T,
 func TestManagerCreateSimpleFeed(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *PrimaryFeed, meh *TestMEH) {
 			err := sf.Close()
 			if err != nil {
 				t.Errorf("expected simple feed close to work")
@@ -763,7 +763,7 @@ func TestManagerCreateSimpleFeed(t *testing.T) {
 func TestBasicStreamMutations(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *PrimaryFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
@@ -845,7 +845,7 @@ func TestBasicStreamMutations(t *testing.T) {
 func TestStreamGetSetMeta(t *testing.T) {
 	sourceParams := ""
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *PrimaryFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
@@ -897,7 +897,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 func TestMultiStreamGetSetMeta(t *testing.T) {
 	sourceParams := "{\"numPartitions\":2}"
 	testManagerSimpleFeed(t, sourceParams, PlanParams{},
-		func(mgr *Manager, sf *DestFeed, meh *TestMEH) {
+		func(mgr *Manager, sf *PrimaryFeed, meh *TestMEH) {
 			pindex := meh.lastPIndex
 			bindex, ok := pindex.Impl.(bleve.Index)
 			if !ok || bindex == nil {
@@ -951,7 +951,7 @@ func testPartitioning(t *testing.T,
 	planParams PlanParams,
 	expectedNumPIndexes int,
 	expectedNumDests int,
-	andThen func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex)) {
+	andThen func(mgr *Manager, sf *PrimaryFeed, pindexes map[string]*PIndex)) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -962,7 +962,7 @@ func testPartitioning(t *testing.T,
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 
-	if err := mgr.CreateIndex("dest", "sourceName", "sourceUUID", sourceParams,
+	if err := mgr.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
 		"bleve", "foo", "", planParams); err != nil {
 		t.Errorf("expected CreateIndex() to work")
 	}
@@ -982,7 +982,7 @@ func testPartitioning(t *testing.T,
 	for _, f := range feeds {
 		feed = f
 	}
-	sf, ok := feed.(*DestFeed)
+	sf, ok := feed.(*PrimaryFeed)
 	if !ok || sf == nil {
 		t.Errorf("expected feed to be simple")
 	}
@@ -1033,7 +1033,7 @@ func TestPartitioningMutations(t *testing.T) {
 	expectedNumStreams := 2
 	testPartitioning(t, sourceParams, planParams,
 		expectedNumPIndexes, expectedNumStreams,
-		func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex) {
+		func(mgr *Manager, sf *PrimaryFeed, pindexes map[string]*PIndex) {
 			var pindex0 *PIndex
 			var pindex1 *PIndex
 			for _, pindex := range pindexes {
@@ -1095,7 +1095,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 	expectedNumStreamsEntries := 3
 	testPartitioning(t, sourceParams, planParams,
 		expectedNumPIndexes, expectedNumStreamsEntries,
-		func(mgr *Manager, sf *DestFeed, pindexes map[string]*PIndex) {
+		func(mgr *Manager, sf *PrimaryFeed, pindexes map[string]*PIndex) {
 			var pindex0_0 *PIndex
 			var pindex0_1 *PIndex
 			var pindex1 *PIndex

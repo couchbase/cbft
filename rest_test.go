@@ -587,7 +587,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
+func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -607,7 +607,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 
 	var doneCh chan *httptest.ResponseRecorder
 
-	var feed *DestFeed
+	var feed *PrimaryFeed
 
 	tests := []*RESTHandlerTest{
 		{
@@ -616,7 +616,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"bleve"},
-				"sourceType":   []string{"dest"},
+				"sourceType":   []string{"primary"},
 				"sourceParams": []string{"-}totally n0t json{-"},
 			},
 			Body:   nil,
@@ -631,7 +631,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"bleve"},
-				"sourceType":   []string{"dest"},
+				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
 			},
 			Body:   nil,
@@ -649,9 +649,9 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed, ok = f.(*DestFeed)
+					feed, ok = f.(*PrimaryFeed)
 					if !ok {
-						t.Errorf("expected the 1 feed to be a DestFeed")
+						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
 				}
 			},
@@ -1216,7 +1216,7 @@ func TestHandlersWithOnePartitionDestFeedIndex(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
+func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1236,7 +1236,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 
 	var doneCh chan *httptest.ResponseRecorder
 
-	var feed *DestFeed
+	var feed *PrimaryFeed
 
 	tests := []*RESTHandlerTest{
 		{
@@ -1245,7 +1245,7 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"bleve"},
-				"sourceType":   []string{"dest"},
+				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
 			},
 			Body:   nil,
@@ -1263,9 +1263,9 @@ func TestHandlersWithOnePartitionDestFeedRollback(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed, ok = f.(*DestFeed)
+					feed, ok = f.(*PrimaryFeed)
 					if !ok {
-						t.Errorf("expected the 1 feed to be a DestFeed")
+						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
 				}
 			},
@@ -1500,8 +1500,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mgr0.Kick("test-start-kick-again")
 	mgr1.Kick("test-start-kick-again")
 
-	var feed0 *DestFeed
-	var feed1 *DestFeed
+	var feed0 *PrimaryFeed
+	var feed1 *PrimaryFeed
 
 	httpGetPrev := httpGet
 	defer func() { httpGet = httpGetPrev }()
@@ -1548,7 +1548,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"bleve"},
-				"sourceType":   []string{"dest"},
+				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":2}`},
 				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
 			},
@@ -1576,9 +1576,9 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed0, ok = f.(*DestFeed)
+					feed0, ok = f.(*PrimaryFeed)
 					if !ok {
-						t.Errorf("expected the 1 feed to be a DestFeed")
+						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
 				}
 				for _, p := range pindexes {
@@ -1596,9 +1596,9 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed1, ok = f.(*DestFeed)
+					feed1, ok = f.(*PrimaryFeed)
 					if !ok {
-						t.Errorf("expected the 1 feed to be a DestFeed")
+						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
 				}
 				for _, p := range pindexes {
@@ -1657,7 +1657,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"bleve"},
-				"sourceType":   []string{"dest"},
+				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":8}`},
 				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
 			},
