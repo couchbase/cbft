@@ -68,10 +68,10 @@ type VLitePartition struct {
 	partition    string
 	partitionKey []byte // Key used for opaqueColl and seqColl.
 
-	m           sync.Mutex // Protects the fields that follow.
-	seqMax      uint64     // Max seq # we've seen for this partition.
-	seqMaxBatch uint64     // Max seq # that got through batch apply/commit.
-	seqSnapEnd  uint64     // To track snapshot end seq # for this partition.
+	// The parent vlite.m protects the following fields.
+	seqMax      uint64 // Max seq # we've seen for this partition.
+	seqMaxBatch uint64 // Max seq # that got through batch apply/commit.
+	seqSnapEnd  uint64 // To track snapshot end seq # for this partition.
 
 	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
@@ -297,7 +297,7 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 		}
 		heap.Init(&bdp.cwrQueue)
 
-		go RunConsistencyWaitQueue(bdp.cwrCh, &bdp.m, &bdp.cwrQueue,
+		go RunConsistencyWaitQueue(bdp.cwrCh, &t.m, &bdp.cwrQueue,
 			func() uint64 { return bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
@@ -393,9 +393,10 @@ func (t *VLite) ConsistencyWait(partition string,
 
 	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
-			bdp.m.Lock()
-			defer bdp.m.Unlock()
-			return bdp.seqMaxBatch
+			t.m.Lock()
+			seqMaxBatch := bdp.seqMaxBatch
+			t.m.Unlock()
+			return seqMaxBatch
 		})
 }
 
@@ -542,8 +543,8 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 
 	log.Printf("OnDataUpdate, secKey: %s", secKey)
 
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
 
 	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
@@ -571,8 +572,8 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 
 func (t *VLitePartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
 
 	backKey, err := t.vlite.backColl.Get(key)
 	if err != nil && len(backKey) > 0 {
@@ -585,8 +586,8 @@ func (t *VLitePartition) OnDataDelete(partition string,
 
 func (t *VLitePartition) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
 
 	err := t.applyBatchUnlocked()
 	if err != nil {
@@ -599,15 +600,15 @@ func (t *VLitePartition) OnSnapshotStart(partition string,
 }
 
 func (t *VLitePartition) SetOpaque(partition string, value []byte) error {
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
 
 	return t.vlite.opaqueColl.Set(t.partitionKey, append([]byte(nil), value...))
 }
 
 func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
 
 	opaqueBuf, err := t.vlite.opaqueColl.Get(t.partitionKey)
 	if err != nil {
