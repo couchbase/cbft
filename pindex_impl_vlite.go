@@ -172,10 +172,6 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	if vliteParams.Path == "" {
-		return nil, nil, fmt.Errorf("error: missing path for vlite index params")
-	}
-
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return nil, nil, err
@@ -486,8 +482,13 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
 	endExclusive := []byte(p.EndExclusive)
 
 	if p.Key != "" {
-		startInclusive = []byte(p.Key + "\xff")
-		endExclusive = []byte(p.Key + "\xff\xff")
+		if t.params.Path != "" {
+			startInclusive = []byte(p.Key + "\xff")
+			endExclusive = []byte(p.Key + "\xff\xff")
+		} else {
+			startInclusive = []byte(p.Key)
+			endExclusive = []byte(p.Key + "\xff")
+		}
 	}
 
 	log.Printf("QueryMain startInclusive: %s, endExclusive: %s",
@@ -529,52 +530,57 @@ func (t *VLitePartition) Close() error {
 
 func (t *VLitePartition) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
-	secVal, err := jsonpointer.Find(val, t.vlite.params.Path)
-	if err != nil {
-		log.Printf("jsonpointer path: %s, key: %s, val: %s, err: %v",
-			t.vlite.params.Path, key, val, err)
-		return nil // TODO: Return or report error here?
-	}
-	if len(secVal) <= 0 {
-		log.Printf("no matching path: %s, key: %s, val: %s",
-			t.vlite.params.Path, key, val)
-		return nil // TODO: Return or report error here?
-	}
-	if len(secVal) >= 2 && secVal[0] == '"' && secVal[len(secVal)-1] == '"' {
-		var s string
-		err := json.Unmarshal(secVal, &s)
+	storeKey := append([]byte(nil), key...)
+	storeVal := append([]byte(nil), val...)
+
+	if t.vlite.params.Path != "" {
+		secVal, err := jsonpointer.Find(val, t.vlite.params.Path)
 		if err != nil {
+			log.Printf("jsonpointer path: %s, key: %s, val: %s, err: %v",
+				t.vlite.params.Path, key, val, err)
 			return nil // TODO: Return or report error here?
 		}
-		secVal = []byte(s)
+		if len(secVal) <= 0 {
+			log.Printf("no matching path: %s, key: %s, val: %s",
+				t.vlite.params.Path, key, val)
+			return nil // TODO: Return or report error here?
+		}
+		if len(secVal) >= 2 && secVal[0] == '"' && secVal[len(secVal)-1] == '"' {
+			var s string
+			err := json.Unmarshal(secVal, &s)
+			if err != nil {
+				return nil // TODO: Return or report error here?
+			}
+			secVal = []byte(s)
+		}
+
+		storeKey = []byte(string(secVal) + "\xff" + string(key))
+		storeVal = EMPTY_BYTES
 	}
 
-	secKey := []byte(string(secVal) + "\xff" + string(key))
-
-	log.Printf("OnDataUpdate, secKey: %s", secKey)
+	log.Printf("OnDataUpdate, storeKey: %s", storeKey)
 
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()
 
-	backKey, err := t.vlite.backColl.Get(key)
-	if err != nil && len(backKey) > 0 {
-		_, err := t.vlite.mainColl.Delete(backKey)
-		if err != nil {
-			log.Printf("mainColl.Delete err: %v", err)
+	if t.vlite.params.Path != "" {
+		backKey, err := t.vlite.backColl.Get(key)
+		if err != nil && len(backKey) > 0 {
+			_, err := t.vlite.mainColl.Delete(backKey)
+			if err != nil {
+				log.Printf("mainColl.Delete err: %v", err)
+			}
 		}
-		_, err = t.vlite.backColl.Delete(key)
+
+		err = t.vlite.backColl.Set(key, storeKey)
 		if err != nil {
-			log.Printf("backColl.Delete err: %v", err)
+			log.Printf("backColl.Set err: %v", err)
 		}
 	}
 
-	err = t.vlite.mainColl.Set(secKey, EMPTY_BYTES)
+	err := t.vlite.mainColl.Set(storeKey, storeVal)
 	if err != nil {
 		log.Printf("mainColl.Set err: %v", err)
-	}
-	err = t.vlite.backColl.Set(key, secKey)
-	if err != nil {
-		log.Printf("backColl.Set err: %v", err)
 	}
 
 	return t.updateSeqUnlocked(seq)
@@ -585,10 +591,14 @@ func (t *VLitePartition) OnDataDelete(partition string,
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()
 
-	backKey, err := t.vlite.backColl.Get(key)
-	if err != nil && len(backKey) > 0 {
-		t.vlite.mainColl.Delete(backKey)
-		t.vlite.backColl.Delete(key)
+	if t.vlite.params.Path != "" {
+		backKey, err := t.vlite.backColl.Get(key)
+		if err != nil && len(backKey) > 0 {
+			t.vlite.mainColl.Delete(backKey)
+			t.vlite.backColl.Delete(key)
+		}
+	} else {
+		t.vlite.mainColl.Delete(key)
 	}
 
 	return t.updateSeqUnlocked(seq)
