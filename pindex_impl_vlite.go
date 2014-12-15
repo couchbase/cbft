@@ -31,7 +31,6 @@ import (
 )
 
 // TODO: Compaction!
-// TODO: Scatter/gather against local vlite PIndexes.
 // TODO: Remote client vlite.
 // TODO: Snapshots, so that queries don't see mutations until commited/flushed.
 // TODO: Partial rollback.
@@ -91,8 +90,8 @@ type VLiteQueryParams struct {
 func NewVLiteQueryParams() *VLiteQueryParams { return &VLiteQueryParams{} }
 
 type VLiteGatherer struct {
-	localVLites  []*VLite
-	remoteVLites []*PIndexClient
+	localVLites   []*VLite
+	remoteClients []*PIndexClient
 }
 
 var EMPTY_BYTES = []byte{}
@@ -723,7 +722,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		rv.remoteVLites = append(rv.remoteVLites, &PIndexClient{
+		rv.remoteClients = append(rv.remoteClients, &PIndexClient{
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
@@ -763,15 +762,31 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 		go func(localVLite *VLite) {
 			defer wg.Done()
 
-			localTotal, err := localVLite.CountMainColl(cancelCh)
+			t, err := localVLite.CountMainColl(cancelCh)
 			totalM.Lock()
 			if err == nil {
-				total += localTotal
+				total += t
 			} else {
 				totalErr = err
 			}
 			totalM.Unlock()
 		}(localVLite)
+	}
+
+	for _, remoteClient := range vg.remoteClients {
+		wg.Add(1)
+		go func(remoteClient *PIndexClient) {
+			defer wg.Done()
+
+			t, err := remoteClient.Count()
+			totalM.Lock()
+			if err == nil {
+				total += t
+			} else {
+				totalErr = err
+			}
+			totalM.Unlock()
+		}(remoteClient)
 	}
 
 	wg.Wait()
@@ -781,7 +796,7 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	cancelCh chan string) error {
-	n := len(vg.localVLites) + len(vg.remoteVLites)
+	n := len(vg.localVLites) + len(vg.remoteClients)
 	errCh := make(chan error, n)
 	doneCh := make(chan struct{})
 

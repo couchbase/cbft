@@ -156,6 +156,10 @@ func (r *PIndexClient) DeleteInternal(key []byte) error {
 
 // -----------------------------------------------------
 
+func (r *PIndexClient) Count() (uint64, error) {
+	return r.DocCount()
+}
+
 func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
 	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
