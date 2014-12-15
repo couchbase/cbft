@@ -89,6 +89,15 @@ type VLiteQueryParams struct {
 
 func NewVLiteQueryParams() *VLiteQueryParams { return &VLiteQueryParams{} }
 
+type VLiteQueryResults struct {
+	Results []*VLiteQueryResult `json:"results"`
+}
+
+type VLiteQueryResult struct {
+	Key string `json:"key"`
+	Val string `json:"val"`
+}
+
 type VLiteGatherer struct {
 	localVLites   []*VLite
 	remoteClients []*PIndexClient
@@ -407,10 +416,10 @@ func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 
 // ---------------------------------------------------------
 
-var entryBefore = []byte("{\"key\":\"")
-var entryBeforeSep = append([]byte("\n,"), entryBefore...)
-var entryMiddle = []byte("\", \"id\":\"")
-var entryAfter = []byte("\"}")
+var entryKeyPrefix = []byte("{\"key\":")
+var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
+var entryValPrefix = []byte(", \"val\":")
+var entrySuffix = []byte("}")
 
 func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan string) error {
@@ -433,16 +442,18 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 	err = t.QueryMainColl(vliteQueryParams, cancelCh, func(i *gkvlite.Item) bool {
 		if first {
-			w.Write(entryBefore)
+			w.Write(entryKeyPrefix)
 			first = false
 		} else {
-			w.Write(entryBeforeSep)
+			w.Write(entryKeyPrefixSep)
 		}
-		parts := bytes.Split(i.Key, []byte{0xff})
-		w.Write(parts[0]) // TODO: Proper encoding of secKey.
-		w.Write(entryMiddle)
-		w.Write(parts[1]) // TODO: Proper encoding of docId.
-		w.Write(entryAfter)
+		buf, _ := json.Marshal(string(i.Key))
+		w.Write(buf)
+		w.Write(entryValPrefix)
+		buf, _ = json.Marshal(string(i.Val))
+		w.Write(buf)
+		w.Write(entrySuffix)
+
 		return true
 	})
 
@@ -491,17 +502,17 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
 
 	mainCollRO := storeRO.GetCollection("main")
 
-	return mainCollRO.VisitItemsAscend(startInclusive, false,
-		func(i *gkvlite.Item) bool {
+	return mainCollRO.VisitItemsAscend(startInclusive, true,
+		func(item *gkvlite.Item) bool {
 			ok := len(endExclusive) <= 0 ||
-				bytes.Compare(i.Key, endExclusive) < 0
+				bytes.Compare(item.Key, endExclusive) < 0
 			if !ok {
 				return false
 			}
 
 			totVisits++
 			if totVisits > p.Skip {
-				if !cb(i) {
+				if !cb(item) {
 					return false
 				}
 			}
@@ -796,6 +807,11 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	cancelCh chan string) error {
+	pBuf, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+
 	n := len(vg.localVLites) + len(vg.remoteClients)
 	errCh := make(chan error, n)
 	doneCh := make(chan struct{})
@@ -806,23 +822,61 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	for _, localVLite := range vg.localVLites {
 		resultCh := make(chan *gkvlite.Item, 1)
 
-		go func(localVLite *VLite, resultCh chan *gkvlite.Item) {
+		go func(resultCh chan *gkvlite.Item, localVLite *VLite) {
 			defer close(resultCh)
 
 			err := localVLite.QueryMainColl(p, cancelCh,
-				func(i *gkvlite.Item) bool {
+				func(item *gkvlite.Item) bool {
 					select {
 					case <-doneCh:
-						close(resultCh)
 						return false
-					case resultCh <- i:
+					case resultCh <- item:
 					}
 					return true
 				})
 			if err != nil {
 				errCh <- err
 			}
-		}(localVLite, resultCh)
+		}(resultCh, localVLite)
+
+		scanCursor := &VLiteScanCursor{resultCh: resultCh}
+		if scanCursor.Next() {
+			heap.Push(&scanCursors, scanCursor)
+		}
+	}
+
+	for _, remoteClient := range vg.remoteClients {
+		resultCh := make(chan *gkvlite.Item, 1)
+
+		go func(resultCh chan *gkvlite.Item, remoteClient *PIndexClient) {
+			defer close(resultCh)
+
+			respBuf, err := remoteClient.Query(pBuf)
+			if err != nil {
+				errCh <- err
+				return
+			}
+
+			results := &VLiteQueryResults{}
+			err = json.Unmarshal(respBuf, results)
+			if err != nil {
+				errCh <- err
+				return
+			}
+
+			for _, result := range results.Results {
+				item := &gkvlite.Item{
+					Key: []byte(result.Key),
+					Val: []byte(result.Val),
+				}
+
+				select {
+				case <-doneCh:
+					return
+				case resultCh <- item:
+				}
+			}
+		}(resultCh, remoteClient)
 
 		scanCursor := &VLiteScanCursor{resultCh: resultCh}
 		if scanCursor.Next() {
@@ -840,16 +894,17 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 		scanCursor := heap.Pop(&scanCursors).(ScanCursor)
 		if !scanCursor.Done() {
 			if first {
-				w.Write(entryBefore)
+				w.Write(entryKeyPrefix)
 				first = false
 			} else {
-				w.Write(entryBeforeSep)
+				w.Write(entryKeyPrefixSep)
 			}
-			parts := bytes.Split(scanCursor.Key(), []byte{0xff})
-			w.Write(parts[0]) // TODO: Proper encoding of secKey.
-			w.Write(entryMiddle)
-			w.Write(parts[1]) // TODO: Proper encoding of docId.
-			w.Write(entryAfter)
+			buf, _ := json.Marshal(string(scanCursor.Key()))
+			w.Write(buf)
+			w.Write(entryValPrefix)
+			buf, _ = json.Marshal(string(scanCursor.Val()))
+			w.Write(buf)
+			w.Write(entrySuffix)
 
 			if scanCursor.Next() {
 				heap.Push(&scanCursors, scanCursor)
@@ -869,7 +924,6 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 		}
 	}()
 
-	var err error
 	select {
 	case err = <-errCh:
 	default:

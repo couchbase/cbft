@@ -167,14 +167,14 @@ func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("pindexClient.Search got status code: %d,"+
-			" searchURL: %s, buf: %s, resp: %#v",
+		return nil, fmt.Errorf("pindexClient.Query got status code: %d,"+
+			" queryURL: %s, buf: %s, resp: %#v",
 			resp.StatusCode, r.QueryURL, buf, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("pindexClient.Search error reading resp.Body,"+
-			" searchURL: %s, buf: %s, resp: %#v",
+		return nil, fmt.Errorf("pindexClient.Query error reading resp.Body,"+
+			" queryURL: %s, buf: %s, resp: %#v",
 			r.QueryURL, buf, resp)
 	}
 	return respBuf, err
