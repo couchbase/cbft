@@ -250,7 +250,11 @@ func RunConsistencyWaitQueue(
 	err := fmt.Errorf("consistency wait closed")
 
 	for _, cwr := range *cwrQueue {
-		cwr.DoneCh <- err
-		close(cwr.DoneCh)
+		// TODO: Perhaps extra goroutine here isn't necessary, but the
+		// motivation is to keep cwrQueue's lock window short.
+		go func(cwr *ConsistencyWaitReq) {
+			cwr.DoneCh <- err
+			close(cwr.DoneCh)
+		}(cwr)
 	}
 }
