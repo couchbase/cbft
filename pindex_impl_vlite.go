@@ -31,7 +31,6 @@ import (
 )
 
 // TODO: Compaction!
-// TODO: Remote client vlite.
 // TODO: Snapshots, so that queries don't see mutations until commited/flushed.
 // TODO: Partial rollback.
 
@@ -39,7 +38,10 @@ var VLiteFileService = NewFileService(30)
 
 type VLiteParams struct {
 	// Path is a jsonpointer path used to retrieve the indexed
-	// secondary value from each document.
+	// secondary value from each document.  When Path is "" (empty
+	// string), then instead of behaving like a secondary index, then
+	// the VLite will use the original source document id as its
+	// stored key and the document bytes are used as the stored value.
 	Path string `json:"path"`
 }
 
