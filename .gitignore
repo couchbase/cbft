@@ -1,5 +1,6 @@
 #*
 *.out
+*.pprof
 *.sublime-*
 *.tmp
 *~

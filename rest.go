@@ -10,12 +10,21 @@
 package cbft
 
 import (
+	"flag"
+	"fmt"
 	"net/http"
+	"os"
+	"runtime"
+	"runtime/pprof"
+	"strconv"
+	"time"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
 
 	"github.com/gorilla/mux"
 )
+
+var startTime = time.Now()
 
 func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, error) {
@@ -109,9 +118,98 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 
 	r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
 
+	r.HandleFunc("/runtime", restGetRuntime).Methods("GET")
+	r.HandleFunc("/runtime/flags", restGetRuntimeFlags).Methods("GET")
+	r.HandleFunc("/runtime/gc", restPostRuntimeGC).Methods("POST")
+	r.HandleFunc("/runtime/profile/cpu", restProfileCPU).Methods("POST")
+	r.HandleFunc("/runtime/profile/memory", restProfileMemory).Methods("POST")
+	r.HandleFunc("/runtime/memStats", restGetRuntimeMemStats).Methods("GET")
+
 	return r, nil
 }
 
 func muxVariableLookup(req *http.Request, name string) string {
 	return mux.Vars(req)[name]
+}
+
+func restGetRuntime(w http.ResponseWriter, r *http.Request) {
+	mustEncode(w, map[string]interface{}{
+		"version":   VERSION,
+		"startTime": startTime,
+		"arch":      runtime.GOARCH,
+		"os":        runtime.GOOS,
+		"numCPU":    runtime.NumCPU(),
+		"go": map[string]interface{}{
+			"GOMAXPROCS":     runtime.GOMAXPROCS(0),
+			"GOROOT":         runtime.GOROOT(),
+			"version":        runtime.Version(),
+			"numGoroutine":   runtime.NumGoroutine(),
+			"numCgoCall":     runtime.NumCgoCall(),
+			"compiler":       runtime.Compiler,
+			"memProfileRate": runtime.MemProfileRate,
+		},
+	})
+}
+
+func restGetRuntimeFlags(w http.ResponseWriter, r *http.Request) {
+	m := map[string]interface{}{}
+	flag.VisitAll(func(f *flag.Flag) {
+		m[f.Name] = f.Value
+	})
+	mustEncode(w, m)
+}
+
+func restPostRuntimeGC(w http.ResponseWriter, r *http.Request) {
+	runtime.GC()
+}
+
+// To start a cpu profiling...
+//    curl -X POST http://127.0.0.1:9090/runtime/profile/cpu -d secs=5
+// To analyze a profiling...
+//    go tool pprof ./cbft run-cpu.pprof
+func restProfileCPU(w http.ResponseWriter, r *http.Request) {
+	fname := "./run-cpu.pprof"
+	secs, err := strconv.Atoi(r.FormValue("secs"))
+	if err != nil || secs <= 0 {
+		http.Error(w, "incorrect or missing secs parameter", 400)
+		return
+	}
+	os.Remove(fname)
+	f, err := os.Create(fname)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("couldn't create file: %v, err: %v",
+			fname, err), 500)
+		return
+	}
+
+	pprof.StartCPUProfile(f)
+	go func() {
+		time.Sleep(time.Duration(secs) * time.Second)
+		pprof.StopCPUProfile()
+		f.Close()
+	}()
+	w.WriteHeader(204)
+}
+
+// To grab a memory profiling...
+//    curl -X POST http://127.0.0.1:9090/runtime/profile/memory
+// To analyze a profiling...
+//    go tool pprof ./cbft run-memory.pprof
+func restProfileMemory(w http.ResponseWriter, r *http.Request) {
+	fname := "./run-memory.pprof"
+	os.Remove(fname)
+	f, err := os.Create(fname)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("couldn't create file: %v, err: %v",
+			fname, err), 500)
+		return
+	}
+	defer f.Close()
+	pprof.WriteHeapProfile(f)
+}
+
+func restGetRuntimeMemStats(w http.ResponseWriter, r *http.Request) {
+	memStats := &runtime.MemStats{}
+	runtime.ReadMemStats(memStats)
+	mustEncode(w, memStats)
 }

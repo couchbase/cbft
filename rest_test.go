@@ -63,23 +63,28 @@ type RESTHandlerTest struct {
 }
 
 func (test *RESTHandlerTest) check(t *testing.T, record *httptest.ResponseRecorder) {
+	desc := test.Desc
+	if desc == "" {
+		desc = test.Path + " " + test.Method
+	}
+
 	if got, want := record.Code, test.Status; got != want {
-		t.Errorf("%s: response code = %d, want %d", test.Desc, got, want)
-		t.Errorf("%s: response body = %s", test.Desc, record.Body)
+		t.Errorf("%s: response code = %d, want %d", desc, got, want)
+		t.Errorf("%s: response body = %s", desc, record.Body)
 	}
 	got := bytes.TrimRight(record.Body.Bytes(), "\n")
 	if test.ResponseBody != nil {
 		if !reflect.DeepEqual(got, test.ResponseBody) {
 			t.Errorf("%s: expected: '%s', got: '%s'",
-				test.Desc, test.ResponseBody, got)
+				desc, test.ResponseBody, got)
 		}
 	}
 	for pattern, shouldMatch := range test.ResponseMatch {
 		didMatch := bytes.Contains(got, []byte(pattern))
 		if didMatch != shouldMatch {
 			t.Errorf("%s: expected match %t for pattern %s, got %t",
-				test.Desc, shouldMatch, pattern, didMatch)
-			t.Errorf("%s: response body was: %s", test.Desc, got)
+				desc, shouldMatch, pattern, didMatch)
+			t.Errorf("%s: response body was: %s", desc, got)
 		}
 	}
 }
@@ -104,6 +109,84 @@ func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router
 			test.After()
 		}
 	}
+}
+
+func TestHandlersForRuntimeOps(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr.Write([]byte("hello"))
+	mr.Write([]byte("world"))
+
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Path:   "/runtime",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				"arch":       true,
+				"go":         true,
+				"GOMAXPROCS": true,
+				"GOROOT":     true,
+			},
+		},
+		{
+			Path:          "/runtime/flags",
+			Method:        "GET",
+			Params:        nil,
+			Body:          nil,
+			Status:        http.StatusOK,
+			ResponseMatch: map[string]bool{
+			// Actual production flags are different from "go test" context.
+			},
+		},
+		{
+			Path:         "/runtime/gc",
+			Method:       "POST",
+			Params:       nil,
+			Body:         nil,
+			Status:       http.StatusOK,
+			ResponseBody: []byte(nil),
+		},
+		{
+			Path:   "/runtime/memStats",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				"Alloc":      true,
+				"TotalAlloc": true,
+			},
+		},
+		{
+			Path:   "/runtime/profile/cpu",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				"incorrect or missing secs parameter": true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
 }
 
 func TestHandlersForEmptyManager(t *testing.T) {
