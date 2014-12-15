@@ -25,7 +25,10 @@ func init() {
 			dests map[string]Dest) error {
 			return mgr.registerFeed(NewDestFeed(feedName, BasicPartitionFunc, dests))
 		},
-		Partitions: DestFeedPartitions,
+		Partitions:  DestFeedPartitions,
+		Public:      true,
+		Description: "dest - a primary data source",
+		StartSample: &DestSourceParams{},
 	})
 }
 
