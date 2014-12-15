@@ -696,8 +696,6 @@ func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 }
 
 func (t *VLitePartition) applyBatchUnlocked() error {
-	// TODO: Locking!  What if store == nil!
-
 	if t.vlite.file != nil { // When not memory-only.
 		err := t.vlite.store.Flush()
 		if err != nil {
