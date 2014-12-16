@@ -57,32 +57,26 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		r.Handle("/api/pindex",
 			NewListPIndexHandler(mgr)).Methods("GET")
-
-		listIndexesHandler := bleveHttp.NewListIndexesHandler()
-		r.Handle("/api/pindex-bleve", listIndexesHandler).Methods("GET")
-
 		r.Handle("/api/pindex/{pindexName}",
 			NewGetPIndexHandler(mgr)).Methods("GET")
+		r.Handle("/api/pindex/{pindexName}/count",
+			NewCountPIndexHandler(mgr)).Methods("GET")
+		r.Handle("/api/pindex/{pindexName}/query",
+			NewQueryPIndexHandler(mgr)).Methods("POST")
+
+		listIndexesHandler := bleveHttp.NewListIndexesHandler()
+		r.Handle("/api/pindex-bleve",
+			listIndexesHandler).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
 		getIndexHandler.IndexNameLookup = pindexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
-		// We have a purpose-built pindex count handler, instead of
-		// just using bleveHttp, to handle auth and count consistency.
-		r.Handle("/api/pindex/{pindexName}/count",
-			NewCountPIndexHandler(mgr)).Methods("GET")
-
 		docCountHandler := bleveHttp.NewDocCountHandler("")
 		docCountHandler.IndexNameLookup = pindexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
-
-		// We have a purpose-built pindex query handler, instead of
-		// just using bleveHttp, to handle auth and query consistency.
-		r.Handle("/api/pindex/{pindexName}/query",
-			NewQueryPIndexHandler(mgr)).Methods("POST")
 
 		searchHandler := bleveHttp.NewSearchHandler("")
 		searchHandler.IndexNameLookup = pindexNameLookup
@@ -92,23 +86,17 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 		docGetHandler := bleveHttp.NewDocGetHandler("")
 		docGetHandler.IndexNameLookup = pindexNameLookup
 		docGetHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex/{pindexName}/doc/{docID}",
-			docGetHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
 		debugDocHandler.IndexNameLookup = pindexNameLookup
 		debugDocHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex/{pindexName}/docDebug/{docID}",
-			debugDocHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex/{pindexName}/fields",
-			listFieldsHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
 	}
