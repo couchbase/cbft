@@ -228,94 +228,95 @@ func (r *DCPFeed) OnError(err error) {
 
 func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	// log.Printf("DCPFeed.DataUpdate: %s: vbucketId: %d, key: %s, seq: %d, req: %v\n",
-	// r.name, vbucketId, key, seq, req)
+	return Time(func() error {
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
+		if err != nil {
+			return err
+		}
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
-	if err != nil {
-		return err
-	}
+		atomic.AddUint64(&r.stats.TotOnDataUpdate, 1)
 
-	atomic.AddUint64(&r.stats.TotOnDataUpdate, 1)
-
-	return dest.OnDataUpdate(partition, key, seq, req.Body)
+		return dest.OnDataUpdate(partition, key, seq, req.Body)
+	}, &r.stats.TimeOnDataUpdate)
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	// log.Printf("DCPFeed.DataDelete: %s: vbucketId: %d, key: %s, seq: %d, req: %#v",
-	// r.name, vbucketId, key, seq, req)
+	return Time(func() error {
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
+		if err != nil {
+			return err
+		}
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
-	if err != nil {
-		return err
-	}
+		atomic.AddUint64(&r.stats.TotOnDataDelete, 1)
 
-	atomic.AddUint64(&r.stats.TotOnDataDelete, 1)
-
-	return dest.OnDataDelete(partition, key, seq)
+		return dest.OnDataDelete(partition, key, seq)
+	}, &r.stats.TimeOnDataDelete)
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 	snapStart, snapEnd uint64, snapType uint32) error {
-	// log.Printf("DCPFeed.SnapshotStart: %s: vbucketId: %d,"+
-	// 	" snapStart: %d, snapEnd: %d, snapType: %d",
-	// 	r.name, vbucketId, snapStart, snapEnd, snapType)
+	return Time(func() error {
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
+		if err != nil {
+			return err
+		}
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
-	if err != nil {
-		return err
-	}
+		atomic.AddUint64(&r.stats.TotOnSnapshotStart, 1)
 
-	atomic.AddUint64(&r.stats.TotOnSnapshotStart, 1)
-
-	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
+		return dest.OnSnapshotStart(partition, snapStart, snapEnd)
+	}, &r.stats.TimeOnSnapshotStart)
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
-	// log.Printf("DCPFeed.SetMetaData: %s: vbucketId: %d,"+
-	// 	" value: %s", r.name, vbucketId, value)
+	return Time(func() error {
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
+		if err != nil {
+			return err
+		}
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
-	if err != nil {
-		return err
-	}
+		atomic.AddUint64(&r.stats.TotSetOpaque, 1)
 
-	atomic.AddUint64(&r.stats.TotSetOpaque, 1)
-
-	return dest.SetOpaque(partition, value)
+		return dest.SetOpaque(partition, value)
+	}, &r.stats.TimeSetOpaque)
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 	value []byte, lastSeq uint64, err error) {
-	// log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
+	err = Time(func() error {
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
+		if err != nil {
+			return err
+		}
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
-	if err != nil {
-		return nil, 0, err
-	}
+		atomic.AddUint64(&r.stats.TotGetOpaque, 1)
 
-	atomic.AddUint64(&r.stats.TotGetOpaque, 1)
+		value, lastSeq, err = dest.GetOpaque(partition)
 
-	return dest.GetOpaque(partition)
+		return err
+	}, &r.stats.TimeGetOpaque)
+
+	return value, lastSeq, err
 }
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
-	log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
-		" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
+	return Time(func() error {
+		log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
+			" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
 
-	partition, dest, err :=
-		VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
-	if err != nil {
-		return err
-	}
+		partition, dest, err :=
+			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
+		if err != nil {
+			return err
+		}
 
-	atomic.AddUint64(&r.stats.TotRollback, 1)
+		atomic.AddUint64(&r.stats.TotRollback, 1)
 
-	return dest.Rollback(partition, rollbackSeq)
+		return dest.Rollback(partition, rollbackSeq)
+	}, &r.stats.TimeRollback)
 }
