@@ -18,6 +18,7 @@ import (
 	"math/rand"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/couchbase/gomemcached"
 	log "github.com/couchbaselabs/clog"
@@ -79,14 +80,7 @@ type DCPFeed struct {
 	m       sync.Mutex
 	closed  bool
 	lastErr error
-
-	numError         uint64
-	numUpdate        uint64
-	numDelete        uint64
-	numSnapshotStart uint64
-	numSetMetaData   uint64
-	numGetMetaData   uint64
-	numRollback      uint64
+	stats   DestStats
 }
 
 type DCPFeedParams struct {
@@ -225,8 +219,9 @@ func (r *DCPFeed) OnError(err error) {
 	// serious / not-recoverable / needs user attention.
 	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
 
+	atomic.AddUint64(&r.stats.TotError, 1)
+
 	r.m.Lock()
-	r.numError += 1
 	r.lastErr = err
 	r.m.Unlock()
 }
@@ -242,9 +237,7 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 		return err
 	}
 
-	r.m.Lock()
-	r.numUpdate += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotOnDataUpdate, 1)
 
 	return dest.OnDataUpdate(partition, key, seq, req.Body)
 }
@@ -260,9 +253,7 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 		return err
 	}
 
-	r.m.Lock()
-	r.numDelete += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotOnDataDelete, 1)
 
 	return dest.OnDataDelete(partition, key, seq)
 }
@@ -279,9 +270,7 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 		return err
 	}
 
-	r.m.Lock()
-	r.numSnapshotStart += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotOnSnapshotStart, 1)
 
 	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
 }
@@ -296,14 +285,13 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 		return err
 	}
 
-	r.m.Lock()
-	r.numSetMetaData += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotSetOpaque, 1)
 
 	return dest.SetOpaque(partition, value)
 }
 
-func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, err error) {
+func (r *DCPFeed) GetMetaData(vbucketId uint16) (
+	value []byte, lastSeq uint64, err error) {
 	// log.Printf("DCPFeed.GetMetaData: %s: vbucketId: %d", r.name, vbucketId)
 
 	partition, dest, err :=
@@ -312,9 +300,7 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (value []byte, lastSeq uint64, e
 		return nil, 0, err
 	}
 
-	r.m.Lock()
-	r.numGetMetaData += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotGetOpaque, 1)
 
 	return dest.GetOpaque(partition)
 }
@@ -329,9 +315,7 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 		return err
 	}
 
-	r.m.Lock()
-	r.numRollback += 1
-	r.m.Unlock()
+	atomic.AddUint64(&r.stats.TotRollback, 1)
 
 	return dest.Rollback(partition, rollbackSeq)
 }

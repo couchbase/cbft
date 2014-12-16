@@ -84,6 +84,16 @@ type Dest interface {
 		cancelCh chan string) error
 }
 
+type DestStats struct {
+	TotError           uint64
+	TotOnDataUpdate    uint64
+	TotOnDataDelete    uint64
+	TotOnSnapshotStart uint64
+	TotSetOpaque       uint64
+	TotGetOpaque       uint64
+	TotRollback        uint64
+}
+
 type DestPartitionFunc func(partition string, key []byte,
 	dests map[string]Dest) (Dest, error)
 
