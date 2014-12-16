@@ -59,10 +59,11 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 		r.Handle("/api/pindex", listIndexesHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve", listIndexesHandler).Methods("GET")
 
+		r.Handle("/api/pindex/{pindexName}",
+			NewGetPIndexHandler(mgr)).Methods("GET")
+
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
 		getIndexHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex/{pindexName}",
-			getIndexHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 

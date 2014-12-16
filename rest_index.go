@@ -221,6 +221,39 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+type GetPIndexHandler struct {
+	mgr *Manager
+}
+
+func NewGetPIndexHandler(mgr *Manager) *GetPIndexHandler {
+	return &GetPIndexHandler{mgr: mgr}
+}
+
+func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	pindexName := pindexNameLookup(req)
+	if pindexName == "" {
+		showError(w, req, "pindex name is required", 400)
+		return
+	}
+
+	pindex := h.mgr.GetPIndex(pindexName)
+	if pindex == nil {
+		showError(w, req, fmt.Sprintf("rest.GetPIndex,"+
+			" no pindex, pindexName: %s", pindexName), 400)
+		return
+	}
+
+	mustEncode(w, struct {
+		Status string  `json:"status"`
+		PIndex *PIndex `json:"pindex"`
+	}{
+		Status: "ok",
+		PIndex: pindex,
+	})
+}
+
+// ---------------------------------------------------
+
 type CountPIndexHandler struct {
 	mgr *Manager
 }
