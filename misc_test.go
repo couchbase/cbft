@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -147,5 +148,23 @@ func TestTime(t *testing.T) {
 	Time(func() error { return nil }, &x)
 	if x < 100 {
 		t.Errorf("expected x to be >= 100")
+	}
+}
+
+func TestAtomicCopyMetrics(t *testing.T) {
+	src := &DestStats{
+		TotError:     1,
+		TotRollback:  2,
+		TimeRollback: 3,
+	}
+	dst := DestStats{}
+	AtomicCopyMetrics(src, &dst, nil)
+	if !reflect.DeepEqual(src, &dst) {
+		t.Errorf("expected src == dst")
+	}
+	if dst.TotError != 1 ||
+		dst.TotRollback != 2 ||
+		dst.TimeRollback != 3 {
+		t.Errorf("expected src == dst")
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -160,4 +161,32 @@ func Time(f func() error, t *uint64) error {
 	err := f()
 	atomic.AddUint64(t, uint64(time.Since(ts)))
 	return err
+}
+
+// AtomicCopyMetrics copies uint64 metrics from s to r (from source to
+// result), and also applies an optional fn function to each metric.
+// The fn is invoked with metrics from s and r, and can be used to
+// compute additions, subtractions, etc.  When fn is nil, AtomicCopyTo
+// defaults to just a straight copier.
+func AtomicCopyMetrics(s, r interface{},
+	fn func(sv uint64, rv uint64) uint64) {
+	// Using reflection rather than a whole slew of explicit
+	// invocations of atomic.LoadUint64()/StoreUint64()'s.
+	if fn == nil {
+		fn = func(sv uint64, rv uint64) uint64 { return sv }
+	}
+	rve := reflect.ValueOf(r).Elem()
+	sve := reflect.ValueOf(s).Elem()
+	svet := sve.Type()
+	for i := 0; i < svet.NumField(); i++ {
+		rvef := rve.Field(i)
+		svef := sve.Field(i)
+		if rvef.CanAddr() && svef.CanAddr() {
+			rvefp := rvef.Addr().Interface()
+			svefp := svef.Addr().Interface()
+			rv := atomic.LoadUint64(rvefp.(*uint64))
+			sv := atomic.LoadUint64(svefp.(*uint64))
+			atomic.StoreUint64(rvefp.(*uint64), fn(sv, rv))
+		}
+	}
 }
