@@ -904,6 +904,47 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "direct pindex get on bogus pindex",
+			Path:   "/api/pindex/not-a-pindex",
+			Method: "GET",
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`no pindex`: true,
+			},
+		},
+		{
+			Desc:   "direct pindex get",
+			Method: "NOOP",
+			After: func() {
+				var pindex *PIndex
+				_, pindexes := mgr.CurrentMaps()
+				if len(pindexes) != 1 {
+					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, p := range pindexes {
+					pindex = p
+				}
+				if pindex == nil {
+					t.Errorf("expected to be a pindex")
+				}
+				req := &http.Request{
+					Method: "GET",
+					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name},
+				}
+				record := httptest.NewRecorder()
+				router.ServeHTTP(record, req)
+				test := &RESTHandlerTest{
+					Desc:   "direct pindex get",
+					Status: 200,
+					ResponseMatch: map[string]bool{
+						`pindex`:    true,
+						`indexName`: true,
+					},
+				}
+				test.check(t, record)
+			},
+		},
+		{
 			Desc:   "direct pindex query on mismatched pindex UUID",
 			Method: "NOOP",
 			After: func() {
