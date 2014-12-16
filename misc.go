@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	log "github.com/couchbaselabs/clog"
@@ -152,4 +153,11 @@ func mustEncode(w io.Writer, i interface{}) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func Time(f func() error, t *uint64) error {
+	ts := time.Now()
+	err := f()
+	atomic.AddUint64(t, uint64(time.Since(ts)))
+	return err
 }

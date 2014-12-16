@@ -141,3 +141,11 @@ func TestTimeoutCancelChan(t *testing.T) {
 		t.Errorf("expected closed")
 	}
 }
+
+func TestTime(t *testing.T) {
+	x := uint64(100)
+	Time(func() error { return nil }, &x)
+	if x < 100 {
+		t.Errorf("expected x to be >= 100")
+	}
+}

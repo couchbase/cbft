@@ -92,6 +92,13 @@ type DestStats struct {
 	TotSetOpaque       uint64
 	TotGetOpaque       uint64
 	TotRollback        uint64
+
+	TimeOnDataUpdate    uint64
+	TimeOnDataDelete    uint64
+	TimeOnSnapshotStart uint64
+	TimeSetOpaque       uint64
+	TimeGetOpaque       uint64
+	TimeRollback        uint64
 }
 
 type DestPartitionFunc func(partition string, key []byte,
