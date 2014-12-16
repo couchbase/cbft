@@ -219,6 +219,29 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		indexName, requestBody)
 }
 
+// ------------------------------------------------------------------
+
+type ListPIndexHandler struct {
+	mgr *Manager
+}
+
+func NewListPIndexHandler(mgr *Manager) *ListPIndexHandler {
+	return &ListPIndexHandler{mgr: mgr}
+}
+
+func (h *ListPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	_, pindexes := h.mgr.CurrentMaps()
+
+	rv := struct {
+		Status   string             `json:"status"`
+		PIndexes map[string]*PIndex `json:"pindexes"`
+	}{
+		Status:   "ok",
+		PIndexes: pindexes,
+	}
+	mustEncode(w, rv)
+}
+
 // ---------------------------------------------------
 
 type GetPIndexHandler struct {

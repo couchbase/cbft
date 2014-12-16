@@ -893,6 +893,16 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "list pindex",
+			Path:   "/api/pindex",
+			Method: "GET",
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"pindexes"`:    true,
+				`"status":"ok"`: true,
+			},
+		},
+		{
 			Desc:   "direct pindex query on bogus pindex",
 			Path:   "/api/pindex/not-a-pindex/query",
 			Method: "POST",

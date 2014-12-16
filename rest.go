@@ -55,8 +55,10 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 	// TODO: Need to cleanly separate the /api/pindex and
 	// /api/pindex-bleve endpoints.
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
+		r.Handle("/api/pindex",
+			NewListPIndexHandler(mgr)).Methods("GET")
+
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
-		r.Handle("/api/pindex", listIndexesHandler).Methods("GET")
 		r.Handle("/api/pindex-bleve", listIndexesHandler).Methods("GET")
 
 		r.Handle("/api/pindex/{pindexName}",
