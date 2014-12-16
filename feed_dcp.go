@@ -203,13 +203,41 @@ func (t *DCPFeed) Dests() map[string]Dest {
 	return t.dests
 }
 
+var prefixBucketDataSourceStats = []byte(`{"bucketDataSourceStats":`)
+var prefixDestStats = []byte(`,"destStats":`)
+var suffixStats = []byte("}")
+
 func (t *DCPFeed) Stats(w io.Writer) error {
 	bdss := cbdatasource.BucketDataSourceStats{}
 	err := t.bds.Stats(&bdss)
 	if err != nil {
 		return err
 	}
-	return json.NewEncoder(w).Encode(&bdss)
+
+	dst := DestStats{}
+	AtomicCopyMetrics(&t.stats, &dst, nil)
+
+	j := json.NewEncoder(w)
+
+	_, err = w.Write(prefixBucketDataSourceStats)
+	if err != nil {
+		return err
+	}
+	err = j.Encode(&bdss)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(prefixDestStats)
+	if err != nil {
+		return err
+	}
+	err = j.Encode(&dst)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(suffixStats)
+
+	return err
 }
 
 // --------------------------------------------------------
