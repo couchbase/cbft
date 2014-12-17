@@ -1916,6 +1916,62 @@ func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
 				`}`:      true,
 			},
 		},
+		{
+			Desc:   "list on a 1 vlite index manager",
+			Path:   "/api/index",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","indexDefs":{"uuid":`:                        true,
+				`"indexDefs":{"idx0":{"type":"vlite","name":"idx0","uuid":"`: true,
+			},
+		},
+		{
+			Desc:   "count empty idx0 on a 1 vlite index manager",
+			Path:   "/api/index/idx0/count",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "query empty idx0 on a 1 vlite index manager with missing args",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`unexpected end of JSON input`: true,
+			},
+		},
+		{
+			Desc:   "query empty idx0 on a 1 vlite index manager with missing args",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`unexpected end of JSON input`: true,
+			},
+		},
+		{
+			Desc:   "no-hit query of empty idx0 on a 1 vlite index manager",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`"results":[]`: true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
