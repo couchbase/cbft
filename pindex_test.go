@@ -175,4 +175,3 @@ func TestErrorConsistencyWait(t *testing.T) {
 		t.Errorf("expected err")
 	}
 }
-
