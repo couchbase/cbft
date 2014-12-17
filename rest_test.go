@@ -1972,6 +1972,29 @@ func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
 				`"results":[]`: true,
 			},
 		},
+		{
+			Desc:   "delete idx0 on a 1 vlite index manager",
+			Path:   "/api/index/idx0",
+			Method: "DELETE",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "list indexes after delete one & only vlite index",
+			Path:   "/api/index",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok",`: true,
+				`"indexDefs":{}`:  true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)
