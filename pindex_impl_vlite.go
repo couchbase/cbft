@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	log "github.com/couchbaselabs/clog"
 
@@ -61,6 +62,8 @@ type VLite struct {
 	backColl   *gkvlite.Collection // Keyed by docId.
 	opaqueColl *gkvlite.Collection // Keyed by partitionId.
 	seqColl    *gkvlite.Collection // Keyed by partitionId.
+
+	stats PIndexStoreStats
 }
 
 // Used to track state for a single partition.
@@ -697,7 +700,10 @@ func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 
 func (t *VLitePartition) applyBatchUnlocked() error {
 	if t.vlite.file != nil { // When not memory-only.
-		err := t.vlite.store.Flush()
+		err := Time(func() error {
+			atomic.AddUint64(&t.vlite.stats.TotBatchStore, 1)
+			return t.vlite.store.Flush()
+		}, &t.vlite.stats.TimeBatchStore)
 		if err != nil {
 			return err
 		}

@@ -81,3 +81,10 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 	}
 	return pindexImplType, nil
 }
+
+// ------------------------------------------------
+
+type PIndexStoreStats struct {
+	TotBatchStore  uint64
+	TimeBatchStore uint64
+}

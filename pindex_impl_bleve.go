@@ -20,6 +20,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/blevesearch/bleve"
 
@@ -38,6 +39,8 @@ type BleveDest struct {
 	m          sync.Mutex // Protects the fields that follow.
 	bindex     bleve.Index
 	partitions map[string]*BleveDestPartition
+
+	stats PIndexStoreStats
 }
 
 // Used to track state for a single partition.
@@ -516,7 +519,10 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 }
 
 func (t *BleveDestPartition) applyBatchUnlocked() error {
-	err := t.bindex.Batch(t.batch)
+	err := Time(func() error {
+		atomic.AddUint64(&t.bdest.stats.TotBatchStore, 1)
+		return t.bindex.Batch(t.batch)
+	}, &t.bdest.stats.TimeBatchStore)
 	if err != nil {
 		return err
 	}
