@@ -361,7 +361,15 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
+func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
+	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve")
+}
+
+func TestHandlersForOneBleveMemIndexWithNILFeed(t *testing.T) {
+	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve-mem")
+}
+
+func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -385,7 +393,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":  []string{"bleve"},
+				"indexType":  []string{indexType},
 				"sourceType": []string{"nil"},
 			},
 			Body:   nil,
@@ -464,8 +472,8 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok","indexDefs":{"uuid":`:                                                                                                                                                      true,
-				`"indexDefs":{"idx0":{"type":"bleve","name":"idx0","uuid":"`:                                                                                                                               true,
+				`{"status":"ok","indexDefs":{"uuid":`: true,
+				`"indexDefs":{"idx0":{"type":"bleve`:  true,
 				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null,"nodePlanParams":null}}}`: true,
 			},
 		},
@@ -519,7 +527,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`"status":"ok","indexDef":{"type":"bleve","name":"idx0","uuid":`: true,
+				`"status":"ok","indexDef":{"type":"bleve`: true,
 			},
 		},
 		{
@@ -625,7 +633,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":  []string{"bleve"},
+				"indexType":  []string{indexType},
 				"sourceType": []string{"nil"},
 			},
 			Body:   nil,
@@ -639,7 +647,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Path:   "/api/index/idxBadInputParams",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":   []string{"bleve"},
+				"indexType":   []string{indexType},
 				"indexParams": []string{"}}totally n0t json{{"},
 				"sourceType":  []string{"nil"},
 			},
@@ -1871,6 +1879,14 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 }
 
 func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
+	testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite")
+}
+
+func TestHandlersForOneVLiteMemIndexWithNILFeed(t *testing.T) {
+	testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite-mem")
+}
+
+func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -1890,11 +1906,11 @@ func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
 
 	tests := []*RESTHandlerTest{
 		{
-			Desc:   "create a vlite index with nil feed",
+			Desc:   "create a vlite type index with nil feed",
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":  []string{"vlite"},
+				"indexType":  []string{indexType},
 				"sourceType": []string{"nil"},
 			},
 			Body:   nil,
@@ -1924,8 +1940,8 @@ func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok","indexDefs":{"uuid":`:                        true,
-				`"indexDefs":{"idx0":{"type":"vlite","name":"idx0","uuid":"`: true,
+				`{"status":"ok","indexDefs":{"uuid":`: true,
+				`"indexDefs":{"idx0":{"type":"vlite`:  true,
 			},
 		},
 		{
