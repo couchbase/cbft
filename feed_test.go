@@ -162,3 +162,14 @@ func TestPrimaryFeed(t *testing.T) {
 		t.Errorf("expected err on querying a dest feed")
 	}
 }
+
+func TestDCPFeedParams(t *testing.T) {
+	p := &DCPFeedParams{
+		AuthUser:     "au",
+		AuthPassword: "ap",
+	}
+	a, b, c := p.GetCredentials()
+	if a != "au" || b != "ap" || c != "au" {
+		t.Errorf("wrong creds")
+	}
+}
