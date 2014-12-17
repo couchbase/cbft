@@ -16,7 +16,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"sync/atomic"
 )
 
 func init() {
@@ -71,9 +70,6 @@ func OpenBlackHolePIndexImpl(indexType, path string, restart func()) (
 // Implements both Dest and PIndexImpl interfaces.
 type BlackHole struct {
 	path string
-
-	totUpdate uint64
-	totDelete uint64
 }
 
 func (t *BlackHole) Close() error {
@@ -82,13 +78,11 @@ func (t *BlackHole) Close() error {
 
 func (t *BlackHole) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
-	atomic.AddUint64(&t.totUpdate, 1)
 	return nil
 }
 
 func (t *BlackHole) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
-	atomic.AddUint64(&t.totDelete, 1)
 	return nil
 }
 
