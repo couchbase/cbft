@@ -10,38 +10,47 @@
 package cbft
 
 import (
-	"fmt"
 	"net/http"
 	"sort"
 )
 
-type FeedStatsHandler struct {
+type CurrentStatsHandler struct {
 	mgr *Manager
 }
 
-func NewFeedStatsHandler(mgr *Manager) *FeedStatsHandler {
-	return &FeedStatsHandler{mgr: mgr}
+func NewCurrentStatsHandler(mgr *Manager) *CurrentStatsHandler {
+	return &CurrentStatsHandler{mgr: mgr}
 }
 
-func (h *FeedStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+var currentStatsFeedsPrefix = []byte("{\"feeds\":[")
+var currentStatsSep = []byte(",")
+var currentStatsFeedNamePrefix = []byte("{\"feedName\":\"")
+var currentStatsFeedStatsPrefix = []byte("\",\"stats\":")
+var currentStatsFeedSuffix = []byte("}")
+var currentStatsSuffix = []byte("]}")
+
+func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, _ := h.mgr.CurrentMaps()
-	w.Write([]byte("[\n"))
-	first := true
 	feedNames := make([]string, 0, len(feeds))
 	for feedName := range feeds {
 		feedNames = append(feedNames, feedName)
 	}
 	sort.Strings(feedNames)
+
+	w.Write(currentStatsFeedsPrefix)
+	first := true
 	for _, feedName := range feedNames {
 		if !first {
-			w.Write([]byte(",\n"))
+			w.Write(currentStatsSep)
 		}
 		first = false
-		w.Write([]byte(fmt.Sprintf("  {\"feedName\":\"%s\",\"stats\":", feedName)))
+		w.Write(currentStatsFeedNamePrefix)
+		w.Write([]byte(feedName))
+		w.Write(currentStatsFeedStatsPrefix)
 		feeds[feedName].Stats(w)
-		w.Write([]byte("}\n"))
+		w.Write(currentStatsFeedSuffix)
 	}
-	w.Write([]byte("]\n"))
+	w.Write(currentStatsSuffix)
 }
 
 // ---------------------------------------------------

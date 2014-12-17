@@ -107,7 +107,7 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
 
-	r.Handle("/api/feedStats", NewFeedStatsHandler(mgr)).Methods("GET")
+	r.Handle("/api/currentStats", NewCurrentStatsHandler(mgr)).Methods("GET")
 
 	r.HandleFunc("/runtime", restGetRuntime).Methods("GET")
 	r.HandleFunc("/runtime/flags", restGetRuntimeFlags).Methods("GET")

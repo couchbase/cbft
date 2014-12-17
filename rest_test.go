@@ -270,7 +270,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 		},
 		{
 			Desc:   "feed stats when no feeds",
-			Path:   "/api/feedStats",
+			Path:   "/api/currentStats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -445,7 +445,7 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 		},
 		{
 			Desc:   "feed stats on a 1 index manager",
-			Path:   "/api/feedStats",
+			Path:   "/api/currentStats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
