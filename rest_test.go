@@ -1869,3 +1869,54 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 	testRESTHandlers(t, tests, router0)
 }
+
+func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "shelf/rack/row", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create a vlite index with nil feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"vlite"},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "feed stats on a 1 vlite index manager",
+			Path:   "/api/currentStats",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{`:      true,
+				`"idx0_`: true,
+				`}`:      true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
