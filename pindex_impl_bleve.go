@@ -392,7 +392,21 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 // ---------------------------------------------------------
 
 func (t *BleveDest) Stats(w io.Writer) error {
-	_, err := w.Write(jsonNULL)
+	pss := PIndexStoreStats{}
+	AtomicCopyMetrics(&t.stats, &pss, nil)
+
+	j := json.NewEncoder(w)
+
+	_, err := w.Write(prefixPIndexStoreStats)
+	if err != nil {
+		return err
+	}
+	err = j.Encode(&pss)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jsonCloseBrace)
+
 	return err
 }
 

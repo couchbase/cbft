@@ -205,7 +205,6 @@ func (t *DCPFeed) Dests() map[string]Dest {
 
 var prefixBucketDataSourceStats = []byte(`{"bucketDataSourceStats":`)
 var prefixDestStats = []byte(`,"destStats":`)
-var suffixStats = []byte("}")
 
 func (t *DCPFeed) Stats(w io.Writer) error {
 	bdss := cbdatasource.BucketDataSourceStats{}
@@ -235,7 +234,7 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(suffixStats)
+	_, err = w.Write(jsonCloseBrace)
 
 	return err
 }

@@ -88,3 +88,5 @@ type PIndexStoreStats struct {
 	TotBatchStore  uint64
 	TimeBatchStore uint64
 }
+
+var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)

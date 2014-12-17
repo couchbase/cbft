@@ -27,6 +27,7 @@ import (
 )
 
 var jsonNULL = []byte("null")
+var jsonCloseBrace = []byte("}")
 
 // Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
 // Returns true when x >= y.

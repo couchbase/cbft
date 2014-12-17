@@ -420,7 +420,6 @@ func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
 var entryKeyPrefix = []byte("{\"key\":")
 var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
 var entryValPrefix = []byte(", \"val\":")
-var entrySuffix = []byte("}")
 
 func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan string) error {
@@ -453,7 +452,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 		w.Write(entryValPrefix)
 		buf, _ = json.Marshal(string(i.Val))
 		w.Write(buf)
-		w.Write(entrySuffix)
+		w.Write(jsonCloseBrace)
 
 		return true
 	})
@@ -530,7 +529,21 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
 // ---------------------------------------------------------
 
 func (t *VLite) Stats(w io.Writer) error {
-	_, err := w.Write(jsonNULL)
+	pss := PIndexStoreStats{}
+	AtomicCopyMetrics(&t.stats, &pss, nil)
+
+	j := json.NewEncoder(w)
+
+	_, err := w.Write(prefixPIndexStoreStats)
+	if err != nil {
+		return err
+	}
+	err = j.Encode(&pss)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jsonCloseBrace)
+
 	return err
 }
 
@@ -931,7 +944,7 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 			w.Write(entryValPrefix)
 			buf, _ = json.Marshal(string(scanCursor.Val()))
 			w.Write(buf)
-			w.Write(entrySuffix)
+			w.Write(jsonCloseBrace)
 
 			if scanCursor.Next() {
 				heap.Push(&scanCursors, scanCursor)
