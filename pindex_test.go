@@ -168,3 +168,11 @@ func TestNewPIndexBleveMem(t *testing.T) {
 		t.Errorf("expected Close to work")
 	}
 }
+
+func TestErrorConsistencyWait(t *testing.T) {
+	e := &ErrorConsistencyWait{}
+	if e.Error() == "" {
+		t.Errorf("expected err")
+	}
+}
+
