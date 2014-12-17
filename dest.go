@@ -82,6 +82,8 @@ type Dest interface {
 	// needed for the Dest to reach the desired consistency.
 	Query(pindex *PIndex, req []byte, w io.Writer,
 		cancelCh chan string) error
+
+	Stats(io.Writer) error
 }
 
 type DestStats struct {

@@ -29,6 +29,8 @@ type DestProvider interface {
 	Query(pindex *PIndex, req []byte, res io.Writer,
 		cancelCh chan string) error
 
+	Stats(io.Writer) error
+
 	Close() error
 }
 
@@ -115,4 +117,8 @@ func (t *DestForwarder) Count(pindex *PIndex, cancelCh chan string) (
 func (t *DestForwarder) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
 	return t.DestProvider.Query(pindex, req, res, cancelCh)
+}
+
+func (t *DestForwarder) Stats(w io.Writer) error {
+	return t.DestProvider.Stats(w)
 }

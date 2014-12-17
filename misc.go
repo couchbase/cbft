@@ -26,6 +26,8 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
+var jsonNULL = []byte("null")
+
 // Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
 // Returns true when x >= y.
 func VersionGTE(x, y string) bool {

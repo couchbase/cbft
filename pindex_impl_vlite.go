@@ -529,6 +529,13 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
 
 // ---------------------------------------------------------
 
+func (t *VLite) Stats(w io.Writer) error {
+	_, err := w.Write(jsonNULL)
+	return err
+}
+
+// ---------------------------------------------------------
+
 func (t *VLitePartition) Close() error {
 	return t.vlite.Close()
 }
@@ -677,6 +684,10 @@ func (t *VLitePartition) Count(pindex *PIndex, cancelCh chan string) (
 func (t *VLitePartition) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
 	return t.vlite.Query(pindex, req, res, cancelCh)
+}
+
+func (t *VLitePartition) Stats(w io.Writer) error {
+	return t.vlite.Stats(w)
 }
 
 // ---------------------------------------------------------

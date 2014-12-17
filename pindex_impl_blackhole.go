@@ -126,3 +126,8 @@ func (t *BlackHole) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh chan string) error {
 	return nil
 }
+
+func (t *BlackHole) Stats(w io.Writer) error {
+	_, err := w.Write(jsonNULL)
+	return err
+}

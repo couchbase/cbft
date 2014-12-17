@@ -69,6 +69,10 @@ func (t *TestDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	return nil
 }
 
+func (t *TestDest) Stats(w io.Writer) error {
+	return nil
+}
+
 func TestBasicPartitionFunc(t *testing.T) {
 	dest := &TestDest{}
 	dest2 := &TestDest{}

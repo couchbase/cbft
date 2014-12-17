@@ -23,31 +23,52 @@ func NewCurrentStatsHandler(mgr *Manager) *CurrentStatsHandler {
 }
 
 var currentStatsFeedsPrefix = []byte("{\"feeds\":{")
-var currentStatsSep = []byte(",")
-var currentStatsFeedNamePrefix = []byte("\"")
-var currentStatsFeedStatsPrefix = []byte("\":")
+var currentStatsPIndexesPrefix = []byte("},\"pindexes\":{")
+var currentStatsNamePrefix = []byte("\"")
+var currentStatsStatsPrefix = []byte("\":")
 var currentStatsSuffix = []byte("}}")
+var currentStatsSep = []byte(",")
 
 func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	feeds, _ := h.mgr.CurrentMaps()
+	feeds, pindexes := h.mgr.CurrentMaps()
 	feedNames := make([]string, 0, len(feeds))
 	for feedName := range feeds {
 		feedNames = append(feedNames, feedName)
 	}
 	sort.Strings(feedNames)
 
-	w.Write(currentStatsFeedsPrefix)
+	pindexNames := make([]string, 0, len(pindexes))
+	for pindexName := range pindexes {
+		pindexNames = append(pindexNames, pindexName)
+	}
+	sort.Strings(pindexNames)
+
 	first := true
+	w.Write(currentStatsFeedsPrefix)
 	for _, feedName := range feedNames {
 		if !first {
 			w.Write(currentStatsSep)
 		}
 		first = false
-		w.Write(currentStatsFeedNamePrefix)
+		w.Write(currentStatsNamePrefix)
 		w.Write([]byte(feedName))
-		w.Write(currentStatsFeedStatsPrefix)
+		w.Write(currentStatsStatsPrefix)
 		feeds[feedName].Stats(w)
 	}
+
+	first = true
+	w.Write(currentStatsPIndexesPrefix)
+	for _, pindexName := range pindexNames {
+		if !first {
+			w.Write(currentStatsSep)
+		}
+		first = false
+		w.Write(currentStatsNamePrefix)
+		w.Write([]byte(pindexName))
+		w.Write(currentStatsStatsPrefix)
+		pindexes[pindexName].Dest.Stats(w)
+	}
+
 	w.Write(currentStatsSuffix)
 }
 

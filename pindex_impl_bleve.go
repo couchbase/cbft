@@ -391,6 +391,13 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 
 // ---------------------------------------------------------
 
+func (t *BleveDest) Stats(w io.Writer) error {
+	_, err := w.Write(jsonNULL)
+	return err
+}
+
+// ---------------------------------------------------------
+
 func (t *BleveDestPartition) Close() error {
 	return t.bdest.Close()
 }
@@ -497,6 +504,10 @@ func (t *BleveDestPartition) Count(pindex *PIndex, cancelCh chan string) (
 func (t *BleveDestPartition) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh chan string) error {
 	return t.bdest.Query(pindex, req, res, cancelCh)
+}
+
+func (t *BleveDestPartition) Stats(w io.Writer) error {
+	return t.bdest.Stats(w)
 }
 
 // ---------------------------------------------------------
