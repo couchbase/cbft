@@ -22,12 +22,11 @@ func NewCurrentStatsHandler(mgr *Manager) *CurrentStatsHandler {
 	return &CurrentStatsHandler{mgr: mgr}
 }
 
-var currentStatsFeedsPrefix = []byte("{\"feeds\":[")
+var currentStatsFeedsPrefix = []byte("{\"feeds\":{")
 var currentStatsSep = []byte(",")
-var currentStatsFeedNamePrefix = []byte("{\"feedName\":\"")
-var currentStatsFeedStatsPrefix = []byte("\",\"stats\":")
-var currentStatsFeedSuffix = []byte("}")
-var currentStatsSuffix = []byte("]}")
+var currentStatsFeedNamePrefix = []byte("\"")
+var currentStatsFeedStatsPrefix = []byte("\":")
+var currentStatsSuffix = []byte("}}")
 
 func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, _ := h.mgr.CurrentMaps()
@@ -48,7 +47,6 @@ func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 		w.Write([]byte(feedName))
 		w.Write(currentStatsFeedStatsPrefix)
 		feeds[feedName].Stats(w)
-		w.Write(currentStatsFeedSuffix)
 	}
 	w.Write(currentStatsSuffix)
 }

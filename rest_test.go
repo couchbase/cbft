@@ -276,8 +276,8 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`[`: true,
-				`]`: true,
+				`{`: true,
+				`}`: true,
 			},
 		},
 		{
@@ -451,9 +451,9 @@ func TestHandlersForOneIndexWithNILFeed(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`[`:                  true,
-				`{"feedName":"idx0_`: true,
-				`]`:                  true,
+				`{`:      true,
+				`"idx0_`: true,
+				`}`:      true,
 			},
 		},
 		{
