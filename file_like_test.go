@@ -109,6 +109,11 @@ func TestFileLike(t *testing.T) {
 	if s != "first write" {
 		t.Fatalf("Misread:  %q", s)
 	}
+
+	err = f.Truncate(10)
+	if err == nil {
+		t.Errorf("expected truncate to fail on read-only")
+	}
 }
 
 func TestFileLikeRW(t *testing.T) {
@@ -146,5 +151,10 @@ func TestFileLikeRW(t *testing.T) {
 	s := string(buf[:len("a write")])
 	if s != "a write" {
 		t.Fatalf("Misread:  %q", s)
+	}
+
+	err = f.Truncate(10)
+	if err != nil {
+		t.Errorf("expected truncate to work")
 	}
 }
