@@ -22,6 +22,8 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 
 	"github.com/gorilla/mux"
+
+	log "github.com/couchbaselabs/clog"
 )
 
 var startTime = time.Now()
@@ -159,25 +161,31 @@ func restPostRuntimeGC(w http.ResponseWriter, r *http.Request) {
 // To analyze a profiling...
 //    go tool pprof ./cbft run-cpu.pprof
 func restProfileCPU(w http.ResponseWriter, r *http.Request) {
-	fname := "./run-cpu.pprof"
 	secs, err := strconv.Atoi(r.FormValue("secs"))
 	if err != nil || secs <= 0 {
 		http.Error(w, "incorrect or missing secs parameter", 400)
 		return
 	}
+	fname := "./run-cpu.pprof"
 	os.Remove(fname)
 	f, err := os.Create(fname)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("couldn't create file: %v, err: %v",
+		http.Error(w, fmt.Sprintf("couldn't create file: %s, err: %v",
 			fname, err), 500)
 		return
 	}
-
-	pprof.StartCPUProfile(f)
+	log.Printf("cpu profiling start, file: %s", fname)
+	err = pprof.StartCPUProfile(f)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("couldn't start CPU profile, file: %s, err: %v",
+			fname, err), 500)
+		return
+	}
 	go func() {
 		time.Sleep(time.Duration(secs) * time.Second)
 		pprof.StopCPUProfile()
 		f.Close()
+		log.Printf("cpu profiling end, file: %s", fname)
 	}()
 	w.WriteHeader(204)
 }
