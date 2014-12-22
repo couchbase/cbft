@@ -4,6 +4,10 @@ build:
 	go build ./...
 	go build -o ./cbft ./cmd/cbft
 
+build-leveldb:
+	go build ./...
+	go build -tags leveldb -o ./cbft ./cmd/cbft
+
 test:
 	go test -v ./...
 
