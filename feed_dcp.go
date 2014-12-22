@@ -27,10 +27,6 @@ import (
 )
 
 func init() {
-	if gomemcached.MaxBodyLen < int(3e7) { // 30,000,000.
-		gomemcached.MaxBodyLen = int(3e7)
-	}
-
 	RegisterFeedType("couchbase", &FeedType{
 		Start:       StartDCPFeed,
 		Partitions:  CouchbasePartitions,
