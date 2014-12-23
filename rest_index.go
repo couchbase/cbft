@@ -98,6 +98,16 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	planPIndexesForIndex := []*PlanPIndex(nil)
+	if planPIndexesByName != nil {
+		planPIndexesForIndex = planPIndexesByName[indexName]
+	}
+
+	planPIndexesWarnings := []string(nil)
+	if planPIndexes != nil && planPIndexes.Warnings != nil {
+		planPIndexesWarnings = planPIndexes.Warnings[indexName]
+	}
+
 	mustEncode(w, struct {
 		Status       string        `json:"status"`
 		IndexDef     *IndexDef     `json:"indexDef"`
@@ -106,8 +116,8 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}{
 		Status:       "ok",
 		IndexDef:     indexDef,
-		PlanPIndexes: planPIndexesByName[indexName],
-		Warnings:     planPIndexes.Warnings[indexName],
+		PlanPIndexes: planPIndexesForIndex,
+		Warnings:     planPIndexesWarnings,
 	})
 }
 

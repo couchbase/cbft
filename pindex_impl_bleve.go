@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -29,6 +30,17 @@ import (
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
 const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1800000
+
+type BleveParams struct {
+	Mapping bleve.IndexMapping     `json:"mapping"`
+	Store   map[string]interface{} `json:"store"`
+}
+
+func NewBleveParams() *BleveParams {
+	return &BleveParams{
+		Mapping: *bleve.NewIndexMapping(),
+	}
+}
 
 type BleveDest struct {
 	path string
@@ -92,7 +104,7 @@ func init() {
 
 		Description: "bleve - full-text index" +
 			" powered by the bleve full-text-search engine",
-		StartSample: bleve.NewIndexMapping(),
+		StartSample: NewBleveParams(),
 	})
 
 	RegisterPIndexImplType("bleve-mem", &PIndexImplType{
@@ -105,25 +117,25 @@ func init() {
 
 		Description: "bleve-mem - full-text index" +
 			" powered by bleve (in memory only)",
-		StartSample: bleve.NewIndexMapping(),
+		StartSample: NewBleveParams(),
 	})
 }
 
 func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
-	bindexMapping := bleve.NewIndexMapping()
+	bleveParams := NewBleveParams()
 	if len(indexParams) > 0 {
-		return json.Unmarshal([]byte(indexParams), &bindexMapping)
+		return json.Unmarshal([]byte(indexParams), bleveParams)
 	}
 	return nil
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
 	restart func()) (PIndexImpl, Dest, error) {
-	bindexMapping := bleve.NewIndexMapping()
+	bleveParams := NewBleveParams()
 	if len(indexParams) > 0 {
-		err := json.Unmarshal([]byte(indexParams), &bindexMapping)
+		err := json.Unmarshal([]byte(indexParams), bleveParams)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error: parse bleve index mapping: %v", err)
+			return nil, nil, fmt.Errorf("error: parse bleve params: %v", err)
 		}
 	}
 
@@ -141,10 +153,16 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	bindex, err := bleve.New(blevePath, bindexMapping)
+	bindex, err := bleve.New(blevePath, &bleveParams.Mapping)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
 			path, err)
+	}
+
+	pathMeta := path + string(os.PathSeparator) + "BLEVE_META"
+	err = ioutil.WriteFile(pathMeta, []byte(indexParams), 0600)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return bindex, &DestForwarder{
@@ -156,6 +174,17 @@ func OpenBlevePIndexImpl(indexType, path string,
 	restart func()) (PIndexImpl, Dest, error) {
 	if indexType == "bleve-mem" {
 		return nil, nil, fmt.Errorf("error: cannot re-open bleve-mem, path: %s", path)
+	}
+
+	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "BLEVE_META")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bleveParams := NewBleveParams()
+	err = json.Unmarshal(buf, bleveParams)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error: parse bleve params: %v", err)
 	}
 
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,

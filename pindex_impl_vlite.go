@@ -173,7 +173,7 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 	if len(indexParams) > 0 {
 		err := json.Unmarshal([]byte(indexParams), &vliteParams)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error: parse vlite index params: %v", err)
+			return nil, nil, fmt.Errorf("error: parse vlite params: %v", err)
 		}
 	}
 
@@ -230,7 +230,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 	vliteParams := VLiteParams{}
 	err = json.Unmarshal(buf, &vliteParams)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error: parse vlite index params: %v", err)
+		return nil, nil, fmt.Errorf("error: parse vlite params: %v", err)
 	}
 
 	pathStore := path + string(os.PathSeparator) + "store.gkvlite"
