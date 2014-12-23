@@ -51,13 +51,6 @@ func (p *PIndex) Close(remove bool) error {
 		}
 	}
 
-	if p.Impl != nil {
-		err := p.Impl.Close()
-		if err != nil {
-			return err
-		}
-	}
-
 	if remove {
 		os.RemoveAll(p.Path)
 	}
@@ -105,7 +98,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 	}
 	buf, err := json.Marshal(pindex)
 	if err != nil {
-		impl.Close()
+		dest.Close()
 		os.RemoveAll(path)
 		return nil, err
 	}
@@ -113,7 +106,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 	err = ioutil.WriteFile(path+string(os.PathSeparator)+PINDEX_META_FILENAME,
 		buf, 0600)
 	if err != nil {
-		impl.Close()
+		dest.Close()
 		os.RemoveAll(path)
 		return nil, fmt.Errorf("error: could not save PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)

@@ -16,9 +16,7 @@ import (
 	"io"
 )
 
-type PIndexImpl interface {
-	Close() error
-}
+type PIndexImpl interface{}
 
 type PIndexImplType struct {
 	Validate func(indexType, indexName, indexParams string) error
