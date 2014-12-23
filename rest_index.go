@@ -95,6 +95,7 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	planPIndexes, planPIndexesByName, err := h.mgr.GetPlanPIndexes(false)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("GetPlanPIndexes, err: %v", err), 400)
+		return
 	}
 
 	mustEncode(w, struct {
