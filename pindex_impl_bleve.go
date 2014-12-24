@@ -159,7 +159,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			path, err)
 	}
 
-	pathMeta := path + string(os.PathSeparator) + "BLEVE_META"
+	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
 	err = ioutil.WriteFile(pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
@@ -176,7 +176,7 @@ func OpenBlevePIndexImpl(indexType, path string,
 		return nil, nil, fmt.Errorf("error: cannot re-open bleve-mem, path: %s", path)
 	}
 
-	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "BLEVE_META")
+	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "PINDEX_BLEVE_META")
 	if err != nil {
 		return nil, nil, err
 	}
