@@ -219,6 +219,19 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 
 	// Examine every indexDef...
 	for _, indexDef := range indexDefs.IndexDefs {
+		if indexDef.PlanParams.PlanFrozen {
+			// If the planner is frozen, just copy over the previous plan for this index.
+			if planPIndexesPrev != nil {
+				for planPIndexNamePrev, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
+					if planPIndexPrev.IndexName == indexDef.Name &&
+						planPIndexPrev.IndexUUID == indexDef.UUID {
+						planPIndexes.PlanPIndexes[planPIndexNamePrev] = planPIndexPrev
+					}
+				}
+			}
+			continue
+		}
+
 		// Split each indexDef into 1 or more PlanPIndexes.
 		pindexImplType, exists := pindexImplTypes[indexDef.Type]
 		if !exists ||

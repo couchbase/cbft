@@ -72,6 +72,12 @@ type PlanParams struct {
 	// ("") is used to represent any node UUID and/or any planPIndex
 	// and/or any indexDef.
 	NodePlanParams map[string]map[string]*NodePlanParam `json:"nodePlanParams"`
+
+	// PlanFrozen means the planner should not change the previous
+	// plan for an index, even if as nodes join or leave and even if
+	// there was no previous plan.  Defaults to false (allow
+	// re-planning).
+	PlanFrozen bool `json:"planFrozen"`
 }
 
 type NodePlanParam struct {
