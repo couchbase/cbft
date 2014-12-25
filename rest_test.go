@@ -2017,7 +2017,8 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 	testRESTHandlers(t, tests, router)
 }
 
-func testCreateIndex1Node(t *testing.T, planParams []string, expNumPIndexes int) (Cfg, *Manager) {
+func testCreateIndex1Node(t *testing.T, planParams []string,
+	expNumPIndexes, expNumFeeds int) (Cfg, *Manager, *mux.Router) {
 	cfg := NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
@@ -2118,8 +2119,9 @@ func testCreateIndex1Node(t *testing.T, planParams []string, expNumPIndexes int)
 				mgr0.Kick("kick after index create")
 
 				feeds, pindexes := mgr0.CurrentMaps()
-				if len(feeds) != 1 {
-					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				if len(feeds) != expNumFeeds {
+					t.Errorf("expected to be %d feed, got feeds: %+v",
+						expNumFeeds, feeds)
 				}
 				if len(pindexes) != expNumPIndexes {
 					t.Errorf("expected to be %d pindex, got pindexes: %+v",
@@ -2149,6 +2151,17 @@ func testCreateIndex1Node(t *testing.T, planParams []string, expNumPIndexes int)
 				}
 			},
 		},
+	}
+
+	testRESTHandlers(t, tests, router0)
+
+	return cfg, mgr0, router0
+}
+
+func TestCreateIndexAddNode(t *testing.T) {
+	cfg, mgr0, router0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":1}`}, 2, 1)
+
+	tests := []*RESTHandlerTest{
 		{
 			Desc:   "count myIdx should be 0, 1 nodes",
 			Path:   "/api/index/myIdx/count",
@@ -2170,14 +2183,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string, expNumPIndexes int)
 			},
 		},
 	}
-
 	testRESTHandlers(t, tests, router0)
-
-	return cfg, mgr0
-}
-
-func TestCreateIndexAddNode(t *testing.T) {
-	cfg, mgr0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":1}`}, 2)
 
 	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
 	if err != nil {
@@ -2233,7 +2239,100 @@ func TestCreateIndexAddNode(t *testing.T) {
 }
 
 func TestCreateIndex1PIndexAddNode(t *testing.T) {
-	cfg, mgr0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":100}`}, 1)
+	cfg, mgr0, router0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":100}`}, 1, 1)
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "count myIdx should be 0, 1 nodes",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "query myIdx should have 0 hits, 1 nodes",
+			Path:   "/api/index/myIdx/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
+			},
+		},
+	}
+	testRESTHandlers(t, tests, router0)
+
+	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+
+	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir1)
+
+	meh1 := &TestMEH{}
+	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1.Start("wanted")
+	mgr1.Kick("test-start-kick")
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs wanted")
+	}
+
+	if cfg.Refresh() != nil {
+		t.Errorf("expected cfg refresh to work")
+	}
+
+	runtime.Gosched()
+
+	mgr0.Kick("test-kick-after-new-node")
+
+	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+	if casPrev != casCurr {
+		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
+	}
+	if !SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
+		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+			planPIndexesPrevJS, planPIndexesCurrJS)
+	}
+}
+
+func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
+	cfg, mgr0, router0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":1,"planFrozen":true}`}, 0, 0)
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "count myIdx should be 0, 1 nodes",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Status: 500,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+	}
+	testRESTHandlers(t, tests, router0)
 
 	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
 	if err != nil {
