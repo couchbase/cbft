@@ -2017,7 +2017,7 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 	testRESTHandlers(t, tests, router)
 }
 
-func testCreateIndex1Node(t *testing.T) (Cfg, *Manager) {
+func testCreateIndex1Node(t *testing.T, planParams []string, expNumPIndexes int) (Cfg, *Manager) {
 	cfg := NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
@@ -2101,7 +2101,7 @@ func testCreateIndex1Node(t *testing.T) (Cfg, *Manager) {
 				"indexType":    []string{"bleve"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":2}`},
-				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
+				"planParams":   planParams,
 			},
 			Body:   nil,
 			Status: http.StatusOK,
@@ -2121,8 +2121,9 @@ func testCreateIndex1Node(t *testing.T) (Cfg, *Manager) {
 				if len(feeds) != 1 {
 					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
 				}
-				if len(pindexes) != 2 {
-					t.Errorf("expected to be 2 pindex, got pindexes: %+v", pindexes)
+				if len(pindexes) != expNumPIndexes {
+					t.Errorf("expected to be %d pindex, got pindexes: %+v",
+						expNumPIndexes, pindexes)
 				}
 				for _, f := range feeds {
 					var ok bool
@@ -2176,7 +2177,7 @@ func testCreateIndex1Node(t *testing.T) (Cfg, *Manager) {
 }
 
 func TestCreateIndexAddNode(t *testing.T) {
-	cfg, mgr0 := testCreateIndex1Node(t)
+	cfg, mgr0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":1}`}, 2)
 
 	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
 	if err != nil {
@@ -2227,6 +2228,62 @@ func TestCreateIndexAddNode(t *testing.T) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+			planPIndexesPrevJS, planPIndexesCurrJS)
+	}
+}
+
+func TestCreateIndex1PIndexAddNode(t *testing.T) {
+	cfg, mgr0 := testCreateIndex1Node(t, []string{`{"maxPartitionsPerPIndex":100}`}, 1)
+
+	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+
+	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir1)
+
+	meh1 := &TestMEH{}
+	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1.Start("wanted")
+	mgr1.Kick("test-start-kick")
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs wanted")
+	}
+
+	if cfg.Refresh() != nil {
+		t.Errorf("expected cfg refresh to work")
+	}
+
+	runtime.Gosched()
+
+	mgr0.Kick("test-kick-after-new-node")
+
+	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+	if casPrev != casCurr {
+		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
+	}
+	if !SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
+		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 }
