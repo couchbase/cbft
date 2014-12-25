@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -2014,4 +2015,218 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 	}
 
 	testRESTHandlers(t, tests, router)
+}
+
+func testCreateIndex1Node(t *testing.T) (Cfg, *Manager) {
+	cfg := NewCfgMem()
+
+	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir0)
+
+	meh0 := &TestMEH{}
+	mgr0 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "localhost:1000", emptyDir0, "some-datasource", meh0)
+	mgr0.Start("wanted")
+	mgr0.Kick("test-start-kick")
+	mr0, _ := NewMsgRing(os.Stderr, 1000)
+	router0, err := NewManagerRESTRouter(mgr0, "static", "", mr0)
+	if err != nil || router0 == nil {
+		t.Errorf("no mux router")
+	}
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 1 {
+		t.Errorf("expected 1 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 1 {
+		t.Errorf("expected 1 node defs wanted")
+	}
+
+	mgr0.Kick("test-start-kick-again")
+
+	var feed0 *PrimaryFeed
+
+	httpGetPrev := httpGet
+	defer func() { httpGet = httpGetPrev }()
+
+	httpGet = func(urlStr string) (
+		resp *http.Response, err error) {
+		u, _ := url.Parse(urlStr)
+		req := &http.Request{
+			Method: "GET",
+			URL:    u,
+			Body:   ioutil.NopCloser(bytes.NewBuffer([]byte{})),
+		}
+		record := httptest.NewRecorder()
+		router0.ServeHTTP(record, req)
+		return &http.Response{
+			StatusCode: record.Code,
+			Body:       ioutil.NopCloser(record.Body),
+		}, nil
+	}
+
+	httpPostPrev := httpPost
+	defer func() { httpPost = httpPostPrev }()
+
+	httpPost = func(urlStr string, bodyType string, body io.Reader) (
+		resp *http.Response, err error) {
+		u, _ := url.Parse(urlStr)
+		req := &http.Request{
+			Method: "POST",
+			URL:    u,
+			Body:   ioutil.NopCloser(body),
+		}
+		record := httptest.NewRecorder()
+		router0.ServeHTTP(record, req)
+		return &http.Response{
+			StatusCode: record.Code,
+			Body:       ioutil.NopCloser(record.Body),
+		}, nil
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create an index with dest feed with 1 partitions, 1 nodes",
+			Path:   "/api/index/myIdx",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":2}`},
+				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+			After: func() {
+				if cfg.Refresh() != nil {
+					t.Errorf("expected cfg refresh to work")
+				}
+
+				runtime.Gosched()
+
+				mgr0.Kick("kick after index create")
+
+				feeds, pindexes := mgr0.CurrentMaps()
+				if len(feeds) != 1 {
+					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+				}
+				if len(pindexes) != 2 {
+					t.Errorf("expected to be 2 pindex, got pindexes: %+v", pindexes)
+				}
+				for _, f := range feeds {
+					var ok bool
+					feed0, ok = f.(*PrimaryFeed)
+					if !ok {
+						t.Errorf("expected the 1 feed to be a PrimaryFeed")
+					}
+				}
+				for _, p := range pindexes {
+					if p.IndexName != "myIdx" {
+						t.Errorf("expected p.IndexName to match on mgr0")
+					}
+				}
+
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if len(indexDefs.IndexDefs) != 1 {
+					t.Errorf("expected 1 indexDef")
+				}
+				for _, indexDef := range indexDefs.IndexDefs {
+					if indexDef.Name != "myIdx" {
+						t.Errorf("expected 1 indexDef named myIdx")
+					}
+				}
+			},
+		},
+		{
+			Desc:   "count myIdx should be 0, 1 nodes",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok","count":0}`: true,
+			},
+		},
+		{
+			Desc:   "query myIdx should have 0 hits, 1 nodes",
+			Path:   "/api/index/myIdx/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`"hits":[],"total_hits":0`: true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router0)
+
+	return cfg, mgr0
+}
+
+func TestCreateIndexAddNode(t *testing.T) {
+	cfg, mgr0 := testCreateIndex1Node(t)
+
+	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+
+	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir1)
+
+	meh1 := &TestMEH{}
+	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1.Start("wanted")
+	mgr1.Kick("test-start-kick")
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs wanted")
+	}
+
+	if cfg.Refresh() != nil {
+		t.Errorf("expected cfg refresh to work")
+	}
+
+	runtime.Gosched()
+
+	mgr0.Kick("test-kick-after-new-node")
+
+	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+	if casPrev >= casCurr {
+		t.Errorf("expected diff casPrev: %d, casCurr: %d", casPrev, casCurr)
+	}
+	if SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
+		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+			planPIndexesPrevJS, planPIndexesCurrJS)
+	}
 }
