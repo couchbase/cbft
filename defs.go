@@ -68,7 +68,9 @@ type PlanParams struct {
 	// NodePlanParams allows users to specify per-node input to the
 	// planner, such as whether PIndexes assigned to different nodes
 	// can be readable or writable.  Keyed by node UUID.  Value is
-	// keyed by planPIndex.Name or indexDef.Name.
+	// keyed by planPIndex.Name or indexDef.Name.  The empty string
+	// ("") is used to represent any node UUID and/or any planPIndex
+	// and/or any indexDef.
 	NodePlanParams map[string]map[string]*NodePlanParam `json:"nodePlanParams"`
 }
 
@@ -178,10 +180,16 @@ func GetNodePlanParam(nodePlanParams map[string]map[string]*NodePlanParam,
 	var nodePlanParam *NodePlanParam
 	if nodePlanParams != nil {
 		m := nodePlanParams[nodeUUID]
+		if m == nil {
+			m = nodePlanParams[""]
+		}
 		if m != nil {
 			nodePlanParam = m[indexDefName]
 			if nodePlanParam == nil {
 				nodePlanParam = m[planPIndexName]
+			}
+			if nodePlanParam == nil {
+				nodePlanParam = m[""]
 			}
 		}
 	}
