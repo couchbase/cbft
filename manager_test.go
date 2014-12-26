@@ -1244,13 +1244,18 @@ func TestManagerIndexControl(t *testing.T) {
 	m.Kick("test0")
 	m.PlannerNOOP("test0")
 
+	err := m.IndexReadWriteControl("foo", "wrong-uuid", "", "")
+	if err == nil {
+		t.Errorf("expected err on wrong UUID")
+	}
+
 	indexDefs, _, _ := CfgGetIndexDefs(cfg)
 	npp := indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
 	if npp != nil {
 		t.Errorf("expected nil npp")
 	}
 
-	err := m.IndexReadWriteControl("foo", "", "", "")
+	err = m.IndexReadWriteControl("foo", "", "", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}

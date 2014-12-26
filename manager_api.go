@@ -128,16 +128,17 @@ func (mgr *Manager) IndexReadWriteControl(indexName, indexUUID, readOp, writeOp 
 		return err
 	}
 	if indexDefs == nil {
-		return fmt.Errorf("error: indexes do not exist during deletion of indexName: %s",
+		return fmt.Errorf("error: no indexes, index read/write control, indexName: %s",
 			indexName)
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		return fmt.Errorf("error: could not delete index, indexDefs.ImplVersion: %s"+
-			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+		return fmt.Errorf("error: index read/write control, indexName: %s,"+
+			" indexDefs.ImplVersion: %s > mgr.version: %s",
+			indexName, indexDefs.ImplVersion, mgr.version)
 	}
 	indexDef, exists := indexDefs.IndexDefs[indexName]
 	if !exists || indexDef == nil {
-		return fmt.Errorf("error: index to delete does not exist, indexName: %s",
+		return fmt.Errorf("error: no index to read/write control, indexName: %s",
 			indexName)
 	}
 	if indexUUID != "" && indexDef.UUID != indexUUID {
