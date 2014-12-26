@@ -1226,3 +1226,148 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			}
 		})
 }
+
+func TestManagerIndexControl(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000", emptyDir, "some-datasource", nil)
+	if err := m.Start("wanted"); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	sourceParams := ""
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
+		"bleve", "foo", "", PlanParams{}); err != nil {
+		t.Errorf("expected CreateIndex() to work, err: %v", err)
+	}
+	m.Kick("test0")
+	m.PlannerNOOP("test0")
+
+	indexDefs, _, _ := CfgGetIndexDefs(cfg)
+	npp := indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp != nil {
+		t.Errorf("expected nil npp")
+	}
+
+	err := m.IndexReadWriteControl("foo", "", "", "")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] != nil {
+		t.Errorf("expected nil npp.sub")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "disallow", "")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] == nil {
+		t.Errorf("expected npp.sub")
+	}
+	if npp[""].CanRead {
+		t.Errorf("expected CanRead false")
+	}
+	if !npp[""].CanWrite {
+		t.Errorf("expected CanWrite")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "", "")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] == nil {
+		t.Errorf("expected npp.sub")
+	}
+	if npp[""].CanRead {
+		t.Errorf("expected CanRead false")
+	}
+	if !npp[""].CanWrite {
+		t.Errorf("expected CanWrite")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "", "pause")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] == nil {
+		t.Errorf("expected npp.sub")
+	}
+	if npp[""].CanRead {
+		t.Errorf("expected CanRead false")
+	}
+	if npp[""].CanWrite {
+		t.Errorf("expected CanWrite false")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "", "")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] == nil {
+		t.Errorf("expected npp.sub")
+	}
+	if npp[""].CanRead {
+		t.Errorf("expected CanRead false")
+	}
+	if npp[""].CanWrite {
+		t.Errorf("expected CanWrite false")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "", "resume")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] == nil {
+		t.Errorf("expected npp.sub")
+	}
+	if npp[""].CanRead {
+		t.Errorf("expected CanRead false")
+	}
+	if !npp[""].CanWrite {
+		t.Errorf("expected CanWrite")
+	}
+
+	err = m.IndexReadWriteControl("foo", "", "allow", "resume")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
+	if npp == nil {
+		t.Errorf("expected npp")
+	}
+	if npp[""] != nil {
+		t.Errorf("expected nil npp.sub")
+	}
+}
