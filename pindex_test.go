@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -122,8 +123,24 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		dest.OnDataDelete("", nil, 0) != nil ||
 		dest.OnSnapshotStart("", 0, 0) != nil ||
 		dest.SetOpaque("", nil) != nil ||
-		dest.Rollback("", 0) != nil {
+		dest.Rollback("", 0) != nil ||
+		dest.ConsistencyWait("", "", 0, nil) != nil ||
+		dest.Query(nil, nil, nil, nil) != nil {
 		t.Errorf("expected no errors from a blackhole pindex impl")
+	}
+
+	c, err := dest.Count(nil, nil)
+	if err != nil || c != 0 {
+		t.Errorf("expected 0, no err")
+	}
+
+	b := &bytes.Buffer{}
+	err = dest.Stats(b)
+	if err != nil {
+		t.Errorf("expected 0, no err")
+	}
+	if string(b.Bytes()) != "null" {
+		t.Errorf("expected null")
 	}
 
 	v, lastSeq, err := dest.GetOpaque("")
