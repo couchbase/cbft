@@ -2318,6 +2318,19 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
+
+	n := 0
+	for _, pindex := range planPIndexesCurr.PlanPIndexes {
+		for nodeUUID, planPIndexNode := range pindex.Nodes {
+			n++
+			if !planPIndexNode.CanRead || !planPIndexNode.CanWrite {
+				t.Errorf("expected readable, writable, nodeUUID: %s", nodeUUID)
+			}
+		}
+	}
+	if n <= 0 {
+		t.Errorf("expected some pindexes")
+	}
 }
 
 func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
@@ -2535,5 +2548,18 @@ func TestNodePlanParams(t *testing.T) {
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
+	}
+
+	n := 0
+	for _, pindex := range planPIndexesCurr.PlanPIndexes {
+		for nodeUUID, planPIndexNode := range pindex.Nodes {
+			n++
+			if planPIndexNode.CanRead || planPIndexNode.CanWrite {
+				t.Errorf("expected not readable, not writable, nodeUUID: %s", nodeUUID)
+			}
+		}
+	}
+	if n <= 0 {
+		t.Errorf("expected some pindexes")
 	}
 }
