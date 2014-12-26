@@ -138,6 +138,26 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.errorMessage = data;
         });
     };
+
+    $scope.indexIngestPause = function(indexName) {
+        $http.post('/api/index/' + indexName + "/ingest/pause").success(function(data) {
+            alert("index ingest paused");
+            $scope.loadIndexDetails();
+        }).
+        error(function(data, code) {
+            alert("index ingest pause error: " + data);
+        });
+    };
+
+    $scope.indexIngestResume = function(indexName) {
+        $http.post('/api/index/' + indexName + "/ingest/resume").success(function(data) {
+            alert("index ingest resumed");
+            $scope.loadIndexDetails();
+        }).
+        error(function(data, code) {
+            alert("index ingest resume error: " + data);
+        });
+    };
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {

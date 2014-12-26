@@ -52,6 +52,9 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 		r.Handle("/api/index/{indexName}/query", NewQueryHandler(mgr)).Methods("POST")
 	}
 
+	r.Handle("/api/index/{indexName}/ingest/{op}",
+		NewIngestPauseResumeHandler(mgr)).Methods("POST")
+
 	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
 	//
 	// TODO: Need to cleanly separate the /api/pindex and

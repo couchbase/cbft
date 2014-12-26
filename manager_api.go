@@ -85,6 +85,8 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 }
 
 // Deletes a logical index, which might be comprised of many PIndex objects.
+//
+// TODO: DeleteIndex should also take index UUID?
 func (mgr *Manager) DeleteIndex(indexName string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
@@ -116,6 +118,69 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	}
 
 	mgr.PlannerKick("api/DeleteIndex, indexName: " + indexName)
+
+	return nil
+}
+
+func (mgr *Manager) PauseResumeIndex(indexName, indexUUID, readOp, writeOp string) error {
+	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
+	if err != nil {
+		return err
+	}
+	if indexDefs == nil {
+		return fmt.Errorf("error: indexes do not exist during deletion of indexName: %s",
+			indexName)
+	}
+	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
+		return fmt.Errorf("error: could not delete index, indexDefs.ImplVersion: %s"+
+			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+	}
+	indexDef, exists := indexDefs.IndexDefs[indexName]
+	if !exists || indexDef == nil {
+		return fmt.Errorf("error: index to delete does not exist, indexName: %s",
+			indexName)
+	}
+	if indexUUID != "" && indexDef.UUID != indexUUID {
+		return fmt.Errorf("error: index.UUID mismatched")
+	}
+
+	if indexDef.PlanParams.NodePlanParams == nil {
+		indexDef.PlanParams.NodePlanParams = map[string]map[string]*NodePlanParam{}
+	}
+	if indexDef.PlanParams.NodePlanParams[""] == nil {
+		indexDef.PlanParams.NodePlanParams[""] = map[string]*NodePlanParam{}
+	}
+	if indexDef.PlanParams.NodePlanParams[""][""] == nil {
+		indexDef.PlanParams.NodePlanParams[""][""] = &NodePlanParam{
+			CanRead:  true,
+			CanWrite: true,
+		}
+	}
+
+	npp := indexDef.PlanParams.NodePlanParams[""][""]
+	if readOp != "" {
+		if readOp == "resume" {
+			npp.CanRead = true
+		} else {
+			npp.CanRead = false
+		}
+	}
+	if writeOp != "" {
+		if writeOp == "resume" {
+			npp.CanWrite = true
+		} else {
+			npp.CanWrite = false
+		}
+	}
+
+	if npp.CanRead == true && npp.CanWrite == true {
+		delete(indexDef.PlanParams.NodePlanParams[""], "")
+	}
+
+	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
+	if err != nil {
+		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+	}
 
 	return nil
 }

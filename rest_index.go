@@ -230,6 +230,47 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		indexName, requestBody)
 }
 
+// ---------------------------------------------------
+
+type IngestPauseResumeHandler struct {
+	mgr *Manager
+}
+
+func NewIngestPauseResumeHandler(mgr *Manager) *IngestPauseResumeHandler {
+	return &IngestPauseResumeHandler{mgr: mgr}
+}
+
+func (h *IngestPauseResumeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	indexName := indexNameLookup(req)
+	if indexName == "" {
+		showError(w, req, "index name is required", 400)
+		return
+	}
+
+	indexUUID := req.FormValue("indexUUID")
+
+	op := muxVariableLookup(req, "op")
+	if op != "pause" && op != "resume" {
+		showError(w, req, fmt.Sprintf("rest.IngestPauseResume,"+
+			" unsupported op: %s", op), 400)
+		return
+	}
+
+	err := h.mgr.PauseResumeIndex(indexName, indexUUID, "", op)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("rest.IngestPauseResume,"+
+			" could not op: %s, err: %v", op, err), 400)
+		return
+	}
+
+	rv := struct {
+		Status string `json:"status"`
+	}{
+		Status: "ok",
+	}
+	mustEncode(w, rv)
+}
+
 // ------------------------------------------------------------------
 
 type ListPIndexHandler struct {

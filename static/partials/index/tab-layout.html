@@ -23,7 +23,21 @@
            class="nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
         {{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canRead && 'r') || '&nbsp;'}}{{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canWrite && 'w') || '&nbsp;'}}
       </div>
-      </td>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <button type="button" class="btn btn-default"
+              ng-click="indexIngestPause(indexDef.name)">
+        <span class="glyphicon glyphicon-pause"></span> Pause Ingest
+      </button>
+      <button type="button" class="btn btn-default"
+              ng-click="indexIngestResume(indexDef.name)">
+        <span class="glyphicon glyphicon-play"></span> Resume Ingest
+      </button>
+    </td>
+    <td ng-repeat="nodeAddr in nodeAddrsArr">
+    </td>
   </tr>
 </table>
 
