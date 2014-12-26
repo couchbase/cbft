@@ -27,12 +27,26 @@
   </tr>
   <tr>
     <td colspan="2">
+      <button type="button" class="btn btn-warning"
+              ng-click="indexControl(indexDef.name, 'query', 'disallow')">
+        <span class="glyphicon glyphicon-stop"></span> Disallow Queries
+      </button>
       <button type="button" class="btn btn-default"
-              ng-click="indexIngestPause(indexDef.name)">
+              ng-click="indexControl(indexDef.name, 'query', 'allow')">
+        <span class="glyphicon glyphicon-play"></span> Allow Queries
+      </button>
+    </td>
+    <td ng-repeat="nodeAddr in nodeAddrsArr">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <button type="button" class="btn btn-warning"
+              ng-click="indexControl(indexDef.name, 'ingest', 'pause')">
         <span class="glyphicon glyphicon-pause"></span> Pause Ingest
       </button>
       <button type="button" class="btn btn-default"
-              ng-click="indexIngestResume(indexDef.name)">
+              ng-click="indexControl(indexDef.name, 'ingest', 'resume')">
         <span class="glyphicon glyphicon-play"></span> Resume Ingest
       </button>
     </td>

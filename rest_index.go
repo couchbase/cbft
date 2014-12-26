@@ -232,15 +232,22 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
-type IngestPauseResumeHandler struct {
-	mgr *Manager
+type IndexReadWriteControlHandler struct {
+	mgr         *Manager
+	controlRead bool
+	allowedOps  map[string]bool
 }
 
-func NewIngestPauseResumeHandler(mgr *Manager) *IngestPauseResumeHandler {
-	return &IngestPauseResumeHandler{mgr: mgr}
+func NewIndexReadWriteControlHandler(mgr *Manager,
+	controlRead bool, allowedOps map[string]bool) *IndexReadWriteControlHandler {
+	return &IndexReadWriteControlHandler{
+		mgr:         mgr,
+		controlRead: controlRead,
+		allowedOps:  allowedOps,
+	}
 }
 
-func (h *IngestPauseResumeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *IndexReadWriteControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
@@ -250,15 +257,20 @@ func (h *IngestPauseResumeHandler) ServeHTTP(w http.ResponseWriter, req *http.Re
 	indexUUID := req.FormValue("indexUUID")
 
 	op := muxVariableLookup(req, "op")
-	if op != "pause" && op != "resume" {
-		showError(w, req, fmt.Sprintf("rest.IngestPauseResume,"+
+	if !h.allowedOps[op] {
+		showError(w, req, fmt.Sprintf("rest.IndexReadWriteControl,"+
 			" unsupported op: %s", op), 400)
 		return
 	}
 
-	err := h.mgr.PauseResumeIndex(indexName, indexUUID, "", op)
+	var err error
+	if h.controlRead {
+		err = h.mgr.IndexReadWriteControl(indexName, indexUUID, op, "")
+	} else {
+		err = h.mgr.IndexReadWriteControl(indexName, indexUUID, "", op)
+	}
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.IngestPauseResume,"+
+		showError(w, req, fmt.Sprintf("rest.IndexReadWriteControl,"+
 			" could not op: %s, err: %v", op, err), 400)
 		return
 	}

@@ -122,7 +122,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	return nil
 }
 
-func (mgr *Manager) PauseResumeIndex(indexName, indexUUID, readOp, writeOp string) error {
+func (mgr *Manager) IndexReadWriteControl(indexName, indexUUID, readOp, writeOp string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
@@ -159,14 +159,14 @@ func (mgr *Manager) PauseResumeIndex(indexName, indexUUID, readOp, writeOp strin
 
 	npp := indexDef.PlanParams.NodePlanParams[""][""]
 	if readOp != "" {
-		if readOp == "resume" {
+		if readOp == "allow" || readOp == "resume" {
 			npp.CanRead = true
 		} else {
 			npp.CanRead = false
 		}
 	}
 	if writeOp != "" {
-		if writeOp == "resume" {
+		if writeOp == "allow" || writeOp == "resume" {
 			npp.CanWrite = true
 		} else {
 			npp.CanWrite = false
