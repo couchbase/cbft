@@ -2466,3 +2466,74 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 }
+
+func TestNodePlanParams(t *testing.T) {
+	cfg, mgr0, router0 := testCreateIndex1Node(t,
+		[]string{`{"maxPartitionsPerPIndex":1,"numReplicas":1,"nodePlanParams":{"":{"":{"canRead":false,"canWrite":false}}}}`},
+		2, 0)
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "count myIdx should be 0, 1 nodes",
+			Path:   "/api/index/myIdx/count",
+			Method: "GET",
+			Status: 500,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+	}
+	testRESTHandlers(t, tests, router0)
+
+	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+
+	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir1)
+
+	meh1 := &TestMEH{}
+	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1.Start("wanted")
+	mgr1.Kick("test-start-kick")
+
+	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected node defs known")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs unknown")
+	}
+
+	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 2 {
+		t.Errorf("expected 2 node defs wanted")
+	}
+
+	if cfg.Refresh() != nil {
+		t.Errorf("expected cfg refresh to work")
+	}
+
+	runtime.Gosched()
+
+	mgr0.Kick("test-kick-after-new-node")
+
+	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		t.Errorf("expected no err")
+	}
+	if casPrev >= casCurr {
+		t.Errorf("expected diff casPrev: %d, casCurr: %d", casPrev, casCurr)
+	}
+	if SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
+		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+			planPIndexesPrevJS, planPIndexesCurrJS)
+	}
+}
