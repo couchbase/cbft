@@ -259,7 +259,7 @@ func (h *IndexReadWriteControlHandler) ServeHTTP(w http.ResponseWriter, req *htt
 	op := muxVariableLookup(req, "op")
 	if !h.allowedOps[op] {
 		showError(w, req, fmt.Sprintf("rest.IndexReadWriteControl,"+
-			" unsupported op: %s", op), 400)
+			" error: unsupported op: %s", op), 400)
 		return
 	}
 

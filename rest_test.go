@@ -2563,3 +2563,209 @@ func TestNodePlanParams(t *testing.T) {
 		t.Errorf("expected some pindexes")
 	}
 }
+
+func TestHandlersForIndexControl(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr.Write([]byte("hello"))
+	mr.Write([]byte("world"))
+
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "ingestControl on not-an-index",
+			Path:   "/api/index/not-an-index/ingestControl/pause",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Desc:   "queryControl on not-an-index",
+			Path:   "/api/index/not-an-index/queryControl/disallow",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Desc:   "create an index with nil feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"bleve"},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "ingestControl on not-an-index",
+			Path:   "/api/index/not-an-index/ingestControl/pause",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Before: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
+					t.Errorf("expected nil plan params before accessing index control")
+				}
+			},
+			Desc:   "ingestControl real index, bad op",
+			Path:   "/api/index/idx0/ingestControl/not-an-op",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`:         true,
+				`unsupported`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
+					t.Errorf("expected nil plan params after rejected index control")
+				}
+			},
+		},
+		{
+			Desc:   "ingestControl real index, pause",
+			Path:   "/api/index/idx0/ingestControl/pause",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
+					t.Errorf("expected non-nil plan params")
+				}
+				if !indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""].CanRead {
+					t.Errorf("expected readable")
+				}
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""].CanWrite {
+					t.Errorf("expected non-write")
+				}
+			},
+		},
+		{
+			Desc:   "ingestControl real index, resume",
+			Path:   "/api/index/idx0/ingestControl/resume",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
+					t.Errorf("expected non-nil plan params")
+				}
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""] != nil {
+					t.Errorf("expected nil sub plan params after resume")
+				}
+			},
+		},
+		{
+			Desc:   "queryControl on not-an-index",
+			Path:   "/api/index/not-an-index/queryControl/disallow",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Desc:   "queryControl real index, bad op",
+			Path:   "/api/index/idx0/queryControl/not-an-op",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`:         true,
+				`unsupported`: true,
+			},
+		},
+		{
+			Desc:   "queryControl real index, disallow",
+			Path:   "/api/index/idx0/queryControl/disallow",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
+					t.Errorf("expected non-nil plan params")
+				}
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""].CanRead {
+					t.Errorf("expected non-readable")
+				}
+				if !indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""].CanWrite {
+					t.Errorf("expected write")
+				}
+			},
+		},
+		{
+			Desc:   "queryControl real index, allow",
+			Path:   "/api/index/idx0/queryControl/allow",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
+					t.Errorf("expected non-nil plan params")
+				}
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""] != nil {
+					t.Errorf("expected nil sub plan params after allow")
+				}
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
