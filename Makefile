@@ -8,6 +8,10 @@ build-leveldb:
 	go build ./...
 	go build -tags leveldb -o ./cbft ./cmd/cbft
 
+build-forestdb:
+	go build ./...
+	go build -tags forestdb -o ./cbft ./cmd/cbft
+
 test:
 	go test -v ./...
 
