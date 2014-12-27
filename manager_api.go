@@ -122,7 +122,8 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	return nil
 }
 
-func (mgr *Manager) IndexReadWriteControl(indexName, indexUUID, readOp, writeOp string) error {
+// IndexControl is used to change runtime properties of an index.
+func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp, planFreezeOp string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
@@ -176,6 +177,10 @@ func (mgr *Manager) IndexReadWriteControl(indexName, indexUUID, readOp, writeOp 
 
 	if npp.CanRead == true && npp.CanWrite == true {
 		delete(indexDef.PlanParams.NodePlanParams[""], "")
+	}
+
+	if planFreezeOp != "" {
+		indexDef.PlanParams.PlanFrozen = planFreezeOp == "freeze"
 	}
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)

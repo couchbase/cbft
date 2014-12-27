@@ -2765,6 +2765,40 @@ func TestHandlersForIndexControl(t *testing.T) {
 				}
 			},
 		},
+		{
+			Desc:   "planFreezeControl real index, freeze",
+			Path:   "/api/index/idx0/planFreezeControl/freeze",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if !indexDefs.IndexDefs["idx0"].PlanParams.PlanFrozen {
+					t.Errorf("expected frozen")
+				}
+			},
+		},
+		{
+			Desc:   "planFreezeControl real index, unfreeze",
+			Path:   "/api/index/idx0/planFreezeControl/unfreeze",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`ok`: true,
+			},
+			After: func() {
+				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				if indexDefs.IndexDefs["idx0"].PlanParams.PlanFrozen {
+					t.Errorf("expected thawed")
+				}
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)

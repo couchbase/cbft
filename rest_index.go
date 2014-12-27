@@ -232,22 +232,22 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
-type IndexReadWriteControlHandler struct {
-	mgr         *Manager
-	controlRead bool
-	allowedOps  map[string]bool
+type IndexControlHandler struct {
+	mgr        *Manager
+	control    string
+	allowedOps map[string]bool
 }
 
-func NewIndexReadWriteControlHandler(mgr *Manager,
-	controlRead bool, allowedOps map[string]bool) *IndexReadWriteControlHandler {
-	return &IndexReadWriteControlHandler{
-		mgr:         mgr,
-		controlRead: controlRead,
-		allowedOps:  allowedOps,
+func NewIndexControlHandler(mgr *Manager, control string,
+	allowedOps map[string]bool) *IndexControlHandler {
+	return &IndexControlHandler{
+		mgr:        mgr,
+		control:    control,
+		allowedOps: allowedOps,
 	}
 }
 
-func (h *IndexReadWriteControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
@@ -258,20 +258,22 @@ func (h *IndexReadWriteControlHandler) ServeHTTP(w http.ResponseWriter, req *htt
 
 	op := muxVariableLookup(req, "op")
 	if !h.allowedOps[op] {
-		showError(w, req, fmt.Sprintf("rest.IndexReadWriteControl,"+
+		showError(w, req, fmt.Sprintf("rest.IndexControl,"+
 			" error: unsupported op: %s", op), 400)
 		return
 	}
 
-	var err error
-	if h.controlRead {
-		err = h.mgr.IndexReadWriteControl(indexName, indexUUID, op, "")
-	} else {
-		err = h.mgr.IndexReadWriteControl(indexName, indexUUID, "", op)
+	err := fmt.Errorf("unknown op")
+	if h.control == "read" {
+		err = h.mgr.IndexControl(indexName, indexUUID, op, "", "")
+	} else if h.control == "write" {
+		err = h.mgr.IndexControl(indexName, indexUUID, "", op, "")
+	} else if h.control == "planFreeze" {
+		err = h.mgr.IndexControl(indexName, indexUUID, "", "", op)
 	}
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.IndexReadWriteControl,"+
-			" could not op: %s, err: %v", op, err), 400)
+		showError(w, req, fmt.Sprintf("rest.IndexControl,"+
+			" control: %s, could not op: %s, err: %v", h.control, op, err), 400)
 		return
 	}
 

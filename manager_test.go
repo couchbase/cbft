@@ -1244,7 +1244,7 @@ func TestManagerIndexControl(t *testing.T) {
 	m.Kick("test0")
 	m.PlannerNOOP("test0")
 
-	err := m.IndexReadWriteControl("foo", "wrong-uuid", "", "")
+	err := m.IndexControl("foo", "wrong-uuid", "", "", "")
 	if err == nil {
 		t.Errorf("expected err on wrong UUID")
 	}
@@ -1255,7 +1255,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected nil npp")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "", "")
+	err = m.IndexControl("foo", "", "", "", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1268,7 +1268,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected nil npp.sub")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "disallow", "")
+	err = m.IndexControl("foo", "", "disallow", "", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1287,7 +1287,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected CanWrite")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "", "")
+	err = m.IndexControl("foo", "", "", "", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1306,7 +1306,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected CanWrite")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "", "pause")
+	err = m.IndexControl("foo", "", "", "pause", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1325,7 +1325,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected CanWrite false")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "", "")
+	err = m.IndexControl("foo", "", "", "", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1344,7 +1344,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected CanWrite false")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "", "resume")
+	err = m.IndexControl("foo", "", "", "resume", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1363,7 +1363,7 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected CanWrite")
 	}
 
-	err = m.IndexReadWriteControl("foo", "", "allow", "resume")
+	err = m.IndexControl("foo", "", "allow", "resume", "")
 	if err != nil {
 		t.Errorf("expected ok")
 	}
@@ -1374,5 +1374,26 @@ func TestManagerIndexControl(t *testing.T) {
 	}
 	if npp[""] != nil {
 		t.Errorf("expected nil npp.sub")
+	}
+
+	if indexDefs.IndexDefs["foo"].PlanParams.PlanFrozen {
+		t.Errorf("expected not yet frozen")
+	}
+	err = m.IndexControl("foo", "", "", "", "freeze")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	if !indexDefs.IndexDefs["foo"].PlanParams.PlanFrozen {
+		t.Errorf("expected frozen")
+	}
+
+	err = m.IndexControl("foo", "", "", "", "unfreeze")
+	if err != nil {
+		t.Errorf("expected ok")
+	}
+	indexDefs, _, _ = CfgGetIndexDefs(cfg)
+	if indexDefs.IndexDefs["foo"].PlanParams.PlanFrozen {
+		t.Errorf("expected not frozen")
 	}
 }
