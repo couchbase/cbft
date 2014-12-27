@@ -34,14 +34,12 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		indexType = "bleve" // TODO: Revisit default indexType?  Should be table'ized?
 	}
 
-	// find the name of the index to create
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
 	}
 
-	// TODO: Need to validate indexParams based on the indexType.
 	indexParams := req.FormValue("indexParams")
 
 	sourceType := req.FormValue("sourceType")
@@ -59,7 +57,6 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceUUID := req.FormValue("sourceUUID") // Defaults to "".
 
-	// TODO: Need to validate sourceParams based on the sourceType.
 	sourceParams := req.FormValue("sourceParams") // Defaults to "".
 
 	planParams := &PlanParams{}
