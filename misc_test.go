@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -159,4 +160,15 @@ func TestAtomicCopyMetrics(t *testing.T) {
 		dst.TimeRollback != 3 {
 		t.Errorf("expected src == dst")
 	}
+}
+
+func TestMustEncode(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Errorf("expected must encode panic and recover")
+		}
+	}()
+	mustEncode(&bytes.Buffer{}, func() {})
+	t.Errorf("expected must encode panic")
 }
