@@ -55,17 +55,17 @@ func (s *TestDest) Rollback(partition string,
 func (s *TestDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return nil
 }
 
 func (t *TestDest) Count(pindex *PIndex,
-	cancelCh chan string) (uint64, error) {
+	cancelCh <-chan bool) (uint64, error) {
 	return 0, nil
 }
 
 func (t *TestDest) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return nil
 }
 

@@ -24,10 +24,10 @@ type DestForwarder struct {
 type DestProvider interface {
 	Dest(partition string) (Dest, error)
 
-	Count(pindex *PIndex, cancelCh chan string) (uint64, error)
+	Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error)
 
 	Query(pindex *PIndex, req []byte, res io.Writer,
-		cancelCh chan string) error
+		cancelCh <-chan bool) error
 
 	Stats(io.Writer) error
 
@@ -99,7 +99,7 @@ func (t *DestForwarder) Rollback(partition string, rollbackSeq uint64) error {
 func (t *DestForwarder) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
@@ -109,13 +109,13 @@ func (t *DestForwarder) ConsistencyWait(partition string,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *DestForwarder) Count(pindex *PIndex, cancelCh chan string) (
+func (t *DestForwarder) Count(pindex *PIndex, cancelCh <-chan bool) (
 	uint64, error) {
 	return t.DestProvider.Count(pindex, cancelCh)
 }
 
 func (t *DestForwarder) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return t.DestProvider.Query(pindex, req, res, cancelCh)
 }
 

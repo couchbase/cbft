@@ -133,12 +133,11 @@ func StringsIntersectStrings(a, b []string) []string {
 	return rv
 }
 
-func TimeoutCancelChan(timeout int64) chan string {
+func TimeoutCancelChan(timeout int64) <-chan bool {
 	if timeout > 0 {
-		cancelCh := make(chan string, 1)
+		cancelCh := make(chan bool, 1)
 		go func() {
 			time.Sleep(time.Duration(timeout) * time.Millisecond)
-			cancelCh <- "timeout"
 			close(cancelCh)
 		}()
 		return cancelCh

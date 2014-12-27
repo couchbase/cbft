@@ -105,7 +105,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 // TODO: One day support user-defined aliases for non-bleve indexes.
 func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	indexName, indexUUID string, consistencyParams *ConsistencyParams,
-	cancelCh chan string) (
+	cancelCh <-chan bool) (
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 

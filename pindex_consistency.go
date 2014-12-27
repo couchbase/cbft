@@ -36,13 +36,13 @@ type ConsistencyWaiter interface {
 	ConsistencyWait(partition string,
 		consistencyLevel string,
 		consistencySeq uint64,
-		cancelCh chan string) error
+		cancelCh <-chan bool) error
 }
 
 type ConsistencyWaitReq struct {
 	ConsistencyLevel string
 	ConsistencySeq   uint64
-	CancelCh         chan string
+	CancelCh         <-chan bool
 	DoneCh           chan error
 }
 
@@ -61,24 +61,20 @@ func (e *ErrorConsistencyWait) Error() string {
 
 // ---------------------------------------------------------
 
-func ConsistencyWaitDone(partition string, cancelCh chan string,
+func ConsistencyWaitDone(partition string, cancelCh <-chan bool,
 	doneCh chan error, currSeq func() uint64) error {
 	seqStart := currSeq()
 
 	select {
-	case status := <-cancelCh:
-		if status == "" { // For example, status might be "timeout".
-			status = "cancelled"
-		}
-
+	case <-cancelCh:
 		rv := map[string][]uint64{}
 		rv[partition] = []uint64{seqStart, currSeq()}
 
-		err := fmt.Errorf("ConsistencyWaitDone cancelled, status: %s", status)
+		err := fmt.Errorf("ConsistencyWaitDone cancelled")
 
 		return &ErrorConsistencyWait{ // TODO: track stats.
 			Err:          err,
-			Status:       status,
+			Status:       "cancelled",
 			StartEndSeqs: rv,
 		}
 
@@ -92,7 +88,7 @@ func ConsistencyWaitPartitions(
 	partitions []string,
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
@@ -107,7 +103,7 @@ func ConsistencyWaitPartitions(
 }
 
 func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
-	consistencyParams *ConsistencyParams, cancelCh chan string) error {
+	consistencyParams *ConsistencyParams, cancelCh <-chan bool) error {
 	if consistencyParams != nil &&
 		consistencyParams.Level != "" &&
 		consistencyParams.Vectors != nil {
@@ -124,7 +120,7 @@ func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
 }
 
 func ConsistencyWaitGroup(indexName string,
-	consistencyParams *ConsistencyParams, cancelCh chan string,
+	consistencyParams *ConsistencyParams, cancelCh <-chan bool,
 	localPIndexes []*PIndex,
 	addLocalPIndex func(*PIndex) error) error {
 	var errConsistencyM sync.Mutex
@@ -171,8 +167,8 @@ func ConsistencyWaitGroup(indexName string,
 
 	if cancelCh != nil {
 		select {
-		case status := <-cancelCh:
-			return fmt.Errorf("cancelled, status: %s", status)
+		case <-cancelCh:
+			return fmt.Errorf("cancelled")
 		default:
 		}
 	}

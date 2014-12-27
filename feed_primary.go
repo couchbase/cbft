@@ -162,7 +162,7 @@ func (t *PrimaryFeed) Rollback(partition string,
 func (t *PrimaryFeed) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
 		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
@@ -171,12 +171,12 @@ func (t *PrimaryFeed) ConsistencyWait(partition string,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *PrimaryFeed) Count(pindex *PIndex, cancelCh chan string) (
+func (t *PrimaryFeed) Count(pindex *PIndex, cancelCh <-chan bool) (
 	uint64, error) {
 	return 0, fmt.Errorf("PrimaryFeed.Count unimplemented")
 }
 
 func (t *PrimaryFeed) Query(pindex *PIndex, req []byte, w io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return fmt.Errorf("PrimaryFeed.Query unimplemented")
 }

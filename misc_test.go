@@ -126,20 +126,12 @@ func TestTimeoutCancelChan(t *testing.T) {
 	if c == nil {
 		t.Errorf("expected non-nil")
 	}
-	msg := <-c
-	if msg != "timeout" {
-		t.Errorf("expected timeout")
-	}
-	select {
-	case msg, ok := <-c:
-		if ok {
-			t.Errorf("expected closed")
-		}
-		if msg != "" {
-			t.Errorf("expected empty msg on closed")
-		}
-	default:
+	msg, ok := <-c
+	if ok {
 		t.Errorf("expected closed")
+	}
+	if msg != false {
+		t.Errorf("expected false msg on closed")
 	}
 }
 

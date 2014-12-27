@@ -378,7 +378,7 @@ func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 func (t *VLite) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	cwr := &ConsistencyWaitReq{
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
@@ -411,7 +411,7 @@ func (t *VLite) ConsistencyWait(partition string,
 
 // ---------------------------------------------------------
 
-func (t *VLite) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
+func (t *VLite) Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error) {
 	return t.CountMainColl(cancelCh)
 }
 
@@ -422,7 +422,7 @@ var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
 var entryValPrefix = []byte(", \"val\":")
 
 func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	vliteQueryParams := NewVLiteQueryParams()
 	err := json.Unmarshal(req, vliteQueryParams)
 	if err != nil {
@@ -464,7 +464,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 
 // ---------------------------------------------------------
 
-func (t *VLite) CountMainColl(cancelCh chan string) (uint64, error) {
+func (t *VLite) CountMainColl(cancelCh <-chan bool) (uint64, error) {
 	t.m.Lock()
 	storeRO := t.store.Snapshot()
 	t.m.Unlock()
@@ -480,7 +480,7 @@ func (t *VLite) CountMainColl(cancelCh chan string) (uint64, error) {
 	return numItems, nil
 }
 
-func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh chan string,
+func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 	cb func(*gkvlite.Item) bool) error {
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
@@ -684,18 +684,18 @@ func (t *VLitePartition) Rollback(partition string, rollbackSeq uint64) error {
 func (t *VLitePartition) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return t.vlite.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *VLitePartition) Count(pindex *PIndex, cancelCh chan string) (
+func (t *VLitePartition) Count(pindex *PIndex, cancelCh <-chan bool) (
 	uint64, error) {
 	return t.vlite.Count(pindex, cancelCh)
 }
 
 func (t *VLitePartition) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return t.vlite.Query(pindex, req, res, cancelCh)
 }
 
@@ -761,7 +761,7 @@ func (t *VLitePartition) applyBatchUnlocked() error {
 // activities.
 func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
-	cancelCh chan string) (*VLiteGatherer, error) {
+	cancelCh <-chan bool) (*VLiteGatherer, error) {
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
@@ -801,7 +801,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	return rv, nil
 }
 
-func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
+func (vg *VLiteGatherer) Count(cancelCh <-chan bool) (uint64, error) {
 	var totalM sync.Mutex
 	var totalErr error
 	var total uint64
@@ -846,7 +846,7 @@ func (vg *VLiteGatherer) Count(cancelCh chan string) (uint64, error) {
 }
 
 func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	pBuf, err := json.Marshal(p)
 	if err != nil {
 		return err

@@ -350,7 +350,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 func (t *BleveDest) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	cwr := &ConsistencyWaitReq{
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
@@ -382,14 +382,14 @@ func (t *BleveDest) ConsistencyWait(partition string,
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Count(pindex *PIndex, cancelCh chan string) (uint64, error) {
+func (t *BleveDest) Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error) {
 	return t.bindex.DocCount()
 }
 
 // ---------------------------------------------------------
 
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	var bleveQueryParams BleveQueryParams
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
@@ -534,18 +534,18 @@ func (t *BleveDestPartition) Rollback(partition string, rollbackSeq uint64) erro
 func (t *BleveDestPartition) ConsistencyWait(partition string,
 	consistencyLevel string,
 	consistencySeq uint64,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return t.bdest.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *BleveDestPartition) Count(pindex *PIndex, cancelCh chan string) (
+func (t *BleveDestPartition) Count(pindex *PIndex, cancelCh <-chan bool) (
 	uint64, error) {
 	return t.bdest.Count(pindex, cancelCh)
 }
 
 func (t *BleveDestPartition) Query(pindex *PIndex, req []byte, res io.Writer,
-	cancelCh chan string) error {
+	cancelCh <-chan bool) error {
 	return t.bdest.Query(pindex, req, res, cancelCh)
 }
 
@@ -635,7 +635,7 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // activities.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
-	cancelCh chan string) (bleve.IndexAlias, error) {
+	cancelCh <-chan bool) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {

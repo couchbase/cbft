@@ -376,7 +376,7 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh chan string // TODO: Support request cancellation.
+	var cancelCh <-chan bool // TODO: Support request cancellation.
 
 	log.Printf("rest.CountPIndex pindexName: %s", pindexName)
 
@@ -441,7 +441,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh chan string // TODO: Support request cancellation.
+	var cancelCh <-chan bool // TODO: Support request cancellation.
 
 	log.Printf("rest.QueryPIndex pindexName: %s, requestBody: %s",
 		pindexName, requestBody)
