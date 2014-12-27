@@ -376,7 +376,15 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh <-chan bool // TODO: Support request cancellation.
+	var cancelCh <-chan bool
+
+	cn, ok := w.(http.CloseNotifier)
+	if ok && cn != nil {
+		cnc := cn.CloseNotify()
+		if cnc != nil {
+			cancelCh = cnc
+		}
+	}
 
 	log.Printf("rest.CountPIndex pindexName: %s", pindexName)
 
@@ -441,7 +449,15 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var cancelCh <-chan bool // TODO: Support request cancellation.
+	var cancelCh <-chan bool
+
+	cn, ok := w.(http.CloseNotifier)
+	if ok && cn != nil {
+		cnc := cn.CloseNotify()
+		if cnc != nil {
+			cancelCh = cnc
+		}
+	}
 
 	log.Printf("rest.QueryPIndex pindexName: %s, requestBody: %s",
 		pindexName, requestBody)
