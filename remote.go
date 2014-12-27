@@ -19,6 +19,8 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"
+	"github.com/blevesearch/bleve/index"
+	"github.com/blevesearch/bleve/index/store"
 )
 
 var httpPost = http.Post
@@ -178,4 +180,8 @@ func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
 			r.QueryURL, buf, resp)
 	}
 	return respBuf, err
+}
+
+func (r *PIndexClient) Advanced() (index.Index, store.KVStore, error) {
+	return nil, nil, pindexClientUnimplementedErr
 }
