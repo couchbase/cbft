@@ -153,10 +153,24 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	bindex, err := bleve.New(blevePath, &bleveParams.Mapping)
+	kvStoreName, ok := bleveParams.Store["kvStoreName"].(string)
+	if !ok || kvStoreName == "" {
+		kvStoreName = bleve.Config.DefaultKVStore
+	}
+	kvConfig := map[string]interface{}{
+		"create_if_missing": true,
+		"error_if_exists":   true,
+	}
+	for k, v := range bleveParams.Store {
+		kvConfig[k] = v
+	}
+
+	bindex, err :=
+		bleve.NewUsing(blevePath, &bleveParams.Mapping, kvStoreName, kvConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error: new bleve index, path: %s, err: %s",
-			path, err)
+		return nil, nil, fmt.Errorf("error: new bleve index, path: %s,"+
+			" kvStoreName: %s, kvConfig: %#v, err: %s",
+			path, kvStoreName, kvConfig, err)
 	}
 
 	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
