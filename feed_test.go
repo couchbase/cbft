@@ -158,8 +158,18 @@ func TestPrimaryFeed(t *testing.T) {
 	if df.ConsistencyWait("unknown-partition", "level", seq, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
+	df2 := NewPrimaryFeed("", BasicPartitionFunc, map[string]Dest{
+		"some-partition": &TestDest{},
+	})
+	if df2.ConsistencyWait("some-partition", "level", seq, nil) != nil {
+		t.Errorf("expected no err on some partition to TestDest")
+	}
+	_, err = df.Count(nil, nil)
+	if err == nil {
+		t.Errorf("expected err on counting a primary feed")
+	}
 	if df.Query(nil, nil, nil, nil) == nil {
-		t.Errorf("expected err on querying a dest feed")
+		t.Errorf("expected err on querying a primary feed")
 	}
 }
 
