@@ -2803,3 +2803,73 @@ func TestHandlersForIndexControl(t *testing.T) {
 
 	testRESTHandlers(t, tests, router)
 }
+
+func TestMultiFeedCurrentStats(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr.Write([]byte("hello"))
+	mr.Write([]byte("world"))
+
+	router, err := NewManagerRESTRouter(mgr, "static", "", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "create another index with primary feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "create another index with primary feed",
+			Path:   "/api/index/idx1",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "feed stats on a multi-index manager",
+			Path:   "/api/currentStats",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{`:      true,
+				`"idx0_`: true,
+				`"idx1_`: true,
+				`}`:      true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
