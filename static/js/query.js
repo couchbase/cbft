@@ -39,14 +39,12 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.results = null;
         $scope.numPages = 0;
 
-        if (!$scope.indexDef) {
-            return
-        }
-
         $location.search('q', $scope.query);
         $location.search('p', $scope.page);
 
-        var req = prepQueryRequest[$scope.indexDef.type]($scope);
+        var indexDefType = ($scope.indexDef && $scope.indexDef.type) || "bleve";
+
+        var req = prepQueryRequest[indexDefType]($scope);
         req.consistency = {
             "level": $scope.consistencyLevel,
             "vectors": JSON.parse($scope.consistencyVectors || "null"),
