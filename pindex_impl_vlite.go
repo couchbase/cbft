@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	log "github.com/couchbaselabs/clog"
 
@@ -725,9 +724,10 @@ func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 func (t *VLitePartition) applyBatchUnlocked() error {
 	if t.vlite.file != nil { // When not memory-only.
 		err := Time(func() error {
-			atomic.AddUint64(&t.vlite.stats.TotBatchStore, 1)
 			return t.vlite.store.Flush()
-		}, &t.vlite.stats.TimeBatchStore)
+		}, &t.vlite.stats.TimeBatchStore,
+			&t.vlite.stats.TotBatchStore,
+			&t.vlite.stats.MaxDurationBatchStore)
 		if err != nil {
 			return err
 		}

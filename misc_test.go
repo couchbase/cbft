@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestVersionGTE(t *testing.T) {
@@ -137,10 +138,21 @@ func TestTimeoutCancelChan(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	x := uint64(100)
-	Time(func() error { return nil }, &x)
-	if x < 100 {
-		t.Errorf("expected x to be >= 100")
+	count := uint64(10)
+	duration := uint64(100)
+	maxDuration := uint64(50)
+	Time(func() error {
+		time.Sleep(123 * time.Millisecond)
+		return nil
+	}, &duration, &count, &maxDuration)
+	if count <= 10 {
+		t.Errorf("expected count to be > 10")
+	}
+	if duration <= 100 {
+		t.Errorf("expected duration to be > 100")
+	}
+	if maxDuration <= 50 {
+		t.Errorf("expected maxDuration to be > 50")
 	}
 }
 

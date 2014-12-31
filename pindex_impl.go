@@ -83,8 +83,9 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 // ------------------------------------------------
 
 type PIndexStoreStats struct {
-	TotBatchStore  uint64
-	TimeBatchStore uint64
+	TotBatchStore         uint64
+	TimeBatchStore        uint64
+	MaxDurationBatchStore uint64
 }
 
 var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)

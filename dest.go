@@ -87,7 +87,8 @@ type Dest interface {
 }
 
 type DestStats struct {
-	TotError           uint64
+	TotError uint64
+
 	TotOnDataUpdate    uint64
 	TotOnDataDelete    uint64
 	TotOnSnapshotStart uint64
@@ -101,6 +102,13 @@ type DestStats struct {
 	TimeSetOpaque       uint64
 	TimeGetOpaque       uint64
 	TimeRollback        uint64
+
+	MaxDurationOnDataUpdate    uint64
+	MaxDurationOnDataDelete    uint64
+	MaxDurationOnSnapshotStart uint64
+	MaxDurationSetOpaque       uint64
+	MaxDurationGetOpaque       uint64
+	MaxDurationRollback        uint64
 }
 
 type DestPartitionFunc func(partition string, key []byte,

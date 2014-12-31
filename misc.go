@@ -158,10 +158,24 @@ func mustEncode(w io.Writer, i interface{}) {
 	}
 }
 
-func Time(f func() error, t *uint64) error {
-	ts := time.Now()
+func Time(f func() error, totalDuration, totalCount, maxDuration *uint64) error {
+	startTime := time.Now()
 	err := f()
-	atomic.AddUint64(t, uint64(time.Since(ts)))
+	duration := uint64(time.Since(startTime))
+	atomic.AddUint64(totalDuration, duration)
+	if totalCount != nil {
+		atomic.AddUint64(totalCount, 1)
+	}
+	if maxDuration != nil {
+		retry := true
+		for retry {
+			retry = false
+			md := atomic.LoadUint64(maxDuration)
+			if md < duration {
+				retry = !atomic.CompareAndSwapUint64(maxDuration, md, duration)
+			}
+		}
+	}
 	return err
 }
 

@@ -262,10 +262,10 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotOnDataUpdate, 1)
-
 		return dest.OnDataUpdate(partition, key, seq, req.Body)
-	}, &r.stats.TimeOnDataUpdate)
+	}, &r.stats.TimeOnDataUpdate,
+		&r.stats.TotOnDataUpdate,
+		&r.stats.MaxDurationOnDataUpdate)
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
@@ -277,10 +277,10 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotOnDataDelete, 1)
-
 		return dest.OnDataDelete(partition, key, seq)
-	}, &r.stats.TimeOnDataDelete)
+	}, &r.stats.TimeOnDataDelete,
+		&r.stats.TotOnDataDelete,
+		&r.stats.MaxDurationOnDataDelete)
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
@@ -292,10 +292,10 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotOnSnapshotStart, 1)
-
 		return dest.OnSnapshotStart(partition, snapStart, snapEnd)
-	}, &r.stats.TimeOnSnapshotStart)
+	}, &r.stats.TimeOnSnapshotStart,
+		&r.stats.TotOnSnapshotStart,
+		&r.stats.MaxDurationOnSnapshotStart)
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
@@ -306,10 +306,10 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotSetOpaque, 1)
-
 		return dest.SetOpaque(partition, value)
-	}, &r.stats.TimeSetOpaque)
+	}, &r.stats.TimeSetOpaque,
+		&r.stats.TotSetOpaque,
+		&r.stats.MaxDurationSetOpaque)
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (
@@ -321,12 +321,12 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotGetOpaque, 1)
-
 		value, lastSeq, err = dest.GetOpaque(partition)
 
 		return err
-	}, &r.stats.TimeGetOpaque)
+	}, &r.stats.TimeGetOpaque,
+		&r.stats.TotGetOpaque,
+		&r.stats.MaxDurationGetOpaque)
 
 	return value, lastSeq, err
 }
@@ -342,8 +342,8 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 			return err
 		}
 
-		atomic.AddUint64(&r.stats.TotRollback, 1)
-
 		return dest.Rollback(partition, rollbackSeq)
-	}, &r.stats.TimeRollback)
+	}, &r.stats.TimeRollback,
+		&r.stats.TotRollback,
+		&r.stats.MaxDurationRollback)
 }

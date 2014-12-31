@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	"github.com/blevesearch/bleve"
 
@@ -588,9 +587,10 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 
 func (t *BleveDestPartition) applyBatchUnlocked() error {
 	err := Time(func() error {
-		atomic.AddUint64(&t.bdest.stats.TotBatchStore, 1)
 		return t.bindex.Batch(t.batch)
-	}, &t.bdest.stats.TimeBatchStore)
+	}, &t.bdest.stats.TimeBatchStore,
+		&t.bdest.stats.TotBatchStore,
+		&t.bdest.stats.MaxDurationBatchStore)
 	if err != nil {
 		return err
 	}
