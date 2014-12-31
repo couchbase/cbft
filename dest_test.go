@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"fmt"
 	"io"
 	"testing"
 )
@@ -95,5 +96,55 @@ func TestBasicPartitionFunc(t *testing.T) {
 	s, err = BasicPartitionFunc("foo", nil, map[string]Dest{"foo": dest, "": dest2})
 	if err != nil || s != dest {
 		t.Errorf("expected BasicPartitionFunc to work on partition hit")
+	}
+}
+
+type ErrorOnlyDestProvider struct{}
+
+func (dp *ErrorOnlyDestProvider) Dest(partition string) (Dest, error) {
+	return nil, fmt.Errorf("always error for testing")
+}
+
+func (dp *ErrorOnlyDestProvider) Count(pindex *PIndex,
+	cancelCh <-chan bool) (uint64, error) {
+	return 0, fmt.Errorf("always error for testing")
+}
+
+func (dp *ErrorOnlyDestProvider) Query(pindex *PIndex, req []byte, res io.Writer,
+	cancelCh <-chan bool) error {
+	return fmt.Errorf("always error for testing")
+}
+
+func (dp *ErrorOnlyDestProvider) Stats(io.Writer) error {
+	return fmt.Errorf("always error for testing")
+}
+
+func (dp *ErrorOnlyDestProvider) Close() error {
+	return fmt.Errorf("always error for testing")
+}
+
+func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
+	df := &DestForwarder{&ErrorOnlyDestProvider{}}
+	if df.OnDataUpdate("", nil, 0, nil) == nil {
+		t.Errorf("expected err")
+	}
+	if df.OnDataDelete("", nil, 0) == nil {
+		t.Errorf("expected err")
+	}
+	if df.OnSnapshotStart("", 0, 0) == nil {
+		t.Errorf("expected err")
+	}
+	if df.SetOpaque("", nil) == nil {
+		t.Errorf("expected err")
+	}
+	value, lastSeq, err := df.GetOpaque("")
+	if err == nil || value != nil || lastSeq != 0 {
+		t.Errorf("expected err")
+	}
+	if df.Rollback("", 0) == nil {
+		t.Errorf("expected err")
+	}
+	if df.ConsistencyWait("", "", 0, nil) == nil {
+		t.Errorf("expected err")
 	}
 }
