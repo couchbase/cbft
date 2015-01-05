@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rcrowley/go-metrics"
+
 	"github.com/blevesearch/bleve"
 
 	log "github.com/couchbaselabs/clog"
@@ -87,6 +89,9 @@ func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
 		restart:    restart,
 		bindex:     bindex,
 		partitions: make(map[string]*BleveDestPartition),
+		stats: PIndexStoreStats{
+			TimerBatchStore: metrics.NewTimer(),
+		},
 	}
 }
 
@@ -434,19 +439,11 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 // ---------------------------------------------------------
 
 func (t *BleveDest) Stats(w io.Writer) error {
-	pss := PIndexStoreStats{}
-	AtomicCopyMetrics(&t.stats, &pss, nil)
-
-	j := json.NewEncoder(w)
-
 	_, err := w.Write(prefixPIndexStoreStats)
 	if err != nil {
 		return err
 	}
-	err = j.Encode(&pss)
-	if err != nil {
-		return err
-	}
+	t.stats.WriteJSON(w)
 	_, err = w.Write(jsonCloseBrace)
 
 	return err
@@ -586,11 +583,9 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 }
 
 func (t *BleveDestPartition) applyBatchUnlocked() error {
-	err := Time(func() error {
+	err := Timer(func() error {
 		return t.bindex.Batch(t.batch)
-	}, &t.bdest.stats.TimeBatchStore,
-		&t.bdest.stats.TotBatchStore,
-		&t.bdest.stats.MaxDurationBatchStore)
+	}, t.bdest.stats.TimerBatchStore)
 	if err != nil {
 		return err
 	}

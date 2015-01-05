@@ -14,6 +14,8 @@ package cbft
 import (
 	"fmt"
 	"io"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 type PIndexImpl interface{}
@@ -47,25 +49,30 @@ func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := pindexImplTypes[indexType]
 	if !exists || t == nil {
-		return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s", indexType)
+		return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s",
+			indexType)
 	}
 
 	return t.New(indexType, indexParams, path, restart)
 }
 
-func OpenPIndexImpl(indexType, path string, restart func()) (PIndexImpl, Dest, error) {
+func OpenPIndexImpl(indexType, path string, restart func()) (
+	PIndexImpl, Dest, error) {
 	t, exists := pindexImplTypes[indexType]
 	if !exists || t == nil {
-		return nil, nil, fmt.Errorf("error: OpenPIndexImpl indexType: %s", indexType)
+		return nil, nil, fmt.Errorf("error: OpenPIndexImpl"+
+			" indexType: %s", indexType)
 	}
 
 	return t.Open(indexType, path, restart)
 }
 
-func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) {
+func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
+	*PIndexImplType, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
 	if err != nil || indexDefs == nil {
-		return nil, fmt.Errorf("could not get indexDefs, indexName: %s, err: %v",
+		return nil, fmt.Errorf("could not get indexDefs,"+
+			" indexName: %s, err: %v",
 			indexName, err)
 	}
 	indexDef := indexDefs.IndexDefs[indexName]
@@ -74,7 +81,8 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 	}
 	pindexImplType := pindexImplTypes[indexDef.Type]
 	if pindexImplType == nil {
-		return nil, fmt.Errorf("no pindexImplType, indexName: %s, indexDef.Type: %s",
+		return nil, fmt.Errorf("no pindexImplType,"+
+			" indexName: %s, indexDef.Type: %s",
 			indexName, indexDef.Type)
 	}
 	return pindexImplType, nil
@@ -83,9 +91,13 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (*PIndexImplType, error) 
 // ------------------------------------------------
 
 type PIndexStoreStats struct {
-	TotBatchStore         uint64
-	TimeBatchStore        uint64
-	MaxDurationBatchStore uint64
+	TimerBatchStore metrics.Timer
+}
+
+func (d *PIndexStoreStats) WriteJSON(w io.Writer) {
+	w.Write([]byte(`{"TimerBatchStore":`))
+	writeTimerJSON(w, d.TimerBatchStore)
+	w.Write(jsonCloseBrace)
 }
 
 var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)

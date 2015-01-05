@@ -23,6 +23,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rcrowley/go-metrics"
+
 	log "github.com/couchbaselabs/clog"
 
 	"github.com/dustin/go-jsonpointer"
@@ -127,6 +129,9 @@ func NewVLite(vliteParams *VLiteParams, path string, file FileLike,
 		seqColl:    store.SetCollection("seq", nil),
 		restart:    restart,
 		partitions: make(map[string]*VLitePartition),
+		stats: PIndexStoreStats{
+			TimerBatchStore: metrics.NewTimer(),
+		},
 	}, nil
 }
 
@@ -528,19 +533,11 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 // ---------------------------------------------------------
 
 func (t *VLite) Stats(w io.Writer) error {
-	pss := PIndexStoreStats{}
-	AtomicCopyMetrics(&t.stats, &pss, nil)
-
-	j := json.NewEncoder(w)
-
 	_, err := w.Write(prefixPIndexStoreStats)
 	if err != nil {
 		return err
 	}
-	err = j.Encode(&pss)
-	if err != nil {
-		return err
-	}
+	t.stats.WriteJSON(w)
 	_, err = w.Write(jsonCloseBrace)
 
 	return err
@@ -723,11 +720,9 @@ func (t *VLitePartition) updateSeqUnlocked(seq uint64) error {
 
 func (t *VLitePartition) applyBatchUnlocked() error {
 	if t.vlite.file != nil { // When not memory-only.
-		err := Time(func() error {
+		err := Timer(func() error {
 			return t.vlite.store.Flush()
-		}, &t.vlite.stats.TimeBatchStore,
-			&t.vlite.stats.TotBatchStore,
-			&t.vlite.stats.MaxDurationBatchStore)
+		}, t.vlite.stats.TimerBatchStore)
 		if err != nil {
 			return err
 		}
