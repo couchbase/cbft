@@ -80,7 +80,7 @@ type DCPFeed struct {
 	m       sync.Mutex
 	closed  bool
 	lastErr error
-	stats   DestStats
+	stats   *DestStats
 }
 
 type DCPFeedParams struct {
@@ -164,6 +164,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 		params:     params,
 		pf:         pf,
 		dests:      dests,
+		stats:      NewDestStats(),
 	}
 
 	feed.bds, err = cbdatasource.NewBucketDataSource(
@@ -212,28 +213,20 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-
-	dst := DestStats{}
-	AtomicCopyMetrics(&t.stats, &dst, nil)
-
-	j := json.NewEncoder(w)
-
 	_, err = w.Write(prefixBucketDataSourceStats)
 	if err != nil {
 		return err
 	}
-	err = j.Encode(&bdss)
+	err = json.NewEncoder(w).Encode(&bdss)
 	if err != nil {
 		return err
 	}
+
 	_, err = w.Write(prefixDestStats)
 	if err != nil {
 		return err
 	}
-	err = j.Encode(&dst)
-	if err != nil {
-		return err
-	}
+	t.stats.WriteJSON(w)
 	_, err = w.Write(jsonCloseBrace)
 
 	return err
@@ -255,7 +248,7 @@ func (r *DCPFeed) OnError(err error) {
 
 func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	return Time(func() error {
+	return Timer(func() error {
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
 		if err != nil {
@@ -263,14 +256,12 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 		}
 
 		return dest.OnDataUpdate(partition, key, seq, req.Body)
-	}, &r.stats.TimeOnDataUpdate,
-		&r.stats.TotOnDataUpdate,
-		&r.stats.MaxDurationOnDataUpdate)
+	}, r.stats.TimerOnDataUpdate)
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 	req *gomemcached.MCRequest) error {
-	return Time(func() error {
+	return Timer(func() error {
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, key)
 		if err != nil {
@@ -278,14 +269,12 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 		}
 
 		return dest.OnDataDelete(partition, key, seq)
-	}, &r.stats.TimeOnDataDelete,
-		&r.stats.TotOnDataDelete,
-		&r.stats.MaxDurationOnDataDelete)
+	}, r.stats.TimerOnDataDelete)
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 	snapStart, snapEnd uint64, snapType uint32) error {
-	return Time(func() error {
+	return Timer(func() error {
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 		if err != nil {
@@ -293,13 +282,11 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 		}
 
 		return dest.OnSnapshotStart(partition, snapStart, snapEnd)
-	}, &r.stats.TimeOnSnapshotStart,
-		&r.stats.TotOnSnapshotStart,
-		&r.stats.MaxDurationOnSnapshotStart)
+	}, r.stats.TimerOnSnapshotStart)
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
-	return Time(func() error {
+	return Timer(func() error {
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 		if err != nil {
@@ -307,14 +294,12 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 		}
 
 		return dest.SetOpaque(partition, value)
-	}, &r.stats.TimeSetOpaque,
-		&r.stats.TotSetOpaque,
-		&r.stats.MaxDurationSetOpaque)
+	}, r.stats.TimerSetOpaque)
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 	value []byte, lastSeq uint64, err error) {
-	err = Time(func() error {
+	err = Timer(func() error {
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 		if err != nil {
@@ -324,15 +309,13 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 		value, lastSeq, err = dest.GetOpaque(partition)
 
 		return err
-	}, &r.stats.TimeGetOpaque,
-		&r.stats.TotGetOpaque,
-		&r.stats.MaxDurationGetOpaque)
+	}, r.stats.TimerGetOpaque)
 
 	return value, lastSeq, err
 }
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
-	return Time(func() error {
+	return Timer(func() error {
 		log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
 			" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
 
@@ -343,7 +326,5 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 		}
 
 		return dest.Rollback(partition, rollbackSeq)
-	}, &r.stats.TimeRollback,
-		&r.stats.TotRollback,
-		&r.stats.MaxDurationRollback)
+	}, r.stats.TimerRollback)
 }

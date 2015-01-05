@@ -14,6 +14,9 @@ package cbft
 import (
 	"fmt"
 	"io"
+	"sync/atomic"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 type Dest interface {
@@ -89,26 +92,43 @@ type Dest interface {
 type DestStats struct {
 	TotError uint64
 
-	TotOnDataUpdate    uint64
-	TotOnDataDelete    uint64
-	TotOnSnapshotStart uint64
-	TotSetOpaque       uint64
-	TotGetOpaque       uint64
-	TotRollback        uint64
+	TimerOnDataUpdate    metrics.Timer
+	TimerOnDataDelete    metrics.Timer
+	TimerOnSnapshotStart metrics.Timer
+	TimerSetOpaque       metrics.Timer
+	TimerGetOpaque       metrics.Timer
+	TimerRollback        metrics.Timer
+}
 
-	TimeOnDataUpdate    uint64
-	TimeOnDataDelete    uint64
-	TimeOnSnapshotStart uint64
-	TimeSetOpaque       uint64
-	TimeGetOpaque       uint64
-	TimeRollback        uint64
+func NewDestStats() *DestStats {
+	return &DestStats{
+		TimerOnDataUpdate:    metrics.NewTimer(),
+		TimerOnDataDelete:    metrics.NewTimer(),
+		TimerOnSnapshotStart: metrics.NewTimer(),
+		TimerSetOpaque:       metrics.NewTimer(),
+		TimerGetOpaque:       metrics.NewTimer(),
+		TimerRollback:        metrics.NewTimer(),
+	}
+}
 
-	MaxDurationOnDataUpdate    uint64
-	MaxDurationOnDataDelete    uint64
-	MaxDurationOnSnapshotStart uint64
-	MaxDurationSetOpaque       uint64
-	MaxDurationGetOpaque       uint64
-	MaxDurationRollback        uint64
+func (d *DestStats) WriteJSON(w io.Writer) {
+	t := atomic.LoadUint64(&d.TotError)
+	fmt.Fprintf(w, `{"TotError":%d`, t)
+
+	w.Write([]byte(`,"TimerOnDataUpdate":`))
+	writeTimerJSON(w, d.TimerOnDataUpdate)
+	w.Write([]byte(`,"TimerOnDataDelete":`))
+	writeTimerJSON(w, d.TimerOnDataDelete)
+	w.Write([]byte(`,"TimerOnSnapshotStart":`))
+	writeTimerJSON(w, d.TimerOnSnapshotStart)
+	w.Write([]byte(`,"TimerSetOpaque":`))
+	writeTimerJSON(w, d.TimerSetOpaque)
+	w.Write([]byte(`,"TimerGetOpaque":`))
+	writeTimerJSON(w, d.TimerGetOpaque)
+	w.Write([]byte(`,"TimerRollback":`))
+	writeTimerJSON(w, d.TimerRollback)
+
+	w.Write(jsonCloseBrace)
 }
 
 type DestPartitionFunc func(partition string, key []byte,

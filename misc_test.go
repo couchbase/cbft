@@ -156,13 +156,19 @@ func TestTime(t *testing.T) {
 	}
 }
 
+type TestACM struct {
+	TotError     uint64
+	TotRollback  uint64
+	TimeRollback uint64
+}
+
 func TestAtomicCopyMetrics(t *testing.T) {
-	src := &DestStats{
+	src := &TestACM{
 		TotError:     1,
 		TotRollback:  2,
 		TimeRollback: 3,
 	}
-	dst := DestStats{}
+	dst := TestACM{}
 	AtomicCopyMetrics(src, &dst, nil)
 	if !reflect.DeepEqual(src, &dst) {
 		t.Errorf("expected src == dst")

@@ -12,6 +12,8 @@
 package cbft
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"testing"
@@ -146,5 +148,19 @@ func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
 	}
 	if df.ConsistencyWait("", "", 0, nil) == nil {
 		t.Errorf("expected err")
+	}
+}
+
+func TestDestStatsWriteJSON(t *testing.T) {
+	ds := NewDestStats()
+	var buf bytes.Buffer
+	ds.WriteJSON(&buf)
+	m := map[string]interface{}{}
+	err := json.Unmarshal(buf.Bytes(), &m)
+	if err != nil {
+		t.Errorf("expected clean json, err: %v", err)
+	}
+	if m == nil || len(m) <= 0 {
+		t.Errorf("expected some m")
 	}
 }

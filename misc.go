@@ -23,10 +23,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/rcrowley/go-metrics"
+
 	log "github.com/couchbaselabs/clog"
 )
 
 var jsonNULL = []byte("null")
+var jsonOpenBrace = []byte("}")
 var jsonCloseBrace = []byte("}")
 
 // Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
@@ -179,6 +182,14 @@ func Time(f func() error, totalDuration, totalCount, maxDuration *uint64) error 
 	return err
 }
 
+func Timer(f func() error, t metrics.Timer) error {
+	var err error
+	t.Time(func() {
+		err = f()
+	})
+	return err
+}
+
 // AtomicCopyMetrics copies uint64 metrics from s to r (from source to
 // result), and also applies an optional fn function to each metric.
 // The fn is invoked with metrics from s and r, and can be used to
@@ -205,4 +216,28 @@ func AtomicCopyMetrics(s, r interface{},
 			atomic.StoreUint64(rvefp.(*uint64), fn(sv, rv))
 		}
 	}
+}
+
+var timerPercentiles = []float64{0.5, 0.75, 0.95, 0.99, 0.999}
+
+func writeTimerJSON(w io.Writer, timer metrics.Timer) {
+	t := timer.Snapshot()
+	p := t.Percentiles(timerPercentiles)
+
+	fmt.Fprintf(w, `{"count":%9d,`, t.Count())
+	fmt.Fprintf(w, `"min":%9d,`, t.Min())
+	fmt.Fprintf(w, `"max":%9d,`, t.Max())
+	fmt.Fprintf(w, `"mean":%12.2f,`, t.Mean())
+	fmt.Fprintf(w, `"stddev":%12.2f,`, t.StdDev())
+	fmt.Fprintf(w, `"percentiles":{`)
+	fmt.Fprintf(w, `"median":%12.2f,`, p[0])
+	fmt.Fprintf(w, `"75%%":%12.2f,`, p[1])
+	fmt.Fprintf(w, `"95%%":%12.2f,`, p[2])
+	fmt.Fprintf(w, `"99%%":%12.2f,`, p[3])
+	fmt.Fprintf(w, `"99.9%%":%12.2f},`, p[4])
+	fmt.Fprintf(w, `"rates":{`)
+	fmt.Fprintf(w, `"1-min":%12.2f,`, t.Rate1())
+	fmt.Fprintf(w, `"5-min":%12.2f,`, t.Rate5())
+	fmt.Fprintf(w, `"15-min":%12.2f,`, t.Rate15())
+	fmt.Fprintf(w, `"mean":%12.2f}}`, t.RateMean())
 }
