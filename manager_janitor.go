@@ -113,13 +113,16 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		log.Printf("  %+v", pi)
 	}
 
+	var errs []error
+
 	// First, teardown pindexes that need to be removed.
 	for _, removePIndex := range removePIndexes {
 		log.Printf("janitor removing pindex: %s", removePIndex.Name)
 		err = mgr.stopPIndex(removePIndex, true)
 		if err != nil {
-			return fmt.Errorf("error: janitor removing pindex: %s, err: %v",
-				removePIndex.Name, err)
+			errs = append(errs,
+				fmt.Errorf("error: janitor removing pindex: %s, err: %v",
+					removePIndex.Name, err))
 		}
 	}
 	// Then, (re-)create pindexes that we're missing.
@@ -127,8 +130,9 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		log.Printf("janitor adding pindex: %s", addPlanPIndex.Name)
 		err = mgr.startPIndex(addPlanPIndex)
 		if err != nil {
-			return fmt.Errorf("error: janitor adding pindex: %s, err: %v",
-				addPlanPIndex.Name, err)
+			errs = append(errs,
+				fmt.Errorf("error: janitor adding pindex: %s, err: %v",
+					addPlanPIndex.Name, err))
 		}
 	}
 
@@ -152,16 +156,27 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	for _, removeFeed := range removeFeeds {
 		err = mgr.stopFeed(removeFeed)
 		if err != nil {
-			return fmt.Errorf("error: janitor removing feed name: %s, err: %v",
-				removeFeed.Name(), err)
+			errs = append(errs,
+				fmt.Errorf("error: janitor removing feed name: %s, err: %v",
+					removeFeed.Name(), err))
 		}
 	}
 	// Then, (re-)create feeds that we're missing.
 	for _, addFeedTargetPIndexes := range addFeeds {
 		err = mgr.startFeed(addFeedTargetPIndexes)
 		if err != nil {
-			return fmt.Errorf("error: janitor adding feed, err: %v", err)
+			errs = append(errs,
+				fmt.Errorf("error: janitor adding feed, err: %v", err))
 		}
+	}
+
+	if len(errs) > 0 {
+		var s []string
+		for i, err := range errs {
+			s = append(s, fmt.Sprintf("#%d: %v", i, err))
+		}
+		return fmt.Errorf("janitor JanitorOnce errors: %d, %#v",
+			len(errs), s)
 	}
 
 	return nil
