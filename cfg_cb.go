@@ -197,7 +197,7 @@ func (a *CfgCB) GetCredentials() (string, string, string) {
 // ----------------------------------------------------------------
 
 func (r *CfgCB) OnError(err error) {
-	log.Printf("cfg-cb, error: %v", err)
+	log.Printf("cfg_cb: OnError, err: %v", err)
 }
 
 func (r *CfgCB) DataUpdate(vbucketId uint16, key []byte, seq uint64,
@@ -259,7 +259,7 @@ func (r *CfgCB) GetMetaData(vbucketId uint16) (
 }
 
 func (r *CfgCB) Rollback(vbucketId uint16, rollbackSeq uint64) error {
-	return fmt.Errorf("unimpl-rollback")
+	return fmt.Errorf("cfg_cb: rollback not implemented")
 }
 
 // ----------------------------------------------------------------

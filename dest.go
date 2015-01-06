@@ -146,6 +146,6 @@ func BasicPartitionFunc(partition string, key []byte,
 	if exists {
 		return dest, nil
 	}
-	return nil, fmt.Errorf("error: no dest for key: %s,"+
+	return nil, fmt.Errorf("dest: no dest for key: %s,"+
 		" partition: %s, dests: %#v", key, partition, dests)
 }

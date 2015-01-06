@@ -139,7 +139,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	if len(indexParams) > 0 {
 		err := json.Unmarshal([]byte(indexParams), bleveParams)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error: parse bleve params: %v", err)
+			return nil, nil, fmt.Errorf("bleve: parse params, err: %v", err)
 		}
 	}
 
@@ -172,7 +172,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	bindex, err :=
 		bleve.NewUsing(blevePath, &bleveParams.Mapping, kvStoreName, kvConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error: new bleve index, path: %s,"+
+		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
 			" kvStoreName: %s, kvConfig: %#v, err: %s",
 			path, kvStoreName, kvConfig, err)
 	}
@@ -191,7 +191,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 func OpenBlevePIndexImpl(indexType, path string,
 	restart func()) (PIndexImpl, Dest, error) {
 	if indexType == "bleve-mem" {
-		return nil, nil, fmt.Errorf("error: cannot re-open bleve-mem, path: %s", path)
+		return nil, nil, fmt.Errorf("bleve: cannot re-open bleve-mem, path: %s", path)
 	}
 
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "PINDEX_BLEVE_META")
@@ -202,7 +202,7 @@ func OpenBlevePIndexImpl(indexType, path string,
 	bleveParams := NewBleveParams()
 	err = json.Unmarshal(buf, bleveParams)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error: parse bleve params: %v", err)
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
 
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
@@ -223,7 +223,7 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	uint64, error) {
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("CountBlevePIndexImpl indexAlias error,"+
+		return 0, fmt.Errorf("bleve: CountBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
@@ -235,7 +235,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	var bleveQueryParams BleveQueryParams
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("QueryBlevePIndexImpl parsing bleveQueryParams,"+
+		return fmt.Errorf("bleve: QueryBlevePIndexImpl parsing bleveQueryParams,"+
 			" req: %s, err: %v", req, err)
 	}
 
@@ -274,7 +274,7 @@ func (t *BleveDest) Dest(partition string) (Dest, error) {
 func (t *BleveDest) getPartitionUnlocked(partition string) (
 	*BleveDestPartition, error) {
 	if t.bindex == nil {
-		return nil, fmt.Errorf("BleveDest already closed")
+		return nil, fmt.Errorf("bleve: BleveDest already closed")
 	}
 
 	bdp, exists := t.partitions[partition]
@@ -328,7 +328,7 @@ func (t *BleveDest) closeUnlocked() error {
 // ---------------------------------------------------------
 
 func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
-	log.Printf("bleve dest rollback, partition: %s, rollbackSeq: %d",
+	log.Printf("bleve: dest rollback, partition: %s, rollbackSeq: %d",
 		partition, rollbackSeq)
 
 	t.m.Lock()
@@ -353,7 +353,8 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 
 	err := t.closeUnlocked()
 	if err != nil {
-		return fmt.Errorf("BleveDest can't close during rollback, err: %v", err)
+		return fmt.Errorf("bleve: BleveDest can't close during rollback,"+
+			" err: %v", err)
 	}
 
 	os.RemoveAll(t.path)
@@ -411,7 +412,7 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	var bleveQueryParams BleveQueryParams
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("BleveDest.Query parsing bleveQueryParams,"+
+		return fmt.Errorf("bleve: BleveDest.Query parsing bleveQueryParams,"+
 			" req: %s, err: %v", req, err)
 	}
 
@@ -528,7 +529,7 @@ func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error)
 			return t.lastOpaque, 0, nil // No seqMax buf is a valid case.
 		}
 		if len(buf) != 8 {
-			return nil, 0, fmt.Errorf("unexpected size for seqMax bytes")
+			return nil, 0, fmt.Errorf("bleve: unexpected size for seqMax bytes")
 		}
 		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
@@ -648,7 +649,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
-		return nil, fmt.Errorf("bleveIndexAlias, err: %v", err)
+		return nil, fmt.Errorf("bleve: bleveIndexAlias, err: %v", err)
 	}
 
 	alias := bleve.NewIndexAlias()
@@ -672,7 +673,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 			bindex, ok := localPIndex.Impl.(bleve.Index)
 			if !ok || bindex == nil ||
 				!strings.HasPrefix(localPIndex.IndexType, "bleve") {
-				return fmt.Errorf("wrong type, localPIndex: %#v", localPIndex)
+				return fmt.Errorf("bleve: wrong type, localPIndex: %#v",
+					localPIndex)
 			}
 			alias.Add(bindex)
 			return nil

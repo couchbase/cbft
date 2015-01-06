@@ -20,12 +20,13 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	indexType, indexName, indexParams string, planParams PlanParams) error {
 	pindexImplType, exists := pindexImplTypes[indexType]
 	if !exists {
-		return fmt.Errorf("error: CreateIndex, unknown indexType: %s", indexType)
+		return fmt.Errorf("manager_api: CreateIndex, unknown indexType: %s",
+			indexType)
 	}
 	if pindexImplType.Validate != nil {
 		err := pindexImplType.Validate(indexType, indexName, indexParams)
 		if err != nil {
-			return fmt.Errorf("error: CreateIndex, invalid, err: %v", err)
+			return fmt.Errorf("manager_api: CreateIndex, invalid, err: %v", err)
 		}
 	}
 
@@ -33,24 +34,26 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	_, err := DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 		mgr.server)
 	if err != nil {
-		return fmt.Errorf("failed to connect to or retrieve information from source,"+
+		return fmt.Errorf("manager_api: failed to connect to"+
+			" or retrieve information from source,"+
 			" sourceType: %s, sourceName: %s, sourceUUID: %s, err: %v",
 			sourceType, sourceName, sourceUUID, err)
 	}
 
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
-		return fmt.Errorf("error: CfgGetIndexDefs err: %v", err)
+		return fmt.Errorf("manager_api: CfgGetIndexDefs err: %v", err)
 	}
 	if indexDefs == nil {
 		indexDefs = NewIndexDefs(mgr.version)
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		return fmt.Errorf("error: could not create index, indexDefs.ImplVersion: %s"+
-			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+		return fmt.Errorf("manager_api: could not create index,"+
+			" indexDefs.ImplVersion: %s > mgr.version: %s",
+			indexDefs.ImplVersion, mgr.version)
 	}
 	if _, exists := indexDefs.IndexDefs[indexName]; exists {
-		return fmt.Errorf("error: index exists, indexName: %s", indexName)
+		return fmt.Errorf("manager_api: index exists, indexName: %s", indexName)
 	}
 
 	indexUUID := NewUUID()
@@ -76,7 +79,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
-		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+		return fmt.Errorf("manager_api: could not save indexDefs, err: %v", err)
 	}
 
 	mgr.PlannerKick("api/CreateIndex, indexName: " + indexName)
@@ -93,15 +96,16 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 		return err
 	}
 	if indexDefs == nil {
-		return fmt.Errorf("error: indexes do not exist during deletion of indexName: %s",
+		return fmt.Errorf("manager_api: no indexes during deletion of indexName: %s",
 			indexName)
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		return fmt.Errorf("error: could not delete index, indexDefs.ImplVersion: %s"+
-			" > mgr.version: %s", indexDefs.ImplVersion, mgr.version)
+		return fmt.Errorf("manager_api: could not delete index,"+
+			" indexDefs.ImplVersion: %s > mgr.version: %s",
+			indexDefs.ImplVersion, mgr.version)
 	}
 	if _, exists := indexDefs.IndexDefs[indexName]; !exists {
-		return fmt.Errorf("error: index to delete does not exist, indexName: %s",
+		return fmt.Errorf("manager_api: index to delete missing, indexName: %s",
 			indexName)
 	}
 
@@ -114,7 +118,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
-		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+		return fmt.Errorf("manager_api: could not save indexDefs, err: %v", err)
 	}
 
 	mgr.PlannerKick("api/DeleteIndex, indexName: " + indexName)
@@ -123,27 +127,28 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 }
 
 // IndexControl is used to change runtime properties of an index.
-func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp, planFreezeOp string) error {
+func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
+	planFreezeOp string) error {
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
 	}
 	if indexDefs == nil {
-		return fmt.Errorf("error: no indexes, index read/write control, indexName: %s",
-			indexName)
+		return fmt.Errorf("manager_api: no indexes,"+
+			" index read/write control, indexName: %s", indexName)
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
-		return fmt.Errorf("error: index read/write control, indexName: %s,"+
-			" indexDefs.ImplVersion: %s > mgr.version: %s",
+		return fmt.Errorf("manager_api: index read/write control,"+
+			" indexName: %s, indexDefs.ImplVersion: %s > mgr.version: %s",
 			indexName, indexDefs.ImplVersion, mgr.version)
 	}
 	indexDef, exists := indexDefs.IndexDefs[indexName]
 	if !exists || indexDef == nil {
-		return fmt.Errorf("error: no index to read/write control, indexName: %s",
-			indexName)
+		return fmt.Errorf("manager_api: no index to read/write control,"+
+			" indexName: %s", indexName)
 	}
 	if indexUUID != "" && indexDef.UUID != indexUUID {
-		return fmt.Errorf("error: index.UUID mismatched")
+		return fmt.Errorf("manager_api: index.UUID mismatched")
 	}
 
 	if indexDef.PlanParams.NodePlanParams == nil {
@@ -185,7 +190,7 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp, planFree
 
 	_, err = CfgSetIndexDefs(mgr.cfg, indexDefs, cas)
 	if err != nil {
-		return fmt.Errorf("error: could not save indexDefs, err: %v", err)
+		return fmt.Errorf("manager_api: could not save indexDefs, err: %v", err)
 	}
 
 	return nil

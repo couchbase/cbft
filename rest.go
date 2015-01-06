@@ -186,14 +186,16 @@ func restProfileCPU(w http.ResponseWriter, r *http.Request) {
 	os.Remove(fname)
 	f, err := os.Create(fname)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("couldn't create file: %s, err: %v",
+		http.Error(w, fmt.Sprintf("profileCPU:"+
+			" couldn't create file: %s, err: %v",
 			fname, err), 500)
 		return
 	}
-	log.Printf("cpu profiling start, file: %s", fname)
+	log.Printf("profileCPU: start, file: %s", fname)
 	err = pprof.StartCPUProfile(f)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("couldn't start CPU profile, file: %s, err: %v",
+		http.Error(w, fmt.Sprintf("profileCPU:"+
+			" couldn't start CPU profile, file: %s, err: %v",
 			fname, err), 500)
 		return
 	}
@@ -201,7 +203,7 @@ func restProfileCPU(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Duration(secs) * time.Second)
 		pprof.StopCPUProfile()
 		f.Close()
-		log.Printf("cpu profiling end, file: %s", fname)
+		log.Printf("profileCPU: end, file: %s", fname)
 	}()
 	w.WriteHeader(204)
 }
@@ -215,7 +217,8 @@ func restProfileMemory(w http.ResponseWriter, r *http.Request) {
 	os.Remove(fname)
 	f, err := os.Create(fname)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("couldn't create file: %v, err: %v",
+		http.Error(w, fmt.Sprintf("profileMemory:"+
+			" couldn't create file: %v, err: %v",
 			fname, err), 500)
 		return
 	}

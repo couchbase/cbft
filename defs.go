@@ -16,7 +16,6 @@ import (
 	"reflect"
 
 	"github.com/couchbaselabs/blance"
-	log "github.com/couchbaselabs/clog"
 )
 
 // JSON/struct definitions of what the Manager stores in the Cfg.
@@ -338,9 +337,5 @@ func PIndexMatchesPlan(pindex *PIndex, planPIndex *PlanPIndex) bool {
 		pindex.SourceUUID == planPIndex.SourceUUID &&
 		pindex.SourceParams == planPIndex.SourceParams &&
 		pindex.SourcePartitions == planPIndex.SourcePartitions
-	if !same {
-		log.Printf("PIndexMatchesPlan false, pindex: %#v, planPIndex: %#v",
-			pindex, planPIndex)
-	}
 	return same
 }

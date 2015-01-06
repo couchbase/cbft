@@ -37,13 +37,13 @@ func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
 	if err != nil {
-		return fmt.Errorf("error: could not prepare TAP stream to server: %s,"+
+		return fmt.Errorf("feed_tap: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
 			mgr.server, bucketName, indexName, err)
 	}
 	err = feed.Start()
 	if err != nil {
-		return fmt.Errorf("error: could not start tap feed, server: %s, err: %v",
+		return fmt.Errorf("feed_tap: could not start tap feed, server: %s, err: %v",
 			mgr.server, err)
 	}
 	err = mgr.registerFeed(feed)
@@ -107,7 +107,7 @@ func (t *TAPFeed) Name() string {
 }
 
 func (t *TAPFeed) Start() error {
-	log.Printf("TAPFeed.Start, name: %s", t.Name())
+	log.Printf("feed_tap: start, name: %s", t.Name())
 
 	backoffFactor := t.params.BackoffFactor
 	if backoffFactor <= 0.0 {
@@ -126,7 +126,7 @@ func (t *TAPFeed) Start() error {
 		func() int {
 			progress, err := t.feed()
 			if err != nil {
-				log.Printf("TAPFeed name: %s, progress: %d, err: %v",
+				log.Printf("feed_tap: name: %s, progress: %d, err: %v",
 					t.Name(), progress, err)
 			}
 			return progress
@@ -154,7 +154,7 @@ func (t *TAPFeed) feed() (int, error) {
 
 	if t.bucketUUID != "" && t.bucketUUID != bucket.UUID {
 		bucket.Close()
-		return -1, fmt.Errorf("error: mismatched bucket uuid,"+
+		return -1, fmt.Errorf("feed_tap: mismatched bucket uuid,"+
 			"bucketName: %s, bucketUUID: %s, bucket.UUID: %s",
 			t.bucketName, t.bucketUUID, bucket.UUID)
 	}
@@ -180,7 +180,7 @@ func (t *TAPFeed) feed() (int, error) {
 	// TODO: this TAPFeed implementation currently only works against
 	// a couchbase cluster that has just a single node.
 
-	log.Printf("TapFeed: running, url: %s,"+
+	log.Printf("feed_tap: running, url: %s,"+
 		" poolName: %s, bucketName: %s, vbuckets: %#v",
 		t.url, t.poolName, t.bucketName, vbuckets)
 
@@ -198,7 +198,7 @@ loop:
 				break loop
 			}
 
-			log.Printf("TapFeed: received from url: %s,"+
+			log.Printf("feed_tap: received from url: %s,"+
 				" poolName: %s, bucketName: %s, opcode: %s, req: %#v",
 				t.url, t.poolName, t.bucketName, req.Opcode, req)
 

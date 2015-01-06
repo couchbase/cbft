@@ -48,13 +48,13 @@ func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
 	if err != nil {
-		return fmt.Errorf("error: could not prepare DCP feed to server: %s,"+
+		return fmt.Errorf("feed_dcp: could not prepare DCP feed to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
 			mgr.server, bucketName, indexName, err)
 	}
 	err = feed.Start()
 	if err != nil {
-		return fmt.Errorf("error: could not start dcp feed, server: %s, err: %v",
+		return fmt.Errorf("feed_dcp: could not start dcp feed, server: %s, err: %v",
 			mgr.server, err)
 	}
 	err = mgr.registerFeed(feed)
@@ -183,7 +183,7 @@ func (t *DCPFeed) Name() string {
 }
 
 func (t *DCPFeed) Start() error {
-	log.Printf("DCPFeed.Start, name: %s", t.Name())
+	log.Printf("feed_dcp: start, name: %s", t.Name())
 	return t.bds.Start()
 }
 
@@ -196,7 +196,7 @@ func (t *DCPFeed) Close() error {
 	t.closed = true
 	t.m.Unlock()
 
-	log.Printf("DCPFeed.Close, name: %s", t.Name())
+	log.Printf("feed_dcp: close, name: %s", t.Name())
 	return t.bds.Close()
 }
 
@@ -237,7 +237,7 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 func (r *DCPFeed) OnError(err error) {
 	// TODO: Check the type of the error if it's something
 	// serious / not-recoverable / needs user attention.
-	log.Printf("DCPFeed.OnError: %s: %v\n", r.name, err)
+	log.Printf("feed_dcp: on error: %s: %v\n", r.name, err)
 
 	atomic.AddUint64(&r.stats.TotError, 1)
 
@@ -316,7 +316,7 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 	return Timer(func() error {
-		log.Printf("DCPFeed.Rollback: %s: vbucketId: %d,"+
+		log.Printf("feed_dcp: rollback, name: %s: vbucketId: %d,"+
 			" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
 
 		partition, dest, err :=

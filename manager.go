@@ -164,7 +164,8 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 			// If a previous entry exists, do some double-checking
 			// before we overwrite the entry with our entry.
 			if nodeDefPrev.UUID != mgr.uuid {
-				return fmt.Errorf("some other node is running at our bindAddr: %s,"+
+				return fmt.Errorf("manager:"+
+					" some other node is running at our bindAddr: %s,"+
 					" with a different uuid: %s, than our uuid: %s",
 					mgr.bindAddr, nodeDefPrev.UUID, mgr.uuid)
 			}
@@ -196,11 +197,11 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 
 // Walk the data dir and register pindexes.
 func (mgr *Manager) LoadDataDir() error {
-	log.Printf("loading dataDir...")
+	log.Printf("manager: loading dataDir...")
 
 	dirEntries, err := ioutil.ReadDir(mgr.dataDir)
 	if err != nil {
-		return fmt.Errorf("error: could not read dataDir: %s, err: %v",
+		return fmt.Errorf("manager: could not read dataDir: %s, err: %v",
 			mgr.dataDir, err)
 	}
 
@@ -211,10 +212,10 @@ func (mgr *Manager) LoadDataDir() error {
 			continue // Skip the entry that doesn't match the naming pattern.
 		}
 
-		log.Printf("  opening pindex: %s", path)
+		log.Printf("manager: opening pindex: %s", path)
 		pindex, err := OpenPIndex(mgr, path)
 		if err != nil {
-			log.Printf("error: could not open pindex: %s, err: %v",
+			log.Printf("manager: could not open pindex: %s, err: %v",
 				path, err)
 			continue
 		}
@@ -222,7 +223,7 @@ func (mgr *Manager) LoadDataDir() error {
 		mgr.registerPIndex(pindex)
 	}
 
-	log.Printf("loading dataDir... done")
+	log.Printf("manager: loading dataDir... done")
 	return nil
 }
 
@@ -255,7 +256,7 @@ func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	defer mgr.m.Unlock()
 
 	if _, exists := mgr.pindexes[pindex.Name]; exists {
-		return fmt.Errorf("error: registered pindex already exists, name: %s",
+		return fmt.Errorf("manager: registered pindex already exists, name: %s",
 			pindex.Name)
 	}
 	mgr.pindexes[pindex.Name] = pindex
@@ -287,7 +288,7 @@ func (mgr *Manager) registerFeed(feed Feed) error {
 	defer mgr.m.Unlock()
 
 	if _, exists := mgr.feeds[feed.Name()]; exists {
-		return fmt.Errorf("error: registered feed already exists, name: %s",
+		return fmt.Errorf("manager: registered feed already exists, name: %s",
 			feed.Name())
 	}
 	mgr.feeds[feed.Name()] = feed

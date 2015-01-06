@@ -62,7 +62,7 @@ func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("CountAlias indexAlias error,"+
+		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
@@ -74,7 +74,8 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	var bleveQueryParams BleveQueryParams
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("QueryAlias parsing bleveQueryParams, err: %v", err)
+		return fmt.Errorf("alias: QueryAlias parsing bleveQueryParams,"+
+			" err: %v", err)
 	}
 
 	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
@@ -111,8 +112,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 
 	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
-		return nil, fmt.Errorf("could not get indexDefs, indexName: %s, err: %v",
-			indexName, err)
+		return nil, fmt.Errorf("alias: could not get indexDefs,"+
+			" indexName: %s, err: %v", indexName, err)
 	}
 
 	num := 0
@@ -122,42 +123,47 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 	fillAlias = func(aliasName, aliasUUID string) error {
 		aliasDef := indexDefs.IndexDefs[aliasName]
 		if aliasDef == nil {
-			return fmt.Errorf("could not get aliasDef, aliasName: %s, indexName: %s",
+			return fmt.Errorf("alias: could not get aliasDef,"+
+				" aliasName: %s, indexName: %s",
 				aliasName, indexName)
 		}
 		if aliasDef.Type != "alias" {
-			return fmt.Errorf("not alias type: %s, aliasName: %s, indexName: %s",
+			return fmt.Errorf("alias: not alias type: %s,"+
+				" aliasName: %s, indexName: %s",
 				aliasDef.Type, aliasName, indexName)
 		}
 		if aliasUUID != "" &&
 			aliasUUID != aliasDef.UUID {
-			return fmt.Errorf("mismatched aliasUUID: %s, aliasDef.UUID: %s,"+
-				" aliasName: %s, indexName: %s", aliasUUID, aliasDef.UUID,
-				aliasName, indexName)
+			return fmt.Errorf("alias: mismatched aliasUUID: %s,"+
+				" aliasDef.UUID: %s, aliasName: %s, indexName: %s",
+				aliasUUID, aliasDef.UUID, aliasName, indexName)
 		}
 
 		params := AliasParams{}
 		err := json.Unmarshal([]byte(aliasDef.Params), &params)
 		if err != nil {
-			return fmt.Errorf("could not parse aliasDef.Params: %s, aliasName: %s,"+
-				" indexName: %s", aliasDef.Params, aliasName, indexName)
+			return fmt.Errorf("alias: could not parse aliasDef.Params: %s,"+
+				" aliasName: %s, indexName: %s",
+				aliasDef.Params, aliasName, indexName)
 		}
 
 		for targetName, targetSpec := range params.Targets {
 			if num > maxAliasTargets {
-				return fmt.Errorf("too many alias targets,"+
+				return fmt.Errorf("alias: too many alias targets,"+
 					" perhaps there's a cycle, aliasName: %s, indexName: %s",
 					aliasName, indexName)
 			}
 			targetDef := indexDefs.IndexDefs[targetName]
 			if targetDef == nil {
-				return fmt.Errorf("no indexDef for targetName: %s, aliasName: %s,"+
-					" indexName: %s", targetName, aliasName, indexName)
+				return fmt.Errorf("alias: no indexDef for targetName: %s,"+
+					" aliasName: %s, indexName: %s",
+					targetName, aliasName, indexName)
 			}
 			if targetSpec.IndexUUID != "" &&
 				targetSpec.IndexUUID != targetDef.UUID {
-				return fmt.Errorf("mismatched targetSpec.UUID: %s, targetDef.UUID: %s,"+
-					" targetName: %s, aliasName: %s, indexName: %s",
+				return fmt.Errorf("alias: mismatched targetSpec.UUID: %s,"+
+					" targetDef.UUID: %s, targetName: %s,"+
+					" aliasName: %s, indexName: %s",
 					targetSpec.IndexUUID, targetDef.UUID, targetName,
 					aliasName, indexName)
 			}
@@ -177,7 +183,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				alias.Add(subAlias)
 				num += 1
 			} else {
-				return fmt.Errorf("unsupported alias target type: %s,"+
+				return fmt.Errorf("alias: unsupported target type: %s,"+
 					" targetName: %s, aliasName: %s, indexName: %s",
 					targetDef.Type, targetName, aliasName, indexName)
 			}

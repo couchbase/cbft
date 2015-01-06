@@ -318,7 +318,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`indexes do not exist`: true,
+				`no indexes`: true,
 			},
 		},
 		{
@@ -495,7 +495,8 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`index to delete does not exist`: true,
+				`err`: true,
+				`index to delete missing`: true,
 			},
 		},
 		{
@@ -506,7 +507,8 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: no indexDef, indexName: NOT-AN-INDEX`: true,
+				`err`: true,
+				`no indexDef, indexName: NOT-AN-INDEX`: true,
 			},
 		},
 		{
@@ -517,7 +519,8 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: no indexDef, indexName: NOT-AN-INDEX`: true,
+				`err`: true,
+				`no indexDef, indexName: NOT-AN-INDEX`: true,
 			},
 		},
 		{
@@ -604,7 +607,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`index to delete does not exist, indexName: idx0`: true,
+				`index to delete missing, indexName: idx0`: true,
 			},
 		},
 		{
@@ -862,7 +865,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   []byte(`>>>not json<<<`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: QueryBlevePIndexImpl parsing bleveQueryParams`: true,
+				`err`: true,
 			},
 		},
 		{
@@ -1102,7 +1105,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"this is not your level","vectors":{"idx0":{"0":1}}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: consistency wait unsupported level: this is not your level`: true,
+				`err`: true,
 			},
 		},
 		{
@@ -1113,7 +1116,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":["array","not","legal"]}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: json: cannot unmarshal array into Go value of type map[string]cbft.ConsistencyVector`: true,
+				`err`: true,
 			},
 		},
 		{
@@ -1261,7 +1264,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   []byte(`>>>not json<<<`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`err: QueryAlias parsing bleveQueryParams`: true,
+				`err`: true,
 			},
 		},
 		{

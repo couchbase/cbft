@@ -12,7 +12,7 @@
 package cbft
 
 import (
-	log "github.com/couchbaselabs/clog"
+	"fmt"
 )
 
 // NOTE: You *must* update VERSION if you change what's stored in the
@@ -34,8 +34,8 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 			// retry in case there was a race.
 			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
 			if err != nil {
-				log.Printf("error: could not save VERSION to cfg, err: %v", err)
-				return false, err
+				return false, fmt.Errorf("version:"+
+					" could not save VERSION to cfg, err: %v", err)
 			}
 			continue
 		}
@@ -47,8 +47,8 @@ func CheckVersion(cfg Cfg, myVersion string) (bool, error) {
 			// myVersion to cfg and retry in case there was a race.
 			_, err = cfg.Set(VERSION_KEY, []byte(myVersion), cas)
 			if err != nil {
-				log.Printf("error: could not save VERSION to cfg, err: %v", err)
-				return false, err
+				return false, fmt.Errorf("version:"+
+					" could not update VERSION in cfg, err: %v", err)
 			}
 			continue
 		}

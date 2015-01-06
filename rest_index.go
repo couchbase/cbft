@@ -94,7 +94,8 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	planPIndexes, planPIndexesByName, err := h.mgr.GetPlanPIndexes(false)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("GetPlanPIndexes, err: %v", err), 400)
+		showError(w, req,
+			fmt.Sprintf("rest_index: GetPlanPIndexes, err: %v", err), 400)
 		return
 	}
 
@@ -142,14 +143,14 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
 	if err != nil || pindexImplType.Count == nil {
-		showError(w, req, fmt.Sprintf("rest.Count,"+
+		showError(w, req, fmt.Sprintf("rest_index: Count,"+
 			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
 		return
 	}
 
 	count, err := pindexImplType.Count(h.mgr, indexName, indexUUID)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.Count,"+
+		showError(w, req, fmt.Sprintf("rest_index: Count,"+
 			" indexName: %s, err: %v", indexName, err), 500)
 		return
 	}
@@ -185,19 +186,20 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.Query,"+
+		showError(w, req, fmt.Sprintf("rest_index: Query,"+
 			" could not read request body, indexName: %s", indexName), 400)
 		return
 	}
 
 	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
 	if err != nil || pindexImplType.Query == nil {
-		showError(w, req, fmt.Sprintf("rest.Query,"+
+		showError(w, req, fmt.Sprintf("rest_index: Query,"+
 			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
 		return
 	}
 
-	log.Printf("rest.Query indexName: %s, requestBody: %s", indexName, requestBody)
+	log.Printf("rest_index: Query indexName: %s, requestBody: %s",
+		indexName, requestBody)
 
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
@@ -208,7 +210,7 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 			}{
 				Status: errCW.Status,
-				Message: fmt.Sprintf("rest.Query,"+
+				Message: fmt.Sprintf("rest_index: Query,"+
 					" indexName: %s, requestBody: %s, req: %#v, err: %v",
 					indexName, requestBody, req, err),
 				StartEndSeqs: errCW.StartEndSeqs,
@@ -220,13 +222,13 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		showError(w, req, fmt.Sprintf("rest.Query,"+
+		showError(w, req, fmt.Sprintf("rest_index: Query,"+
 			" indexName: %s, requestBody: %s, req: %#v, err: %v",
 			indexName, requestBody, req, err), 400)
 		return
 	}
 
-	log.Printf("rest.Query indexName: %s, DONE, requestBody: %s",
+	log.Printf("rest_index: Query indexName: %s, DONE, requestBody: %s",
 		indexName, requestBody)
 }
 
@@ -258,12 +260,12 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 
 	op := muxVariableLookup(req, "op")
 	if !h.allowedOps[op] {
-		showError(w, req, fmt.Sprintf("rest.IndexControl,"+
+		showError(w, req, fmt.Sprintf("rest_index: IndexControl,"+
 			" error: unsupported op: %s", op), 400)
 		return
 	}
 
-	err := fmt.Errorf("unknown op")
+	err := fmt.Errorf("rest_index: unknown op")
 	if h.control == "read" {
 		err = h.mgr.IndexControl(indexName, indexUUID, op, "", "")
 	} else if h.control == "write" {
@@ -272,7 +274,7 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 		err = h.mgr.IndexControl(indexName, indexUUID, "", "", op)
 	}
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.IndexControl,"+
+		showError(w, req, fmt.Sprintf("rest_index: IndexControl,"+
 			" control: %s, could not op: %s, err: %v", h.control, op, err), 400)
 		return
 	}
@@ -321,13 +323,13 @@ func NewGetPIndexHandler(mgr *Manager) *GetPIndexHandler {
 func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	pindexName := pindexNameLookup(req)
 	if pindexName == "" {
-		showError(w, req, "pindex name is required", 400)
+		showError(w, req, "rest_index: pindex name is required", 400)
 		return
 	}
 
 	pindex := h.mgr.GetPIndex(pindexName)
 	if pindex == nil {
-		showError(w, req, fmt.Sprintf("rest.GetPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: GetPIndex,"+
 			" no pindex, pindexName: %s", pindexName), 400)
 		return
 	}
@@ -354,25 +356,25 @@ func NewCountPIndexHandler(mgr *Manager) *CountPIndexHandler {
 func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	pindexName := pindexNameLookup(req)
 	if pindexName == "" {
-		showError(w, req, "pindex name is required", 400)
+		showError(w, req, "rest_index: pindex name is required", 400)
 		return
 	}
 
 	pindex := h.mgr.GetPIndex(pindexName)
 	if pindex == nil {
-		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
 			" no pindex, pindexName: %s", pindexName), 400)
 		return
 	}
 	if pindex.Dest == nil {
-		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
 			" no pindex.Dest, pindexName: %s", pindexName), 400)
 		return
 	}
 
 	pindexUUID := req.FormValue("pindexUUID")
 	if pindexUUID != "" && pindex.UUID != pindexUUID {
-		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
 			" wrong pindexUUID: %s, pindex.UUID: %s, pindexName: %s",
 			pindexUUID, pindex.UUID, pindexName), 400)
 		return
@@ -388,11 +390,11 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	log.Printf("rest.CountPIndex pindexName: %s", pindexName)
+	log.Printf("rest_index: CountPIndex pindexName: %s", pindexName)
 
 	count, err := pindex.Dest.Count(pindex, cancelCh)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.CountPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
 			" pindexName: %s, req: %#v, err: %v", pindexName, req, err), 400)
 		return
 	}
@@ -420,25 +422,25 @@ func NewQueryPIndexHandler(mgr *Manager) *QueryPIndexHandler {
 func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	pindexName := pindexNameLookup(req)
 	if pindexName == "" {
-		showError(w, req, "pindex name is required", 400)
+		showError(w, req, "rest_index: pindex name is required", 400)
 		return
 	}
 
 	pindex := h.mgr.GetPIndex(pindexName)
 	if pindex == nil {
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
 			" no pindex, pindexName: %s", pindexName), 400)
 		return
 	}
 	if pindex.Dest == nil {
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
 			" no pindex.Dest, pindexName: %s", pindexName), 400)
 		return
 	}
 
 	pindexUUID := req.FormValue("pindexUUID")
 	if pindexUUID != "" && pindex.UUID != pindexUUID {
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
 			" wrong pindexUUID: %s, pindex.UUID: %s, pindexName: %s",
 			pindexUUID, pindex.UUID, pindexName), 400)
 		return
@@ -446,7 +448,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
 			" could not read request body, pindexName: %s", pindexName), 400)
 		return
 	}
@@ -461,7 +463,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	log.Printf("rest.QueryPIndex pindexName: %s, requestBody: %s",
+	log.Printf("rest_index: QueryPIndex pindexName: %s, requestBody: %s",
 		pindexName, requestBody)
 
 	err = pindex.Dest.Query(pindex, requestBody, w, cancelCh)
@@ -473,7 +475,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 			}{
 				Status: errCW.Status,
-				Message: fmt.Sprintf("rest.QueryPIndex,"+
+				Message: fmt.Sprintf("rest_index: QueryPIndex,"+
 					" pindexName: %s, requestBody: %s, req: %#v, err: %v",
 					pindexName, requestBody, req, err),
 				StartEndSeqs: errCW.StartEndSeqs,
@@ -485,12 +487,12 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 			}
 		}
 
-		showError(w, req, fmt.Sprintf("rest.QueryPIndex,"+
+		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
 			" pindexName: %s, requestBody: %s, req: %#v, err: %v",
 			pindexName, requestBody, req, err), 400)
 		return
 	}
 
-	log.Printf("rest.QueryPIndex pindexName: %s, DONE, requestBody: %s",
+	log.Printf("rest_index: QueryPIndex pindexName: %s, DONE, requestBody: %s",
 		pindexName, requestBody)
 }

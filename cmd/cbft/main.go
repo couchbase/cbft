@@ -76,7 +76,7 @@ func main() {
 
 	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
-		log.Fatalf("error: could not create MsgRing, err: %v", err)
+		log.Fatalf("main: could not create MsgRing, err: %v", err)
 	}
 	log.SetOutput(mr)
 
@@ -86,7 +86,7 @@ func main() {
 	//
 	cfg, err := MainCfg(*cfgConnect, *dataDir)
 	if err != nil {
-		log.Fatalf("error: could not start cfg, cfgConnect: %s, err: %v",
+		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v",
 			*cfgConnect, err)
 		return
 	}
@@ -109,12 +109,12 @@ func main() {
 	}
 
 	http.Handle("/", router)
-	log.Printf("listening on: %v", *bindAddr)
+	log.Printf("main: listening on: %v", *bindAddr)
 	log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }
 
 func MainWelcome() {
-	log.Printf("%s started", os.Args[0])
+	log.Printf("main: %s started", os.Args[0])
 	if *logFlags != "" {
 		log.ParseLogFlag(*logFlags)
 	}
@@ -131,11 +131,11 @@ func MainUUID(dataDir string) (string, error) {
 		if uuid == "" {
 			return "", fmt.Errorf("error: could not parse uuidPath: %s", uuidPath)
 		}
-		log.Printf("manager uuid: %s", uuid)
-		log.Printf("manager uuid was reloaded")
+		log.Printf("main: manager uuid: %s", uuid)
+		log.Printf("main: manager uuid was reloaded")
 	} else {
-		log.Printf("manager uuid: %s", uuid)
-		log.Printf("manager uuid was generated")
+		log.Printf("main: manager uuid: %s", uuid)
+		log.Printf("main: manager uuid was generated")
 	}
 	err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
 	if err != nil {

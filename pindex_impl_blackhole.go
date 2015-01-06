@@ -23,11 +23,11 @@ func init() {
 		New:  NewBlackHolePIndexImpl,
 		Open: OpenBlackHolePIndexImpl,
 		Count: func(mgr *Manager, indexName, indexUUID string) (uint64, error) {
-			return 0, fmt.Errorf("blackhole is uncountable")
+			return 0, fmt.Errorf("blackhole: not countable")
 		},
 		Query: func(mgr *Manager, indexName, indexUUID string,
 			req []byte, res io.Writer) error {
-			return fmt.Errorf("blackhole is unqueryable")
+			return fmt.Errorf("blackhole: not queryable")
 		},
 		Description: "blackhole - ignores all incoming data" +
 			" and is not queryable; used for testing",
@@ -58,7 +58,7 @@ func OpenBlackHolePIndexImpl(indexType, path string, restart func()) (
 		return nil, nil, err
 	}
 	if len(buf) > 0 {
-		return nil, nil, fmt.Errorf("expected black.hole to be empty")
+		return nil, nil, fmt.Errorf("blackhole: expected empty black.hole")
 	}
 
 	dest := &BlackHole{path: path}

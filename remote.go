@@ -59,7 +59,7 @@ func (r *PIndexClient) Document(id string) (*document.Document, error) {
 
 func (r *PIndexClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
-		return 0, fmt.Errorf("no CountURL provided")
+		return 0, fmt.Errorf("remote: no CountURL provided")
 	}
 	resp, err := httpGet(r.CountURL)
 	if err != nil {
@@ -67,12 +67,12 @@ func (r *PIndexClient) DocCount() (uint64, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return 0, fmt.Errorf("pindexClient.DocCount got status code: %d,"+
+		return 0, fmt.Errorf("remote: count got status code: %d,"+
 			" docCountURL: %s, resp: %#v", resp.StatusCode, r.CountURL, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return 0, fmt.Errorf("pindexClient.DocCount error reading resp.Body,"+
+		return 0, fmt.Errorf("remote: count error reading resp.Body,"+
 			" docCountURL: %s, resp: %#v", r.CountURL, resp)
 	}
 	rv := struct {
@@ -81,7 +81,7 @@ func (r *PIndexClient) DocCount() (uint64, error) {
 	}{}
 	err = json.Unmarshal(respBuf, &rv)
 	if err != nil {
-		return 0, fmt.Errorf("pindexClient.DocCount error parsing respBuf: %s,"+
+		return 0, fmt.Errorf("remote: count error parsing respBuf: %s,"+
 			" docCountURL: %s, resp: %#v", respBuf, r.CountURL, resp)
 	}
 	return rv.Count, nil
@@ -89,7 +89,7 @@ func (r *PIndexClient) DocCount() (uint64, error) {
 
 func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 	if r.QueryURL == "" {
-		return nil, fmt.Errorf("no QueryURL provided")
+		return nil, fmt.Errorf("remote: no QueryURL provided")
 	}
 
 	bleveQueryParams := &BleveQueryParams{
@@ -110,7 +110,7 @@ func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, er
 	rv := &bleve.SearchResult{}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
-		return nil, fmt.Errorf("pindexClient.Search error parsing respBuf: %s,"+
+		return nil, fmt.Errorf("remote: search error parsing respBuf: %s,"+
 			" queryURL: %s", respBuf, r.QueryURL)
 	}
 	return rv, nil
@@ -169,13 +169,13 @@ func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("pindexClient.Query got status code: %d,"+
+		return nil, fmt.Errorf("remote: query got status code: %d,"+
 			" queryURL: %s, buf: %s, resp: %#v",
 			resp.StatusCode, r.QueryURL, buf, resp)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("pindexClient.Query error reading resp.Body,"+
+		return nil, fmt.Errorf("remote: query error reading resp.Body,"+
 			" queryURL: %s, buf: %s, resp: %#v",
 			r.QueryURL, buf, resp)
 	}

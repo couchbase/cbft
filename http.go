@@ -57,6 +57,6 @@ func RewriteURL(to string, h http.Handler) http.Handler {
 
 func showError(w http.ResponseWriter, r *http.Request,
 	msg string, code int) {
-	log.Printf("error: http: %v/%v", code, msg)
+	log.Printf("http: error code: %d, msg: %s", code, msg)
 	http.Error(w, msg, code)
 }

@@ -31,8 +31,8 @@ func ParsePartitionsToVBucketIds(dests map[string]Dest) ([]uint16, error) {
 		if partition != "" {
 			vbId, err := strconv.Atoi(partition)
 			if err != nil {
-				return nil, fmt.Errorf("error: could not parse partition: %s, err: %v",
-					partition, err)
+				return nil, fmt.Errorf("feed_cb:"+
+					" could not parse partition: %s, err: %v", partition, err)
 			}
 			vbuckets = append(vbuckets, uint16(vbId))
 		}
@@ -51,7 +51,7 @@ func VBucketIdToPartitionDest(pf DestPartitionFunc,
 	}
 	dest, err = pf(partition, key, dests)
 	if err != nil {
-		return "", nil, fmt.Errorf("error: VBucketIdToPartitionDest,"+
+		return "", nil, fmt.Errorf("feed_cb: VBucketIdToPartitionDest,"+
 			" partition func, vbucketId: %d, err: %v", vbucketId, err)
 	}
 	return partition, dest, err
@@ -76,7 +76,7 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	// TODO: how the halloween does GetBucket() api work without explicit auth?
 	bucket, err := couchbase.GetBucket(server, poolName, bucketName)
 	if err != nil {
-		return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
 			" failed GetBucket, server: %s, poolName: %s, bucketName: %s, err: %v",
 			server, poolName, bucketName, err)
 	}
@@ -84,7 +84,7 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 
 	vbm := bucket.VBServerMap()
 	if vbm == nil {
-		return nil, fmt.Errorf("error: DataSourcePartitions/couchbase"+
+		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
 			" no VBServerMap, server: %s, poolName: %s, bucketName: %s, err: %v",
 			server, poolName, bucketName, err)
 	}

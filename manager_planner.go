@@ -58,7 +58,7 @@ func (mgr *Manager) PlannerLoop() {
 		if m.op == WORK_KICK {
 			changed, err := mgr.PlannerOnce(m.msg)
 			if err != nil {
-				log.Printf("error: PlannerOnce, err: %v", err)
+				log.Printf("planner: PlannerOnce, err: %v", err)
 				// Keep looping as perhaps it's a transient issue.
 			} else if changed {
 				mgr.JanitorKick("the plans have changed")
@@ -66,7 +66,7 @@ func (mgr *Manager) PlannerLoop() {
 		} else if m.op == WORK_NOOP {
 			// NOOP.
 		} else {
-			err = fmt.Errorf("error: unknown planner op: %s, m: %#v", m.op, m)
+			err = fmt.Errorf("planner: unknown op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
 			if err != nil {
@@ -78,10 +78,10 @@ func (mgr *Manager) PlannerLoop() {
 }
 
 func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
-	log.Printf("planner awakes, reason: %s", reason)
+	log.Printf("planner: awakes, reason: %s", reason)
 
 	if mgr.cfg == nil { // Can occur during testing.
-		return false, fmt.Errorf("planner skipped due to nil cfg")
+		return false, fmt.Errorf("planner: skipped due to nil cfg")
 	}
 	err := PlannerCheckVersion(mgr.cfg, mgr.version)
 	if err != nil {
@@ -103,14 +103,14 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	planPIndexes, err :=
 		CalcPlan(indexDefs, nodeDefs, planPIndexesPrev, mgr.version, mgr.server)
 	if err != nil {
-		return false, fmt.Errorf("planner ended on CalcPlan, err: %v", err)
+		return false, fmt.Errorf("planner: CalcPlan, err: %v", err)
 	}
 	if SamePlanPIndexes(planPIndexes, planPIndexesPrev) {
 		return false, nil
 	}
 	_, err = CfgSetPlanPIndexes(mgr.cfg, planPIndexes, cas)
 	if err != nil {
-		return false, fmt.Errorf("planner could not save new plan,"+
+		return false, fmt.Errorf("planner: could not save new plan,"+
 			" perhaps a concurrent planner won, cas: %d, err: %v",
 			cas, err)
 	}
@@ -120,10 +120,10 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 func PlannerCheckVersion(cfg Cfg, version string) error {
 	ok, err := CheckVersion(cfg, version)
 	if err != nil {
-		return fmt.Errorf("planner skipped on CheckVersion err: %v", err)
+		return fmt.Errorf("planner: CheckVersion err: %v", err)
 	}
 	if !ok {
-		return fmt.Errorf("planner skipped with version too low: %v", version)
+		return fmt.Errorf("planner: version too low: %v", version)
 	}
 	return nil
 }
@@ -131,41 +131,42 @@ func PlannerCheckVersion(cfg Cfg, version string) error {
 func PlannerGetIndexDefs(cfg Cfg, version string) (*IndexDefs, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("planner skipped on CfgGetIndexDefs err: %v", err)
+		return nil, fmt.Errorf("planner: CfgGetIndexDefs err: %v", err)
 	}
 	if indexDefs == nil {
-		return nil, fmt.Errorf("planner ended since no IndexDefs")
+		return nil, fmt.Errorf("planner: ended since no IndexDefs")
 	}
 	if VersionGTE(version, indexDefs.ImplVersion) == false {
-		return nil, fmt.Errorf("planner ended since indexDefs.ImplVersion: %s"+
+		return nil, fmt.Errorf("planner: indexDefs.ImplVersion: %s"+
 			" > version: %s", indexDefs.ImplVersion, version)
 	}
 	return indexDefs, nil
 }
 
-func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (*NodeDefs, error) {
+func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (
+	*NodeDefs, error) {
 	nodeDefs, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil {
-		return nil, fmt.Errorf("planner skipped on CfgGetNodeDefs err: %v", err)
+		return nil, fmt.Errorf("planner: CfgGetNodeDefs err: %v", err)
 	}
 	if nodeDefs == nil {
-		return nil, fmt.Errorf("planner ended since no NodeDefs")
+		return nil, fmt.Errorf("planner: ended since no NodeDefs")
 	}
 	if VersionGTE(version, nodeDefs.ImplVersion) == false {
-		return nil, fmt.Errorf("planner ended since nodeDefs.ImplVersion: %s"+
+		return nil, fmt.Errorf("planner: nodeDefs.ImplVersion: %s"+
 			" > version: %s", nodeDefs.ImplVersion, version)
 	}
 	nodeDef, exists := nodeDefs.NodeDefs[bindAddr]
 	if !exists || nodeDef == nil {
-		return nil, fmt.Errorf("planner ended since no NodeDef, bindAddr: %s", bindAddr)
+		return nil, fmt.Errorf("planner: no NodeDef, bindAddr: %s", bindAddr)
 	}
 	if nodeDef.ImplVersion != version {
-		return nil, fmt.Errorf("planner ended since NodeDef, bindAddr: %s,"+
+		return nil, fmt.Errorf("planner: ended since NodeDef, bindAddr: %s,"+
 			" NodeDef.ImplVersion: %s != version: %s",
 			bindAddr, nodeDef.ImplVersion, version)
 	}
 	if nodeDef.UUID != uuid {
-		return nil, fmt.Errorf("planner ended since NodeDef, bindAddr: %s,"+
+		return nil, fmt.Errorf("planner: ended since NodeDef, bindAddr: %s,"+
 			" NodeDef.UUID: %s != uuid: %s",
 			bindAddr, nodeDef.UUID, uuid)
 	}
@@ -179,7 +180,7 @@ func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (*NodeDefs, err
 		}
 	}
 	if !isPlanner {
-		return nil, fmt.Errorf("planner ended since node, bindAddr: %s,"+
+		return nil, fmt.Errorf("planner: ended since node, bindAddr: %s,"+
 			" is not a planner, tags: %#v", bindAddr, nodeDef.Tags)
 	}
 	return nodeDefs, nil
@@ -188,13 +189,13 @@ func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (*NodeDefs, err
 func PlannerGetPlanPIndexes(cfg Cfg, version string) (*PlanPIndexes, uint64, error) {
 	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(cfg)
 	if err != nil {
-		return nil, 0, fmt.Errorf("planner skipped on CfgGetPlanPIndexes err: %v", err)
+		return nil, 0, fmt.Errorf("planner: CfgGetPlanPIndexes err: %v", err)
 	}
 	if planPIndexesPrev == nil {
 		planPIndexesPrev = NewPlanPIndexes(version)
 	}
 	if VersionGTE(version, planPIndexesPrev.ImplVersion) == false {
-		return nil, 0, fmt.Errorf("planner ended on planPIndexesPrev.ImplVersion: %s"+
+		return nil, 0, fmt.Errorf("planner: planPIndexesPrev.ImplVersion: %s"+
 			" > version: %s", planPIndexesPrev.ImplVersion, version)
 	}
 	return planPIndexesPrev, cas, nil
@@ -246,7 +247,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		planPIndexesForIndex, err :=
 			splitIndexDefIntoPlanPIndexes(indexDef, server, planPIndexes)
 		if err != nil {
-			log.Printf("error: planner could not splitIndexDefIntoPlanPIndexes,"+
+			log.Printf("planner: could not splitIndexDefIntoPlanPIndexes,"+
 				" indexDef: %#v, server: %s, err: %v", indexDef, server, err)
 			continue // Keep planning the other IndexDefs.
 		}
@@ -261,7 +262,8 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		planPIndexes.Warnings[indexDef.Name] = warnings
 
 		for _, warning := range warnings {
-			log.Printf("indexDef.Name: %s, PlanNextMap warning: %s, indexDef: %#v",
+			log.Printf("planner: indexDef.Name: %s,"+
+				" PlanNextMap warning: %s, indexDef: %#v",
 				indexDef.Name, warning, indexDef)
 		}
 	}
@@ -345,7 +347,7 @@ func splitIndexDefIntoPlanPIndexes(indexDef *IndexDef, server string,
 	sourcePartitionsArr, err := DataSourcePartitions(indexDef.SourceType,
 		indexDef.SourceName, indexDef.SourceUUID, indexDef.SourceParams, server)
 	if err != nil {
-		return nil, fmt.Errorf("planner could not get partitions,"+
+		return nil, fmt.Errorf("planner: could not get partitions,"+
 			" indexDef: %#v, server: %s, err: %v", indexDef, server, err)
 	}
 

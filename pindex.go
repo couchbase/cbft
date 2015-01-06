@@ -74,7 +74,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 	impl, dest, err := NewPIndexImpl(indexType, indexParams, path, restart)
 	if err != nil {
 		os.RemoveAll(path)
-		return nil, fmt.Errorf("error: new indexType: %s, indexParams: %s,"+
+		return nil, fmt.Errorf("pindex: new indexType: %s, indexParams: %s,"+
 			" path: %s, err: %s", indexType, indexParams, path, err)
 	}
 
@@ -108,7 +108,7 @@ func NewPIndex(mgr *Manager, name, uuid,
 	if err != nil {
 		dest.Close()
 		os.RemoveAll(path)
-		return nil, fmt.Errorf("error: could not save PINDEX_META_FILENAME,"+
+		return nil, fmt.Errorf("pindex: could not save PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
 	}
 
@@ -119,14 +119,14 @@ func NewPIndex(mgr *Manager, name, uuid,
 func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
-		return nil, fmt.Errorf("error: could not load PINDEX_META_FILENAME,"+
+		return nil, fmt.Errorf("pindex: could not load PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
 	}
 
 	pindex := &PIndex{}
 	err = json.Unmarshal(buf, pindex)
 	if err != nil {
-		return nil, fmt.Errorf("error: could not parse pindex json,"+
+		return nil, fmt.Errorf("pindex: could not parse pindex json,"+
 			" path: %s, err: %v", path, err)
 	}
 
@@ -139,8 +139,8 @@ func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 
 	impl, dest, err := OpenPIndexImpl(pindex.IndexType, path, restart)
 	if err != nil {
-		return nil, fmt.Errorf("error: could not open indexType: %s, path: %s, err: %v",
-			pindex.IndexType, path, err)
+		return nil, fmt.Errorf("pindex: could not open indexType: %s,"+
+			" path: %s, err: %v", pindex.IndexType, path, err)
 	}
 
 	pindex.Path = path
@@ -201,7 +201,8 @@ func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not retrieve wanted nodeDefs, err: %v", err)
+		return nil, nil, fmt.Errorf("pindex: could not retrieve wanted nodeDefs,"+
+			" err: %v", err)
 	}
 
 	// Returns true if the node has the "pindex" tag.
@@ -223,12 +224,14 @@ func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 
 	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not retrieve allPlanPIndexes, err: %v", err)
+		return nil, nil, fmt.Errorf("pindex: could not retrieve allPlanPIndexes,"+
+			" err: %v", err)
 	}
 
 	planPIndexes, exists := allPlanPIndexes[indexName]
 	if !exists || len(planPIndexes) <= 0 {
-		return nil, nil, fmt.Errorf("no planPIndexes for indexName: %s", indexName)
+		return nil, nil, fmt.Errorf("pindex: no planPIndexes for indexName: %s",
+			indexName)
 	}
 
 	localPIndexes = make([]*PIndex, 0)
@@ -269,7 +272,8 @@ build_loop:
 			}
 		}
 
-		return nil, nil, fmt.Errorf("no node covers planPIndex: %#v", planPIndex)
+		return nil, nil, fmt.Errorf("pindex: no node covers planPIndex: %#v",
+			planPIndex)
 	}
 
 	return localPIndexes, remotePlanPIndexes, nil

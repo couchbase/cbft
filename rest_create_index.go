@@ -36,7 +36,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
-		showError(w, req, "index name is required", 400)
+		showError(w, req, "rest_create_index: index name is required", 400)
 		return
 	}
 
@@ -64,7 +64,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	if planParamsStr != "" {
 		err := json.Unmarshal([]byte(planParamsStr), planParams)
 		if err != nil {
-			showError(w, req, fmt.Sprintf("error parsing planParams: %s, err: %v",
+			showError(w, req, fmt.Sprintf("rest_create_index:"+
+				" error parsing planParams: %s, err: %v",
 				planParamsStr, err), 400)
 			return
 		}
@@ -73,7 +74,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 		indexType, indexName, string(indexParams), *planParams)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error creating index: %s, err: %v",
+		showError(w, req, fmt.Sprintf("rest_create_index:"+
+			" error creating index: %s, err: %v",
 			indexName, err), 400)
 		return
 	}

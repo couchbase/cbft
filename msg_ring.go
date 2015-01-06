@@ -26,10 +26,10 @@ type MsgRing struct {
 
 func NewMsgRing(inner io.Writer, ringSize int) (*MsgRing, error) {
 	if inner == nil {
-		return nil, fmt.Errorf("need a non-nil inner io.Writer param")
+		return nil, fmt.Errorf("msg_ring: nil inner io.Writer")
 	}
 	if ringSize <= 0 {
-		return nil, fmt.Errorf("need a positive ring size")
+		return nil, fmt.Errorf("msg_ring: non-positive ring size")
 	}
 	return &MsgRing{
 		inner: inner,

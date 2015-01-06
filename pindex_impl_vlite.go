@@ -177,7 +177,7 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 	if len(indexParams) > 0 {
 		err := json.Unmarshal([]byte(indexParams), &vliteParams)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error: parse vlite params: %v", err)
+			return nil, nil, fmt.Errorf("vlite: parse params, err: %v", err)
 		}
 	}
 
@@ -223,7 +223,8 @@ func NewVLitePIndexImpl(indexType, indexParams, path string,
 func OpenVLitePIndexImpl(indexType, path string,
 	restart func()) (PIndexImpl, Dest, error) {
 	if indexType == "vlite-mem" {
-		return nil, nil, fmt.Errorf("error: cannot re-open vlite-mem, path: %s", path)
+		return nil, nil, fmt.Errorf("vlite: cannot re-open vlite-mem,"+
+			" path: %s", path)
 	}
 
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "VLITE_META")
@@ -234,7 +235,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 	vliteParams := VLiteParams{}
 	err = json.Unmarshal(buf, &vliteParams)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error: parse vlite params: %v", err)
+		return nil, nil, fmt.Errorf("vlite: parse params, err: %v", err)
 	}
 
 	pathStore := path + string(os.PathSeparator) + "store.gkvlite"
@@ -258,7 +259,7 @@ func CountVLitePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	uint64, error) {
 	vg, err := vliteGatherer(mgr, indexName, indexUUID, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("CountVLitePIndexImpl indexAlias error,"+
+		return 0, fmt.Errorf("vlite: CountVLitePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
@@ -270,7 +271,7 @@ func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	vliteQueryParams := NewVLiteQueryParams()
 	err := json.Unmarshal(req, vliteQueryParams)
 	if err != nil {
-		return fmt.Errorf("QueryVLitePIndexImpl parsing vliteQueryParams,"+
+		return fmt.Errorf("vlite: QueryVLitePIndexImpl parsing vliteQueryParams,"+
 			" req: %s, err: %v", req, err)
 	}
 
@@ -296,7 +297,7 @@ func (t *VLite) Dest(partition string) (Dest, error) {
 
 func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) {
 	if t.store == nil {
-		return nil, fmt.Errorf("VLite already closed")
+		return nil, fmt.Errorf("vlite: already closed")
 	}
 
 	bdp, exists := t.partitions[partition]
@@ -347,7 +348,7 @@ func (t *VLite) closeUnlocked() error {
 // ---------------------------------------------------------
 
 func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
-	log.Printf("vlite dest rollback, partition: %s, rollbackSeq: %d",
+	log.Printf("vlite: dest rollback, partition: %s, rollbackSeq: %d",
 		partition, rollbackSeq)
 
 	t.m.Lock()
@@ -367,7 +368,7 @@ func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 
 	err := t.closeUnlocked()
 	if err != nil {
-		return fmt.Errorf("VLite can't close during rollback, err: %v", err)
+		return fmt.Errorf("vlite: can't close during rollback, err: %v", err)
 	}
 
 	os.RemoveAll(t.path)
@@ -430,7 +431,7 @@ func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 	vliteQueryParams := NewVLiteQueryParams()
 	err := json.Unmarshal(req, vliteQueryParams)
 	if err != nil {
-		return fmt.Errorf("VLite.Query parsing vliteQueryParams,"+
+		return fmt.Errorf("vlite: parsing vliteQueryParams,"+
 			" req: %s, err: %v", req, err)
 	}
 
@@ -478,7 +479,7 @@ func (t *VLite) CountMainColl(cancelCh <-chan bool) (uint64, error) {
 
 	numItems, _, err := mainCollRO.GetTotals()
 	if err != nil {
-		return 0, fmt.Errorf("VLite.Count get totals err: %v", err)
+		return 0, fmt.Errorf("vlite: get totals err: %v", err)
 	}
 
 	return numItems, nil
@@ -499,7 +500,7 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 		}
 	}
 
-	log.Printf("QueryMain startInclusive: %s, endExclusive: %s",
+	log.Printf("vlite: QueryMain startInclusive: %s, endExclusive: %s",
 		startInclusive, endExclusive)
 
 	totVisits := uint64(0)
@@ -557,12 +558,12 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 	if t.vlite.params.Path != "" {
 		secVal, err := jsonpointer.Find(val, t.vlite.params.Path)
 		if err != nil {
-			log.Printf("jsonpointer path: %s, key: %s, val: %s, err: %v",
+			log.Printf("vlite: jsonpointer path: %s, key: %s, val: %s, err: %v",
 				t.vlite.params.Path, key, val, err)
 			return nil // TODO: Return or report error here?
 		}
 		if len(secVal) <= 0 {
-			log.Printf("no matching path: %s, key: %s, val: %s",
+			log.Printf("vlite: no matching path: %s, key: %s, val: %s",
 				t.vlite.params.Path, key, val)
 			return nil // TODO: Return or report error here?
 		}
@@ -579,7 +580,7 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 		storeVal = EMPTY_BYTES
 	}
 
-	log.Printf("OnDataUpdate, storeKey: %s", storeKey)
+	log.Printf("vlite: OnDataUpdate, storeKey: %s", storeKey)
 
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()
@@ -589,19 +590,19 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 		if err != nil && len(backKey) > 0 {
 			_, err := t.vlite.mainColl.Delete(backKey)
 			if err != nil {
-				log.Printf("mainColl.Delete err: %v", err)
+				log.Printf("vlite: mainColl.Delete err: %v", err)
 			}
 		}
 
 		err = t.vlite.backColl.Set(key, storeKey)
 		if err != nil {
-			log.Printf("backColl.Set err: %v", err)
+			log.Printf("vlite: backColl.Set err: %v", err)
 		}
 	}
 
 	err := t.vlite.mainColl.Set(storeKey, storeVal)
 	if err != nil {
-		log.Printf("mainColl.Set err: %v", err)
+		log.Printf("vlite: mainColl.Set err: %v", err)
 	}
 
 	return t.updateSeqUnlocked(seq)
@@ -665,7 +666,7 @@ func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
 			return opaqueBuf, 0, nil // No seqMax buf is a valid case.
 		}
 		if len(seqBuf) != 8 {
-			return nil, 0, fmt.Errorf("unexpected size for seqMax bytes")
+			return nil, 0, fmt.Errorf("vlite: unexpected size for seqMax bytes")
 		}
 		t.seqMax = binary.BigEndian.Uint64(seqBuf[0:8])
 	}
@@ -760,7 +761,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	localPIndexes, remotePlanPIndexes, err :=
 		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
 	if err != nil {
-		return nil, fmt.Errorf("vliteGatherer, err: %v", err)
+		return nil, fmt.Errorf("vlite: gatherer, err: %v", err)
 	}
 
 	rv := &VLiteGatherer{}
@@ -784,7 +785,8 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 			vlite, ok := localPIndex.Impl.(*VLite)
 			if !ok || vlite == nil ||
 				!strings.HasPrefix(localPIndex.IndexType, "vlite") {
-				return fmt.Errorf("wrong type, localPIndex: %#v", localPIndex)
+				return fmt.Errorf("vlite: nil impl or wrong type,"+
+					" localPIndex: %#v", localPIndex)
 			}
 			rv.localVLites = append(rv.localVLites, vlite)
 			return nil

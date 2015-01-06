@@ -53,7 +53,7 @@ func (mgr *Manager) JanitorLoop() {
 	}
 
 	for m := range mgr.janitorCh {
-		log.Printf("janitor awakes, reason: %s", m.msg)
+		log.Printf("janitor: awakes, reason: %s", m.msg)
 
 		var err error
 		if m.op == WORK_KICK {
@@ -61,7 +61,7 @@ func (mgr *Manager) JanitorLoop() {
 			if err != nil {
 				// Keep looping as perhaps it's a transient issue.
 				// TODO: perhaps need a rescheduled janitor kick.
-				log.Printf("error: JanitorOnce, err: %v", err)
+				log.Printf("janitor: JanitorOnce, err: %v", err)
 			}
 		} else if m.op == WORK_NOOP {
 			// NOOP.
@@ -70,7 +70,7 @@ func (mgr *Manager) JanitorLoop() {
 		} else if m.op == JANITOR_REMOVE_PINDEX {
 			mgr.stopPIndex(m.obj.(*PIndex), true)
 		} else {
-			err = fmt.Errorf("error: unknown janitor op: %s, m: %#v", m.op, m)
+			err = fmt.Errorf("janitor: unknown op: %s, m: %#v", m.op, m)
 		}
 		if m.resCh != nil {
 			if err != nil {
@@ -83,7 +83,7 @@ func (mgr *Manager) JanitorLoop() {
 
 func (mgr *Manager) JanitorOnce(reason string) error {
 	if mgr.cfg == nil { // Can occur during testing.
-		return fmt.Errorf("janitor skipped due to nil cfg")
+		return fmt.Errorf("janitor: skipped due to nil cfg")
 	}
 
 	// NOTE: The janitor doesn't reconfirm that we're a wanted node
@@ -92,11 +92,11 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 
 	planPIndexes, _, err := CfgGetPlanPIndexes(mgr.cfg)
 	if err != nil {
-		return fmt.Errorf("janitor skipped on CfgGetPlanPIndexes err: %v", err)
+		return fmt.Errorf("janitor: skipped on CfgGetPlanPIndexes err: %v", err)
 	}
 	if planPIndexes == nil {
 		// Might happen if janitor wins an initialization race.
-		return fmt.Errorf("janitor skipped on nil planPIndexes")
+		return fmt.Errorf("janitor: skipped on nil planPIndexes")
 	}
 
 	currFeeds, currPIndexes := mgr.CurrentMaps()
@@ -104,11 +104,11 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	addPlanPIndexes, removePIndexes :=
 		CalcPIndexesDelta(mgr.uuid, currPIndexes, planPIndexes)
 
-	log.Printf("janitor pindexes to add: %d", len(addPlanPIndexes))
+	log.Printf("janitor: pindexes to add: %d", len(addPlanPIndexes))
 	for _, ppi := range addPlanPIndexes {
 		log.Printf("  %+v", ppi)
 	}
-	log.Printf("janitor pindexes to remove: %d", len(removePIndexes))
+	log.Printf("janitor: pindexes to remove: %d", len(removePIndexes))
 	for _, pi := range removePIndexes {
 		log.Printf("  %+v", pi)
 	}
@@ -117,21 +117,21 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 
 	// First, teardown pindexes that need to be removed.
 	for _, removePIndex := range removePIndexes {
-		log.Printf("janitor removing pindex: %s", removePIndex.Name)
+		log.Printf("janitor: removing pindex: %s", removePIndex.Name)
 		err = mgr.stopPIndex(removePIndex, true)
 		if err != nil {
 			errs = append(errs,
-				fmt.Errorf("error: janitor removing pindex: %s, err: %v",
+				fmt.Errorf("janitor: removing pindex: %s, err: %v",
 					removePIndex.Name, err))
 		}
 	}
 	// Then, (re-)create pindexes that we're missing.
 	for _, addPlanPIndex := range addPlanPIndexes {
-		log.Printf("janitor adding pindex: %s", addPlanPIndex.Name)
+		log.Printf("janitor: adding pindex: %s", addPlanPIndex.Name)
 		err = mgr.startPIndex(addPlanPIndex)
 		if err != nil {
 			errs = append(errs,
-				fmt.Errorf("error: janitor adding pindex: %s, err: %v",
+				fmt.Errorf("janitor: adding pindex: %s, err: %v",
 					addPlanPIndex.Name, err))
 		}
 	}
@@ -141,13 +141,13 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 	addFeeds, removeFeeds :=
 		CalcFeedsDelta(mgr.uuid, planPIndexes, currFeeds, currPIndexes)
 
-	log.Printf("janitor feeds to add:")
+	log.Printf("janitor: feeds to add:")
 	for _, targetPIndexes := range addFeeds {
 		if len(targetPIndexes) > 0 {
 			log.Printf("  %s", FeedName(targetPIndexes[0]))
 		}
 	}
-	log.Printf("janitor feeds to remove:")
+	log.Printf("janitor: feeds to remove:")
 	for _, removeFeed := range removeFeeds {
 		log.Printf("  %s", removeFeed.Name())
 	}
@@ -157,7 +157,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		err = mgr.stopFeed(removeFeed)
 		if err != nil {
 			errs = append(errs,
-				fmt.Errorf("error: janitor removing feed name: %s, err: %v",
+				fmt.Errorf("janitor: stopping feed, name: %s, err: %v",
 					removeFeed.Name(), err))
 		}
 	}
@@ -166,7 +166,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		err = mgr.startFeed(addFeedTargetPIndexes)
 		if err != nil {
 			errs = append(errs,
-				fmt.Errorf("error: janitor adding feed, err: %v", err))
+				fmt.Errorf("janitor: adding feed, err: %v", err))
 		}
 	}
 
@@ -175,7 +175,7 @@ func (mgr *Manager) JanitorOnce(reason string) error {
 		for i, err := range errs {
 			s = append(s, fmt.Sprintf("#%d: %v", i, err))
 		}
-		return fmt.Errorf("janitor JanitorOnce errors: %d, %#v",
+		return fmt.Errorf("janitor: JanitorOnce errors: %d, %#v",
 			len(errs), s)
 	}
 
@@ -301,12 +301,12 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	if err == nil {
 		pindex, err = OpenPIndex(mgr, path)
 		if err != nil {
-			log.Printf("startPIndex, OpenPIndex error, cleaning up and"+
+			log.Printf("janitor: startPIndex, OpenPIndex error, cleaning up and"+
 				" trying NewPIndex, path: %s, err: %v", path, err)
 			os.RemoveAll(path)
 		} else {
 			if !PIndexMatchesPlan(pindex, planPIndex) {
-				log.Printf("startPIndex, pindex does not match plan,"+
+				log.Printf("janitor: startPIndex, pindex does not match plan,"+
 					" cleaning up and trying NewPIndex, path: %s, err: %v",
 					path, err)
 				pindex.Close(true)
@@ -328,7 +328,7 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 			planPIndex.SourcePartitions,
 			path)
 		if err != nil {
-			return fmt.Errorf("error: NewPIndex, name: %s, err: %v",
+			return fmt.Errorf("janitor: NewPIndex, name: %s, err: %v",
 				planPIndex.Name, err)
 		}
 	}
@@ -349,7 +349,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 		for _, dest := range feed.Dests() {
 			if dest == pindex.Dest {
 				if err := mgr.stopFeed(feed); err != nil {
-					panic(fmt.Sprintf("error: could not stop feed, err: %v", err))
+					panic(fmt.Sprintf("janitor: could not stop feed, err: %v", err))
 				}
 			}
 		}
@@ -357,7 +357,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 
 	pindexUnreg := mgr.unregisterPIndex(pindex.Name)
 	if pindexUnreg != nil && pindexUnreg != pindex {
-		panic("unregistered pindex isn't the one we're stopping")
+		panic("janitor: unregistered pindex isn't the one we're stopping")
 	}
 
 	return pindex.Close(remove)
@@ -376,12 +376,13 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 	dests := make(map[string]Dest)
 	for _, pindex := range pindexes {
 		if f := FeedName(pindex); f != feedName {
-			panic(fmt.Sprintf("error: unexpected feedName: %s != %s", f, feedName))
+			panic(fmt.Sprintf("janitor: unexpected feedName: %s != %s",
+				f, feedName))
 		}
 
 		addSourcePartition := func(sourcePartition string) {
 			if _, exists := dests[sourcePartition]; exists {
-				panic(fmt.Sprintf("error: startFeed saw sourcePartition collision: %s",
+				panic(fmt.Sprintf("janitor: startFeed sourcePartition collision: %s",
 					sourcePartition))
 			}
 			dests[sourcePartition] = pindex.Dest
@@ -416,7 +417,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	dests map[string]Dest) error {
 	feedType, exists := feedTypes[sourceType]
 	if !exists || feedType == nil {
-		return fmt.Errorf("error: unknown sourceType: %s", sourceType)
+		return fmt.Errorf("janitor: unknown sourceType: %s", sourceType)
 	}
 
 	return feedType.Start(mgr, feedName, indexName, indexUUID,
@@ -426,7 +427,7 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 func (mgr *Manager) stopFeed(feed Feed) error {
 	feedUnreg := mgr.unregisterFeed(feed.Name())
 	if feedUnreg != nil && feedUnreg != feed {
-		panic("error: unregistered feed isn't the one we're closing")
+		panic("janitor: unregistered feed isn't the one we're closing")
 	}
 
 	// NOTE: We're depending on feed to synchronously close, so we

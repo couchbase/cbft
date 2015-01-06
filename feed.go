@@ -56,7 +56,7 @@ func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
 	feedType, exists := feedTypes[sourceType]
 	if !exists || feedType == nil {
-		return nil, fmt.Errorf("error: partitions unknown sourceType: %s", sourceType)
+		return nil, fmt.Errorf("feed: unknown sourceType: %s", sourceType)
 	}
 
 	return feedType.Partitions(sourceType, sourceName, sourceUUID, sourceParams, server)

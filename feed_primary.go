@@ -91,7 +91,7 @@ func PrimaryFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	if sourceParams != "" {
 		err := json.Unmarshal([]byte(sourceParams), dsp)
 		if err != nil {
-			return nil, fmt.Errorf("error: DataSourcePartitions/dest"+
+			return nil, fmt.Errorf("feed_primary: DataSourcePartitions/dest"+
 				" could not parse sourceParams: %s, err: %v", sourceParams, err)
 		}
 	}
@@ -109,7 +109,7 @@ func (t *PrimaryFeed) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnDataUpdate(partition, key, seq, val)
 }
@@ -118,7 +118,7 @@ func (t *PrimaryFeed) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnDataDelete(partition, key, seq)
 }
@@ -127,7 +127,7 @@ func (t *PrimaryFeed) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
 }
@@ -136,7 +136,7 @@ func (t *PrimaryFeed) SetOpaque(partition string,
 	value []byte) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.SetOpaque(partition, value)
 }
@@ -145,7 +145,7 @@ func (t *PrimaryFeed) GetOpaque(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return nil, 0, fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.GetOpaque(partition)
 }
@@ -154,7 +154,7 @@ func (t *PrimaryFeed) Rollback(partition string,
 	rollbackSeq uint64) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.Rollback(partition, rollbackSeq)
 }
@@ -165,7 +165,7 @@ func (t *PrimaryFeed) ConsistencyWait(partition string,
 	cancelCh <-chan bool) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
-		return fmt.Errorf("error: PrimaryFeed pf, err: %v", err)
+		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
 	return dest.ConsistencyWait(partition,
 		consistencyLevel, consistencySeq, cancelCh)

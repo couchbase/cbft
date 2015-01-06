@@ -49,7 +49,7 @@ func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := pindexImplTypes[indexType]
 	if !exists || t == nil {
-		return nil, nil, fmt.Errorf("error: NewPIndexImpl indexType: %s",
+		return nil, nil, fmt.Errorf("pindex_impl: NewPIndexImpl indexType: %s",
 			indexType)
 	}
 
@@ -60,7 +60,7 @@ func OpenPIndexImpl(indexType, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := pindexImplTypes[indexType]
 	if !exists || t == nil {
-		return nil, nil, fmt.Errorf("error: OpenPIndexImpl"+
+		return nil, nil, fmt.Errorf("pindex_impl: OpenPIndexImpl"+
 			" indexType: %s", indexType)
 	}
 
@@ -71,17 +71,18 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 	*PIndexImplType, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
 	if err != nil || indexDefs == nil {
-		return nil, fmt.Errorf("could not get indexDefs,"+
+		return nil, fmt.Errorf("pindex_impl: could not get indexDefs,"+
 			" indexName: %s, err: %v",
 			indexName, err)
 	}
 	indexDef := indexDefs.IndexDefs[indexName]
 	if indexDef == nil {
-		return nil, fmt.Errorf("no indexDef, indexName: %s", indexName)
+		return nil, fmt.Errorf("pindex_impl: no indexDef,"+
+			" indexName: %s", indexName)
 	}
 	pindexImplType := pindexImplTypes[indexDef.Type]
 	if pindexImplType == nil {
-		return nil, fmt.Errorf("no pindexImplType,"+
+		return nil, fmt.Errorf("pindex_impl: no pindexImplType,"+
 			" indexName: %s, indexDef.Type: %s",
 			indexName, indexDef.Type)
 	}

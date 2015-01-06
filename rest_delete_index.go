@@ -29,13 +29,14 @@ func NewDeleteIndexHandler(mgr *Manager) *DeleteIndexHandler {
 func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
-		showError(w, req, "index name is required", 400)
+		showError(w, req, "rest_delete_index: index name is required", 400)
 		return
 	}
 
 	err := h.mgr.DeleteIndex(indexName)
 	if err != nil {
-		showError(w, req, fmt.Sprintf("error deleting index, err: %v", err), 400)
+		showError(w, req, fmt.Sprintf("rest_delete_index:"+
+			" error deleting index, err: %v", err), 400)
 		return
 	}
 

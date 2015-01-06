@@ -64,7 +64,7 @@ func (c *CfgMem) Set(key string, val []byte, cas uint64) (
 	prevEntry, exists := c.Entries[key]
 	if cas == 0 {
 		if exists {
-			return 0, fmt.Errorf("error: entry already exists, key: %s", key)
+			return 0, fmt.Errorf("cfg_mem: entry already exists, key: %s", key)
 		}
 	} else { // cas != 0
 		if !exists || cas != prevEntry.CAS {

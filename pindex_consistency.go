@@ -70,7 +70,7 @@ func ConsistencyWaitDone(partition string, cancelCh <-chan bool,
 		rv := map[string][]uint64{}
 		rv[partition] = []uint64{seqStart, currSeq()}
 
-		err := fmt.Errorf("ConsistencyWaitDone cancelled")
+		err := fmt.Errorf("pindex_consistency: ConsistencyWaitDone cancelled")
 
 		return &ErrorConsistencyWait{ // TODO: track stats.
 			Err:          err,
@@ -168,7 +168,7 @@ func ConsistencyWaitGroup(indexName string,
 	if cancelCh != nil {
 		select {
 		case <-cancelCh:
-			return fmt.Errorf("cancelled")
+			return fmt.Errorf("pindex_consistency: ConsistencyWaitGroup cancelled")
 		default:
 		}
 	}
@@ -230,8 +230,8 @@ func RunConsistencyWaitQueue(
 				close(cwr.DoneCh)
 			}
 		} else {
-			cwr.DoneCh <- fmt.Errorf("consistency wait unsupported level: %s,"+
-				" cwr: %#v", cwr.ConsistencyLevel, cwr)
+			cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
+				" unsupported level: %s, cwr: %#v", cwr.ConsistencyLevel, cwr)
 			close(cwr.DoneCh)
 		}
 
@@ -243,7 +243,7 @@ func RunConsistencyWaitQueue(
 	m.Lock()
 	defer m.Unlock()
 
-	err := fmt.Errorf("consistency wait closed")
+	err := fmt.Errorf("pindex_consistency: wait queue closed")
 
 	for _, cwr := range *cwrQueue {
 		// TODO: Perhaps extra goroutine here isn't necessary, but the
