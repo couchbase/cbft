@@ -27,6 +27,8 @@ import (
 	"github.com/blevesearch/bleve"
 
 	log "github.com/couchbaselabs/clog"
+
+	_ "github.com/couchbaselabs/cbft/bleve_metrics"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
