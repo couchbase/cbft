@@ -286,13 +286,14 @@ func (mgr *Manager) startPIndex(planPIndex *PlanPIndex) error {
 	if err == nil {
 		pindex, err = OpenPIndex(mgr, path)
 		if err != nil {
-			fmt.Printf("OpenPIndex error, cleaning up and"+
+			log.Printf("startPIndex, OpenPIndex error, cleaning up and"+
 				" trying NewPIndex, path: %s, err: %v", path, err)
 			os.RemoveAll(path)
 		} else {
 			if !PIndexMatchesPlan(pindex, planPIndex) {
-				fmt.Printf("pindex does not match plan, cleaning up and"+
-					" trying NewPIndex, path: %s, err: %v", path, err)
+				log.Printf("startPIndex, pindex does not match plan,"+
+					" cleaning up and trying NewPIndex, path: %s, err: %v",
+					path, err)
 				pindex.Close(true)
 				pindex = nil
 			}
