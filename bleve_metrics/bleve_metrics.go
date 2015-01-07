@@ -133,6 +133,29 @@ func (s *Store) Writer() (store.KVWriter, error) {
 }
 
 func (s *Store) WriteJSON(w io.Writer) {
+	w.Write([]byte(`{"TimerReaderGet":`))
+	WriteTimerJSON(w, s.TimerReaderGet)
+	w.Write([]byte(`,"TimerReaderIterator":`))
+	WriteTimerJSON(w, s.TimerReaderIterator)
+	w.Write([]byte(`,"TimerWriterGet":`))
+	WriteTimerJSON(w, s.TimerWriterGet)
+	w.Write([]byte(`,"TimerWriterIterator":`))
+	WriteTimerJSON(w, s.TimerWriterIterator)
+	w.Write([]byte(`,"TimerWriterSet":`))
+	WriteTimerJSON(w, s.TimerWriterSet)
+	w.Write([]byte(`,"TimerWriterDelete":`))
+	WriteTimerJSON(w, s.TimerWriterDelete)
+	w.Write([]byte(`,"TimerIteratorSeekFirst":`))
+	WriteTimerJSON(w, s.TimerIteratorSeekFirst)
+	w.Write([]byte(`,"TimerIteratorSeek":`))
+	WriteTimerJSON(w, s.TimerIteratorSeek)
+	w.Write([]byte(`,"TimerIteratorNext":`))
+	WriteTimerJSON(w, s.TimerIteratorNext)
+	w.Write([]byte(`,"TimerBatchMerge":`))
+	WriteTimerJSON(w, s.TimerBatchMerge)
+	w.Write([]byte(`,"TimerBatchExecute":`))
+	WriteTimerJSON(w, s.TimerBatchExecute)
+	w.Write([]byte(`}`))
 }
 
 func (w *Reader) Get(key []byte) (v []byte, err error) {
@@ -250,4 +273,31 @@ func (w *Batch) Execute() (err error) {
 
 func (w *Batch) Close() error {
 	return w.o.Close()
+}
+
+// NOTE: This is copy & pasted from cbft as otherwise there
+// would be an import cycle.
+
+var timerPercentiles = []float64{0.5, 0.75, 0.95, 0.99, 0.999}
+
+func WriteTimerJSON(w io.Writer, timer metrics.Timer) {
+	t := timer.Snapshot()
+	p := t.Percentiles(timerPercentiles)
+
+	fmt.Fprintf(w, `{"count":%9d,`, t.Count())
+	fmt.Fprintf(w, `"min":%9d,`, t.Min())
+	fmt.Fprintf(w, `"max":%9d,`, t.Max())
+	fmt.Fprintf(w, `"mean":%12.2f,`, t.Mean())
+	fmt.Fprintf(w, `"stddev":%12.2f,`, t.StdDev())
+	fmt.Fprintf(w, `"percentiles":{`)
+	fmt.Fprintf(w, `"median":%12.2f,`, p[0])
+	fmt.Fprintf(w, `"75%%":%12.2f,`, p[1])
+	fmt.Fprintf(w, `"95%%":%12.2f,`, p[2])
+	fmt.Fprintf(w, `"99%%":%12.2f,`, p[3])
+	fmt.Fprintf(w, `"99.9%%":%12.2f},`, p[4])
+	fmt.Fprintf(w, `"rates":{`)
+	fmt.Fprintf(w, `"1-min":%12.2f,`, t.Rate1())
+	fmt.Fprintf(w, `"5-min":%12.2f,`, t.Rate5())
+	fmt.Fprintf(w, `"15-min":%12.2f,`, t.Rate15())
+	fmt.Fprintf(w, `"mean":%12.2f}}`, t.RateMean())
 }

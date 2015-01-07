@@ -28,7 +28,7 @@ import (
 
 	log "github.com/couchbaselabs/clog"
 
-	_ "github.com/couchbaselabs/cbft/bleve_metrics"
+	"github.com/couchbaselabs/cbft/bleve_metrics"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
@@ -447,6 +447,18 @@ func (t *BleveDest) Stats(w io.Writer) error {
 		return err
 	}
 	t.stats.WriteJSON(w)
+
+	t.m.Lock()
+	_, kvs, err := t.bindex.Advanced()
+	if err == nil && kvs != nil {
+		kvsBleveMetrics, ok := kvs.(*bleve_metrics.Store)
+		if ok {
+			w.Write([]byte(`,"bleveMetrics":`))
+			kvsBleveMetrics.WriteJSON(w)
+		}
+	}
+	t.m.Unlock()
+
 	_, err = w.Write(jsonCloseBrace)
 
 	return err
