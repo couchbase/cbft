@@ -30,6 +30,11 @@ type ConsistencyParams struct {
 }
 
 // Key is partition, value is seq.
+//
+// TODO: To support issue 26, allow key of the ConsistencyVector to
+// optionally have a partition uuid, like "partition,uuid".  For
+// example, a DCP data source might have the key as
+// "vbucketId,vbucketUUID".
 type ConsistencyVector map[string]uint64
 
 type ConsistencyWaiter interface {
