@@ -158,6 +158,10 @@ func (s *Store) WriteJSON(w io.Writer) {
 	w.Write([]byte(`}`))
 }
 
+func (s *Store) Actual() store.KVStore {
+	return s.o
+}
+
 func (w *Reader) Get(key []byte) (v []byte, err error) {
 	w.s.TimerReaderGet.Time(func() {
 		v, err = w.o.Get(key)
