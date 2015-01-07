@@ -5,11 +5,11 @@ build:
 	go build -o ./cbft ./cmd/cbft
 
 build-leveldb:
-	go build ./...
+	go build -tags leveldb ./...
 	go build -tags leveldb -o ./cbft ./cmd/cbft
 
 build-forestdb:
-	go build ./...
+	go build -tags forestdb ./...
 	go build -tags forestdb -o ./cbft ./cmd/cbft
 
 test:
