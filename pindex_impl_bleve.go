@@ -442,25 +442,21 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 // ---------------------------------------------------------
 
 func (t *BleveDest) Stats(w io.Writer) error {
-	_, err := w.Write(prefixPIndexStoreStats)
-	if err != nil {
-		return err
-	}
+	w.Write(prefixPIndexStoreStats)
 	t.stats.WriteJSON(w)
 
 	t.m.Lock()
 	_, kvs, err := t.bindex.Advanced()
 	if err == nil && kvs != nil {
-		kvsBleveMetrics, ok := kvs.(*bleve_metrics.Store)
+		m, ok := kvs.(*bleve_metrics.Store)
 		if ok {
-			w.Write([]byte(`,"bleveMetrics":`))
-			kvsBleveMetrics.WriteJSON(w)
+			w.Write([]byte(`,"bleveKVStoreStats":`))
+			m.WriteJSON(w)
 		}
 	}
 	t.m.Unlock()
 
 	_, err = w.Write(jsonCloseBrace)
-
 	return err
 }
 

@@ -534,13 +534,9 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 // ---------------------------------------------------------
 
 func (t *VLite) Stats(w io.Writer) error {
-	_, err := w.Write(prefixPIndexStoreStats)
-	if err != nil {
-		return err
-	}
+	w.Write(prefixPIndexStoreStats)
 	t.stats.WriteJSON(w)
-	_, err = w.Write(jsonCloseBrace)
-
+	_, err := w.Write(jsonCloseBrace)
 	return err
 }
 

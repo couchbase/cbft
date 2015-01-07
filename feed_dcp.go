@@ -213,22 +213,13 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(prefixBucketDataSourceStats)
-	if err != nil {
-		return err
-	}
-	err = json.NewEncoder(w).Encode(&bdss)
-	if err != nil {
-		return err
-	}
+	w.Write(prefixBucketDataSourceStats)
+	json.NewEncoder(w).Encode(&bdss)
 
-	_, err = w.Write(prefixDestStats)
-	if err != nil {
-		return err
-	}
+	w.Write(prefixDestStats)
 	t.stats.WriteJSON(w)
-	_, err = w.Write(jsonCloseBrace)
 
+	_, err = w.Write(jsonCloseBrace)
 	return err
 }
 
