@@ -116,17 +116,17 @@ func (d *DestStats) WriteJSON(w io.Writer) {
 	fmt.Fprintf(w, `{"TotError":%d`, t)
 
 	w.Write([]byte(`,"TimerOnDataUpdate":`))
-	writeTimerJSON(w, d.TimerOnDataUpdate)
+	WriteTimerJSON(w, d.TimerOnDataUpdate)
 	w.Write([]byte(`,"TimerOnDataDelete":`))
-	writeTimerJSON(w, d.TimerOnDataDelete)
+	WriteTimerJSON(w, d.TimerOnDataDelete)
 	w.Write([]byte(`,"TimerOnSnapshotStart":`))
-	writeTimerJSON(w, d.TimerOnSnapshotStart)
+	WriteTimerJSON(w, d.TimerOnSnapshotStart)
 	w.Write([]byte(`,"TimerSetOpaque":`))
-	writeTimerJSON(w, d.TimerSetOpaque)
+	WriteTimerJSON(w, d.TimerSetOpaque)
 	w.Write([]byte(`,"TimerGetOpaque":`))
-	writeTimerJSON(w, d.TimerGetOpaque)
+	WriteTimerJSON(w, d.TimerGetOpaque)
 	w.Write([]byte(`,"TimerRollback":`))
-	writeTimerJSON(w, d.TimerRollback)
+	WriteTimerJSON(w, d.TimerRollback)
 
 	w.Write(jsonCloseBrace)
 }

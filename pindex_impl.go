@@ -97,7 +97,7 @@ type PIndexStoreStats struct {
 
 func (d *PIndexStoreStats) WriteJSON(w io.Writer) {
 	w.Write([]byte(`{"TimerBatchStore":`))
-	writeTimerJSON(w, d.TimerBatchStore)
+	WriteTimerJSON(w, d.TimerBatchStore)
 	w.Write(jsonCloseBrace)
 }
 

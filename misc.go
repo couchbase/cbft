@@ -220,7 +220,7 @@ func AtomicCopyMetrics(s, r interface{},
 
 var timerPercentiles = []float64{0.5, 0.75, 0.95, 0.99, 0.999}
 
-func writeTimerJSON(w io.Writer, timer metrics.Timer) {
+func WriteTimerJSON(w io.Writer, timer metrics.Timer) {
 	t := timer.Snapshot()
 	p := t.Percentiles(timerPercentiles)
 
