@@ -30,6 +30,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	"github.com/couchbaselabs/cbft"
 	log "github.com/couchbaselabs/clog"
@@ -120,6 +121,15 @@ func MainWelcome() {
 	}
 	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
+
+	log.Printf("main: registered bleve stores")
+	types, instances := bleveRegistry.KVStoreTypesAndInstances()
+	for _, s := range types {
+		log.Printf("  %s", s)
+	}
+	for _, s := range instances {
+		log.Printf("  %s", s)
+	}
 }
 
 func MainUUID(dataDir string) (string, error) {
