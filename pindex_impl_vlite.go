@@ -380,7 +380,7 @@ func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 
 // ---------------------------------------------------------
 
-func (t *VLite) ConsistencyWait(partition string,
+func (t *VLite) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
@@ -404,6 +404,8 @@ func (t *VLite) ConsistencyWait(partition string,
 	bdp.cwrCh <- cwr
 
 	t.m.Unlock()
+
+	// TODO: Check the optional partitionUUID here.
 
 	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
@@ -674,11 +676,11 @@ func (t *VLitePartition) Rollback(partition string, rollbackSeq uint64) error {
 	return t.vlite.Rollback(partition, rollbackSeq)
 }
 
-func (t *VLitePartition) ConsistencyWait(partition string,
+func (t *VLitePartition) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
-	return t.vlite.ConsistencyWait(partition,
+	return t.vlite.ConsistencyWait(partition, partitionUUID,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 

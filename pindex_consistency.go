@@ -32,13 +32,13 @@ type ConsistencyParams struct {
 // Key is partition, value is seq.
 //
 // TODO: To support issue 26, allow key of the ConsistencyVector to
-// optionally have a partition uuid, like "partition,uuid".  For
-// example, a DCP data source might have the key as
-// "vbucketId,vbucketUUID".
+// optionally have a partition uuid, like "partition/uuid".  For
+// example, a DCP data source might have the key as either "vbucketId"
+// or "vbucketId/vbucketUUID".
 type ConsistencyVector map[string]uint64
 
 type ConsistencyWaiter interface {
-	ConsistencyWait(partition string,
+	ConsistencyWait(partition, partitionUUID string,
 		consistencyLevel string,
 		consistencySeq uint64,
 		cancelCh <-chan bool) error
@@ -66,8 +66,10 @@ func (e *ErrorConsistencyWait) Error() string {
 
 // ---------------------------------------------------------
 
-func ConsistencyWaitDone(partition string, cancelCh <-chan bool,
-	doneCh chan error, currSeq func() uint64) error {
+func ConsistencyWaitDone(partition string,
+	cancelCh <-chan bool,
+	doneCh chan error,
+	currSeq func() uint64) error {
 	seqStart := currSeq()
 
 	select {
@@ -97,7 +99,8 @@ func ConsistencyWaitPartitions(
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
-			err := t.ConsistencyWait(partition,
+			partitionUUID := "" // TODO.
+			err := t.ConsistencyWait(partition, partitionUUID,
 				consistencyLevel, consistencySeq, cancelCh)
 			if err != nil {
 				return err

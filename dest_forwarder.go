@@ -96,7 +96,7 @@ func (t *DestForwarder) Rollback(partition string, rollbackSeq uint64) error {
 	return dest.Rollback(partition, rollbackSeq)
 }
 
-func (t *DestForwarder) ConsistencyWait(partition string,
+func (t *DestForwarder) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
@@ -105,7 +105,7 @@ func (t *DestForwarder) ConsistencyWait(partition string,
 		return err
 	}
 
-	return dest.ConsistencyWait(partition,
+	return dest.ConsistencyWait(partition, partitionUUID,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 

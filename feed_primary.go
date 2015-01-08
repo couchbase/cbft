@@ -159,7 +159,7 @@ func (t *PrimaryFeed) Rollback(partition string,
 	return dest.Rollback(partition, rollbackSeq)
 }
 
-func (t *PrimaryFeed) ConsistencyWait(partition string,
+func (t *PrimaryFeed) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
@@ -167,7 +167,7 @@ func (t *PrimaryFeed) ConsistencyWait(partition string,
 	if err != nil {
 		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.ConsistencyWait(partition,
+	return dest.ConsistencyWait(partition, partitionUUID,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 

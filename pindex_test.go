@@ -124,7 +124,7 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		dest.OnSnapshotStart("", 0, 0) != nil ||
 		dest.SetOpaque("", nil) != nil ||
 		dest.Rollback("", 0) != nil ||
-		dest.ConsistencyWait("", "", 0, nil) != nil ||
+		dest.ConsistencyWait("", "", "", 0, nil) != nil ||
 		dest.Query(nil, nil, nil, nil) != nil {
 		t.Errorf("expected no errors from a blackhole pindex impl")
 	}

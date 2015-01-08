@@ -155,13 +155,15 @@ func TestPrimaryFeed(t *testing.T) {
 	if df.Rollback("unknown-partition", seq) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	if df.ConsistencyWait("unknown-partition", "level", seq, nil) == nil {
+	if df.ConsistencyWait("unknown-partition", "unknown-partition-UUID",
+		"level", seq, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
 	df2 := NewPrimaryFeed("", BasicPartitionFunc, map[string]Dest{
 		"some-partition": &TestDest{},
 	})
-	if df2.ConsistencyWait("some-partition", "level", seq, nil) != nil {
+	if df2.ConsistencyWait("some-partition", "some-partition-UUID",
+		"level", seq, nil) != nil {
 		t.Errorf("expected no err on some partition to TestDest")
 	}
 	_, err = df.Count(nil, nil)

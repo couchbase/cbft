@@ -55,7 +55,7 @@ func (s *TestDest) Rollback(partition string,
 	return nil
 }
 
-func (s *TestDest) ConsistencyWait(partition string,
+func (s *TestDest) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
@@ -146,7 +146,7 @@ func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
 	if df.Rollback("", 0) == nil {
 		t.Errorf("expected err")
 	}
-	if df.ConsistencyWait("", "", 0, nil) == nil {
+	if df.ConsistencyWait("", "", "", 0, nil) == nil {
 		t.Errorf("expected err")
 	}
 }
