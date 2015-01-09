@@ -94,6 +94,9 @@ func ConsistencyWaitPartitions(
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
 	cancelCh <-chan bool) error {
+	if len(consistencyVector) <= 0 {
+		return nil
+	}
 	for _, partition := range partitions {
 		consistencySeq := consistencyVector[partition]
 		if consistencySeq > 0 {
