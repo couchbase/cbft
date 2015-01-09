@@ -78,6 +78,8 @@ type VLitePartition struct {
 	seqMaxBatch uint64 // Max seq # that got through batch apply/commit.
 	seqSnapEnd  uint64 // To track snapshot end seq # for this partition.
 
+	lastUUID string // Cache most recent partition UUID from lastOpaque.
+
 	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
 }
@@ -312,7 +314,7 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 		heap.Init(&bdp.cwrQueue)
 
 		go RunConsistencyWaitQueue(bdp.cwrCh, &t.m, &bdp.cwrQueue,
-			func() uint64 { return bdp.seqMaxBatch })
+			func() (string, uint64) { return bdp.lastUUID, bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
 	}
@@ -385,6 +387,7 @@ func (t *VLite) ConsistencyWait(partition, partitionUUID string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
 	cwr := &ConsistencyWaitReq{
+		PartitionUUID:    partitionUUID,
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
 		CancelCh:         cancelCh,
@@ -404,8 +407,6 @@ func (t *VLite) ConsistencyWait(partition, partitionUUID string,
 	bdp.cwrCh <- cwr
 
 	t.m.Unlock()
-
-	// TODO: Check the optional partitionUUID here.
 
 	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
@@ -643,6 +644,8 @@ func (t *VLitePartition) SetOpaque(partition string, value []byte) error {
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()
 
+	t.lastUUID = parseOpaqueToUUID(value)
+
 	return t.vlite.opaqueColl.Set(t.partitionKey, append([]byte(nil), value...))
 }
 
@@ -654,6 +657,8 @@ func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
+
+	t.lastUUID = parseOpaqueToUUID(opaqueBuf)
 
 	if t.seqMax <= 0 {
 		seqBuf, err := t.vlite.seqColl.Get(t.partitionKey)

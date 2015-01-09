@@ -74,6 +74,7 @@ type BleveDestPartition struct {
 	batch       *bleve.Batch // Batch applied when too big or we hit seqSnapEnd.
 
 	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
+	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
 	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
@@ -294,7 +295,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 		heap.Init(&bdp.cwrQueue)
 
 		go RunConsistencyWaitQueue(bdp.cwrCh, &bdp.m, &bdp.cwrQueue,
-			func() uint64 { return bdp.seqMaxBatch })
+			func() (string, uint64) { return bdp.lastUUID, bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
 	}
@@ -373,6 +374,7 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
 	cwr := &ConsistencyWaitReq{
+		PartitionUUID:    partitionUUID,
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
 		CancelCh:         cancelCh,
@@ -393,13 +395,12 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 	t.m.Unlock()
 
-	// TODO: Check the optional partitionUUID here.
-
 	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
 			bdp.m.Lock()
-			defer bdp.m.Unlock()
-			return bdp.seqMaxBatch
+			seqMaxBatch := bdp.seqMaxBatch
+			bdp.m.Unlock()
+			return seqMaxBatch
 		})
 }
 
@@ -510,6 +511,7 @@ func (t *BleveDestPartition) SetOpaque(partition string, value []byte) error {
 	defer t.m.Unlock()
 
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
+	t.lastUUID = parseOpaqueToUUID(value)
 
 	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
 
@@ -528,6 +530,7 @@ func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error)
 			return nil, 0, err
 		}
 		t.lastOpaque = append([]byte(nil), value...) // Note: copies value.
+		t.lastUUID = parseOpaqueToUUID(value)
 	}
 
 	if t.seqMax <= 0 {

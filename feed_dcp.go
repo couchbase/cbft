@@ -319,3 +319,22 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 		return dest.Rollback(partition, rollbackSeq)
 	}, r.stats.TimerRollback)
 }
+
+// -------------------------------------------------------
+
+type vbucketMetaData struct {
+	FailOverLog [][]uint64 `json:"failOverLog"`
+}
+
+func parseOpaqueToUUID(b []byte) string {
+	vmd := &vbucketMetaData{}
+	err := json.Unmarshal(b, &vmd)
+	if err != nil {
+		return ""
+	}
+	flogLen := len(vmd.FailOverLog)
+	if flogLen < 1 || len(vmd.FailOverLog[flogLen-1]) < 1 {
+		return ""
+	}
+	return fmt.Sprintf("%d", vmd.FailOverLog[flogLen-1][0])
+}

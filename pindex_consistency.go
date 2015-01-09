@@ -41,6 +41,7 @@ type ConsistencyWaiter interface {
 }
 
 type ConsistencyWaitReq struct {
+	PartitionUUID    string
 	ConsistencyLevel string
 	ConsistencySeq   uint64
 	CancelCh         <-chan bool
@@ -230,14 +231,19 @@ func RunConsistencyWaitQueue(
 	cwrCh chan *ConsistencyWaitReq,
 	m *sync.Mutex,
 	cwrQueue *cwrQueue,
-	currSeq func() uint64) {
+	currSeq func() (string, uint64)) {
 	for cwr := range cwrCh {
 		m.Lock()
 
 		if cwr.ConsistencyLevel == "" {
 			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
 		} else if cwr.ConsistencyLevel == "at_plus" {
-			if cwr.ConsistencySeq > currSeq() {
+			uuid, seq := currSeq()
+			if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
+				cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
+					" mismatched partition uuid: %s, cwr: %#v", uuid, cwr)
+				close(cwr.DoneCh)
+			} else if cwr.ConsistencySeq > seq {
 				heap.Push(cwrQueue, cwr)
 			} else {
 				close(cwr.DoneCh)

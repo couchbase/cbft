@@ -1120,6 +1120,28 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "query with bogus consistency params vectors bad partitionUUID",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0/badPartitionUUID":20}}}}`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Desc:   "query with empty string consistency level (same as stale=ok)",
+			Path:   "/api/index/idx0/query",
+			Method: "POST",
+			Params: nil,
+			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"","vectors":{"idx0":{"0":1000}}}}`),
+			Status: 200,
+			ResponseMatch: map[string]bool{
+				`hello`: true,
+			},
+		},
+		{
 			Desc:   "query with consistency params in the future",
 			Method: "NOOP",
 			Before: func() {
