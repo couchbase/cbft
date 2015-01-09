@@ -25,8 +25,6 @@ type ConsistencyParams struct {
 
 	// Keyed by indexName.
 	Vectors map[string]ConsistencyVector `json:"vectors"`
-
-	// TODO: Can user specify certain partition UUID (like vbucket UUID)?
 }
 
 // Key is partition, value is seq.
