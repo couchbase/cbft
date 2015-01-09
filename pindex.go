@@ -40,7 +40,7 @@ type PIndex struct {
 	Impl             PIndexImpl `json:"-"` // Transient, not persisted.
 	Dest             Dest       `json:"-"` // Transient, not persisted.
 
-	sourcePartitionsArr []string // Non-persisted memoization.
+	sourcePartitionsMap map[string]bool // Non-persisted memoization.
 }
 
 func (p *PIndex) Close(remove bool) error {
@@ -93,9 +93,12 @@ func NewPIndex(mgr *Manager, name, uuid,
 		Path:             path,
 		Impl:             impl,
 		Dest:             dest,
-
-		sourcePartitionsArr: strings.Split(sourcePartitions, ","),
 	}
+	pindex.sourcePartitionsMap = map[string]bool{}
+	for _, partition := range strings.Split(sourcePartitions, ",") {
+		pindex.sourcePartitionsMap[partition] = true
+	}
+
 	buf, err := json.Marshal(pindex)
 	if err != nil {
 		dest.Close()
@@ -146,7 +149,11 @@ func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	pindex.Path = path
 	pindex.Impl = impl
 	pindex.Dest = dest
-	pindex.sourcePartitionsArr = strings.Split(pindex.SourcePartitions, ",")
+
+	pindex.sourcePartitionsMap = map[string]bool{}
+	for _, partition := range strings.Split(pindex.SourcePartitions, ",") {
+		pindex.sourcePartitionsMap[partition] = true
+	}
 
 	return pindex, nil
 }

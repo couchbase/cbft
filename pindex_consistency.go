@@ -14,6 +14,7 @@ package cbft
 import (
 	"container/heap"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -27,12 +28,9 @@ type ConsistencyParams struct {
 	Vectors map[string]ConsistencyVector `json:"vectors"`
 }
 
-// Key is partition, value is seq.
-//
-// TODO: To support issue 26, allow key of the ConsistencyVector to
-// optionally have a partition uuid, like "partition/uuid".  For
-// example, a DCP data source might have the key as either "vbucketId"
-// or "vbucketId/vbucketUUID".
+// Key is partition or partition/partitionUUID.  Value is seq.
+// For example, a DCP data source might have the key as either
+// "vbucketId" or "vbucketId/vbucketUUID".
 type ConsistencyVector map[string]uint64
 
 type ConsistencyWaiter interface {
@@ -90,21 +88,27 @@ func ConsistencyWaitDone(partition string,
 
 func ConsistencyWaitPartitions(
 	t ConsistencyWaiter,
-	partitions []string,
+	partitions map[string]bool,
 	consistencyLevel string,
 	consistencyVector map[string]uint64,
 	cancelCh <-chan bool) error {
-	if len(consistencyVector) <= 0 {
-		return nil
-	}
-	for _, partition := range partitions {
-		consistencySeq := consistencyVector[partition]
+	// Key of consistencyVector looks like either just "partition" or
+	// like "partition/partitionUUID".
+	for k, consistencySeq := range consistencyVector {
 		if consistencySeq > 0 {
-			partitionUUID := "" // TODO.
-			err := t.ConsistencyWait(partition, partitionUUID,
-				consistencyLevel, consistencySeq, cancelCh)
-			if err != nil {
-				return err
+			arr := strings.Split(k, "/")
+			partition := arr[0]
+			_, exists := partitions[partition]
+			if exists {
+				partitionUUID := ""
+				if len(arr) > 1 {
+					partitionUUID = arr[1]
+				}
+				err := t.ConsistencyWait(partition, partitionUUID,
+					consistencyLevel, consistencySeq, cancelCh)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -118,7 +122,7 @@ func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
 		consistencyParams.Vectors != nil {
 		consistencyVector := consistencyParams.Vectors[pindex.IndexName]
 		if consistencyVector != nil {
-			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsArr,
+			err := ConsistencyWaitPartitions(t, pindex.sourcePartitionsMap,
 				consistencyParams.Level, consistencyVector, cancelCh)
 			if err != nil {
 				return err
@@ -154,7 +158,7 @@ func ConsistencyWaitGroup(indexName string,
 					defer wg.Done()
 
 					err := ConsistencyWaitPartitions(localPIndex.Dest,
-						localPIndex.sourcePartitionsArr,
+						localPIndex.sourcePartitionsMap,
 						consistencyParams.Level,
 						consistencyVector,
 						cancelCh)
