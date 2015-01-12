@@ -12,6 +12,10 @@ build-forestdb:
 	go build -tags forestdb ./...
 	go build -tags forestdb -o ./cbft ./cmd/cbft
 
+build-full:
+	go build -tags 'leveldb forestdb' ./...
+	go build -tags 'leveldb forestdb' -o ./cbft ./cmd/cbft
+
 test:
 	go test -v ./...
 
