@@ -213,7 +213,7 @@ func (w *Writer) Delete(key []byte) (err error) {
 }
 
 func (w *Writer) NewBatch() store.KVBatch {
-	return w.o.NewBatch()
+	return &Batch{s: w.s, o: w.o.NewBatch()}
 }
 
 func (w *Iterator) SeekFirst() {
