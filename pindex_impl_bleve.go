@@ -25,10 +25,9 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
+	bleve_metrics "github.com/blevesearch/bleve/index/store/metrics"
 
 	log "github.com/couchbaselabs/clog"
-
-	"github.com/couchbaselabs/cbft/bleve_metrics"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
