@@ -1905,11 +1905,15 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 }
 
 func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
-	testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite")
+	if pindexImplTypes["vlite"] != nil {
+		testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite")
+	}
 }
 
 func TestHandlersForOneVLiteMemIndexWithNILFeed(t *testing.T) {
-	testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite-mem")
+	if pindexImplTypes["vlite"] != nil {
+		testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite-mem")
+	}
 }
 
 func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string) {
