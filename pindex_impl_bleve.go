@@ -25,7 +25,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
-	bleve_metrics "github.com/blevesearch/bleve/index/store/metrics"
 
 	log "github.com/couchbaselabs/clog"
 )
@@ -443,6 +442,10 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 
 // ---------------------------------------------------------
 
+type JSONStatsWriter interface {
+	WriteJSON(w io.Writer)
+}
+
 func (t *BleveDest) Stats(w io.Writer) error {
 	w.Write(prefixPIndexStoreStats)
 	t.stats.WriteJSON(w)
@@ -450,7 +453,7 @@ func (t *BleveDest) Stats(w io.Writer) error {
 	t.m.Lock()
 	_, kvs, err := t.bindex.Advanced()
 	if err == nil && kvs != nil {
-		m, ok := kvs.(*bleve_metrics.Store)
+		m, ok := kvs.(JSONStatsWriter)
 		if ok {
 			w.Write([]byte(`,"bleveKVStoreStats":`))
 			m.WriteJSON(w)
