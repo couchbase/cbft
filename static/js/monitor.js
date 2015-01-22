@@ -219,7 +219,6 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 		graph.render();
 	}
 
-	// global metrics
 	$scope.metrics = {
 		"memory": {
 			"display": "Memory",
