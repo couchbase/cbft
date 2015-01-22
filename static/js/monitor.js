@@ -3,7 +3,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 	$scope.monitoredIndexes = {};
 
 	var tv = 1000;
-	var top = "/cbft/";
+	var top = "/stats/";
 	var updateInterval = null;
 	var isoDateFormatter = function(x) { return ISODateString(new Date(x*1000)); };
 	var byteSizeFormatter = function(y) { return Humanize.fileSize(y); };

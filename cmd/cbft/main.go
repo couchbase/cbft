@@ -64,7 +64,6 @@ var cfgConnect = flag.String("cfgConnect", "simple",
 var expvars = expvar.NewMap("stats")
 
 func init() {
-	expvar.Publish("cbft", expvars)
 	expvars.Set("indexes", bleveHttp.IndexStats())
 }
 
