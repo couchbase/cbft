@@ -19,6 +19,10 @@ Running against local Couchbase Server
 
 ```./cbft -server http://localhost:8091```
 
+More complex example
+
+```./cbft -addr=localhost:9090 -cfgConnect=couchbase:http://cfg@localhost:8091 -server=http://localhost:8091```
+
 Create a new index (for the default bucket)
 
 ```curl -XPUT http://localhost:8095/api/index/default```
