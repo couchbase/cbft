@@ -267,9 +267,9 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 func (t *BleveDest) Dest(partition string) (Dest, error) {
 	t.m.Lock()
-	defer t.m.Unlock()
-
-	return t.getPartitionUnlocked(partition)
+	d, err := t.getPartitionUnlocked(partition)
+	t.m.Unlock()
+	return d, err
 }
 
 func (t *BleveDest) getPartitionUnlocked(partition string) (
@@ -305,9 +305,9 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 
 func (t *BleveDest) Close() error {
 	t.m.Lock()
-	defer t.m.Unlock()
-
-	return t.closeUnlocked()
+	err := t.closeUnlocked()
+	t.m.Unlock()
+	return err
 }
 
 func (t *BleveDest) closeUnlocked() error {
@@ -474,61 +474,63 @@ func (t *BleveDestPartition) Close() error {
 func (t *BleveDestPartition) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	t.m.Lock()
-	defer t.m.Unlock()
 
 	bufVal := t.appendToBufUnlocked(val)
-
 	t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
+	err := t.updateSeqUnlocked(seq)
 
-	return t.updateSeqUnlocked(seq)
+	t.m.Unlock()
+	return err
 }
 
 func (t *BleveDestPartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.m.Lock()
-	defer t.m.Unlock()
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
+	err := t.updateSeqUnlocked(seq)
 
-	return t.updateSeqUnlocked(seq)
+	t.m.Unlock()
+	return err
 }
 
 func (t *BleveDestPartition) OnSnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
-	defer t.m.Unlock()
 
 	err := t.applyBatchUnlocked()
 	if err != nil {
+		t.m.Unlock()
 		return err
 	}
 
 	t.seqSnapEnd = snapEnd
 
+	t.m.Unlock()
 	return nil
 }
 
 func (t *BleveDestPartition) SetOpaque(partition string, value []byte) error {
 	t.m.Lock()
-	defer t.m.Unlock()
 
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
 	t.lastUUID = parseOpaqueToUUID(value)
 
 	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
 
+	t.m.Unlock()
 	return nil
 }
 
 func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	t.m.Lock()
-	defer t.m.Unlock()
 
 	if t.lastOpaque == nil {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
 		value, err := t.bindex.GetInternal(t.partitionOpaque)
 		if err != nil {
+			t.m.Unlock()
 			return nil, 0, err
 		}
 		t.lastOpaque = append([]byte(nil), value...) // Note: copies value.
@@ -540,19 +542,25 @@ func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error)
 		// perhaps with optional memory allocator func() parameter?
 		buf, err := t.bindex.GetInternal([]byte(t.partition))
 		if err != nil {
+			t.m.Unlock()
 			return nil, 0, err
 		}
 		if len(buf) <= 0 {
+			t.m.Unlock()
 			return t.lastOpaque, 0, nil // No seqMax buf is a valid case.
 		}
 		if len(buf) != 8 {
+			t.m.Unlock()
 			return nil, 0, fmt.Errorf("bleve: unexpected size for seqMax bytes")
 		}
 		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
 	}
 
-	return t.lastOpaque, t.seqMax, nil
+	lastOpaque, seqMax := t.lastOpaque, t.seqMax
+
+	t.m.Unlock()
+	return lastOpaque, seqMax, nil
 }
 
 func (t *BleveDestPartition) Rollback(partition string, rollbackSeq uint64) error {
