@@ -74,7 +74,6 @@ type BleveDestPartition struct {
 	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
-	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
 }
 
@@ -287,13 +286,9 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           bleve.NewBatch(),
-			cwrCh:           make(chan *ConsistencyWaitReq, 1),
 			cwrQueue:        cwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
-
-		go RunConsistencyWaitQueue(bdp.cwrCh, &bdp.m, &bdp.cwrQueue,
-			func() (string, uint64) { return bdp.lastUUID, bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
 	}
@@ -315,13 +310,25 @@ func (t *BleveDest) closeUnlocked() error {
 		return nil // Already closed.
 	}
 
-	for _, bdp := range t.partitions {
-		close(bdp.cwrCh)
-	}
+	partitions := t.partitions
 	t.partitions = make(map[string]*BleveDestPartition)
 
 	t.bindex.Close()
 	t.bindex = nil
+
+	go func() {
+		// Cancel/error any consistency wait requests.
+		err := fmt.Errorf("BleveDest.closeUnlocked")
+
+		for _, bdp := range partitions {
+			bdp.m.Lock()
+			for _, cwr := range bdp.cwrQueue {
+				cwr.DoneCh <- err
+				close(cwr.DoneCh)
+			}
+			bdp.m.Unlock()
+		}
+	}()
 
 	return nil
 }
@@ -371,12 +378,20 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
+	if consistencyLevel == "" {
+		return nil
+	}
+	if consistencyLevel != "at_plus" {
+		return fmt.Errorf("ConsistencyWait:"+
+			" unsupported consistencyLevel: %s", consistencyLevel)
+	}
+
 	cwr := &ConsistencyWaitReq{
 		PartitionUUID:    partitionUUID,
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
 		CancelCh:         cancelCh,
-		DoneCh:           make(chan error),
+		DoneCh:           make(chan error, 1),
 	}
 
 	t.m.Lock()
@@ -387,9 +402,20 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 		return err
 	}
 
-	// We want getPartitionUnlocked() & cwr send under the same lock
-	// so that another goroutine can't concurrently close the cwrCh.
-	bdp.cwrCh <- cwr
+	bdp.m.Lock()
+
+	uuid, seq := bdp.lastUUID, bdp.seqMaxBatch
+	if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
+		cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
+			" mismatched partition uuid: %s, cwr: %#v", uuid, cwr)
+		close(cwr.DoneCh)
+	} else if cwr.ConsistencySeq > seq {
+		heap.Push(&bdp.cwrQueue, cwr)
+	} else {
+		close(cwr.DoneCh)
+	}
+
+	bdp.m.Unlock()
 
 	t.m.Unlock()
 
@@ -621,8 +647,7 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 	for t.cwrQueue.Len() > 0 &&
 		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
 		cwr := heap.Pop(&t.cwrQueue).(*ConsistencyWaitReq)
-		if cwr != nil &&
-			cwr.DoneCh != nil {
+		if cwr != nil && cwr.DoneCh != nil {
 			close(cwr.DoneCh)
 		}
 	}
