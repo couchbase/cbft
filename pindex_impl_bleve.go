@@ -29,8 +29,7 @@ import (
 	log "github.com/couchbaselabs/clog"
 )
 
-const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 2000000
-const BLEVE_DEST_APPLY_BUF_SIZE_BYTES = 1800000
+const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
 
 type BleveParams struct {
 	Mapping bleve.IndexMapping     `json:"mapping"`
@@ -626,8 +625,7 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
-	if len(t.buf) < BLEVE_DEST_APPLY_BUF_SIZE_BYTES &&
-		seq < t.seqSnapEnd {
+	if seq < t.seqSnapEnd {
 		return nil
 	}
 
