@@ -15,19 +15,19 @@ import (
 	"testing"
 )
 
-func TestNegativePIndexClient(t *testing.T) {
-	bc := &PIndexClient{}
-	if bc.Index("", nil) != pindexClientUnimplementedErr {
+func TestNegativeIndexClient(t *testing.T) {
+	bc := &IndexClient{}
+	if bc.Index("", nil) != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.Delete("") != pindexClientUnimplementedErr {
+	if bc.Delete("") != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.Batch(nil) != pindexClientUnimplementedErr {
+	if bc.Batch(nil) != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 	d, err := bc.Document("")
-	if err != pindexClientUnimplementedErr || d != nil {
+	if err != indexClientUnimplementedErr || d != nil {
 		t.Errorf("expected unimplemented")
 	}
 	c, err := bc.DocCount()
@@ -39,7 +39,7 @@ func TestNegativePIndexClient(t *testing.T) {
 		t.Errorf("expected search error on empty QueryURL")
 	}
 	f, err := bc.Fields()
-	if err != pindexClientUnimplementedErr || f != nil {
+	if err != indexClientUnimplementedErr || f != nil {
 		t.Errorf("expected unimplemented")
 	}
 	if bc.DumpAll() != nil {
@@ -51,7 +51,7 @@ func TestNegativePIndexClient(t *testing.T) {
 	if bc.DumpFields() != nil {
 		t.Errorf("expected nil")
 	}
-	if bc.Close() != pindexClientUnimplementedErr {
+	if bc.Close() != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 	if bc.Mapping() != nil {
@@ -61,19 +61,19 @@ func TestNegativePIndexClient(t *testing.T) {
 		t.Errorf("expected nil")
 	}
 	val, err := bc.GetInternal(nil)
-	if err != pindexClientUnimplementedErr || val != nil {
+	if err != indexClientUnimplementedErr || val != nil {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.SetInternal(nil, nil) != pindexClientUnimplementedErr {
+	if bc.SetInternal(nil, nil) != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
-	if bc.DeleteInternal(nil) != pindexClientUnimplementedErr {
+	if bc.DeleteInternal(nil) != indexClientUnimplementedErr {
 		t.Errorf("expected unimplemented")
 	}
 }
 
-func TestBadURLsPIndexClient(t *testing.T) {
-	bc := &PIndexClient{
+func TestBadURLsIndexClient(t *testing.T) {
+	bc := &IndexClient{
 		CountURL: "bogus url",
 		QueryURL: "fake url",
 	}

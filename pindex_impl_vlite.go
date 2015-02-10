@@ -110,7 +110,7 @@ type VLiteQueryResult struct {
 
 type VLiteGatherer struct {
 	localVLites   []*VLite
-	remoteClients []*PIndexClient
+	remoteClients []*IndexClient
 }
 
 var EMPTY_BYTES = []byte{}
@@ -774,7 +774,7 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		rv.remoteClients = append(rv.remoteClients, &PIndexClient{
+		rv.remoteClients = append(rv.remoteClients, &IndexClient{
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
@@ -828,7 +828,7 @@ func (vg *VLiteGatherer) Count(cancelCh <-chan bool) (uint64, error) {
 
 	for _, remoteClient := range vg.remoteClients {
 		wg.Add(1)
-		go func(remoteClient *PIndexClient) {
+		go func(remoteClient *IndexClient) {
 			defer wg.Done()
 
 			t, err := remoteClient.Count()
@@ -890,7 +890,7 @@ func (vg *VLiteGatherer) Query(p *VLiteQueryParams, w io.Writer,
 	for _, remoteClient := range vg.remoteClients {
 		resultCh := make(chan *gkvlite.Item, 1)
 
-		go func(resultCh chan *gkvlite.Item, remoteClient *PIndexClient) {
+		go func(resultCh chan *gkvlite.Item, remoteClient *IndexClient) {
 			defer close(resultCh)
 
 			respBuf, err := remoteClient.Query(pBuf)

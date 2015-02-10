@@ -26,38 +26,38 @@ import (
 var httpPost = http.Post
 var httpGet = http.Get
 
-var pindexClientUnimplementedErr = errors.New("unimplemented")
+var indexClientUnimplementedErr = errors.New("unimplemented")
 
-// PIndexClient implements the Search() and DocCount() subset of the
+// IndexClient implements the Search() and DocCount() subset of the
 // bleve.Index interface by accessing a remote cbft server via REST
-// protocol.  This allows callers to add a PIndexClient as a target of
+// protocol.  This allows callers to add a IndexClient as a target of
 // a bleve.IndexAlias, and implements cbft protocol features like
 // query consistency and auth.
 //
-// TODO: Implement propagating auth info in PIndexClient.
-type PIndexClient struct {
+// TODO: Implement propagating auth info in IndexClient.
+type IndexClient struct {
 	QueryURL    string
 	CountURL    string
 	Consistency *ConsistencyParams
 }
 
-func (r *PIndexClient) Index(id string, data interface{}) error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) Index(id string, data interface{}) error {
+	return indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) Delete(id string) error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) Delete(id string) error {
+	return indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) Batch(b *bleve.Batch) error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) Batch(b *bleve.Batch) error {
+	return indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) Document(id string) (*document.Document, error) {
-	return nil, pindexClientUnimplementedErr
+func (r *IndexClient) Document(id string) (*document.Document, error) {
+	return nil, indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) DocCount() (uint64, error) {
+func (r *IndexClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
 		return 0, fmt.Errorf("remote: no CountURL provided")
 	}
@@ -87,7 +87,7 @@ func (r *PIndexClient) DocCount() (uint64, error) {
 	return rv.Count, nil
 }
 
-func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+func (r *IndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 	if r.QueryURL == "" {
 		return nil, fmt.Errorf("remote: no QueryURL provided")
 	}
@@ -116,53 +116,53 @@ func (r *PIndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, er
 	return rv, nil
 }
 
-func (r *PIndexClient) Fields() ([]string, error) {
-	return nil, pindexClientUnimplementedErr
+func (r *IndexClient) Fields() ([]string, error) {
+	return nil, indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) DumpAll() chan interface{} {
+func (r *IndexClient) DumpAll() chan interface{} {
 	return nil
 }
 
-func (r *PIndexClient) DumpDoc(id string) chan interface{} {
+func (r *IndexClient) DumpDoc(id string) chan interface{} {
 	return nil
 }
 
-func (r *PIndexClient) DumpFields() chan interface{} {
+func (r *IndexClient) DumpFields() chan interface{} {
 	return nil
 }
 
-func (r *PIndexClient) Close() error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) Close() error {
+	return indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) Mapping() *bleve.IndexMapping {
+func (r *IndexClient) Mapping() *bleve.IndexMapping {
 	return nil
 }
 
-func (r *PIndexClient) Stats() *bleve.IndexStat {
+func (r *IndexClient) Stats() *bleve.IndexStat {
 	return nil
 }
 
-func (r *PIndexClient) GetInternal(key []byte) ([]byte, error) {
-	return nil, pindexClientUnimplementedErr
+func (r *IndexClient) GetInternal(key []byte) ([]byte, error) {
+	return nil, indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) SetInternal(key, val []byte) error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) SetInternal(key, val []byte) error {
+	return indexClientUnimplementedErr
 }
 
-func (r *PIndexClient) DeleteInternal(key []byte) error {
-	return pindexClientUnimplementedErr
+func (r *IndexClient) DeleteInternal(key []byte) error {
+	return indexClientUnimplementedErr
 }
 
 // -----------------------------------------------------
 
-func (r *PIndexClient) Count() (uint64, error) {
+func (r *IndexClient) Count() (uint64, error) {
 	return r.DocCount()
 }
 
-func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
+func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
@@ -182,6 +182,6 @@ func (r *PIndexClient) Query(buf []byte) ([]byte, error) {
 	return respBuf, err
 }
 
-func (r *PIndexClient) Advanced() (index.Index, store.KVStore, error) {
-	return nil, nil, pindexClientUnimplementedErr
+func (r *IndexClient) Advanced() (index.Index, store.KVStore, error) {
+	return nil, nil, indexClientUnimplementedErr
 }

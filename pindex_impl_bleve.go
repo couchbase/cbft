@@ -705,7 +705,7 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		alias.Add(&PIndexClient{
+		alias.Add(&IndexClient{
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
