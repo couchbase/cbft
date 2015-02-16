@@ -1,7 +1,8 @@
 <ol class="breadcrumb">
   <li><span class="glyphicon glyphicon-book"></li>
   <li><a href="/indexes">Indexes</a></li>
-  <li>New</li>
+  <li ng-show="isEdit">{{newIndexName}}</li>
+  <li ng-show="!isEdit">New Index</li>
 </ol>
 
 <div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
@@ -12,7 +13,8 @@
   <div class="form-group">
     <label for="inputIndexName" class="col-sm-2 control-label">Index Name</label>
     <div class="col-sm-10">
-      <input ng-model="newIndexName" type="text" class="form-control"
+      <span ng-show="isEdit">{{newIndexName}}</span>
+      <input ng-show="!isEdit" ng-model="newIndexName" type="text" class="form-control"
              id="inputIndexName" placeholder="index-name">
     </div>
   </div>
@@ -80,12 +82,15 @@
       <button ng-click="newIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
               type="submit" class="btn btn-default">
         <span ng-show="!isEdit">
-          New Index
+          Create Index
         </span>
         <span ng-show="isEdit">
           Update Index
         </span>
       </button>
+      <a href="/indexes/">
+        <button class="btn btn-cancel">Cancel</button>
+      </a>
     </div>
   </div>
 </form>
