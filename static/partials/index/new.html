@@ -11,15 +11,19 @@
 
 <form class="form form-horizontal" role="form">
   <div class="form-group">
-    <label for="inputIndexName" class="col-sm-2 control-label">Index Name</label>
+    <label for="inputIndexName"
+           class="col-sm-2 control-label">Index Name</label>
     <div class="col-sm-10">
-      <span ng-show="isEdit">{{newIndexName}}</span>
-      <input ng-show="!isEdit" ng-model="newIndexName" type="text" class="form-control"
+      <div ng-show="isEdit"
+           class="indexName">{{newIndexName}}</div>
+      <input ng-show="!isEdit" ng-model="newIndexName"
+             type="text" class="form-control"
              id="inputIndexName" placeholder="index-name">
     </div>
   </div>
   <div class="form-group">
-    <label for="inputIndexType" class="col-sm-2 control-label">Index Type</label>
+    <label for="inputIndexType"
+           class="col-sm-2 control-label">Index Type</label>
     <div class="col-sm-10">
       <select ng-model="newIndexType"
         ng-options="indexType as t.description for (indexType, t) in meta.indexTypes">
@@ -29,7 +33,8 @@
   </div>
   <div class="form-group"
        ng-show="newIndexType && newIndexType != 'blackhole'">
-    <label for="inputDoc" class="col-sm-2 control-label">Index Params</label>
+    <label for="inputDoc"
+           class="col-sm-2 control-label">Index Params</label>
     <div ng-repeat="(indexType, p) in newIndexParams" class="col-sm-10">
       <textarea ng-model="newIndexParams[indexType]"
                 rows="{{paramNumLines[indexType]}}"
@@ -38,7 +43,8 @@
     </div>
   </div>
   <div class="form-group">
-    <label for="inputSourceType" class="col-sm-2 control-label">Source Type</label>
+    <label for="inputSourceType"
+           class="col-sm-2 control-label">Source Type</label>
     <div class="col-sm-10">
       <select ng-model="newSourceType"
         ng-options="sourceType as t.description for (sourceType, t) in meta.sourceTypes">
@@ -48,21 +54,28 @@
   </div>
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
-    <label for="inputSourceName" class="col-sm-2 control-label">Source Name</label>
+    <label for="inputSourceName"
+           class="col-sm-2 control-label">Source Name</label>
     <div class="col-sm-10">
-      <input ng-model="newSourceName" type="text" class="form-control" id="inputSourceName" placeholder="bucket-name">
+      <input ng-model="newSourceName"
+             type="text" class="form-control" id="inputSourceName"
+             placeholder="bucket-name">
     </div>
   </div>
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
-    <label for="inputSourceUUID" class="col-sm-2 control-label">Source UUID</label>
+    <label for="inputSourceUUID"
+           class="col-sm-2 control-label">Source UUID</label>
     <div class="col-sm-10">
-      <input ng-model="newSourceUUID" type="text" class="form-control" id="inputSourceUUID" placeholder="(optional bucket-uuid)">
+      <input ng-model="newSourceUUID"
+             type="text" class="form-control" id="inputSourceUUID"
+             placeholder="(optional bucket-uuid)">
     </div>
   </div>
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
-    <label for="inputSourceParams" class="col-sm-2 control-label">Source Params</label>
+    <label for="inputSourceParams"
+           class="col-sm-2 control-label">Source Params</label>
     <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-10">
       <textarea ng-model="newSourceParams[sourceType]"
                 rows="{{paramNumLines[sourceType]}}"
@@ -71,7 +84,8 @@
     </div>
   </div>
   <div class="form-group">
-    <label for="inputPlanParams" class="col-sm-2 control-label">Plan Params</label>
+    <label for="inputPlanParams"
+           class="col-sm-2 control-label">Plan Params</label>
     <div class="col-sm-10">
       <textarea ng-model="newPlanParams" rows="{{paramNumLines['planParams']}}"
                 class="form-control" id="inputPlanParams"></textarea>
@@ -94,3 +108,13 @@
     </div>
   </div>
 </form>
+
+<style>
+form .form-group div.indexName {
+  padding-top: 7px;
+}
+form .form-group select {
+  margin-top: 7px;
+}
+</style>
+
