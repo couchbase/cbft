@@ -71,7 +71,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	prevIndexUUID := mux.Vars(req)["prevIndexUUID"]
+	prevIndexUUID := req.FormValue("prevIndexUUID") // Defaults to "".
 
 	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 		indexType, indexName, string(indexParams), *planParams, prevIndexUUID)

@@ -30,6 +30,10 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         });
     };
 
+    $scope.editIndex = function(name) {
+        $location.path('/indexes/' + name + '/_edit');
+    }
+
     $scope.cloneIndex = function(name) {
         $location.path('/indexes/' + name + '/_clone');
     }
@@ -159,6 +163,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.newSourceUUID = "";
     $scope.newSourceParams = {};
     $scope.newPlanParams = "";
+    $scope.prevIndexUUID = "";
     $scope.paramNumLines = {};
     $scope.errorMessage = null;
 
@@ -184,9 +189,16 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
         origIndexName = $routeParams.indexName;
         if (origIndexName && origIndexName.length > 0) {
+            $scope.isEdit = $location.path().match(/_edit$/);
+            $scope.isClone = $location.path().match(/_clone$/);
+
             $http.get('/api/index/' + origIndexName).
             success(function(data) {
-                $scope.newIndexName = data.indexDef.name + "-copy";
+                $scope.newIndexName = data.indexDef.name;
+                if ($scope.isClone) {
+                    $scope.newIndexName = data.indexDef.name + "-copy";
+                }
+
                 $scope.newIndexType = data.indexDef.type;
                 $scope.newIndexParams[data.indexDef.type] = data.indexDef.params;
                 $scope.newSourceType = data.indexDef.sourceType;
@@ -194,6 +206,11 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 $scope.newSourceUUID = data.indexDef.sourceUUID;
                 $scope.newSourceParams[data.indexDef.sourceType] = data.indexDef.sourceParams;
                 $scope.newPlanParams = JSON.stringify(data.indexDef.planParams, undefined, 2);
+
+                $scope.prevIndexUUID = "";
+                if ($scope.isEdit) {
+                    $scope.prevIndexUUID = data.indexDef.uuid;
+                }
             }).
             error(function(data, code) {
                 $scope.errorMessage = data;
@@ -204,7 +221,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.newIndex = function(indexName, indexType, indexParams,
                                sourceType, sourceName,
                                sourceUUID, sourceParams,
-                               planParams) {
+                               planParams, prevIndexUUID) {
         $scope.errorMessage = null;
         $http.put('/api/index/' + indexName, "", {
             params: {
@@ -216,6 +233,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 sourceUUID: sourceUUID || "",
                 sourceParams: sourceParams[sourceType],
                 planParams: planParams,
+                prevIndexUUID: prevIndexUUID
             }
         }).
         success(function(data) {

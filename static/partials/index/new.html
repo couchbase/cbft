@@ -77,7 +77,15 @@
   </div>
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">
-      <button ng-click="newIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams)" type="submit" class="btn btn-default">New Index</button>
+      <button ng-click="newIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+              type="submit" class="btn btn-default">
+        <span ng-show="!isEdit">
+          New Index
+        </span>
+        <span ng-show="isEdit">
+          Update Index
+        </span>
+      </button>
     </div>
   </div>
 </form>

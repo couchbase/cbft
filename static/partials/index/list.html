@@ -15,6 +15,10 @@
 	<tr ng-repeat="indexName in indexNames">
 		<td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
 		<td style="white-space: nowrap;">
+			<button ng-click="editIndex(indexName)"
+			         type="button" class="btn btn-default btn-sm">
+				<span class="glyphicon glyphicon-edit"></span> edit
+			</button>
 			<button ng-click="cloneIndex(indexName)"
 			         type="button" class="btn btn-default btn-sm">
 				<span class="glyphicon glyphicon-plus-sign"></span> clone
