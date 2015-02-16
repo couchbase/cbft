@@ -16,8 +16,10 @@ import (
 )
 
 // Creates a logical index, which might be comprised of many PIndex objects.
+// A non-"" prevIndexUUID means an update to an existing index.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-	indexType, indexName, indexParams string, planParams PlanParams) error {
+	indexType, indexName, indexParams string, planParams PlanParams,
+	prevIndexUUID string) error {
 	pindexImplType, exists := pindexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("manager_api: CreateIndex, unknown indexType: %s",
@@ -52,8 +54,23 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 			" indexDefs.ImplVersion: %s > mgr.version: %s",
 			indexDefs.ImplVersion, mgr.version)
 	}
-	if _, exists := indexDefs.IndexDefs[indexName]; exists {
-		return fmt.Errorf("manager_api: index exists, indexName: %s", indexName)
+
+	prevIndex, exists := indexDefs.IndexDefs[indexName]
+	if prevIndexUUID == "" { // New index creation.
+		if exists || prevIndex != nil {
+			return fmt.Errorf("manager_api: index exists, indexName: %s",
+				indexName)
+		}
+	} else { // Update index definition.
+		if !exists || prevIndex == nil {
+			return fmt.Errorf("manager_api: index missing for update,"+
+				" indexName: %s", indexName)
+		}
+		if prevIndex.UUID != prevIndexUUID {
+			return fmt.Errorf("manager_api: index wrong UUID for update,"+
+				" indexName: %s, prevIndex.UUID: %s, prevIndexUUID: %s",
+				indexName, prevIndex.UUID, prevIndexUUID)
+		}
 	}
 
 	indexUUID := NewUUID()

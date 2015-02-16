@@ -133,8 +133,16 @@ func TestManagerRestart(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err != nil {
+		"bleve", "foo", "", PlanParams{}, "bad-prevIndexUUID"); err == nil {
+		t.Errorf("expected CreateIndex() err on attempted create-with-prevIndexUUID")
+	}
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
+		"bleve", "foo", "", PlanParams{}, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
+	}
+	if err := m.CreateIndex("primary", "default", "123", sourceParams,
+		"bleve", "foo", "", PlanParams{}, "bad-prevIndexUUID"); err == nil {
+		t.Errorf("expected CreateIndex() err on update with wrong prevIndexUUID")
 	}
 	m.Kick("test0")
 	m.PlannerNOOP("test0")
@@ -175,11 +183,11 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err != nil {
+		"bleve", "foo", "", PlanParams{}, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err == nil {
+		"bleve", "foo", "", PlanParams{}, ""); err == nil {
 		t.Errorf("expected re-CreateIndex() to fail")
 	}
 	if err := m.DeleteIndex("not-an-actual-index-name"); err == nil {
@@ -648,7 +656,7 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err != nil {
+		"bleve", "foo", "", PlanParams{}, ""); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
 	if err := SyncWorkReq(m.plannerCh, "whoa-this-isn't-a-valid-op",
@@ -721,7 +729,7 @@ func testManagerSimpleFeed(t *testing.T,
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 	if err := m.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
-		"bleve", "foo", "", planParams); err != nil {
+		"bleve", "foo", "", planParams, ""); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
 	m.PlannerNOOP("test")
@@ -963,7 +971,7 @@ func testPartitioning(t *testing.T,
 	}
 
 	if err := mgr.CreateIndex("primary", "sourceName", "sourceUUID", sourceParams,
-		"bleve", "foo", "", planParams); err != nil {
+		"bleve", "foo", "", planParams, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work")
 	}
 
@@ -1238,7 +1246,7 @@ func TestManagerIndexControl(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", PlanParams{}); err != nil {
+		"bleve", "foo", "", PlanParams{}, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	m.Kick("test0")

@@ -71,8 +71,10 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
+	prevIndexUUID := mux.Vars(req)["prevIndexUUID"]
+
 	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-		indexType, indexName, string(indexParams), *planParams)
+		indexType, indexName, string(indexParams), *planParams, prevIndexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_create_index:"+
 			" error creating index: %s, err: %v",
