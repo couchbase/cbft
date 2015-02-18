@@ -22,7 +22,8 @@
   <dd>{{resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].tags}}</dd>
   <dt>Container:</dt>
   <dd>
-    <ul class="nodeDefContainer">
+    <ul class="nodeDefContainer"
+        ng-show="resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].container">
       <li ng-repeat="nodeDefContainerPart in resultCfg.nodeDefsKnown.nodeDefs[nodeAddr].containerArr"
           class="nodeDefContainerPart">
         <div ng-attr-style="border-left: 8px solid {{containerPartColor(nodeDefContainerPart)}}">
