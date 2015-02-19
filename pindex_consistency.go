@@ -87,35 +87,6 @@ func ConsistencyWaitDone(partition string,
 	}
 }
 
-func ConsistencyWaitPartitions(
-	t ConsistencyWaiter,
-	partitions map[string]bool,
-	consistencyLevel string,
-	consistencyVector map[string]uint64,
-	cancelCh <-chan bool) error {
-	// Key of consistencyVector looks like either just "partition" or
-	// like "partition/partitionUUID".
-	for k, consistencySeq := range consistencyVector {
-		if consistencySeq > 0 {
-			arr := strings.Split(k, "/")
-			partition := arr[0]
-			_, exists := partitions[partition]
-			if exists {
-				partitionUUID := ""
-				if len(arr) > 1 {
-					partitionUUID = arr[1]
-				}
-				err := t.ConsistencyWait(partition, partitionUUID,
-					consistencyLevel, consistencySeq, cancelCh)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
 	consistencyParams *ConsistencyParams, cancelCh <-chan bool) error {
 	if consistencyParams != nil &&
@@ -194,6 +165,35 @@ func ConsistencyWaitGroup(indexName string,
 	// rollback.  Using the alias to query after that might now be
 	// incorrectly running against data some time back in the past.
 
+	return nil
+}
+
+func ConsistencyWaitPartitions(
+	t ConsistencyWaiter,
+	partitions map[string]bool,
+	consistencyLevel string,
+	consistencyVector map[string]uint64,
+	cancelCh <-chan bool) error {
+	// Key of consistencyVector looks like either just "partition" or
+	// like "partition/partitionUUID".
+	for k, consistencySeq := range consistencyVector {
+		if consistencySeq > 0 {
+			arr := strings.Split(k, "/")
+			partition := arr[0]
+			_, exists := partitions[partition]
+			if exists {
+				partitionUUID := ""
+				if len(arr) > 1 {
+					partitionUUID = arr[1]
+				}
+				err := t.ConsistencyWait(partition, partitionUUID,
+					consistencyLevel, consistencySeq, cancelCh)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
