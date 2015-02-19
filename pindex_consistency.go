@@ -12,7 +12,6 @@
 package cbft
 
 import (
-	"container/heap"
 	"fmt"
 	"strings"
 	"sync"
@@ -223,53 +222,4 @@ func (pq *cwrQueue) Pop() interface{} {
 	item := old[n-1]
 	*pq = old[0 : n-1]
 	return item
-}
-
-// ---------------------------------------------------------
-
-func RunConsistencyWaitQueue(
-	cwrCh chan *ConsistencyWaitReq,
-	m *sync.Mutex,
-	cwrQueue *cwrQueue,
-	currSeq func() (string, uint64)) {
-	for cwr := range cwrCh {
-		m.Lock()
-
-		if cwr.ConsistencyLevel == "" {
-			close(cwr.DoneCh) // We treat "" like stale=ok, so we're done.
-		} else if cwr.ConsistencyLevel == "at_plus" {
-			uuid, seq := currSeq()
-			if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
-				cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
-					" mismatched partition uuid: %s, cwr: %#v", uuid, cwr)
-				close(cwr.DoneCh)
-			} else if cwr.ConsistencySeq > seq {
-				heap.Push(cwrQueue, cwr)
-			} else {
-				close(cwr.DoneCh)
-			}
-		} else {
-			cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
-				" unsupported level: %s, cwr: %#v", cwr.ConsistencyLevel, cwr)
-			close(cwr.DoneCh)
-		}
-
-		m.Unlock()
-	}
-
-	// If we reach here, then we're closing down so cancel/error any
-	// callers waiting for consistency.
-	m.Lock()
-	defer m.Unlock()
-
-	err := fmt.Errorf("pindex_consistency: wait queue closed")
-
-	for _, cwr := range *cwrQueue {
-		// TODO: Perhaps extra goroutine here isn't necessary, but the
-		// motivation is to keep cwrQueue's lock window short.
-		go func(cwr *ConsistencyWaitReq) {
-			cwr.DoneCh <- err
-			close(cwr.DoneCh)
-		}(cwr)
-	}
 }

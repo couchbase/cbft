@@ -190,7 +190,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 func OpenBlevePIndexImpl(indexType, path string,
 	restart func()) (PIndexImpl, Dest, error) {
 	if indexType == "bleve-mem" {
-		return nil, nil, fmt.Errorf("bleve: cannot re-open bleve-mem, path: %s", path)
+		return nil, nil, fmt.Errorf("bleve: cannot re-open bleve-mem,"+
+			" path: %s", path)
 	}
 
 	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "PINDEX_BLEVE_META")
@@ -317,7 +318,7 @@ func (t *BleveDest) closeUnlocked() error {
 
 	go func() {
 		// Cancel/error any consistency wait requests.
-		err := fmt.Errorf("BleveDest.closeUnlocked")
+		err := fmt.Errorf("bleve: closeUnlocked")
 
 		for _, bdp := range partitions {
 			bdp.m.Lock()
@@ -360,7 +361,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 
 	err := t.closeUnlocked()
 	if err != nil {
-		return fmt.Errorf("bleve: BleveDest can't close during rollback,"+
+		return fmt.Errorf("bleve: can't close during rollback,"+
 			" err: %v", err)
 	}
 
@@ -381,8 +382,8 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 		return nil
 	}
 	if consistencyLevel != "at_plus" {
-		return fmt.Errorf("ConsistencyWait:"+
-			" unsupported consistencyLevel: %s", consistencyLevel)
+		return fmt.Errorf("bleve: unsupported consistencyLevel: %s",
+			consistencyLevel)
 	}
 
 	cwr := &ConsistencyWaitReq{
@@ -405,8 +406,8 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 	uuid, seq := bdp.lastUUID, bdp.seqMaxBatch
 	if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
-		cwr.DoneCh <- fmt.Errorf("pindex_consistency:"+
-			" mismatched partition uuid: %s, cwr: %#v", uuid, cwr)
+		cwr.DoneCh <- fmt.Errorf("bleve: pindex_consistency"+
+			" mismatched partition, uuid: %s, cwr: %#v", uuid, cwr)
 		close(cwr.DoneCh)
 	} else if cwr.ConsistencySeq > seq {
 		heap.Push(&bdp.cwrQueue, cwr)

@@ -82,7 +82,6 @@ type VLitePartition struct {
 
 	lastUUID string // Cache most recent partition UUID from lastOpaque.
 
-	cwrCh    chan *ConsistencyWaitReq
 	cwrQueue cwrQueue
 }
 
@@ -294,9 +293,9 @@ func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 func (t *VLite) Dest(partition string) (Dest, error) {
 	t.m.Lock()
-	defer t.m.Unlock()
-
-	return t.getPartitionUnlocked(partition)
+	d, err := t.getPartitionUnlocked(partition)
+	t.m.Unlock()
+	return d, err
 }
 
 func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) {
@@ -310,13 +309,9 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 			vlite:        t,
 			partition:    partition,
 			partitionKey: []byte(partition),
-			cwrCh:        make(chan *ConsistencyWaitReq, 1),
 			cwrQueue:     cwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
-
-		go RunConsistencyWaitQueue(bdp.cwrCh, &t.m, &bdp.cwrQueue,
-			func() (string, uint64) { return bdp.lastUUID, bdp.seqMaxBatch })
 
 		t.partitions[partition] = bdp
 	}
@@ -328,9 +323,9 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 
 func (t *VLite) Close() error {
 	t.m.Lock()
-	defer t.m.Unlock()
-
-	return t.closeUnlocked()
+	err := t.closeUnlocked()
+	t.m.Unlock()
+	return err
 }
 
 func (t *VLite) closeUnlocked() error {
@@ -338,13 +333,25 @@ func (t *VLite) closeUnlocked() error {
 		return nil // Already closed.
 	}
 
-	for _, bdp := range t.partitions {
-		close(bdp.cwrCh)
-	}
+	partitions := t.partitions
 	t.partitions = make(map[string]*VLitePartition)
 
 	t.store.Close()
 	t.store = nil
+
+	go func() {
+		// Cancel/error any consistency wait requests.
+		err := fmt.Errorf("vlite: closeUnlocked")
+
+		for _, bdp := range partitions {
+			t.m.Lock()
+			for _, cwr := range bdp.cwrQueue {
+				cwr.DoneCh <- err
+				close(cwr.DoneCh)
+			}
+			t.m.Unlock()
+		}
+	}()
 
 	return nil
 }
@@ -372,7 +379,8 @@ func (t *VLite) Rollback(partition string, rollbackSeq uint64) error {
 
 	err := t.closeUnlocked()
 	if err != nil {
-		return fmt.Errorf("vlite: can't close during rollback, err: %v", err)
+		return fmt.Errorf("vlite: can't close during rollback,"+
+			" err: %v", err)
 	}
 
 	os.RemoveAll(t.path)
@@ -388,12 +396,20 @@ func (t *VLite) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
+	if consistencyLevel == "" {
+		return nil
+	}
+	if consistencyLevel != "at_plus" {
+		return fmt.Errorf("vlite: unsupported consistencyLevel: %s",
+			consistencyLevel)
+	}
+
 	cwr := &ConsistencyWaitReq{
 		PartitionUUID:    partitionUUID,
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
 		CancelCh:         cancelCh,
-		DoneCh:           make(chan error),
+		DoneCh:           make(chan error, 1),
 	}
 
 	t.m.Lock()
@@ -404,9 +420,16 @@ func (t *VLite) ConsistencyWait(partition, partitionUUID string,
 		return err
 	}
 
-	// We want getPartitionUnlocked() & cwr send under the same lock
-	// so that another goroutine can't concurrently close the cwrCh.
-	bdp.cwrCh <- cwr
+	uuid, seq := bdp.lastUUID, bdp.seqMaxBatch
+	if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
+		cwr.DoneCh <- fmt.Errorf("vlite: pindex_consistency"+
+			" mismatched partition, uuid: %s, cwr: %#v", uuid, cwr)
+		close(cwr.DoneCh)
+	} else if cwr.ConsistencySeq > seq {
+		heap.Push(&bdp.cwrQueue, cwr)
+	} else {
+		close(cwr.DoneCh)
+	}
 
 	t.m.Unlock()
 
@@ -478,15 +501,15 @@ func (t *VLite) CountMainColl(cancelCh <-chan bool) (uint64, error) {
 	t.m.Lock()
 	storeRO := t.store.Snapshot()
 	t.m.Unlock()
-	defer storeRO.Close()
 
 	mainCollRO := storeRO.GetCollection("main")
-
 	numItems, _, err := mainCollRO.GetTotals()
 	if err != nil {
+		storeRO.Close()
 		return 0, fmt.Errorf("vlite: get totals err: %v", err)
 	}
 
+	storeRO.Close()
 	return numItems, nil
 }
 
@@ -513,11 +536,9 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 	t.m.Lock()
 	storeRO := t.store.Snapshot()
 	t.m.Unlock()
-	defer storeRO.Close()
 
 	mainCollRO := storeRO.GetCollection("main")
-
-	return mainCollRO.VisitItemsAscend(startInclusive, true,
+	err := mainCollRO.VisitItemsAscend(startInclusive, true,
 		func(item *gkvlite.Item) bool {
 			ok := len(endExclusive) <= 0 ||
 				bytes.Compare(item.Key, endExclusive) < 0
@@ -534,6 +555,9 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 
 			return p.Limit <= 0 || (totVisits < p.Skip+p.Limit)
 		})
+
+	storeRO.Close()
+	return err
 }
 
 // ---------------------------------------------------------
@@ -581,10 +605,7 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 		storeVal = EMPTY_BYTES
 	}
 
-	log.Printf("vlite: OnDataUpdate, storeKey: %s", storeKey)
-
 	t.vlite.m.Lock()
-	defer t.vlite.m.Unlock()
 
 	if t.vlite.params.Path != "" {
 		backKey, err := t.vlite.backColl.Get(key)
@@ -592,27 +613,36 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 			_, err := t.vlite.mainColl.Delete(backKey)
 			if err != nil {
 				log.Printf("vlite: mainColl.Delete err: %v", err)
+				t.vlite.m.Unlock()
+				return err
 			}
 		}
 
 		err = t.vlite.backColl.Set(key, storeKey)
 		if err != nil {
+			// TODO: Need to revert the delete?
 			log.Printf("vlite: backColl.Set err: %v", err)
+			t.vlite.m.Unlock()
+			return err
 		}
 	}
 
 	err := t.vlite.mainColl.Set(storeKey, storeVal)
 	if err != nil {
+		// TODO: Need to revert the backColl?
 		log.Printf("vlite: mainColl.Set err: %v", err)
+		t.vlite.m.Unlock()
+		return err
 	}
 
-	return t.updateSeqUnlocked(seq)
+	err = t.updateSeqUnlocked(seq)
+	t.vlite.m.Unlock()
+	return err
 }
 
 func (t *VLitePartition) OnDataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.vlite.m.Lock()
-	defer t.vlite.m.Unlock()
 
 	if t.vlite.params.Path != "" {
 		backKey, err := t.vlite.backColl.Get(key)
@@ -624,7 +654,9 @@ func (t *VLitePartition) OnDataDelete(partition string,
 		t.vlite.mainColl.Delete(key)
 	}
 
-	return t.updateSeqUnlocked(seq)
+	err := t.updateSeqUnlocked(seq)
+	t.vlite.m.Unlock()
+	return err
 }
 
 func (t *VLitePartition) OnSnapshotStart(partition string,
@@ -739,8 +771,7 @@ func (t *VLitePartition) applyBatchUnlocked() error {
 	for t.cwrQueue.Len() > 0 &&
 		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
 		cwr := heap.Pop(&t.cwrQueue).(*ConsistencyWaitReq)
-		if cwr != nil &&
-			cwr.DoneCh != nil {
+		if cwr != nil && cwr.DoneCh != nil {
 			close(cwr.DoneCh)
 		}
 	}
