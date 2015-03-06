@@ -63,3 +63,10 @@ To get local coverage reports with heatmaps...
 To get more coverage reports that include dependencies like the bleve library...
 
     go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
+
+Error messages
+
+In the cbft project, fmt.Errorf() message strings follow a rough
+convention, like...
+
+    source_file_base_name: short msg, arg0: val0, arg1: val1
