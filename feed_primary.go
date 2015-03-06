@@ -173,10 +173,10 @@ func (t *PrimaryFeed) ConsistencyWait(partition, partitionUUID string,
 
 func (t *PrimaryFeed) Count(pindex *PIndex, cancelCh <-chan bool) (
 	uint64, error) {
-	return 0, fmt.Errorf("PrimaryFeed.Count unimplemented")
+	return 0, fmt.Errorf("feed_primary: PrimaryFeed.Count unimplemented")
 }
 
 func (t *PrimaryFeed) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh <-chan bool) error {
-	return fmt.Errorf("PrimaryFeed.Query unimplemented")
+	return fmt.Errorf("feed_primary: PrimaryFeed.Query unimplemented")
 }
