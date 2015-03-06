@@ -42,7 +42,7 @@ func NewBlackHolePIndexImpl(indexType, indexParams, path string, restart func())
 	}
 
 	err = ioutil.WriteFile(path+string(os.PathSeparator)+"black.hole",
-		[]byte{}, 0600)
+		EMPTY_BYTES, 0600)
 	if err != nil {
 		return nil, nil, err
 	}
