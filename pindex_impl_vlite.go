@@ -112,8 +112,6 @@ type VLiteGatherer struct {
 	remoteClients []*IndexClient
 }
 
-var EMPTY_BYTES = []byte{}
-
 func NewVLite(vliteParams *VLiteParams, path string, file FileLike,
 	restart func()) (*VLite, error) {
 	store, err := gkvlite.NewStore(file)
