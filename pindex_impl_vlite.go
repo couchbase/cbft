@@ -448,10 +448,6 @@ func (t *VLite) Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error) {
 
 // ---------------------------------------------------------
 
-var entryKeyPrefix = []byte("{\"key\":")
-var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
-var entryValPrefix = []byte(", \"val\":")
-
 func (t *VLite) Query(pindex *PIndex, req []byte, w io.Writer,
 	cancelCh <-chan bool) error {
 	vliteQueryParams := NewVLiteQueryParams()
