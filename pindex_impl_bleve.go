@@ -474,9 +474,10 @@ type JSONStatsWriter interface {
 
 func (t *BleveDest) Stats(w io.Writer) error {
 	w.Write(prefixPIndexStoreStats)
-	t.stats.WriteJSON(w)
 
 	t.m.Lock()
+	t.stats.WriteJSON(w)
+
 	_, kvs, err := t.bindex.Advanced()
 	if err == nil && kvs != nil {
 		m, ok := kvs.(JSONStatsWriter)
