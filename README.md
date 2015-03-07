@@ -1,13 +1,20 @@
 cbft
 ====
 
-Couchbase Full Text engine
+Couchbase Full Text server
 
 This project integrates the bleve full-text search engine and Couchbase Server.
 
 [![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest) [![Coverage Status](https://coveralls.io/repos/couchbaselabs/cbft/badge.png?branch=master)](https://coveralls.io/r/couchbaselabs/cbft?branch=master) [![GoDoc](https://godoc.org/github.com/couchbaselabs/cbft?status.svg)](https://godoc.org/github.com/couchbaselabs/cbft)
 
 LICENSE: Apache 2.0
+
+A cbft process creates and maintains connections to a Couchbase Server
+cluster and indexes any incoming streamed data (coming from the
+Couchbase's DCP protocol) using the bleve full-text search engine.
+Indexes can be partitioned amongst multiple cbft processes, and
+queries on the index will be scatter/gather'ed across the distributed
+index partitions.
 
 ### Usage
 
