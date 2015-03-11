@@ -40,6 +40,12 @@ type CfgCB struct {
 	meta map[uint16][]byte // To track metadata blob's per vbucketId.
 }
 
+var cfgCBOptions = &cbdatasource.BucketDataSourceOptions{
+	// TODO: Make these parametrized.
+	ClusterManagerSleepMaxMS: 20000,
+	DataManagerSleepMaxMS:    20000,
+}
+
 func NewCfgCB(url, bucket string) (*CfgCB, error) {
 	c := &CfgCB{
 		url:    url,
@@ -54,7 +60,7 @@ func NewCfgCB(url, bucket string) (*CfgCB, error) {
 
 	bds, err := cbdatasource.NewBucketDataSource(
 		[]string{url},
-		"default", bucket, "", nil, c, c, nil)
+		"default", bucket, "", nil, c, c, cfgCBOptions)
 	if err != nil {
 		return nil, err
 	}
