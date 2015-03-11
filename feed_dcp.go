@@ -32,14 +32,14 @@ func init() {
 		Partitions:  CouchbasePartitions,
 		Public:      true,
 		Description: "couchbase - Couchbase Server/Cluster data source",
-		StartSample: &DCPFeedParams{},
+		StartSample: NewDCPFeedParams(),
 	})
 	RegisterFeedType("couchbase-dcp", &FeedType{
 		Start:       StartDCPFeed,
 		Partitions:  CouchbasePartitions,
 		Public:      false, // Won't be listed in /api/managerMeta output.
 		Description: "couchbase-dcp - Couchbase Server/Cluster data source, via DCP protocol",
-		StartSample: &DCPFeedParams{},
+		StartSample: NewDCPFeedParams(),
 	})
 }
 
@@ -115,6 +115,13 @@ type DCPFeedParams struct {
 	FeedBufferAckThreshold float32 `json:"feedBufferAckThreshold"`
 }
 
+func NewDCPFeedParams() *DCPFeedParams {
+	return &DCPFeedParams{
+		ClusterManagerSleepMaxMS: 20000,
+		DataManagerSleepMaxMS:    20000,
+	}
+}
+
 func (d *DCPFeedParams) GetCredentials() (string, string, string) {
 	// TODO: bucketName not necessarily userName.
 	return d.AuthUser, d.AuthPassword, d.AuthUser
@@ -122,7 +129,7 @@ func (d *DCPFeedParams) GetCredentials() (string, string, string) {
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
-	params := &DCPFeedParams{}
+	params := NewDCPFeedParams()
 	if paramsStr != "" {
 		err := json.Unmarshal([]byte(paramsStr), params)
 		if err != nil {
