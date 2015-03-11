@@ -13,7 +13,6 @@ package cbft
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/couchbase/gomemcached"
@@ -22,7 +21,8 @@ import (
 	"github.com/couchbaselabs/go-couchbase/cbdatasource"
 )
 
-// CfgCB is an implementation of Cfg that uses a couchbase bucket.
+// CfgCB is an implementation of Cfg that uses a couchbase bucket,
+// and uses DCP to get change notifications.
 //
 // TODO: This current implementation is race-y!  Instead of storing
 // everything as a single uber key/value, we should instead be storing
@@ -259,7 +259,17 @@ func (r *CfgCB) GetMetaData(vbucketId uint16) (
 }
 
 func (r *CfgCB) Rollback(vbucketId uint16, rollbackSeq uint64) error {
-	return fmt.Errorf("cfg_cb: rollback not implemented")
+	err := r.Refresh()
+	if err != nil {
+		return err
+	}
+
+	r.bdsm.Lock()
+	r.seqs = nil
+	r.meta = nil
+	r.bdsm.Unlock()
+
+	return nil
 }
 
 // ----------------------------------------------------------------
