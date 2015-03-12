@@ -235,7 +235,9 @@ func (t *DCPFeed) Stats(w io.Writer) error {
 func (r *DCPFeed) OnError(err error) {
 	// TODO: Check the type of the error if it's something
 	// serious / not-recoverable / needs user attention.
-	log.Printf("feed_dcp: on error: %s: %v\n", r.name, err)
+	log.Printf("feed_dcp: OnError, name: %s:"+
+		" bucketName: %s, bucketUUID: %s, err: %v\n",
+		r.name, r.bucketName, r.bucketUUID, err)
 
 	atomic.AddUint64(&r.stats.TotError, 1)
 
