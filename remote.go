@@ -120,6 +120,20 @@ func (r *IndexClient) Fields() ([]string, error) {
 	return nil, indexClientUnimplementedErr
 }
 
+func (r *IndexClient) FieldDict(field string) (index.FieldDict, error) {
+	return nil, indexClientUnimplementedErr
+}
+
+func (r *IndexClient) FieldDictRange(field string,
+	startTerm []byte, endTerm []byte) (index.FieldDict, error) {
+	return nil, indexClientUnimplementedErr
+}
+
+func (r *IndexClient) FieldDictPrefix(field string,
+	termPrefix []byte) (index.FieldDict, error) {
+	return nil, indexClientUnimplementedErr
+}
+
 func (r *IndexClient) DumpAll() chan interface{} {
 	return nil
 }
@@ -137,6 +151,10 @@ func (r *IndexClient) Close() error {
 }
 
 func (r *IndexClient) Mapping() *bleve.IndexMapping {
+	return nil
+}
+
+func (r *IndexClient) NewBatch() *bleve.Batch {
 	return nil
 }
 

@@ -285,7 +285,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 			partition:       partition,
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
-			batch:           bleve.NewBatch(),
+			batch:           t.bindex.NewBatch(),
 			cwrQueue:        cwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
@@ -654,7 +654,7 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 
 	// TODO: would good to reuse batch; ask for a public Reset() kind
 	// of method on bleve.Batch?
-	t.batch = bleve.NewBatch()
+	t.batch = t.bindex.NewBatch()
 
 	if t.buf != nil {
 		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
