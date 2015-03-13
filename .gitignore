@@ -10,3 +10,5 @@
 .DS_Store
 /cbft
 /data
+/dist/*.gz
+/dist/version.json
