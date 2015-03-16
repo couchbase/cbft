@@ -57,7 +57,8 @@ var container = flag.String("container", "",
 var weight = flag.Int("weight", 1,
 	"weight of this node (a more capable node has higher weight)")
 var register = flag.String("register", "wanted",
-	"register this node as wanted, wantedForce, known, knownForce or notRegistered")
+	"register this node as wanted, wantedForce, known, knownForce,"+
+		" unwanted, unknown or unchanged")
 var cfgConnect = flag.String("cfgConnect", "simple",
 	"connection string/info to configuration provider")
 

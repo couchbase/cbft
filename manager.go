@@ -77,25 +77,9 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 }
 
 func (mgr *Manager) Start(register string) error {
-	if register != "notRegistered" {
-		if register == "known" ||
-			register == "knownForce" ||
-			register == "wanted" ||
-			register == "wantedForce" {
-			// Save our nodeDef (with our UUID) into the Cfg as a known node.
-			err := mgr.SaveNodeDef(NODE_DEFS_KNOWN, register == "knownForce")
-			if err != nil {
-				return err
-			}
-		}
-		if register == "wanted" ||
-			register == "wantedForce" {
-			// Save our nodeDef (with our UUID) into the Cfg as a wanted node.
-			err := mgr.SaveNodeDef(NODE_DEFS_WANTED, register == "wantedForce")
-			if err != nil {
-				return err
-			}
-		}
+	err := mgr.StartRegister(register)
+	if err != nil {
+		return err
 	}
 
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
@@ -132,6 +116,40 @@ func (mgr *Manager) Start(register string) error {
 		}()
 	}
 
+	return nil
+}
+
+func (mgr *Manager) StartRegister(register string) error {
+	if register == "unchanged" {
+		return nil
+	}
+	if register == "unwanted" || register == "unknown" {
+		err := mgr.RemoveNodeDef(NODE_DEFS_WANTED)
+		if err != nil {
+			return err
+		}
+		if register == "unknown" {
+			err := mgr.RemoveNodeDef(NODE_DEFS_KNOWN)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if register == "known" || register == "knownForce" ||
+		register == "wanted" || register == "wantedForce" {
+		// Save our nodeDef (with our UUID) into the Cfg as a known node.
+		err := mgr.SaveNodeDef(NODE_DEFS_KNOWN, register == "knownForce")
+		if err != nil {
+			return err
+		}
+		if register == "wanted" || register == "wantedForce" {
+			// Save our nodeDef (with our UUID) into the Cfg as a wanted node.
+			err := mgr.SaveNodeDef(NODE_DEFS_WANTED, register == "wantedForce")
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
