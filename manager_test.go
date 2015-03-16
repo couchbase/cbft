@@ -1405,3 +1405,105 @@ func TestManagerIndexControl(t *testing.T) {
 		t.Errorf("expected not frozen")
 	}
 }
+
+func TestRemoveNodeDef(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000",
+		emptyDir, "some-datasource", nil)
+	if err := m.Start("wanted"); err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+	nd, cas, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+		t.Errorf("expected mgr to be in nodeDefsKnown")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+		t.Errorf("expected mgr to be in nodeDefsWanted")
+	}
+
+	err = m.RemoveNodeDef(NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected no error on RemoveNodeDef WANTED")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+		t.Errorf("expected mgr to be in nodeDefsKnown")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to not be in nodeDefsWanted")
+	}
+
+	err = m.RemoveNodeDef(NODE_DEFS_WANTED)
+	if err != nil {
+		t.Errorf("expected no error on RemoveNodeDef WANTED")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+		t.Errorf("expected mgr to be in nodeDefsKnown")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to not be in nodeDefsWanted")
+	}
+
+	err = m.RemoveNodeDef(NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected no error on RemoveNodeDef WANTED")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to be in nodeDefsKnown")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to not be in nodeDefsWanted")
+	}
+
+	err = m.RemoveNodeDef(NODE_DEFS_KNOWN)
+	if err != nil {
+		t.Errorf("expected no error on RemoveNodeDef WANTED")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to be in nodeDefsKnown")
+	}
+	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	if err != nil || cas == 0 || nd == nil {
+		t.Errorf("expected node defs wanted")
+	}
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+		t.Errorf("expected mgr to not be in nodeDefsWanted")
+	}
+}

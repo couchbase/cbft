@@ -195,6 +195,45 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 
 // ---------------------------------------------------------------
 
+func (mgr *Manager) RemoveNodeDef(kind string) error {
+	if mgr.cfg == nil {
+		return nil // Occurs during testing.
+	}
+
+	for {
+		nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
+		if err != nil {
+			return err
+		}
+		if nodeDefs == nil {
+			return nil
+		}
+		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+		if !exists || nodeDefPrev == nil {
+			return nil
+		}
+		delete(nodeDefs.NodeDefs, mgr.bindAddr)
+
+		nodeDefs.UUID = NewUUID()
+		nodeDefs.ImplVersion = mgr.version // TODO: ImplVersion bump?
+
+		_, err = CfgSetNodeDefs(mgr.cfg, kind, nodeDefs, cas)
+		if err != nil {
+			if _, ok := err.(*CfgCASError); ok {
+				// Retry if it was a CAS mismatch, as perhaps
+				// multiple nodes are all racing to register themselves,
+				// such as in a full datacenter power restart.
+				continue
+			}
+			return err
+		}
+		break
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------
+
 // Walk the data dir and register pindexes.
 func (mgr *Manager) LoadDataDir() error {
 	log.Printf("manager: loading dataDir...")
