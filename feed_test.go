@@ -185,3 +185,37 @@ func TestDCPFeedParams(t *testing.T) {
 		t.Errorf("wrong creds")
 	}
 }
+
+func TestVBucketIdToPartitionDest(t *testing.T) {
+	var dests map[string]Dest
+
+	pf_hi := func(partition string, key []byte, dests map[string]Dest) (Dest, error) {
+		if string(key) != "hi" {
+			t.Errorf("expected hi")
+		}
+		return nil, nil
+	}
+	partition, dest, err := VBucketIdToPartitionDest(pf_hi, dests, 0, []byte("hi"))
+	if err != nil || dest != nil || partition != "0" {
+		t.Errorf("expected no err, got: %v", err)
+	}
+
+	pf_bye := func(partition string, key []byte, dests map[string]Dest) (Dest, error) {
+		if string(key) != "bye" {
+			t.Errorf("expected bye")
+		}
+		return nil, nil
+	}
+	partition, dest, err = VBucketIdToPartitionDest(pf_bye, dests, 1025, []byte("bye"))
+	if err != nil || dest != nil || partition != "1025" {
+		t.Errorf("expected no err, got: %v", err)
+	}
+
+	pf_err := func(partition string, key []byte, dests map[string]Dest) (Dest, error) {
+		return nil, fmt.Errorf("whoa_err")
+	}
+	partition, dest, err = VBucketIdToPartitionDest(pf_err, dests, 123, nil)
+	if err == nil {
+		t.Errorf("expected err")
+	}
+}
