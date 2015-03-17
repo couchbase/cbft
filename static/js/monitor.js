@@ -1,5 +1,6 @@
 function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
-    $scope.active = true;
+    $scope.indexNames = [];
+    $scope.currIndexName = null;
     $scope.monitoredIndexes = {};
 
     var tv = 1000;
@@ -21,40 +22,37 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     var updateData = function() {
         expvar.pollExpvar();
 
-        indexesSeen = {};
-        indxs = expvar.getDynamicDataKeys("indexes");
-        for (var idxIndex in indxs) {
-            idxname = indxs[idxIndex];
-            if ($scope.monitoredIndexes[idxname] === undefined) {
-                // a new index
-                $scope.monitoredIndexes[idxname] = monitorIndex(idxname);
-            }
-            indexesSeen[idxname] = true;
-        }
-
-        for (var monitoredIdxName in $scope.monitoredIndexes) {
-            if (indexesSeen[monitoredIdxName] !== true) {
-                $log.info("stop monitoring index: " + monitoredIdxName);
-                removeIndex($scope.monitoredIndexes[monitoredIdxName]);
-                delete $scope.monitoredIndexes[monitoredIdxName];
-            }
-        }
-
         for (var i in $scope.metrics) {
             category = $scope.metrics[i];
             for (var k in category.metrics) {
-                metric = category.metrics[k];
-                redrawMetric(metric);
+                redrawMetric(category.metrics[k]);
             }
         }
 
-        for (var idxName in $scope.monitoredIndexes) {
-            idx = $scope.monitoredIndexes[idxName];
-            if (idx !== undefined) {
-                for(var j in idx.metrics) {
-                    metric = idx.metrics[j];
-                    redrawMetric(metric);
+        $scope.indexNames = expvar.getDynamicDataKeys("indexes");
+
+        for (var indexName in $scope.monitoredIndexes) {
+            if (indexName != $scope.currIndexName) {
+                var idx = $scope.monitoredIndexes[indexName];
+                for (var i in idx.metrics) {
+                    metric = idx.metrics[i];
+                    mname = idify(metric.name);
+                    expvar.removeMetric(metric.name);
+                    $("#header" + mname).remove();
+                    $("#"+mname).remove();
+                    $("#panel"+name).remove();
                 }
+            }
+        }
+
+        var idx = $scope.monitoredIndexes[$scope.currIndexName];
+        if (!idx && $scope.currIndexName) {
+            idx = $scope.monitoredIndexes[$scope.currIndexName] =
+                monitorIndex($scope.currIndexName);
+        }
+        if (idx) {
+            for(var j in idx.metrics) {
+                redrawMetric(idx.metrics[j]);
             }
         }
     };
@@ -379,7 +377,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     });
 
     function ISODateString(d){
-        function pad(n){return n<10 ? '0'+n : n;}
+        function pad(n) { return n<10 ? '0'+n : n; }
         return d.getUTCFullYear()+'-' +
             pad(d.getUTCMonth()+1)+'-' +
             pad(d.getUTCDate())+'T' +

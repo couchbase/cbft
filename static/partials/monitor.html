@@ -6,4 +6,8 @@
 
 <h3 id="indexMonitor">Process Index Stats</h3>
 
+<select ng-model="currIndexName">
+  <option ng-repeat="n in indexNames">{{n}}</option>
+</select>
+
 <div id="indexchartend"></div>
