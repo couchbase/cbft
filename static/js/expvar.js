@@ -3,12 +3,11 @@ var module = angular.module('expvar', []);
 module.factory('expvar', function($http, $log) {
 
 	var result = {
-		pollInterval: null,
 		numSamplesToKeep: 60*10,
-		metricPaths: {},
-		metricValues: {},
-		keyLookupPaths: {},
-		keyLookupValues: {},
+		metricPaths: {}, // name => jsonPointerPath.
+		metricValues: {}, // name => [val0, val1, ..., val59].
+		keyLookupPaths: {}, // keyLookupName => jsonPointerPath.
+		keyLookupValues: {}, // keyLookupName => [key0, key1, ...].
 
 		addMetric: function(name, path) {
 			this.metricPaths[name] = path;
