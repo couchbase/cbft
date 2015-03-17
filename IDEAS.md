@@ -35,9 +35,11 @@ Implementation sketch: perhaps don't blow away the index on the old
 node until the new node has built up the index; and perhaps there's
 some takeover handshake?
 
-# OC1 - Support optional looser "best effort" options (along a
-spectrum from stale=ok to totally consistent) that has lower latency
-than a totally consistent CR1 query.
+# OC1 - Support optional looser "best effort" options
+
+The options might be along a spectrum from stale=ok to totally
+consistent.  The "best effort" option should probably have lower
+latency than a totally consistent CR1 query.
 
 For example, perhaps the client may want to just ask for consistency
 around just one vbucket-seqnum.
@@ -107,8 +109,10 @@ will not be able to make indexing progress.  Those cbft instances
 should try to automatically reconnect and resume indexing from where
 they left off.
 
-# E1 - The user should be able to see error conditions (e.g., yellow /
-red color) on node down and other error conditions.
+# E1 - The user should be able to see error conditions
+
+For example yellow or red coloring on node down and other error
+conditions.
 
 Question: how to distinguish between I'm behind (as normal) versus
 I'm REALLY behind on indexing.  Example: in 2i project, it can detect
@@ -128,7 +132,7 @@ datasource nodes are down.
 # PI1 - Ability to pause/resume indexing.
 
 ---------------------------------------------
-Imaginary N1QL syntax...
+# Imaginary N1QL syntax...
 
   CREATE FULLTEXT INDEX XXX on Bucket (...optional params...);
 
@@ -144,7 +148,7 @@ Also, the index aliases proposed above might not belong to any single
 bucket.
 
 ---------------------------------------------
-Proposed highlevel design concepts and "subparts"...
+# Proposed highlevel design concepts and "subparts"...
 
 Inside a single cbft process...
 
@@ -228,7 +232,7 @@ Queryer with the PIndexes that need to be accessed.  This networking
 layer will provide the necessary AUTH checks.
 
 ---------------------------------------------
-What happens when creating a full-text index...
+# What happens when creating a full-text index...
 
 Let's "follow a request" through the system of a user creating a
 logical full-text index.  The user supplies inputs of data source
@@ -419,7 +423,7 @@ that they also don't have to talk to each other but can separately
 work and arrive at the same answers.
 
 -------------------------
-What about downgrades?
+# What about downgrades?
 
 Downgrades might happen when a user starts a rolling upgrade her
 cluster of cbft nodes to a latest cbft version.  The new version of
