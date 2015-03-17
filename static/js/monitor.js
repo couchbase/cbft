@@ -125,9 +125,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         indexDivName = "index" + idify(name);
         indexPanel =
             '<div id="panel'+idify(name)+'" class="panel panel-default">' +
-            ' <div class="panel-heading">' +
-            '  <a data-toggle="collapse" data-target="#' + indexDivName + '">' + name + '</a>' +
-            ' </div>' +
+            ' <div class="panel-heading">' + name + '</div>' +
             ' <div id="' + indexDivName + '" class="panel-body collapse in"></div>' +
             '</div>';
         $(indexPanel).insertBefore('#indexchartend');
@@ -263,11 +261,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         divName = "cat" + idify(categoryName);
         panel =
             '<div class="panel panel-default">' +
-            ' <div class="panel-heading">' +
-            '  <a data-toggle="collapse" data-target="#' + divName + '">' +
-            category.display +
-            '  </a>' +
-            ' </div>' +
+            ' <div class="panel-heading">' + category.display + '</div>' +
             ' <div id="' + divName + '" class="panel-body collapse in">' +
             ' </div>' +
             '</div>';
