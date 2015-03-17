@@ -175,10 +175,10 @@ Inside a single cbft process...
 Every cbft node is homogeneous in order to provide a simple story for
 deployment.
 
-An PIndex (a.k.a, an Index Partition, or a "Physical Index") will have
+A PIndex (a.k.a, an Index Partition, or a "Physical Index") will have
 different backend implementation types, and a PIndex of type "bleve"
 maintains a single bleve index.  A PIndex *might* be covering just a
-subset of a larger index, but an PIndex doesn't really know that.
+subset of a larger index, but a PIndex doesn't really know that.
 Higher levels of the system (Manager/Planner/Janitor) have a logical
 index (aka, "LIndex") to PIndex mapping.  A PIndex, in particular,
 doesn't really know about data-source concepts like couchbase cluster,
@@ -187,13 +187,14 @@ buckets, vbuckets, or DCP/TAP.
 A Feed is an interface that will have different implementations
 (TAPFeed, DCPFeed, TestFeed, etc).  A Feed is responsible for
 connecting to a data source (and reconnecting as necessary).  A Feed
-pumps updates from its data source into one or more PIndexes.  A
-TestFeed, for example, can send a whole series of interesting updates
-to PIndexes for testing difficult scenarios.  Of note, a PIndex
-doesn't know about Feeds, so that any code (like test code) might be
-driving updates to a PIndex's API.  During scenarios to flapping or
-wobbly data sources, it's the responsibility of the different Feed
-implementations to implement reconnection backoff strategies.
+pumps updates from its data source into a logical destination (or
+Dest).  A backend for a Dest can be a PIndex.  A TestFeed, for
+example, can send a whole series of interesting updates to Dests/PIndexes
+for testing difficult scenarios.  Of note, a PIndex doesn't know about
+Feeds, so that any code (like test code) might be driving updates to a
+PIndex's API.  During scenarios of flapping or wobbly data sources,
+it's the responsibility of the different Feed implementations to
+implement reconnection backoff strategies.
 
 A Manager has a collection of PIndexes and Feeds and manages the
 hook-ups between them.  A Manager singleton will be that single
@@ -255,7 +256,8 @@ will be awoken (hey, something changed, there's (re-)planning
 needed).
 
 50 ASIDE: By the way, each cbft instance or process has its own
-unique, persistent cbft-ID (likely saved in the dataDir somewhere).
+unique, persistent cbft-ID (like a UUID, likely saved in the dataDir
+somewhere).
 
 52 And all those cbft-ID's will also be listed in the Cfg.
 
@@ -266,8 +268,7 @@ M amount of RAM here) to the Cfg.
 54 Those brand new cbft instances, however, are not engaged right
 away.  Only some subset of cbft-ID's, however, will be explicitly
 listed as "wanted" by the user or sysadmin.  This is akin to how
-Couchbase Server has a separate step or state between Add Server and
-Rebalance.
+Couchbase Server has an extra step between Add Server and Rebalance.
 
 56 The sysadmin can use some API's to mark some subset of the known
 cbft instances as "wanted" in the Cfg.
@@ -283,10 +284,10 @@ IndexDef's), the list of wanted cbft-instances, and version info.
 72 If any of the above inputs changes, the Planner needs to be
 re-awoken and re-run.
 
-80 The Planner functionally (in a deterministic, mathematically
-function sense) computes an assignment of partitions (in this case,
-vbuckets) to PIndexes and then also functionally assigns those
-PIndexes to cbft instances.
+80 The Planner functionally (in a deterministic, mathematical function
+sense) computes an assignment of partitions (in this case, vbuckets)
+to PIndexes and then also functionally assigns those PIndexes to cbft
+instances.
 
 90 So, there are N indepedent Planners running across the cbft cluster
 that independently see something needs to be planned, and assumming
