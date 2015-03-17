@@ -54,7 +54,6 @@ Getting
     cd $GOPATH/src/github.com/couchbaselabs
     git clone git://github.com/couchbaselabs/cbft.git
 
-
 Building
 
     make
