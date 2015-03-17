@@ -34,6 +34,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         for (var indexName in $scope.monitoredIndexes) {
             if (indexName != $scope.currIndexName) {
                 removeIndex($scope.monitoredIndexes[indexName]);
+                delete $scope.monitoredIndexes[indexName];
             }
         }
 
@@ -185,6 +186,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
                 $("#header" + mname).remove();
                 $("#" + mname).remove();
             }
+            $("#panel" + idify(index.name)).remove();
         }
     }
 
