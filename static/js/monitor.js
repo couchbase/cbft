@@ -20,8 +20,9 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
     var updateData = function() {
         expvar.pollExpvar();
-        indxs = expvar.getKeys("indexes");
+
         indexesSeen = {};
+        indxs = expvar.getKeys("indexes");
         for (var idxIndex in indxs) {
             idxname = indxs[idxIndex];
             if ($scope.monitoredIndexes[idxname] === undefined) {
@@ -129,19 +130,28 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
             ]
         };
 
-        indexDivName = "index" + name;
-        indexPanel = '<div id="panel'+name+'" class="panel panel-default"><div class="panel-heading"><a data-toggle="collapse" data-target="#' + indexDivName + '">' + name + '</a></div><div id="' + indexDivName + '" class="panel-body collapse in"></div></div>';
+        indexDivName = "index" + idify(name);
+        indexPanel =
+            '<div id="panel'+idify(name)+'" class="panel panel-default">' +
+            ' <div class="panel-heading">' +
+            '  <a data-toggle="collapse" data-target="#' + indexDivName + '">' + name + '</a>' +
+            ' </div>' +
+            ' <div id="' + indexDivName + '" class="panel-body collapse in"></div>' +
+            '</div>';
         $(indexPanel).insertBefore('#indexchartend');
 
         for (var i in idx.metrics) {
             metric = idx.metrics[i];
+            mname = idify(metric.name);
 
-            divContent = '<h5 id="header' +metric.name+'">'+metric.display+'</h5><div id="'+metric.name+'"></div>';
+            divContent =
+                '<h5 id="header' +mname+'">' + metric.display + '</h5>' +
+                '<div id="'+mname+'"></div>';
 
             $(divContent).appendTo('#'+indexDivName);
 
             if (metric.legend) {
-                legendDivName = "legend" + name;
+                legendDivName = "legend" + idify(name);
                 legendContent = '<div id="' + legendDivName + '" class="legend"></div>';
                 $(legendContent).appendTo('#'+indexDivName);
             }
@@ -169,7 +179,6 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
             // build chart
             addGraph(metric);
-
         }
 
         return idx;
@@ -178,9 +187,10 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     function removeIndex(index) {
         for (var i in index.metrics) {
             metric = index.metrics[i];
+            mname = idify(metric.name);
             expvar.removeMetric(metric.name);
-            // $("#header" + metric.name).remove();
-            // $("#"+metric.name).remove();
+            $("#header" + mname).remove();
+            $("#"+mname).remove();
             $("#panel"+name).remove();
         }
     }
@@ -261,8 +271,9 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
         for (var i in category.metrics) {
             metric = category.metrics[i];
+            mname = idify(metric.name);
 
-            divContent = '<h5>'+metric.display+'</h5><div id="'+metric.name+'"></div>';
+            divContent = '<h5>'+metric.display+'</h5><div id="'+mname+'"></div>';
 
             $(divContent).appendTo("#"+divName);
 
@@ -275,6 +286,8 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     }
 
     function addGraph(metric) {
+        mname = idify(metric.name);
+
         var seriesData = [];
         if (metric.series !== undefined) {
             for (var si in metric.series) {
@@ -295,13 +308,8 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         $log.info(seriesData);
         $log.info("seriesdataend");
 
-        var el = document.getElementById(metric.name);
-        if (!el) {
-            return;
-        }
-
         var graph = new Rickshaw.Graph({
-            element: el,
+            element: document.querySelector("#"+mname),
             width: "800",
             height: "75",
             renderer: "area",
@@ -368,5 +376,9 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
             pad(d.getUTCHours())+':' +
             pad(d.getUTCMinutes())+':' +
             pad(d.getUTCSeconds())+'Z';
+    }
+
+    function idify(s) {
+        return s.replace(/\./g, '-');
     }
 }
