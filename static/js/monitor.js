@@ -33,15 +33,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
         for (var indexName in $scope.monitoredIndexes) {
             if (indexName != $scope.currIndexName) {
-                var idx = $scope.monitoredIndexes[indexName];
-                for (var i in idx.metrics) {
-                    metric = idx.metrics[i];
-                    mname = idify(metric.name);
-                    expvar.removeMetric(metric.name);
-                    $("#header" + mname).remove();
-                    $("#"+mname).remove();
-                    $("#panel"+name).remove();
-                }
+                removeIndex($scope.monitoredIndexes[indexName]);
             }
         }
 
@@ -184,13 +176,15 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     }
 
     function removeIndex(index) {
-        for (var i in index.metrics) {
-            metric = index.metrics[i];
-            mname = idify(metric.name);
-            expvar.removeMetric(metric.name);
-            $("#header" + mname).remove();
-            $("#"+mname).remove();
-            $("#panel"+name).remove();
+        if (index) {
+            for (var i in index.metrics) {
+                metric = index.metrics[i];
+                mname = idify(metric.name);
+                expvar.removeMetric(metric.name);
+                $("#panel" + mname).remove();
+                $("#header" + mname).remove();
+                $("#" + mname).remove();
+            }
         }
     }
 
