@@ -4,10 +4,17 @@ module.factory('expvar', function($http, $log) {
 
 	var result = {
 		numSamplesToKeep: 60*10,
+
+        // An example of an individual metric would be
+        // like "stats/indexes/SOME_PINDEX/index/index_time".
 		metricPaths: {}, // name => jsonPointerPath.
 		metricValues: {}, // name => [val0, val1, ..., val59].
-		keyLookupPaths: {}, // keyLookupName => jsonPointerPath.
-		keyLookupValues: {}, // keyLookupName => [key0, key1, ...].
+
+        // Used for server-driven dynamic data.  For example, when
+        // jsonPointerPath is "stats/indexes", then the
+        // dynamicDataKeys will be all the PINDEX_NAME's.
+		dynamicDataPaths: {}, // dynamicName => jsonPointerPath.
+		dynamicDataKeys: {}, // dynamicName => [key0, key1, ...].
 
 		addMetric: function(name, path) {
 			this.metricPaths[name] = path;
@@ -17,12 +24,12 @@ module.factory('expvar', function($http, $log) {
 			delete this.metricPaths[name];
 		},
 
-		addKeysLookup: function(name, path) {
-			this.keyLookupPaths[name] = path;
+		addDynamicDataPath: function(name, path) {
+			this.dynamicDataPaths[name] = path;
 		},
 
-		getKeys: function(name) {
-			return this.keyLookupValues[name];
+		getDynamicDataKeys: function(name) {
+			return this.dynamicDataKeys[name];
 		},
 
 		getMetricValues: function(name) {
@@ -57,19 +64,21 @@ module.factory('expvar', function($http, $log) {
 			numSamplesToKeep = this.numSamplesToKeep;
 			metricPaths = this.metricPaths;
 			metricValues = this.metricValues;
-			keyLookupPaths = this.keyLookupPaths;
-			keyLookupValues = this.keyLookupValues;
+			dynamicDataPaths = this.dynamicDataPaths;
+			dynamicDataKeys = this.dynamicDataKeys;
+
 			$http.get("/debug/vars").success(function(data) {
-				// lookup key names
-				for(var keyLookupName in keyLookupPaths) {
-					keyPath = this.keyLookupPaths[keyLookupName];
+				// lookup dynamic keys
+				for(var keyLookupName in dynamicDataPaths) {
+					keyPath = this.dynamicDataPaths[keyLookupName];
 					keysContainer = jsonpointer.get(data, keyPath);
 					keys = [];
 					for(var key in keysContainer) {
 						keys.push(key);
 					}
-					keyLookupValues[keyLookupName] = keys;
+					dynamicDataKeys[keyLookupName] = keys;
 				}
+
 				// lookup metrics
 				for(var metricName in metricPaths) {
 					metricPath = this.metricPaths[metricName];

@@ -22,7 +22,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         expvar.pollExpvar();
 
         indexesSeen = {};
-        indxs = expvar.getKeys("indexes");
+        indxs = expvar.getDynamicDataKeys("indexes");
         for (var idxIndex in indxs) {
             idxname = indxs[idxIndex];
             if ($scope.monitoredIndexes[idxname] === undefined) {
@@ -260,7 +260,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
         }
     };
 
-    expvar.addKeysLookup("indexes", top + "indexes");
+    expvar.addDynamicDataPath("indexes", top + "indexes");
 
     for (var categoryName in $scope.metrics) {
         category = $scope.metrics[categoryName];
