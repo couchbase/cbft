@@ -11,4 +11,5 @@
 /cbft
 /data
 /dist/*.gz
+/dist/cbft.*
 /dist/version.json
