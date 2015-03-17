@@ -37,6 +37,8 @@ import (
 	"github.com/couchbaselabs/go-couchbase"
 )
 
+var VERSION = "0.0.0"
+
 var bindAddr = flag.String("addr", "localhost:8095",
 	"http listen address:port")
 var dataDir = flag.String("dataDir", "data",
@@ -69,6 +71,8 @@ func init() {
 }
 
 func main() {
+	log.Printf("main: %s started (%s/%s)", os.Args[0], VERSION, cbft.VERSION)
+
 	flag.Parse()
 
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -115,7 +119,6 @@ func main() {
 }
 
 func MainWelcome() {
-	log.Printf("main: %s started", os.Args[0])
 	if *logFlags != "" {
 		log.ParseLogFlag(*logFlags)
 	}
