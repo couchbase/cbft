@@ -187,6 +187,9 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 
 	function redrawMetric(metric) {
 		graph = metric.graph;
+        if (!graph || !graph.series) {
+            return;
+        }
 
 		if (metric.series !== undefined) {
 			var seriesData = [];
@@ -292,8 +295,13 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
 		$log.info(seriesData);
 		$log.info("seriesdataend");
 
+        var el = document.getElementById(metric.name);
+        if (!el) {
+            return;
+        }
+
 		var graph = new Rickshaw.Graph({
-			element: document.querySelector("#"+metric.name),
+			element: el,
 			width: "800",
 			height: "75",
 			renderer: "area",
