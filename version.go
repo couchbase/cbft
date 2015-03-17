@@ -15,6 +15,14 @@ import (
 	"fmt"
 )
 
+// The cbft.VERSION tracks persistence versioning (format of persisted
+// data and configuration).  The main.VERSION (see cmd/cbft/...), in
+// contrast, is an overall "product" version.  For example, we might
+// introduce new features like web UI admin enhancements into the
+// software project, in which case we'd bump the main.VERSION number;
+// but, if the persisted data/config format was unchanged, then the
+// cbft.VERSION number would also remain unchanged.
+//
 // NOTE: You *must* update VERSION if you change what's stored in the
 // Cfg (such as the JSON/struct definitions or planning algorithms).
 const VERSION = "3.0.0"
