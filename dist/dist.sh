@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 project=github.com/couchbaselabs/cbft
+projectCmd=$project/cmd/cbft
 top=`go list -f '{{.Dir}}' $project`
 version=`git describe`
 
@@ -20,14 +21,14 @@ emitVersion() {
 build() {
     goflags="-v -ldflags '-X main.VERSION $version'"
 
-    eval env GOOS=linux   GOARCH=386         go build $goflags -o $DIST/cbft.linux.386 $project &
-    eval env GOOS=linux   GOARCH=arm         go build $goflags -o $DIST/cbft.linux.arm $project &
-    eval env GOOS=linux   GOARCH=arm GOARM=5 go build $goflags -o $DIST/cbft.linux.arm5 $project &
-    eval env GOOS=linux   GOARCH=amd64       go build $goflags -o $DIST/cbft.linux.amd64 $project &
-    eval env GOOS=freebsd GOARCH=amd64       go build $goflags -o $DIST/cbft.freebsd.amd64 $project &
-    eval env GOOS=windows GOARCH=386         go build $goflags -o $DIST/cbft.windows.386.exe $project &
-    eval env GOOS=windows GOARCH=amd64       go build $goflags -o $DIST/cbft.windows.amd64.exe $project &
-    eval env GOOS=darwin  GOARCH=amd64       go build $goflags -o $DIST/cbft.darwin.amd64 $project &
+    eval env GOOS=linux   GOARCH=386         go build $goflags -o $DIST/cbft.linux.386 $projectCmd &
+    eval env GOOS=linux   GOARCH=arm         go build $goflags -o $DIST/cbft.linux.arm $projectCmd &
+    eval env GOOS=linux   GOARCH=arm GOARM=5 go build $goflags -o $DIST/cbft.linux.arm5 $projectCmd &
+    eval env GOOS=linux   GOARCH=amd64       go build $goflags -o $DIST/cbft.linux.amd64 $projectCmd &
+    eval env GOOS=freebsd GOARCH=amd64       go build $goflags -o $DIST/cbft.freebsd.amd64 $projectCmd &
+    eval env GOOS=windows GOARCH=386         go build $goflags -o $DIST/cbft.windows.386.exe $projectCmd &
+    eval env GOOS=windows GOARCH=amd64       go build $goflags -o $DIST/cbft.windows.amd64.exe $projectCmd &
+    eval env GOOS=darwin  GOARCH=amd64       go build $goflags -o $DIST/cbft.darwin.amd64 $projectCmd &
 
     wait
 }
@@ -45,4 +46,5 @@ compress() {
 testProject
 emitVersion
 build
-compress
+
+# compress
