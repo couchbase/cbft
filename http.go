@@ -11,6 +11,7 @@ package cbft
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -18,17 +19,23 @@ import (
 )
 
 func staticFileRouter(staticDir, staticETag string, pages []string) *mux.Router {
+	var s http.FileSystem
+	if _, err := os.Stat(staticDir); err == nil {
+		log.Printf("http: serving assets from staticDir: %s", staticDir)
+		s = http.Dir(staticDir)
+	} else {
+		log.Printf("http: serving assets from embedded data")
+		s = assetFS()
+	}
+
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-
-	// static
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
-		myFileHandler{http.FileServer(http.Dir(staticDir)), staticETag}))
+		myFileHandler{http.FileServer(s), staticETag}))
 
 	for _, p := range pages {
-		// if you try to use index.html it will redirect...poorly
-		r.PathPrefix(p).Handler(RewriteURL("/",
-			http.FileServer(http.Dir(staticDir))))
+		// If client ask for any of the pages, redirect.
+		r.PathPrefix(p).Handler(RewriteURL("/", http.FileServer(s)))
 	}
 
 	r.Handle("/", http.RedirectHandler("/static/index.html", 302))
