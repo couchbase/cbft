@@ -32,9 +32,9 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
+	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase"
 	"github.com/couchbaselabs/cbft"
-	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
 )
 
 var VERSION = "0.0.0"

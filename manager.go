@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 type Manager struct {

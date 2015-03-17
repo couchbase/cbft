@@ -26,7 +26,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.

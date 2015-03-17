@@ -20,10 +20,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase"
+	"github.com/couchbase/go-couchbase/cbdatasource"
 	"github.com/couchbase/gomemcached"
-	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
-	"github.com/couchbaselabs/go-couchbase/cbdatasource"
 )
 
 func init() {

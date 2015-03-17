@@ -25,7 +25,7 @@ import (
 
 	"github.com/rcrowley/go-metrics"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 var jsonNULL = []byte("null")

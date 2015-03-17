@@ -15,7 +15,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 func docIDLookup(req *http.Request) string {

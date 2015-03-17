@@ -16,9 +16,9 @@ import (
 	"fmt"
 	"io"
 
+	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/gomemcached/client"
-	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
 )
 
 func init() {

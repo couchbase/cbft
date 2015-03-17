@@ -16,7 +16,7 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 // A janitor maintains PIndexes and Feeds, creating, deleting &

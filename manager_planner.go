@@ -18,8 +18,8 @@ import (
 	"sort"
 	"strings"
 
+	log "github.com/couchbase/clog"
 	"github.com/couchbaselabs/blance"
-	log "github.com/couchbaselabs/clog"
 )
 
 // A planner assigns partitions to cbft's and to PIndexes on each cbft.

@@ -20,8 +20,6 @@ import (
 	"testing"
 
 	"github.com/blevesearch/bleve"
-
-	log "github.com/couchbaselabs/clog"
 )
 
 // Implements ManagerEventHandlers interface.
@@ -200,8 +198,6 @@ func TestManagerCreateDeleteIndex(t *testing.T) {
 		t.Errorf("expected to be 1 feed and 1 pindex, got feeds: %+v, pindexes: %+v",
 			feeds, pindexes)
 	}
-
-	log.Printf("test will now be deleting the index: foo")
 
 	if err := m.DeleteIndex("foo"); err != nil {
 		t.Errorf("expected DeleteIndex() to work on actual index, err: %v", err)

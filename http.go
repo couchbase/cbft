@@ -15,7 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 func staticFileRouter(staticDir, staticETag string, pages []string) *mux.Router {

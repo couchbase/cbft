@@ -15,10 +15,10 @@ import (
 	"encoding/json"
 	"sync"
 
+	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase"
+	"github.com/couchbase/go-couchbase/cbdatasource"
 	"github.com/couchbase/gomemcached"
-	log "github.com/couchbaselabs/clog"
-	"github.com/couchbaselabs/go-couchbase"
-	"github.com/couchbaselabs/go-couchbase/cbdatasource"
 )
 
 // CfgCB is an implementation of Cfg that uses a couchbase bucket,

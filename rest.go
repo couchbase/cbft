@@ -23,7 +23,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 )
 
 var startTime = time.Now()

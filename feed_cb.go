@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/gomemcached"
-	"github.com/couchbaselabs/go-couchbase"
 )
 
 func init() {

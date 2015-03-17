@@ -27,7 +27,7 @@ import (
 
 	"github.com/rcrowley/go-metrics"
 
-	log "github.com/couchbaselabs/clog"
+	log "github.com/couchbase/clog"
 
 	"github.com/dustin/go-jsonpointer"
 
