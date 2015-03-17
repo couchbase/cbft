@@ -265,8 +265,17 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     for (var categoryName in $scope.metrics) {
         category = $scope.metrics[categoryName];
 
-        divName = "cat" + categoryName;
-        panel = '<div class="panel panel-default"><div class="panel-heading"><a data-toggle="collapse" data-target="#' + divName + '">'+ category.display + '</a></div><div id="' + divName + '" class="panel-body collapse in"></div></div>';
+        divName = "cat" + idify(categoryName);
+        panel =
+            '<div class="panel panel-default">' +
+            ' <div class="panel-heading">' +
+            '  <a data-toggle="collapse" data-target="#' + divName + '">' +
+            category.display +
+            '  </a>' +
+            ' </div>' +
+            ' <div id="' + divName + '" class="panel-body collapse in">' +
+            ' </div>' +
+            '</div>';
         $(panel).insertBefore('#chartend');
 
         for (var i in category.metrics) {
