@@ -62,6 +62,7 @@ function MonitorCtrl($scope, $http, $routeParams, $log, $sce, expvar) {
     function monitorIndex(name) {
         $log.info("start monitoring index: " + name);
         idx = {
+            name: name,
             metrics: [
                 {
                     name: name+"updates",
