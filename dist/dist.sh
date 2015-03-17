@@ -46,5 +46,4 @@ compress() {
 testProject
 emitVersion
 build
-
-# compress
+compress
