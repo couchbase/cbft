@@ -19,7 +19,7 @@ emitVersion() {
 }
 
 build() {
-    goflags="-v -ldflags '-X main.VERSION $version'"
+    goflags="-v -ldflags '-X main.VERSION $version' -tags debug"
 
     eval env GOOS=linux   GOARCH=386         go build $goflags -o $DIST/cbft.linux.386 $projectCmd &
     eval env GOOS=linux   GOARCH=arm         go build $goflags -o $DIST/cbft.linux.arm $projectCmd &
