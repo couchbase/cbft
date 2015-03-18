@@ -6,8 +6,8 @@ bindata:
 	go fmt bindata_assetfs.go
 
 build: bindata
-	go build ./...
-	go build -o ./cbft ./cmd/cbft
+	go build -tags 'debug' ./...
+	go build -tags 'debug' -o ./cbft ./cmd/cbft
 
 build-leveldb: bindata
 	go build -tags 'debug leveldb' ./...
