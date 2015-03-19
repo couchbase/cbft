@@ -40,6 +40,9 @@ type PIndexImplType struct {
 		req []byte, res io.Writer) error
 
 	Description string
+
+	// A prototype instance of indexParams that is usable for
+	// Validate() and New().
 	StartSample interface{}
 }
 
