@@ -68,11 +68,12 @@ type Dest interface {
 
 	// Blocks until the Dest has reached the desired consistency for
 	// the partition or until the cancelCh is readable or closed by
-	// some goroutine related to the calling goroutine.  The seqStart
-	// is the seq number when the operation started waiting and the
-	// seqEnd is the seq number at the end of operation (even when
-	// cancelled or error), so that the caller can get a rough idea of
-	// ingest velocity.
+	// some goroutine related to the calling goroutine.  The error
+	// response might be a ErrorConsistencyWait instance, which has
+	// StartEndSeqs information.  The seqStart is the seq number when
+	// the operation started waiting and the seqEnd is the seq number
+	// at the end of operation (even when cancelled or error), so that
+	// the caller might get a rough idea of ingest velocity.
 	ConsistencyWait(partition, partitionUUID string,
 		consistencyLevel string,
 		consistencySeq uint64,
