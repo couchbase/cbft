@@ -46,7 +46,8 @@ func init() {
 }
 
 func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
-	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
+	sourceType, bucketName, bucketUUID, params string,
+	dests map[string]Dest) error {
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
@@ -57,7 +58,7 @@ func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	}
 	err = feed.Start()
 	if err != nil {
-		return fmt.Errorf("feed_dcp: could not start dcp feed, server: %s, err: %v",
+		return fmt.Errorf("feed_dcp: could not start, server: %s, err: %v",
 			mgr.server, err)
 	}
 	err = mgr.registerFeed(feed)

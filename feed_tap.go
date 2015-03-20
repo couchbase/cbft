@@ -34,7 +34,8 @@ func init() {
 }
 
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
-	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
+	sourceType, bucketName, bucketUUID, params string,
+	dests map[string]Dest) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
