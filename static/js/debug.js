@@ -1,27 +1,44 @@
-function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
+function DebugCtrl($scope, $http, $routeParams, $log) {
 
-    $scope.errorMessage = "";
 	$scope.pindexName = "";
 	$scope.docId = "";
+    $scope.docResults = null;
+    $scope.docDebugResults = null;
+    $scope.errorMessage = null;
 	$scope.maxKLen = 0;
 	$scope.maxVLen = 0;
 
     $scope.debugDoc = function() {
-        $http.get('/api/pindex-bleve/'+$scope.pindexName+'/docDebug/'+$scope.docId).
+        $scope.docResults = null;
+        $scope.docDebugResults = null;
+        $scope.errorMessage = null;
+	    $scope.maxKLen = 0;
+	    $scope.maxVLen = 0;
+
+        $http.get('/api/pindex-bleve/'+$scope.pindexName+'/doc/'+
+                  encodeURIComponent($scope.docId)).
         success(function(data) {
-            $scope.processResults(data);
+            $scope.docResults = data;
+
+            $http.get('/api/pindex-bleve/'+$scope.pindexName+'/docDebug/'+
+                      encodeURIComponent($scope.docId)).
+            success(function(data) {
+                $scope.processDocDebugResults(data);
+            }).
+            error(function(data, code) {
+                $scope.errorMessage = data;
+            });
         }).
         error(function(data, code) {
             $scope.errorMessage = data;
         });
     };
 
-    $scope.processResults = function(data) {
-        $scope.errorMessage = null;
-        $scope.results = data;
+    $scope.processDocDebugResults = function(data) {
+        $scope.docDebugResults = data;
 
-        for(var i in $scope.results) {
-            row = $scope.results[i];
+        for(var i in $scope.docDebugResults) {
+            var row = $scope.docDebugResults[i];
             row.k = atob(row.key).split('');
             if (row.k.length > $scope.maxKLen) {
 				$scope.maxKLen = row.k.length;

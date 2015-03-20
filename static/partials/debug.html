@@ -30,5 +30,11 @@
   </div>
 </form>
 
-<div ng-show="results" ng-include
+<div ng-show="docResults">
+  <h3>Doc</h3>
+  <pre>{{docResults}}</pre>
+</div>
+
+<div ng-show="docDebugResults" ng-include
      src="'/static/partials/debug-rows.html'"/>
+
