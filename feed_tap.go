@@ -24,10 +24,11 @@ import (
 func init() {
 	RegisterFeedType("couchbase-tap",
 		&FeedType{
-			Start:       StartTAPFeed,
-			Partitions:  CouchbasePartitions,
-			Public:      false,
-			Description: "couchbase-tap - Couchbase Server/Cluster data source, via TAP protocol",
+			Start:      StartTAPFeed,
+			Partitions: CouchbasePartitions,
+			Public:     false,
+			Description: "couchbase-tap" +
+				" - Couchbase Server/Cluster data source, via TAP protocol",
 			StartSample: &TAPFeedParams{},
 		})
 }
@@ -35,7 +36,8 @@ func init() {
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewTAPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
+		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
 		return fmt.Errorf("feed_tap: could not prepare TAP stream to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -43,7 +45,7 @@ func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	}
 	err = feed.Start()
 	if err != nil {
-		return fmt.Errorf("feed_tap: could not start tap feed, server: %s, err: %v",
+		return fmt.Errorf("feed_tap: could not start, server: %s, err: %v",
 			mgr.server, err)
 	}
 	err = mgr.registerFeed(feed)
@@ -64,6 +66,7 @@ type TAPFeed struct {
 	params     *TAPFeedParams
 	pf         DestPartitionFunc
 	dests      map[string]Dest
+	disable    bool
 	closeCh    chan bool
 	doneCh     chan bool
 	doneErr    error
@@ -77,7 +80,8 @@ type TAPFeedParams struct {
 }
 
 func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
-	pf DestPartitionFunc, dests map[string]Dest) (*TAPFeed, error) {
+	pf DestPartitionFunc, dests map[string]Dest,
+	disable bool) (*TAPFeed, error) {
 	params := &TAPFeedParams{}
 	if paramsStr != "" {
 		err := json.Unmarshal([]byte(paramsStr), params)
@@ -95,6 +99,7 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 		params:     params,
 		pf:         pf,
 		dests:      dests,
+		disable:    disable,
 		closeCh:    make(chan bool),
 		doneCh:     make(chan bool),
 		doneErr:    nil,
@@ -107,6 +112,11 @@ func (t *TAPFeed) Name() string {
 }
 
 func (t *TAPFeed) Start() error {
+	if t.disable {
+		log.Printf("feed_tap: disable, name: %s", t.Name())
+		return nil
+	}
+
 	log.Printf("feed_tap: start, name: %s", t.Name())
 
 	backoffFactor := t.params.BackoffFactor

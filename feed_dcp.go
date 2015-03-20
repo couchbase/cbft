@@ -28,17 +28,19 @@ import (
 
 func init() {
 	RegisterFeedType("couchbase", &FeedType{
-		Start:       StartDCPFeed,
-		Partitions:  CouchbasePartitions,
-		Public:      true,
-		Description: "couchbase - Couchbase Server/Cluster data source",
+		Start:      StartDCPFeed,
+		Partitions: CouchbasePartitions,
+		Public:     true,
+		Description: "couchbase" +
+			" - Couchbase Server/Cluster data source",
 		StartSample: NewDCPFeedParams(),
 	})
 	RegisterFeedType("couchbase-dcp", &FeedType{
-		Start:       StartDCPFeed,
-		Partitions:  CouchbasePartitions,
-		Public:      false, // Won't be listed in /api/managerMeta output.
-		Description: "couchbase-dcp - Couchbase Server/Cluster data source, via DCP protocol",
+		Start:      StartDCPFeed,
+		Partitions: CouchbasePartitions,
+		Public:     false, // Won't be listed in /api/managerMeta output.
+		Description: "couchbase-dcp" +
+			" - Couchbase Server/Cluster data source, via DCP protocol",
 		StartSample: NewDCPFeedParams(),
 	})
 }
@@ -46,7 +48,8 @@ func init() {
 func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, bucketName, bucketUUID, params string, dests map[string]Dest) error {
 	feed, err := NewDCPFeed(feedName, mgr.server, "default",
-		bucketName, bucketUUID, params, BasicPartitionFunc, dests)
+		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
+		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
 		return fmt.Errorf("feed_dcp: could not prepare DCP feed to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
@@ -75,6 +78,7 @@ type DCPFeed struct {
 	params     *DCPFeedParams
 	pf         DestPartitionFunc
 	dests      map[string]Dest
+	disable    bool
 	bds        cbdatasource.BucketDataSource
 
 	m       sync.Mutex
@@ -128,7 +132,8 @@ func (d *DCPFeedParams) GetCredentials() (string, string, string) {
 }
 
 func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
-	pf DestPartitionFunc, dests map[string]Dest) (*DCPFeed, error) {
+	pf DestPartitionFunc, dests map[string]Dest,
+	disable bool) (*DCPFeed, error) {
 	params := NewDCPFeedParams()
 	if paramsStr != "" {
 		err := json.Unmarshal([]byte(paramsStr), params)
@@ -171,6 +176,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 		params:     params,
 		pf:         pf,
 		dests:      dests,
+		disable:    disable,
 		stats:      NewDestStats(),
 	}
 
@@ -190,6 +196,11 @@ func (t *DCPFeed) Name() string {
 }
 
 func (t *DCPFeed) Start() error {
+	if t.disable {
+		log.Printf("feed_dcp: disable, name: %s", t.Name())
+		return nil
+	}
+
 	log.Printf("feed_dcp: start, name: %s", t.Name())
 	return t.bds.Start()
 }
