@@ -28,8 +28,8 @@ import (
 
 var startTime = time.Now()
 
-func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
-	*mux.Router, error) {
+func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string,
+	mr *MsgRing) (*mux.Router, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
@@ -48,8 +48,10 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string, mr *MsgRin
 	r.Handle("/api/index/{indexName}", NewGetIndexHandler(mgr)).Methods("GET")
 
 	if mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
-		r.Handle("/api/index/{indexName}/count", NewCountHandler(mgr)).Methods("GET")
-		r.Handle("/api/index/{indexName}/query", NewQueryHandler(mgr)).Methods("POST")
+		r.Handle("/api/index/{indexName}/count",
+			NewCountHandler(mgr)).Methods("GET")
+		r.Handle("/api/index/{indexName}/query",
+			NewQueryHandler(mgr)).Methods("POST")
 	}
 
 	r.Handle("/api/index/{indexName}/planFreezeControl/{op}",
