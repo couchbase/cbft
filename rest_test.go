@@ -282,6 +282,21 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "diag on empty manaager",
+			Path:   "/api/diag",
+			Method: "GET",
+			Params: nil,
+			Body:   nil,
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`/api/cfg`:          true,
+				`/api/currentStats`: true,
+				`/api/log`:          true,
+				`/api/managerMeta`:  true,
+				`/runtime`:          true,
+			},
+		},
+		{
 			Desc:         "list empty indexes",
 			Path:         "/api/index",
 			Method:       "GET",
