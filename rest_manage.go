@@ -18,12 +18,14 @@ import (
 )
 
 type DiagGetHandler struct {
-	mgr *Manager
-	mr  *MsgRing
+	versionMain string
+	mgr         *Manager
+	mr          *MsgRing
 }
 
-func NewDiagGetHandler(mgr *Manager, mr *MsgRing) *DiagGetHandler {
-	return &DiagGetHandler{mgr: mgr, mr: mr}
+func NewDiagGetHandler(versionMain string,
+	mgr *Manager, mr *MsgRing) *DiagGetHandler {
+	return &DiagGetHandler{versionMain: versionMain, mgr: mgr, mr: mr}
 }
 
 func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -37,7 +39,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewGetLogHandler(h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
-		{"/runtime", nil, restGetRuntime},
+		{"/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
 		{"/runtime/flags", nil, restGetRuntimeFlags},
 		{"/runtime/memStats", nil, restGetRuntimeMemStats},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},

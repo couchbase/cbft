@@ -28,8 +28,8 @@ import (
 
 var startTime = time.Now()
 
-func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string,
-	mr *MsgRing) (*mux.Router, error) {
+func NewManagerRESTRouter(versionMain string, mgr *Manager,
+	staticDir, staticETag string, mr *MsgRing) (*mux.Router, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
@@ -124,14 +124,15 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string,
 
 	r.Handle("/api/currentStats", NewCurrentStatsHandler(mgr)).Methods("GET")
 
-	r.Handle("/api/diag", NewDiagGetHandler(mgr, mr)).Methods("GET")
+	r.Handle("/api/diag", NewDiagGetHandler(versionMain, mgr, mr)).Methods("GET")
 
 	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
 
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
 
-	r.HandleFunc("/runtime", restGetRuntime).Methods("GET")
+	r.Handle("/runtime", NewRuntimeGetHandler(versionMain, mgr)).Methods("GET")
+
 	r.HandleFunc("/runtime/flags", restGetRuntimeFlags).Methods("GET")
 	r.HandleFunc("/runtime/gc", restPostRuntimeGC).Methods("POST")
 	r.HandleFunc("/runtime/profile/cpu", restProfileCPU).Methods("POST")
@@ -145,13 +146,23 @@ func muxVariableLookup(req *http.Request, name string) string {
 	return mux.Vars(req)[name]
 }
 
-func restGetRuntime(w http.ResponseWriter, r *http.Request) {
+type RuntimeGetHandler struct {
+	versionMain string
+	mgr         *Manager
+}
+
+func NewRuntimeGetHandler(versionMain string, mgr *Manager) *RuntimeGetHandler {
+	return &RuntimeGetHandler{versionMain: versionMain, mgr: mgr}
+}
+
+func (h *RuntimeGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mustEncode(w, map[string]interface{}{
-		"version":   VERSION,
-		"startTime": startTime,
-		"arch":      runtime.GOARCH,
-		"os":        runtime.GOOS,
-		"numCPU":    runtime.NumCPU(),
+		"versionMain": h.versionMain,
+		"versionData": h.mgr.version,
+		"startTime":   startTime,
+		"arch":        runtime.GOARCH,
+		"os":          runtime.GOOS,
+		"numCPU":      runtime.NumCPU(),
 		"go": map[string]interface{}{
 			"GOMAXPROCS":     runtime.GOMAXPROCS(0),
 			"GOROOT":         runtime.GOROOT(),

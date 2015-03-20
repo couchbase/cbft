@@ -178,7 +178,7 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	return cbft.NewManagerRESTRouter(mgr, staticDir, staticETag, mr)
+	return cbft.NewManagerRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
 }
 
 type MainHandlers struct{}
