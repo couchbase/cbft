@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"container/heap"
+	"container/list"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rcrowley/go-metrics"
 
@@ -91,6 +93,7 @@ func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
 		partitions: make(map[string]*BleveDestPartition),
 		stats: PIndexStoreStats{
 			TimerBatchStore: metrics.NewTimer(),
+			Errors:          list.New(),
 		},
 	}
 }
@@ -481,6 +484,39 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 
 // ---------------------------------------------------------
 
+func (t *BleveDest) AddError(op, partition string,
+	key []byte, seq uint64, val []byte, err error) {
+	e := struct {
+		Time      string
+		Op        string
+		Partition string
+		Key       string
+		Seq       uint64
+		Val       string
+		Err       string
+	}{
+		Time:      time.Now().Format(time.RFC3339Nano),
+		Op:        op,
+		Partition: partition,
+		Key:       string(key),
+		Seq:       seq,
+		Val:       string(val),
+		Err:       fmt.Sprintf("%v", err),
+	}
+
+	buf, err := json.Marshal(&e)
+	if err != nil {
+		t.m.Lock()
+		for t.stats.Errors.Len() >= PINDEX_STORE_MAX_ERRORS {
+			t.stats.Errors.Remove(t.stats.Errors.Front())
+		}
+		t.stats.Errors.PushBack(string(buf))
+		t.m.Unlock()
+	}
+}
+
+// ---------------------------------------------------------
+
 type JSONStatsWriter interface {
 	WriteJSON(w io.Writer)
 }
@@ -516,10 +552,16 @@ func (t *BleveDestPartition) OnDataUpdate(partition string,
 	t.m.Lock()
 
 	bufVal := t.appendToBufUnlocked(val)
-	t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
+
+	erri := t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
 	err := t.updateSeqUnlocked(seq)
 
 	t.m.Unlock()
+
+	if erri != nil {
+		t.bdest.AddError("Index", partition, key, seq, val, erri)
+	}
+
 	return err
 }
 

@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"container/list"
 	"fmt"
 	"io"
 
@@ -98,13 +99,35 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 
 // ------------------------------------------------
 
+var PINDEX_STORE_MAX_ERRORS = 40
+
 type PIndexStoreStats struct {
 	TimerBatchStore metrics.Timer
+	Errors          *list.List // Capped list of string (json).
 }
 
 func (d *PIndexStoreStats) WriteJSON(w io.Writer) {
 	w.Write([]byte(`{"TimerBatchStore":`))
 	WriteTimerJSON(w, d.TimerBatchStore)
+
+	if d.Errors != nil {
+		w.Write([]byte(`,"Errors":[`))
+		e := d.Errors.Front()
+		i := 0
+		for e != nil {
+			j, ok := e.Value.(string)
+			if ok && j != "" {
+				if i > 0 {
+					w.Write([]byte(","))
+				}
+				w.Write([]byte(j))
+			}
+			e = e.Next()
+			i = i + 1
+		}
+		w.Write([]byte(`]`))
+	}
+
 	w.Write(jsonCloseBrace)
 }
 
