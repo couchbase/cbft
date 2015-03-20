@@ -4,9 +4,23 @@ function DebugCtrl($scope, $http, $routeParams, $log) {
 	$scope.docId = "";
     $scope.docResults = null;
     $scope.docDebugResults = null;
+    $scope.fieldsResults = null;
     $scope.errorMessage = null;
 	$scope.maxKLen = 0;
 	$scope.maxVLen = 0;
+
+    $scope.getFields = function() {
+        $scope.fieldsResults = null;
+        $scope.errorMessage = null;
+
+        $http.get('/api/pindex-bleve/'+$scope.pindexName+'/fields/').
+        success(function(data) {
+            $scope.fieldsResults = data;
+        }).
+        error(function(data, code) {
+            $scope.errorMessage = data;
+        });
+    }
 
     $scope.debugDoc = function() {
         $scope.docResults = null;
