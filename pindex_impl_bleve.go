@@ -25,6 +25,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
 )
@@ -160,12 +161,23 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	if !ok || kvStoreName == "" {
 		kvStoreName = bleve.Config.DefaultKVStore
 	}
+
 	kvConfig := map[string]interface{}{
 		"create_if_missing": true,
 		"error_if_exists":   true,
 	}
 	for k, v := range bleveParams.Store {
 		kvConfig[k] = v
+	}
+
+	// Always use the "metrics" wrapper KVStore if it's available and
+	// also not already configured.
+	_, exists := kvConfig["kvStoreName_actual"]
+	if !exists &&
+		kvStoreName != "metrics" &&
+		registry.KVStoreConstructorByName("metrics") != nil {
+		kvConfig["kvStoreName_actual"] = kvStoreName
+		kvStoreName = "metrics"
 	}
 
 	bindex, err :=
