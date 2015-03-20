@@ -1,5 +1,6 @@
 function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
 
+    $scope.errorMessage = "";
 	$scope.pindexName = "";
 	$scope.docId = "";
 	$scope.maxKLen = 0;
@@ -11,6 +12,7 @@ function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.processResults(data);
         }).
         error(function(data, code) {
+            $scope.errorMessage = data;
         });
     };
 
@@ -30,6 +32,7 @@ function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
 				$scope.maxVLen = row.v.length;
             }
         }
+
         $scope.klentimes = new Array($scope.maxKLen);
         $scope.vlentimes = new Array($scope.maxVLen);
     };
