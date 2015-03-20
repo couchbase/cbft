@@ -194,7 +194,8 @@ func OpenBlevePIndexImpl(indexType, path string,
 			" path: %s", path)
 	}
 
-	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + "PINDEX_BLEVE_META")
+	buf, err := ioutil.ReadFile(path +
+		string(os.PathSeparator) + "PINDEX_BLEVE_META")
 	if err != nil {
 		return nil, nil, err
 	}
