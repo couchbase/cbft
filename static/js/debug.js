@@ -6,7 +6,7 @@ function DebugCtrl($scope, $http, $routeParams, $log, $sce) {
 	$scope.maxVLen = 0;
 
     $scope.debugDoc = function() {
-        $http.get('/api/pindex/'+$scope.pindexName+'/docDebug/'+$scope.docId).
+        $http.get('/api/pindex-bleve/'+$scope.pindexName+'/docDebug/'+$scope.docId).
         success(function(data) {
             $scope.processResults(data);
         }).
