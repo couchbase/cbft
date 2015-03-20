@@ -118,7 +118,7 @@ func (d *PIndexStoreStats) WriteJSON(w io.Writer) {
 			j, ok := e.Value.(string)
 			if ok && j != "" {
 				if i > 0 {
-					w.Write([]byte(","))
+					w.Write(jsonComma)
 				}
 				w.Write([]byte(j))
 			}

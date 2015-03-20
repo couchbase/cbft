@@ -10,9 +10,57 @@
 package cbft
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
+
+	bleveHttp "github.com/blevesearch/bleve/http"
 )
+
+type DiagGetHandler struct {
+	mgr *Manager
+	mr  *MsgRing
+}
+
+func NewDiagGetHandler(mgr *Manager, mr *MsgRing) *DiagGetHandler {
+	return &DiagGetHandler{mgr: mgr, mr: mr}
+}
+
+func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	handlers := []struct {
+		Name        string
+		Handler     http.Handler
+		HandlerFunc http.HandlerFunc
+	}{
+		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
+		{"/api/currentStats", NewCurrentStatsHandler(h.mgr), nil},
+		{"/api/index", NewListIndexHandler(h.mgr), nil},
+		{"/api/log", NewGetLogHandler(h.mr), nil},
+		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
+		{"/runtime", nil, restGetRuntime},
+		{"/runtime/flags", nil, restGetRuntimeFlags},
+		{"/runtime/memStats", nil, restGetRuntimeMemStats},
+		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
+		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
+	}
+
+	w.Write(jsonOpenBrace)
+	for i, handler := range handlers {
+		if i > 0 {
+			w.Write(jsonComma)
+		}
+		w.Write([]byte(fmt.Sprintf(`"%s":`, handler.Name)))
+		if handler.Handler != nil {
+			handler.Handler.ServeHTTP(w, req)
+		}
+		if handler.HandlerFunc != nil {
+			handler.HandlerFunc.ServeHTTP(w, req)
+		}
+	}
+	w.Write(jsonCloseBrace)
+}
+
+// ---------------------------------------------------
 
 type CurrentStatsHandler struct {
 	mgr *Manager

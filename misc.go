@@ -29,8 +29,9 @@ import (
 )
 
 var jsonNULL = []byte("null")
-var jsonOpenBrace = []byte("}")
+var jsonOpenBrace = []byte("{")
 var jsonCloseBrace = []byte("}")
+var jsonComma = []byte(",")
 
 var EMPTY_BYTES = []byte{}
 

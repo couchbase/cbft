@@ -40,8 +40,6 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string,
 		"/debug",
 	})
 
-	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
-
 	r.Handle("/api/index", NewListIndexHandler(mgr)).Methods("GET")
 	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
 	r.Handle("/api/index/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
@@ -124,10 +122,14 @@ func NewManagerRESTRouter(mgr *Manager, staticDir, staticETag string,
 	r.Handle("/api/cfg", NewCfgGetHandler(mgr)).Methods("GET")
 	r.Handle("/api/cfgRefresh", NewCfgRefreshHandler(mgr)).Methods("POST")
 
+	r.Handle("/api/currentStats", NewCurrentStatsHandler(mgr)).Methods("GET")
+
+	r.Handle("/api/diag", NewDiagGetHandler(mgr, mr)).Methods("GET")
+
+	r.Handle("/api/log", NewGetLogHandler(mr)).Methods("GET")
+
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
-
-	r.Handle("/api/currentStats", NewCurrentStatsHandler(mgr)).Methods("GET")
 
 	r.HandleFunc("/runtime", restGetRuntime).Methods("GET")
 	r.HandleFunc("/runtime/flags", restGetRuntimeFlags).Methods("GET")
