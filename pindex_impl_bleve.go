@@ -505,7 +505,7 @@ func (t *BleveDest) AddError(op, partition string,
 	}
 
 	buf, err := json.Marshal(&e)
-	if err != nil {
+	if err == nil {
 		t.m.Lock()
 		for t.stats.Errors.Len() >= PINDEX_STORE_MAX_ERRORS {
 			t.stats.Errors.Remove(t.stats.Errors.Front())
