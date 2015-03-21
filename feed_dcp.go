@@ -340,14 +340,21 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 
 func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 	return Timer(func() error {
-		log.Printf("feed_dcp: rollback, name: %s: vbucketId: %d,"+
-			" rollbackSeq: %d", r.name, vbucketId, rollbackSeq)
-
 		partition, dest, err :=
 			VBucketIdToPartitionDest(r.pf, r.dests, vbucketId, nil)
 		if err != nil {
 			return err
 		}
+
+		opaqueValue, lastSeq, err := dest.GetOpaque(partition)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("feed_dcp: rollback, name: %s: vbucketId: %d,"+
+			" rollbackSeq: %d, partition: %s, opaqueValue: %s, lastSeq: %d",
+			r.name, vbucketId, rollbackSeq,
+			partition, opaqueValue, lastSeq)
 
 		return dest.Rollback(partition, rollbackSeq)
 	}, r.stats.TimerRollback)
