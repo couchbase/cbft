@@ -678,7 +678,7 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 		t.seqMax = seq
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
 
-		// NOTE: No copy of partition to buf as it's immutatable string bytes.
+		// TODO: Perhaps copy partition bytes to buf?
 		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
