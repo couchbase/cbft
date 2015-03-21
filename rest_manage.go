@@ -35,10 +35,10 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		HandlerFunc http.HandlerFunc
 	}{
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
-		{"/api/currentStats", NewCurrentStatsHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewGetLogHandler(h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
+		{"/api/stats", NewStatsHandler(h.mgr), nil},
 		{"/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
 		{"/runtime/flags", nil, restGetRuntimeFlags},
 		{"/runtime/memStats", nil, restGetRuntimeMemStats},
@@ -64,22 +64,22 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
-type CurrentStatsHandler struct {
+type StatsHandler struct {
 	mgr *Manager
 }
 
-func NewCurrentStatsHandler(mgr *Manager) *CurrentStatsHandler {
-	return &CurrentStatsHandler{mgr: mgr}
+func NewStatsHandler(mgr *Manager) *StatsHandler {
+	return &StatsHandler{mgr: mgr}
 }
 
-var currentStatsFeedsPrefix = []byte("{\"feeds\":{")
-var currentStatsPIndexesPrefix = []byte("},\"pindexes\":{")
-var currentStatsNamePrefix = []byte("\"")
-var currentStatsStatsPrefix = []byte("\":")
-var currentStatsSuffix = []byte("}}")
-var currentStatsSep = []byte(",")
+var statsFeedsPrefix = []byte("{\"feeds\":{")
+var statsPIndexesPrefix = []byte("},\"pindexes\":{")
+var statsNamePrefix = []byte("\"")
+var statsStatsPrefix = []byte("\":")
+var statsSuffix = []byte("}}")
+var statsSep = []byte(",")
 
-func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, pindexes := h.mgr.CurrentMaps()
 	feedNames := make([]string, 0, len(feeds))
 	for feedName := range feeds {
@@ -94,32 +94,32 @@ func (h *CurrentStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	sort.Strings(pindexNames)
 
 	first := true
-	w.Write(currentStatsFeedsPrefix)
+	w.Write(statsFeedsPrefix)
 	for _, feedName := range feedNames {
 		if !first {
-			w.Write(currentStatsSep)
+			w.Write(statsSep)
 		}
 		first = false
-		w.Write(currentStatsNamePrefix)
+		w.Write(statsNamePrefix)
 		w.Write([]byte(feedName))
-		w.Write(currentStatsStatsPrefix)
+		w.Write(statsStatsPrefix)
 		feeds[feedName].Stats(w)
 	}
 
 	first = true
-	w.Write(currentStatsPIndexesPrefix)
+	w.Write(statsPIndexesPrefix)
 	for _, pindexName := range pindexNames {
 		if !first {
-			w.Write(currentStatsSep)
+			w.Write(statsSep)
 		}
 		first = false
-		w.Write(currentStatsNamePrefix)
+		w.Write(statsNamePrefix)
 		w.Write([]byte(pindexName))
-		w.Write(currentStatsStatsPrefix)
+		w.Write(statsStatsPrefix)
 		pindexes[pindexName].Dest.Stats(w)
 	}
 
-	w.Write(currentStatsSuffix)
+	w.Write(statsSuffix)
 }
 
 // ---------------------------------------------------

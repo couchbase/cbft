@@ -271,7 +271,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 		},
 		{
 			Desc:   "feed stats when no feeds",
-			Path:   "/api/currentStats",
+			Path:   "/api/stats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -289,11 +289,11 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`/api/cfg`:          true,
-				`/api/currentStats`: true,
-				`/api/log`:          true,
-				`/api/managerMeta`:  true,
-				`/runtime`:          true,
+				`/api/cfg`:         true,
+				`/api/stats`:       true,
+				`/api/log`:         true,
+				`/api/managerMeta`: true,
+				`/runtime`:         true,
 			},
 		},
 		{
@@ -469,7 +469,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 		},
 		{
 			Desc:   "feed stats on a 1 index manager",
-			Path:   "/api/currentStats",
+			Path:   "/api/stats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -1966,7 +1966,7 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 		},
 		{
 			Desc:   "feed stats on a 1 vlite index manager",
-			Path:   "/api/currentStats",
+			Path:   "/api/stats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -2848,7 +2848,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestMultiFeedCurrentStats(t *testing.T) {
+func TestMultiFeedStats(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -2901,7 +2901,7 @@ func TestMultiFeedCurrentStats(t *testing.T) {
 		},
 		{
 			Desc:   "feed stats on a multi-index manager",
-			Path:   "/api/currentStats",
+			Path:   "/api/stats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
