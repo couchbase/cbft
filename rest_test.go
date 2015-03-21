@@ -165,7 +165,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			ResponseBody: []byte(nil),
 		},
 		{
-			Path:   "/api/runtime/memStats",
+			Path:   "/api/runtime/statsMem",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,

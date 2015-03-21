@@ -135,7 +135,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r.HandleFunc("/api/runtime/gc", restPostRuntimeGC).Methods("POST")
 	r.HandleFunc("/api/runtime/profile/cpu", restProfileCPU).Methods("POST")
 	r.HandleFunc("/api/runtime/profile/memory", restProfileMemory).Methods("POST")
-	r.HandleFunc("/api/runtime/memStats", restGetRuntimeMemStats).Methods("GET")
+	r.HandleFunc("/api/runtime/statsMem", restGetRuntimeStatsMem).Methods("GET")
 	r.HandleFunc("/api/runtime/stats", restGetRuntimeStats).Methods("GET")
 
 	r.Handle("/api/stats", NewStatsHandler(mgr)).Methods("GET")
@@ -238,7 +238,7 @@ func restProfileMemory(w http.ResponseWriter, r *http.Request) {
 	pprof.WriteHeapProfile(f)
 }
 
-func restGetRuntimeMemStats(w http.ResponseWriter, r *http.Request) {
+func restGetRuntimeStatsMem(w http.ResponseWriter, r *http.Request) {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
 	mustEncode(w, memStats)
