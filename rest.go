@@ -129,15 +129,16 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
 
+	r.Handle("/api/runtime", NewRuntimeGetHandler(versionMain, mgr)).Methods("GET")
+
+	r.HandleFunc("/api/runtime/flags", restGetRuntimeFlags).Methods("GET")
+	r.HandleFunc("/api/runtime/gc", restPostRuntimeGC).Methods("POST")
+	r.HandleFunc("/api/runtime/profile/cpu", restProfileCPU).Methods("POST")
+	r.HandleFunc("/api/runtime/profile/memory", restProfileMemory).Methods("POST")
+	r.HandleFunc("/api/runtime/memStats", restGetRuntimeMemStats).Methods("GET")
+	r.HandleFunc("/api/runtime/stats", restGetRuntimeStats).Methods("GET")
+
 	r.Handle("/api/stats", NewStatsHandler(mgr)).Methods("GET")
-
-	r.Handle("/runtime", NewRuntimeGetHandler(versionMain, mgr)).Methods("GET")
-
-	r.HandleFunc("/runtime/flags", restGetRuntimeFlags).Methods("GET")
-	r.HandleFunc("/runtime/gc", restPostRuntimeGC).Methods("POST")
-	r.HandleFunc("/runtime/profile/cpu", restProfileCPU).Methods("POST")
-	r.HandleFunc("/runtime/profile/memory", restProfileMemory).Methods("POST")
-	r.HandleFunc("/runtime/memStats", restGetRuntimeMemStats).Methods("GET")
 
 	return r, nil
 }
@@ -159,18 +160,14 @@ func (h *RuntimeGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mustEncode(w, map[string]interface{}{
 		"versionMain": h.versionMain,
 		"versionData": h.mgr.version,
-		"startTime":   startTime,
 		"arch":        runtime.GOARCH,
 		"os":          runtime.GOOS,
 		"numCPU":      runtime.NumCPU(),
 		"go": map[string]interface{}{
-			"GOMAXPROCS":     runtime.GOMAXPROCS(0),
-			"GOROOT":         runtime.GOROOT(),
-			"version":        runtime.Version(),
-			"numGoroutine":   runtime.NumGoroutine(),
-			"numCgoCall":     runtime.NumCgoCall(),
-			"compiler":       runtime.Compiler,
-			"memProfileRate": runtime.MemProfileRate,
+			"GOMAXPROCS": runtime.GOMAXPROCS(0),
+			"GOROOT":     runtime.GOROOT(),
+			"version":    runtime.Version(),
+			"compiler":   runtime.Compiler,
 		},
 	})
 }
@@ -188,7 +185,7 @@ func restPostRuntimeGC(w http.ResponseWriter, r *http.Request) {
 }
 
 // To start a cpu profiling...
-//    curl -X POST http://127.0.0.1:9090/runtime/profile/cpu -d secs=5
+//    curl -X POST http://127.0.0.1:9090/api/runtime/profile/cpu -d secs=5
 // To analyze a profiling...
 //    go tool pprof ./cbft run-cpu.pprof
 func restProfileCPU(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +221,7 @@ func restProfileCPU(w http.ResponseWriter, r *http.Request) {
 }
 
 // To grab a memory profiling...
-//    curl -X POST http://127.0.0.1:9090/runtime/profile/memory
+//    curl -X POST http://127.0.0.1:9090/api/runtime/profile/memory
 // To analyze a profiling...
 //    go tool pprof ./cbft run-memory.pprof
 func restProfileMemory(w http.ResponseWriter, r *http.Request) {
@@ -245,4 +242,15 @@ func restGetRuntimeMemStats(w http.ResponseWriter, r *http.Request) {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
 	mustEncode(w, memStats)
+}
+
+func restGetRuntimeStats(w http.ResponseWriter, r *http.Request) {
+	mustEncode(w, map[string]interface{}{
+		"startTime": startTime,
+		"go": map[string]interface{}{
+			"numGoroutine":   runtime.NumGoroutine(),
+			"numCgoCall":     runtime.NumCgoCall(),
+			"memProfileRate": runtime.MemProfileRate,
+		},
+	})
 }

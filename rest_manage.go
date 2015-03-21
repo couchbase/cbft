@@ -38,12 +38,13 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewGetLogHandler(h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
-		{"/api/stats", NewStatsHandler(h.mgr), nil},
-		{"/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
-		{"/runtime/flags", nil, restGetRuntimeFlags},
-		{"/runtime/memStats", nil, restGetRuntimeMemStats},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
 		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
+		{"/api/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
+		{"/api/runtime/flags", nil, restGetRuntimeFlags},
+		{"/api/runtime/memStats", nil, restGetRuntimeMemStats},
+		{"/api/runtime/stats", nil, restGetRuntimeStats},
+		{"/api/stats", NewStatsHandler(h.mgr), nil},
 	}
 
 	w.Write(jsonOpenBrace)

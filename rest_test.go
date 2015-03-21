@@ -134,7 +134,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 
 	tests := []*RESTHandlerTest{
 		{
-			Path:   "/runtime",
+			Path:   "/api/runtime",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -147,7 +147,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			},
 		},
 		{
-			Path:          "/runtime/flags",
+			Path:          "/api/runtime/flags",
 			Method:        "GET",
 			Params:        nil,
 			Body:          nil,
@@ -157,7 +157,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			},
 		},
 		{
-			Path:         "/runtime/gc",
+			Path:         "/api/runtime/gc",
 			Method:       "POST",
 			Params:       nil,
 			Body:         nil,
@@ -165,7 +165,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			ResponseBody: []byte(nil),
 		},
 		{
-			Path:   "/runtime/memStats",
+			Path:   "/api/runtime/memStats",
 			Method: "GET",
 			Params: nil,
 			Body:   nil,
@@ -176,7 +176,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			},
 		},
 		{
-			Path:   "/runtime/profile/cpu",
+			Path:   "/api/runtime/profile/cpu",
 			Method: "POST",
 			Params: nil,
 			Body:   nil,
@@ -293,7 +293,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 				`/api/stats`:       true,
 				`/api/log`:         true,
 				`/api/managerMeta`: true,
-				`/runtime`:         true,
+				`/api/runtime`:     true,
 			},
 		},
 		{
