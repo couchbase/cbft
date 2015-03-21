@@ -71,7 +71,7 @@ type BleveDestPartition struct {
 	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
 	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
 	buf         []byte       // Batch points to slices of buf, which we reuse.
-	batch       *bleve.Batch // Batch applied when too big or we hit seqSnapEnd.
+	batch       *bleve.Batch // Batch applied when we hit seqSnapEnd.
 
 	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
