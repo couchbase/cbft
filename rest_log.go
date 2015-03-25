@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
@@ -19,24 +20,39 @@ import (
 // messages and fmt.Errorf()'s.
 
 type GetLogHandler struct {
-	mr *MsgRing
+	mgr *Manager
+	mr  *MsgRing
 }
 
-func NewGetLogHandler(mr *MsgRing) *GetLogHandler {
-	return &GetLogHandler{mr: mr}
+func NewGetLogHandler(mgr *Manager, mr *MsgRing) *GetLogHandler {
+	return &GetLogHandler{mgr: mgr, mr: mr}
 }
 
 func (h *GetLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	messages := h.mr.Messages()
-	stringMessages := make([]string, len(messages))
-	for i, message := range messages {
-		stringMessages[i] = string(message)
+	w.Write([]byte(`{"messages":[`))
+	for i, message := range h.mr.Messages() {
+		buf, err := json.Marshal(string(message))
+		if err == nil {
+			if i > 0 {
+				w.Write(jsonComma)
+			}
+			w.Write(buf)
+		}
 	}
-
-	rv := struct {
-		Messages []string `json:"messages"`
-	}{
-		Messages: stringMessages,
+	w.Write([]byte(`],"events":[`))
+	if h.mgr != nil {
+		first := true
+		h.mgr.m.Lock()
+		p := h.mgr.events.Front()
+		for p != nil {
+			if !first {
+				w.Write(jsonComma)
+			}
+			first = false
+			w.Write(p.Value.([]byte))
+			p = p.Next()
+		}
+		h.mgr.m.Unlock()
 	}
-	mustEncode(w, rv)
+	w.Write([]byte(`]}`))
 }

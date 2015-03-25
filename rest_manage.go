@@ -36,7 +36,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}{
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
-		{"/api/log", NewGetLogHandler(h.mr), nil},
+		{"/api/log", NewGetLogHandler(h.mgr, h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
 		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
@@ -79,7 +79,6 @@ var statsPIndexesPrefix = []byte("},\"pindexes\":{")
 var statsNamePrefix = []byte("\"")
 var statsStatsPrefix = []byte("\":")
 var statsSuffix = []byte("}}")
-var statsSep = []byte(",")
 
 func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, pindexes := h.mgr.CurrentMaps()
@@ -99,7 +98,7 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write(statsFeedsPrefix)
 	for _, feedName := range feedNames {
 		if !first {
-			w.Write(statsSep)
+			w.Write(jsonComma)
 		}
 		first = false
 		w.Write(statsNamePrefix)
@@ -112,7 +111,7 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write(statsPIndexesPrefix)
 	for _, pindexName := range pindexNames {
 		if !first {
-			w.Write(statsSep)
+			w.Write(jsonComma)
 		}
 		first = false
 		w.Write(statsNamePrefix)
@@ -134,24 +133,8 @@ func NewStatsManagerHandler(mgr *Manager) *StatsManagerHandler {
 	return &StatsManagerHandler{mgr: mgr}
 }
 
-var statsManagerPrefix = []byte("{\"statsManager\":[")
-var statsManagerSuffix = []byte("]}")
-
 func (h *StatsManagerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	first := true
-	w.Write(statsManagerPrefix)
-	h.mgr.m.Lock()
-	p := h.mgr.events.Front()
-	for p != nil {
-		if !first {
-			w.Write(statsSep)
-		}
-		first = false
-		w.Write(p.Value.([]byte))
-		p = p.Next()
-	}
-	h.mgr.m.Unlock()
-	w.Write(statsManagerSuffix)
+	w.Write([]byte("{}"))
 }
 
 // ---------------------------------------------------

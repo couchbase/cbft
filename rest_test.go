@@ -205,6 +205,9 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
+	mgr.addEvent([]byte(`"fizz"`))
+	mgr.addEvent([]byte(`"buzz"`))
+
 	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
@@ -218,7 +221,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Params:       nil,
 			Body:         nil,
 			Status:       http.StatusOK,
-			ResponseBody: []byte(`{"messages":["hello","world"]}`),
+			ResponseBody: []byte(`{"messages":["hello","world"],"events":["fizz","buzz"]}`),
 		},
 		{
 			Desc:   "cfg on empty manaager",

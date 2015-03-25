@@ -18,6 +18,7 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/couchbase/clog"
@@ -53,6 +54,13 @@ type Manager struct {
 }
 
 type ManagerStats struct {
+	TotKick uint64
+
+	TotSaveNodeDef        uint64
+	TotSaveNodeDefGetErr  uint64
+	TotSaveNodeDefSetErr  uint64
+	TotSaveNodeDefUUIDErr uint64
+	TotSaveNodeDefOk      uint64
 }
 
 const MANAGER_MAX_EVENTS = 10
@@ -166,7 +174,10 @@ func (mgr *Manager) StartRegister(register string) error {
 // ---------------------------------------------------------------
 
 func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
+	atomic.AddUint64(&mgr.stats.TotSaveNodeDef, 1)
+
 	if mgr.cfg == nil {
+		atomic.AddUint64(&mgr.stats.TotSaveNodeDefOk, 1)
 		return nil // Occurs during testing.
 	}
 
@@ -182,6 +193,7 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 	for {
 		nodeDefs, cas, err := CfgGetNodeDefs(mgr.cfg, kind)
 		if err != nil {
+			atomic.AddUint64(&mgr.stats.TotSaveNodeDefGetErr, 1)
 			return err
 		}
 		if nodeDefs == nil {
@@ -192,12 +204,14 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 			// If a previous entry exists, do some double-checking
 			// before we overwrite the entry with our entry.
 			if nodeDefPrev.UUID != mgr.uuid {
+				atomic.AddUint64(&mgr.stats.TotSaveNodeDefUUIDErr, 1)
 				return fmt.Errorf("manager:"+
 					" some other node is running at our bindAddr: %s,"+
 					" with a different uuid: %s, than our uuid: %s",
 					mgr.bindAddr, nodeDefPrev.UUID, mgr.uuid)
 			}
 			if reflect.DeepEqual(nodeDefPrev, nodeDef) {
+				atomic.AddUint64(&mgr.stats.TotSaveNodeDefOk, 1)
 				return nil // No changes, so leave the existing nodeDef.
 			}
 		}
@@ -214,10 +228,12 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 				// such as in a full datacenter power restart.
 				continue
 			}
+			atomic.AddUint64(&mgr.stats.TotSaveNodeDefSetErr, 1)
 			return err
 		}
 		break
 	}
+	atomic.AddUint64(&mgr.stats.TotSaveNodeDefOk, 1)
 	return nil
 }
 
@@ -297,6 +313,8 @@ func (mgr *Manager) LoadDataDir() error {
 // ---------------------------------------------------------------
 
 func (mgr *Manager) Kick(msg string) {
+	atomic.AddUint64(&mgr.stats.TotKick, 1)
+
 	mgr.PlannerKick(msg)
 	mgr.JanitorKick(msg)
 }
