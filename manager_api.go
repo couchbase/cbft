@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"fmt"
+	"sync/atomic"
 )
 
 // Creates a logical index, which might be comprised of many PIndex objects.
@@ -20,6 +21,8 @@ import (
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 	indexType, indexName, indexParams string, planParams PlanParams,
 	prevIndexUUID string) error {
+	atomic.AddUint64(&mgr.stats.TotCreateIndex, 1)
+
 	pindexImplType, exists := pindexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("manager_api: CreateIndex, unknown indexType: %s",
@@ -100,7 +103,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	}
 
 	mgr.PlannerKick("api/CreateIndex, indexName: " + indexName)
-
+	atomic.AddUint64(&mgr.stats.TotCreateIndexOk, 1)
 	return nil
 }
 
@@ -108,6 +111,8 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 //
 // TODO: DeleteIndex should also take index UUID?
 func (mgr *Manager) DeleteIndex(indexName string) error {
+	atomic.AddUint64(&mgr.stats.TotDeleteIndex, 1)
+
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
@@ -139,13 +144,15 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	}
 
 	mgr.PlannerKick("api/DeleteIndex, indexName: " + indexName)
-
+	atomic.AddUint64(&mgr.stats.TotDeleteIndexOk, 1)
 	return nil
 }
 
 // IndexControl is used to change runtime properties of an index.
 func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 	planFreezeOp string) error {
+	atomic.AddUint64(&mgr.stats.TotIndexControl, 1)
+
 	indexDefs, cas, err := CfgGetIndexDefs(mgr.cfg)
 	if err != nil {
 		return err
@@ -210,5 +217,6 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 		return fmt.Errorf("manager_api: could not save indexDefs, err: %v", err)
 	}
 
+	atomic.AddUint64(&mgr.stats.TotIndexControlOk, 1)
 	return nil
 }

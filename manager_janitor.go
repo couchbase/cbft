@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	log "github.com/couchbase/clog"
@@ -29,6 +30,8 @@ const JANITOR_REMOVE_PINDEX = "janitor_remove_pindex"
 
 // JanitorNOOP sends a synchronous NOOP request to the manager's janitor, if any.
 func (mgr *Manager) JanitorNOOP(msg string) {
+	atomic.AddUint64(&mgr.stats.TotJanitorNOOP, 1)
+
 	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
 		SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
 	}
@@ -36,6 +39,8 @@ func (mgr *Manager) JanitorNOOP(msg string) {
 
 // JanitorKick synchronously kicks the manager's janitor, if any.
 func (mgr *Manager) JanitorKick(msg string) {
+	atomic.AddUint64(&mgr.stats.TotJanitorKick, 1)
+
 	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
 		SyncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
 	}
@@ -49,6 +54,7 @@ func (mgr *Manager) JanitorLoop() {
 			mgr.cfg.Subscribe(PLAN_PINDEXES_KEY, ec)
 			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
 			for e := range ec {
+				atomic.AddUint64(&mgr.stats.TotJanitorSubscriptionEvent, 1)
 				mgr.JanitorKick("cfg changed, key: " + e.Key)
 			}
 		}()
@@ -59,20 +65,27 @@ func (mgr *Manager) JanitorLoop() {
 
 		var err error
 		if m.op == WORK_KICK {
+			atomic.AddUint64(&mgr.stats.TotJanitorKickStart, 1)
 			err = mgr.JanitorOnce(m.msg)
 			if err != nil {
 				// Keep looping as perhaps it's a transient issue.
 				// TODO: perhaps need a rescheduled janitor kick.
 				log.Printf("janitor: JanitorOnce, err: %v", err)
+				atomic.AddUint64(&mgr.stats.TotJanitorKickErr, 1)
+			} else {
+				atomic.AddUint64(&mgr.stats.TotJanitorKickOk, 1)
 			}
 		} else if m.op == WORK_NOOP {
-			// NOOP.
+			atomic.AddUint64(&mgr.stats.TotJanitorNOOPOk, 1)
 		} else if m.op == JANITOR_CLOSE_PINDEX {
 			mgr.stopPIndex(m.obj.(*PIndex), false)
+			atomic.AddUint64(&mgr.stats.TotJanitorClosePIndex, 1)
 		} else if m.op == JANITOR_REMOVE_PINDEX {
 			mgr.stopPIndex(m.obj.(*PIndex), true)
+			atomic.AddUint64(&mgr.stats.TotJanitorRemovePIndex, 1)
 		} else {
 			err = fmt.Errorf("janitor: unknown op: %s, m: %#v", m.op, m)
+			atomic.AddUint64(&mgr.stats.TotJanitorUnknownErr, 1)
 		}
 		if m.resCh != nil {
 			if err != nil {

@@ -61,6 +61,34 @@ type ManagerStats struct {
 	TotSaveNodeDefSetErr  uint64
 	TotSaveNodeDefUUIDErr uint64
 	TotSaveNodeDefOk      uint64
+
+	TotCreateIndex    uint64
+	TotCreateIndexOk  uint64
+	TotDeleteIndex    uint64
+	TotDeleteIndexOk  uint64
+	TotIndexControl   uint64
+	TotIndexControlOk uint64
+
+	TotPlannerNOOP              uint64
+	TotPlannerNOOPOk            uint64
+	TotPlannerKick              uint64
+	TotPlannerKickStart         uint64
+	TotPlannerKickChanged       uint64
+	TotPlannerKickErr           uint64
+	TotPlannerKickOk            uint64
+	TotPlannerUnknownErr        uint64
+	TotPlannerSubscriptionEvent uint64
+
+	TotJanitorNOOP              uint64
+	TotJanitorNOOPOk            uint64
+	TotJanitorKick              uint64
+	TotJanitorKickStart         uint64
+	TotJanitorKickErr           uint64
+	TotJanitorKickOk            uint64
+	TotJanitorClosePIndex       uint64
+	TotJanitorRemovePIndex      uint64
+	TotJanitorUnknownErr        uint64
+	TotJanitorSubscriptionEvent uint64
 }
 
 const MANAGER_MAX_EVENTS = 10

@@ -17,6 +17,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	log "github.com/couchbase/clog"
 	"github.com/couchbaselabs/blance"
@@ -28,6 +29,8 @@ import (
 
 // PlannerNOOP sends a synchronous NOOP request to the manager's planner, if any.
 func (mgr *Manager) PlannerNOOP(msg string) {
+	atomic.AddUint64(&mgr.stats.TotPlannerNOOP, 1)
+
 	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
 		SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
 	}
@@ -35,6 +38,8 @@ func (mgr *Manager) PlannerNOOP(msg string) {
 
 // PlannerKick synchronously kicks the manager's planner, if any.
 func (mgr *Manager) PlannerKick(msg string) {
+	atomic.AddUint64(&mgr.stats.TotPlannerKick, 1)
+
 	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
 		SyncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
 	}
@@ -48,6 +53,7 @@ func (mgr *Manager) PlannerLoop() {
 			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ec)
 			mgr.cfg.Subscribe(CfgNodeDefsKey(NODE_DEFS_WANTED), ec)
 			for e := range ec {
+				atomic.AddUint64(&mgr.stats.TotPlannerSubscriptionEvent, 1)
 				mgr.PlannerKick("cfg changed, key: " + e.Key)
 			}
 		}()
@@ -56,17 +62,24 @@ func (mgr *Manager) PlannerLoop() {
 	for m := range mgr.plannerCh {
 		var err error
 		if m.op == WORK_KICK {
+			atomic.AddUint64(&mgr.stats.TotPlannerKickStart, 1)
 			changed, err := mgr.PlannerOnce(m.msg)
 			if err != nil {
 				log.Printf("planner: PlannerOnce, err: %v", err)
+				atomic.AddUint64(&mgr.stats.TotPlannerKickErr, 1)
 				// Keep looping as perhaps it's a transient issue.
-			} else if changed {
-				mgr.JanitorKick("the plans have changed")
+			} else {
+				if changed {
+					atomic.AddUint64(&mgr.stats.TotPlannerKickChanged, 1)
+					mgr.JanitorKick("the plans have changed")
+				}
+				atomic.AddUint64(&mgr.stats.TotPlannerKickOk, 1)
 			}
 		} else if m.op == WORK_NOOP {
-			// NOOP.
+			atomic.AddUint64(&mgr.stats.TotPlannerNOOPOk, 1)
 		} else {
 			err = fmt.Errorf("planner: unknown op: %s, m: %#v", m.op, m)
+			atomic.AddUint64(&mgr.stats.TotPlannerUnknownErr, 1)
 		}
 		if m.resCh != nil {
 			if err != nil {
