@@ -90,7 +90,7 @@ func TestMainCfg(t *testing.T) {
 		t.Errorf("expected err on bad url")
 	}
 
-	cfg, err = MainCfg("couchbase:http://user:pswd@not-a-server", emptyDir)
+	cfg, err = MainCfg("couchbase:http://user:pswd@127.0.0.1:666", emptyDir)
 	if err == nil || cfg != nil {
 		t.Errorf("expected err on bad server")
 	}
