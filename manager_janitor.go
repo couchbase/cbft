@@ -12,9 +12,11 @@
 package cbft
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/couchbase/clog"
 )
@@ -355,6 +357,18 @@ func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 		}
 	}
 
+	if pindex.Dest != nil {
+		buf := bytes.NewBuffer(nil)
+		buf.Write([]byte(fmt.Sprintf(
+			`{"op":"stopPIndex","name":"%s","remove":%t,"time":"%s","stats":`,
+			pindex.Name, remove, time.Now().Format(time.RFC3339Nano))))
+		err := pindex.Dest.Stats(buf)
+		if err == nil {
+			buf.Write(jsonCloseBrace)
+			mgr.addStats(buf.Bytes())
+		}
+	}
+
 	pindexUnreg := mgr.unregisterPIndex(pindex.Name)
 	if pindexUnreg != nil && pindexUnreg != pindex {
 		panic("janitor: unregistered pindex isn't the one we're stopping")
@@ -425,6 +439,16 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 }
 
 func (mgr *Manager) stopFeed(feed Feed) error {
+	buf := bytes.NewBuffer(nil)
+	buf.Write([]byte(fmt.Sprintf(
+		`{"op":"stopFeed","name":"%s","time":"%s","stats":`,
+		feed.Name(), time.Now().Format(time.RFC3339Nano))))
+	err := feed.Stats(buf)
+	if err == nil {
+		buf.Write(jsonCloseBrace)
+		mgr.addStats(buf.Bytes())
+	}
+
 	feedUnreg := mgr.unregisterFeed(feed.Name())
 	if feedUnreg != nil && feedUnreg != feed {
 		panic("janitor: unregistered feed isn't the one we're closing")

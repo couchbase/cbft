@@ -527,17 +527,19 @@ func (t *BleveDest) Stats(w io.Writer) error {
 	t.m.Lock()
 	t.stats.WriteJSON(w)
 
-	_, kvs, err := t.bindex.Advanced()
-	if err == nil && kvs != nil {
-		m, ok := kvs.(JSONStatsWriter)
-		if ok {
-			w.Write([]byte(`,"bleveKVStoreStats":`))
-			m.WriteJSON(w)
+	if t.bindex != nil {
+		_, kvs, err := t.bindex.Advanced()
+		if err == nil && kvs != nil {
+			m, ok := kvs.(JSONStatsWriter)
+			if ok {
+				w.Write([]byte(`,"bleveKVStoreStats":`))
+				m.WriteJSON(w)
+			}
 		}
 	}
 	t.m.Unlock()
 
-	_, err = w.Write(jsonCloseBrace)
+	_, err := w.Write(jsonCloseBrace)
 	return err
 }
 

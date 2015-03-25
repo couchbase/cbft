@@ -139,6 +139,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r.HandleFunc("/api/runtime/statsMem", restGetRuntimeStatsMem).Methods("GET")
 
 	r.Handle("/api/stats", NewStatsHandler(mgr)).Methods("GET")
+	r.Handle("/api/statsManager", NewStatsManagerHandler(mgr)).Methods("GET")
 
 	return r, nil
 }

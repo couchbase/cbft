@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"container/list"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -46,7 +47,11 @@ type Manager struct {
 	lastIndexDefsByName    map[string]*IndexDef
 	lastPlanPIndexes       *PlanPIndexes
 	lastPlanPIndexesByName map[string][]*PlanPIndex
+
+	stats *list.List
 }
+
+const MANAGER_MAX_STATS = 10
 
 type ManagerEventHandlers interface {
 	OnRegisterPIndex(pindex *PIndex)
@@ -73,6 +78,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		plannerCh: make(chan *WorkReq),
 		janitorCh: make(chan *WorkReq),
 		meh:       meh,
+		stats:     list.New(),
 	}
 }
 
@@ -462,4 +468,15 @@ func (mgr *Manager) UUID() string {
 
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
+}
+
+// --------------------------------------------------------
+
+func (mgr *Manager) addStats(jsonBytes []byte) {
+	mgr.m.Lock()
+	for mgr.stats.Len() >= MANAGER_MAX_STATS {
+		mgr.stats.Remove(mgr.stats.Front())
+	}
+	mgr.stats.PushBack(jsonBytes)
+	mgr.m.Unlock()
 }

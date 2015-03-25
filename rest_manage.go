@@ -45,6 +45,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
+		{"/api/statsManager", NewStatsManagerHandler(h.mgr), nil},
 	}
 
 	w.Write(jsonOpenBrace)
@@ -121,6 +122,36 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Write(statsSuffix)
+}
+
+// ---------------------------------------------------
+
+type StatsManagerHandler struct {
+	mgr *Manager
+}
+
+func NewStatsManagerHandler(mgr *Manager) *StatsManagerHandler {
+	return &StatsManagerHandler{mgr: mgr}
+}
+
+var statsManagerPrefix = []byte("{\"statsManager\":[")
+var statsManagerSuffix = []byte("]}")
+
+func (h *StatsManagerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	first := true
+	w.Write(statsManagerPrefix)
+	h.mgr.m.Lock()
+	p := h.mgr.stats.Front()
+	for p != nil {
+		if !first {
+			w.Write(statsSep)
+		}
+		first = false
+		w.Write(p.Value.([]byte))
+		p = p.Next()
+	}
+	h.mgr.m.Unlock()
+	w.Write(statsManagerSuffix)
 }
 
 // ---------------------------------------------------
