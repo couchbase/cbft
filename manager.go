@@ -48,10 +48,14 @@ type Manager struct {
 	lastPlanPIndexes       *PlanPIndexes
 	lastPlanPIndexesByName map[string][]*PlanPIndex
 
-	stats *list.List
+	stats  ManagerStats
+	events *list.List
 }
 
-const MANAGER_MAX_STATS = 10
+type ManagerStats struct {
+}
+
+const MANAGER_MAX_EVENTS = 10
 
 type ManagerEventHandlers interface {
 	OnRegisterPIndex(pindex *PIndex)
@@ -78,7 +82,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		plannerCh: make(chan *WorkReq),
 		janitorCh: make(chan *WorkReq),
 		meh:       meh,
-		stats:     list.New(),
+		events:    list.New(),
 	}
 }
 
@@ -472,11 +476,11 @@ func (mgr *Manager) DataDir() string {
 
 // --------------------------------------------------------
 
-func (mgr *Manager) addStats(jsonBytes []byte) {
+func (mgr *Manager) addEvent(jsonBytes []byte) {
 	mgr.m.Lock()
-	for mgr.stats.Len() >= MANAGER_MAX_STATS {
-		mgr.stats.Remove(mgr.stats.Front())
+	for mgr.events.Len() >= MANAGER_MAX_EVENTS {
+		mgr.events.Remove(mgr.events.Front())
 	}
-	mgr.stats.PushBack(jsonBytes)
+	mgr.events.PushBack(jsonBytes)
 	mgr.m.Unlock()
 }

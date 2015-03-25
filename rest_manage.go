@@ -141,7 +141,7 @@ func (h *StatsManagerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	first := true
 	w.Write(statsManagerPrefix)
 	h.mgr.m.Lock()
-	p := h.mgr.stats.Front()
+	p := h.mgr.events.Front()
 	for p != nil {
 		if !first {
 			w.Write(statsSep)

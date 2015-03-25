@@ -360,12 +360,12 @@ func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 	if pindex.Dest != nil {
 		buf := bytes.NewBuffer(nil)
 		buf.Write([]byte(fmt.Sprintf(
-			`{"op":"stopPIndex","name":"%s","remove":%t,"time":"%s","stats":`,
+			`{"event":"stopPIndex","name":"%s","remove":%t,"time":"%s","stats":`,
 			pindex.Name, remove, time.Now().Format(time.RFC3339Nano))))
 		err := pindex.Dest.Stats(buf)
 		if err == nil {
 			buf.Write(jsonCloseBrace)
-			mgr.addStats(buf.Bytes())
+			mgr.addEvent(buf.Bytes())
 		}
 	}
 
@@ -441,12 +441,12 @@ func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 func (mgr *Manager) stopFeed(feed Feed) error {
 	buf := bytes.NewBuffer(nil)
 	buf.Write([]byte(fmt.Sprintf(
-		`{"op":"stopFeed","name":"%s","time":"%s","stats":`,
+		`{"event":"stopFeed","name":"%s","time":"%s","stats":`,
 		feed.Name(), time.Now().Format(time.RFC3339Nano))))
 	err := feed.Stats(buf)
 	if err == nil {
 		buf.Write(jsonCloseBrace)
-		mgr.addStats(buf.Bytes())
+		mgr.addEvent(buf.Bytes())
 	}
 
 	feedUnreg := mgr.unregisterFeed(feed.Name())
