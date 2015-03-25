@@ -61,7 +61,11 @@ type PlanParams struct {
 	// when assigning PIndexes to nodes, especially for replica
 	// placement.  Through the HierarchyRules, a user can specify, for
 	// example, that the first replica should be not on the same rack
-	// and zone as the first copy.
+	// and zone as the first copy.  Some examples:
+	// Try to put the first replica on the same rack...
+	// {"replica":[{"includeLevel":1,"excludeLevel":0}]}
+	// Try to put the first replica on a different rack...
+	// {"replica":[{"includeLevel":2,"excludeLevel":1}]}
 	HierarchyRules blance.HierarchyRules `json:"hierarchyRules"`
 
 	// NodePlanParams allows users to specify per-node input to the
