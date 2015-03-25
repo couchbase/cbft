@@ -45,7 +45,6 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
-		{"/api/statsManager", NewStatsManagerHandler(h.mgr), nil},
 	}
 
 	w.Write(jsonOpenBrace)
@@ -121,20 +120,6 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Write(statsSuffix)
-}
-
-// ---------------------------------------------------
-
-type StatsManagerHandler struct {
-	mgr *Manager
-}
-
-func NewStatsManagerHandler(mgr *Manager) *StatsManagerHandler {
-	return &StatsManagerHandler{mgr: mgr}
-}
-
-func (h *StatsManagerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("{}"))
 }
 
 // ---------------------------------------------------
