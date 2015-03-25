@@ -530,3 +530,21 @@ func (mgr *Manager) addEvent(jsonBytes []byte) {
 	mgr.events.PushBack(jsonBytes)
 	mgr.m.Unlock()
 }
+
+// --------------------------------------------------------
+
+// AtomicCopyTo copies metrics from s to r (from source to result).
+func (s *ManagerStats) AtomicCopyTo(r *ManagerStats) {
+	rve := reflect.ValueOf(r).Elem()
+	sve := reflect.ValueOf(s).Elem()
+	svet := sve.Type()
+	for i := 0; i < svet.NumField(); i++ {
+		rvef := rve.Field(i)
+		svef := sve.Field(i)
+		if rvef.CanAddr() && svef.CanAddr() {
+			rvefp := rvef.Addr().Interface()
+			svefp := svef.Addr().Interface()
+			atomic.StoreUint64(rvefp.(*uint64), atomic.LoadUint64(svefp.(*uint64)))
+		}
+	}
+}

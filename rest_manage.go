@@ -10,6 +10,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -75,9 +76,9 @@ func NewStatsHandler(mgr *Manager) *StatsHandler {
 
 var statsFeedsPrefix = []byte("{\"feeds\":{")
 var statsPIndexesPrefix = []byte("},\"pindexes\":{")
+var statsManagerPrefix = []byte("},\"manager\":")
 var statsNamePrefix = []byte("\"")
 var statsStatsPrefix = []byte("\":")
-var statsSuffix = []byte("}}")
 
 func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	feeds, pindexes := h.mgr.CurrentMaps()
@@ -119,7 +120,17 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		pindexes[pindexName].Dest.Stats(w)
 	}
 
-	w.Write(statsSuffix)
+	w.Write(statsManagerPrefix)
+	var mgrStats ManagerStats
+	h.mgr.stats.AtomicCopyTo(&mgrStats)
+	mgrStatsJSON, err := json.Marshal(&mgrStats)
+	if err == nil && len(mgrStatsJSON) > 0 {
+		w.Write(mgrStatsJSON)
+	} else {
+		w.Write(jsonNULL)
+	}
+
+	w.Write(jsonCloseBrace)
 }
 
 // ---------------------------------------------------
