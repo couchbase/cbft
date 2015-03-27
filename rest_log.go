@@ -19,16 +19,16 @@ import (
 // TODO: Need to give the entire cbft codebase a scrub of its log
 // messages and fmt.Errorf()'s.
 
-type GetLogHandler struct {
+type LogGetHandler struct {
 	mgr *Manager
 	mr  *MsgRing
 }
 
-func NewGetLogHandler(mgr *Manager, mr *MsgRing) *GetLogHandler {
-	return &GetLogHandler{mgr: mgr, mr: mr}
+func NewLogGetHandler(mgr *Manager, mr *MsgRing) *LogGetHandler {
+	return &LogGetHandler{mgr: mgr, mr: mr}
 }
 
-func (h *GetLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *LogGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(`{"messages":[`))
 	for i, message := range h.mr.Messages() {
 		buf, err := json.Marshal(string(message))

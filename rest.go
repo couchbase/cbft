@@ -124,7 +124,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 
 	r.Handle("/api/diag", NewDiagGetHandler(versionMain, mgr, mr)).Methods("GET")
 
-	r.Handle("/api/log", NewGetLogHandler(mgr, mr)).Methods("GET")
+	r.Handle("/api/log", NewLogGetHandler(mgr, mr)).Methods("GET")
 
 	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
 	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")

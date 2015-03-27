@@ -40,7 +40,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}{
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
-		{"/api/log", NewGetLogHandler(h.mgr, h.mr), nil},
+		{"/api/log", NewLogGetHandler(h.mgr, h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
 		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
@@ -69,12 +69,12 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var visit func(path string, f os.FileInfo, err error) error
 	visit = func(path string, f os.FileInfo, err error) error {
 		buf, err := json.Marshal(map[string]interface{}{
-			"Path": path,
-			"Name": f.Name(),
-			"Size": f.Size(),
-			"Mode": f.Mode(),
+			"Path":    path,
+			"Name":    f.Name(),
+			"Size":    f.Size(),
+			"Mode":    f.Mode(),
 			"ModTime": f.ModTime().Format(time.RFC3339Nano),
-			"IsDir": f.IsDir(),
+			"IsDir":   f.IsDir(),
 		})
 		if err == nil {
 			if !first {
