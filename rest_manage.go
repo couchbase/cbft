@@ -13,7 +13,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
+	"time"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
 )
@@ -61,6 +64,32 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			handler.HandlerFunc.ServeHTTP(w, req)
 		}
 	}
+
+	var first = true
+	var visit func(path string, f os.FileInfo, err error) error
+	visit = func(path string, f os.FileInfo, err error) error {
+		buf, err := json.Marshal(map[string]interface{}{
+			"Path": path,
+			"Name": f.Name(),
+			"Size": f.Size(),
+			"Mode": f.Mode(),
+			"ModTime": f.ModTime().Format(time.RFC3339Nano),
+			"IsDir": f.IsDir(),
+		})
+		if err == nil {
+			if !first {
+				w.Write(jsonComma)
+			}
+			w.Write(buf)
+			first = false
+		}
+		return nil
+	}
+
+	w.Write([]byte(`,"dataDir":[`))
+	filepath.Walk(h.mgr.dataDir, visit)
+	w.Write([]byte(`]`))
+
 	w.Write(jsonCloseBrace)
 }
 
