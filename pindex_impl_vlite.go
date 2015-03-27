@@ -37,6 +37,7 @@ import (
 // TODO: Compaction!
 // TODO: Snapshots, so that queries don't see mutations until commited/flushed.
 // TODO: Partial rollback.
+// TODO: Aliases work for vlite.
 
 var VLiteFileService = NewFileService(30)
 
