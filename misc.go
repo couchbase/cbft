@@ -28,12 +28,19 @@ import (
 	log "github.com/couchbase/clog"
 )
 
+var EMPTY_BYTES = []byte{}
+
 var jsonNULL = []byte("null")
 var jsonOpenBrace = []byte("{")
 var jsonCloseBrace = []byte("}")
 var jsonComma = []byte(",")
 
-var EMPTY_BYTES = []byte{}
+func ErrorToString(e error) string {
+	if e != nil {
+		return e.Error()
+	}
+	return ""
+}
 
 // Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
 // Returns true when x >= y.

@@ -14,9 +14,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/user"
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"time"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
@@ -131,7 +133,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 
 	r.Handle("/api/runtime", NewRuntimeGetHandler(versionMain, mgr)).Methods("GET")
 
-	r.HandleFunc("/api/runtime/flags", restGetRuntimeFlags).Methods("GET")
+	r.HandleFunc("/api/runtime/args", restGetRuntimeArgs).Methods("GET")
 	r.HandleFunc("/api/runtime/gc", restPostRuntimeGC).Methods("POST")
 	r.HandleFunc("/api/runtime/profile/cpu", restProfileCPU).Methods("POST")
 	r.HandleFunc("/api/runtime/profile/memory", restProfileMemory).Methods("POST")
@@ -172,12 +174,46 @@ func (h *RuntimeGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func restGetRuntimeFlags(w http.ResponseWriter, r *http.Request) {
-	m := map[string]interface{}{}
+func restGetRuntimeArgs(w http.ResponseWriter, r *http.Request) {
+	flags := map[string]interface{}{}
 	flag.VisitAll(func(f *flag.Flag) {
-		m[f.Name] = f.Value
+		flags[f.Name] = f.Value
 	})
-	mustEncode(w, m)
+
+	env := []string(nil)
+	for _, e := range os.Environ() {
+		if !strings.Contains(e, "PASSWORD") &&
+			!strings.Contains(e, "PSWD") &&
+			!strings.Contains(e, "AUTH") {
+			env = append(env, e)
+		}
+	}
+
+	groups, groupsErr := os.Getgroups()
+	hostname, hostnameErr := os.Hostname()
+	user, userErr := user.Current()
+	wd, wdErr := os.Getwd()
+
+	mustEncode(w, map[string]interface{}{
+		"args":  os.Args,
+		"env":   env,
+		"flags": flags,
+		"process": map[string]interface{}{
+			"euid":        os.Geteuid(),
+			"gid":         os.Getgid(),
+			"groups":      groups,
+			"groupsErr":   ErrorToString(groupsErr),
+			"hostname":    hostname,
+			"hostnameErr": ErrorToString(hostnameErr),
+			"pageSize":    os.Getpagesize(),
+			"pid":         os.Getpid(),
+			"ppid":        os.Getppid(),
+			"user":        user,
+			"userErr":     ErrorToString(userErr),
+			"wd":          wd,
+			"wdErr":       ErrorToString(wdErr),
+		},
+	})
 }
 
 func restPostRuntimeGC(w http.ResponseWriter, r *http.Request) {

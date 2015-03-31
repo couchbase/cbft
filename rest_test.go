@@ -147,13 +147,13 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			},
 		},
 		{
-			Path:          "/api/runtime/flags",
+			Path:          "/api/runtime/args",
 			Method:        "GET",
 			Params:        nil,
 			Body:          nil,
 			Status:        http.StatusOK,
 			ResponseMatch: map[string]bool{
-			// Actual production flags are different from "go test" context.
+			// Actual production args are different from "go test" context.
 			},
 		},
 		{

@@ -47,7 +47,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
 		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		{"/api/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
-		{"/api/runtime/flags", nil, restGetRuntimeFlags},
+		{"/api/runtime/args", nil, restGetRuntimeArgs},
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
