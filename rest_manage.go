@@ -12,10 +12,12 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
@@ -70,14 +72,23 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var first = true
 	var visit func(path string, f os.FileInfo, err error) error
 	visit = func(path string, f os.FileInfo, err error) error {
-		buf, err := json.Marshal(map[string]interface{}{
+		m := map[string]interface{}{
 			"Path":    path,
 			"Name":    f.Name(),
 			"Size":    f.Size(),
 			"Mode":    f.Mode(),
 			"ModTime": f.ModTime().Format(time.RFC3339Nano),
 			"IsDir":   f.IsDir(),
-		})
+		}
+		if strings.HasPrefix(f.Name(), "PINDEX_") || // Matches PINDEX_xxx_META.
+			strings.HasSuffix(f.Name(), "_META") || // Matches PINDEX_META.
+			strings.HasSuffix(f.Name(), ".json") { // Matches index_meta.json.
+			b, err := ioutil.ReadFile(path)
+			if err == nil {
+				m["Contents"] = string(b)
+			}
+		}
+		buf, err := json.Marshal(m)
 		if err == nil {
 			if !first {
 				w.Write(jsonComma)
