@@ -12,6 +12,10 @@ cbft's project source code is hosted at [http://github.com/couchbaselabse/cbft](
 
 cbft is [Apache 2](https://github.com/couchbaselabs/cbft/blob/master/LICENSE) licensed.
 
+## Contributing to cbft
+
+tbd
+
 ## bleve
 
 cbft is based on the open-source [bleve](http://blevesearch.com)

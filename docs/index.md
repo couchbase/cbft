@@ -27,4 +27,5 @@ tbd
 
 # Where to go next
 
-Please see the [Developer's Guide](dev-guide.md) and the [Administrator's Guide](admin-guide.md).
+Please see the [Developer's Guide](dev-guide.md) and the
+[Administrator's Guide](admin-guide.md).
