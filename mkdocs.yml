@@ -1,7 +1,5 @@
 site_name: cbft Technical Documentation (0.0.0 DP)
 
-repo_url: https://github.com/couchbaselabs/cbft/
-
 pages:
 - ['index.md', 'Home']
 - ['dev-guide.md', "Developer's Guide"]
