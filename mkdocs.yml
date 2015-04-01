@@ -1,0 +1,14 @@
+site_name: cbft Technical Documentation (0.0.0 DP)
+
+repo_url: https://github.com/couchbaselabs/cbft/
+
+pages:
+- ['index.md', 'Home']
+- ['dev-guide.md', "Developer's Guide"]
+- ['api-guide.md', "API Guide"]
+- ['admin-guide.md', "Administrator's Guide"]
+- ['links.md', "Links"]
+
+copyright: Copyright &copy; 2015, <a href="http://couchbase.com">Couchbase, Inc.</a>.
+
+theme: flatly
