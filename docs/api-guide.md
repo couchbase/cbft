@@ -10,13 +10,6 @@ Returns all index definitions.
 **version introduced**: 0.0.1
 
 ---
-DELETE `/api/index/{indexName}`
-
-Deletes an index definition.
-
-**version introduced**: 0.0.1
-
----
 GET `/api/index/{indexName}`
 
 Returns the definition of an index.
@@ -27,6 +20,13 @@ Returns the definition of an index.
 PUT `/api/index/{indexName}`
 
 Creates/updates an index definition.
+
+**version introduced**: 0.0.1
+
+---
+DELETE `/api/index/{indexName}`
+
+Deletes an index definition.
 
 **version introduced**: 0.0.1
 

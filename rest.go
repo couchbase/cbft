@@ -49,15 +49,23 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		"/debug",
 	})
 
+	methodOrds := map[string]string{
+		"GET":    "0",
+		"PUT":    "1",
+		"DELETE": "2",
+	}
+
 	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
-		meta[path+" "+method] = RESTMeta{path, method, opts}
+		meta[path+" "+methodOrds[method]+method] =
+			RESTMeta{path, method, opts}
 		r.Handle(path, h).Methods(method)
 	}
 	handleFunc := func(path string, method string, h http.HandlerFunc,
 		opts map[string]string) {
-		meta[path+" "+method] = RESTMeta{path, method, opts}
+		meta[path+" "+methodOrds[method]+method] =
+			RESTMeta{path, method, opts}
 		r.HandleFunc(path, h).Methods(method)
 	}
 
