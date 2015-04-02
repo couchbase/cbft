@@ -5,20 +5,28 @@
 ---
 **/api/index GET**
 
+Returns all index definitions.
+
 **version introduced**: 0.0.0
 
 ---
 **/api/index/{indexName} DELETE**
+
+Deletes an index definition.
 
 **version introduced**: 0.0.0
 
 ---
 **/api/index/{indexName} GET**
 
+Returns the definition of an index.
+
 **version introduced**: 0.0.0
 
 ---
 **/api/index/{indexName} PUT**
+
+Creates/updates an index definition.
 
 **version introduced**: 0.0.0
 
@@ -26,6 +34,9 @@
 
 ---
 **/api/index/{indexName}/ingestControl/{op} POST**
+
+Pause index updates and maintenance (no more
+                          ingesting document mutations).
 
 **param: op**: Allowed values for op are
                           "pause" or "resume".
@@ -35,6 +46,8 @@
 ---
 **/api/index/{indexName}/planFreezeControl/{op} POST**
 
+Freeze the assignment of index partitions to nodes.
+
 **param: op**: Allowed values for op are
                           "freeze" or "unfreeze".
 
@@ -42,6 +55,8 @@
 
 ---
 **/api/index/{indexName}/queryControl/{op} POST**
+
+Disallow queries on an index.
 
 **param: op**: Allowed values for op are
                           "allow" or "disallow".
@@ -63,10 +78,14 @@ Returns indexing and data related metrics,
 ---
 **/api/index/{indexName}/count GET**
 
+Returns the count of indexed documents.
+
 **version introduced**: 0.0.0
 
 ---
 **/api/index/{indexName}/query POST**
+
+Queries an index.
 
 **version introduced**: 0.0.0
 

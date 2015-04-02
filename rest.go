@@ -64,21 +64,25 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handle("/api/index", "GET", NewListIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
+			"_about":             `Returns all index definitions.`,
 			"version introduced": "0.0.0",
 		})
 	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
+			"_about":             `Creates/updates an index definition.`,
 			"version introduced": "0.0.0",
 		})
 	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
+			"_about":             `Deletes an index definition.`,
 			"version introduced": "0.0.0",
 		})
 	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
+			"_about":             `Returns the definition of an index.`,
 			"version introduced": "0.0.0",
 		})
 
@@ -87,12 +91,14 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			NewCountHandler(mgr),
 			map[string]string{
 				"_category":          "Indexing|Index querying",
+				"_about":             `Returns the count of indexed documents.`,
 				"version introduced": "0.0.0",
 			})
 		handle("/api/index/{indexName}/query", "POST",
 			NewQueryHandler(mgr),
 			map[string]string{
 				"_category":          "Indexing|Index querying",
+				"_about":             `Queries an index.`,
 				"version introduced": "0.0.0",
 			})
 	}
@@ -104,6 +110,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		}),
 		map[string]string{
 			"_category": "Indexing|Index management",
+			"_about":    `Freeze the assignment of index partitions to nodes.`,
 			"param: op": `Allowed values for op are
                           "freeze" or "unfreeze".`,
 			"version introduced": "0.0.0",
@@ -115,6 +122,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		}),
 		map[string]string{
 			"_category": "Indexing|Index management",
+			"_about": `Pause index updates and maintenance (no more
+                          ingesting document mutations).`,
 			"param: op": `Allowed values for op are
                           "pause" or "resume".`,
 			"version introduced": "0.0.0",
@@ -126,6 +135,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		}),
 		map[string]string{
 			"_category": "Indexing|Index management",
+			"_about":    `Disallow queries on an index.`,
 			"param: op": `Allowed values for op are
                           "allow" or "disallow".`,
 			"version introduced": "0.0.0",
