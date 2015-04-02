@@ -63,7 +63,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr), nil)
 	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr), nil)
 
-	if mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
+	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
 		handle("/api/index/{indexName}/count", "GET",
 			NewCountHandler(mgr), nil)
 		handle("/api/index/{indexName}/query", "POST",
@@ -90,7 +90,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	//
 	// TODO: Need to cleanly separate the /api/pindex and
 	// /api/pindex-bleve endpoints.
-	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
+	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		handle("/api/pindex", "GET",
 			NewListPIndexHandler(mgr), nil)
 		handle("/api/pindex/{pindexName}", "GET",
