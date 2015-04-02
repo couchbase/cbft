@@ -33,7 +33,6 @@ var startTime = time.Now()
 type RESTMeta struct {
 	Path    string
 	Method  string
-	Descrip string
 	Handler http.Handler
 	Opts    map[string]string
 }
@@ -54,7 +53,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
-		meta[path] = RESTMeta{path, method, "", h, opts}
+		meta[path] = RESTMeta{path, method, h, opts}
 		r.Handle(path, h).Methods(method)
 	}
 
@@ -146,14 +145,21 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr), nil)
 	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr), nil)
 
-	handle("/api/runtime", "GET", NewRuntimeGetHandler(versionMain, mgr), nil)
+	handle("/api/runtime", "GET",
+		NewRuntimeGetHandler(versionMain, mgr), nil)
 
-	r.HandleFunc("/api/runtime/args", restGetRuntimeArgs).Methods("GET")
-	r.HandleFunc("/api/runtime/gc", restPostRuntimeGC).Methods("POST")
-	r.HandleFunc("/api/runtime/profile/cpu", restProfileCPU).Methods("POST")
-	r.HandleFunc("/api/runtime/profile/memory", restProfileMemory).Methods("POST")
-	r.HandleFunc("/api/runtime/stats", restGetRuntimeStats).Methods("GET")
-	r.HandleFunc("/api/runtime/statsMem", restGetRuntimeStatsMem).Methods("GET")
+	r.HandleFunc("/api/runtime/args",
+		restGetRuntimeArgs).Methods("GET")
+	r.HandleFunc("/api/runtime/gc",
+		restPostRuntimeGC).Methods("POST")
+	r.HandleFunc("/api/runtime/profile/cpu",
+		restProfileCPU).Methods("POST")
+	r.HandleFunc("/api/runtime/profile/memory",
+		restProfileMemory).Methods("POST")
+	r.HandleFunc("/api/runtime/stats",
+		restGetRuntimeStats).Methods("GET")
+	r.HandleFunc("/api/runtime/statsMem",
+		restGetRuntimeStatsMem).Methods("GET")
 
 	handle("/api/stats", "GET", NewStatsHandler(mgr), nil)
 
