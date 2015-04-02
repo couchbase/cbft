@@ -1,4 +1,6 @@
-# Index definition
+# Indexing
+
+## Index definition
 
 ---
 **/api/index**
@@ -14,7 +16,7 @@
 
 **version introduced**: 0.0.0
 
-# Index management
+## Index management
 
 ---
 **/api/index/{indexName}/ingestControl/{op}**
@@ -46,7 +48,7 @@
 
 **version introduced**: 0.0.0
 
-# Index monitoring
+## Index monitoring
 
 ---
 **/api/stats**
@@ -58,7 +60,7 @@ Returns indexing and data related metrics,
 
 **version introduced**: 0.0.0
 
-# Index querying
+## Index querying
 
 ---
 **/api/index/{indexName}/count**
@@ -74,7 +76,9 @@ Returns indexing and data related metrics,
 
 **version introduced**: 0.0.0
 
-# Node configuration
+# Node
+
+## Node configuration
 
 ---
 **/api/cfg**
@@ -116,7 +120,7 @@ Returns information on the node's capabilities,
 
 **version introduced**: 0.0.0
 
-# Node diagnostics
+## Node diagnostics
 
 ---
 **/api/diag**
@@ -180,7 +184,7 @@ Requests the node to capture
 
 **version introduced**: 0.0.0
 
-# Node management
+## Node management
 
 ---
 **/api/runtime/gc**
@@ -191,7 +195,7 @@ Requests the node to perform a GC.
 
 **version introduced**: 0.0.0
 
-# Node monitoring
+## Node monitoring
 
 ---
 **/api/runtime/stats**
@@ -213,7 +217,9 @@ Returns information on the node's
 
 **version introduced**: 0.0.0
 
-# (Advanced) Index partition definition
+# Advanced
+
+## Index partition definition
 
 ---
 **/api/pindex**
@@ -243,7 +249,7 @@ Returns information on the node's
 
 **version introduced**: 0.0.0
 
-# (Advanced) Index partition querying
+## Index partition querying
 
 ---
 **/api/pindex-bleve/{pindexName}/count**
@@ -273,7 +279,7 @@ Returns information on the node's
 
 **version introduced**: 0.0.0
 
-# (Advanced) bleve index diagnostics
+## bleve index diagnostics
 
 ---
 **/api/pindex-bleve/{pindexName}/doc/{docID}**

@@ -22,6 +22,20 @@ import (
 	cbftCmd "github.com/couchbaselabs/cbft/cmd/cbft"
 )
 
+func categoryParse(categoryFull string) (string, string, string, string) {
+	ma := strings.Split(categoryFull, "|")
+
+	mainCategory := ma[0]
+	mainCategoryParts := strings.Split(mainCategory, "/")
+	mainCategoryVis := mainCategoryParts[len(mainCategoryParts)-1]
+
+	subCategory := ma[1]
+	subCategoryParts := strings.Split(subCategory, "/")
+	subCategoryVis := subCategoryParts[len(subCategoryParts)-1]
+
+	return mainCategory, mainCategoryVis, subCategory, subCategoryVis
+}
+
 // Emits markdown docs of cbft's REST API.
 func main() {
 	_, meta, err :=
@@ -30,8 +44,11 @@ func main() {
 		log.Panic(err)
 	}
 
-	categoriesMap := map[string]bool{}
-	categories := []string(nil)
+	mainCategoriesMap := map[string]bool{}
+	mainCategories := []string(nil)
+
+	subCategoriesMap := map[string]bool{}
+	subCategories := []string(nil)
 
 	paths := []string(nil)
 	for path := range meta {
@@ -39,50 +56,79 @@ func main() {
 
 		m := meta[path]
 		if m.Opts != nil {
-			if !categoriesMap[m.Opts["_category"]] {
-				categoriesMap[m.Opts["_category"]] = true
-				categories = append(categories, m.Opts["_category"])
+			category := m.Opts["_category"]
+
+			mainCategory, _, subCategory, _ := categoryParse(category)
+
+			if !mainCategoriesMap[mainCategory] {
+				mainCategoriesMap[mainCategory] = true
+				mainCategories = append(mainCategories, mainCategory)
+			}
+
+			if !subCategoriesMap[subCategory] {
+				subCategoriesMap[subCategory] = true
+				subCategories = append(subCategories, subCategory)
 			}
 		}
 	}
 
-	sort.Strings(categories)
+	sort.Strings(mainCategories)
+	sort.Strings(subCategories)
 	sort.Strings(paths)
 
-	for _, category := range categories {
-		if category != "" {
-			ca := strings.Split(category, "/")
-			fmt.Printf("# %s\n\n", ca[len(ca)-1])
-		} else {
-			fmt.Printf("# General\n\n")
-		}
+	for _, mainCategory := range mainCategories {
+		mainCategoryFirst := true
 
-		for _, path := range paths {
-			m := meta[path]
-			if m.Opts != nil {
-				if m.Opts["_category"] != category ||
+		for _, subCategory := range subCategories {
+			subCategoryFirst := true
+
+			for _, path := range paths {
+				m := meta[path]
+
+				category := ""
+				if m.Opts != nil {
+					category = m.Opts["_category"]
+				}
+
+				mc, mcVis, sc, scVis := categoryParse(category)
+				if mc != mainCategory ||
+					sc != subCategory {
+					continue
+				}
+
+				if m.Opts != nil &&
 					m.Opts["_status"] == "private" {
 					continue
 				}
-			}
 
-			fmt.Printf("---\n")
-			fmt.Printf("**%s**\n\n", path)
-			fmt.Printf("**method**: %s\n\n", m.Method)
-			if m.Opts != nil && m.Opts["_about"] != "" {
-				fmt.Printf("%s\n\n", m.Opts["_about"])
-			}
-
-			optNames := []string(nil)
-			for optName := range m.Opts {
-				if optName != "" && !strings.HasPrefix(optName, "_") {
-					optNames = append(optNames, optName)
+				if mainCategoryFirst {
+					fmt.Printf("# %s\n\n", mcVis)
 				}
-			}
-			sort.Strings(optNames)
+				mainCategoryFirst = false
 
-			for _, optName := range optNames {
-				fmt.Printf("**%s**: %s\n\n", optName, m.Opts[optName])
+				if subCategoryFirst {
+					fmt.Printf("## %s\n\n", scVis)
+				}
+				subCategoryFirst = false
+
+				fmt.Printf("---\n")
+				fmt.Printf("**%s**\n\n", path)
+				fmt.Printf("**method**: %s\n\n", m.Method)
+				if m.Opts != nil && m.Opts["_about"] != "" {
+					fmt.Printf("%s\n\n", m.Opts["_about"])
+				}
+
+				optNames := []string(nil)
+				for optName := range m.Opts {
+					if optName != "" && !strings.HasPrefix(optName, "_") {
+						optNames = append(optNames, optName)
+					}
+				}
+				sort.Strings(optNames)
+
+				for _, optName := range optNames {
+					fmt.Printf("**%s**: %s\n\n", optName, m.Opts[optName])
+				}
 			}
 		}
 	}
