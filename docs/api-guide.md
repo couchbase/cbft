@@ -3,28 +3,28 @@
 ## Index definition
 
 ---
-**/api/index GET**
+GET `/api/index`
 
 Returns all index definitions.
 
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName} DELETE**
+DELETE `/api/index/{indexName}`
 
 Deletes an index definition.
 
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName} GET**
+GET `/api/index/{indexName}`
 
 Returns the definition of an index.
 
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName} PUT**
+PUT `/api/index/{indexName}`
 
 Creates/updates an index definition.
 
@@ -33,7 +33,7 @@ Creates/updates an index definition.
 ## Index management
 
 ---
-**/api/index/{indexName}/ingestControl/{op} POST**
+POST `/api/index/{indexName}/ingestControl/{op}`
 
 Pause index updates and maintenance (no more
                           ingesting document mutations).
@@ -44,7 +44,7 @@ Pause index updates and maintenance (no more
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName}/planFreezeControl/{op} POST**
+POST `/api/index/{indexName}/planFreezeControl/{op}`
 
 Freeze the assignment of index partitions to nodes.
 
@@ -54,7 +54,7 @@ Freeze the assignment of index partitions to nodes.
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName}/queryControl/{op} POST**
+POST `/api/index/{indexName}/queryControl/{op}`
 
 Disallow queries on an index.
 
@@ -66,7 +66,7 @@ Disallow queries on an index.
 ## Index monitoring
 
 ---
-**/api/stats GET**
+GET `/api/stats`
 
 Returns indexing and data related metrics,
                        timings and counters for the node.
@@ -76,14 +76,14 @@ Returns indexing and data related metrics,
 ## Index querying
 
 ---
-**/api/index/{indexName}/count GET**
+GET `/api/index/{indexName}/count`
 
 Returns the count of indexed documents.
 
 **version introduced**: 0.0.1
 
 ---
-**/api/index/{indexName}/query POST**
+POST `/api/index/{indexName}/query`
 
 Queries an index.
 
@@ -94,7 +94,7 @@ Queries an index.
 ## Node configuration
 
 ---
-**/api/cfg GET**
+GET `/api/cfg`
 
 Returns the node's current view
                        of the cluster's configuration.
@@ -102,7 +102,7 @@ Returns the node's current view
 **version introduced**: 0.0.1
 
 ---
-**/api/cfgRefresh POST**
+POST `/api/cfgRefresh`
 
 Requests the node to refresh its configuration
                        from the configuration provider.
@@ -110,7 +110,7 @@ Requests the node to refresh its configuration
 **version introduced**: 0.0.1
 
 ---
-**/api/managerKick POST**
+POST `/api/managerKick`
 
 Forces the node to replan resource assignments and
                        to update its state to reflect the latest plan.
@@ -118,7 +118,7 @@ Forces the node to replan resource assignments and
 **version introduced**: 0.0.1
 
 ---
-**/api/managerMeta GET**
+GET `/api/managerMeta`
 
 Returns information on the node's capabilities,
                        including available storage and bleve options.
@@ -128,7 +128,7 @@ Returns information on the node's capabilities,
 ## Node diagnostics
 
 ---
-**/api/diag GET**
+GET `/api/diag`
 
 Returns full set of diagnostic information
                        from the node.
@@ -136,7 +136,7 @@ Returns full set of diagnostic information
 **version introduced**: 0.0.1
 
 ---
-**/api/log GET**
+GET `/api/log`
 
 Returns recent log messages
                        and key events for the node.
@@ -144,7 +144,7 @@ Returns recent log messages
 **version introduced**: 0.0.1
 
 ---
-**/api/runtime GET**
+GET `/api/runtime`
 
 Returns information on the node's software,
                        such as version strings and slow-changing
@@ -153,7 +153,7 @@ Returns information on the node's software,
 **version introduced**: 0.0.1
 
 ---
-**/api/runtime/args GET**
+GET `/api/runtime/args`
 
 Returns information on the node's command-line,
                        parameters, environment variables and
@@ -162,7 +162,7 @@ Returns information on the node's command-line,
 **version introduced**: 0.0.1
 
 ---
-**/api/runtime/profile/cpu POST**
+POST `/api/runtime/profile/cpu`
 
 Requests the node to capture
                        cpu usage profiling information.
@@ -170,7 +170,7 @@ Requests the node to capture
 **version introduced**: 0.0.1
 
 ---
-**/api/runtime/profile/memory POST**
+POST `/api/runtime/profile/memory`
 
 Requests the node to capture
                        memory usage profiling information.
@@ -180,7 +180,7 @@ Requests the node to capture
 ## Node management
 
 ---
-**/api/runtime/gc POST**
+POST `/api/runtime/gc`
 
 Requests the node to perform a GC.
 
@@ -189,7 +189,7 @@ Requests the node to perform a GC.
 ## Node monitoring
 
 ---
-**/api/runtime/stats GET**
+GET `/api/runtime/stats`
 
 Returns information on the node's
                        low-level runtime stats.
@@ -197,7 +197,7 @@ Returns information on the node's
 **version introduced**: 0.0.1
 
 ---
-**/api/runtime/statsMem GET**
+GET `/api/runtime/statsMem`
 
 Returns information on the node's
                        low-level GC and memory related runtime stats.
@@ -209,61 +209,61 @@ Returns information on the node's
 ## Index partition definition
 
 ---
-**/api/pindex GET**
+GET `/api/pindex`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex-bleve GET**
+GET `/api/pindex-bleve`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex-bleve/{pindexName} GET**
+GET `/api/pindex-bleve/{pindexName}`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex/{pindexName} GET**
+GET `/api/pindex/{pindexName}`
 
 **version introduced**: 0.0.1
 
 ## Index partition querying
 
 ---
-**/api/pindex-bleve/{pindexName}/count GET**
+GET `/api/pindex-bleve/{pindexName}/count`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex-bleve/{pindexName}/query POST**
+POST `/api/pindex-bleve/{pindexName}/query`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex/{pindexName}/count GET**
+GET `/api/pindex/{pindexName}/count`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex/{pindexName}/query POST**
+POST `/api/pindex/{pindexName}/query`
 
 **version introduced**: 0.0.1
 
 ## bleve index diagnostics
 
 ---
-**/api/pindex-bleve/{pindexName}/doc/{docID} GET**
+GET `/api/pindex-bleve/{pindexName}/doc/{docID}`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex-bleve/{pindexName}/docDebug/{docID} GET**
+GET `/api/pindex-bleve/{pindexName}/docDebug/{docID}`
 
 **version introduced**: 0.0.1
 
 ---
-**/api/pindex-bleve/{pindexName}/fields GET**
+GET `/api/pindex-bleve/{pindexName}/fields`
 
 **version introduced**: 0.0.1
 

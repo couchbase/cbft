@@ -111,8 +111,9 @@ func main() {
 				}
 				subCategoryFirst = false
 
+				pathParts := strings.Split(path, " ")
 				fmt.Printf("---\n")
-				fmt.Printf("**%s**\n\n", path)
+				fmt.Printf("%s `%s`\n\n", m.Method, pathParts[0])
 				if m.Opts != nil && m.Opts["_about"] != "" {
 					fmt.Printf("%s\n\n", m.Opts["_about"])
 				}
