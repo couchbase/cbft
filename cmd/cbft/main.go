@@ -74,9 +74,9 @@ func init() {
 }
 
 func main() {
-	log.Printf("main: %s started (%s/%s)", os.Args[0], VERSION, cbft.VERSION)
-
 	flag.Parse()
+
+	log.Printf("main: %s started (%s/%s)", os.Args[0], VERSION, cbft.VERSION)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -125,7 +125,9 @@ func MainWelcome() {
 	if *logFlags != "" {
 		log.ParseLogFlag(*logFlags)
 	}
-	flag.VisitAll(func(f *flag.Flag) { log.Printf("  -%s=%s\n", f.Name, f.Value) })
+	flag.VisitAll(func(f *flag.Flag) {
+		log.Printf("  -%s=%s\n", f.Name, f.Value)
+	})
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
 	log.Printf("main: registered bleve stores")
@@ -145,7 +147,8 @@ func MainUUID(dataDir string) (string, error) {
 	if err == nil {
 		uuid = strings.TrimSpace(string(uuidBuf))
 		if uuid == "" {
-			return "", fmt.Errorf("error: could not parse uuidPath: %s", uuidPath)
+			return "", fmt.Errorf("error: could not parse uuidPath: %s",
+				uuidPath)
 		}
 		log.Printf("main: manager uuid: %s", uuid)
 		log.Printf("main: manager uuid was reloaded")
