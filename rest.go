@@ -65,25 +65,25 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category":          "Indexing|Index definition",
 			"_about":             `Returns all index definitions.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
 			"_about":             `Creates/updates an index definition.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
 			"_about":             `Deletes an index definition.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
 			"_about":             `Returns the definition of an index.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
@@ -92,14 +92,14 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			map[string]string{
 				"_category":          "Indexing|Index querying",
 				"_about":             `Returns the count of indexed documents.`,
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 		handle("/api/index/{indexName}/query", "POST",
 			NewQueryHandler(mgr),
 			map[string]string{
 				"_category":          "Indexing|Index querying",
 				"_about":             `Queries an index.`,
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 	}
 
@@ -113,7 +113,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_about":    `Freeze the assignment of index partitions to nodes.`,
 			"param: op": `Allowed values for op are
                           "freeze" or "unfreeze".`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "write", map[string]bool{
@@ -126,7 +126,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
                           ingesting document mutations).`,
 			"param: op": `Allowed values for op are
                           "pause" or "resume".`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}/queryControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "read", map[string]bool{
@@ -138,7 +138,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_about":    `Disallow queries on an index.`,
 			"param: op": `Allowed values for op are
                           "allow" or "disallow".`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
@@ -150,32 +150,32 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			NewListPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 		handle("/api/pindex/{pindexName}", "GET",
 			NewGetPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 		handle("/api/pindex/{pindexName}/count", "GET",
 			NewCountPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 		handle("/api/pindex/{pindexName}/query", "POST",
 			NewQueryPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
 		handle("/api/pindex-bleve", "GET", listIndexesHandler,
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
@@ -184,7 +184,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			getIndexHandler,
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
@@ -193,7 +193,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			docCountHandler,
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		searchHandler := bleveHttp.NewSearchHandler("")
@@ -202,7 +202,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			searchHandler,
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
@@ -212,7 +212,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			docGetHandler,
 			map[string]string{
 				"_category":          "x/Advanced|y/bleve index diagnostics",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
@@ -222,7 +222,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			debugDocHandler,
 			map[string]string{
 				"_category":          "x/Advanced|y/bleve index diagnostics",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
@@ -231,7 +231,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			listFieldsHandler,
 			map[string]string{
 				"_category":          "x/Advanced|y/bleve index diagnostics",
-				"version introduced": "0.0.0",
+				"version introduced": "0.0.1",
 			})
 	}
 
@@ -240,7 +240,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node configuration",
 			"_about": `Returns the node's current view
                        of the cluster's configuration.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr),
@@ -248,7 +248,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node configuration",
 			"_about": `Requests the node to refresh its configuration
                        from the configuration provider.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr),
@@ -256,7 +256,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns full set of diagnostic information
                        from the node.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/log", "GET", NewLogGetHandler(mgr, mr),
@@ -264,7 +264,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns recent log messages
                        and key events for the node.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr),
@@ -272,7 +272,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node configuration",
 			"_about": `Forces the node to replan resource assignments and
                        to update its state to reflect the latest plan.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr),
@@ -280,7 +280,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node configuration",
 			"_about": `Returns information on the node's capabilities,
                        including available storage and bleve options.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/runtime", "GET",
@@ -290,7 +290,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_about": `Returns information on the node's software,
                        such as version strings and slow-changing
                        runtime settings.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/args", "GET",
@@ -299,14 +299,14 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_about": `Returns information on the node's command-line,
                        parameters, environment variables and
                        O/S process values.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/gc", "POST",
 		restPostRuntimeGC, map[string]string{
 			"_category":          "Node|Node management",
 			"_about":             `Requests the node to perform a GC.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/profile/cpu", "POST",
@@ -314,7 +314,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Requests the node to capture
                        cpu usage profiling information.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/profile/memory", "POST",
@@ -322,7 +322,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Requests the node to capture
                        memory usage profiling information.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/stats", "GET",
@@ -330,7 +330,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node monitoring",
 			"_about": `Returns information on the node's
                        low-level runtime stats.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handleFunc("/api/runtime/statsMem", "GET",
@@ -338,7 +338,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node monitoring",
 			"_about": `Returns information on the node's
                        low-level GC and memory related runtime stats.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	handle("/api/stats", "GET", NewStatsHandler(mgr),
@@ -346,7 +346,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Indexing|Index monitoring",
 			"_about": `Returns indexing and data related metrics,
                        timings and counters for the node.`,
-			"version introduced": "0.0.0",
+			"version introduced": "0.0.1",
 		})
 
 	return r, meta, nil
