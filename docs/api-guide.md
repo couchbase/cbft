@@ -1,23 +1,3 @@
-# Index bleve diagnostics
-
-### /api/pindex-bleve/{pindexName}/doc/{docID}
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
-### /api/pindex-bleve/{pindexName}/docDebug/{docID}
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
-### /api/pindex-bleve/{pindexName}/fields
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
 # Index definition
 
 ### /api/index
@@ -47,34 +27,6 @@
 **version introduced**: 0.0.0
 
 ### /api/index/{indexName}/queryControl/{op}
-
-**method**: POST
-
-**version introduced**: 0.0.0
-
-# Index partition definition
-
-### /api/pindex
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
-### /api/pindex/{pindexName}
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
-# Index partition querying
-
-### /api/pindex/{pindexName}/count
-
-**method**: GET
-
-**version introduced**: 0.0.0
-
-### /api/pindex/{pindexName}/query
 
 **method**: POST
 
@@ -166,6 +118,78 @@ Returns information on the node's software,
 
 Returns current stats metrics, timings and counters
                        for the node.
+
+**version introduced**: 0.0.0
+
+# (Advanced) Index partition definition
+
+### /api/pindex
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex-bleve
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex-bleve/{pindexName}
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex/{pindexName}
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+# (Advanced) Index partition querying
+
+### /api/pindex-bleve/{pindexName}/count
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex-bleve/{pindexName}/query
+
+**method**: POST
+
+**version introduced**: 0.0.0
+
+### /api/pindex/{pindexName}/count
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex/{pindexName}/query
+
+**method**: POST
+
+**version introduced**: 0.0.0
+
+# (Advanced) bleve index diagnostics
+
+### /api/pindex-bleve/{pindexName}/doc/{docID}
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex-bleve/{pindexName}/docDebug/{docID}
+
+**method**: GET
+
+**version introduced**: 0.0.0
+
+### /api/pindex-bleve/{pindexName}/fields
+
+**method**: GET
 
 **version introduced**: 0.0.0
 

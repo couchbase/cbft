@@ -51,7 +51,8 @@ func main() {
 
 	for _, category := range categories {
 		if category != "" {
-			fmt.Printf("# %s\n\n", category)
+			ca := strings.Split(category, "/")
+			fmt.Printf("# %s\n\n", ca[len(ca)-1])
 		} else {
 			fmt.Printf("# General\n\n")
 		}

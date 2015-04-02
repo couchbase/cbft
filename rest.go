@@ -129,33 +129,32 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex", "GET",
 			NewListPIndexHandler(mgr),
 			map[string]string{
-				"_category":          "Index partition definition",
+				"_category":          "x/(Advanced) Index partition definition",
 				"version introduced": "0.0.0",
 			})
 		handle("/api/pindex/{pindexName}", "GET",
 			NewGetPIndexHandler(mgr),
 			map[string]string{
-				"_category":          "Index partition definition",
+				"_category":          "x/(Advanced) Index partition definition",
 				"version introduced": "0.0.0",
 			})
 		handle("/api/pindex/{pindexName}/count", "GET",
 			NewCountPIndexHandler(mgr),
 			map[string]string{
-				"_category":          "Index partition querying",
+				"_category":          "x/(Advanced) Index partition querying",
 				"version introduced": "0.0.0",
 			})
 		handle("/api/pindex/{pindexName}/query", "POST",
 			NewQueryPIndexHandler(mgr),
 			map[string]string{
-				"_category":          "Index partition querying",
+				"_category":          "x/(Advanced) Index partition querying",
 				"version introduced": "0.0.0",
 			})
 
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
 		handle("/api/pindex-bleve", "GET", listIndexesHandler,
 			map[string]string{
-				"_status":            "private",
-				"_category":          "Index partition definition",
+				"_category":          "x/(Advanced) Index partition definition",
 				"version introduced": "0.0.0",
 			})
 
@@ -164,8 +163,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}", "GET",
 			getIndexHandler,
 			map[string]string{
-				"_status":            "private",
-				"_category":          "Index partition definition",
+				"_category":          "x/(Advanced) Index partition definition",
 				"version introduced": "0.0.0",
 			})
 
@@ -174,8 +172,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}/count", "GET",
 			docCountHandler,
 			map[string]string{
-				"_status":            "private",
-				"_category":          "Index partition querying",
+				"_category":          "x/(Advanced) Index partition querying",
 				"version introduced": "0.0.0",
 			})
 
@@ -184,8 +181,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}/query", "POST",
 			searchHandler,
 			map[string]string{
-				"_status":            "private",
-				"_category":          "Index partition querying",
+				"_category":          "x/(Advanced) Index partition querying",
 				"version introduced": "0.0.0",
 			})
 
@@ -195,7 +191,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}/doc/{docID}", "GET",
 			docGetHandler,
 			map[string]string{
-				"_category":          "Index bleve diagnostics",
+				"_category":          "y/(Advanced) bleve index diagnostics",
 				"version introduced": "0.0.0",
 			})
 
@@ -205,7 +201,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}", "GET",
 			debugDocHandler,
 			map[string]string{
-				"_category":          "Index bleve diagnostics",
+				"_category":          "y/(Advanced) bleve index diagnostics",
 				"version introduced": "0.0.0",
 			})
 
@@ -214,7 +210,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		handle("/api/pindex-bleve/{pindexName}/fields", "GET",
 			listFieldsHandler,
 			map[string]string{
-				"_category":          "Index bleve diagnostics",
+				"_category":          "y/(Advanced) bleve index diagnostics",
 				"version introduced": "0.0.0",
 			})
 	}
