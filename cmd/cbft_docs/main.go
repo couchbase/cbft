@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/couchbaselabs/cbft"
 
@@ -29,31 +30,58 @@ func main() {
 		log.Panic(err)
 	}
 
+	categoriesMap := map[string]bool{}
+	categories := []string(nil)
+
 	paths := []string(nil)
 	for path := range meta {
 		paths = append(paths, path)
-	}
-	sort.Strings(paths)
 
-	for _, path := range paths {
 		m := meta[path]
-
-		fmt.Printf("# %s\n\n", path)
-		fmt.Printf("method: %s\n\n", m.Method)
-		if m.Opts != nil && m.Opts[""] != "" {
-			fmt.Printf("%s\n\n", m.Opts[""])
-		}
-
-		optNames := []string(nil)
-		for optName := range m.Opts {
-			if optName != "" {
-				optNames = append(optNames, optName)
+		if m.Opts != nil {
+			if !categoriesMap[m.Opts["_category"]] {
+				categoriesMap[m.Opts["_category"]] = true
+				categories = append(categories, m.Opts["_category"])
 			}
 		}
-		sort.Strings(optNames)
+	}
 
-		for _, optName := range optNames {
-			fmt.Printf("**%s** - %s\n\n", optName, m.Opts[optName])
+	sort.Strings(categories)
+	sort.Strings(paths)
+
+	for _, category := range categories {
+		if category != "" {
+			fmt.Printf("# %s\n\n", category)
+		} else {
+			fmt.Printf("# General\n\n")
+		}
+
+		for _, path := range paths {
+			m := meta[path]
+			if m.Opts != nil {
+				if m.Opts["_category"] != category ||
+					m.Opts["_status"] == "private" {
+					continue
+				}
+			}
+
+			fmt.Printf("### %s\n\n", path)
+			fmt.Printf("**method**: %s\n\n", m.Method)
+			if m.Opts != nil && m.Opts["_about"] != "" {
+				fmt.Printf("%s\n\n", m.Opts["_about"])
+			}
+
+			optNames := []string(nil)
+			for optName := range m.Opts {
+				if optName != "" && !strings.HasPrefix(optName, "_") {
+					optNames = append(optNames, optName)
+				}
+			}
+			sort.Strings(optNames)
+
+			for _, optName := range optNames {
+				fmt.Printf("**%s**: %s\n\n", optName, m.Opts[optName])
+			}
 		}
 	}
 }

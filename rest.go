@@ -57,33 +57,69 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		r.Handle(path, h).Methods(method)
 	}
 
-	handle("/api/index", "GET", NewListIndexHandler(mgr), nil)
-	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr), nil)
-	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr), nil)
-	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr), nil)
+	handle("/api/index", "GET", NewListIndexHandler(mgr),
+		map[string]string{
+			"_category":          "Index definition",
+			"version introduced": "0.0.0",
+		})
+	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr),
+		map[string]string{
+			"_category":          "Index definition",
+			"version introduced": "0.0.0",
+		})
+	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr),
+		map[string]string{
+			"_category":          "Index definition",
+			"version introduced": "0.0.0",
+		})
+	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr),
+		map[string]string{
+			"_category":          "Index definition",
+			"version introduced": "0.0.0",
+		})
 
 	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
 		handle("/api/index/{indexName}/count", "GET",
-			NewCountHandler(mgr), nil)
+			NewCountHandler(mgr),
+			map[string]string{
+				"_category":          "Index querying",
+				"version introduced": "0.0.0",
+			})
 		handle("/api/index/{indexName}/query", "POST",
-			NewQueryHandler(mgr), nil)
+			NewQueryHandler(mgr),
+			map[string]string{
+				"_category":          "Index querying",
+				"version introduced": "0.0.0",
+			})
 	}
 
 	handle("/api/index/{indexName}/planFreezeControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "planFreeze", map[string]bool{
 			"freeze":   true,
 			"unfreeze": true,
-		}), nil)
+		}),
+		map[string]string{
+			"_category":          "Index management",
+			"version introduced": "0.0.0",
+		})
 	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "write", map[string]bool{
 			"pause":  true,
 			"resume": true,
-		}), nil)
+		}),
+		map[string]string{
+			"_category":          "Index management",
+			"version introduced": "0.0.0",
+		})
 	handle("/api/index/{indexName}/queryControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "read", map[string]bool{
 			"allow":    true,
 			"disallow": true,
-		}), nil)
+		}),
+		map[string]string{
+			"_category":          "Index management",
+			"version introduced": "0.0.0",
+		})
 
 	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
 	//
@@ -91,62 +127,146 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	// /api/pindex-bleve endpoints.
 	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		handle("/api/pindex", "GET",
-			NewListPIndexHandler(mgr), nil)
+			NewListPIndexHandler(mgr),
+			map[string]string{
+				"_category":          "Index partition definition",
+				"version introduced": "0.0.0",
+			})
 		handle("/api/pindex/{pindexName}", "GET",
-			NewGetPIndexHandler(mgr), nil)
+			NewGetPIndexHandler(mgr),
+			map[string]string{
+				"_category":          "Index partition definition",
+				"version introduced": "0.0.0",
+			})
 		handle("/api/pindex/{pindexName}/count", "GET",
-			NewCountPIndexHandler(mgr), nil)
+			NewCountPIndexHandler(mgr),
+			map[string]string{
+				"_category":          "Index partition querying",
+				"version introduced": "0.0.0",
+			})
 		handle("/api/pindex/{pindexName}/query", "POST",
-			NewQueryPIndexHandler(mgr), nil)
+			NewQueryPIndexHandler(mgr),
+			map[string]string{
+				"_category":          "Index partition querying",
+				"version introduced": "0.0.0",
+			})
 
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
-		handle("/api/pindex-bleve", "GET", listIndexesHandler, nil)
+		handle("/api/pindex-bleve", "GET", listIndexesHandler,
+			map[string]string{
+				"_status":            "private",
+				"_category":          "Index partition definition",
+				"version introduced": "0.0.0",
+			})
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
 		getIndexHandler.IndexNameLookup = pindexNameLookup
 		handle("/api/pindex-bleve/{pindexName}", "GET",
-			getIndexHandler, nil)
+			getIndexHandler,
+			map[string]string{
+				"_status":            "private",
+				"_category":          "Index partition definition",
+				"version introduced": "0.0.0",
+			})
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
 		docCountHandler.IndexNameLookup = pindexNameLookup
 		handle("/api/pindex-bleve/{pindexName}/count", "GET",
-			docCountHandler, nil)
+			docCountHandler,
+			map[string]string{
+				"_status":            "private",
+				"_category":          "Index partition querying",
+				"version introduced": "0.0.0",
+			})
 
 		searchHandler := bleveHttp.NewSearchHandler("")
 		searchHandler.IndexNameLookup = pindexNameLookup
 		handle("/api/pindex-bleve/{pindexName}/query", "POST",
-			searchHandler, nil)
+			searchHandler,
+			map[string]string{
+				"_status":            "private",
+				"_category":          "Index partition querying",
+				"version introduced": "0.0.0",
+			})
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
 		docGetHandler.IndexNameLookup = pindexNameLookup
 		docGetHandler.DocIDLookup = docIDLookup
 		handle("/api/pindex-bleve/{pindexName}/doc/{docID}", "GET",
-			docGetHandler, nil)
+			docGetHandler,
+			map[string]string{
+				"_category":          "Index bleve diagnostics",
+				"version introduced": "0.0.0",
+			})
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
 		debugDocHandler.IndexNameLookup = pindexNameLookup
 		debugDocHandler.DocIDLookup = docIDLookup
 		handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}", "GET",
-			debugDocHandler, nil)
+			debugDocHandler,
+			map[string]string{
+				"_category":          "Index bleve diagnostics",
+				"version introduced": "0.0.0",
+			})
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = pindexNameLookup
 		handle("/api/pindex-bleve/{pindexName}/fields", "GET",
-			listFieldsHandler, nil)
+			listFieldsHandler,
+			map[string]string{
+				"_category":          "Index bleve diagnostics",
+				"version introduced": "0.0.0",
+			})
 	}
 
-	handle("/api/cfg", "GET", NewCfgGetHandler(mgr), nil)
-	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr), nil)
-
-	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr), nil)
-
-	handle("/api/log", "GET", NewLogGetHandler(mgr, mr), nil)
-
-	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr), nil)
-	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr), nil)
+	handle("/api/cfg", "GET", NewCfgGetHandler(mgr),
+		map[string]string{
+			"_category": "Node configuration",
+			"_about": `Returns the node's current view
+                       of the cluster's configuration.`,
+			"version introduced": "0.0.0",
+		})
+	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr),
+		map[string]string{
+			"_category":          "Node configuration",
+			"_about":             `Requests the node to refresh its configuration.`,
+			"version introduced": "0.0.0",
+		})
+	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr),
+		map[string]string{
+			"_category":          "Node diagnostics",
+			"_about":             `Returns large amount of diagnosis information.`,
+			"version introduced": "0.0.0",
+		})
+	handle("/api/log", "GET", NewLogGetHandler(mgr, mr),
+		map[string]string{
+			"_category":          "Node diagnostics",
+			"_about":             `Returns recent log messages and key events for the node.`,
+			"version introduced": "0.0.0",
+		})
+	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr),
+		map[string]string{
+			"_category": "Node configuration",
+			"_about": `Forces the node to replan resource assignments and
+                       to update its state to reflect the latest plan.`,
+			"version introduced": "0.0.0",
+		})
+	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr),
+		map[string]string{
+			"_category":          "Node configuration",
+			"_about":             `Returns metadata on the node's capabilities.`,
+			"version introduced": "0.0.0",
+		})
 
 	handle("/api/runtime", "GET",
-		NewRuntimeGetHandler(versionMain, mgr), nil)
+		NewRuntimeGetHandler(versionMain, mgr),
+		map[string]string{
+			"_category": "Node diagnostics",
+			"_about": `Returns information on the node's software,
+                       such as version strings and slow-changing
+                       runtime settings.`,
+			"version introduced": "0.0.0",
+		})
 
 	r.HandleFunc("/api/runtime/args",
 		restGetRuntimeArgs).Methods("GET")
@@ -161,7 +281,13 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r.HandleFunc("/api/runtime/statsMem",
 		restGetRuntimeStatsMem).Methods("GET")
 
-	handle("/api/stats", "GET", NewStatsHandler(mgr), nil)
+	handle("/api/stats", "GET", NewStatsHandler(mgr),
+		map[string]string{
+			"_category": "Node monitoring",
+			"_about": `Returns current stats metrics, timings and counters
+                       for the node.`,
+			"version introduced": "0.0.0",
+		})
 
 	return r, meta, nil
 }

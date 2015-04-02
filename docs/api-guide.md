@@ -1,104 +1,171 @@
-# /api/cfg
+# Index bleve diagnostics
 
-method: GET
+### /api/pindex-bleve/{pindexName}/doc/{docID}
 
-# /api/cfgRefresh
+**method**: GET
 
-method: POST
+**version introduced**: 0.0.0
 
-# /api/diag
+### /api/pindex-bleve/{pindexName}/docDebug/{docID}
 
-method: GET
+**method**: GET
 
-# /api/index
+**version introduced**: 0.0.0
 
-method: GET
+### /api/pindex-bleve/{pindexName}/fields
 
-# /api/index/{indexName}
+**method**: GET
 
-method: GET
+**version introduced**: 0.0.0
 
-# /api/index/{indexName}/count
+# Index definition
 
-method: GET
+### /api/index
 
-# /api/index/{indexName}/ingestControl/{op}
+**method**: GET
 
-method: POST
+**version introduced**: 0.0.0
 
-# /api/index/{indexName}/planFreezeControl/{op}
+### /api/index/{indexName}
 
-method: POST
+**method**: GET
 
-# /api/index/{indexName}/query
+**version introduced**: 0.0.0
 
-method: POST
+# Index management
 
-# /api/index/{indexName}/queryControl/{op}
+### /api/index/{indexName}/ingestControl/{op}
 
-method: POST
+**method**: POST
 
-# /api/log
+**version introduced**: 0.0.0
 
-method: GET
+### /api/index/{indexName}/planFreezeControl/{op}
 
-# /api/managerKick
+**method**: POST
 
-method: POST
+**version introduced**: 0.0.0
 
-# /api/managerMeta
+### /api/index/{indexName}/queryControl/{op}
 
-method: GET
+**method**: POST
 
-# /api/pindex
+**version introduced**: 0.0.0
 
-method: GET
+# Index partition definition
 
-# /api/pindex-bleve
+### /api/pindex
 
-method: GET
+**method**: GET
 
-# /api/pindex-bleve/{pindexName}
+**version introduced**: 0.0.0
 
-method: GET
+### /api/pindex/{pindexName}
 
-# /api/pindex-bleve/{pindexName}/count
+**method**: GET
 
-method: GET
+**version introduced**: 0.0.0
 
-# /api/pindex-bleve/{pindexName}/doc/{docID}
+# Index partition querying
 
-method: GET
+### /api/pindex/{pindexName}/count
 
-# /api/pindex-bleve/{pindexName}/docDebug/{docID}
+**method**: GET
 
-method: GET
+**version introduced**: 0.0.0
 
-# /api/pindex-bleve/{pindexName}/fields
+### /api/pindex/{pindexName}/query
 
-method: GET
+**method**: POST
 
-# /api/pindex-bleve/{pindexName}/query
+**version introduced**: 0.0.0
 
-method: POST
+# Index querying
 
-# /api/pindex/{pindexName}
+### /api/index/{indexName}/count
 
-method: GET
+**method**: GET
 
-# /api/pindex/{pindexName}/count
+**version introduced**: 0.0.0
 
-method: GET
+### /api/index/{indexName}/query
 
-# /api/pindex/{pindexName}/query
+**method**: POST
 
-method: POST
+**version introduced**: 0.0.0
 
-# /api/runtime
+# Node configuration
 
-method: GET
+### /api/cfg
 
-# /api/stats
+**method**: GET
 
-method: GET
+Returns the node's current view
+                       of the cluster's configuration.
+
+**version introduced**: 0.0.0
+
+### /api/cfgRefresh
+
+**method**: POST
+
+Requests the node to refresh its configuration.
+
+**version introduced**: 0.0.0
+
+### /api/managerKick
+
+**method**: POST
+
+Forces the node to replan resource assignments and
+                       to update its state to reflect the latest plan.
+
+**version introduced**: 0.0.0
+
+### /api/managerMeta
+
+**method**: GET
+
+Returns metadata on the node's capabilities.
+
+**version introduced**: 0.0.0
+
+# Node diagnostics
+
+### /api/diag
+
+**method**: GET
+
+Returns large amount of diagnosis information.
+
+**version introduced**: 0.0.0
+
+### /api/log
+
+**method**: GET
+
+Returns recent log messages and key events for the node.
+
+**version introduced**: 0.0.0
+
+### /api/runtime
+
+**method**: GET
+
+Returns information on the node's software,
+                       such as version strings and slow-changing
+                       runtime settings.
+
+**version introduced**: 0.0.0
+
+# Node monitoring
+
+### /api/stats
+
+**method**: GET
+
+Returns current stats metrics, timings and counters
+                       for the node.
+
+**version introduced**: 0.0.0
 
