@@ -51,8 +51,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 
 	methodOrds := map[string]string{
 		"GET":    "0",
-		"PUT":    "1",
-		"DELETE": "2",
+		"POST":   "1",
+		"PUT":    "2",
+		"DELETE": "3",
 	}
 
 	meta := map[string]RESTMeta{}
