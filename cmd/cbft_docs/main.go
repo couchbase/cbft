@@ -66,7 +66,8 @@ func main() {
 				}
 			}
 
-			fmt.Printf("### %s\n\n", path)
+			fmt.Printf("---\n")
+			fmt.Printf("**%s**\n\n", path)
 			fmt.Printf("**method**: %s\n\n", m.Method)
 			if m.Opts != nil && m.Opts["_about"] != "" {
 				fmt.Printf("%s\n\n", m.Opts["_about"])

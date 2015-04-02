@@ -31,10 +31,9 @@ import (
 var startTime = time.Now()
 
 type RESTMeta struct {
-	Path    string
-	Method  string
-	Handler http.Handler
-	Opts    map[string]string
+	Path   string
+	Method string
+	Opts   map[string]string
 }
 
 func NewManagerRESTRouter(versionMain string, mgr *Manager,
@@ -53,8 +52,13 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
-		meta[path] = RESTMeta{path, method, h, opts}
+		meta[path] = RESTMeta{path, method, opts}
 		r.Handle(path, h).Methods(method)
+	}
+	handleFunc := func(path string, method string, h http.HandlerFunc,
+		opts map[string]string) {
+		meta[path] = RESTMeta{path, method, opts}
+		r.HandleFunc(path, h).Methods(method)
 	}
 
 	handle("/api/index", "GET", NewListIndexHandler(mgr),
@@ -228,24 +232,31 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
                        of the cluster's configuration.`,
 			"version introduced": "0.0.0",
 		})
+
 	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr),
 		map[string]string{
-			"_category":          "Node configuration",
-			"_about":             `Requests the node to refresh its configuration.`,
+			"_category": "Node configuration",
+			"_about": `Requests the node to refresh its configuration
+                       from the configuration provider.`,
 			"version introduced": "0.0.0",
 		})
+
 	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr),
 		map[string]string{
-			"_category":          "Node diagnostics",
-			"_about":             `Returns large amount of diagnosis information.`,
+			"_category": "Node diagnostics",
+			"_about": `Returns full set of diagnostic information
+                       from the node.`,
 			"version introduced": "0.0.0",
 		})
+
 	handle("/api/log", "GET", NewLogGetHandler(mgr, mr),
 		map[string]string{
-			"_category":          "Node diagnostics",
-			"_about":             `Returns recent log messages and key events for the node.`,
+			"_category": "Node diagnostics",
+			"_about": `Returns recent log messages
+                       and key events for the node.`,
 			"version introduced": "0.0.0",
 		})
+
 	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr),
 		map[string]string{
 			"_category": "Node configuration",
@@ -253,10 +264,12 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
                        to update its state to reflect the latest plan.`,
 			"version introduced": "0.0.0",
 		})
+
 	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr),
 		map[string]string{
-			"_category":          "Node configuration",
-			"_about":             `Returns metadata on the node's capabilities.`,
+			"_category": "Node configuration",
+			"_about": `Returns information on the node's capabilities,
+                       including available storage and bleve options.`,
 			"version introduced": "0.0.0",
 		})
 
@@ -270,24 +283,59 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"version introduced": "0.0.0",
 		})
 
-	r.HandleFunc("/api/runtime/args",
-		restGetRuntimeArgs).Methods("GET")
-	r.HandleFunc("/api/runtime/gc",
-		restPostRuntimeGC).Methods("POST")
-	r.HandleFunc("/api/runtime/profile/cpu",
-		restProfileCPU).Methods("POST")
-	r.HandleFunc("/api/runtime/profile/memory",
-		restProfileMemory).Methods("POST")
-	r.HandleFunc("/api/runtime/stats",
-		restGetRuntimeStats).Methods("GET")
-	r.HandleFunc("/api/runtime/statsMem",
-		restGetRuntimeStatsMem).Methods("GET")
+	handleFunc("/api/runtime/args", "GET",
+		restGetRuntimeArgs, map[string]string{
+			"_category": "Node diagnostics",
+			"_about": `Returns information on the node's command-line,
+                       parameters, environment variables and
+                       O/S process values.`,
+			"version introduced": "0.0.0",
+		})
+
+	handleFunc("/api/runtime/gc", "POST",
+		restPostRuntimeGC, map[string]string{
+			"_category":          "Node management",
+			"_about":             `Requests the node to perform a GC.`,
+			"version introduced": "0.0.0",
+		})
+
+	handleFunc("/api/runtime/profile/cpu", "POST",
+		restProfileCPU, map[string]string{
+			"_category": "Node diagnostics",
+			"_about": `Requests the node to capture
+                       cpu usage profiling information.`,
+			"version introduced": "0.0.0",
+		})
+
+	handleFunc("/api/runtime/profile/memory", "POST",
+		restProfileMemory, map[string]string{
+			"_category": "Node diagnostics",
+			"_about": `Requests the node to capture
+                       memory usage profiling information.`,
+			"version introduced": "0.0.0",
+		})
+
+	handleFunc("/api/runtime/stats", "GET",
+		restGetRuntimeStats, map[string]string{
+			"_category": "Node monitoring",
+			"_about": `Returns information on the node's
+                       low-level runtime stats.`,
+			"version introduced": "0.0.0",
+		})
+
+	handleFunc("/api/runtime/statsMem", "GET",
+		restGetRuntimeStatsMem, map[string]string{
+			"_category": "Node monitoring",
+			"_about": `Returns information on the node's
+                       low-level GC and memory related runtime stats.`,
+			"version introduced": "0.0.0",
+		})
 
 	handle("/api/stats", "GET", NewStatsHandler(mgr),
 		map[string]string{
-			"_category": "Node monitoring",
-			"_about": `Returns current stats metrics, timings and counters
-                       for the node.`,
+			"_category": "Index monitoring",
+			"_about": `Returns indexing and data related metrics,
+                       timings and counters for the node.`,
 			"version introduced": "0.0.0",
 		})
 
