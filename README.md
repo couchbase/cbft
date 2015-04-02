@@ -20,7 +20,11 @@ index partitions.
 
 Getting
 
-```go get -u github.com/couchbaselabs/cbft```
+```go get -u github.com/couchbaselabs/cbft/...```
+
+Create a directory for index data
+
+```mkdir data```
 
 Running against local Couchbase Server
 
