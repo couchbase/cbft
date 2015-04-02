@@ -14,3 +14,4 @@
 /dist/*.gz
 /dist/cbft.*
 /dist/version.json
+/site

@@ -80,3 +80,22 @@ In the cbft project, fmt.Errorf() message strings follow a rough
 convention, like...
 
     source_file_base_name: short msg, arg0: val0, arg1: val1
+
+Generating documentation
+
+We use the [MkDocs](http://mkdocs.org) tool to help generate docs.
+
+To generate the REST API markdown documentation...
+
+    make gen-docs
+
+For a local development testing web server that automatically
+generates on changes, run...
+
+    mkdocs serve
+
+Then browse to http://127.0.0.1:8000
+
+To deploy to github's gh-pages, run...
+
+    mkdocs gh-deploy
