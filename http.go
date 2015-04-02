@@ -18,7 +18,13 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-func staticFileRouter(staticDir, staticETag string, pages []string) *mux.Router {
+func staticFileRouter(staticDir, staticETag string,
+	pages []string) *mux.Router {
+	r := mux.NewRouter()
+	if staticDir == "" {
+		return r
+	}
+
 	var s http.FileSystem
 	if _, err := os.Stat(staticDir); err == nil {
 		log.Printf("http: serving assets from staticDir: %s", staticDir)
@@ -28,7 +34,6 @@ func staticFileRouter(staticDir, staticETag string, pages []string) *mux.Router 
 		s = assetFS()
 	}
 
-	r := mux.NewRouter()
 	r.StrictSlash(true)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		myFileHandler{http.FileServer(s), staticETag}))
