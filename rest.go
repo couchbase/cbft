@@ -99,7 +99,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"unfreeze": true,
 		}),
 		map[string]string{
-			"_category":          "Index management",
+			"_category": "Index management",
+			"param: op": `Allowed values for op are
+                          "freeze" or "unfreeze".`,
 			"version introduced": "0.0.0",
 		})
 	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
@@ -108,7 +110,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"resume": true,
 		}),
 		map[string]string{
-			"_category":          "Index management",
+			"_category": "Index management",
+			"param: op": `Allowed values for op are
+                          "pause" or "resume".`,
 			"version introduced": "0.0.0",
 		})
 	handle("/api/index/{indexName}/queryControl/{op}", "POST",
@@ -117,7 +121,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"disallow": true,
 		}),
 		map[string]string{
-			"_category":          "Index management",
+			"_category": "Index management",
+			"param: op": `Allowed values for op are
+                          "allow" or "disallow".`,
 			"version introduced": "0.0.0",
 		})
 

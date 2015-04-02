@@ -18,17 +18,26 @@
 
 **method**: POST
 
+**param: op**: Allowed values for op are
+                          "pause" or "resume"
+
 **version introduced**: 0.0.0
 
 ### /api/index/{indexName}/planFreezeControl/{op}
 
 **method**: POST
 
+**param: op**: Allowed values for op are
+                          "freeze" or "unfreeze"
+
 **version introduced**: 0.0.0
 
 ### /api/index/{indexName}/queryControl/{op}
 
 **method**: POST
+
+**param: op**: Allowed values for op are
+                          "allow" or "disallow"
 
 **version introduced**: 0.0.0
 
