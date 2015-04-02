@@ -36,15 +36,15 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	cfg := NewCfgMem()
 	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000",
 		emptyDir, "some-datasource", nil)
-	r, err := NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
-	if r == nil || err != nil {
+	r, meta, err := NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
+	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
 
 	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"},
 		"", 1, ":1000", emptyDir, "some-datasource", nil)
-	r, err = NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
-	if r == nil || err != nil {
+	r, meta, err = NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
+	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
 }
@@ -127,7 +127,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -208,7 +208,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	mgr.addEvent([]byte(`"fizz"`))
 	mgr.addEvent([]byte(`"buzz"`))
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -401,7 +401,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -713,7 +713,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -1424,7 +1424,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -1663,11 +1663,11 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mr0, _ := NewMsgRing(os.Stderr, 1000)
 	mr1, _ := NewMsgRing(os.Stderr, 1000)
 
-	router0, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
+	router0, _, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
-	router1, err := NewManagerRESTRouter("v0", mgr1, "static", "", mr1)
+	router1, _, err := NewManagerRESTRouter("v0", mgr1, "static", "", mr1)
 	if err != nil || router1 == nil {
 		t.Errorf("no mux router")
 	}
@@ -1947,7 +1947,7 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 
 	mr, _ := NewMsgRing(os.Stderr, 1000)
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -2077,7 +2077,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	mgr0.Start("wanted")
 	mgr0.Kick("test-start-kick")
 	mr0, _ := NewMsgRing(os.Stderr, 1000)
-	router0, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
+	router0, _, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
@@ -2626,7 +2626,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -2866,7 +2866,7 @@ func TestMultiFeedStats(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}

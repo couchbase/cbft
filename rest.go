@@ -30,8 +30,17 @@ import (
 
 var startTime = time.Now()
 
+type RESTMeta struct {
+	Path    string
+	Method  string
+	Descrip string
+	Handler http.Handler
+	Opts    map[string]string
+}
+
 func NewManagerRESTRouter(versionMain string, mgr *Manager,
-	staticDir, staticETag string, mr *MsgRing) (*mux.Router, error) {
+	staticDir, staticETag string, mr *MsgRing) (
+	*mux.Router, map[string]RESTMeta, error) {
 	// create a router to serve static files
 	r := staticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
@@ -42,96 +51,102 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		"/debug",
 	})
 
-	r.Handle("/api/index", NewListIndexHandler(mgr)).Methods("GET")
-	r.Handle("/api/index/{indexName}", NewCreateIndexHandler(mgr)).Methods("PUT")
-	r.Handle("/api/index/{indexName}", NewDeleteIndexHandler(mgr)).Methods("DELETE")
-	r.Handle("/api/index/{indexName}", NewGetIndexHandler(mgr)).Methods("GET")
-
-	if mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
-		r.Handle("/api/index/{indexName}/count",
-			NewCountHandler(mgr)).Methods("GET")
-		r.Handle("/api/index/{indexName}/query",
-			NewQueryHandler(mgr)).Methods("POST")
+	meta := map[string]RESTMeta{}
+	handle := func(path string, method string, h http.Handler,
+		opts map[string]string) {
+		meta[path] = RESTMeta{path, method, "", h, opts}
+		r.Handle(path, h).Methods(method)
 	}
 
-	r.Handle("/api/index/{indexName}/planFreezeControl/{op}",
+	handle("/api/index", "GET", NewListIndexHandler(mgr), nil)
+	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr), nil)
+	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr), nil)
+	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr), nil)
+
+	if mgr.tagsMap == nil || mgr.tagsMap["queryer"] {
+		handle("/api/index/{indexName}/count", "GET",
+			NewCountHandler(mgr), nil)
+		handle("/api/index/{indexName}/query", "POST",
+			NewQueryHandler(mgr), nil)
+	}
+
+	handle("/api/index/{indexName}/planFreezeControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "planFreeze", map[string]bool{
 			"freeze":   true,
 			"unfreeze": true,
-		})).Methods("POST")
-	r.Handle("/api/index/{indexName}/ingestControl/{op}",
+		}), nil)
+	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "write", map[string]bool{
 			"pause":  true,
 			"resume": true,
-		})).Methods("POST")
-	r.Handle("/api/index/{indexName}/queryControl/{op}",
+		}), nil)
+	handle("/api/index/{indexName}/queryControl/{op}", "POST",
 		NewIndexControlHandler(mgr, "read", map[string]bool{
 			"allow":    true,
 			"disallow": true,
-		})).Methods("POST")
+		}), nil)
 
 	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
 	//
 	// TODO: Need to cleanly separate the /api/pindex and
 	// /api/pindex-bleve endpoints.
 	if mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
-		r.Handle("/api/pindex",
-			NewListPIndexHandler(mgr)).Methods("GET")
-		r.Handle("/api/pindex/{pindexName}",
-			NewGetPIndexHandler(mgr)).Methods("GET")
-		r.Handle("/api/pindex/{pindexName}/count",
-			NewCountPIndexHandler(mgr)).Methods("GET")
-		r.Handle("/api/pindex/{pindexName}/query",
-			NewQueryPIndexHandler(mgr)).Methods("POST")
+		handle("/api/pindex", "GET",
+			NewListPIndexHandler(mgr), nil)
+		handle("/api/pindex/{pindexName}", "GET",
+			NewGetPIndexHandler(mgr), nil)
+		handle("/api/pindex/{pindexName}/count", "GET",
+			NewCountPIndexHandler(mgr), nil)
+		handle("/api/pindex/{pindexName}/query", "POST",
+			NewQueryPIndexHandler(mgr), nil)
 
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
-		r.Handle("/api/pindex-bleve",
-			listIndexesHandler).Methods("GET")
+		handle("/api/pindex-bleve", "GET", listIndexesHandler, nil)
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
 		getIndexHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex-bleve/{pindexName}",
-			getIndexHandler).Methods("GET")
+		handle("/api/pindex-bleve/{pindexName}", "GET",
+			getIndexHandler, nil)
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
 		docCountHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/count",
-			docCountHandler).Methods("GET")
+		handle("/api/pindex-bleve/{pindexName}/count", "GET",
+			docCountHandler, nil)
 
 		searchHandler := bleveHttp.NewSearchHandler("")
 		searchHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/query",
-			searchHandler).Methods("POST")
+		handle("/api/pindex-bleve/{pindexName}/query", "POST",
+			searchHandler, nil)
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
 		docGetHandler.IndexNameLookup = pindexNameLookup
 		docGetHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
-			docGetHandler).Methods("GET")
+		handle("/api/pindex-bleve/{pindexName}/doc/{docID}", "GET",
+			docGetHandler, nil)
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
 		debugDocHandler.IndexNameLookup = pindexNameLookup
 		debugDocHandler.DocIDLookup = docIDLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
-			debugDocHandler).Methods("GET")
+		handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}", "GET",
+			debugDocHandler, nil)
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = pindexNameLookup
-		r.Handle("/api/pindex-bleve/{pindexName}/fields",
-			listFieldsHandler).Methods("GET")
+		handle("/api/pindex-bleve/{pindexName}/fields", "GET",
+			listFieldsHandler, nil)
 	}
 
-	r.Handle("/api/cfg", NewCfgGetHandler(mgr)).Methods("GET")
-	r.Handle("/api/cfgRefresh", NewCfgRefreshHandler(mgr)).Methods("POST")
+	handle("/api/cfg", "GET", NewCfgGetHandler(mgr), nil)
+	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr), nil)
 
-	r.Handle("/api/diag", NewDiagGetHandler(versionMain, mgr, mr)).Methods("GET")
+	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr), nil)
 
-	r.Handle("/api/log", NewLogGetHandler(mgr, mr)).Methods("GET")
+	handle("/api/log", "GET", NewLogGetHandler(mgr, mr), nil)
 
-	r.Handle("/api/managerKick", NewManagerKickHandler(mgr)).Methods("POST")
-	r.Handle("/api/managerMeta", NewManagerMetaHandler(mgr)).Methods("GET")
+	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr), nil)
+	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr), nil)
 
-	r.Handle("/api/runtime", NewRuntimeGetHandler(versionMain, mgr)).Methods("GET")
+	handle("/api/runtime", "GET", NewRuntimeGetHandler(versionMain, mgr), nil)
 
 	r.HandleFunc("/api/runtime/args", restGetRuntimeArgs).Methods("GET")
 	r.HandleFunc("/api/runtime/gc", restPostRuntimeGC).Methods("POST")
@@ -140,9 +155,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r.HandleFunc("/api/runtime/stats", restGetRuntimeStats).Methods("GET")
 	r.HandleFunc("/api/runtime/statsMem", restGetRuntimeStatsMem).Methods("GET")
 
-	r.Handle("/api/stats", NewStatsHandler(mgr)).Methods("GET")
+	handle("/api/stats", "GET", NewStatsHandler(mgr), nil)
 
-	return r, nil
+	return r, meta, nil
 }
 
 func muxVariableLookup(req *http.Request, name string) string {

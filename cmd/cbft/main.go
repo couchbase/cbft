@@ -167,7 +167,8 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 
 	_, err := couchbase.Connect(server)
 	if err != nil {
-		return nil, fmt.Errorf("error: could not connect to server URL: %s, err: %v",
+		return nil, fmt.Errorf("error: could not connect to server,"+
+			" URL: %s, err: %v",
 			server, err)
 	}
 
@@ -178,7 +179,10 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	return cbft.NewManagerRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
+	router, _, err :=
+		cbft.NewManagerRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
+
+	return router, err
 }
 
 type MainHandlers struct{}
