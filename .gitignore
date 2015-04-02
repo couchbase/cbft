@@ -9,6 +9,7 @@
 .settings
 .DS_Store
 /cbft
+/cbft_docs
 /data
 /dist/*.gz
 /dist/cbft.*
