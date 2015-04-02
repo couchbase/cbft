@@ -2,7 +2,15 @@
 
 tbd
 
+# Datasources for indexes
+
+tbd
+
 # Defining indexes
+
+tbd
+
+## Index aliases
 
 tbd
 
@@ -14,15 +22,19 @@ tbd
 
 tbd
 
+## Results highlighting
+
+tbd
+
+## Faceted searches
+
+tbd
+
 ## Index consistency
 
 tbd
 
 # Testing your indexes
-
-tbd
-
-# Index aliases
 
 tbd
 
@@ -40,5 +52,6 @@ tbd
 
 tbd
 
-## Faceted searches
+# Sample applications
 
+tbd

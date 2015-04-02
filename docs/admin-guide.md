@@ -6,31 +6,35 @@ tbd
 
 tbd
 
-# Development, staging/test, production
+# Planning
 
 tbd
 
-# Sizing
+## Deployment environments
 
 tbd
 
-# Deployment
+### Development
+
+tbd
+
+### Staging and test
+
+tbd
+
+### Production
+
+tbd
+
+## Sizing
+
+tbd
+
+# Running a single cbft node
 
 tbd
 
 ## Command-line parameters
-
-tbd
-
-## Scaling cbft
-
-tbd
-
-### Adding cbft nodes
-
-tbd
-
-### Removing cbft nodes
 
 tbd
 
@@ -42,13 +46,27 @@ tbd
 
 tbd
 
-# Management
+# Clustering cbft nodes
 
 tbd
 
-## Restarting cbft
+### Adding cbft nodes
 
 tbd
+
+### Removing cbft nodes
+
+tbd
+
+## Index replicas
+
+tbd
+
+## Restarts of cbft nodes
+
+tbd
+
+# Index management
 
 ## Index definition changes and zero downtime
 
@@ -66,29 +84,13 @@ tbd
 
 tbd
 
-# Monitoring
-
-tbd
-
-## Heartbeats
-
-tbd
-
-## Memory
-
-tbd
-
-## CPU
-
-tbd
-
-## Storage
-
-tbd
-
-### Advanced storage options
+## Advanced storage options
 
 EXPERIMENTAL!
+
+tbd
+
+# Monitoring cbft
 
 tbd
 
@@ -96,10 +98,31 @@ tbd
 
 tbd
 
+## Heartbeats
+
+tbd
+
+## Resources consumption
+
+### Memory
+
+tbd
+
+#### GC pauses
+
+tbd
+
+### CPU
+
+tbd
+
+### Storage
+
+tbd
+
+## Performance
+
 # Diagnosing issues
 
 tbd
 
-## FAQ
-
-## GC pauses

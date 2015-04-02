@@ -1,10 +1,14 @@
 # More links
 
-## Issues
+## Getting help
+
+tbd (gitter or link to forums here?)
+
+## Reporting issues
 
 cbft bugs and issues are tracked at [http://github.com/couchbaselabs/cbft/issues](https://github.com/couchbaselabs/cbft/issues).
 
-## Source
+## Source code
 
 cbft's project source code is hosted at [http://github.com/couchbaselabse/cbft](http://github.com/couchbaselabs/cbft).
 
