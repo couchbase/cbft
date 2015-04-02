@@ -52,12 +52,12 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
-		meta[path] = RESTMeta{path, method, opts}
+		meta[path+" "+method] = RESTMeta{path, method, opts}
 		r.Handle(path, h).Methods(method)
 	}
 	handleFunc := func(path string, method string, h http.HandlerFunc,
 		opts map[string]string) {
-		meta[path] = RESTMeta{path, method, opts}
+		meta[path+" "+method] = RESTMeta{path, method, opts}
 		r.HandleFunc(path, h).Methods(method)
 	}
 
