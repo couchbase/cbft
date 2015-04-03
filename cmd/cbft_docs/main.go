@@ -76,6 +76,8 @@ func main() {
 	sort.Strings(subCategories)
 	sort.Strings(paths)
 
+	fmt.Printf("# API Reference\n\n")
+
 	for _, mainCategory := range mainCategories {
 		mainCategoryFirst := true
 
@@ -102,7 +104,7 @@ func main() {
 				}
 
 				if mainCategoryFirst {
-					fmt.Printf("# %s\n\n", mcVis)
+					fmt.Printf("---\n\n# %s\n\n", mcVis)
 				}
 				mainCategoryFirst = false
 
@@ -112,7 +114,7 @@ func main() {
 				subCategoryFirst = false
 
 				pathParts := strings.Split(path, " ")
-				fmt.Printf("---\n")
+				fmt.Printf("---\n\n")
 				fmt.Printf("%s `%s`\n\n", m.Method, pathParts[0])
 				if m.Opts != nil && m.Opts["_about"] != "" {
 					fmt.Printf("%s\n\n", m.Opts["_about"])

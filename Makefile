@@ -11,7 +11,7 @@ gen-bindata:
 
 gen-docs: cmd/cbft_docs/main.go
 	go build -o ./cbft_docs ./cmd/cbft_docs
-	./cbft_docs > docs/api-guide.md
+	./cbft_docs > docs/api-ref.md
 
 build: gen-bindata
 	go build -tags 'debug libstemmer' ./...

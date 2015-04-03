@@ -3,7 +3,7 @@ site_name: cbft Technical Documentation (0.0.0 DP)
 pages:
 - ['index.md', 'Home']
 - ['dev-guide.md', "Developer's Guide"]
-- ['api-guide.md', "API Guide"]
+- ['api-ref.md', "API Reference"]
 - ['admin-guide/overview.md', "Administrator's Guide", "Administration overview"]
 - ['admin-guide/planning.md', "Administrator's Guide", "Planning your deployment"]
 - ['admin-guide/dependencies.md', "Administrator's Guide", "Dependencies"]
