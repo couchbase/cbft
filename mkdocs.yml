@@ -4,7 +4,14 @@ pages:
 - ['index.md', 'Home']
 - ['dev-guide.md', "Developer's Guide"]
 - ['api-guide.md', "API Guide"]
-- ['admin-guide.md', "Administrator's Guide"]
+- ['admin-guide/overview.md', "Administrator's Guide", "Administration overview"]
+- ['admin-guide/planning.md', "Administrator's Guide", "Planning your deployment"]
+- ['admin-guide/dependencies.md', "Administrator's Guide", "Dependencies"]
+- ['admin-guide/running.md', "Administrator's Guide", "Running cbft"]
+- ['admin-guide/clustering.md', "Administrator's Guide", "Clustering cbft"]
+- ['admin-guide/index-management.md', "Administrator's Guide", "Index management"]
+- ['admin-guide/monitoring.md', "Administrator's Guide", "Monitoring cbft"]
+- ['admin-guide/diagnosing.md', "Administrator's Guide", "Diagnosing issues"]
 - ['links.md', "Links"]
 
 copyright: Copyright &copy; 2015, <a href="http://couchbase.com">Couchbase, Inc.</a>.
