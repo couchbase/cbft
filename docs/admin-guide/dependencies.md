@@ -2,7 +2,7 @@
 
 tbd
 
-## The Configuration server
+## The configuration server
 
 tbd
 
