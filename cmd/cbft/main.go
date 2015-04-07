@@ -182,8 +182,11 @@ func main() {
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := MainCfg(flags.CfgConnect, flags.DataDir)
 	if err != nil {
-		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v",
-			flags.CfgConnect, err)
+		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
+			"  Please check that your -cfg/-cfgConnect parameter (%s)\n"+
+			"  is correct and/or that your configuration provider\n"+
+			"  is available.",
+			flags.CfgConnect, err, flags.CfgConnect)
 		return
 	}
 
@@ -250,7 +253,9 @@ func MainUUID(dataDir string) (string, error) {
 	}
 	err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
 	if err != nil {
-		return "", fmt.Errorf("error: could not write uuidPath: %s", uuidPath)
+		return "", fmt.Errorf("error: could not write uuidPath: %s\n"+
+			"  Please check that your -data/-dataDir parameter (%s)\n"+
+			"  is to a writable directory.", uuidPath, dataDir)
 	}
 	return uuid, nil
 }
