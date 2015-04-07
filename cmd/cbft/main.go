@@ -214,9 +214,11 @@ func main() {
 
 	log.Printf("main: listening on: %v", flags.BindAddr)
 	err = http.ListenAndServe(flags.BindAddr, nil)
-	log.Fatalf("main: listen, err: %v\n"+
-		"  Please check that your -bindAddr parameter (%s)\n"+
-		"  is correct and available.", err, flags.BindAddr)
+	if err != nil {
+		log.Fatalf("main: listen, err: %v\n"+
+			"  Please check that your -bindAddr parameter (%s)\n"+
+			"  is correct and available.", err, flags.BindAddr)
+	}
 }
 
 func MainWelcome(flagAliases map[string][]string) {
