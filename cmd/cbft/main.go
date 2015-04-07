@@ -46,6 +46,7 @@ var expvars = expvar.NewMap("stats")
 type Flags struct {
 	BindAddr   string
 	DataDir    string
+	Help       bool
 	LogFlags   string
 	StaticDir  string
 	StaticETag string
@@ -55,6 +56,13 @@ type Flags struct {
 	Weight     int
 	Register   string
 	CfgConnect string
+}
+
+var flags Flags
+var flagAliases map[string][]string
+
+func init() {
+	flagAliases = initFlags(&flags)
 }
 
 func initFlags(flags *Flags) map[string][]string {
@@ -76,6 +84,14 @@ func initFlags(flags *Flags) map[string][]string {
 		flagAliases[names[0]] = names
 	}
 
+	b := func(v *bool, names []string,
+		defaultVal bool, usage string) { // Bool cmd-line param.
+		for _, name := range names {
+			flag.BoolVar(v, name, defaultVal, usage)
+		}
+		flagAliases[names[0]] = names
+	}
+
 	s(&flags.BindAddr,
 		[]string{"bindAddr"}, "localhost:8095",
 		"http listen address:port")
@@ -83,6 +99,9 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"dataDir", "data"}, "data",
 		"directory path where index data and"+
 			"\nlocal configuration files will be stored")
+	b(&flags.Help,
+		[]string{"help", "?", "H", "h"}, false,
+		"print this usage message and exit")
 	s(&flags.LogFlags,
 		[]string{"logFlags"}, "",
 		"comma-separated logging control flags")
@@ -115,6 +134,10 @@ func initFlags(flags *Flags) map[string][]string {
 		"connection string/info to configuration provider")
 
 	flag.Usage = func() {
+		if !flags.Help {
+			return
+		}
+
 		base := path.Base(os.Args[0])
 
 		fmt.Fprintf(os.Stderr,
@@ -154,9 +177,12 @@ func initFlags(flags *Flags) map[string][]string {
 }
 
 func main() {
-	var flags Flags
-	flagAliases := initFlags(&flags)
 	flag.Parse()
+
+	if flags.Help {
+		flag.Usage()
+		os.Exit(2)
+	}
 
 	log.Printf("main: %s started (%s/%s)",
 		os.Args[0], VERSION, cbft.VERSION)
