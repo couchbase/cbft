@@ -40,37 +40,47 @@ import (
 var VERSION = "0.0.0"
 
 var bindAddr = flag.String("addr", "localhost:8095",
-	"http listen address:port")
+	"\n\thttp listen address:port")
 var dataDir = flag.String("dataDir", "data",
-	"directory path where index data and\n"+
+	"\n\tdirectory path where index data and\n"+
 		"\tlocal configuration files will be stored")
 var logFlags = flag.String("logFlags", "",
-	"comma-separated logging control flags")
+	"\n\tcomma-separated logging control flags")
 var staticDir = flag.String("staticDir", "static",
-	"directory for static web UI content")
+	"\n\tdirectory for static web UI content")
 var staticETag = flag.String("staticETag", "",
-	"static etag value")
+	"\n\tstatic etag value")
 var server = flag.String("server", "",
-	"url to datasource server;\n"+
+	"\n\turl to datasource server;\n"+
 		"\texample for couchbase: http://localhost:8091")
 var tags = flag.String("tags", "",
-	"comma-separated list of tags (or roles) for this node")
+	"\n\tcomma-separated list of tags (or roles) for this node")
 var container = flag.String("container", "",
-	"slash separated path of parent containers for this node,\n"+
+	"\n\tslash separated path of parent containers for this node,\n"+
 		"\tfor shelf/rack/row/zone awareness")
 var weight = flag.Int("weight", 1,
-	"weight of this node (a more capable node has higher weight)")
+	"\n\tweight of this node (a more capable node has higher weight)")
 var register = flag.String("register", "wanted",
-	"register this node as wanted, wantedForce,\n\t"+
+	"\n\tregister this node as wanted, wantedForce,\n\t"+
 		" known, knownForce,"+
 		" unwanted, unknown or unchanged")
 var cfgConnect = flag.String("cfgConnect", "simple",
-	"connection string/info to configuration provider")
+	"\n\tconnection string/info to configuration provider")
 
 var expvars = expvar.NewMap("stats")
 
 func init() {
 	expvars.Set("indexes", bleveHttp.IndexStats())
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr,
+			"%s: couchbase full-text server\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "more information is available at:\n"+
+			"  http://github.com/couchbaselabs/cbft\n\n")
+		fmt.Fprintf(os.Stderr, "usage:\n  %s [flags]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "flags:\n")
+		flag.PrintDefaults()
+	}
 }
 
 func main() {
