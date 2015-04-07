@@ -21,8 +21,10 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
 	"runtime/pprof"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,53 +41,126 @@ import (
 
 var VERSION = "0.0.0"
 
-var bindAddr = flag.String("addr", "localhost:8095",
-	adesc("http listen address:port"))
-var dataDir = flag.String("dataDir", "data",
-	adesc("directory path where index data and"+
-		"\nlocal configuration files will be stored"))
-var logFlags = flag.String("logFlags", "",
-	adesc("comma-separated logging control flags"))
-var staticDir = flag.String("staticDir", "static",
-	adesc("directory for static web UI content"))
-var staticETag = flag.String("staticETag", "",
-	adesc("static etag value"))
-var server = flag.String("server", "",
-	adesc("url to datasource server;"+
-		"\nexample for couchbase: http://localhost:8091"))
-var tags = flag.String("tags", "",
-	adesc("comma-separated list of tags (or roles) for this node"))
-var container = flag.String("container", "",
-	adesc("slash separated path of parent containers for this node,"+
-		"\nfor shelf/rack/row/zone awareness"))
-var weight = flag.Int("weight", 1,
-	adesc("weight of this node (a more capable node has higher weight)"))
-var register = flag.String("register", "wanted",
-	adesc("register this node as wanted, wantedForce,"+
-		"\nknown, knownForce, unwanted, unknown or unchanged"))
-var cfgConnect = flag.String("cfgConnect", "simple",
-	adesc("connection string/info to configuration provider"))
-
 var expvars = expvar.NewMap("stats")
 
-func init() {
-	expvars.Set("indexes", bleveHttp.IndexStats())
+type Flags struct {
+	BindAddr   string
+	DataDir    string
+	LogFlags   string
+	StaticDir  string
+	StaticETag string
+	Server     string
+	Tags       string
+	Container  string
+	Weight     int
+	Register   string
+	CfgConnect string
+}
+
+func initFlags(flags *Flags) map[string][]string {
+	flagAliases := map[string][]string{} // main flag name => all aliases.
+
+	flagStringVar := func(v *string, names []string,
+		defaultVal, usage string) {
+		for _, name := range names {
+			flag.StringVar(v, name, defaultVal, usage)
+		}
+		flagAliases[names[0]] = names
+	}
+
+	flagIntVar := func(v *int, names []string,
+		defaultVal int, usage string) {
+		for _, name := range names {
+			flag.IntVar(v, name, defaultVal, usage)
+		}
+		flagAliases[names[0]] = names
+	}
+
+	flagStringVar(&flags.BindAddr, []string{"bindAddr"},
+		"localhost:8095",
+		"http listen address:port")
+	flagStringVar(&flags.DataDir, []string{"dataDir", "data"},
+		"data",
+		"directory path where index data and"+
+			"\nlocal configuration files will be stored")
+	flagStringVar(&flags.LogFlags, []string{"logFlags"},
+		"",
+		"comma-separated logging control flags")
+	flagStringVar(&flags.StaticDir, []string{"staticDir"},
+		"static", "directory for static web UI content")
+	flagStringVar(&flags.StaticETag, []string{"staticETag"},
+		"",
+		"static etag value")
+	flagStringVar(&flags.Server, []string{"server"},
+		"",
+		"url to datasource server;"+
+			"\nexample for couchbase: http://localhost:8091")
+	flagStringVar(&flags.Tags, []string{"tags"},
+		"",
+		"comma-separated list of tags (or roles) for this node")
+	flagStringVar(&flags.Container, []string{"container"},
+		"",
+		"slash separated path of parent containers for this node,"+
+			"\nfor shelf/rack/row/zone awareness")
+	flagIntVar(&flags.Weight, []string{"weight"},
+		1,
+		"weight of this node (a more capable node has higher weight)")
+	flagStringVar(&flags.Register, []string{"register"},
+		"wanted",
+		"register this node as wanted, wantedForce,"+
+			"\nknown, knownForce, unwanted, unknown or unchanged")
+	flagStringVar(&flags.CfgConnect, []string{"cfgConnect", "cfg"},
+		"simple",
+		"connection string/info to configuration provider")
 
 	flag.Usage = func() {
+		base := path.Base(os.Args[0])
+
 		fmt.Fprintf(os.Stderr,
-			"%s: couchbase full-text server\n\n", os.Args[0])
+			"%s: couchbase full-text server\n\n", base)
 		fmt.Fprintf(os.Stderr, "more information is available at:\n"+
 			"  http://github.com/couchbaselabs/cbft\n\n")
-		fmt.Fprintf(os.Stderr, "usage:\n  %s [flags]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage:\n  %s [flags]\n\n", base)
 		fmt.Fprintf(os.Stderr, "flags:\n")
-		flag.PrintDefaults()
+
+		flagsByName := map[string]*flag.Flag{}
+		flag.VisitAll(func(f *flag.Flag) {
+			flagsByName[f.Name] = f
+		})
+
+		flags := []string(nil)
+		for name := range flagAliases {
+			flags = append(flags, name)
+		}
+		sort.Strings(flags)
+
+		for _, name := range flags {
+			aliases := flagAliases[name]
+			a := []string(nil)
+			for i := len(aliases) - 1; i >= 0; i-- {
+				a = append(a, aliases[i])
+			}
+			f := flagsByName[name]
+			fmt.Fprintf(os.Stderr, "  -%s=%s\n",
+				strings.Join(a, ", -"), f.Value)
+			fmt.Fprintf(os.Stderr, "      %s\n",
+				strings.Join(strings.Split(f.Usage, "\n"),
+					"\n      "))
+		}
 	}
+
+	return flagAliases
 }
 
 func main() {
+	var flags Flags
+
+	flagAliases := initFlags(&flags)
+
 	flag.Parse()
 
-	log.Printf("main: %s started (%s/%s)", os.Args[0], VERSION, cbft.VERSION)
+	log.Printf("main: %s started (%s/%s)",
+		os.Args[0], VERSION, cbft.VERSION)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -97,45 +172,53 @@ func main() {
 	}
 	log.SetOutput(mr)
 
-	MainWelcome()
+	if flags.LogFlags != "" {
+		log.ParseLogFlag(flags.LogFlags)
+	}
 
-	// TODO: If cfg goes down, should we stop?  How do we reconnect?
-	//
-	cfg, err := MainCfg(*cfgConnect, *dataDir)
+	MainWelcome(flagAliases)
+
+	// If cfg is down, we error, leaving it to some user-supplied
+	// outside watchdog to backoff and restart/retry.
+	cfg, err := MainCfg(flags.CfgConnect, flags.DataDir)
 	if err != nil {
 		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v",
-			*cfgConnect, err)
+			flags.CfgConnect, err)
 		return
 	}
 
-	uuid, err := MainUUID(*dataDir)
+	uuid, err := MainUUID(flags.DataDir)
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("%v", err))
 		return
 	}
 
 	var tagsArr []string
-	if *tags != "" {
-		tagsArr = strings.Split(*tags, ",")
+	if flags.Tags != "" {
+		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
-	router, err := MainStart(cfg, uuid, tagsArr, *container, *weight,
-		*bindAddr, *dataDir, *staticDir, *staticETag, *server, *register, mr)
+	expvars.Set("indexes", bleveHttp.IndexStats())
+
+	router, err := MainStart(cfg, uuid, tagsArr,
+		flags.Container, flags.Weight,
+		flags.BindAddr, flags.DataDir,
+		flags.StaticDir, flags.StaticETag,
+		flags.Server, flags.Register, mr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	http.Handle("/", router)
-	log.Printf("main: listening on: %v", *bindAddr)
-	log.Fatal(http.ListenAndServe(*bindAddr, nil))
+	log.Printf("main: listening on: %v", flags.BindAddr)
+	log.Fatal(http.ListenAndServe(flags.BindAddr, nil))
 }
 
-func MainWelcome() {
-	if *logFlags != "" {
-		log.ParseLogFlag(*logFlags)
-	}
+func MainWelcome(flagAliases map[string][]string) {
 	flag.VisitAll(func(f *flag.Flag) {
-		log.Printf("  -%s=%s\n", f.Name, f.Value)
+		if flagAliases[f.Name] != nil {
+			log.Printf("  -%s=%s\n", f.Name, f.Value)
+		}
 	})
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
 
@@ -222,8 +305,4 @@ func dumpOnSignal(signals ...os.Signal) {
 		log.Printf("dump: heap...")
 		pprof.Lookup("heap").WriteTo(os.Stderr, 1)
 	}
-}
-
-func adesc(s string) string {
-	return "\n      " + strings.Replace(s, "\n", "\n      ", -1)
 }

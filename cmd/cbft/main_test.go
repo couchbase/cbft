@@ -48,8 +48,8 @@ func TestMainUUID(t *testing.T) {
 
 	uuid2, err := MainUUID(emptyDir)
 	if err != nil || uuid2 != uuid {
-		t.Errorf("expected MainUUID() reload to give same uuid, uuid: %s vs %s, err: %v",
-			uuid, uuid2, err)
+		t.Errorf("expected MainUUID() reload to give same uuid,"+
+			" uuid: %s vs %s, err: %v", uuid, uuid2, err)
 	}
 
 	path := emptyDir + string(os.PathSeparator) + "cbft.uuid"
@@ -97,5 +97,7 @@ func TestMainCfg(t *testing.T) {
 }
 
 func TestMainWelcome(t *testing.T) {
-	MainWelcome() // Don't crash.
+	flagAliases := initFlags(&Flags{})
+
+	MainWelcome(flagAliases) // Don't crash.
 }
