@@ -60,7 +60,7 @@ type Flags struct {
 func initFlags(flags *Flags) map[string][]string {
 	flagAliases := map[string][]string{} // main flag name => all aliases.
 
-	flagStringVar := func(v *string, names []string,
+	s := func(v *string, names []string,
 		defaultVal, usage string) {
 		for _, name := range names {
 			flag.StringVar(v, name, defaultVal, usage)
@@ -68,7 +68,7 @@ func initFlags(flags *Flags) map[string][]string {
 		flagAliases[names[0]] = names
 	}
 
-	flagIntVar := func(v *int, names []string,
+	i := func(v *int, names []string,
 		defaultVal int, usage string) {
 		for _, name := range names {
 			flag.IntVar(v, name, defaultVal, usage)
@@ -76,40 +76,40 @@ func initFlags(flags *Flags) map[string][]string {
 		flagAliases[names[0]] = names
 	}
 
-	flagStringVar(&flags.BindAddr, []string{"bindAddr"},
+	s(&flags.BindAddr, []string{"bindAddr"},
 		"localhost:8095",
 		"http listen address:port")
-	flagStringVar(&flags.DataDir, []string{"dataDir", "data"},
+	s(&flags.DataDir, []string{"dataDir", "data"},
 		"data",
 		"directory path where index data and"+
 			"\nlocal configuration files will be stored")
-	flagStringVar(&flags.LogFlags, []string{"logFlags"},
+	s(&flags.LogFlags, []string{"logFlags"},
 		"",
 		"comma-separated logging control flags")
-	flagStringVar(&flags.StaticDir, []string{"staticDir"},
+	s(&flags.StaticDir, []string{"staticDir"},
 		"static", "directory for static web UI content")
-	flagStringVar(&flags.StaticETag, []string{"staticETag"},
+	s(&flags.StaticETag, []string{"staticETag"},
 		"",
 		"static etag value")
-	flagStringVar(&flags.Server, []string{"server"},
+	s(&flags.Server, []string{"server"},
 		"",
 		"url to datasource server;"+
 			"\nexample for couchbase: http://localhost:8091")
-	flagStringVar(&flags.Tags, []string{"tags"},
+	s(&flags.Tags, []string{"tags"},
 		"",
 		"comma-separated list of tags (or roles) for this node")
-	flagStringVar(&flags.Container, []string{"container"},
+	s(&flags.Container, []string{"container"},
 		"",
 		"slash separated path of parent containers for this node,"+
 			"\nfor shelf/rack/row/zone awareness")
-	flagIntVar(&flags.Weight, []string{"weight"},
+	i(&flags.Weight, []string{"weight"},
 		1,
 		"weight of this node (a more capable node has higher weight)")
-	flagStringVar(&flags.Register, []string{"register"},
+	s(&flags.Register, []string{"register"},
 		"wanted",
 		"register this node as wanted, wantedForce,"+
 			"\nknown, knownForce, unwanted, unknown or unchanged")
-	flagStringVar(&flags.CfgConnect, []string{"cfgConnect", "cfg"},
+	s(&flags.CfgConnect, []string{"cfgConnect", "cfg"},
 		"simple",
 		"connection string/info to configuration provider")
 
@@ -154,9 +154,7 @@ func initFlags(flags *Flags) map[string][]string {
 
 func main() {
 	var flags Flags
-
 	flagAliases := initFlags(&flags)
-
 	flag.Parse()
 
 	log.Printf("main: %s started (%s/%s)",
@@ -213,8 +211,12 @@ func main() {
 	}
 
 	http.Handle("/", router)
+
 	log.Printf("main: listening on: %v", flags.BindAddr)
-	log.Fatal(http.ListenAndServe(flags.BindAddr, nil))
+	err = http.ListenAndServe(flags.BindAddr, nil)
+	log.Fatalf("main: listen, err: %v\n"+
+		"  Please check that your -bindAddr parameter (%s)\n"+
+		"  is correct and available.", err, flags.BindAddr)
 }
 
 func MainWelcome(flagAliases map[string][]string) {
