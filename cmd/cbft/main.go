@@ -61,7 +61,7 @@ func initFlags(flags *Flags) map[string][]string {
 	flagAliases := map[string][]string{} // main flag name => all aliases.
 
 	s := func(v *string, names []string,
-		defaultVal, usage string) {
+		defaultVal, usage string) { // String cmd-line param.
 		for _, name := range names {
 			flag.StringVar(v, name, defaultVal, usage)
 		}
@@ -69,48 +69,49 @@ func initFlags(flags *Flags) map[string][]string {
 	}
 
 	i := func(v *int, names []string,
-		defaultVal int, usage string) {
+		defaultVal int, usage string) { // Integer cmd-line param.
 		for _, name := range names {
 			flag.IntVar(v, name, defaultVal, usage)
 		}
 		flagAliases[names[0]] = names
 	}
 
-	s(&flags.BindAddr, []string{"bindAddr"},
-		"localhost:8095",
+	s(&flags.BindAddr,
+		[]string{"bindAddr"}, "localhost:8095",
 		"http listen address:port")
-	s(&flags.DataDir, []string{"dataDir", "data"},
-		"data",
+	s(&flags.DataDir,
+		[]string{"dataDir", "data"}, "data",
 		"directory path where index data and"+
 			"\nlocal configuration files will be stored")
-	s(&flags.LogFlags, []string{"logFlags"},
-		"",
+	s(&flags.LogFlags,
+		[]string{"logFlags"}, "",
 		"comma-separated logging control flags")
-	s(&flags.StaticDir, []string{"staticDir"},
-		"static", "directory for static web UI content")
-	s(&flags.StaticETag, []string{"staticETag"},
-		"",
+	s(&flags.StaticDir,
+		[]string{"staticDir"}, "static",
+		"directory for static web UI content")
+	s(&flags.StaticETag,
+		[]string{"staticETag"}, "",
 		"static etag value")
-	s(&flags.Server, []string{"server"},
-		"",
+	s(&flags.Server,
+		[]string{"server"}, "",
 		"url to datasource server;"+
 			"\nexample for couchbase: http://localhost:8091")
-	s(&flags.Tags, []string{"tags"},
-		"",
+	s(&flags.Tags,
+		[]string{"tags"}, "",
 		"comma-separated list of tags (or roles) for this node")
-	s(&flags.Container, []string{"container"},
-		"",
+	s(&flags.Container,
+		[]string{"container"}, "",
 		"slash separated path of parent containers for this node,"+
 			"\nfor shelf/rack/row/zone awareness")
-	i(&flags.Weight, []string{"weight"},
-		1,
+	i(&flags.Weight,
+		[]string{"weight"}, 1,
 		"weight of this node (a more capable node has higher weight)")
-	s(&flags.Register, []string{"register"},
-		"wanted",
+	s(&flags.Register,
+		[]string{"register"}, "wanted",
 		"register this node as wanted, wantedForce,"+
 			"\nknown, knownForce, unwanted, unknown or unchanged")
-	s(&flags.CfgConnect, []string{"cfgConnect", "cfg"},
-		"simple",
+	s(&flags.CfgConnect,
+		[]string{"cfgConnect", "cfg"}, "simple",
 		"connection string/info to configuration provider")
 
 	flag.Usage = func() {
