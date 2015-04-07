@@ -141,7 +141,7 @@ func initFlags(flags *Flags) map[string][]string {
 				a = append(a, aliases[i])
 			}
 			f := flagsByName[name]
-			fmt.Fprintf(os.Stderr, "  -%s=%s\n",
+			fmt.Fprintf(os.Stderr, "  -%s=%q\n",
 				strings.Join(a, ", -"), f.Value)
 			fmt.Fprintf(os.Stderr, "      %s\n",
 				strings.Join(strings.Split(f.Usage, "\n"),
@@ -220,7 +220,7 @@ func main() {
 func MainWelcome(flagAliases map[string][]string) {
 	flag.VisitAll(func(f *flag.Flag) {
 		if flagAliases[f.Name] != nil {
-			log.Printf("  -%s=%s\n", f.Name, f.Value)
+			log.Printf("  -%s=%q\n", f.Name, f.Value)
 		}
 	})
 	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
