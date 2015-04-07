@@ -27,9 +27,9 @@ type Flags struct {
 	DataDir    string
 	Help       bool
 	Register   string
+	Server     string
 	StaticDir  string
 	StaticETag string
-	Server     string
 	Tags       string
 	Version    bool
 	Weight     int
@@ -75,14 +75,17 @@ func initFlags(flags *Flags) map[string][]string {
 
 	s(&flags.BindAddr,
 		[]string{"bindAddr"}, "ADDR:PORT", "localhost:8095",
-		"http listen address:port")
+		"HTTP/REST listen addr:port;"+
+			"\ndefault is localhost:8095")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
 		"connection string/info to a configuration provider;"+
 			"\nexamples:"+
-			"\n* simple (for local-only, single-node configuration)"+
 			"\n* couchbase:http://BUCKET@HOST:PORT"+
-			"\n* couchbase:http://my-cfg-bucket@127.0.0.1:8091")
+			"\n* couchbase:http://my-cfg-bucket@127.0.0.1:8091"+
+			"\n* simple (for single-node, local-only, file-based"+
+			"\n           configuration intended for development usage)"+
+			"\ndefault is simple")
 	s(&flags.Container,
 		[]string{"container"}, "PATH", "",
 		"slash separated path of logical parent containers"+
@@ -90,35 +93,40 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.DataDir,
 		[]string{"dataDir", "data"}, "DIR", "data",
 		"directory path where index data and local"+
-			"\nconfiguration files will be stored")
+			"\nconfiguration files will be stored;"+
+			"\ndefault is 'data'")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit")
 	s(&flags.Register,
 		[]string{"register"}, "REGISTER", "wanted",
 		"register this node as wanted, wantedForce,"+
-			"\nknown, knownForce, unwanted, unknown or unchanged")
-	s(&flags.StaticDir,
-		[]string{"staticDir"}, "DIR", "static",
-		"directory for static web UI content")
-	s(&flags.StaticETag,
-		[]string{"staticETag"}, "ETAG", "",
-		"etag for static web UI content")
+			"\nknown, knownForce, unwanted, unknown or unchanged;"+
+			"\ndefault is wanted")
 	s(&flags.Server,
 		[]string{"server"}, "URL", "",
 		"url to datasource server;"+
 			"\nexample for couchbase: http://localhost:8091")
+	s(&flags.StaticDir,
+		[]string{"staticDir"}, "DIR", "static",
+		"directory for static web UI content;"+
+			"\ndefault is use static resources shipped in program binary")
+	s(&flags.StaticETag,
+		[]string{"staticETag"}, "ETAG", "",
+		"etag for static web UI content")
 	s(&flags.Tags,
 		[]string{"tags"}, "TAGS", "",
-		"comma-separated list of tags (allowed roles)"+
-			"\nfor this node, such as:"+
-			"\nfeed, janitor, pindex, planner, queryer")
+		"comma-separated list of tags (or allowed roles)"+
+			"\nfor this node, such as: feed, janitor,"+
+			"\npindex, planner, queryer;"+
+			"\ndefault is (\"\") which means all roles allowed")
 	b(&flags.Version,
 		[]string{"version", "v"}, "", false,
 		"print version string and exit")
 	i(&flags.Weight,
 		[]string{"weight"}, "INTEGER", 1,
-		"weight of this node (a more capable node has higher weight)")
+		"weight of this node, where a more capable node should"+
+			"\nhave higher weight; default is 1")
 
 	flag.Usage = func() {
 		if !flags.Help {
