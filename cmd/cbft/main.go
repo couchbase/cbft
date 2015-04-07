@@ -40,32 +40,31 @@ import (
 var VERSION = "0.0.0"
 
 var bindAddr = flag.String("addr", "localhost:8095",
-	"\n\thttp listen address:port")
+	adesc("http listen address:port"))
 var dataDir = flag.String("dataDir", "data",
-	"\n\tdirectory path where index data and\n"+
-		"\tlocal configuration files will be stored")
+	adesc("directory path where index data and"+
+		"\nlocal configuration files will be stored"))
 var logFlags = flag.String("logFlags", "",
-	"\n\tcomma-separated logging control flags")
+	adesc("comma-separated logging control flags"))
 var staticDir = flag.String("staticDir", "static",
-	"\n\tdirectory for static web UI content")
+	adesc("directory for static web UI content"))
 var staticETag = flag.String("staticETag", "",
-	"\n\tstatic etag value")
+	adesc("static etag value"))
 var server = flag.String("server", "",
-	"\n\turl to datasource server;\n"+
-		"\texample for couchbase: http://localhost:8091")
+	adesc("url to datasource server;"+
+		"\nexample for couchbase: http://localhost:8091"))
 var tags = flag.String("tags", "",
-	"\n\tcomma-separated list of tags (or roles) for this node")
+	adesc("comma-separated list of tags (or roles) for this node"))
 var container = flag.String("container", "",
-	"\n\tslash separated path of parent containers for this node,\n"+
-		"\tfor shelf/rack/row/zone awareness")
+	adesc("slash separated path of parent containers for this node,"+
+		"\nfor shelf/rack/row/zone awareness"))
 var weight = flag.Int("weight", 1,
-	"\n\tweight of this node (a more capable node has higher weight)")
+	adesc("weight of this node (a more capable node has higher weight)"))
 var register = flag.String("register", "wanted",
-	"\n\tregister this node as wanted, wantedForce,\n\t"+
-		" known, knownForce,"+
-		" unwanted, unknown or unchanged")
+	adesc("register this node as wanted, wantedForce,"+
+		"\nknown, knownForce, unwanted, unknown or unchanged"))
 var cfgConnect = flag.String("cfgConnect", "simple",
-	"\n\tconnection string/info to configuration provider")
+	adesc("connection string/info to configuration provider"))
 
 var expvars = expvar.NewMap("stats")
 
@@ -223,4 +222,8 @@ func dumpOnSignal(signals ...os.Signal) {
 		log.Printf("dump: heap...")
 		pprof.Lookup("heap").WriteTo(os.Stderr, 1)
 	}
+}
+
+func adesc(s string) string {
+	return "\n      " + strings.Replace(s, "\n", "\n      ", -1)
 }
