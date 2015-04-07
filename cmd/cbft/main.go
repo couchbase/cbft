@@ -53,6 +53,7 @@ type Flags struct {
 	Server     string
 	Tags       string
 	Container  string
+	Version    bool
 	Weight     int
 	Register   string
 	CfgConnect string
@@ -122,6 +123,9 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"container"}, "",
 		"slash separated path of parent containers for this node,"+
 			"\nfor shelf/rack/row/zone awareness")
+	b(&flags.Version,
+		[]string{"version", "v"}, false,
+		"print version string and exit")
 	i(&flags.Weight,
 		[]string{"weight"}, 1,
 		"weight of this node (a more capable node has higher weight)")
@@ -182,6 +186,12 @@ func main() {
 	if flags.Help {
 		flag.Usage()
 		os.Exit(2)
+	}
+
+	if flags.Version {
+		fmt.Printf("%s main: %s, data: %s\n", path.Base(os.Args[0]),
+			VERSION, cbft.VERSION)
+		os.Exit(0)
 	}
 
 	log.Printf("main: %s started (%s/%s)",
