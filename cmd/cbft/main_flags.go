@@ -22,17 +22,17 @@ import (
 
 type Flags struct {
 	BindAddr   string
+	CfgConnect string
+	Container  string
 	DataDir    string
 	Help       bool
+	Register   string
 	StaticDir  string
 	StaticETag string
 	Server     string
 	Tags       string
-	Container  string
 	Version    bool
 	Weight     int
-	Register   string
-	CfgConnect string
 }
 
 var flags Flags
@@ -76,43 +76,49 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.BindAddr,
 		[]string{"bindAddr"}, "ADDR:PORT", "localhost:8095",
 		"http listen address:port")
+	s(&flags.CfgConnect,
+		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
+		"connection string/info to a configuration provider;"+
+			"\nexamples:"+
+			"\n* simple (for local-only, single-node configuration)"+
+			"\n* couchbase:http://BUCKET@HOST:PORT"+
+			"\n* couchbase:http://my-cfg-bucket@127.0.0.1:8091")
+	s(&flags.Container,
+		[]string{"container"}, "PATH", "",
+		"slash separated path of logical parent containers"+
+			"\nfor this node, for shelf/rack/row/zone awareness")
 	s(&flags.DataDir,
 		[]string{"dataDir", "data"}, "DIR", "data",
-		"directory path where index data and"+
-			"\nlocal configuration files will be stored")
+		"directory path where index data and local"+
+			"\nconfiguration files will be stored")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit")
+	s(&flags.Register,
+		[]string{"register"}, "REGISTER", "wanted",
+		"register this node as wanted, wantedForce,"+
+			"\nknown, knownForce, unwanted, unknown or unchanged")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
 		"directory for static web UI content")
 	s(&flags.StaticETag,
 		[]string{"staticETag"}, "ETAG", "",
-		"static etag value")
+		"etag for static web UI content")
 	s(&flags.Server,
 		[]string{"server"}, "URL", "",
 		"url to datasource server;"+
 			"\nexample for couchbase: http://localhost:8091")
 	s(&flags.Tags,
 		[]string{"tags"}, "TAGS", "",
-		"comma-separated list of tags (or roles) for this node")
-	s(&flags.Container,
-		[]string{"container"}, "PATH", "",
-		"slash separated path of parent containers for this node,"+
-			"\nfor shelf/rack/row/zone awareness")
+		"comma-separated list of tags (allowed roles)"+
+			"\nfor this node, such as:"+
+			"\nfeed, janitor, pindex, planner, queryer")
 	b(&flags.Version,
 		[]string{"version", "v"}, "", false,
 		"print version string and exit")
 	i(&flags.Weight,
-		[]string{"weight"}, "INT", 1,
+		[]string{"weight"}, "INTEGER", 1,
 		"weight of this node (a more capable node has higher weight)")
-	s(&flags.Register,
-		[]string{"register"}, "REGISTER", "wanted",
-		"register this node as wanted, wantedForce,"+
-			"\nknown, knownForce, unwanted, unknown or unchanged")
-	s(&flags.CfgConnect,
-		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
-		"connection string/info to configuration provider")
 
 	flag.Usage = func() {
 		if !flags.Help {
