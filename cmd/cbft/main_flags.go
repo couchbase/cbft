@@ -24,7 +24,6 @@ type Flags struct {
 	BindAddr   string
 	DataDir    string
 	Help       bool
-	LogFlags   string
 	StaticDir  string
 	StaticETag string
 	Server     string
@@ -45,73 +44,74 @@ func init() {
 
 func initFlags(flags *Flags) map[string][]string {
 	flagAliases := map[string][]string{} // main flag name => all aliases.
+	flagKinds := map[string]string{}
 
-	s := func(v *string, names []string,
+	s := func(v *string, names []string, kind string,
 		defaultVal, usage string) { // String cmd-line param.
 		for _, name := range names {
 			flag.StringVar(v, name, defaultVal, usage)
 		}
 		flagAliases[names[0]] = names
+		flagKinds[names[0]] = kind
 	}
 
-	i := func(v *int, names []string,
+	i := func(v *int, names []string, kind string,
 		defaultVal int, usage string) { // Integer cmd-line param.
 		for _, name := range names {
 			flag.IntVar(v, name, defaultVal, usage)
 		}
 		flagAliases[names[0]] = names
+		flagKinds[names[0]] = kind
 	}
 
-	b := func(v *bool, names []string,
+	b := func(v *bool, names []string, kind string,
 		defaultVal bool, usage string) { // Bool cmd-line param.
 		for _, name := range names {
 			flag.BoolVar(v, name, defaultVal, usage)
 		}
 		flagAliases[names[0]] = names
+		flagKinds[names[0]] = kind
 	}
 
 	s(&flags.BindAddr,
-		[]string{"bindAddr"}, "localhost:8095",
+		[]string{"bindAddr"}, "ADDR:PORT", "localhost:8095",
 		"http listen address:port")
 	s(&flags.DataDir,
-		[]string{"dataDir", "data"}, "data",
+		[]string{"dataDir", "data"}, "DIR", "data",
 		"directory path where index data and"+
 			"\nlocal configuration files will be stored")
 	b(&flags.Help,
-		[]string{"help", "?", "H", "h"}, false,
+		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit")
-	s(&flags.LogFlags,
-		[]string{"logFlags"}, "",
-		"comma-separated logging control flags")
 	s(&flags.StaticDir,
-		[]string{"staticDir"}, "static",
+		[]string{"staticDir"}, "DIR", "static",
 		"directory for static web UI content")
 	s(&flags.StaticETag,
-		[]string{"staticETag"}, "",
+		[]string{"staticETag"}, "ETAG", "",
 		"static etag value")
 	s(&flags.Server,
-		[]string{"server"}, "",
+		[]string{"server"}, "URL", "",
 		"url to datasource server;"+
 			"\nexample for couchbase: http://localhost:8091")
 	s(&flags.Tags,
-		[]string{"tags"}, "",
+		[]string{"tags"}, "TAGS", "",
 		"comma-separated list of tags (or roles) for this node")
 	s(&flags.Container,
-		[]string{"container"}, "",
+		[]string{"container"}, "PATH", "",
 		"slash separated path of parent containers for this node,"+
 			"\nfor shelf/rack/row/zone awareness")
 	b(&flags.Version,
-		[]string{"version", "v"}, false,
+		[]string{"version", "v"}, "", false,
 		"print version string and exit")
 	i(&flags.Weight,
-		[]string{"weight"}, 1,
+		[]string{"weight"}, "INT", 1,
 		"weight of this node (a more capable node has higher weight)")
 	s(&flags.Register,
-		[]string{"register"}, "wanted",
+		[]string{"register"}, "REGISTER", "wanted",
 		"register this node as wanted, wantedForce,"+
 			"\nknown, knownForce, unwanted, unknown or unchanged")
 	s(&flags.CfgConnect,
-		[]string{"cfgConnect", "cfg"}, "simple",
+		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
 		"connection string/info to configuration provider")
 
 	flag.Usage = func() {
@@ -146,8 +146,8 @@ func initFlags(flags *Flags) map[string][]string {
 				a = append(a, aliases[i])
 			}
 			f := flagsByName[name]
-			fmt.Fprintf(os.Stderr, "  -%s=%q\n",
-				strings.Join(a, ", -"), f.Value)
+			fmt.Fprintf(os.Stderr, "  -%s %s\n",
+				strings.Join(a, ", -"), flagKinds[name])
 			fmt.Fprintf(os.Stderr, "      %s\n",
 				strings.Join(strings.Split(f.Usage, "\n"),
 					"\n      "))

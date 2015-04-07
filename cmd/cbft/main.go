@@ -69,10 +69,6 @@ func main() {
 	}
 	log.SetOutput(mr)
 
-	if flags.LogFlags != "" {
-		log.ParseLogFlag(flags.LogFlags)
-	}
-
 	MainWelcome(flagAliases)
 
 	// If cfg is down, we error, leaving it to some user-supplied
