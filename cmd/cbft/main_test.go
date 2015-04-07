@@ -97,7 +97,5 @@ func TestMainCfg(t *testing.T) {
 }
 
 func TestMainWelcome(t *testing.T) {
-	flagAliases := initFlags(&Flags{})
-
 	MainWelcome(flagAliases) // Don't crash.
 }
