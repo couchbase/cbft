@@ -75,58 +75,60 @@ func initFlags(flags *Flags) map[string][]string {
 
 	s(&flags.BindAddr,
 		[]string{"bindAddr"}, "ADDR:PORT", "localhost:8095",
-		"HTTP/REST listen addr:port;"+
-			"\ndefault is localhost:8095")
+		"optional HTTP/REST listen addr:port;"+
+			"\ndefault is 'localhost:8095'.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
-		"connection string/info to a configuration provider;"+
-			"\nexamples:"+
+		"optional connection string/info to a configuration provider"+
+			"\nfor the cluster:"+
 			"\n* couchbase:http://BUCKET@HOST:PORT"+
-			"\n* couchbase:http://my-cfg-bucket@127.0.0.1:8091"+
-			"\n* simple (for single-node, local-only, file-based"+
-			"\n           configuration intended for development usage)"+
-			"\ndefault is simple")
+			"\n         (ex: couchbase:http://my-cfg-bucket@127.0.0.1:8091)"+
+			"\n* simple (for single-node, local-only, simple file-based"+
+			"\n          configuration intended for development usage)"+
+			"\ndefault is 'simple'.")
 	s(&flags.Container,
 		[]string{"container"}, "PATH", "",
-		"slash separated path of logical parent containers"+
-			"\nfor this node, for shelf/rack/row/zone awareness")
+		"optional slash separated path of logical parent containers"+
+			"\nfor this node, for shelf/rack/row/zone awareness.")
 	s(&flags.DataDir,
 		[]string{"dataDir", "data"}, "DIR", "data",
-		"directory path where index data and local"+
-			"\nconfiguration files will be stored;"+
-			"\ndefault is 'data'")
+		"optional directory path where local index data and local"+
+			"\nconfiguration files will be stored on this node;"+
+			"\ndefault is 'data'.")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
-		"print this usage message and exit")
+		"print this usage message and exit.")
 	s(&flags.Register,
 		[]string{"register"}, "REGISTER", "wanted",
-		"register this node as wanted, wantedForce,"+
-			"\nknown, knownForce, unwanted, unknown or unchanged;"+
-			"\ndefault is wanted")
+		"optional flag to register this node in the cluster as either"+
+			"\nwanted, wantedForce, known, knownForce,"+
+			"\nunwanted, unknown, unchanged;"+
+			"\ndefault is 'wanted'.")
 	s(&flags.Server,
 		[]string{"server"}, "URL", "",
-		"url to datasource server;"+
-			"\nexample for couchbase: http://localhost:8091")
+		"required URL to datasource server;"+
+			"\nexample for couchbase: 'http://localhost:8091'.")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
-		"directory for static web UI content;"+
-			"\ndefault is use static resources shipped in program binary")
+		"optional directory for web UI static content;"+
+			"\ndefault is using the static resources embedded"+
+			"\nin the program binary.")
 	s(&flags.StaticETag,
 		[]string{"staticETag"}, "ETAG", "",
-		"etag for static web UI content")
+		"optional ETag for web UI static content.")
 	s(&flags.Tags,
 		[]string{"tags"}, "TAGS", "",
-		"comma-separated list of tags (or allowed roles)"+
+		"optional comma-separated list of tags or enabled roles"+
 			"\nfor this node, such as: feed, janitor,"+
 			"\npindex, planner, queryer;"+
-			"\ndefault is (\"\") which means all roles allowed")
+			"\ndefault is (\"\") which means all roles are enabled.")
 	b(&flags.Version,
 		[]string{"version", "v"}, "", false,
-		"print version string and exit")
+		"print version string and exit.")
 	i(&flags.Weight,
 		[]string{"weight"}, "INTEGER", 1,
-		"weight of this node, where a more capable node should"+
-			"\nhave higher weight; default is 1")
+		"optional weight of this node, where a more capable"+
+			"\nnode should have higher weight; default is 1.")
 
 	flag.Usage = func() {
 		if !flags.Help {
@@ -136,8 +138,8 @@ func initFlags(flags *Flags) map[string][]string {
 		base := path.Base(os.Args[0])
 
 		fmt.Fprintf(os.Stderr, "%s: couchbase full-text server\n", base)
-		fmt.Fprintf(os.Stderr, "\nusage: %s [flags]\n", base)
-		fmt.Fprintf(os.Stderr, "\nflags:\n")
+		fmt.Fprintf(os.Stderr, "\nUsage: %s [flags]\n", base)
+		fmt.Fprintf(os.Stderr, "\nFlags:\n")
 
 		flagsByName := map[string]*flag.Flag{}
 		flag.VisitAll(func(f *flag.Flag) {
@@ -164,9 +166,9 @@ func initFlags(flags *Flags) map[string][]string {
 					"\n      "))
 		}
 
-		fmt.Fprintf(os.Stderr, "\nexample:")
+		fmt.Fprintf(os.Stderr, "\nExample:")
 		fmt.Fprintf(os.Stderr, example)
-		fmt.Fprintf(os.Stderr, "\nmore information is at"+
+		fmt.Fprintf(os.Stderr, "\nMore information is at"+
 			" http://github.com/couchbaselabs/cbft\n")
 	}
 
