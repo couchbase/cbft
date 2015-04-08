@@ -27,6 +27,19 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 	return &CreateIndexHandler{mgr: mgr}
 }
 
+func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
+	opts["form value: indexType"] = "required, string"
+	opts["form value: indexParams"] = "optional, string (JSON)"
+	opts["form value: sourceType"] = "required, string"
+	opts["form value: sourceName"] = "optional, string"
+	opts["form value: sourceUUID"] = "optional, string"
+	opts["form value: sourceParams"] = "optional, string (JSON)"
+	opts["form value: planParams"] = "optional, string (JSON)"
+	opts["form value: prevIndexUUID"] = "optional, string"
+	opts["result on error"] = `non-200 HTTP error code`
+	opts["result on success"] = `HTTP 200 with body JSON of {"status": "ok"}` // TODO: 200.
+}
+
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// TODO: Need more input validation (check source UUID's, name lengths, etc).
 	indexName := mux.Vars(req)["indexName"]
@@ -84,7 +97,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	mustEncode(w, struct {
+	mustEncode(w, struct { // TODO: Should return created instead of 200 HTTP code?
 		Status string `json:"status"`
 	}{Status: "ok"})
 }

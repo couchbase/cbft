@@ -36,6 +36,10 @@ type RESTMeta struct {
 	Opts   map[string]string
 }
 
+type RESTOpts interface {
+	RESTOpts(map[string]string)
+}
+
 func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
@@ -59,6 +63,9 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
+		if a, ok := h.(RESTOpts); ok {
+			a.RESTOpts(opts)
+		}
 		meta[path+" "+methodOrds[method]+method] =
 			RESTMeta{path, method, opts}
 		r.Handle(path, h).Methods(method)
@@ -73,7 +80,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handle("/api/index", "GET", NewListIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
-			"_about":             `Returns all index definitions.`,
+			"_about":             `Returns all index definitions as JSON.`,
 			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr),
@@ -91,7 +98,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr),
 		map[string]string{
 			"_category":          "Indexing|Index definition",
-			"_about":             `Returns the definition of an index.`,
+			"_about":             `Returns the definition of an index as JSON.`,
 			"version introduced": "0.0.1",
 		})
 

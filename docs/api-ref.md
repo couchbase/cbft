@@ -10,7 +10,7 @@
 
 GET `/api/index`
 
-Returns all index definitions.
+Returns all index definitions as JSON.
 
 **version introduced**: 0.0.1
 
@@ -18,7 +18,7 @@ Returns all index definitions.
 
 GET `/api/index/{indexName}`
 
-Returns the definition of an index.
+Returns the definition of an index as JSON.
 
 **version introduced**: 0.0.1
 
@@ -27,6 +27,26 @@ Returns the definition of an index.
 PUT `/api/index/{indexName}`
 
 Creates/updates an index definition.
+
+**form value: indexParams**: optional, string (JSON)
+
+**form value: indexType**: required, string
+
+**form value: planParams**: optional, string (JSON)
+
+**form value: prevIndexUUID**: optional, string
+
+**form value: sourceName**: optional, string
+
+**form value: sourceParams**: optional, string (JSON)
+
+**form value: sourceType**: required, string
+
+**form value: sourceUUID**: optional, string
+
+**result on error**: non-200 HTTP error code
+
+**result on success**: HTTP 200 with body JSON of {"status": "ok"}
 
 **version introduced**: 0.0.1
 
