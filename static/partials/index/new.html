@@ -36,7 +36,7 @@
     <div class="form-group"
          ng-repeat="(k, v) in p"
          ng-show="newIndexType == indexType">
-      <label class="col-sm-4 control-label">{{k}}</label>
+      <label class="col-sm-4 control-label indexParam">{{k}}</label>
       <div class="col-sm-8">
         <textarea ng-model="newIndexParams[indexType][k]"
                   rows="{{paramNumLines[k]}}"
@@ -117,6 +117,9 @@ form .form-group div.indexName {
 }
 form .form-group select {
   margin-top: 7px;
+}
+form .form-group label.indexParam {
+  text-transform: capitalize;
 }
 </style>
 
