@@ -31,15 +31,17 @@
       </select>
     </div>
   </div>
-  <div class="form-group"
-       ng-show="newIndexType && newIndexType != 'blackhole'">
-    <label for="inputDoc"
-           class="col-sm-2 control-label">Index Params</label>
-    <div ng-repeat="(indexType, p) in newIndexParams" class="col-sm-10">
-      <textarea ng-model="newIndexParams[indexType]"
-                rows="{{paramNumLines[indexType]}}"
-                class="form-control"
-                ng-show="newIndexType == indexType"></textarea>
+  <div ng-show="newIndexType && newIndexType != 'blackhole'"
+       ng-repeat="(indexType, p) in newIndexParams">
+    <div class="form-group"
+         ng-repeat="(k, v) in p"
+         ng-show="newIndexType == indexType">
+      <label class="col-sm-4 control-label">{{k}}</label>
+      <div class="col-sm-8">
+        <textarea ng-model="newIndexParams[indexType][k]"
+                  rows="{{paramNumLines[k]}}"
+                  class="form-control"></textarea>
+      </div>
     </div>
   </div>
   <div class="form-group">
@@ -55,8 +57,8 @@
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceName"
-           class="col-sm-2 control-label">Source Name</label>
-    <div class="col-sm-10">
+           class="col-sm-4 control-label">Source Name</label>
+    <div class="col-sm-8">
       <input ng-model="newSourceName"
              type="text" class="form-control" id="inputSourceName"
              placeholder="bucket-name">
@@ -65,8 +67,8 @@
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceUUID"
-           class="col-sm-2 control-label">Source UUID</label>
-    <div class="col-sm-10">
+           class="col-sm-4 control-label">Source UUID</label>
+    <div class="col-sm-8">
       <input ng-model="newSourceUUID"
              type="text" class="form-control" id="inputSourceUUID"
              placeholder="(optional bucket-uuid)">
@@ -75,8 +77,8 @@
   <div class="form-group"
        ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceParams"
-           class="col-sm-2 control-label">Source Params</label>
-    <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-10">
+           class="col-sm-4 control-label">Source Params</label>
+    <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-8">
       <textarea ng-model="newSourceParams[sourceType]"
                 rows="{{paramNumLines[sourceType]}}"
                 class="form-control"
@@ -93,7 +95,7 @@
   </div>
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">
-      <button ng-click="newIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+      <button ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
               type="submit" class="btn btn-default">
         <span ng-show="!isEdit">
           Create Index

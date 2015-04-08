@@ -173,19 +173,23 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         for (var k in data.sourceTypes) {
             $scope.newSourceParams[k] =
                 JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
-            $scope.paramNumLines[k] = $scope.newSourceParams[k].split("\n").length;
+            $scope.paramNumLines[k] = $scope.newSourceParams[k].split("\n").length + 1;
         }
 
         for (var k in data.indexTypes) {
-            $scope.newIndexParams[k] =
-                JSON.stringify(data.indexTypes[k].startSample, undefined, 2);
-            $scope.paramNumLines[k] = $scope.newIndexParams[k].split("\n").length;
+            $scope.newIndexParams[k] = {};
+            for (var j in data.indexTypes[k].startSample) {
+                $scope.newIndexParams[k][j] =
+                    JSON.stringify(data.indexTypes[k].startSample[j], undefined, 2);
+                $scope.paramNumLines[j] =
+                    $scope.newIndexParams[k][j].split("\n").length + 1;
+            }
         }
 
         $scope.newPlanParams =
             JSON.stringify(data.startSamples["planParams"], undefined, 2);
         $scope.paramNumLines["planParams"] =
-            $scope.newPlanParams.split("\n").length;
+            $scope.newPlanParams.split("\n").length + 1;
 
         origIndexName = $routeParams.indexName;
         if (origIndexName && origIndexName.length > 0) {
@@ -200,12 +204,19 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 }
 
                 $scope.newIndexType = data.indexDef.type;
-                $scope.newIndexParams[data.indexDef.type] = data.indexDef.params;
+                $scope.newIndexParams[data.indexDef.type] =
+                    JSON.parse(data.indexDef.params);
+                for (var j in $scope.newIndexParams[data.indexDef.type]) {
+                    $scope.newIndexParams[data.indexDef.type][j] =
+                        JSON.stringify($scope.newIndexParams[data.indexDef.type][j],
+                                       undefined, 2);
+                }
                 $scope.newSourceType = data.indexDef.sourceType;
                 $scope.newSourceName = data.indexDef.sourceName;
                 $scope.newSourceUUID = data.indexDef.sourceUUID;
                 $scope.newSourceParams[data.indexDef.sourceType] = data.indexDef.sourceParams;
-                $scope.newPlanParams = JSON.stringify(data.indexDef.planParams, undefined, 2);
+                $scope.newPlanParams = JSON.stringify(data.indexDef.planParams,
+                                                      undefined, 2);
 
                 $scope.prevIndexUUID = "";
                 if ($scope.isEdit) {
@@ -218,16 +229,21 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         }
     })
 
-    $scope.newIndex = function(indexName, indexType, indexParams,
+    $scope.putIndex = function(indexName, indexType, indexParams,
                                sourceType, sourceName,
                                sourceUUID, sourceParams,
                                planParams, prevIndexUUID) {
         $scope.errorMessage = null;
+        indexType = indexType || "bleve";
+        var indexParamsObj = {};
+        for (var k in indexParams[indexType]) {
+            indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
+        }
         $http.put('/api/index/' + indexName, "", {
             params: {
                 indexName: indexName,
-                indexType: indexType || "bleve",
-                indexParams: indexParams[indexType],
+                indexType: indexType,
+                indexParams: JSON.stringify(indexParamsObj),
                 sourceType: sourceType,
                 sourceName: sourceName,
                 sourceUUID: sourceUUID || "",
