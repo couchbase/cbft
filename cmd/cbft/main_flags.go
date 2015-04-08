@@ -79,12 +79,17 @@ func initFlags(flags *Flags) map[string][]string {
 			"\ndefault is 'localhost:8095'.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
-		"optional connection string/info to a configuration provider"+
-			"\nfor the cluster:"+
-			"\n* couchbase:http://BUCKET@HOST:PORT"+
-			"\n         (ex: couchbase:http://my-cfg-bucket@127.0.0.1:8091)"+
-			"\n* simple (for single-node, local-only, simple file-based"+
-			"\n          configuration intended for development usage)"+
+		"optional connection string/info to a configuration server"+
+			"\nfor clustering multiple cbft nodes:"+
+			"\n* couchbase:http://BUCKET_USER:BUCKET_PSWD@CB_HOST:CB_PORT"+
+			"\n     - manages a cbft cluster configuration in a couchbase"+
+			"\n       bucket; for example:"+
+			"\n       'couchbase:http://my-cfg-bucket@127.0.0.1:8091';"+
+			"\n* simple"+
+			"\n     - intended for development usage, the 'simple'"+
+			"\n       configuration provider manages a configuration"+
+			"\n       for a single, unclustered cbft node in a local,"+
+			"\n       simple file that's stored in the dataDir;"+
 			"\ndefault is 'simple'.")
 	s(&flags.Container,
 		[]string{"container"}, "PATH", "",
@@ -99,16 +104,27 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit.")
 	s(&flags.Register,
-		[]string{"register"}, "REGISTER", "wanted",
-		"optional flag to register this node in the cluster as either"+
-			"\nwanted, wantedForce, known, knownForce,"+
-			"\nunwanted, unknown, unchanged;"+
+		[]string{"register"}, "STATE", "wanted",
+		"optional flag to register this node in the cluster as:"+
+			"\n* wanted      - make node wanted in the cluster,"+
+			"\n                if not already, so that it will participate"+
+			"\n                fully in data operations;"+
+			"\n* wantedForce - same as wanted, but forces a cfg update;"+
+			"\n* known       - make node known to the cluster,"+
+			"\n                if not already, so it will be admin'able"+
+			"\n                but won't yet participate in data operations;"+
+			"\n                this is useful for staging several nodes into"+
+			"\n                the cluster before making them fully wanted;"+
+			"\n* knownForce  - same as known, but forces a cfg update;"+
+			"\n* unwanted    - make node unwanted, but still known to the cluster;"+
+			"\n* unknown     - make node unwanted and unknown to the cluster;"+
+			"\n* unchanged   - don't change the node's registration state;"+
 			"\ndefault is 'wanted'.")
 	s(&flags.Server,
 		[]string{"server"}, "URL", "",
 		"required URL to datasource server;"+
 			"\nexample for couchbase: 'http://localhost:8091';"+
-			"\nuse '.' when there is no datasource server")
+			"\nuse '.' when there is no datasource server.")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
 		"optional directory for web UI static content;"+
@@ -120,8 +136,12 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.Tags,
 		[]string{"tags"}, "TAGS", "",
 		"optional comma-separated list of tags or enabled roles"+
-			"\nfor this node, such as: feed, janitor,"+
-			"\npindex, planner, queryer;"+
+			"\nfor this node, such as:"+
+			"\n* feed    - node can connect feeds to datasources;"+
+			"\n* janitor - node can run a local janitor;"+
+			"\n* pindex  - node can maintain local index partitions;"+
+			"\n* planner - node can replan cluster-wide resource allocations;"+
+			"\n* queryer - node can execute queries;"+
 			"\ndefault is (\"\") which means all roles are enabled.")
 	b(&flags.Version,
 		[]string{"version", "v"}, "", false,
