@@ -135,12 +135,9 @@ func initFlags(flags *Flags) map[string][]string {
 
 		base := path.Base(os.Args[0])
 
-		fmt.Fprintf(os.Stderr,
-			"%s: couchbase full-text server\n\n", base)
-		fmt.Fprintf(os.Stderr, "more information is available at:\n"+
-			"  http://github.com/couchbaselabs/cbft\n\n")
-		fmt.Fprintf(os.Stderr, "usage:\n  %s [flags]\n\n", base)
-		fmt.Fprintf(os.Stderr, "flags:\n")
+		fmt.Fprintf(os.Stderr, "%s: couchbase full-text server\n", base)
+		fmt.Fprintf(os.Stderr, "\nusage: %s [flags]\n", base)
+		fmt.Fprintf(os.Stderr, "\nflags:\n")
 
 		flagsByName := map[string]*flag.Flag{}
 		flag.VisitAll(func(f *flag.Flag) {
@@ -166,7 +163,19 @@ func initFlags(flags *Flags) map[string][]string {
 				strings.Join(strings.Split(f.Usage, "\n"),
 					"\n      "))
 		}
+
+		fmt.Fprintf(os.Stderr, "\nexample:")
+		fmt.Fprintf(os.Stderr, example)
+		fmt.Fprintf(os.Stderr, "\nmore information is at"+
+			" http://github.com/couchbaselabs/cbft\n")
 	}
 
 	return flagAliases
 }
+
+const example = `
+  ./cbft -bindAddr=localhost:9090 \
+         -cfg=couchbase:http://my-cfg-bucket@localhost:8091 \
+         -data=/var/data/cbft-node-9090 \
+         -server=http://localhost:8091
+`
