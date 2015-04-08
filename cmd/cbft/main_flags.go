@@ -169,7 +169,7 @@ func initFlags(flags *Flags) map[string][]string {
 
 		fmt.Fprintf(os.Stderr, "\nExample:")
 		fmt.Fprintf(os.Stderr, example)
-		fmt.Fprintf(os.Stderr, "\nMore information is at"+
+		fmt.Fprintf(os.Stderr, "\nSee also:"+
 			" http://github.com/couchbaselabs/cbft\n")
 	}
 
