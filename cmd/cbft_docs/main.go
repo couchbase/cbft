@@ -134,4 +134,6 @@ func main() {
 			}
 		}
 	}
+
+	fmt.Printf("---\n\nCopyright (c) 2015 Couchbase, Inc.\n")
 }
