@@ -273,6 +273,21 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
+        var errs = [];
+        if (!indexName) {
+            errs.push("index name");
+        }
+        if (!indexType) {
+            errs.push("index type");
+        }
+        if (!sourceType) {
+            errs.push("source type");
+        }
+        if (errs.length > 0) {
+            $scope.errorMessage = "missing parameters: " + errs.join(", ");
+            return
+        }
+
         var indexParamsObj = {};
         for (var k in indexParams[indexType]) {
             indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
