@@ -76,7 +76,7 @@ func main() {
 	cfg, err := MainCfg(flags.CfgConnect, flags.DataDir)
 	if err != nil {
 		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
-			"  Please check that your -cfg/-cfgConnect parameter (%s)\n"+
+			"  Please check that your -cfg/-cfgConnect parameter (%q)\n"+
 			"  is correct and/or that your configuration provider\n"+
 			"  is available.",
 			flags.CfgConnect, err, flags.CfgConnect)
@@ -111,7 +111,7 @@ func main() {
 	err = http.ListenAndServe(flags.BindAddr, nil)
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
-			"  Please check that your -bindAddr parameter (%s)\n"+
+			"  Please check that your -bindAddr parameter (%q)\n"+
 			"  is correct and available.", err, flags.BindAddr)
 	}
 }
@@ -153,7 +153,7 @@ func MainUUID(dataDir string) (string, error) {
 	err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
 	if err != nil {
 		return "", fmt.Errorf("error: could not write uuidPath: %s\n"+
-			"  Please check that your -data/-dataDir parameter (%s)\n"+
+			"  Please check that your -data/-dataDir parameter (%q)\n"+
 			"  is to a writable directory where cbft can store\n"+
 			"  index data.",
 			uuidPath, dataDir)
@@ -173,8 +173,10 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 		_, err := couchbase.Connect(server)
 		if err != nil {
 			return nil, fmt.Errorf("error: could not connect to server,"+
-				" URL: %s, err: %v",
-				server, err)
+				" URL: %s, err: %v\n"+
+				"  Please check that your -server parameter (%q)\n"+
+				"  is correct and the server is available.",
+				server, err, server)
 		}
 	}
 
