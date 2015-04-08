@@ -175,37 +175,75 @@
 <h2 id="index-definition">Index definition</h2>
 <hr />
 <p>GET <code>/api/index</code></p>
-<p>Returns all index definitions.</p>
+<p>Returns all index definitions as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/index/{indexName}</code></p>
-<p>Returns the definition of an index.</p>
+<p>Returns the definition of an index as JSON.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index definition to be retrieved.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>PUT <code>/api/index/{indexName}</code></p>
 <p>Creates/updates an index definition.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the to-be-created/updated index definition.</p>
+<p><strong>param: indexParams</strong>: optional, string (JSON), form parameter</p>
+<p><strong>param: indexType</strong>: required, string, form parameter</p>
+<p>supported index types:</p>
+<ul>
+<li>alias - supports fan-out of queries to multiple index targets</li>
+<li>blackhole - ignores all incoming data and is not queryable; used for testing</li>
+<li>bleve - full-text index powered by the bleve full-text-search engine</li>
+<li>bleve-mem - full-text index powered by bleve (in memory only)</li>
+<li>vlite - lightweight, view-like index</li>
+<li>vlite-mem - lightweight, view-like index (in memory only)</li>
+</ul>
+<p><strong>param: planParams</strong>: optional, string (JSON), form parameter</p>
+<p><strong>param: prevIndexUUID</strong>: optional, string, form parameter</p>
+<p>Intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients.</p>
+<p><strong>param: sourceName</strong>: optional, string, form parameter</p>
+<p><strong>param: sourceParams</strong>: optional, string (JSON), form parameter</p>
+<p><strong>param: sourceType</strong>: required, string, form parameter</p>
+<p>supported source types:</p>
+<ul>
+<li>couchbase - Couchbase Server/Cluster data source</li>
+<li>nil - a NO-OP data source, used for index aliases and testing</li>
+<li>primary - a primary data source</li>
+</ul>
+<p><strong>param: sourceUUID</strong>: optional, string, form parameter</p>
+<p><strong>result on error</strong>: non-200 HTTP error code</p>
+<p><strong>result on success</strong>: HTTP 200 with body JSON of {"status": "ok"}</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>DELETE <code>/api/index/{indexName}</code></p>
 <p>Deletes an index definition.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index definition to be deleted.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="index-management">Index management</h2>
 <hr />
 <p>POST <code>/api/index/{indexName}/ingestControl/{op}</code></p>
 <p>Pause index updates and maintenance (no more
                           ingesting document mutations).</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index whose control values will be modified.</p>
 <p><strong>param: op</strong>: Allowed values for op are
                           "pause" or "resume".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/index/{indexName}/planFreezeControl/{op}</code></p>
 <p>Freeze the assignment of index partitions to nodes.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index whose control values will be modified.</p>
 <p><strong>param: op</strong>: Allowed values for op are
                           "freeze" or "unfreeze".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/index/{indexName}/queryControl/{op}</code></p>
 <p>Disallow queries on an index.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index whose control values will be modified.</p>
 <p><strong>param: op</strong>: Allowed values for op are
                           "allow" or "disallow".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
@@ -213,16 +251,20 @@
 <hr />
 <p>GET <code>/api/stats</code></p>
 <p>Returns indexing and data related metrics,
-                       timings and counters for the node.</p>
+                       timings and counters for the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="index-querying">Index querying</h2>
 <hr />
 <p>GET <code>/api/index/{indexName}/count</code></p>
 <p>Returns the count of indexed documents.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index whose count is to be retrieved.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/index/{indexName}/query</code></p>
 <p>Queries an index.</p>
+<p><strong>param: indexName</strong>: required, string, URL path parameter</p>
+<p>The name of the index to be queried.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <h1 id="node">Node</h1>
@@ -230,7 +272,7 @@
 <hr />
 <p>GET <code>/api/cfg</code></p>
 <p>Returns the node's current view
-                       of the cluster's configuration.</p>
+                       of the cluster's configuration as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/cfgRefresh</code></p>
@@ -245,39 +287,39 @@
 <hr />
 <p>GET <code>/api/managerMeta</code></p>
 <p>Returns information on the node's capabilities,
-                       including available storage and bleve options.</p>
+                       including available storage and bleve options as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="node-diagnostics">Node diagnostics</h2>
 <hr />
 <p>GET <code>/api/diag</code></p>
 <p>Returns full set of diagnostic information
-                       from the node.</p>
+                       from the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/log</code></p>
 <p>Returns recent log messages
-                       and key events for the node.</p>
+                       and key events for the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/runtime</code></p>
 <p>Returns information on the node's software,
                        such as version strings and slow-changing
-                       runtime settings.</p>
+                       runtime settings as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/runtime/args</code></p>
 <p>Returns information on the node's command-line,
                        parameters, environment variables and
-                       O/S process values.</p>
+                       O/S process values as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/runtime/profile/cpu</code></p>
-<p>Requests the node to capture
+<p>Requests the node to capture local
                        cpu usage profiling information.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/runtime/profile/memory</code></p>
-<p>Requests the node to capture
+<p>Requests the node to capture lcoal
                        memory usage profiling information.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="node-management">Node management</h2>
@@ -289,12 +331,12 @@
 <hr />
 <p>GET <code>/api/runtime/stats</code></p>
 <p>Returns information on the node's
-                       low-level runtime stats.</p>
+                       low-level runtime stats as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/runtime/statsMem</code></p>
 <p>Returns information on the node's
-                       low-level GC and memory related runtime stats.</p>
+                       low-level GC and memory related runtime stats as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <h1 id="advanced">Advanced</h1>
@@ -334,6 +376,8 @@
 <hr />
 <p>GET <code>/api/pindex-bleve/{pindexName}/fields</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
+<p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
         </div>
 
