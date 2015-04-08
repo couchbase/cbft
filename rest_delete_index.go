@@ -26,6 +26,11 @@ func NewDeleteIndexHandler(mgr *Manager) *DeleteIndexHandler {
 	return &DeleteIndexHandler{mgr: mgr}
 }
 
+func (h *DeleteIndexHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"the name of the index definition to be deleted"
+}
+
 func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {

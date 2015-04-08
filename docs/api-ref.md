@@ -28,21 +28,42 @@ PUT `/api/index/{indexName}`
 
 Creates/updates an index definition.
 
-**form value: indexParams**: optional, string (JSON)
+**param: indexName**: required, string, URL path parameter
 
-**form value: indexType**: required, string
+the name of the created/updated index definition
 
-**form value: planParams**: optional, string (JSON)
+**param: indexParams**: optional, string (JSON), form parameter
 
-**form value: prevIndexUUID**: optional, string
+**param: indexType**: required, string, form parameter
 
-**form value: sourceName**: optional, string
+supported index types:
 
-**form value: sourceParams**: optional, string (JSON)
+* alias - supports fan-out of queries to multiple index targets
+* blackhole - ignores all incoming data and is not queryable; used for testing
+* bleve - full-text index powered by the bleve full-text-search engine
+* bleve-mem - full-text index powered by bleve (in memory only)
+* vlite - lightweight, view-like index
+* vlite-mem - lightweight, view-like index (in memory only)
 
-**form value: sourceType**: required, string
+**param: planParams**: optional, string (JSON), form parameter
 
-**form value: sourceUUID**: optional, string
+**param: prevIndexUUID**: optional, string, form parameter
+
+intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients
+
+**param: sourceName**: optional, string, form parameter
+
+**param: sourceParams**: optional, string (JSON), form parameter
+
+**param: sourceType**: required, string, form parameter
+
+supported source types:
+
+* couchbase - Couchbase Server/Cluster data source
+* nil - a NO-OP data source, used for index aliases and testing
+* primary - a primary data source
+
+**param: sourceUUID**: optional, string, form parameter
 
 **result on error**: non-200 HTTP error code
 
@@ -55,6 +76,10 @@ Creates/updates an index definition.
 DELETE `/api/index/{indexName}`
 
 Deletes an index definition.
+
+**param: indexName**: required, string, URL path parameter
+
+the name of the index definition to be deleted
 
 **version introduced**: 0.0.1
 

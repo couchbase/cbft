@@ -15,6 +15,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -28,14 +30,34 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 }
 
 func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
-	opts["form value: indexType"] = "required, string"
-	opts["form value: indexParams"] = "optional, string (JSON)"
-	opts["form value: sourceType"] = "required, string"
-	opts["form value: sourceName"] = "optional, string"
-	opts["form value: sourceUUID"] = "optional, string"
-	opts["form value: sourceParams"] = "optional, string (JSON)"
-	opts["form value: planParams"] = "optional, string (JSON)"
-	opts["form value: prevIndexUUID"] = "optional, string"
+	indexTypes := []string(nil)
+	for _, t := range pindexImplTypes {
+		indexTypes = append(indexTypes, t.Description)
+	}
+	sort.Strings(indexTypes)
+
+	sourceTypes := []string(nil)
+	for _, t := range feedTypes {
+		if t.Public {
+			sourceTypes = append(sourceTypes, t.Description)
+		}
+	}
+	sort.Strings(sourceTypes)
+
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"the name of the created/updated index definition"
+	opts["param: indexType"] = "required, string, form parameter\n\n" +
+		"supported index types:\n\n* " + strings.Join(indexTypes, "\n* ")
+	opts["param: indexParams"] = "optional, string (JSON), form parameter"
+	opts["param: sourceType"] = "required, string, form parameter\n\n" +
+		"supported source types:\n\n* " + strings.Join(sourceTypes, "\n* ")
+	opts["param: sourceName"] = "optional, string, form parameter"
+	opts["param: sourceUUID"] = "optional, string, form parameter"
+	opts["param: sourceParams"] = "optional, string (JSON), form parameter"
+	opts["param: planParams"] = "optional, string (JSON), form parameter"
+	opts["param: prevIndexUUID"] = "optional, string, form parameter\n\n" +
+		"intended for clients that want to check that they are not " +
+		"overwriting the index definition updates of concurrent clients"
 	opts["result on error"] = `non-200 HTTP error code`
 	opts["result on success"] = `HTTP 200 with body JSON of {"status": "ok"}` // TODO: 200.
 }
