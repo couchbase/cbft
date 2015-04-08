@@ -435,6 +435,36 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 
 	tests := []*RESTHandlerTest{
 		{
+			Desc:   "create an index with bad indexName",
+			Path:   "/api/index/%#^badIndexName",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{indexType},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error creating index`: true,
+				`indexName is invalid`: true,
+			},
+		},
+		{
+			Desc:   "create an index with whitespace in indexName",
+			Path:   "/api/index/another bad index name",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{indexType},
+				"sourceType": []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`error creating index`: true,
+				`indexName is invalid`: true,
+			},
+		},
+		{
 			Desc:   "create an index with nil feed",
 			Path:   "/api/index/idx0",
 			Method: "PUT",

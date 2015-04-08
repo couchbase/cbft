@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"fmt"
+	"regexp"
 	"sync/atomic"
 )
 
@@ -22,6 +23,16 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	indexType, indexName, indexParams string, planParams PlanParams,
 	prevIndexUUID string) error {
 	atomic.AddUint64(&mgr.stats.TotCreateIndex, 1)
+
+	matched, err := regexp.Match(`^[A-Za-z][0-9A-Za-z_\-]*$`, []byte(indexName))
+	if err != nil {
+		return fmt.Errorf("manager_api: CreateIndex, indexName parsing problem,"+
+			" indexName: %s, err: %v", indexName, err)
+	}
+	if !matched {
+		return fmt.Errorf("manager_api: CreateIndex, indexName is invalid,"+
+			" indexName: %q", indexName)
+	}
 
 	pindexImplType, exists := pindexImplTypes[indexType]
 	if !exists {
@@ -36,7 +47,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	}
 
 	// First, check that the source exists.
-	_, err := DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
+	_, err = DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 		mgr.server)
 	if err != nil {
 		return fmt.Errorf("manager_api: failed to connect to"+
