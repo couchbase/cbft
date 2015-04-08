@@ -78,7 +78,7 @@ func initFlags(flags *Flags) map[string][]string {
 		"optional HTTP/REST listen addr:port;"+
 			"\ndefault is 'localhost:8095'.")
 	s(&flags.CfgConnect,
-		[]string{"cfgConnect", "cfg"}, "CFG_CONNECT", "simple",
+		[]string{"cfgConnect", "cfg", "c"}, "CFG_CONNECT", "simple",
 		"optional connection string/info to a configuration server"+
 			"\nfor clustering multiple cbft nodes:"+
 			"\n* couchbase:http://BUCKET_USER:BUCKET_PSWD@CB_HOST:CB_PORT"+
@@ -121,7 +121,7 @@ func initFlags(flags *Flags) map[string][]string {
 			"\n* unchanged   - don't change the node's registration state;"+
 			"\ndefault is 'wanted'.")
 	s(&flags.Server,
-		[]string{"server"}, "URL", "",
+		[]string{"server", "s"}, "URL", "",
 		"required URL to datasource server;"+
 			"\nexample for couchbase: 'http://localhost:8091';"+
 			"\nuse '.' when there is no datasource server.")
