@@ -28,15 +28,16 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// TODO: Need more input validation (check the UUID's, name lengths, etc).
-	indexType := req.FormValue("indexType")
-	if indexType == "" {
-		indexType = "bleve" // TODO: Revisit default indexType?  Should be table'ized?
-	}
-
+	// TODO: Need more input validation (check source UUID's, name lengths, etc).
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
 		showError(w, req, "rest_create_index: index name is required", 400)
+		return
+	}
+
+	indexType := req.FormValue("indexType")
+	if indexType == "" {
+		showError(w, req, "rest_create_index: index type is required", 400)
 		return
 	}
 
@@ -44,7 +45,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
-		sourceType = "couchbase" // TODO: Revisit default of sourceType as couchbase.
+		showError(w, req, "rest_create_index: source type is required", 400)
+		return
 	}
 
 	sourceName := req.FormValue("sourceName")

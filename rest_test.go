@@ -318,10 +318,37 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			ResponseBody: []byte(`not an index`),
 		},
 		{
-			Desc:   "try to create a default index with bad server",
+			Desc:   "try to create a default index with no params",
 			Path:   "/api/index/index-on-a-bad-server",
 			Method: "PUT",
 			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`rest_create_index: index type is required`: true,
+			},
+		},
+		{
+			Desc:   "try to create a default index with no sourceType",
+			Path:   "/api/index/index-on-a-bad-server",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType": []string{"bleve"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`rest_create_index: source type is required`: true,
+			},
+		},
+		{
+			Desc:   "try to create a default index with bad server",
+			Path:   "/api/index/index-on-a-bad-server",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":  []string{"bleve"},
+				"sourceType": []string{"couchbase"},
+			},
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
