@@ -107,7 +107,8 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.Server,
 		[]string{"server"}, "URL", "",
 		"required URL to datasource server;"+
-			"\nexample for couchbase: 'http://localhost:8091'.")
+			"\nexample for couchbase: 'http://localhost:8091';"+
+			"\nuse '.' when there is no datasource server")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
 		"optional directory for web UI static content;"+

@@ -169,16 +169,18 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
-	_, err := couchbase.Connect(server)
-	if err != nil {
-		return nil, fmt.Errorf("error: could not connect to server,"+
-			" URL: %s, err: %v",
-			server, err)
+	if server != "." {
+		_, err := couchbase.Connect(server)
+		if err != nil {
+			return nil, fmt.Errorf("error: could not connect to server,"+
+				" URL: %s, err: %v",
+				server, err)
+		}
 	}
 
 	mgr := cbft.NewManager(cbft.VERSION, cfg, uuid, tags, container, weight,
 		bindAddr, dataDir, server, &MainHandlers{})
-	err = mgr.Start(register)
+	err := mgr.Start(register)
 	if err != nil {
 		return nil, err
 	}
