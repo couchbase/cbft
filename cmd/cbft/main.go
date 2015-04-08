@@ -154,7 +154,9 @@ func MainUUID(dataDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error: could not write uuidPath: %s\n"+
 			"  Please check that your -data/-dataDir parameter (%s)\n"+
-			"  is to a writable directory.", uuidPath, dataDir)
+			"  is to a writable directory where cbft can store\n"+
+			"  index data.",
+			uuidPath, dataDir)
 	}
 	return uuid, nil
 }
