@@ -24,3 +24,7 @@ tbd
 
 cbft is based on the open-source [bleve](http://blevesearch.com)
 full-text indexing engine.
+
+---
+
+Copyright (c) 2015 Couchbase, Inc.

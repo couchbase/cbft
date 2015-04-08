@@ -30,3 +30,7 @@ tbd
 Please see the [Developer's Guide](dev-guide.md),
 the [API Reference](api-ref.md) and
 the [Administrator's Guide](admin-guide/overview.md).
+
+---
+
+Copyright (c) 2015 Couchbase, Inc.
