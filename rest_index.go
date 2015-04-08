@@ -67,6 +67,11 @@ func NewGetIndexHandler(mgr *Manager) *GetIndexHandler {
 	return &GetIndexHandler{mgr: mgr}
 }
 
+func (h *GetIndexHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"The name of the index definition to be retrieved."
+}
+
 func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
 	if indexName == "" {
@@ -132,6 +137,11 @@ func NewCountHandler(mgr *Manager) *CountHandler {
 	return &CountHandler{mgr: mgr}
 }
 
+func (h *CountHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"The name of the index whose count is to be retrieved."
+}
+
 func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := indexNameLookup(req)
 	if indexName == "" {
@@ -173,6 +183,11 @@ type QueryHandler struct {
 
 func NewQueryHandler(mgr *Manager) *QueryHandler {
 	return &QueryHandler{mgr: mgr}
+}
+
+func (h *QueryHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"The name of the index to be queried."
 }
 
 func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -247,6 +262,11 @@ func NewIndexControlHandler(mgr *Manager, control string,
 		control:    control,
 		allowedOps: allowedOps,
 	}
+}
+
+func (h *IndexControlHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
+		"The name of the index whose control values will be modified."
 }
 
 func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

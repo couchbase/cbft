@@ -255,7 +255,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Node|Node configuration",
 			"_about": `Returns the node's current view
-                       of the cluster's configuration.`,
+                       of the cluster's configuration as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -271,7 +271,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns full set of diagnostic information
-                       from the node.`,
+                       from the node as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -279,7 +279,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns recent log messages
-                       and key events for the node.`,
+                       and key events for the node as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -295,7 +295,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Node|Node configuration",
 			"_about": `Returns information on the node's capabilities,
-                       including available storage and bleve options.`,
+                       including available storage and bleve options as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -305,7 +305,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns information on the node's software,
                        such as version strings and slow-changing
-                       runtime settings.`,
+                       runtime settings as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -314,7 +314,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns information on the node's command-line,
                        parameters, environment variables and
-                       O/S process values.`,
+                       O/S process values as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -328,7 +328,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handleFunc("/api/runtime/profile/cpu", "POST",
 		restProfileCPU, map[string]string{
 			"_category": "Node|Node diagnostics",
-			"_about": `Requests the node to capture
+			"_about": `Requests the node to capture local
                        cpu usage profiling information.`,
 			"version introduced": "0.0.1",
 		})
@@ -336,7 +336,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	handleFunc("/api/runtime/profile/memory", "POST",
 		restProfileMemory, map[string]string{
 			"_category": "Node|Node diagnostics",
-			"_about": `Requests the node to capture
+			"_about": `Requests the node to capture lcoal
                        memory usage profiling information.`,
 			"version introduced": "0.0.1",
 		})
@@ -345,7 +345,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		restGetRuntimeStats, map[string]string{
 			"_category": "Node|Node monitoring",
 			"_about": `Returns information on the node's
-                       low-level runtime stats.`,
+                       low-level runtime stats as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -353,7 +353,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		restGetRuntimeStatsMem, map[string]string{
 			"_category": "Node|Node monitoring",
 			"_about": `Returns information on the node's
-                       low-level GC and memory related runtime stats.`,
+                       low-level GC and memory related runtime stats as JSON.`,
 			"version introduced": "0.0.1",
 		})
 
@@ -361,7 +361,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Indexing|Index monitoring",
 			"_about": `Returns indexing and data related metrics,
-                       timings and counters for the node.`,
+                       timings and counters for the node as JSON.`,
 			"version introduced": "0.0.1",
 		})
 

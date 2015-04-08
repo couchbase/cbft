@@ -20,6 +20,10 @@ GET `/api/index/{indexName}`
 
 Returns the definition of an index as JSON.
 
+**param: indexName**: required, string, URL path parameter
+
+The name of the index definition to be retrieved.
+
 **version introduced**: 0.0.1
 
 ---
@@ -30,7 +34,7 @@ Creates/updates an index definition.
 
 **param: indexName**: required, string, URL path parameter
 
-the name of the created/updated index definition
+The name of the to-be-created/updated index definition.
 
 **param: indexParams**: optional, string (JSON), form parameter
 
@@ -49,7 +53,7 @@ supported index types:
 
 **param: prevIndexUUID**: optional, string, form parameter
 
-intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients
+Intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients.
 
 **param: sourceName**: optional, string, form parameter
 
@@ -79,7 +83,7 @@ Deletes an index definition.
 
 **param: indexName**: required, string, URL path parameter
 
-the name of the index definition to be deleted
+The name of the index definition to be deleted.
 
 **version introduced**: 0.0.1
 
@@ -92,6 +96,10 @@ POST `/api/index/{indexName}/ingestControl/{op}`
 Pause index updates and maintenance (no more
                           ingesting document mutations).
 
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose control values will be modified.
+
 **param: op**: Allowed values for op are
                           "pause" or "resume".
 
@@ -103,6 +111,10 @@ POST `/api/index/{indexName}/planFreezeControl/{op}`
 
 Freeze the assignment of index partitions to nodes.
 
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose control values will be modified.
+
 **param: op**: Allowed values for op are
                           "freeze" or "unfreeze".
 
@@ -113,6 +125,10 @@ Freeze the assignment of index partitions to nodes.
 POST `/api/index/{indexName}/queryControl/{op}`
 
 Disallow queries on an index.
+
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose control values will be modified.
 
 **param: op**: Allowed values for op are
                           "allow" or "disallow".
@@ -126,7 +142,7 @@ Disallow queries on an index.
 GET `/api/stats`
 
 Returns indexing and data related metrics,
-                       timings and counters for the node.
+                       timings and counters for the node as JSON.
 
 **version introduced**: 0.0.1
 
@@ -138,6 +154,10 @@ GET `/api/index/{indexName}/count`
 
 Returns the count of indexed documents.
 
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose count is to be retrieved.
+
 **version introduced**: 0.0.1
 
 ---
@@ -145,6 +165,10 @@ Returns the count of indexed documents.
 POST `/api/index/{indexName}/query`
 
 Queries an index.
+
+**param: indexName**: required, string, URL path parameter
+
+The name of the index to be queried.
 
 **version introduced**: 0.0.1
 
@@ -159,7 +183,7 @@ Queries an index.
 GET `/api/cfg`
 
 Returns the node's current view
-                       of the cluster's configuration.
+                       of the cluster's configuration as JSON.
 
 **version introduced**: 0.0.1
 
@@ -186,7 +210,7 @@ Forces the node to replan resource assignments and
 GET `/api/managerMeta`
 
 Returns information on the node's capabilities,
-                       including available storage and bleve options.
+                       including available storage and bleve options as JSON.
 
 **version introduced**: 0.0.1
 
@@ -197,7 +221,7 @@ Returns information on the node's capabilities,
 GET `/api/diag`
 
 Returns full set of diagnostic information
-                       from the node.
+                       from the node as JSON.
 
 **version introduced**: 0.0.1
 
@@ -206,7 +230,7 @@ Returns full set of diagnostic information
 GET `/api/log`
 
 Returns recent log messages
-                       and key events for the node.
+                       and key events for the node as JSON.
 
 **version introduced**: 0.0.1
 
@@ -216,7 +240,7 @@ GET `/api/runtime`
 
 Returns information on the node's software,
                        such as version strings and slow-changing
-                       runtime settings.
+                       runtime settings as JSON.
 
 **version introduced**: 0.0.1
 
@@ -226,7 +250,7 @@ GET `/api/runtime/args`
 
 Returns information on the node's command-line,
                        parameters, environment variables and
-                       O/S process values.
+                       O/S process values as JSON.
 
 **version introduced**: 0.0.1
 
@@ -234,7 +258,7 @@ Returns information on the node's command-line,
 
 POST `/api/runtime/profile/cpu`
 
-Requests the node to capture
+Requests the node to capture local
                        cpu usage profiling information.
 
 **version introduced**: 0.0.1
@@ -243,7 +267,7 @@ Requests the node to capture
 
 POST `/api/runtime/profile/memory`
 
-Requests the node to capture
+Requests the node to capture lcoal
                        memory usage profiling information.
 
 **version introduced**: 0.0.1
@@ -265,7 +289,7 @@ Requests the node to perform a GC.
 GET `/api/runtime/stats`
 
 Returns information on the node's
-                       low-level runtime stats.
+                       low-level runtime stats as JSON.
 
 **version introduced**: 0.0.1
 
@@ -274,7 +298,7 @@ Returns information on the node's
 GET `/api/runtime/statsMem`
 
 Returns information on the node's
-                       low-level GC and memory related runtime stats.
+                       low-level GC and memory related runtime stats as JSON.
 
 **version introduced**: 0.0.1
 
