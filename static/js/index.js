@@ -2,6 +2,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.indexNames = [];
     $scope.errorMessage = null;
+    $scope.errorMessageFull = null;
 
     $scope.refreshIndexNames = function() {
         $http.get('/api/index').success(function(data) {
@@ -12,7 +13,8 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.indexNames = indexNames;
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
@@ -21,12 +23,16 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                     + name + "'?")) {
             return;
         }
+
         $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
         $http.delete('/api/index/' + name).success(function(data) {
             $scope.refreshIndexNames();
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
@@ -42,6 +48,9 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 }
 
 function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
+
+    $scope.errorMessage = null;
+    $scope.errorMessageFull = null;
 
     $scope.nodeDefsByUUID = null;
     $scope.nodeDefsByAddr = null;
@@ -72,10 +81,18 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
         }
         $scope.nodeAddrsArr.sort();
         $scope.loadIndexDetails()
-    })
+    }).
+    error(function(data, code) {
+        $scope.errorMessage = errorMessage(data, code);
+        $scope.errorMessageFull = data;
+    });
 
     $scope.loadIndexDetails = function() {
-        $http.get('/api/index/' + $scope.indexName).success(function(data) {
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
+        $http.get('/api/index/' + $scope.indexName).
+        success(function(data) {
             data.indexDef.params = JSON.parse(data.indexDef.params)
             data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams)
             $scope.indexDef = data.indexDef
@@ -102,17 +119,22 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.warnings = data.warnings;
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
     $scope.loadIndexDocCount = function() {
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
         $http.get('/api/index/' + $scope.indexName + '/count').
         success(function(data) {
             $scope.indexDocCount = data.count;
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
@@ -123,38 +145,53 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
     $scope.indexDocument = function(id, body) {
         $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
         $http.put('/api/index/' + $scope.indexName + "/doc/" + id, body).
         success(function(data) {
             $scope.successMessage = "Indexed Document: " + id;
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
     $scope.deleteDocument = function(id) {
         $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
         $http.delete('/api/index/' + $scope.indexName + "/" + id).
         success(function(data) {
             $scope.successMessage = "Deleted Document: " + id;
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 
     $scope.indexControl = function(indexName, what, op) {
-        $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).success(function(data) {
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
+        $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).
+        success(function(data) {
             alert("index " + what + " " + op);
             $scope.loadIndexDetails();
         }).
         error(function(data, code) {
             alert("index " + what + " " + op + " error: " + data);
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+    $scope.errorMessage = null;
+    $scope.errorMessageFull = null;
+
     $scope.newIndexName = "";
     $scope.newIndexType = "";
     $scope.newIndexParams = {};
@@ -165,7 +202,6 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.newPlanParams = "";
     $scope.prevIndexUUID = "";
     $scope.paramNumLines = {};
-    $scope.errorMessage = null;
 
     $http.get('/api/managerMeta').success(function(data) {
         $scope.meta = data;
@@ -224,7 +260,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 }
             }).
             error(function(data, code) {
-                $scope.errorMessage = data;
+                $scope.errorMessage = errorMessage(data, code);
+                $scope.errorMessageFull = data;
             })
         }
     })
@@ -234,11 +271,13 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                                sourceUUID, sourceParams,
                                planParams, prevIndexUUID) {
         $scope.errorMessage = null;
-        indexType = indexType || "bleve";
+        $scope.errorMessageFull = null;
+
         var indexParamsObj = {};
         for (var k in indexParams[indexType]) {
             indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
         }
+
         $http.put('/api/index/' + indexName, "", {
             params: {
                 indexName: indexName,
@@ -256,9 +295,16 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $location.path('/indexes/' + indexName);
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
         });
     };
+}
+
+function errorMessage(errorMessageFull, code) {
+    console.log("errorMessageFull", errorMessageFull, code);
+    var a = (errorMessageFull || (code + "")).split("err: ");
+    return a[a.length - 1];
 }
 
 function collapseNeighbors(arr) {
