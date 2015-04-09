@@ -187,7 +187,8 @@
 <p>PUT <code>/api/index/{indexName}</code></p>
 <p>Creates/updates an index definition.</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
-<p>The name of the to-be-created/updated index definition.</p>
+<p>The name of the to-be-created/updated index definition,
+validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.</p>
 <p><strong>param: indexParams</strong>: optional, string (JSON), form parameter</p>
 <p><strong>param: indexType</strong>: required, string, form parameter</p>
 <p>supported index types:</p>
@@ -281,19 +282,27 @@
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/managerKick</code></p>
-<p>Forces the node to replan resource assignments and
-                       to update its state to reflect the latest plan.</p>
+<p>Forces the node to replan resource assignments
+                       (by running the planner, if enabled) and to update
+                       its runtime state to reflect the latest plan
+                       (by running the janitor, if enabled).</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/managerMeta</code></p>
 <p>Returns information on the node's capabilities,
-                       including available storage and bleve options as JSON.</p>
+                       including available indexing and storage options as JSON,
+                       and is intended to help management tools and web UI's
+                       to be more dynamically metadata driven.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="node-diagnostics">Node diagnostics</h2>
 <hr />
 <p>GET <code>/api/diag</code></p>
 <p>Returns full set of diagnostic information
-                       from the node as JSON.</p>
+                       from the node in one shot as JSON.  That is, the
+                       /api/diag response will be the union of the responses
+                       from the other REST API diagnostic and monitoring
+                       endpoints from the node, and is intended to make
+                       production support easier.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/log</code></p>
