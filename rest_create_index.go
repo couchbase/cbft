@@ -45,7 +45,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	sort.Strings(sourceTypes)
 
 	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the to-be-created/updated index definition."
+		"The name of the to-be-created/updated index definition,\n" +
+		"validated with the regular expression of ```" + INDEX_NAME_REGEXP + "```."
 	opts["param: indexType"] = "required, string, form parameter\n\n" +
 		"supported index types:\n\n* " + strings.Join(indexTypes, "\n* ")
 	opts["param: indexParams"] = "optional, string (JSON), form parameter"

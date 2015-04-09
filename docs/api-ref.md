@@ -34,7 +34,8 @@ Creates/updates an index definition.
 
 **param: indexName**: required, string, URL path parameter
 
-The name of the to-be-created/updated index definition.
+The name of the to-be-created/updated index definition,
+validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
 **param: indexParams**: optional, string (JSON), form parameter
 

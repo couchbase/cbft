@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 )
 
+const INDEX_NAME_REGEXP = `^[A-Za-z][0-9A-Za-z_\-]*$`
+
 // Creates a logical index, which might be comprised of many PIndex objects.
 // A non-"" prevIndexUUID means an update to an existing index.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
@@ -24,7 +26,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	prevIndexUUID string) error {
 	atomic.AddUint64(&mgr.stats.TotCreateIndex, 1)
 
-	matched, err := regexp.Match(`^[A-Za-z][0-9A-Za-z_\-]*$`, []byte(indexName))
+	matched, err := regexp.Match(INDEX_NAME_REGEXP, []byte(indexName))
 	if err != nil {
 		return fmt.Errorf("manager_api: CreateIndex, indexName parsing problem,"+
 			" indexName: %s, err: %v", indexName, err)
