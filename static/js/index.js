@@ -189,6 +189,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+    $scope.errorFields = {};
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
 
@@ -270,23 +271,28 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                                sourceType, sourceName,
                                sourceUUID, sourceParams,
                                planParams, prevIndexUUID) {
+        $scope.errorFields = {};
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
         var errs = [];
         if (!indexName) {
+            $scope.errorFields["indexName"] = true;
             errs.push("index name is required");
         } else if ($scope.meta &&
             $scope.meta.indexNameRE &&
             !indexName.match($scope.meta.indexNameRE)) {
+            $scope.errorFields["indexName"] = true;
             errs.push("index name '" + indexName + "'" +
                       " does not pass validation regexp (" +
                       $scope.meta.indexNameRE + ")");
         }
         if (!indexType) {
+            $scope.errorFields["indexType"] = true;
             errs.push("index type is required");
         }
         if (!sourceType) {
+            $scope.errorFields["sourceType"] = true;
             errs.push("source type is required");
         }
         if (errs.length > 0) {
@@ -300,6 +306,9 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             try {
                 indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
             } catch (e) {
+                $scope.errorFields["indexParams"] = {};
+                $scope.errorFields["indexParams"][indexType] = {};
+                $scope.errorFields["indexParams"][indexType][k] = true;
                 $scope.errorMessage =
                     "error: could not JSON parse index parameter: " + k;
                 return
@@ -310,6 +319,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             try {
                 JSON.parse(sourceParams[sourceType]);
             } catch (e) {
+                $scope.errorFields["sourceParams"] = {};
+                $scope.errorFields["sourceParams"][sourceType] = true;
                 $scope.errorMessage = "error: could not JSON parse source params";
                 return
             }
@@ -318,6 +329,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         try {
             JSON.parse(planParams);
         } catch (e) {
+            $scope.errorFields["planParams"] = true;
             $scope.errorMessage = "error: could not JSON parse plan params";
             return
         }

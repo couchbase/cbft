@@ -13,7 +13,8 @@
   <div class="form-group">
     <label for="inputIndexName"
            class="col-sm-2 control-label">Index Name</label>
-    <div class="col-sm-10">
+    <div class="col-sm-10"
+         ng-class="{'has-error': errorFields.indexName}">
       <div ng-show="isEdit"
            class="indexName">{{newIndexName}}</div>
       <input ng-show="!isEdit" ng-model="newIndexName"
@@ -35,7 +36,8 @@
        ng-repeat="(indexType, p) in newIndexParams">
     <div class="form-group"
          ng-repeat="(k, v) in p"
-         ng-show="newIndexType == indexType">
+         ng-show="newIndexType == indexType"
+         ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
       <label class="col-sm-4 control-label indexParam">{{k}}</label>
       <div class="col-sm-8">
         <textarea ng-model="newIndexParams[indexType][k]"
@@ -78,7 +80,9 @@
        ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceParams"
            class="col-sm-4 control-label">Source Params</label>
-    <div ng-repeat="(sourceType, p) in newSourceParams" class="col-sm-8">
+    <div class="col-sm-8"
+         ng-repeat="(sourceType, p) in newSourceParams"
+         ng-class="{'has-error': errorFields.sourceParams[sourceType]}">
       <textarea ng-model="newSourceParams[sourceType]"
                 rows="{{paramNumLines[sourceType]}}"
                 class="form-control"
