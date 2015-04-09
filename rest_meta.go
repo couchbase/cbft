@@ -79,16 +79,17 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	br["Tokenizer"] = map[string][]string{"types": t, "instances": i}
 
 	mustEncode(w, struct {
-		Status       string                 `json:"status"`
-		StartSamples map[string]interface{} `json:"startSamples"`
-		SourceTypes  map[string]*MetaDesc   `json:"sourceTypes"`
-		IndexTypes   map[string]*MetaDesc   `json:"indexTypes"`
-
+		Status        string                         `json:"status"`
+		StartSamples  map[string]interface{}         `json:"startSamples"`
+		SourceTypes   map[string]*MetaDesc           `json:"sourceTypes"`
+		IndexNameRE   string                         `json:"indexNameRE"`
+		IndexTypes    map[string]*MetaDesc           `json:"indexTypes"`
 		BleveRegistry map[string]map[string][]string `json:"bleveRegistry"`
 	}{
 		Status:        "ok",
 		StartSamples:  startSamples,
 		SourceTypes:   sourceTypes,
+		IndexNameRE:   INDEX_NAME_REGEXP,
 		IndexTypes:    indexTypes,
 		BleveRegistry: br,
 	})
