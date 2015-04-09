@@ -306,6 +306,15 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             }
         }
 
+        if (sourceParams[sourceType]) {
+            try {
+                JSON.parse(sourceParams[sourceType]);
+            } catch (e) {
+                $scope.errorMessage = "error: could not JSON parse source params";
+                return
+            }
+        }
+
         try {
             JSON.parse(planParams);
         } catch (e) {
