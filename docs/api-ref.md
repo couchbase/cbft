@@ -201,8 +201,10 @@ Requests the node to refresh its configuration
 
 POST `/api/managerKick`
 
-Forces the node to replan resource assignments and
-                       to update its state to reflect the latest plan.
+Forces the node to replan resource assignments
+                       (by running the planner, if enabled) and to update
+                       its runtime state to reflect the latest plan
+                       (by running the janitor, if enabled).
 
 **version introduced**: 0.0.1
 
@@ -211,7 +213,9 @@ Forces the node to replan resource assignments and
 GET `/api/managerMeta`
 
 Returns information on the node's capabilities,
-                       including available storage and bleve options as JSON.
+                       including available indexing and storage options as JSON,
+                       and is intended to help management tools and web UI's
+                       to be more dynamically metadata driven.
 
 **version introduced**: 0.0.1
 
