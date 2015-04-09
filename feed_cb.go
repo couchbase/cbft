@@ -93,7 +93,7 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 
 	var client couchbase.Client
 
-	if params.AuthUser != "" {
+	if params.AuthUser != "" || bucketName != "default" {
 		client, err = couchbase.ConnectWithAuthCreds(server,
 			params.AuthUser, params.AuthPassword)
 	} else {
@@ -104,7 +104,6 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 			" connection failed, server: %s, poolName: %s,"+
 			" bucketName: %s, sourceType: %s, sourceParams: %q, err: %v",
 			server, poolName, bucketName, sourceType, sourceParams, err)
-
 	}
 
 	pool, err := client.GetPool(poolName)
