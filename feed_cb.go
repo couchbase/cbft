@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -68,13 +69,53 @@ func init() {
 
 // ----------------------------------------------------------------
 
+type CBFeedParams struct {
+	AuthUser     string `json:"authUser"` // May be "" for no auth.
+	AuthPassword string `json:"authPassword"`
+}
+
 func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
-	server string) ([]string, error) {
+	server string) (partitions []string, err error) {
 	poolName := "default" // TODO: Parameterize poolName.
 	bucketName := sourceName
 
-	// TODO: how the halloween does GetBucket() api work without explicit auth?
-	bucket, err := couchbase.GetBucket(server, poolName, bucketName)
+	params := CBFeedParams{}
+	if sourceParams != "" {
+		err := json.Unmarshal([]byte(sourceParams), &params)
+		if err != nil {
+			return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
+				" failed sourceParams JSON to CBFeedParams,"+
+				" server: %s, poolName: %s, bucketName: %s,"+
+				" sourceType: %s, sourceParams: %q, err: %v",
+				server, poolName, bucketName, sourceType, sourceParams, err)
+		}
+	}
+
+	var client couchbase.Client
+
+	if params.AuthUser != "" {
+		client, err = couchbase.ConnectWithAuthCreds(server,
+			params.AuthUser, params.AuthPassword)
+	} else {
+		client, err = couchbase.Connect(server)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
+			" connection failed, server: %s, poolName: %s,"+
+			" bucketName: %s, sourceType: %s, sourceParams: %q, err: %v",
+			server, poolName, bucketName, sourceType, sourceParams, err)
+
+	}
+
+	pool, err := client.GetPool(poolName)
+	if err != nil {
+		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
+			" failed GetPool, server: %s, poolName: %s,"+
+			" bucketName: %s, sourceType: %s, sourceParams: %q, err: %v",
+			server, poolName, bucketName, sourceType, sourceParams, err)
+	}
+
+	bucket, err := pool.GetBucket(bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
 			" failed GetBucket, server: %s, poolName: %s, bucketName: %s, err: %v",
