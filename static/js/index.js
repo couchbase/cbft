@@ -306,6 +306,13 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             }
         }
 
+        try {
+            JSON.parse(planParams);
+        } catch (e) {
+            $scope.errorMessage = "error: could not JSON parse plan params";
+            return
+        }
+
         $http.put('/api/index/' + indexName, "", {
             params: {
                 indexName: indexName,
