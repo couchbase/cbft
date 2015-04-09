@@ -102,8 +102,10 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	if err != nil {
 		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
 			" connection failed, server: %s, poolName: %s,"+
-			" bucketName: %s, sourceType: %s, sourceParams: %q, err: %v",
-			server, poolName, bucketName, sourceType, sourceParams, err)
+			" bucketName: %s, sourceType: %s, sourceParams: %q, err: %v,"+
+			" please check that your authUser and authPassword are correct"+
+			" and that your couchbase server (%q) is available",
+			server, poolName, bucketName, sourceType, sourceParams, err, server)
 	}
 
 	pool, err := client.GetPool(poolName)
@@ -117,8 +119,10 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	bucket, err := pool.GetBucket(bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("feed_cb: DataSourcePartitions/couchbase"+
-			" failed GetBucket, server: %s, poolName: %s, bucketName: %s, err: %v",
-			server, poolName, bucketName, err)
+			" failed GetBucket, server: %s, poolName: %s,"+
+			" bucketName: %s, err: %v, please check that your"+
+			" bucketName/sourceName (%q) is correct",
+			server, poolName, bucketName, err, bucketName)
 	}
 	defer bucket.Close()
 
