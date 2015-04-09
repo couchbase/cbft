@@ -275,16 +275,22 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
         var errs = [];
         if (!indexName) {
-            errs.push("index name");
+            errs.push("index name is required");
+        } else if ($scope.meta &&
+            $scope.meta.indexNameRE &&
+            !indexName.match($scope.meta.indexNameRE)) {
+            errs.push("index name '" + indexName + "'" +
+                      " does not pass validation regexp (" +
+                      $scope.meta.indexNameRE + ")");
         }
         if (!indexType) {
-            errs.push("index type");
+            errs.push("index type is required");
         }
         if (!sourceType) {
-            errs.push("source type");
+            errs.push("source type is required");
         }
         if (errs.length > 0) {
-            $scope.errorMessage = "missing parameters: " + errs.join(", ");
+            $scope.errorMessage = "errors: " + errs.join("; ");
             return
         }
 
