@@ -551,17 +551,28 @@ func (t *BleveDestPartition) Close() error {
 
 func (t *BleveDestPartition) OnDataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
+	k := string(key)
+
+	var v interface{}
+
+	var errv error
+	var erri error
+
 	t.m.Lock()
 
-	bufVal := t.appendToBufUnlocked(val)
-
-	erri := t.batch.Index(string(key), bufVal) // TODO: string(key) makes garbage?
+	errv = json.Unmarshal(val, &v)
+	if errv == nil {
+		erri = t.batch.Index(k, v)
+	}
 	err := t.updateSeqUnlocked(seq)
 
 	t.m.Unlock()
 
+	if errv != nil {
+		t.bdest.AddError("json.Unmarshal", partition, key, seq, val, errv)
+	}
 	if erri != nil {
-		t.bdest.AddError("Index", partition, key, seq, val, erri)
+		t.bdest.AddError("batch.Index", partition, key, seq, val, erri)
 	}
 
 	return err
