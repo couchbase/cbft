@@ -290,13 +290,20 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             errs.push("source type is required");
         }
         if (errs.length > 0) {
-            $scope.errorMessage = "errors: " + errs.join("; ");
+            $scope.errorMessage =
+                (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
             return
         }
 
         var indexParamsObj = {};
         for (var k in indexParams[indexType]) {
-            indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
+            try {
+                indexParamsObj[k] = JSON.parse(indexParams[indexType][k]);
+            } catch (e) {
+                $scope.errorMessage =
+                    "error: could not JSON parse index parameter: " + k;
+                return
+            }
         }
 
         $http.put('/api/index/' + indexName, "", {
