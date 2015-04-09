@@ -271,7 +271,11 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns full set of diagnostic information
-                       from the node as JSON.`,
+                       from the node in one shot as JSON.  That is, the
+                       /api/diag response will be the union of the responses
+                       from the other REST API diagnostic and monitoring
+                       endpoints from the node, and is intended to make
+                       production support easier.`,
 			"version introduced": "0.0.1",
 		})
 
