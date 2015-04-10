@@ -1,51 +1,45 @@
-var prepQueryRequest = {};
-
-function bleveQuery(scope) {
-    var from = (scope.page-1) * scope.resultsPerPage;
-    return { "query": {
-        "indexName": scope.indexName,
-        "size": scope.resultsPerPage,
-        "from": from,
-        "explain": true,
-        "highlight": {},
+function prepQueryRequest(scope) {
+    return {
+        "q": scope.query,
         "query": {
-            "boost": 1.0,
-            "query": scope.query,
-        },
-        "fields": ["*"],
-    } }
+            "indexName": scope.indexName,
+            "size": scope.resultsPerPage,
+            "from": (scope.page-1) * scope.resultsPerPage,
+            "explain": true,
+            "highlight": {},
+            "query": {
+                "boost": 1.0,
+                "query": scope.query,
+            },
+            "fields": ["*"],
+        }
+    }
 }
-
-prepQueryRequest["bleve"] = bleveQuery;
-prepQueryRequest["bleve-mem"] = bleveQuery;
-prepQueryRequest["alias"] = bleveQuery;
-
-function vliteQuery(scope) {
-    return { "key": scope.query };
-}
-
-prepQueryRequest["vlite"] = vliteQuery;
-prepQueryRequest["vlite-mem"] = vliteQuery;
 
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
+    $scope.query = null;
+    $scope.page = 1;
+    $scope.errorMessage = null;
+    $scope.results = null;
+    $scope.numPages = 0;
     $scope.maxPagesToShow = 5;
     $scope.resultsPerPage = 10;
-    $scope.page = 1;
     $scope.timeout = 0;
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
 
     $scope.runQuery = function() {
-        $scope.results = null;
-        $scope.numPages = 0;
-
         $location.search('q', $scope.query);
         $location.search('p', $scope.page);
 
+        $scope.errorMessage = null;
+        $scope.results = null;
+        $scope.numPages = 0;
+
         var indexDefType = ($scope.indexDef && $scope.indexDef.type) || "bleve";
 
-        var req = prepQueryRequest[indexDefType]($scope);
+        var req = prepQueryRequest($scope);
         req.consistency = {
             "level": $scope.consistencyLevel,
             "vectors": JSON.parse($scope.consistencyVectors || "null"),
@@ -138,9 +132,9 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 
     $scope.processResults = function(data) {
-        $scope.errorMessage = null;
         $scope.results = data;
         $scope.setupPager($scope.results);
+
         for(var i in $scope.results.hits) {
             var hit = $scope.results.hits[i];
             hit.roundedScore = $scope.roundScore(hit.score);

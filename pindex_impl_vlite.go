@@ -92,7 +92,7 @@ type VLiteQueryParams struct {
 	Limit       uint64             `json:"limit"`
 	Skip        uint64             `json:"skip"`
 
-	Key            string `json:"key"`
+	Q              string `json:"q"`
 	StartInclusive string `json:"startInclusive"`
 	EndExclusive   string `json:"endExclusive"`
 }
@@ -513,13 +513,13 @@ func (t *VLite) QueryMainColl(p *VLiteQueryParams, cancelCh <-chan bool,
 	startInclusive := []byte(p.StartInclusive)
 	endExclusive := []byte(p.EndExclusive)
 
-	if p.Key != "" {
+	if p.Q != "" {
 		if t.params.Path != "" {
-			startInclusive = []byte(p.Key + "\xff")
-			endExclusive = []byte(p.Key + "\xff\xff")
+			startInclusive = []byte(p.Q + "\xff")
+			endExclusive = []byte(p.Q + "\xff\xff")
 		} else {
-			startInclusive = []byte(p.Key)
-			endExclusive = []byte(p.Key + "\xff")
+			startInclusive = []byte(p.Q)
+			endExclusive = []byte(p.Q + "\xff")
 		}
 	}
 
