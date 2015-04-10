@@ -98,7 +98,7 @@ func main() {
 
 	router, err := MainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight,
-		flags.BindAddr, flags.DataDir,
+		flags.BindHttp, flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr)
 	if err != nil {
@@ -107,12 +107,12 @@ func main() {
 
 	http.Handle("/", router)
 
-	log.Printf("main: listening on: %v", flags.BindAddr)
-	err = http.ListenAndServe(flags.BindAddr, nil)
+	log.Printf("main: listening on: %v", flags.BindHttp)
+	err = http.ListenAndServe(flags.BindHttp, nil)
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
-			"  Please check that your -bindAddr parameter (%q)\n"+
-			"  is correct and available.", err, flags.BindAddr)
+			"  Please check that your -bindHttp parameter (%q)\n"+
+			"  is correct and available.", err, flags.BindHttp)
 	}
 }
 
@@ -162,7 +162,7 @@ func MainUUID(dataDir string) (string, error) {
 }
 
 func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
-	weight int, bindAddr, dataDir, staticDir, staticETag, server string,
+	weight int, bindHttp, dataDir, staticDir, staticETag, server string,
 	register string, mr *cbft.MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
@@ -181,7 +181,7 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 	}
 
 	mgr := cbft.NewManager(cbft.VERSION, cfg, uuid, tags, container, weight,
-		bindAddr, dataDir, server, &MainHandlers{})
+		bindHttp, dataDir, server, &MainHandlers{})
 	err := mgr.Start(register)
 	if err != nil {
 		return nil, err

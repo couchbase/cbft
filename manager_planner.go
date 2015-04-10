@@ -104,7 +104,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	nodeDefs, err := PlannerGetNodeDefs(mgr.cfg, mgr.version, mgr.uuid, mgr.bindAddr)
+	nodeDefs, err := PlannerGetNodeDefs(mgr.cfg, mgr.version, mgr.uuid, mgr.bindHttp)
 	if err != nil {
 		return false, err
 	}
@@ -156,7 +156,7 @@ func PlannerGetIndexDefs(cfg Cfg, version string) (*IndexDefs, error) {
 	return indexDefs, nil
 }
 
-func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (
+func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindHttp string) (
 	*NodeDefs, error) {
 	nodeDefs, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil {
@@ -169,19 +169,19 @@ func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (
 		return nil, fmt.Errorf("planner: nodeDefs.ImplVersion: %s"+
 			" > version: %s", nodeDefs.ImplVersion, version)
 	}
-	nodeDef, exists := nodeDefs.NodeDefs[bindAddr]
+	nodeDef, exists := nodeDefs.NodeDefs[bindHttp]
 	if !exists || nodeDef == nil {
-		return nil, fmt.Errorf("planner: no NodeDef, bindAddr: %s", bindAddr)
+		return nil, fmt.Errorf("planner: no NodeDef, bindHttp: %s", bindHttp)
 	}
 	if nodeDef.ImplVersion != version {
-		return nil, fmt.Errorf("planner: ended since NodeDef, bindAddr: %s,"+
+		return nil, fmt.Errorf("planner: ended since NodeDef, bindHttp: %s,"+
 			" NodeDef.ImplVersion: %s != version: %s",
-			bindAddr, nodeDef.ImplVersion, version)
+			bindHttp, nodeDef.ImplVersion, version)
 	}
 	if nodeDef.UUID != uuid {
-		return nil, fmt.Errorf("planner: ended since NodeDef, bindAddr: %s,"+
+		return nil, fmt.Errorf("planner: ended since NodeDef, bindHttp: %s,"+
 			" NodeDef.UUID: %s != uuid: %s",
-			bindAddr, nodeDef.UUID, uuid)
+			bindHttp, nodeDef.UUID, uuid)
 	}
 	isPlanner := true
 	if nodeDef.Tags != nil && len(nodeDef.Tags) > 0 {
@@ -193,8 +193,8 @@ func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindAddr string) (
 		}
 	}
 	if !isPlanner {
-		return nil, fmt.Errorf("planner: ended since node, bindAddr: %s,"+
-			" is not a planner, tags: %#v", bindAddr, nodeDef.Tags)
+		return nil, fmt.Errorf("planner: ended since node, bindHttp: %s,"+
+			" is not a planner, tags: %#v", bindHttp, nodeDef.Tags)
 	}
 	return nodeDefs, nil
 }

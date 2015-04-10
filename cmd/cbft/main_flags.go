@@ -21,7 +21,7 @@ import (
 )
 
 type Flags struct {
-	BindAddr   string
+	BindHttp   string
 	CfgConnect string
 	Container  string
 	DataDir    string
@@ -73,8 +73,8 @@ func initFlags(flags *Flags) map[string][]string {
 		flagKinds[names[0]] = kind
 	}
 
-	s(&flags.BindAddr,
-		[]string{"bindAddr"}, "ADDR:PORT", "localhost:8095",
+	s(&flags.BindHttp,
+		[]string{"bindHttp", "b"}, "ADDR:PORT", "localhost:8095",
 		"optional HTTP/REST listen addr:port;"+
 			"\ndefault is 'localhost:8095'.")
 	s(&flags.CfgConnect,
@@ -197,7 +197,7 @@ func initFlags(flags *Flags) map[string][]string {
 }
 
 const example = `
-  ./cbft -bindAddr=localhost:9090 \
+  ./cbft -bindHttp=localhost:9090 \
          -cfg=couchbase:http://my-cfg-bucket@localhost:8091 \
          -data=/var/data/cbft-node-9090 \
          -server=http://localhost:8091

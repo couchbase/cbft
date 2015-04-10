@@ -1416,14 +1416,14 @@ func TestRemoveNodeDef(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsWanted")
 	}
 
@@ -1435,14 +1435,14 @@ func TestRemoveNodeDef(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 
@@ -1454,14 +1454,14 @@ func TestRemoveNodeDef(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 
@@ -1473,14 +1473,14 @@ func TestRemoveNodeDef(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 
@@ -1492,14 +1492,14 @@ func TestRemoveNodeDef(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 }
@@ -1519,14 +1519,14 @@ func TestRegisterUnwanted(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsWanted")
 	}
 
@@ -1539,14 +1539,14 @@ func TestRegisterUnwanted(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsWanted")
 	}
 
@@ -1562,14 +1562,14 @@ func TestRegisterUnwanted(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindAddr] == nil {
+	if len(nd.NodeDefs) != 1 || nd.NodeDefs[m.bindHttp] == nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 
@@ -1585,14 +1585,14 @@ func TestRegisterUnwanted(t *testing.T) {
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs known, %v, %d, %v", nd, cas, err)
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to be in nodeDefsKnown")
 	}
 	nd, cas, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
 	if err != nil || cas == 0 || nd == nil {
 		t.Errorf("expected node defs wanted")
 	}
-	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindAddr] != nil {
+	if len(nd.NodeDefs) != 0 || nd.NodeDefs[m.bindHttp] != nil {
 		t.Errorf("expected mgr to not be in nodeDefsWanted")
 	}
 }

@@ -33,7 +33,7 @@ type Manager struct {
 	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
 	container string          // Slash ('/') separated containment path (optional).
 	weight    int
-	bindAddr  string
+	bindHttp  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
 
@@ -99,7 +99,7 @@ type ManagerEventHandlers interface {
 }
 
 func NewManager(version string, cfg Cfg, uuid string, tags []string,
-	container string, weight int, bindAddr, dataDir string, server string,
+	container string, weight int, bindHttp, dataDir string, server string,
 	meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		startTime: time.Now(),
@@ -110,7 +110,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		tagsMap:   StringsToMap(tags),
 		container: container,
 		weight:    weight,
-		bindAddr:  bindAddr, // TODO: need FQDN:port instead of ":8095".
+		bindHttp:  bindHttp, // TODO: need FQDN:port instead of ":8095".
 		dataDir:   dataDir,
 		server:    server,
 		feeds:     make(map[string]Feed),
@@ -210,7 +210,7 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 	}
 
 	nodeDef := &NodeDef{
-		HostPort:    mgr.bindAddr,
+		HostPort:    mgr.bindHttp,
 		UUID:        mgr.uuid,
 		ImplVersion: mgr.version,
 		Tags:        mgr.tags,
@@ -227,16 +227,16 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		if nodeDefs == nil {
 			nodeDefs = NewNodeDefs(mgr.version)
 		}
-		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindHttp]
 		if exists && !force {
 			// If a previous entry exists, do some double-checking
 			// before we overwrite the entry with our entry.
 			if nodeDefPrev.UUID != mgr.uuid {
 				atomic.AddUint64(&mgr.stats.TotSaveNodeDefUUIDErr, 1)
 				return fmt.Errorf("manager:"+
-					" some other node is running at our bindAddr: %s,"+
+					" some other node is running at our bindHttp: %s,"+
 					" with a different uuid: %s, than our uuid: %s",
-					mgr.bindAddr, nodeDefPrev.UUID, mgr.uuid)
+					mgr.bindHttp, nodeDefPrev.UUID, mgr.uuid)
 			}
 			if reflect.DeepEqual(nodeDefPrev, nodeDef) {
 				atomic.AddUint64(&mgr.stats.TotSaveNodeDefOk, 1)
@@ -245,7 +245,7 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		}
 
 		nodeDefs.UUID = NewUUID()
-		nodeDefs.NodeDefs[mgr.bindAddr] = nodeDef
+		nodeDefs.NodeDefs[mgr.bindHttp] = nodeDef
 		nodeDefs.ImplVersion = mgr.version // TODO: ImplVersion bump?
 
 		_, err = CfgSetNodeDefs(mgr.cfg, kind, nodeDefs, cas)
@@ -280,11 +280,11 @@ func (mgr *Manager) RemoveNodeDef(kind string) error {
 		if nodeDefs == nil {
 			return nil
 		}
-		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindAddr]
+		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindHttp]
 		if !exists || nodeDefPrev == nil {
 			return nil
 		}
-		delete(nodeDefs.NodeDefs, mgr.bindAddr)
+		delete(nodeDefs.NodeDefs, mgr.bindHttp)
 
 		nodeDefs.UUID = NewUUID()
 		nodeDefs.ImplVersion = mgr.version // TODO: ImplVersion bump?
