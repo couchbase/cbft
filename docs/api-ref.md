@@ -47,8 +47,6 @@ supported index types:
 * blackhole - ignores all incoming data and is not queryable; used for testing
 * bleve - full-text index powered by the bleve full-text-search engine
 * bleve-mem - full-text index powered by bleve (in memory only)
-* vlite - lightweight, view-like index
-* vlite-mem - lightweight, view-like index (in memory only)
 
 **param: planParams**: optional, string (JSON), form parameter
 
