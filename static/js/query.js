@@ -1,3 +1,5 @@
+var prepQueryRequest = {};
+
 function bleveQuery(scope) {
     var from = (scope.page-1) * scope.resultsPerPage;
     return { "query": {
@@ -14,17 +16,16 @@ function bleveQuery(scope) {
     } }
 }
 
+prepQueryRequest["bleve"] = bleveQuery;
+prepQueryRequest["bleve-mem"] = bleveQuery;
+prepQueryRequest["alias"] = bleveQuery;
+
 function vliteQuery(scope) {
     return { "key": scope.query };
 }
 
-var prepQueryRequest = {
-    "bleve": bleveQuery,
-    "bleve-mem": bleveQuery,
-    "alias": bleveQuery, // TODO: make aliases more generic.
-    "vlite": vliteQuery,
-    "vlite-mem": vliteQuery
-};
+prepQueryRequest["vlite"] = vliteQuery;
+prepQueryRequest["vlite-mem"] = vliteQuery;
 
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
