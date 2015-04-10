@@ -165,27 +165,6 @@ func TestBlackholePIndexImpl(t *testing.T) {
 	}
 }
 
-func TestNewPIndexBleveMem(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	pindex, err := NewPIndex(nil, "fake", "uuid",
-		"bleve-mem", "indexName", "indexUUID", "",
-		"sourceType", "sourceName", "sourceUUID", "sourceParams", "sourcePartitions",
-		PIndexPath(emptyDir, "fake"))
-	if pindex == nil || err != nil {
-		t.Errorf("expected NewPIndex to work")
-	}
-	pindex2, err := OpenPIndex(nil, PIndexPath(emptyDir, "fake"))
-	if pindex2 != nil || err == nil {
-		t.Errorf("expected OpenPIndex to fail for bleve-mem")
-	}
-	err = pindex.Close(true)
-	if err != nil {
-		t.Errorf("expected Close to work")
-	}
-}
-
 func TestErrorConsistencyWait(t *testing.T) {
 	e := &ErrorConsistencyWait{}
 	if e.Error() == "" {

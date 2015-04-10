@@ -42,6 +42,9 @@ type BleveParams struct {
 func NewBleveParams() *BleveParams {
 	return &BleveParams{
 		Mapping: *bleve.NewIndexMapping(),
+		Store: map[string]interface{}{
+			"kvStoreName": bleve.Config.DefaultKVStore,
+		},
 	}
 }
 
@@ -113,19 +116,6 @@ func init() {
 			" powered by the bleve full-text-search engine",
 		StartSample: NewBleveParams(),
 	})
-
-	RegisterPIndexImplType("bleve-mem", &PIndexImplType{
-		Validate: ValidateBlevePIndexImpl,
-
-		New:   NewBlevePIndexImpl,
-		Open:  OpenBlevePIndexImpl,
-		Count: CountBlevePIndexImpl,
-		Query: QueryBlevePIndexImpl,
-
-		Description: "bleve-mem - full-text index" +
-			" powered by bleve (in memory only)",
-		StartSample: NewBleveParams(),
-	})
 }
 
 func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
@@ -143,20 +133,6 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		err := json.Unmarshal([]byte(indexParams), bleveParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("bleve: parse params, err: %v", err)
-		}
-	}
-
-	blevePath := path
-	if indexType == "bleve-mem" {
-		blevePath = "" // Force bleve to use memory-only storage.
-
-		// For a normal, non-empty path, bleve will create the
-		// directory (and also expects path not to exist yet
-		// beforehand).  And, for an empty path, we need to create the
-		// directory here because bleve won't do so.
-		err := os.MkdirAll(path, 0700)
-		if err != nil {
-			return nil, nil, err
 		}
 	}
 
@@ -184,7 +160,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	bindex, err :=
-		bleve.NewUsing(blevePath, &bleveParams.Mapping, kvStoreName, kvConfig)
+		bleve.NewUsing(path, &bleveParams.Mapping, kvStoreName, kvConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
 			" kvStoreName: %s, kvConfig: %#v, err: %s",
@@ -204,11 +180,6 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 
 func OpenBlevePIndexImpl(indexType, path string,
 	restart func()) (PIndexImpl, Dest, error) {
-	if indexType == "bleve-mem" {
-		return nil, nil, fmt.Errorf("bleve: cannot re-open bleve-mem,"+
-			" path: %s", path)
-	}
-
 	buf, err := ioutil.ReadFile(path +
 		string(os.PathSeparator) + "PINDEX_BLEVE_META")
 	if err != nil {

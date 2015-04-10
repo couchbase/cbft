@@ -411,10 +411,6 @@ func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
 	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve")
 }
 
-func TestHandlersForOneBleveMemIndexWithNILFeed(t *testing.T) {
-	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve-mem")
-}
-
 func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)

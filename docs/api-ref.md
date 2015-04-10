@@ -46,7 +46,6 @@ supported index types:
 * alias - supports fan-out of queries to multiple index targets
 * blackhole - ignores all incoming data and is not queryable; used for testing
 * bleve - full-text index powered by the bleve full-text-search engine
-* bleve-mem - full-text index powered by bleve (in memory only)
 
 **param: planParams**: optional, string (JSON), form parameter
 
