@@ -196,9 +196,6 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <li>alias - supports fan-out of queries to multiple index targets</li>
 <li>blackhole - ignores all incoming data and is not queryable; used for testing</li>
 <li>bleve - full-text index powered by the bleve full-text-search engine</li>
-<li>bleve-mem - full-text index powered by bleve (in memory only)</li>
-<li>vlite - lightweight, view-like index</li>
-<li>vlite-mem - lightweight, view-like index (in memory only)</li>
 </ul>
 <p><strong>param: planParams</strong>: optional, string (JSON), form parameter</p>
 <p><strong>param: prevIndexUUID</strong>: optional, string, form parameter</p>
@@ -252,7 +249,12 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <hr />
 <p>GET <code>/api/stats</code></p>
 <p>Returns indexing and data related metrics,
-                       timings and counters for the node as JSON.</p>
+                       timings and counters from the node as JSON.</p>
+<p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
+<p>GET <code>/api/stats/index/{indexName}</code></p>
+<p>Returns metrics, timings and counters
+                       for a single index from the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="index-querying">Index querying</h2>
 <hr />
