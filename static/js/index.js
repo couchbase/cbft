@@ -180,7 +180,17 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
                     return 1;
                 }
                 return 0;
-            })
+            });
+
+            errors.sort(function(a, b) { // More recent errors sort first.
+                if (a.Time < b.Time) {
+                    return 1;
+                }
+                if (a.Time > b.Time) {
+                    return -1;
+                }
+                return 0;
+            });
 
             $scope.indexErrors = errors;
             $scope.indexStatsFlat = stats;
