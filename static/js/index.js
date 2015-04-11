@@ -19,8 +19,8 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 
     $scope.deleteIndex = function(name) {
-        if(!confirm("Are you sure you want to permanenty delete the index '"
-                    + name + "'?")) {
+        if (!confirm("Are you sure you want to permanenty delete the index '"
+                     + name + "'?")) {
             return;
         }
 
@@ -67,7 +67,7 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
     $scope.warnings = null;
 
     $scope.tab = $routeParams.tabName;
-    if($scope.tab === undefined || $scope.tab === "") {
+    if ($scope.tab === undefined || $scope.tab === "") {
         $scope.tab = "summary";
     }
     $scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
@@ -157,10 +157,10 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
     };
 
     // tab specific loading
-    if($scope.tab === "summary") {
+    if ($scope.tab === "summary") {
         $scope.loadIndexDocCount();
     }
-    if($scope.tab === "stats") {
+    if ($scope.tab === "monitor") {
         $scope.loadIndexStats();
     }
 
