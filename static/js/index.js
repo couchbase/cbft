@@ -60,9 +60,12 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
     $scope.indexDocCount = 0;
     $scope.indexDefStr = "";
     $scope.indexParamsStr = "";
+    $scope.indexStats = null;
+    $scope.indexStatsStr = "";
     $scope.planPIndexes = null;
     $scope.planPIndexesStr = ""
     $scope.warnings = null;
+
     $scope.tab = $routeParams.tabName;
     if($scope.tab === undefined || $scope.tab === "") {
         $scope.tab = "summary";
@@ -93,13 +96,13 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
 
         $http.get('/api/index/' + $scope.indexName).
         success(function(data) {
-            data.indexDef.params = JSON.parse(data.indexDef.params)
-            data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams)
+            data.indexDef.params = JSON.parse(data.indexDef.params);
+            data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
             $scope.indexDef = data.indexDef
-            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2)
-            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2)
-            $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2)
-            $scope.planPIndexes = data.planPIndexes
+            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
+            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
+            $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2);
+            $scope.planPIndexes = data.planPIndexes;
             $scope.planPIndexes.sort(
                 function(x, y) {
                     if (x.name > y.name) { return 1; }
@@ -138,9 +141,27 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
         });
     };
 
+    $scope.loadIndexStats = function() {
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
+        $http.get('/api/stats/index/' + $scope.indexName).
+        success(function(data) {
+            $scope.indexStats = data;
+            $scope.indexStatsStr = JSON.stringify(data, undefined, 2);
+        }).
+        error(function(data, code) {
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
+        });
+    };
+
     // tab specific loading
     if($scope.tab === "summary") {
         $scope.loadIndexDocCount();
+    }
+    if($scope.tab === "stats") {
+        $scope.loadIndexStats();
     }
 
     $scope.indexDocument = function(id, body) {

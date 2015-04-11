@@ -12,4 +12,8 @@
       ng-attr-class="{{tab == 'layout' && 'active' || 'inactive' }}">
     <a href="/indexes/{{indexName}}/layout">Layout</a>
   </li>
+  <li ng-if="planPIndexesStr != 'null'"
+      ng-attr-class="{{tab == 'stats' && 'active' || 'inactive' }}">
+    <a href="/indexes/{{indexName}}/stats">Stats</a>
+  </li>
 </ul>
