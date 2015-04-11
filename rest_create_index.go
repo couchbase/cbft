@@ -44,23 +44,37 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	}
 	sort.Strings(sourceTypes)
 
-	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the to-be-created/updated index definition,\n" +
-		"validated with the regular expression of ```" + INDEX_NAME_REGEXP + "```."
-	opts["param: indexType"] = "required, string, form parameter\n\n" +
-		"supported index types:\n\n* " + strings.Join(indexTypes, "\n* ")
-	opts["param: indexParams"] = "optional, string (JSON), form parameter"
-	opts["param: sourceType"] = "required, string, form parameter\n\n" +
-		"supported source types:\n\n* " + strings.Join(sourceTypes, "\n* ")
-	opts["param: sourceName"] = "optional, string, form parameter"
-	opts["param: sourceUUID"] = "optional, string, form parameter"
-	opts["param: sourceParams"] = "optional, string (JSON), form parameter"
-	opts["param: planParams"] = "optional, string (JSON), form parameter"
-	opts["param: prevIndexUUID"] = "optional, string, form parameter\n\n" +
-		"Intended for clients that want to check that they are not " +
-		"overwriting the index definition updates of concurrent clients."
-	opts["result on error"] = `non-200 HTTP error code`
-	opts["result on success"] = `HTTP 200 with body JSON of {"status": "ok"}` // TODO: 200.
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the to-be-created/updated index definition,\n" +
+			"validated with the regular expression of ```" +
+			INDEX_NAME_REGEXP + "```."
+	opts["param: indexType"] =
+		"required, string, form parameter\n\n" +
+			"supported index types:\n\n* " +
+			strings.Join(indexTypes, "\n* ")
+	opts["param: indexParams"] =
+		"optional, string (JSON), form parameter"
+	opts["param: sourceType"] =
+		"required, string, form parameter\n\n" +
+			"supported source types:\n\n* " +
+			strings.Join(sourceTypes, "\n* ")
+	opts["param: sourceName"] =
+		"optional, string, form parameter"
+	opts["param: sourceUUID"] =
+		"optional, string, form parameter"
+	opts["param: sourceParams"] =
+		"optional, string (JSON), form parameter"
+	opts["param: planParams"] =
+		"optional, string (JSON), form parameter"
+	opts["param: prevIndexUUID"] =
+		"optional, string, form parameter\n\n" +
+			"Intended for clients that want to check that they are not " +
+			"overwriting the index definition updates of concurrent clients."
+	opts["result on error"] =
+		`non-200 HTTP error code`
+	opts["result on success"] =
+		`HTTP 200 with body JSON of {"status": "ok"}` // TODO: Revisit 200 code.
 }
 
 func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

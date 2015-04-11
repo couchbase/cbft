@@ -369,7 +369,18 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Indexing|Index monitoring",
 			"_about": `Returns indexing and data related metrics,
-                       timings and counters for the node as JSON.`,
+                       timings and counters from the node as JSON.`,
+			"version introduced": "0.0.1",
+		})
+
+	// TODO: If we ever implement cluster-wide index stats, we should
+	// have it under /api/index/{indexName}/stats GET endpoint.
+	//
+	handle("/api/stats/index/{indexName}", "GET", NewStatsHandler(mgr),
+		map[string]string{
+			"_category": "Indexing|Index monitoring",
+			"_about": `Returns metrics, timings and counters
+                       for a single index from the node as JSON.`,
 			"version introduced": "0.0.1",
 		})
 

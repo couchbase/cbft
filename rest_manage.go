@@ -21,6 +21,8 @@ import (
 	"time"
 
 	bleveHttp "github.com/blevesearch/bleve/http"
+
+	"github.com/gorilla/mux"
 )
 
 type DiagGetHandler struct {
@@ -116,13 +118,15 @@ func NewStatsHandler(mgr *Manager) *StatsHandler {
 	return &StatsHandler{mgr: mgr}
 }
 
-var statsFeedsPrefix = []byte("{\"feeds\":{")
-var statsPIndexesPrefix = []byte("},\"pindexes\":{")
-var statsManagerPrefix = []byte("},\"manager\":")
+var statsFeedsPrefix = []byte("\"feeds\":{")
+var statsPIndexesPrefix = []byte("\"pindexes\":{")
+var statsManagerPrefix = []byte(",\"manager\":")
 var statsNamePrefix = []byte("\"")
 var statsStatsPrefix = []byte("\":")
 
 func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	indexName := mux.Vars(req)["indexName"]
+
 	feeds, pindexes := h.mgr.CurrentMaps()
 	feedNames := make([]string, 0, len(feeds))
 	for feedName := range feeds {
@@ -136,40 +140,50 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	sort.Strings(pindexNames)
 
-	first := true
-	w.Write(statsFeedsPrefix)
-	for _, feedName := range feedNames {
-		if !first {
-			w.Write(jsonComma)
+	w.Write(jsonOpenBrace)
+
+	if indexName == "" {
+		first := true
+		w.Write(statsFeedsPrefix)
+		for _, feedName := range feedNames {
+			if !first {
+				w.Write(jsonComma)
+			}
+			first = false
+			w.Write(statsNamePrefix)
+			w.Write([]byte(feedName))
+			w.Write(statsStatsPrefix)
+			feeds[feedName].Stats(w)
 		}
-		first = false
-		w.Write(statsNamePrefix)
-		w.Write([]byte(feedName))
-		w.Write(statsStatsPrefix)
-		feeds[feedName].Stats(w)
+		w.Write(jsonCloseBraceComma)
 	}
 
-	first = true
+	first := true
 	w.Write(statsPIndexesPrefix)
 	for _, pindexName := range pindexNames {
-		if !first {
-			w.Write(jsonComma)
+		if indexName == "" || indexName == pindexes[pindexName].IndexName {
+			if !first {
+				w.Write(jsonComma)
+			}
+			first = false
+			w.Write(statsNamePrefix)
+			w.Write([]byte(pindexName))
+			w.Write(statsStatsPrefix)
+			pindexes[pindexName].Dest.Stats(w)
 		}
-		first = false
-		w.Write(statsNamePrefix)
-		w.Write([]byte(pindexName))
-		w.Write(statsStatsPrefix)
-		pindexes[pindexName].Dest.Stats(w)
 	}
+	w.Write(jsonCloseBrace)
 
-	w.Write(statsManagerPrefix)
-	var mgrStats ManagerStats
-	h.mgr.stats.AtomicCopyTo(&mgrStats)
-	mgrStatsJSON, err := json.Marshal(&mgrStats)
-	if err == nil && len(mgrStatsJSON) > 0 {
-		w.Write(mgrStatsJSON)
-	} else {
-		w.Write(jsonNULL)
+	if indexName == "" {
+		w.Write(statsManagerPrefix)
+		var mgrStats ManagerStats
+		h.mgr.stats.AtomicCopyTo(&mgrStats)
+		mgrStatsJSON, err := json.Marshal(&mgrStats)
+		if err == nil && len(mgrStatsJSON) > 0 {
+			w.Write(mgrStatsJSON)
+		} else {
+			w.Write(jsonNULL)
+		}
 	}
 
 	w.Write(jsonCloseBrace)

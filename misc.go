@@ -33,6 +33,7 @@ var EMPTY_BYTES = []byte{}
 var jsonNULL = []byte("null")
 var jsonOpenBrace = []byte("{")
 var jsonCloseBrace = []byte("}")
+var jsonCloseBraceComma = []byte("},")
 var jsonComma = []byte(",")
 
 func ErrorToString(e error) string {
