@@ -75,11 +75,12 @@ func initFlags(flags *Flags) map[string][]string {
 
 	s(&flags.BindHttp,
 		[]string{"bindHttp", "b"}, "ADDR:PORT", "localhost:8095",
-		"optional HTTP/REST listen addr:port;"+
-			"\ndefault is 'localhost:8095'.")
+		"local address:port where this node will listen and"+
+			"\nserve HTTP/REST API requests and the web-based"+
+			"\nadmin UI; default is 'localhost:8095'.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg", "c"}, "CFG_CONNECT", "simple",
-		"optional connection string/info to a configuration server"+
+		"connection string to a configuration provider/server"+
 			"\nfor clustering multiple cbft nodes:"+
 			"\n* couchbase:http://BUCKET_USER:BUCKET_PSWD@CB_HOST:CB_PORT"+
 			"\n     - manages a cbft cluster configuration in a couchbase"+
@@ -88,8 +89,8 @@ func initFlags(flags *Flags) map[string][]string {
 			"\n* simple"+
 			"\n     - intended for development usage, the 'simple'"+
 			"\n       configuration provider manages a configuration"+
-			"\n       for a single, unclustered cbft node in a local,"+
-			"\n       simple file that's stored in the dataDir;"+
+			"\n       for a single, unclustered cbft node in a local"+
+			"\n       file that's stored in the dataDir;"+
 			"\ndefault is 'simple'.")
 	s(&flags.Container,
 		[]string{"container"}, "PATH", "",
@@ -97,8 +98,8 @@ func initFlags(flags *Flags) map[string][]string {
 			"\nfor this node, for shelf/rack/row/zone awareness.")
 	s(&flags.DataDir,
 		[]string{"dataDir", "data"}, "DIR", "data",
-		"optional directory path where local index data and local"+
-			"\nconfiguration files will be stored on this node;"+
+		"optional directory path where local index data and"+
+			"\nlocal config files will be stored for this node;"+
 			"\ndefault is 'data'.")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
@@ -122,8 +123,8 @@ func initFlags(flags *Flags) map[string][]string {
 			"\ndefault is 'wanted'.")
 	s(&flags.Server,
 		[]string{"server", "s"}, "URL", "",
-		"required URL to datasource server;"+
-			"\nexample for couchbase: 'http://localhost:8091';"+
+		"URL to datasource server; example when using couchbase as"+
+			"\nyour datasource server: 'http://localhost:8091';"+
 			"\nuse '.' when there is no datasource server.")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
