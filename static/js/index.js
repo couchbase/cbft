@@ -166,6 +166,22 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
                 }
             }
 
+            stats.sort(function(a, b) {
+                if (a.statName < b.statName) {
+                    return -1;
+                }
+                if (a.statName > b.statName) {
+                    return 1;
+                }
+                if (a.pindexName < b.pindexName) {
+                    return -1;
+                }
+                if (a.pindexName > b.pindexName) {
+                    return 1;
+                }
+                return 0;
+            })
+
             $scope.indexErrors = errors;
             $scope.indexStatsFlat = stats;
         }).
