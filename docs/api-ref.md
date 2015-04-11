@@ -140,7 +140,16 @@ The name of the index whose control values will be modified.
 GET `/api/stats`
 
 Returns indexing and data related metrics,
-                       timings and counters for the node as JSON.
+                       timings and counters from the node as JSON.
+
+**version introduced**: 0.0.1
+
+---
+
+GET `/api/stats/index/{indexName}`
+
+Returns metrics, timings and counters
+                       for a single index from the node as JSON.
 
 **version introduced**: 0.0.1
 
