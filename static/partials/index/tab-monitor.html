@@ -1,49 +1,41 @@
-<div>
-  Errors:
-  <ul>
-    <li ng-repeat="e in indexErrors">
-      {{e}}
-    </li>
-  </ul>
-</div>
+<h3>Stats</h3>
 
 <div class="indexStats">
-  Stats:
   <table>
     <tr>
-      <th>Stat</th>
+      <th class="statName">Stat</th>
       <th>Count</th>
-      <th>Min</th>
-      <th>Max</th>
-      <th>Mean</th>
-      <th>Stddev</th>
+      <th>99.9%tile</th>
+      <th>99%tile</th>
+      <th>95%tile</th>
+      <th>75%tile</th>
       <th>Median</th>
-      <th>75%-tile</th>
-      <th>95%-tile</th>
-      <th>99%-tile</th>
-      <th>99.9%-tile</th>
-      <th>rate 1-min</th>
-      <th>rate 5-min</th>
-      <th>rate 15-min</th>
-      <th>rate mean</th>
-      <th>PIndex</th>
+      <th>Mean</th>
+      <th>Max</th>
+      <th>Min</th>
+      <th>Stddev</th>
+      <th>Rate 1-min</th>
+      <th>Rate 5-min</th>
+      <th>Rate 15-min</th>
+      <th>Rate Mean</th>
+      <th class="pindexName">Index Partition</th>
     </tr>
     <tr ng-repeat="(s, ss) in indexStatsFlat">
-      <th class="statName">{{ss.statName}}</th>
+      <td class="statName">{{ss.statName}}</td>
       <td>{{ss.count}}</td>
-      <td>{{ss.min}}</td>
-      <td>{{ss.max}}</td>
-      <td>{{ss.mean}}</td>
-      <td>{{ss.stddev}}</td>
-      <td>{{ss.percentiles.median}}</td>
-      <td>{{ss.percentiles["75%"]}}</td>
-      <td>{{ss.percentiles["95%"]}}</td>
-      <td>{{ss.percentiles["99%"]}}</td>
-      <td>{{ss.percentiles["99.9%"]}}</td>
-      <td>{{ss.rates["1-min"]}}</td>
-      <td>{{ss.rates["5-min"]}}</td>
-      <td>{{ss.rates["15-min"]}}</td>
-      <td>{{ss.rates["mean"]}}</td>
+      <td>{{ss.percentiles["99.9%"] | number:0}}</td>
+      <td>{{ss.percentiles["99%"] | number:0}}</td>
+      <td>{{ss.percentiles["95%"] | number:0}}</td>
+      <td>{{ss.percentiles["75%"] | number:0}}</td>
+      <td>{{ss.percentiles.median | number:0}}</td>
+      <td>{{ss.mean | number:0}}</td>
+      <td>{{ss.max | number:0}}</td>
+      <td>{{ss.min | number:0}}</td>
+      <td>{{ss.stddev | number:0}}</td>
+      <td>{{ss.rates["1-min"] | number:1}}</td>
+      <td>{{ss.rates["5-min"] | number:1}}</td>
+      <td>{{ss.rates["15-min"] | number:1}}</td>
+      <td>{{ss.rates["mean"] | number:1}}</td>
       <td>{{ss.pindexName}}</td>
     </tr>
     </div>
@@ -51,19 +43,36 @@
   </table>
 </div>
 
+<h3>Errors</h3>
+
+<ul>
+  <li ng-repeat="e in indexErrors">
+    {{e}}
+  </li>
+</ul>
+
+<div ng-show="!indexErrors.length" class="indexErrorsEmpty">
+  no errors
+</div>
+
 <style>
 .indexStats td {
   vertical-align: bottom;
 }
-.indexStats td {
-  text-align: right;
-}
 .indexStats td, .indexStats th {
+  text-align: right;
   padding-left: 5px;
   padding-right: 5px;
 }
 .indexStats th {
   white-space: nowrap;
   margin-right: 5px;
+}
+.indexStats .statName, .indexStats th.pindexName {
+  text-align: left;
+}
+.indexErrorsEmpty {
+  font-style: italic;
+  padding-left: 5px;
 }
 </style>
