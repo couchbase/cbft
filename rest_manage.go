@@ -122,7 +122,7 @@ var statsFeedsPrefix = []byte("\"feeds\":{")
 var statsPIndexesPrefix = []byte("\"pindexes\":{")
 var statsManagerPrefix = []byte(",\"manager\":")
 var statsNamePrefix = []byte("\"")
-var statsStatsPrefix = []byte("\":")
+var statsNameSuffix = []byte("\":")
 
 func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexName := mux.Vars(req)["indexName"]
@@ -152,7 +152,7 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			first = false
 			w.Write(statsNamePrefix)
 			w.Write([]byte(feedName))
-			w.Write(statsStatsPrefix)
+			w.Write(statsNameSuffix)
 			feeds[feedName].Stats(w)
 		}
 		w.Write(jsonCloseBraceComma)
@@ -168,7 +168,7 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			first = false
 			w.Write(statsNamePrefix)
 			w.Write([]byte(pindexName))
-			w.Write(statsStatsPrefix)
+			w.Write(statsNameSuffix)
 			pindexes[pindexName].Dest.Stats(w)
 		}
 	}
