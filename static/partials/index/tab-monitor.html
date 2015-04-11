@@ -1,2 +1,69 @@
+<div>
+  Errors:
+  <ul>
+    <li ng-repeat="e in indexErrors">
+      {{e}}
+    </li>
+  </ul>
+</div>
 
-<pre nag-prism source="{{indexStatsStr}}" class="language-javascript"></pre>
+<div class="indexStats">
+  Stats:
+  <table>
+    <tr>
+      <th>Stat</th>
+      <th>Count</th>
+      <th>Min</th>
+      <th>Max</th>
+      <th>Mean</th>
+      <th>Stddev</th>
+      <th>Median</th>
+      <th>75%-tile</th>
+      <th>95%-tile</th>
+      <th>99%-tile</th>
+      <th>99.9%-tile</th>
+      <th>rate 1-min</th>
+      <th>rate 5-min</th>
+      <th>rate 15-min</th>
+      <th>rate mean</th>
+      <th>PIndex</th>
+    </tr>
+    <tr ng-repeat="(s, ss) in indexStatsFlat">
+      <th class="statName">{{ss.statName}}</th>
+      <td>{{ss.count}}</td>
+      <td>{{ss.min}}</td>
+      <td>{{ss.max}}</td>
+      <td>{{ss.mean}}</td>
+      <td>{{ss.stddev}}</td>
+      <td>{{ss.percentiles.median}}</td>
+      <td>{{ss.percentiles["75%"]}}</td>
+      <td>{{ss.percentiles["95%"]}}</td>
+      <td>{{ss.percentiles["99%"]}}</td>
+      <td>{{ss.percentiles["99.9%"]}}</td>
+      <td>{{ss.rates["1-min"]}}</td>
+      <td>{{ss.rates["5-min"]}}</td>
+      <td>{{ss.rates["15-min"]}}</td>
+      <td>{{ss.rates["mean"]}}</td>
+      <th class="pindexName">{{ss.pindexName}}</th>
+    </tr>
+    </div>
+    </div>
+  </table>
+</div>
+
+<style>
+.indexStats td {
+  vertical-align: bottom;
+}
+.indexStats td {
+  text-align: right;
+}
+.indexStats td, .indexStats th {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.indexStats th {
+  white-space: nowrap;
+  margin-right: 5px;
+}
+</style>

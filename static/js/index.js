@@ -61,7 +61,6 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
     $scope.indexDefStr = "";
     $scope.indexParamsStr = "";
     $scope.indexStats = null;
-    $scope.indexStatsStr = "";
     $scope.planPIndexes = null;
     $scope.planPIndexesStr = ""
     $scope.warnings = null;
@@ -148,7 +147,27 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
         $http.get('/api/stats/index/' + $scope.indexName).
         success(function(data) {
             $scope.indexStats = data;
-            $scope.indexStatsStr = JSON.stringify(data, undefined, 2);
+
+            var errors = [];
+            var stats = [];
+            for (var k in data.pindexes) {
+                var kk = data.pindexes[k];
+                for (var j in kk) {
+                    var jj = data.pindexes[k][j];
+                    errors = errors.concat(jj.Errors || []);
+                    for (var s in jj) {
+                        if (s != "Errors") {
+                            var ss = jj[s];
+                            ss.pindexName = k;
+                            ss.statName = s;
+                            stats.push(ss);
+                        }
+                    }
+                }
+            }
+
+            $scope.indexErrors = errors;
+            $scope.indexStatsFlat = stats;
         }).
         error(function(data, code) {
             $scope.errorMessage = errorMessage(data, code);
