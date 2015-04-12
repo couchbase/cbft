@@ -323,8 +323,7 @@ func (t *BleveDest) closeUnlocked() error {
 // ---------------------------------------------------------
 
 func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
-	log.Printf("bleve: dest rollback, partition: %s, rollbackSeq: %d",
-		partition, rollbackSeq)
+	t.AddError("dest rollback", partition, nil, rollbackSeq, nil, nil)
 
 	t.m.Lock()
 	defer t.m.Unlock()
@@ -457,6 +456,9 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 
 func (t *BleveDest) AddError(op, partition string,
 	key []byte, seq uint64, val []byte, err error) {
+	log.Printf("bleve: %s, partition: %s, key: %q, seq: %d,"+
+		" val: %q, err: %v", op, partition, key, seq, val, err)
+
 	e := struct {
 		Time      string
 		Op        string
