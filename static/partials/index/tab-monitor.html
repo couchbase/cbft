@@ -45,11 +45,25 @@
 
 <h3>Errors</h3>
 
-<ul>
-  <li ng-repeat="e in indexErrors">
+<table class="indexErrors">
+  <tr>
+    <th>Op</th>
+    <th>Error</th>
+    <th>Partition</th>
+    <th>Key</th>
+    <th>Val</th>
+    <th>Time</th>
+  </tr>
+  <tr ng-repeat="e in indexErrors">
+    <td>{{e.Op}}</td>
+    <td>{{e.Err}}</td>
+    <td>{{e.Partition}}</td>
+    <td>{{e.Key}}</td>
+    <td class="val">{{e.Val}}</td>
+    <td>{{e.Time}}</td>
     {{e}}
-  </li>
-</ul>
+  </tr>
+</table>
 
 <div ng-show="!indexErrors.length" class="indexErrorsEmpty">
   no errors
@@ -59,14 +73,14 @@
 .indexStats td {
   vertical-align: bottom;
 }
-.indexStats td, .indexStats th {
-  text-align: right;
+.indexStats td, .indexStats th, .indexErrors td, .indexErrors th {
   padding-left: 5px;
   padding-right: 5px;
-}
-.indexStats th, .indexStats td {
   white-space: nowrap;
   margin-right: 5px;
+}
+.indexStats td, .indexStats th {
+  text-align: right;
 }
 .indexStats .statName, .indexStats th.pindexName {
   text-align: left;
@@ -74,5 +88,8 @@
 .indexErrorsEmpty {
   font-style: italic;
   padding-left: 5px;
+}
+.indexErrors td.val {
+  white-space: wrap;
 }
 </style>
