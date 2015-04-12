@@ -297,7 +297,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"version introduced": "0.0.1",
 		})
 
-	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr),
+	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr, meta),
 		map[string]string{
 			"_category": "Node|Node configuration",
 			"_about": `Returns information on the node's capabilities,

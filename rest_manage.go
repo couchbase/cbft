@@ -45,7 +45,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewLogGetHandler(h.mgr, h.mr), nil},
-		{"/api/managerMeta", NewManagerMetaHandler(h.mgr), nil},
+		{"/api/managerMeta", NewManagerMetaHandler(h.mgr, nil), nil},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
 		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		{"/api/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},

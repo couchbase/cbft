@@ -16,11 +16,13 @@ import (
 )
 
 type ManagerMetaHandler struct {
-	mgr *Manager
+	mgr  *Manager
+	meta map[string]RESTMeta
 }
 
-func NewManagerMetaHandler(mgr *Manager) *ManagerMetaHandler {
-	return &ManagerMetaHandler{mgr: mgr}
+func NewManagerMetaHandler(mgr *Manager,
+	meta map[string]RESTMeta) *ManagerMetaHandler {
+	return &ManagerMetaHandler{mgr: mgr, meta: meta}
 }
 
 type MetaDesc struct {
@@ -79,18 +81,20 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	br["Tokenizer"] = map[string][]string{"types": t, "instances": i}
 
 	mustEncode(w, struct {
-		Status        string                         `json:"status"`
-		StartSamples  map[string]interface{}         `json:"startSamples"`
-		SourceTypes   map[string]*MetaDesc           `json:"sourceTypes"`
-		IndexNameRE   string                         `json:"indexNameRE"`
-		IndexTypes    map[string]*MetaDesc           `json:"indexTypes"`
-		BleveRegistry map[string]map[string][]string `json:"bleveRegistry"`
+		Status       string                         `json:"status"`
+		StartSamples map[string]interface{}         `json:"startSamples"`
+		SourceTypes  map[string]*MetaDesc           `json:"sourceTypes"`
+		IndexNameRE  string                         `json:"indexNameRE"`
+		IndexTypes   map[string]*MetaDesc           `json:"indexTypes"`
+		RefREST      map[string]RESTMeta            `json:"refREST"`
+		RegBleve     map[string]map[string][]string `json:"regBleve"`
 	}{
-		Status:        "ok",
-		StartSamples:  startSamples,
-		SourceTypes:   sourceTypes,
-		IndexNameRE:   INDEX_NAME_REGEXP,
-		IndexTypes:    indexTypes,
-		BleveRegistry: br,
+		Status:       "ok",
+		StartSamples: startSamples,
+		SourceTypes:  sourceTypes,
+		IndexNameRE:  INDEX_NAME_REGEXP,
+		IndexTypes:   indexTypes,
+		RefREST:      h.meta,
+		RegBleve:     br,
 	})
 }
