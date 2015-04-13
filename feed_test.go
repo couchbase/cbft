@@ -237,3 +237,47 @@ func TestVBucketIdToPartitionDest(t *testing.T) {
 		t.Errorf("expected err")
 	}
 }
+
+func TestTAPFeedBasics(t *testing.T) {
+	df, err := NewTAPFeed("aaa", "bbb",
+		"url", "poolName", "bucketName", "bucketUUID", "",
+		BasicPartitionFunc, map[string]Dest{}, false)
+	if err != nil {
+		t.Errorf("expected NewTAPFeed to work")
+	}
+	if df.Name() != "aaa" {
+		t.Errorf("expected aaa name")
+	}
+	if df.IndexName() != "bbb" {
+		t.Errorf("expected bbb index name")
+	}
+	if df.Dests() == nil {
+		t.Errorf("expected some dests")
+	}
+	err = df.Stats(bytes.NewBuffer(nil))
+	if err != nil {
+		t.Errorf("expected stats to work")
+	}
+}
+
+func TestDCPFeedBasics(t *testing.T) {
+	df, err := NewDCPFeed("aaa", "bbb",
+		"url", "poolName", "bucketName", "bucketUUID", "",
+		BasicPartitionFunc, map[string]Dest{}, false)
+	if err != nil {
+		t.Errorf("expected NewDCPFeed to work")
+	}
+	if df.Name() != "aaa" {
+		t.Errorf("expected aaa name")
+	}
+	if df.IndexName() != "bbb" {
+		t.Errorf("expected bbb index name")
+	}
+	if df.Dests() == nil {
+		t.Errorf("expected some dests")
+	}
+	err = df.Stats(bytes.NewBuffer(nil))
+	if err != nil {
+		t.Errorf("expected stats to work")
+	}
+}
