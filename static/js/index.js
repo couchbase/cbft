@@ -108,13 +108,15 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
             $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2);
             $scope.planPIndexes = data.planPIndexes;
-            $scope.planPIndexes.sort(
-                function(x, y) {
-                    if (x.name > y.name) { return 1; }
-                    if (y.name > x.name) { return -1; }
-                    return 0;
-                }
-            );
+            if ($scope.planPIndexes) {
+                $scope.planPIndexes.sort(
+                    function(x, y) {
+                        if (x.name > y.name) { return 1; }
+                        if (y.name > x.name) { return -1; }
+                        return 0;
+                    }
+                );
+            }
             for (var k in $scope.planPIndexes) {
                 var planPIndex = $scope.planPIndexes[k];
                 planPIndex.sourcePartitionsArr =

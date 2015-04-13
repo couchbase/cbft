@@ -5,11 +5,10 @@
   <li ng-attr-class="{{tab == 'query' && 'active' || 'inactive' }}">
     <a href="/indexes/{{indexName}}/query">Query</a>
   </li>
-  <li ng-if="planPIndexesStr != 'null'"
-      ng-attr-class="{{tab == 'monitor' && 'active' || 'inactive' }}">
+  <li ng-attr-class="{{tab == 'monitor' && 'active' || 'inactive' }}">
     <a href="/indexes/{{indexName}}/monitor">Monitor</a>
   </li>
-  <li ng-if="planPIndexesStr != 'null'"
+  <li ng-if="indexDef && indexDef.type != 'alias'"
       ng-attr-class="{{tab == 'manage' && 'active' || 'inactive' }}">
     <a href="/indexes/{{indexName}}/manage">Manage</a>
   </li>
