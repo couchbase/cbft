@@ -8,9 +8,10 @@ function LogsCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 		$scope.clearLogMessages();
 		$http.get('/api/log').success(function(data) {
 			for(var i in data.messages) {
-				message = data.messages[i];
+				var message = data.messages[i];
 				$scope.logMessages += $sce.trustAsHtml(message);
 			}
+            $scope.events = data.events;
 		}).
 		error(function(data, code) {
 			$scope.errorMessage = data;
