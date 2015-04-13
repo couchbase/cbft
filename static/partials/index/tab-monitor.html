@@ -19,7 +19,7 @@
       <th>Rate 5-min</th>
       <th>Rate 15-min</th>
       <th>Rate Mean</th>
-      <th class="source">Source</th>
+      <th class="sourceName">Source</th>
     </tr>
     <tr ng-repeat="(s, ss) in indexStatsFlat">
       <td class="statKind">{{ss.statKind}}</td>
@@ -52,7 +52,7 @@
         {{ss.rates["15-min"] | number:1}}</td>
       <td ng-class="{changed: ss.prev.rates.mean != ss.rates.mean}">
         {{ss.rates["mean"] | number:1}}</td>
-      <td class="source">{{ss.source}}</td>
+      <td class="sourceName">{{ss.sourceName}}</td>
     </tr>
   </table>
 
@@ -108,8 +108,7 @@
 .indexStats td, .indexStats th {
   text-align: right;
 }
-.indexStats .statKind, .indexStats .statName,
-.indexStats th.source, .indexStats td.source {
+.indexStats .statKind, .indexStats .statName, .indexStats .sourceName {
   text-align: left;
 }
 .indexStats td.changed {

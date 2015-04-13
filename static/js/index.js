@@ -185,7 +185,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                             if (indexStatsPrev) {
                                 ss.prev = ((indexStatsPrev[aa][k] || {})[j] || {})[s];
                             }
-                            ss.source = k;
+                            ss.sourceName = k;
                             ss.statKind = indexStatsLabels[aa];
                             ss.statName = s;
                             stats.push(ss);
@@ -207,10 +207,10 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                 if (a.statName > b.statName) {
                     return 1;
                 }
-                if (a.pindexName < b.pindexName) {
+                if (a.sourceName < b.sourceName) {
                     return -1;
                 }
-                if (a.pindexName > b.pindexName) {
+                if (a.sourceName > b.sourceName) {
                     return 1;
                 }
                 return 0;
