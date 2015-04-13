@@ -166,20 +166,20 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                 // The k is pindexName / feedName.
                 for (var k in data[aa]) {
                     var kk = data[aa][k];
-                    // The j is category of stats, like bleveKVStoreStats,
-                    // pindexStoreStats, destStats, bucketDataSourceStats.
+                    // The j is category of stats, like
+                    // bleveKVStoreStats, pindexStoreStats,
+                    // bucketDataSourceStats, destStats.
                     for (var j in kk) {
-                        if (j == "bucketDataSourceStats") {
-                            continue;
-                        }
-
                         var jj = data[aa][k][j];
                         errors = errors.concat(jj.Errors || []);
+
                         for (var s in jj) {
                             var ss = jj[s];
-                            console.log(s, ss)
-                            if (typeof(ss) != "object" || ss instanceof Array) {
+                            if (ss instanceof Array) {
                                 continue;
+                            }
+                            if (typeof(ss) == "number") {
+                                ss = jj[s] = { count: ss };
                             }
                             ss.prev = ss;
                             if (indexStatsPrev) {
