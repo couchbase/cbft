@@ -1,5 +1,9 @@
 var indexStatsPrevs = {};
 
+var indexStatsLabels = {
+    "pindexes": "index partition", "feeds": "datasource"
+}
+
 function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.indexNames = [];
@@ -155,19 +159,34 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
             var errors = [];
             var stats = [];
-            for (var k in data.pindexes) {
-                var kk = data.pindexes[k];
-                for (var j in kk) {
-                    var jj = data.pindexes[k][j];
-                    errors = errors.concat(jj.Errors || []);
-                    for (var s in jj) {
-                        if (s != "Errors") {
+            var kinds = ["pindexes", "feeds"];
+            for (var a in kinds) {
+                var aa = kinds[a];
+
+                // The k is pindexName / feedName.
+                for (var k in data[aa]) {
+                    var kk = data[aa][k];
+                    // The j is category of stats, like bleveKVStoreStats,
+                    // pindexStoreStats, destStats, bucketDataSourceStats.
+                    for (var j in kk) {
+                        if (j == "bucketDataSourceStats") {
+                            continue;
+                        }
+
+                        var jj = data[aa][k][j];
+                        errors = errors.concat(jj.Errors || []);
+                        for (var s in jj) {
                             var ss = jj[s];
+                            console.log(s, ss)
+                            if (typeof(ss) != "object" || ss instanceof Array) {
+                                continue;
+                            }
                             ss.prev = ss;
                             if (indexStatsPrev) {
-                                ss.prev = ((indexStatsPrev.pindexes[k] || {})[j] || {})[s];
+                                ss.prev = ((indexStatsPrev[aa][k] || {})[j] || {})[s];
                             }
-                            ss.pindexName = k;
+                            ss.source = k;
+                            ss.statKind = indexStatsLabels[aa];
                             ss.statName = s;
                             stats.push(ss);
                         }
@@ -176,6 +195,12 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             }
 
             stats.sort(function(a, b) {
+                if (a.statKind < b.statKind) {
+                    return 1;
+                }
+                if (a.statKind > b.statKind) {
+                    return -1;
+                }
                 if (a.statName < b.statName) {
                     return -1;
                 }
