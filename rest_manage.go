@@ -142,10 +142,10 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	w.Write(jsonOpenBrace)
 
-	if indexName == "" {
-		first := true
-		w.Write(statsFeedsPrefix)
-		for _, feedName := range feedNames {
+	first := true
+	w.Write(statsFeedsPrefix)
+	for _, feedName := range feedNames {
+		if indexName == "" || indexName == feeds[feedName].IndexName() {
 			if !first {
 				w.Write(jsonComma)
 			}
@@ -155,10 +155,10 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			w.Write(statsNameSuffix)
 			feeds[feedName].Stats(w)
 		}
-		w.Write(jsonCloseBraceComma)
 	}
+	w.Write(jsonCloseBraceComma)
 
-	first := true
+	first = true
 	w.Write(statsPIndexesPrefix)
 	for _, pindexName := range pindexNames {
 		if indexName == "" || indexName == pindexes[pindexName].IndexName {
