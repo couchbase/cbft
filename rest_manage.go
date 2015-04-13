@@ -69,8 +69,6 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// TODO: We should include contents of some of the smaller config
-	// files that we recognize from the dataDir.
 	var first = true
 	var visit func(path string, f os.FileInfo, err error) error
 	visit = func(path string, f os.FileInfo, err error) error {
