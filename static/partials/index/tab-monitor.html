@@ -42,13 +42,13 @@
         {{ss.min | number:0}}</td>
       <td ng-class="{changed: ss.prev.stddev != ss.stddev}">
         {{ss.stddev | number:0}}</td>
-      <td ng-class="{changed: ss.prev.rates['1-min'] != ss.rates['1-min]}">
+      <td ng-class="{changed: ss.prev.rates['1-min'] != ss.rates['1-min']}">
         {{ss.rates["1-min"] | number:1}}</td>
-      <td ng-class="{changed: ss.prev.rates['5-min'] != ss.rates['5-min]}">
+      <td ng-class="{changed: ss.prev.rates['5-min'] != ss.rates['5-min']}">
         {{ss.rates["5-min"] | number:1}}</td>
-      <td ng-class="{changed: ss.prev.rates['15-min'] != ss.rates['15-min]}">
+      <td ng-class="{changed: ss.prev.rates['15-min'] != ss.rates['15-min']}">
         {{ss.rates["15-min"] | number:1}}</td>
-      <td ng-class="{changed: ss.prev.rates.mean] != ss.rates.mean}">
+      <td ng-class="{changed: ss.prev.rates.mean != ss.rates.mean}">
         {{ss.rates["mean"] | number:1}}</td>
       <td>{{ss.pindexName}}</td>
     </tr>
