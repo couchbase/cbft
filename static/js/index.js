@@ -1,3 +1,5 @@
+var indexStatsPrevs = {};
+
 function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.indexNames = [];
@@ -47,7 +49,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.refreshIndexNames();
 }
 
-function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
+function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
@@ -148,6 +150,9 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
         success(function(data) {
             $scope.indexStats = data;
 
+            var indexStatsPrev = indexStatsPrevs[$scope.indexName];
+            indexStatsPrevs[$scope.indexName] = data;
+
             var errors = [];
             var stats = [];
             for (var k in data.pindexes) {
@@ -158,6 +163,10 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
                     for (var s in jj) {
                         if (s != "Errors") {
                             var ss = jj[s];
+                            ss.prev = ss;
+                            if (indexStatsPrev) {
+                                ss.prev = ((indexStatsPrev.pindexes[k] || {})[j] || {})[s];
+                            }
                             ss.pindexName = k;
                             ss.statName = s;
                             stats.push(ss);
@@ -252,6 +261,10 @@ function IndexCtrl($scope, $http, $routeParams, $log, $sce) {
             $scope.errorMessageFull = data;
         });
     };
+
+    $scope.refresh = function() {
+        $route.reload();
+    }
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
