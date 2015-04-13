@@ -1,6 +1,8 @@
 <div class="indexStats">
   <h3>Stats</h3>
 
+  <button ng-click="refresh()" class="indexMonitorRefresh">Refresh</button>
+
   <table>
     <tr>
       <th class="statKind">Kind</th>
@@ -92,6 +94,7 @@
 <style>
 .indexStats {
   margin-left: 20px;
+  margin-bottom: 20px;
 }
 .indexStats table {
   margin-left: 10px;
@@ -128,6 +131,6 @@
   padding-left: 5px;
 }
 .indexMonitorRefresh {
-  margin: 10px 10px 20px 10px;
+  margin: 10px 10px 10px 10px;
 }
 </style>
