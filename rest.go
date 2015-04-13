@@ -157,10 +157,6 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"version introduced": "0.0.1",
 		})
 
-	// We use standard bleveHttp handlers for the /api/pindex-bleve endpoints.
-	//
-	// TODO: Need to cleanly separate the /api/pindex and
-	// /api/pindex-bleve endpoints.
 	if mgr == nil || mgr.tagsMap == nil || mgr.tagsMap["pindex"] {
 		handle("/api/pindex", "GET",
 			NewListPIndexHandler(mgr),
@@ -187,6 +183,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 				"version introduced": "0.0.1",
 			})
 
+		// Using standard bleveHttp handlers for /api/pindex-bleve endpoints.
+		//
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()
 		handle("/api/pindex-bleve", "GET", listIndexesHandler,
 			map[string]string{

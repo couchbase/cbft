@@ -159,7 +159,7 @@ func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 }
 
 func PIndexPath(dataDir, pindexName string) string {
-	// TODO: path security checks / mapping here; ex: "../etc/pswd"
+	// TODO: Need path security checks / mapping here; ex: "../etc/pswd"
 	return dataDir + string(os.PathSeparator) + pindexName + pindexPathSuffix
 }
 

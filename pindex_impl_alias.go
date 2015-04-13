@@ -168,7 +168,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 					aliasName, indexName)
 			}
 
-			// TODO: Perhaps convert to registered callbacks instead of if-else-if.
+			// TODO: Convert to registered callbacks instead of if-else-if.
 			if targetDef.Type == "alias" {
 				err = fillAlias(targetName, targetSpec.IndexUUID)
 				if err != nil {

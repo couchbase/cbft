@@ -462,7 +462,7 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		}
 	}
 
-	// TODO: Leverage these blance features.
+	// TODO: Leverage blance's partition weight & state stickiness features.
 	partitionWeights := map[string]int(nil)
 	stateStickiness := map[string]int(nil)
 

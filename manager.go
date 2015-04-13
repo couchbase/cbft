@@ -110,7 +110,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		tagsMap:   StringsToMap(tags),
 		container: container,
 		weight:    weight,
-		bindHttp:  bindHttp, // TODO: need FQDN:port instead of ":8095".
+		bindHttp:  bindHttp, // TODO: Need FQDN:port instead of ":8095".
 		dataDir:   dataDir,
 		server:    server,
 		feeds:     make(map[string]Feed),
@@ -145,7 +145,7 @@ func (mgr *Manager) Start(register string) error {
 		go mgr.JanitorKick("start")
 	}
 
-	if mgr.cfg != nil { // TODO: err handling for Cfg subscriptions.
+	if mgr.cfg != nil { // TODO: Need err handling for Cfg subscriptions.
 		go func() {
 			ei := make(chan CfgEvent)
 			mgr.cfg.Subscribe(INDEX_DEFS_KEY, ei)

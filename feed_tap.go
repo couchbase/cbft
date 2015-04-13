@@ -192,9 +192,9 @@ func (t *TAPFeed) feed() (int, error) {
 	}
 	defer feed.Close()
 
-	// TODO: maybe TAPFeed should do a rollback to zero if it finds it
+	// TODO: Maybe TAPFeed should do a rollback to zero if it finds it
 	// needs to do a full backfill.
-	// TODO: this TAPFeed implementation currently only works against
+	// TODO: This TAPFeed implementation currently only works against
 	// a couchbase cluster that has just a single node.
 
 	log.Printf("feed_tap: running, url: %s,"+

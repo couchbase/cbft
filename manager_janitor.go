@@ -69,7 +69,7 @@ func (mgr *Manager) JanitorLoop() {
 			err = mgr.JanitorOnce(m.msg)
 			if err != nil {
 				// Keep looping as perhaps it's a transient issue.
-				// TODO: perhaps need a rescheduled janitor kick.
+				// TODO: Perhaps need a rescheduled janitor kick.
 				log.Printf("janitor: JanitorOnce, err: %v", err)
 				atomic.AddUint64(&mgr.stats.TotJanitorKickErr, 1)
 			} else {
@@ -432,8 +432,8 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 		dests)
 }
 
-// TODO: need way to track dead cows (non-beef)
-// TODO: need a way to collect these errors so REST api
+// TODO: Need way to track dead cows (non-beef)
+// TODO: Need a way to collect these errors so REST api
 // can show them to user ("hey, perhaps you deleted a bucket
 // and should delete these related full-text indexes?
 // or the couchbase cluster is just down.");

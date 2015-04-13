@@ -693,8 +693,8 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 		}
 	}
 
-	// TODO: would good to reuse batch; ask for a public Reset() kind
-	// of method on bleve.Batch?
+	// TODO: Would good to reuse batch's memory; but, would need some
+	// public Reset() kind of method on bleve.Batch?
 	t.batch = t.bindex.NewBatch()
 
 	if t.buf != nil {
@@ -714,7 +714,7 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 		return b
 	}
 	if t.buf == nil {
-		// TODO: parameterize initial buf capacity.
+		// TODO: Parameterize initial buf capacity.
 		t.buf = make([]byte, 0, BLEVE_DEST_INITIAL_BUF_SIZE_BYTES)
 	}
 	t.buf = append(t.buf, b...)
