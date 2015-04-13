@@ -48,7 +48,7 @@ func init() {
 func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, bucketName, bucketUUID, params string,
 	dests map[string]Dest) error {
-	feed, err := NewDCPFeed(feedName, mgr.server, "default",
+	feed, err := NewDCPFeed(feedName, indexName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
@@ -72,6 +72,7 @@ func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 // A DCPFeed implements both Feed and cbdatasource.Receiver interfaces.
 type DCPFeed struct {
 	name       string
+	indexName  string
 	url        string
 	poolName   string
 	bucketName string
@@ -132,7 +133,8 @@ func (d *DCPFeedParams) GetCredentials() (string, string, string) {
 	return d.AuthUser, d.AuthPassword, d.AuthUser
 }
 
-func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
+func NewDCPFeed(name, indexName, url, poolName,
+	bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest,
 	disable bool) (*DCPFeed, error) {
 	params := NewDCPFeedParams()
@@ -170,6 +172,7 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 
 	feed := &DCPFeed{
 		name:       name,
+		indexName:  indexName,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -194,6 +197,10 @@ func NewDCPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 
 func (t *DCPFeed) Name() string {
 	return t.name
+}
+
+func (t *DCPFeed) IndexName() string {
+	return t.indexName
 }
 
 func (t *DCPFeed) Start() error {

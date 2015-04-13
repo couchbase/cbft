@@ -36,7 +36,7 @@ func init() {
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, bucketName, bucketUUID, params string,
 	dests map[string]Dest) error {
-	feed, err := NewTAPFeed(feedName, mgr.server, "default",
+	feed, err := NewTAPFeed(feedName, indexName, mgr.server, "default",
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
@@ -60,6 +60,7 @@ func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 // A TAPFeed uses TAP protocol to dump data from a couchbase data source.
 type TAPFeed struct {
 	name       string
+	indexName  string
 	url        string
 	poolName   string
 	bucketName string
@@ -80,8 +81,8 @@ type TAPFeedParams struct {
 	SleepMaxMS    int     `json:"sleepMaxMS"`
 }
 
-func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
-	pf DestPartitionFunc, dests map[string]Dest,
+func NewTAPFeed(name, indexName, url, poolName, bucketName, bucketUUID,
+	paramsStr string, pf DestPartitionFunc, dests map[string]Dest,
 	disable bool) (*TAPFeed, error) {
 	params := &TAPFeedParams{}
 	if paramsStr != "" {
@@ -93,6 +94,7 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 
 	return &TAPFeed{
 		name:       name,
+		indexName:  indexName,
 		url:        url,
 		poolName:   poolName,
 		bucketName: bucketName,
@@ -110,6 +112,10 @@ func NewTAPFeed(name, url, poolName, bucketName, bucketUUID, paramsStr string,
 
 func (t *TAPFeed) Name() string {
 	return t.name
+}
+
+func (t *TAPFeed) IndexName() string {
+	return t.indexName
 }
 
 func (t *TAPFeed) Start() error {

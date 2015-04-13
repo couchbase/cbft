@@ -20,7 +20,7 @@ func init() {
 		Start: func(mgr *Manager, feedName, indexName, indexUUID,
 			sourceType, sourceName, sourceUUID, params string,
 			dests map[string]Dest) error {
-			return mgr.registerFeed(NewNILFeed(feedName, dests))
+			return mgr.registerFeed(NewNILFeed(feedName, indexName, dests))
 		},
 		Partitions: func(sourceType, sourceName, sourceUUID, sourceParams,
 			server string) ([]string, error) {
@@ -34,16 +34,21 @@ func init() {
 // A NILFeed never feeds any data to its dests.  It's useful for
 // testing and for pindexes that are actually primary data sources.
 type NILFeed struct {
-	name  string
-	dests map[string]Dest
+	name      string
+	indexName string
+	dests     map[string]Dest
 }
 
-func NewNILFeed(name string, dests map[string]Dest) *NILFeed {
-	return &NILFeed{name: name, dests: dests}
+func NewNILFeed(name, indexName string, dests map[string]Dest) *NILFeed {
+	return &NILFeed{name: name, indexName: indexName, dests: dests}
 }
 
 func (t *NILFeed) Name() string {
 	return t.name
+}
+
+func (t *NILFeed) IndexName() string {
+	return t.indexName
 }
 
 func (t *NILFeed) Start() error {

@@ -18,6 +18,7 @@ import (
 
 type Feed interface {
 	Name() string
+	IndexName() string
 	Start() error
 	Close() error
 	Dests() map[string]Dest // Key is partition identifier.

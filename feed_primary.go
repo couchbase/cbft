@@ -23,7 +23,7 @@ func init() {
 		Start: func(mgr *Manager, feedName, indexName, indexUUID,
 			sourceType, sourceName, sourceUUID, params string,
 			dests map[string]Dest) error {
-			return mgr.registerFeed(NewPrimaryFeed(feedName,
+			return mgr.registerFeed(NewPrimaryFeed(feedName, indexName,
 				BasicPartitionFunc, dests))
 		},
 		Partitions:  PrimaryFeedPartitions,
@@ -36,30 +36,36 @@ func init() {
 // A PrimaryFeed implements both the Feed and Dest interfaces, for
 // chainability; and is also useful for testing.
 type PrimaryFeed struct {
-	name    string
-	pf      DestPartitionFunc
-	dests   map[string]Dest
-	closeCh chan bool
-	doneCh  chan bool
-	doneErr error
-	doneMsg string
+	name      string
+	indexName string
+	pf        DestPartitionFunc
+	dests     map[string]Dest
+	closeCh   chan bool
+	doneCh    chan bool
+	doneErr   error
+	doneMsg   string
 }
 
-func NewPrimaryFeed(name string, pf DestPartitionFunc,
+func NewPrimaryFeed(name, indexName string, pf DestPartitionFunc,
 	dests map[string]Dest) *PrimaryFeed {
 	return &PrimaryFeed{
-		name:    name,
-		pf:      pf,
-		dests:   dests,
-		closeCh: make(chan bool),
-		doneCh:  make(chan bool),
-		doneErr: nil,
-		doneMsg: "",
+		name:      name,
+		indexName: indexName,
+		pf:        pf,
+		dests:     dests,
+		closeCh:   make(chan bool),
+		doneCh:    make(chan bool),
+		doneErr:   nil,
+		doneMsg:   "",
 	}
 }
 
 func (t *PrimaryFeed) Name() string {
 	return t.name
+}
+
+func (t *PrimaryFeed) IndexName() string {
+	return t.indexName
 }
 
 func (t *PrimaryFeed) Start() error {

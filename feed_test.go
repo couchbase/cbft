@@ -26,6 +26,10 @@ func (t *ErrorOnlyFeed) Name() string {
 	return t.name
 }
 
+func (t *ErrorOnlyFeed) IndexName() string {
+	return t.name
+}
+
 func (t *ErrorOnlyFeed) Start() error {
 	return fmt.Errorf("ErrorOnlyFeed Start() invoked")
 }
@@ -115,13 +119,27 @@ func TestDataSourcePartitions(t *testing.T) {
 }
 
 func TestNilFeedStart(t *testing.T) {
-	if NewNILFeed("", nil).Start() != nil {
+	f := NewNILFeed("aaa", "bbb", nil)
+	if f.Name() != "aaa" {
+		t.Errorf("expected aaa name")
+	}
+	if f.IndexName() != "bbb" {
+		t.Errorf("expected bbb index name")
+	}
+	if f.Start() != nil {
 		t.Errorf("expected NILFeed.Start() to work")
 	}
 }
 
 func TestPrimaryFeed(t *testing.T) {
-	df := NewPrimaryFeed("", BasicPartitionFunc, map[string]Dest{})
+	df := NewPrimaryFeed("aaa", "bbb",
+		BasicPartitionFunc, map[string]Dest{})
+	if df.Name() != "aaa" {
+		t.Errorf("expected aaa name")
+	}
+	if df.IndexName() != "bbb" {
+		t.Errorf("expected bbb index name")
+	}
 	if df.Start() != nil {
 		t.Errorf("expected PrimaryFeed start to work")
 	}
@@ -159,7 +177,7 @@ func TestPrimaryFeed(t *testing.T) {
 		"level", seq, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	df2 := NewPrimaryFeed("", BasicPartitionFunc, map[string]Dest{
+	df2 := NewPrimaryFeed("", "", BasicPartitionFunc, map[string]Dest{
 		"some-partition": &TestDest{},
 	})
 	if df2.ConsistencyWait("some-partition", "some-partition-UUID",
