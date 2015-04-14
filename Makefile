@@ -51,6 +51,7 @@ dist: test dist-meta dist-build
 dist-meta:
 	rm -rf ./dist/out
 	mkdir -p ./dist/out
+	mkdir -p ./static/dist
 	echo $(version) > ./static/dist/version.txt
 	cp ./static/dist/version.txt ./dist/out/version.txt
 	./dist/go-manifest > ./static/dist/manifest.txt
