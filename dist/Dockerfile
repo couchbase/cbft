@@ -13,12 +13,21 @@ MAINTAINER Steve Yen <steve.yen@gmail.com>
 
 RUN apt-get update && apt-get -y install \
     build-essential \
+    cmake \
     libicu-dev \
-    libstemmer-dev \
     libleveldb-dev \
+    libsnappy-dev \
+    libstemmer-dev \
     python-pip
 
-RUN go get -u -v github.com/couchbaselabs/cbft
+RUN git clone git://github.com/couchbase/forestdb /tmp/forestdb && \
+    cd /tmp/forestdb && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make all install
+
+RUN go get -u -v -tags "debug icu libstemmer kagome forestdb leveldb" github.com/couchbaselabs/cbft/...
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft \
     prereqs-dist \

@@ -24,13 +24,13 @@ build: gen-bindata
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
 build-leveldb:
-	$(MAKE) build CBFT_TAGS="libstemmer leveldb"
+	$(MAKE) build CBFT_TAGS="icu libstemmer kagome leveldb"
 
 build-forestdb:
-	$(MAKE) build CBFT_TAGS="libstemmer forestdb"
+	$(MAKE) build CBFT_TAGS="icu libstemmer kagome forestdb"
 
 build-full:
-	$(MAKE) build CBFT_TAGS="libstemmer leveldb forestdb"
+	$(MAKE) build CBFT_TAGS="icu libstemmer kagome forestdb leveldb"
 
 test:
 	go test -v -tags "debug $(CBFT_TAGS)" .
@@ -58,7 +58,6 @@ dist-meta:
 	cp ./static/dist/manifest.txt ./dist/out/manifest.txt
 
 dist-build:
-	$(MAKE) gen-bindata gen-docs
 	$(MAKE) build GOOS=darwin  GOARCH=amd64       CBFT_OUT=./dist/out/cbft.darwin.amd64
 	$(MAKE) build GOOS=linux   GOARCH=386         CBFT_OUT=./dist/out/cbft.linux.386
 	$(MAKE) build GOOS=linux   GOARCH=arm         CBFT_OUT=./dist/out/cbft.linux.arm
