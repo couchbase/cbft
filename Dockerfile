@@ -9,4 +9,13 @@ MAINTAINER Steve Yen <steve.yen@gmail.com>
 
 RUN go get -u github.com/couchbaselabs/cbft
 
-RUN make --directory=/go/src/github.com/couchbaselabs/cbft prereqs-dist test coverage build gen-docs
+RUN make --directory=/go/src/github.com/couchbaselabs/cbft prereqs-dist
+
+# Run through all the dist steps once, but leave a clean,
+# ready-for-use state.
+
+RUN make --directory=/go/src/github.com/couchbaselabs/cbft test coverage
+
+RUN make --directory=/go/src/github.com/couchbaselabs/cbft build
+
+RUN make --directory=/go/src/github.com/couchbaselabs/cbft dist-clean
