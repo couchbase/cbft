@@ -11,11 +11,11 @@ RUN go get -u github.com/couchbaselabs/cbft
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft prereqs-dist
 
-# Run through all the dist steps once, but leave a clean,
-# ready-for-use state.
-
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft test coverage
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft build
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft dist-clean
+
+# Reaching here, we've exercised relevant build/dist steps, and will
+# leave a clean, ready-to-use state of the image.
