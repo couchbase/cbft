@@ -11,7 +11,6 @@ DIST=$top/dist
 
 testProject() {
     go test $project/...
-    go vet $project/...
 }
 
 emitVersion() {
