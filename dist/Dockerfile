@@ -1,7 +1,7 @@
 # This Dockerfile is for building a container image that has all the
 # prerequisites for building cbft.  For example...
 #
-#    docker build -t cbft-builder:latest
+#    docker build -t cbft-builder:latest .
 #
 # To force a fresh image rebuild...
 #
