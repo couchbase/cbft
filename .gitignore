@@ -12,6 +12,7 @@
 /cbft_docs
 /data
 /dist/*.gz
-/dist/cbft.*
-/dist/version.json
+/dist/out
 /site
+/static/dist/manifest.txt
+/static/dist/version.txt
