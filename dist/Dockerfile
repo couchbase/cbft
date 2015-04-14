@@ -1,7 +1,7 @@
 # This Dockerfile is for building a container image that has all the
 # prerequisites for building cbft.  For example...
 #
-#    docker build -t cbft-builder .
+#    docker build -t cbft-builder --no-cache=true .
 #
 FROM golang:1.4.2-cross
 
