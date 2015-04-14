@@ -7,6 +7,10 @@ FROM golang:1.4.2-cross
 
 MAINTAINER Steve Yen <steve.yen@gmail.com>
 
+RUN apt-get update
+
+RUN apt-get -y install python-pip
+
 RUN go get -u github.com/couchbaselabs/cbft
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft prereqs-dist
