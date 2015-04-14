@@ -12,6 +12,9 @@ goflags = \
 
 default: build
 
+clean:
+	rm -f ./cbft
+
 gen-docs: cmd/cbft_docs/main.go
 	go build -o ./cbft_docs ./cmd/cbft_docs
 	./cbft_docs > docs/api-ref.md
@@ -67,7 +70,7 @@ dist-build:
 	$(MAKE) build         GOOS=windows GOARCH=386         CBFT_OUT=./dist/out/cbft.windows.386.exe
 	$(MAKE) build         GOOS=windows GOARCH=amd64       CBFT_OUT=./dist/out/cbft.windows.amd64.exe
 
-dist-clean:
+dist-clean: clean
 	rm -rf ./dist/out
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
