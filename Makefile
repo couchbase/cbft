@@ -1,14 +1,12 @@
-CBFT_OUT = ./cbft
+CBFT_CHECKOUT = origin/master
+CBFT_DOCKER   = cbft-builder:latest
+CBFT_OUT      = ./cbft
+CBFT_TAGS     =
 
-CBFT_TAGS =
-
-pwd = $(shell pwd)
-
+pwd     = $(shell pwd)
 version = $(shell git describe --long)
-
-goflags = \
-    -ldflags '-X main.VERSION $(version)' \
-    -tags "debug $(CBFT_TAGS)"
+goflags = -ldflags '-X main.VERSION $(version)' \
+          -tags "debug $(CBFT_TAGS)"
 
 # -------------------------------------------------------------------
 # Targets commonly used for day-to-day development...
@@ -52,21 +50,13 @@ coverage:
 # -------------------------------------------------------------------
 # Release / distribution related targets...
 
-CBFT_CHECKOUT = origin/master
-CBFT_DOCKER = cbft-builder:latest
-CBFT_RELEASE =
-
-eee:
-	$(ifeq ($(strip $(CBFT_RELEASE)),), FOO=bye, FOO=hello)
-	echo foo $(FOO)
-	echo $(CBFT_RELEASE) xyz $(strip $(CBFT_RELEASE)) yyy
-
 dist: test dist-meta dist-build
 
 dist-meta:
-	rm -rf ./dist/out
 	mkdir -p ./dist/out
 	mkdir -p ./static/dist
+	rm -rf ./dist/out/*
+	rm -rf ./static/dist/*
 	echo $(version) > ./static/dist/version.txt
 	cp ./static/dist/version.txt ./dist/out/version.txt
 	./dist/go-manifest > ./static/dist/manifest.txt
@@ -83,7 +73,7 @@ dist-build:
 	$(MAKE) build         GOOS=windows GOARCH=amd64       CBFT_OUT=./dist/out/cbft.windows.amd64.exe
 
 dist-clean: clean
-	rm -rf ./dist/out
+	rm -rf ./dist/out/*
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
 
@@ -99,15 +89,6 @@ release-publish-build: # This runs inside a cbft-builder docker container.
 	cp -R ./dist/out/* /tmp/dist-out
 	cp -R ./site/* /tmp/dist-site
 
-release-publish-push:
-ifeq ($(CBFT_RELEASE),)
-	$(error CBFT_RELEASE not set)
-else
-	rm -rf ./site/*
-	cp -R $(pwd)/tmp/dist-site/* ./site
-	mkdocs gh-deploy
-endif
-
 release-publish:
 	rm -rf $(pwd)/tmp/dist-out
 	rm -rf $(pwd)/tmp/dist-site
@@ -120,7 +101,9 @@ release-publish:
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			release-publish-build dist-clean
-	$(MAKE) release-publish-push CBFT_RELEASE=$(CBFT_RELEASE)
+	rm -rf ./site/*
+	cp -R $(pwd)/tmp/dist-site/* ./site
+	mkdocs gh-deploy
 
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
