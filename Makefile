@@ -79,7 +79,7 @@ dist-clean: clean
 
 # -------------------------------------------------------------------
 
-CBFT_CHECKOUT = master
+CBFT_CHECKOUT = origin/master
 CBFT_DOCKER   = cbft-builder:latest
 
 dist-pub:
