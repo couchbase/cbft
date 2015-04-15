@@ -109,7 +109,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// Ex: "static/dist/manifest.txt".
 			a, err := Asset("static/dist/" + name)
 			if err == nil {
-				j, err := json.Marshal(string(a))
+				j, err := json.Marshal(strings.TrimSpace(string(a)))
 				if err == nil {
 					w.Write([]byte(`,"`))
 					w.Write([]byte("/static/dist/" + name))
