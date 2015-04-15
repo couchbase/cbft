@@ -94,6 +94,9 @@ dist-pub:
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			dist-pub-helper dist-clean
+	rm -rf ./site/*
+	cp -R $(pwd)/tmp/dist-site/* ./site
+	mkdocs gh-deploy
 
 dist-pub-helper: # This runs inside a cbft-builder docker container.
 	git remote update
