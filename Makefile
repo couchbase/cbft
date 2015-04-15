@@ -84,6 +84,21 @@ dist-clean: clean
 #
 # See: https://help.github.com/articles/creating-an-access-token-for-command-line-use
 #
+# To release a new version...
+#
+#   git grep v0.0.1 # Look for old version strings.
+#   <edit/update files, like cmd/cbft/main.go>
+#   make test
+#   <and, more tests, etc>
+#   git commit -m "v0.0.2"
+#   git tag -a "v0.0.2" -m "v0.0.2"
+#   git push --tags
+#   make release
+#
+# Remember, we use semver versioning rules.
+#
+# Of note, the version.go/VERSION is only updated on data/config format changes.
+#
 release: release-build release-push
 
 release-build:

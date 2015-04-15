@@ -38,7 +38,7 @@ import (
 	"github.com/couchbaselabs/cbft"
 )
 
-var VERSION = "0.0.0"
+var VERSION = "v0.0.1"
 
 var expvars = expvar.NewMap("stats")
 
