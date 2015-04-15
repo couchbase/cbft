@@ -53,7 +53,13 @@ coverage:
 # Release / distribution related targets...
 
 CBFT_CHECKOUT = origin/master
-CBFT_DOCKER   = cbft-builder:latest
+CBFT_DOCKER = cbft-builder:latest
+CBFT_RELEASE =
+
+eee:
+	$(ifeq ($(strip $(CBFT_RELEASE)),), FOO=bye, FOO=hello)
+	echo foo $(FOO)
+	echo $(CBFT_RELEASE) xyz $(strip $(CBFT_RELEASE)) yyy
 
 dist: test dist-meta dist-build
 
@@ -81,7 +87,7 @@ dist-clean: clean
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
 
-release-helper: # This runs inside a cbft-builder docker container.
+release-publish-build: # This runs inside a cbft-builder docker container.
 	git remote update
 	git fetch --tags
 	git checkout $(CBFT_CHECKOUT)
@@ -92,6 +98,15 @@ release-helper: # This runs inside a cbft-builder docker container.
 	mkdir -p /tmp/dist-site
 	cp -R ./dist/out/* /tmp/dist-out
 	cp -R ./site/* /tmp/dist-site
+
+release-publish-push:
+ifeq ($(CBFT_RELEASE),)
+	$(error CBFT_RELEASE not set)
+else
+	rm -rf ./site/*
+	cp -R $(pwd)/tmp/dist-site/* ./site
+	mkdocs gh-deploy
+endif
 
 release-publish:
 	rm -rf $(pwd)/tmp/dist-out
@@ -104,10 +119,8 @@ release-publish:
 		$(CBFT_DOCKER) \
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
-			release-helper dist-clean
-	rm -rf ./site/*
-	cp -R $(pwd)/tmp/dist-site/* ./site
-	mkdocs gh-deploy
+			release-publish-build dist-clean
+	$(MAKE) release-publish-push CBFT_RELEASE=$(CBFT_RELEASE)
 
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
@@ -120,4 +133,5 @@ prereqs:
 prereqs-dist: prereqs
 	go get golang.org/x/tools/cmd/cover/...
 	go get golang.org/x/tools/cmd/vet/...
+	go get github.com/aktau/github-release/...
 	pip install mkdocs
