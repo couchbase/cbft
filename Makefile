@@ -105,6 +105,12 @@ release-publish:
 	cp -R $(pwd)/tmp/dist-site/* ./site
 	mkdocs gh-deploy
 
+%.tar.bz2: %
+	tar -jcvf "$<.tar.bz2" "$<"
+
+%.zip: %.exe
+	zip "$@" "$<"
+
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
 
