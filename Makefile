@@ -87,10 +87,11 @@ dist-clean: clean
 # To release a new version...
 #
 #   git grep v0.0.1 # Look for old version strings.
-#   <edit/update files, like cmd/cbft/main.go>
+#   <edit/update files, like cmd/cbft/main.go and mkdocs.yml>
 #   make test
 #   <and, more tests, etc>
 #   git commit -m "v0.0.2"
+#   git push
 #   git tag -a "v0.0.2" -m "v0.0.2"
 #   git push --tags
 #   make release
@@ -99,13 +100,14 @@ dist-clean: clean
 #
 # Of note, the version.go/VERSION is only updated on data/config format changes.
 #
-release: release-build release-push
+release: release-build \
+	release-github-register release-github-upload release-github-docs
 
 release-build:
-	mkdir -p $(pwd)/tmp/dist-out
-	mkdir -p $(pwd)/tmp/dist-site
-	rm -rf $(pwd)/tmp/dist-out/*
-	rm -rf $(pwd)/tmp/dist-site/*
+	mkdir -p ./tmp/dist-out
+	mkdir -p ./tmp/dist-site
+	rm -rf ./tmp/dist-out/*
+	rm -rf ./tmp/dist-site/*
 	docker run --rm \
 		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
 		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
@@ -113,12 +115,12 @@ release-build:
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			release-build-helper dist-clean
-	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.exe),\
-		zip $(FILE).zip $(FILE);)
-	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.amd64),\
-		tar -zcvf $(FILE).tar.gz $(FILE);)
-	rm -rf ./site/*
-	cp -R $(pwd)/tmp/dist-site/* ./site
+	(cd ./tmp/dist-out; for f in *.exe; do \
+		zip $$f.zip $$f; \
+	done)
+	(cd ./tmp/dist-out; for f in *.amd64; do \
+		tar -zcvf $$f.tar.gz $$f; \
+	done)
 
 release-build-helper: # This runs inside a cbft-builder docker container.
 	git remote update
@@ -134,17 +136,26 @@ release-build-helper: # This runs inside a cbft-builder docker container.
 	cp -R ./dist/out/* /tmp/dist-out
 	cp -R ./site/* /tmp/dist-site
 
-release-push:
+release-github-register:
 	$(GOPATH)/bin/github-release --verbose release \
 		--repo cbft \
-		--tag $(strip $(shell git describe --abbrev=0 --tags)) \
-		--pre-release || true
-	$(foreach FILE,$(wildcard ./tmp/dist-out/*.gz ./tmp/dist-out/*.zip),\
+		--tag $(strip $(shell git describe --abbrev=0 --tags \
+				$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
+		--pre-release
+
+release-github-upload: # Must be run in ./tmp/dist-out directory.
+	(cd ./tmp/dist-out; for f in *.gz *.zip; do \
 		$(GOPATH)/bin/github-release upload \
 			--repo cbft \
-			--tag $(strip $(shell git describe --abbrev=0 --tags)) \
-			--name $(strip $(shell cat ./tmp/dist-out/version.txt))_$(notdir $(FILE)) \
-			--file $(FILE);)
+			--tag $(strip $(shell git describe --abbrev=0 --tags \
+					$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
+			--name $(strip $(shell cat ./tmp/dist-out/version.txt))_$$f \
+			--file $$f; \
+	done)
+
+release-github-docs:
+	rm -rf ./site/*
+	cp -R ./tmp/dist-site/* ./site
 	mkdocs gh-deploy
 
 # -------------------------------------------------------------------
