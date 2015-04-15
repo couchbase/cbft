@@ -1,6 +1,8 @@
 CBFT_OUT  = ./cbft
 CBFT_TAGS =
 
+pwd = $(shell pwd)
+
 version = $(shell git describe --long)
 
 goflags = \
@@ -81,25 +83,28 @@ CBFT_CHECKOUT = master
 CBFT_DOCKER   = cbft-builder:latest
 
 dist-pub:
-	rm -rf ./dist/out/* ./site/*
-	mkdir -p ./dist/out
-	mkdir -p ./site
-	docker run $(CBFT_DOCKER) \
-		-v ./dist/out:/tmp/cbft-out \
-		-v ./site:/tmp/cbft-site \
+	rm -rf $(pwd)/tmp/dist-out
+	rm -rf $(pwd)/tmp/dist-site
+	mkdir -p $(pwd)/tmp/dist-out
+	mkdir -p $(pwd)/tmp/dist-site
+	docker run \
+		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
+		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
+		$(CBFT_DOCKER) \
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			dist-pub-helper dist-clean
-	mkdocs gh-deploy
 
-dist-pub-helper: # This runs in cbft-builder docker container.
+dist-pub-helper: # This runs inside a cbft-builder docker container.
 	git remote update
 	git checkout $(CBFT_CHECKOUT)
 	$(MAKE) dist
 	$(MAKE) gen-docs
 	mkdocs build --clean
-	cp -R ./dist/out/ /tmp/cbft-out/
-	cp -R ./site/ /tmp/cbft-site/
+	mkdir -p /tmp/dist-out
+	mkdir -p /tmp/dist-site
+	cp -R ./dist/out/* /tmp/dist-out
+	cp -R ./site/* /tmp/dist-site
 
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
