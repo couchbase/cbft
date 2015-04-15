@@ -77,7 +77,35 @@ dist-clean: clean
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
 
-release-publish-build: # This runs inside a cbft-builder docker container.
+# The release target requires...
+#
+#   export GITHUB_TOKEN=/* a github access token */
+#   export GITHUB_USER=couchbaselabs
+#
+# See: https://help.github.com/articles/creating-an-access-token-for-command-line-use
+#
+release: release-build release-push
+
+release-build:
+	mkdir -p $(pwd)/tmp/dist-out
+	mkdir -p $(pwd)/tmp/dist-site
+	rm -rf $(pwd)/tmp/dist-out/*
+	rm -rf $(pwd)/tmp/dist-site/*
+	docker run --rm \
+		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
+		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
+		$(CBFT_DOCKER) \
+		make -C /go/src/github.com/couchbaselabs/cbft \
+			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
+			release-build-helper dist-clean
+	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.exe),\
+		zip $(FILE).zip $(FILE);)
+	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.amd64),\
+		tar -zcvf $(FILE).tar.gz $(FILE);)
+	rm -rf ./site/*
+	cp -R $(pwd)/tmp/dist-site/* ./site
+
+release-build-helper: # This runs inside a cbft-builder docker container.
 	git remote update
 	git fetch --tags
 	git checkout $(CBFT_CHECKOUT)
@@ -91,24 +119,17 @@ release-publish-build: # This runs inside a cbft-builder docker container.
 	cp -R ./dist/out/* /tmp/dist-out
 	cp -R ./site/* /tmp/dist-site
 
-release-publish:
-	mkdir -p $(pwd)/tmp/dist-out
-	mkdir -p $(pwd)/tmp/dist-site
-	rm -rf $(pwd)/tmp/dist-out/*
-	rm -rf $(pwd)/tmp/dist-site/*
-	docker run --rm \
-		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
-		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
-		$(CBFT_DOCKER) \
-		make -C /go/src/github.com/couchbaselabs/cbft \
-			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
-			release-publish-build dist-clean
-	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.exe),\
-		zip $(FILE).zip $(FILE);)
-	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.amd64),\
-		tar -zcvf $(FILE).tar.gz $(FILE);)
-	rm -rf ./site/*
-	cp -R $(pwd)/tmp/dist-site/* ./site
+release-push:
+	$(GOPATH)/bin/github-release --verbose release \
+		--repo cbft \
+		--tag $(strip $(shell git describe --abbrev=0 --tags)) \
+		--pre-release || true
+	$(foreach FILE,$(wildcard ./tmp/dist-out/*.gz ./tmp/dist-out/*.zip),\
+		$(GOPATH)/bin/github-release upload \
+			--repo cbft \
+			--tag $(strip $(shell git describe --abbrev=0 --tags)) \
+			--name $(strip $(shell cat ./tmp/dist-out/version.txt))_$(notdir $(FILE)) \
+			--file $(FILE);)
 	mkdocs gh-deploy
 
 # -------------------------------------------------------------------
