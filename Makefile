@@ -16,14 +16,6 @@ default: build
 clean:
 	rm -f ./cbft ./cbft_docs
 
-gen-docs: cmd/cbft_docs/main.go
-	go build -o ./cbft_docs ./cmd/cbft_docs
-	./cbft_docs > docs/api-ref.md
-
-gen-bindata:
-	go-bindata-assetfs -pkg=cbft ./static/...
-	go fmt bindata_assetfs.go
-
 build: gen-bindata
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
@@ -36,12 +28,20 @@ build-leveldb:
 build-full:
 	$(MAKE) build CBFT_TAGS="icu libstemmer kagome forestdb leveldb"
 
+gen-bindata:
+	go-bindata-assetfs -pkg=cbft ./static/...
+	go fmt bindata_assetfs.go
+
+gen-docs: cmd/cbft_docs/main.go
+	go build -o ./cbft_docs ./cmd/cbft_docs
+	./cbft_docs > docs/api-ref.md
+
 test:
 	go test -v -tags "debug $(CBFT_TAGS)" .
 	go test -v -tags "debug $(CBFT_TAGS)" ./cmd/cbft
 
 test-full:
-	$(MAKE) test CBFT_TAGS="leveldb forestdb"
+	$(MAKE) test CBFT_TAGS="icu libstemmer kagome forestdb leveldb"
 
 coverage:
 	go test -coverprofile=coverage.out -covermode=count
@@ -86,14 +86,16 @@ release-publish-build: # This runs inside a cbft-builder docker container.
 	mkdocs build --clean
 	mkdir -p /tmp/dist-out
 	mkdir -p /tmp/dist-site
+	rm -rf /tmp/dist-out/*
+	rm -rf /tmp/dist-site/*
 	cp -R ./dist/out/* /tmp/dist-out
 	cp -R ./site/* /tmp/dist-site
 
 release-publish:
-	rm -rf $(pwd)/tmp/dist-out
-	rm -rf $(pwd)/tmp/dist-site
 	mkdir -p $(pwd)/tmp/dist-out
 	mkdir -p $(pwd)/tmp/dist-site
+	rm -rf $(pwd)/tmp/dist-out/*
+	rm -rf $(pwd)/tmp/dist-site/*
 	docker run --rm \
 		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
 		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
@@ -101,15 +103,13 @@ release-publish:
 		make -C /go/src/github.com/couchbaselabs/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			release-publish-build dist-clean
+	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.exe),\
+		zip $(FILE).zip $(FILE);)
+	$(foreach FILE,$(wildcard $(pwd)/tmp/dist-out/cbft.*.amd64),\
+		tar -zcvf $(FILE).tar.gz $(FILE);)
 	rm -rf ./site/*
 	cp -R $(pwd)/tmp/dist-site/* ./site
 	mkdocs gh-deploy
-
-%.tar.bz2: %
-	tar -jcvf "$<.tar.bz2" "$<"
-
-%.zip: %.exe
-	zip "$@" "$<"
 
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
