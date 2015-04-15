@@ -103,6 +103,23 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	filepath.Walk(h.mgr.dataDir, visit)
 	w.Write([]byte(`]`))
 
+	entries, err := AssetDir("static/dist")
+	if err == nil {
+		for _, name := range entries {
+			// Ex: "static/dist/manifest.txt".
+			a, err := Asset("static/dist/" + name)
+			if err == nil {
+				j, err := json.Marshal(string(a))
+				if err == nil {
+					w.Write([]byte(`,"`))
+					w.Write([]byte("/static/dist/" + name))
+					w.Write([]byte(`":`))
+					w.Write(j)
+				}
+			}
+		}
+	}
+
 	w.Write(jsonCloseBrace)
 }
 
