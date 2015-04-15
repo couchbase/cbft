@@ -13,7 +13,7 @@ goflags = \
 default: build
 
 clean:
-	rm -f ./cbft
+	rm -f ./cbft ./cbft_docs
 
 gen-docs: cmd/cbft_docs/main.go
 	go build -o ./cbft_docs ./cmd/cbft_docs
@@ -74,6 +74,32 @@ dist-clean: clean
 	rm -rf ./dist/out
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
+
+# -------------------------------------------------------------------
+
+CBFT_CHECKOUT = master
+CBFT_DOCKER   = cbft-builder:latest
+
+dist-pub:
+	rm -rf ./dist/out/* ./site/*
+	mkdir -p ./dist/out
+	mkdir -p ./site
+	docker run $(CBFT_DOCKER) \
+		-v ./dist/out:/tmp/cbft-out \
+		-v ./site:/tmp/cbft-site \
+		make -C /go/src/github.com/couchbaselabs/cbft \
+			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
+			dist-pub-helper dist-clean
+	mkdocs gh-deploy
+
+dist-pub-helper: # This runs in cbft-builder docker container.
+	git remote update
+	git checkout $(CBFT_CHECKOUT)
+	$(MAKE) dist
+	$(MAKE) gen-docs
+	mkdocs build --clean
+	cp -R ./dist/out/ /tmp/cbft-out/
+	cp -R ./site/ /tmp/cbft-site/
 
 # -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
