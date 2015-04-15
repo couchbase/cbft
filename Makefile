@@ -98,7 +98,7 @@ release-publish:
 	rm -rf $(pwd)/tmp/dist-site
 	mkdir -p $(pwd)/tmp/dist-out
 	mkdir -p $(pwd)/tmp/dist-site
-	docker run \
+	docker run --rm \
 		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
 		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
 		$(CBFT_DOCKER) \
