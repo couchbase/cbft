@@ -1,4 +1,5 @@
-CBFT_OUT  = ./cbft
+CBFT_OUT = ./cbft
+
 CBFT_TAGS =
 
 pwd = $(shell pwd)
