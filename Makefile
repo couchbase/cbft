@@ -6,7 +6,7 @@ CBFT_TAGS     =
 pwd     = $(shell pwd)
 version = $(shell git describe --long)
 goflags = -ldflags '-X main.VERSION $(version)' \
-          -tags "debug $(CBFT_TAGS)"
+          -tags "debug kagome $(CBFT_TAGS)"
 
 # -------------------------------------------------------------------
 # Targets commonly used for day-to-day development...
@@ -20,16 +20,16 @@ build: gen-bindata
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
 build-static:
-	$(MAKE) build CBFT_TAGS="libstemmer kagome"
+	$(MAKE) build CBFT_TAGS="libstemmer"
 
 build-forestdb:
-	$(MAKE) build CBFT_TAGS="libstemmer kagome icu forestdb"
+	$(MAKE) build CBFT_TAGS="libstemmer icu forestdb"
 
 build-leveldb:
-	$(MAKE) build CBFT_TAGS="libstemmer kagome icu leveldb"
+	$(MAKE) build CBFT_TAGS="libstemmer icu leveldb"
 
 build-full:
-	$(MAKE) build CBFT_TAGS="libstemmer kagome icu forestdb leveldb"
+	$(MAKE) build CBFT_TAGS="full"
 
 gen-bindata:
 	go-bindata-assetfs -pkg=cbft ./static/...
@@ -40,11 +40,11 @@ gen-docs: cmd/cbft_docs/main.go
 	./cbft_docs > docs/api-ref.md
 
 test:
-	go test -v -tags "debug $(CBFT_TAGS)" .
-	go test -v -tags "debug $(CBFT_TAGS)" ./cmd/cbft
+	go test -v -tags "debug kagome $(CBFT_TAGS)" .
+	go test -v -tags "debug kagome $(CBFT_TAGS)" ./cmd/cbft
 
 test-full:
-	$(MAKE) test CBFT_TAGS="icu libstemmer kagome forestdb leveldb"
+	$(MAKE) test CBFT_TAGS="full"
 
 coverage:
 	go test -coverprofile=coverage.out -covermode=count
