@@ -45,7 +45,7 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	// Key is sourceType, value is description.
 	sourceTypes := map[string]*MetaDescSource{}
-	for sourceType, f := range feedTypes {
+	for sourceType, f := range FeedTypes {
 		if f.Public {
 			sourceTypes[sourceType] = &MetaDescSource{
 				Description: f.Description,
@@ -56,7 +56,7 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	// Key is indexType, value is description.
 	indexTypes := map[string]*MetaDescIndex{}
-	for indexType, t := range pindexImplTypes {
+	for indexType, t := range PIndexImplTypes {
 		indexTypes[indexType] = &MetaDescIndex{
 			MetaDesc: MetaDesc{
 				Description: t.Description,

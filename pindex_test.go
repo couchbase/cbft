@@ -148,9 +148,9 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		t.Errorf("expected nothing from blackhole.GetOpaque()")
 	}
 
-	bt := pindexImplTypes["blackhole"]
+	bt := PIndexImplTypes["blackhole"]
 	if bt == nil {
-		t.Errorf("expected blackhole in pindexImplTypes")
+		t.Errorf("expected blackhole in PIndexImplTypes")
 	}
 	if bt.New == nil || bt.Open == nil {
 		t.Errorf("blackhole should have open and new funcs")

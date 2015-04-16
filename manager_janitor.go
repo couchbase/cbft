@@ -442,7 +442,7 @@ func (mgr *Manager) startFeed(pindexes []*PIndex) error {
 func (mgr *Manager) startFeedByType(feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID, sourceParams string,
 	dests map[string]Dest) error {
-	feedType, exists := feedTypes[sourceType]
+	feedType, exists := FeedTypes[sourceType]
 	if !exists || feedType == nil {
 		return fmt.Errorf("janitor: unknown sourceType: %s", sourceType)
 	}

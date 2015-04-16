@@ -49,15 +49,15 @@ type PIndexImplType struct {
 	QueryHelp string
 }
 
-var pindexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
+var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
 
 func RegisterPIndexImplType(indexType string, t *PIndexImplType) {
-	pindexImplTypes[indexType] = t
+	PIndexImplTypes[indexType] = t
 }
 
 func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
-	t, exists := pindexImplTypes[indexType]
+	t, exists := PIndexImplTypes[indexType]
 	if !exists || t == nil {
 		return nil, nil, fmt.Errorf("pindex_impl: NewPIndexImpl indexType: %s",
 			indexType)
@@ -68,7 +68,7 @@ func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 
 func OpenPIndexImpl(indexType, path string, restart func()) (
 	PIndexImpl, Dest, error) {
-	t, exists := pindexImplTypes[indexType]
+	t, exists := PIndexImplTypes[indexType]
 	if !exists || t == nil {
 		return nil, nil, fmt.Errorf("pindex_impl: OpenPIndexImpl"+
 			" indexType: %s", indexType)
@@ -90,7 +90,7 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 		return nil, fmt.Errorf("pindex_impl: no indexDef,"+
 			" indexName: %s", indexName)
 	}
-	pindexImplType := pindexImplTypes[indexDef.Type]
+	pindexImplType := PIndexImplTypes[indexDef.Type]
 	if pindexImplType == nil {
 		return nil, fmt.Errorf("pindex_impl: no pindexImplType,"+
 			" indexName: %s, indexDef.Type: %s",

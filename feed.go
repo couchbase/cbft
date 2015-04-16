@@ -32,7 +32,7 @@ const FEED_SLEEP_MAX_MS = 10000
 const FEED_SLEEP_INIT_MS = 100
 const FEED_BACKOFF_FACTOR = 1.5
 
-var feedTypes = make(map[string]*FeedType) // Key is sourceType.
+var FeedTypes = make(map[string]*FeedType) // Key is sourceType.
 
 type FeedType struct {
 	Start       FeedStartFunc
@@ -50,12 +50,12 @@ type FeedPartitionsFunc func(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error)
 
 func RegisterFeedType(sourceType string, f *FeedType) {
-	feedTypes[sourceType] = f
+	FeedTypes[sourceType] = f
 }
 
 func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
-	feedType, exists := feedTypes[sourceType]
+	feedType, exists := FeedTypes[sourceType]
 	if !exists || feedType == nil {
 		return nil, fmt.Errorf("feed: unknown sourceType: %s", sourceType)
 	}

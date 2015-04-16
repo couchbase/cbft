@@ -36,7 +36,7 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 			" indexName: %q", indexName)
 	}
 
-	pindexImplType, exists := pindexImplTypes[indexType]
+	pindexImplType, exists := PIndexImplTypes[indexType]
 	if !exists {
 		return fmt.Errorf("manager_api: CreateIndex, unknown indexType: %s",
 			indexType)

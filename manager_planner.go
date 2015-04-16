@@ -247,7 +247,7 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 		}
 
 		// Split each indexDef into 1 or more PlanPIndexes.
-		pindexImplType, exists := pindexImplTypes[indexDef.Type]
+		pindexImplType, exists := PIndexImplTypes[indexDef.Type]
 		if !exists ||
 			pindexImplType == nil ||
 			pindexImplType.New == nil ||

@@ -31,13 +31,13 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 
 func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
-	for _, t := range pindexImplTypes {
+	for _, t := range PIndexImplTypes {
 		indexTypes = append(indexTypes, t.Description)
 	}
 	sort.Strings(indexTypes)
 
 	sourceTypes := []string(nil)
-	for _, t := range feedTypes {
+	for _, t := range FeedTypes {
 		if t.Public {
 			sourceTypes = append(sourceTypes, t.Description)
 		}
