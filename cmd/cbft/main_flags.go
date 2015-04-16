@@ -198,11 +198,11 @@ func initFlags(flags *Flags) map[string][]string {
 }
 
 const examples = `
-  Getting started, where a local couchbase server is the datasource:
+  Getting started, where a couchbase running on localhost is the datasource:
     mkdir -p data
     ./cbft -server=http://localhost:8091
 
-  Example where configuration is kept in a couchbase "cfg-bucket":
+  Example where cbft's configuration is kept in a couchbase "cfg-bucket":
     ./cbft -cfg=couchbase:http://cfg-bucket@CB_HOST:8091 \
            -server=http://CB_HOST:8091
 `
