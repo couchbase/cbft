@@ -56,18 +56,18 @@ func main() {
 		os.Exit(0)
 	}
 
+	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
+	if err != nil {
+		log.Fatalf("main: could not create MsgRing, err: %v", err)
+	}
+	log.SetOutput(mr)
+
 	log.Printf("main: %s started (%s/%s)",
 		os.Args[0], VERSION, cbft.VERSION)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	go dumpOnSignalForPlatform()
-
-	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
-	if err != nil {
-		log.Fatalf("main: could not create MsgRing, err: %v", err)
-	}
-	log.SetOutput(mr)
 
 	MainWelcome(flagAliases)
 
