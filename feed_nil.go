@@ -26,8 +26,9 @@ func init() {
 			server string) ([]string, error) {
 			return nil, nil
 		},
-		Public:      true,
-		Description: "nil - a NO-OP data source, used for index aliases and testing",
+		Public: true,
+		Description: "advanced/nil" +
+			" - a NO-OP data source, used for index aliases and testing",
 	})
 }
 

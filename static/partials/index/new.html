@@ -27,7 +27,7 @@
            class="col-sm-2 control-label">Index Type</label>
     <div class="col-sm-10">
       <select ng-model="newIndexType"
-        ng-options="indexType as t.description for (indexType, t) in meta.indexTypes">
+        ng-options="indexType as t.label group by t.category for (indexType, t) in meta.indexTypes">
         <option value="">-- choose index type --</option>
       </select>
     </div>
@@ -51,7 +51,7 @@
            class="col-sm-2 control-label">Source Type</label>
     <div class="col-sm-10">
       <select ng-model="newSourceType"
-        ng-options="sourceType as t.description for (sourceType, t) in meta.sourceTypes">
+        ng-options="sourceType as t.label group by t.category for (sourceType, t) in meta.sourceTypes">
         <option value="">-- choose source type --</option>
       </select>
     </div>

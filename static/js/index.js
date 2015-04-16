@@ -314,12 +314,20 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.meta = data;
 
         for (var k in data.sourceTypes) {
+            var parts = data.sourceTypes[k].description.split("/");
+            data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
+            data.sourceTypes[k].label = parts[parts.length - 1];
+
             $scope.newSourceParams[k] =
                 JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
             $scope.paramNumLines[k] = $scope.newSourceParams[k].split("\n").length + 1;
         }
 
         for (var k in data.indexTypes) {
+            var parts = data.indexTypes[k].description.split("/");
+            data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
+            data.indexTypes[k].label = parts[parts.length - 1];
+
             $scope.newIndexParams[k] = {};
             for (var j in data.indexTypes[k].startSample) {
                 $scope.newIndexParams[k][j] =

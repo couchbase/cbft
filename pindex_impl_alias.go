@@ -26,10 +26,11 @@ func init() {
 	// Register alias with empty instantiation functions,
 	// so that "alias" will show up in valid index types.
 	RegisterPIndexImplType("alias", &PIndexImplType{
-		Validate:    ValidateAlias,
-		Count:       CountAlias,
-		Query:       QueryAlias,
-		Description: "alias - supports fan-out of queries to multiple index targets",
+		Validate: ValidateAlias,
+		Count:    CountAlias,
+		Query:    QueryAlias,
+		Description: "advanced/alias" +
+			" - supports fan-out of queries to multiple index targets",
 		StartSample: &AliasParams{
 			Targets: map[string]*AliasParamsTarget{
 				"yourIndexName": &AliasParamsTarget{},

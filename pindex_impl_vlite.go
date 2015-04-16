@@ -148,7 +148,8 @@ func init() {
 		Count: CountVLitePIndexImpl,
 		Query: QueryVLitePIndexImpl,
 
-		Description: "vlite - lightweight, view-like index",
+		Description: "advanced/vlite" +
+			" - lightweight, view-like index",
 		StartSample: VLiteParams{},
 	})
 
@@ -160,7 +161,8 @@ func init() {
 		Count: CountVLitePIndexImpl,
 		Query: QueryVLitePIndexImpl,
 
-		Description: "vlite-mem - lightweight, view-like index (in memory only)",
+		Description: "advanced/vlite-mem" +
+			" - lightweight, view-like index (in memory only)",
 		StartSample: VLiteParams{},
 	})
 }

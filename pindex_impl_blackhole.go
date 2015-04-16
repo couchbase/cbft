@@ -22,20 +22,22 @@ func init() {
 	RegisterPIndexImplType("blackhole", &PIndexImplType{
 		New:  NewBlackHolePIndexImpl,
 		Open: OpenBlackHolePIndexImpl,
-		Count: func(mgr *Manager, indexName, indexUUID string) (uint64, error) {
+		Count: func(mgr *Manager, indexName, indexUUID string) (
+			uint64, error) {
 			return 0, fmt.Errorf("blackhole: not countable")
 		},
 		Query: func(mgr *Manager, indexName, indexUUID string,
 			req []byte, res io.Writer) error {
 			return fmt.Errorf("blackhole: not queryable")
 		},
-		Description: "blackhole - (advanced) ignores all incoming data" +
-			" and is not queryable; used for testing",
+		Description: "advanced/blackhole" +
+			" - ignores all incoming data and is not queryable;" +
+			" used for testing",
 	})
 }
 
-func NewBlackHolePIndexImpl(indexType, indexParams, path string, restart func()) (
-	PIndexImpl, Dest, error) {
+func NewBlackHolePIndexImpl(indexType, indexParams,
+	path string, restart func()) (PIndexImpl, Dest, error) {
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return nil, nil, err

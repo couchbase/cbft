@@ -112,8 +112,8 @@ func init() {
 		Count: CountBlevePIndexImpl,
 		Query: QueryBlevePIndexImpl,
 
-		Description: "bleve - full-text index" +
-			" powered by the bleve full-text-search engine",
+		Description: "general/bleve" +
+			" - full-text index powered by the bleve full-text engine",
 		StartSample: NewBleveParams(),
 	})
 }
