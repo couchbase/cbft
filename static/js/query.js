@@ -30,6 +30,11 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyVectors = "{}";
 
     $scope.runQuery = function() {
+        if (!$scope.query) {
+            $scope.errorMessage = "please enter a query";
+            return;
+        }
+
         $location.search('q', $scope.query);
         $location.search('p', $scope.page);
 
