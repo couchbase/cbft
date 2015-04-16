@@ -90,6 +90,7 @@ dist-clean: clean
 # To release a new version...
 #
 #   git grep v0.0.1 # Look for old version strings.
+#   git grep v0.0   # Look for old version strings.
 #   <edit/update files, like cmd/cbft/main.go and mkdocs.yml>
 #   make test
 #   <and, more tests, etc>
