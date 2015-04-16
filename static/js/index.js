@@ -185,7 +185,8 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                             }
                             ss.prev = ss;
                             if (indexStatsPrev) {
-                                ss.prev = ((indexStatsPrev[aa][k] || {})[j] || {})[s];
+                                ss.prev =
+                                    ((indexStatsPrev[aa][k] || {})[j] || {})[s];
                             }
                             ss.sourceName = k;
                             ss.statKind = indexStatsLabels[aa];
@@ -320,7 +321,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
             $scope.newSourceParams[k] =
                 JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
-            $scope.paramNumLines[k] = $scope.newSourceParams[k].split("\n").length + 1;
+            $scope.paramNumLines[k] =
+                $scope.newSourceParams[k].split("\n").length + 1;
         }
 
         for (var k in data.indexTypes) {
@@ -365,9 +367,11 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                 $scope.newSourceType = data.indexDef.sourceType;
                 $scope.newSourceName = data.indexDef.sourceName;
                 $scope.newSourceUUID = data.indexDef.sourceUUID;
-                $scope.newSourceParams[data.indexDef.sourceType] = data.indexDef.sourceParams;
-                $scope.newPlanParams = JSON.stringify(data.indexDef.planParams,
-                                                      undefined, 2);
+                $scope.newSourceParams[data.indexDef.sourceType] =
+                    data.indexDef.sourceParams;
+                $scope.newPlanParams =
+                    JSON.stringify(data.indexDef.planParams,
+                                   undefined, 2);
 
                 $scope.prevIndexUUID = "";
                 if ($scope.isEdit) {
@@ -435,7 +439,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             } catch (e) {
                 $scope.errorFields["sourceParams"] = {};
                 $scope.errorFields["sourceParams"][sourceType] = true;
-                $scope.errorMessage = "error: could not JSON parse source params";
+                $scope.errorMessage =
+                    "error: could not JSON parse source params";
                 return
             }
         }
@@ -444,7 +449,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             JSON.parse(planParams);
         } catch (e) {
             $scope.errorFields["planParams"] = true;
-            $scope.errorMessage = "error: could not JSON parse plan params";
+            $scope.errorMessage =
+                "error: could not JSON parse plan params";
             return
         }
 
