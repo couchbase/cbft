@@ -188,8 +188,8 @@ func initFlags(flags *Flags) map[string][]string {
 					"\n      "))
 		}
 
-		fmt.Fprintf(os.Stderr, "\nExample:")
-		fmt.Fprintf(os.Stderr, example)
+		fmt.Fprintf(os.Stderr, "\nExamples:")
+		fmt.Fprintf(os.Stderr, examples)
 		fmt.Fprintf(os.Stderr, "\nSee also:"+
 			" http://github.com/couchbaselabs/cbft\n\n")
 	}
@@ -197,9 +197,14 @@ func initFlags(flags *Flags) map[string][]string {
 	return flagAliases
 }
 
-const example = `
-  ./cbft -bindHttp=localhost:9090 \
-         -cfg=couchbase:http://my-cfg-bucket@localhost:8091 \
-         -data=/var/data/cbft-node-9090 \
-         -server=http://localhost:8091
+const examples = `
+  Getting started with a local couchbase server as the datasource:
+    mkdir -p data
+    ./cbft -server=http://localhost:8091
+
+  More advanced example:
+    ./cbft -bindHttp=localhost:9090 \
+           -cfg=couchbase:http://cfg-bucket@localhost:8091 \
+           -data=/var/data/cbft-data \
+           -server=http://localhost:8091
 `
