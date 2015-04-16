@@ -19,6 +19,9 @@ function prepQueryRequest(scope) {
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.query = null;
+    $scope.queryHelp = null;
+    $scope.queryHelpSafe = null;
+
     $scope.page = 1;
     $scope.errorMessage = null;
     $scope.results = null;
@@ -29,14 +32,24 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
 
-    var indexDefType = ($scope.indexDef && $scope.indexDef.type) || "bleve";
-
     if (!$scope.meta) {
-        $http.get('/api/managerMeta').success(function(data) {
+        if (!$scope.indexDef) {
+            $http.get('/api/index/' + $scope.indexName).success(function(data) {
+                $scope.indexDef = data.indexDef;
+                $http.get('/api/managerMeta').success(handleMeta);
+            })
+        } else {
+            $http.get('/api/managerMeta').success(handleMeta);
+        }
+
+        function handleMeta(data) {
             $scope.meta = data;
-            $scope.queryHelp =
-                $sce.trustAsHtml(data.indexTypes[indexDefType].queryHelp);
-        });
+
+            var indexDefType = ($scope.indexDef && $scope.indexDef.type);
+
+            $scope.queryHelp = data.indexTypes[indexDefType].queryHelp;
+            $scope.queryHelpSafe = $sce.trustAsHtml($scope.queryHelp);
+        }
     }
 
     $scope.runQuery = function() {

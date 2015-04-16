@@ -18,8 +18,8 @@
 
   <div class="querySub">
     <div class="col-lg-9"
-         ng-show="queryHelp.length"
-         ng-bind-html="queryHelp"></div>
+         ng-if="queryHelp && queryHelp.length"
+         ng-bind-html="queryHelpSafe"></div>
     <div class="col-lg-offset-9">
       <label>Advanced:</label>
       <input ng-model="queryAdvancedToggle" type="checkbox"/>
