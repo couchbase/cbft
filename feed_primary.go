@@ -27,7 +27,7 @@ func init() {
 				BasicPartitionFunc, dests))
 		},
 		Partitions:  PrimaryFeedPartitions,
-		Public:      true,
+		Public:      false,
 		Description: "primary - a primary data source",
 		StartSample: &DestSourceParams{},
 	})
