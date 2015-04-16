@@ -36,8 +36,6 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.meta = data;
             $scope.queryHelp =
                 $sce.trustAsHtml(data.indexTypes[indexDefType].queryHelp);
-            console.log($scope.indexDef)
-            console.log(data.indexTypes[indexDefType].queryHelp)
         });
     }
 
