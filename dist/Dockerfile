@@ -27,13 +27,13 @@ RUN git clone git://github.com/couchbase/forestdb /tmp/forestdb && \
     cmake .. && \
     make all install
 
-# TODO: Skipping forestdb and cld, for now, where they
-# are not specified as part of the following go get tags.
+# TODO: Skipping some go get tags..
 # - forestdb builds as shared library rather than static,
 #   which means a single downloadable executable doesn't work.
-# - cld2 has linking issues with C++ exceptions.
+# - cld has linking issues with C++ exceptions.
+# - icu also is shared library.
 
-RUN go get -u -v -tags "debug icu libstemmer kagome leveldb" github.com/couchbaselabs/cbft/...
+RUN go get -u -v -tags "debug libstemmer kagome" github.com/couchbaselabs/cbft/...
 
 RUN make --directory=/go/src/github.com/couchbaselabs/cbft \
     prereqs-dist \

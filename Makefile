@@ -19,14 +19,17 @@ clean:
 build: gen-bindata
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
+build-static:
+	$(MAKE) build CBFT_TAGS="libstemmer kagome"
+
 build-forestdb:
-	$(MAKE) build CBFT_TAGS="icu libstemmer kagome forestdb"
+	$(MAKE) build CBFT_TAGS="libstemmer kagome icu forestdb"
 
 build-leveldb:
-	$(MAKE) build CBFT_TAGS="icu libstemmer kagome leveldb"
+	$(MAKE) build CBFT_TAGS="libstemmer kagome icu leveldb"
 
 build-full:
-	$(MAKE) build CBFT_TAGS="icu libstemmer kagome forestdb leveldb"
+	$(MAKE) build CBFT_TAGS="libstemmer kagome icu forestdb leveldb"
 
 gen-bindata:
 	go-bindata-assetfs -pkg=cbft ./static/...
@@ -63,14 +66,14 @@ dist-meta:
 	cp ./static/dist/manifest.txt ./dist/out/manifest.txt
 
 dist-build:
-	$(MAKE) build         GOOS=darwin  GOARCH=amd64       CBFT_OUT=./dist/out/cbft.darwin.amd64
-	$(MAKE) build         GOOS=linux   GOARCH=386         CBFT_OUT=./dist/out/cbft.linux.386
-	$(MAKE) build         GOOS=linux   GOARCH=arm         CBFT_OUT=./dist/out/cbft.linux.arm
-	$(MAKE) build         GOOS=linux   GOARCH=arm GOARM=5 CBFT_OUT=./dist/out/cbft.linux.arm5
-	$(MAKE) build-leveldb GOOS=linux   GOARCH=amd64       CBFT_OUT=./dist/out/cbft.linux.amd64
-	$(MAKE) build         GOOS=freebsd GOARCH=amd64       CBFT_OUT=./dist/out/cbft.freebsd.amd64
-	$(MAKE) build         GOOS=windows GOARCH=386         CBFT_OUT=./dist/out/cbft.windows.386.exe
-	$(MAKE) build         GOOS=windows GOARCH=amd64       CBFT_OUT=./dist/out/cbft.windows.amd64.exe
+	$(MAKE) build        GOOS=darwin  GOARCH=amd64       CBFT_OUT=./dist/out/cbft.darwin.amd64
+	$(MAKE) build        GOOS=linux   GOARCH=386         CBFT_OUT=./dist/out/cbft.linux.386
+	$(MAKE) build        GOOS=linux   GOARCH=arm         CBFT_OUT=./dist/out/cbft.linux.arm
+	$(MAKE) build        GOOS=linux   GOARCH=arm GOARM=5 CBFT_OUT=./dist/out/cbft.linux.arm5
+	$(MAKE) build-static GOOS=linux   GOARCH=amd64       CBFT_OUT=./dist/out/cbft.linux.amd64
+	$(MAKE) build        GOOS=freebsd GOARCH=amd64       CBFT_OUT=./dist/out/cbft.freebsd.amd64
+	$(MAKE) build        GOOS=windows GOARCH=386         CBFT_OUT=./dist/out/cbft.windows.386.exe
+	$(MAKE) build        GOOS=windows GOARCH=amd64       CBFT_OUT=./dist/out/cbft.windows.amd64.exe
 
 dist-clean: clean
 	rm -rf ./dist/out/*
