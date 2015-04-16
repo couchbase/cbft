@@ -18,7 +18,7 @@ index partitions.
 
 # Getting started
 
-## Getting cbft...
+## Getting cbft
 
 Download a pre-built cbft from the [releases](https://github.com/couchbaselabs/cbft/releases) page.  For example, for OSX...
 
@@ -31,7 +31,7 @@ Or, to build cbft from source (requires golang 1.4)...
     go get -u github.com/couchbaselabs/cbft/...
     $GOPATH/bin/cbft --help
 
-## First time setup...
+## First time setup
 
 Prerequisites: you should have a Couchbase Server (3.0+) already
 installed and running somewhere.
@@ -40,7 +40,7 @@ Create a directory where cbft will store its config and data files...
 
     mkdir -p data
 
-## Running cbft...
+## Running cbft
 
 Start cbft, pointing it to the Couchbase Server as its datasource
 server...
@@ -74,19 +74,21 @@ Delete the index...
 
 # For cbft developers
 
-Setup...
+## Dev environment setup
 
     go get -u github.com/couchbaselabs/cbft/...
     cd $GOPATH/src/github.com/couchbaselabs/cbft
     make prereqs
 
-Building...
+## Building cbft
 
     make
 
-Unit tests...
+## Unit tests
 
     make test
+
+## Coverage reports
 
 To get local coverage reports with heatmaps...
 
@@ -99,28 +101,36 @@ To get more coverage reports that include dependencies like the bleve library...
         -covermode=count && \
     go tool cover -html=coverage.out
 
+## Documentation
+
 Generating documentation...
 
-We use the [MkDocs](http://mkdocs.org) tool to help generate docs.
+We use the [MkDocs](http://mkdocs.org) tool to help generate an HTML
+docs website from the markdown files in the ```./docs``` subdirectory.
 
 To generate the REST API markdown documentation...
 
     make gen-docs
 
 For a local development testing web server that automatically
-generates on changes, run...
+re-generates the HTML website of ```./docs``` changes, run...
 
     mkdocs serve
 
-Then browse to http://127.0.0.1:8000 to see the docs.
+Then browse to http://127.0.0.1:8000 to see the HTML docs website.
 
-To deploy to github's gh-pages, run...
+To deploy the HTML docs website to github's gh-pages, run...
 
     mkdocs gh-deploy
 
-Releasing...
+## Releasing
 
-To do a full release, see the Makefile's "release" target.
+To do a full release with a new (semver) tag, see the Makefile's
+"release" target.
+
+## Coding conventions
+
+You must pass ```go fmt```.
 
 Error message conventions...
 
