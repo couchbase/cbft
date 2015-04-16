@@ -107,7 +107,14 @@ func main() {
 
 	http.Handle("/", router)
 
-	log.Printf("main: listening on: %v", flags.BindHttp)
+	log.Printf("main: listening on: %s", flags.BindHttp)
+	u := flags.BindHttp
+	if u[0] == ':' {
+		u = "localhost" + u
+	}
+	log.Printf("------------------------------------------------------------")
+	log.Printf("admin web UI is available: http://%s", u)
+	log.Printf("------------------------------------------------------------")
 	err = http.ListenAndServe(flags.BindHttp, nil)
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
