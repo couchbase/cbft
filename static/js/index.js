@@ -477,12 +477,6 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 }
 
-function errorMessage(errorMessageFull, code) {
-    console.log("errorMessageFull", errorMessageFull, code);
-    var a = (errorMessageFull || (code + "")).split("err: ");
-    return a[a.length - 1];
-}
-
 function collapseNeighbors(arr) {
     var prevBeg = null;
     var prevEnd = null;
