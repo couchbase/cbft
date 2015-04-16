@@ -1,4 +1,5 @@
-<ol class="breadcrumb">
+<ol ng-if="indexNames.length"
+    class="breadcrumb">
   <li><span class="glyphicon glyphicon-book"></li>
   <li><a href="#">Indexes</a></li>
 </ol>
@@ -7,7 +8,8 @@
   {{errorMessage}}
 </div>
 
-<table class="table table-striped">
+<table ng-if="indexNames.length"
+       class="table table-striped">
 	<tr>
 		<th width="99%">Name</th>
 		<th></th>
@@ -31,10 +33,23 @@
 	</tr>
 </table>
 
-<div class="input-group pull-right">
+<div ng-if="!indexNames.length"
+     class="indexWelcome">
+  <h1>Welcome to cbft</h1>
+  <div>cbft is a full-text server for couchbase data.</div>
+  <div>Please define your first index with the New Index button.</div>
+</div>
+
+<div class="input-group">
   <a href="/indexes/_new">
     <button  class="btn btn-primary" type="submit">
       <i class="glyphicon glyphicon-plus"></i> New Index
     </button>
   </a>
 </div>
+
+<style>
+.indexWelcome h1, .indexWelcome div {
+  margin-bottom: 20px;
+}
+</style>

@@ -77,7 +77,7 @@ func static_css_app_css() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/css/app.css", size: 951, mode: os.FileMode(420), modTime: time.Unix(1417574276, 0)}
+	info := bindata_file_info{name: "static/css/app.css", size: 951, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -217,7 +217,7 @@ func static_css_dashboard_css() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/css/dashboard.css", size: 1554, mode: os.FileMode(420), modTime: time.Unix(1416415578, 0)}
+	info := bindata_file_info{name: "static/css/dashboard.css", size: 1554, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -397,7 +397,7 @@ func static_index_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/index.html", size: 2665, mode: os.FileMode(420), modTime: time.Unix(1417624762, 0)}
+	info := bindata_file_info{name: "static/index.html", size: 2665, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -417,7 +417,7 @@ func static_js_app_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/app.js", size: 2525, mode: os.FileMode(420), modTime: time.Unix(1426526713, 0)}
+	info := bindata_file_info{name: "static/js/app.js", size: 2525, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -477,7 +477,7 @@ func static_js_debug_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/debug.js", size: 2119, mode: os.FileMode(420), modTime: time.Unix(1426873243, 0)}
+	info := bindata_file_info{name: "static/js/debug.js", size: 2119, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -497,7 +497,7 @@ func static_js_directives_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/directives.js", size: 923, mode: os.FileMode(420), modTime: time.Unix(1416418438, 0)}
+	info := bindata_file_info{name: "static/js/directives.js", size: 923, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -517,7 +517,7 @@ func static_js_expvar_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/expvar.js", size: 3656, mode: os.FileMode(420), modTime: time.Unix(1426570668, 0)}
+	info := bindata_file_info{name: "static/js/expvar.js", size: 3656, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -557,7 +557,7 @@ func static_js_index_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/index.js", size: 17092, mode: os.FileMode(420), modTime: time.Unix(1428954918, 0)}
+	info := bindata_file_info{name: "static/js/index.js", size: 17092, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -577,7 +577,7 @@ func static_js_logs_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/logs.js", size: 702, mode: os.FileMode(420), modTime: time.Unix(1428956462, 0)}
+	info := bindata_file_info{name: "static/js/logs.js", size: 702, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -597,7 +597,7 @@ func static_js_manage_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/manage.js", size: 1395, mode: os.FileMode(420), modTime: time.Unix(1416423248, 0)}
+	info := bindata_file_info{name: "static/js/manage.js", size: 1395, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -617,7 +617,7 @@ func static_js_monitor_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/monitor.js", size: 12832, mode: os.FileMode(420), modTime: time.Unix(1426628487, 0)}
+	info := bindata_file_info{name: "static/js/monitor.js", size: 12832, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -637,7 +637,7 @@ func static_js_node_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/node.js", size: 1400, mode: os.FileMode(420), modTime: time.Unix(1417732775, 0)}
+	info := bindata_file_info{name: "static/js/node.js", size: 1400, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -657,7 +657,7 @@ func static_js_query_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/js/query.js", size: 5725, mode: os.FileMode(420), modTime: time.Unix(1428676477, 0)}
+	info := bindata_file_info{name: "static/js/query.js", size: 5725, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -877,7 +877,7 @@ func static_partials_debug_rows_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/debug-rows.html", size: 498, mode: os.FileMode(420), modTime: time.Unix(1426870149, 0)}
+	info := bindata_file_info{name: "static/partials/debug-rows.html", size: 498, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -897,7 +897,7 @@ func static_partials_debug_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/debug.html", size: 1335, mode: os.FileMode(420), modTime: time.Unix(1426873524, 0)}
+	info := bindata_file_info{name: "static/partials/debug.html", size: 1335, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -917,12 +917,12 @@ func static_partials_index_index_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/index.html", size: 457, mode: os.FileMode(420), modTime: time.Unix(1418257480, 0)}
+	info := bindata_file_info{name: "static/partials/index/index.html", size: 457, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _static_partials_index_list_html = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\xbc\x53\x4d\x6f\xdc\x20\x10\x3d\xef\xfe\x0a\x44\x55\xa9\x3d\x58\x3e\xa7\xc5\xdc\x7b\x68\xfe\x42\x85\xcd\xc4\x46\x8b\x01\x0d\xe3\xba\xab\xd5\xfe\xf7\xf2\x61\x3b\x6d\xaa\x2a\x39\x65\xa5\xc5\xa0\x99\x37\xef\xcd\x63\x10\xde\xb2\xc1\xaa\x18\x3b\xde\x23\x28\x3d\xe0\x32\xf7\x5c\x9e\x19\x13\xd6\x48\x11\x83\x72\x7b\x7c\xb4\xd7\x30\x99\xc1\x3b\x76\xec\x9a\xde\xfb\x0b\x97\xa2\x4d\xb9\x3b\x44\xb1\x09\xe1\xa9\xe3\x1f\xb8\xfc\xe6\x34\xfc\x82\x28\x5a\xb5\xa5\x88\xd6\x5b\x79\x3e\x0b\x6d\x7e\x32\x37\x36\x71\xf2\x6b\xc7\x01\xd1\xe3\x77\x88\x51\x8d\xc0\x77\x32\x65\x01\x89\x95\xb5\xd1\xca\x8d\x80\x19\x30\x58\xaf\x2e\x9c\xa1\xb7\xb0\xa5\x14\xa9\xb7\xdb\x9f\x35\xee\xf7\xc4\x93\x18\x32\x11\xa9\xde\xc2\x5e\xb3\x1e\xca\xda\x44\x42\x13\x40\x27\xf8\x49\x10\xa6\x35\x7d\x26\xb6\x1a\x4d\x53\xc7\x1f\x1e\x3e\x72\xf9\xa8\x66\x10\x2d\x4d\x5b\x4c\x6e\xfb\xf4\xc1\x0a\xca\x82\x10\x02\x28\xea\xb8\xc9\x9d\x66\x04\x33\x8e\x1d\x87\xc8\x2b\x58\x3f\xbb\xd2\x9a\xea\x49\x7b\xbb\x1d\x69\xf7\x3b\x97\x7f\x1d\xab\x61\x09\x56\xd1\x2c\xd2\x35\x37\xbc\x4e\x86\x92\xf2\xa0\x06\xf8\xc2\x9c\x5f\x51\x85\xaf\x85\xe1\x24\xfa\x85\x28\x5d\x4c\xb1\xc8\x0c\x97\x64\xaa\x36\x54\xec\xff\x74\xd4\xfd\xcc\x73\x2a\xdb\x7f\x74\x0d\xa9\x66\x05\x1e\xb6\xf7\xe4\x58\xfa\x37\x1a\x9e\xd4\x62\xa9\xec\xe3\x5c\x49\x4e\xaf\x4e\x43\x26\xcd\xd3\x90\xf3\x24\xcb\xa7\x22\xae\xad\x24\xff\x51\x9a\xee\xd4\xc1\xbb\x4b\x0d\x76\x89\x4d\x34\xa3\x7b\xd6\x5b\x84\xbc\x41\xb0\x06\x0b\xf4\xfe\x8a\x09\x55\x9c\x0e\xb5\x2f\x75\x6e\xe3\x52\xa7\x33\xad\x79\xc8\xf7\x97\xb6\x15\x35\x2e\x2c\xd4\x8c\xe8\x97\xc0\xc2\x62\x6d\x83\x66\x9c\xea\x03\xfa\x77\x3c\x7f\x38\x58\x4b\x28\x05\x37\x07\x5e\xb6\x11\xd0\xcc\x0a\xaf\x7c\x6b\x36\x2e\xfd\x6c\x68\xc3\x24\x94\x79\xcd\xfe\xdc\x8b\x91\xec\x11\x56\x56\xcc\xac\x64\x47\x4f\x79\xaf\xe4\xfe\x94\x7f\x07\x00\x00\xff\xff\x18\x84\x35\xf5\xa8\x04\x00\x00")
+var _static_partials_index_list_html = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\xbc\x54\xc1\x6e\xdb\x30\x0c\x3d\x37\x5f\xc1\x69\x18\xb0\x01\x73\xbd\xee\xd6\xd6\xf1\x7d\x87\x15\xbb\xed\x38\xc8\x36\x63\x09\x95\x25\x43\xa2\x9b\x06\x41\xfe\x7d\x94\xe4\x38\x69\x87\x22\x3b\x35\x40\x64\x49\xe4\xe3\x7b\x22\x45\x55\xce\x80\xed\x0b\xbd\x59\x0b\x6d\x3b\x7c\x7e\x90\x03\x86\x6b\x83\xb6\x27\x25\x56\xc0\xbf\xd6\xc8\x10\xd6\xa2\xf1\x28\xbb\xd6\x4f\x43\x23\x6a\xde\xaf\x8c\xae\xab\x30\x4a\x7b\xb4\xf7\x66\x37\x2a\xdd\x3a\x0b\xcb\xac\x68\x9c\x7b\x14\x75\x55\xb2\xef\x11\x22\x41\x79\x64\xb2\x8f\xa2\xfe\x11\xf9\x30\x54\xa5\x9c\x5d\xaa\xd2\x99\x7a\xb5\xaa\x3a\xfd\x14\x35\x05\xe5\xb6\x6b\x81\xde\x3b\xff\x13\x43\x90\x3d\x8a\x23\x99\x34\xe8\x09\xd2\x58\x74\xd2\xf6\xe8\x23\xa0\x35\x4e\x3e\x0a\xf0\xce\xe0\xec\x92\xa4\xee\xf7\xe7\x31\x0e\x07\xe6\x61\x86\x48\x44\xb2\x31\x78\xe1\xf8\xa7\x0c\x64\xef\x34\x16\x81\xbc\x1e\xb1\xe3\xf8\x57\x15\x79\x1e\xf9\xa3\x60\xab\x3b\x52\x6b\x71\x7b\xfb\x49\xd4\x31\x52\x55\x92\x9a\x6d\xf5\x3c\xe7\x8f\xcf\xa0\xc8\xeb\x71\x44\x49\x67\xdc\xa0\x2d\x9c\x84\x88\x0c\xee\x4e\x69\x2b\x75\x4e\x5a\xb9\xdf\x2f\x6e\x87\x83\xa8\x5f\x2c\x73\x46\x19\x96\xd1\x10\x68\x17\x33\xb2\x55\x9a\x58\xf9\x28\x5b\xbc\x03\xeb\xb6\x5e\x8e\xf7\x89\xe1\xaa\x6a\x26\x22\xae\x5c\xca\xa1\x6e\x1f\x39\xeb\x9d\xa6\x54\x9f\xcf\x4b\xdc\x2f\x22\xba\xc2\xf1\x47\xbb\x91\x63\x66\xe0\x52\x97\x86\x2c\xf0\xbf\xe8\x70\x23\x27\x43\x69\x1e\x86\x4c\x72\x75\xf1\xba\x44\xd2\x78\x5d\xa2\x5f\x0d\x71\x95\xc4\x95\x99\xe4\x0d\xa5\x5c\x74\x8b\xef\x2e\x75\x34\x53\x28\x82\xee\xed\x49\x6f\x12\xf2\x1f\x82\x3b\x34\x48\xef\xaf\x98\xbc\x0c\x6a\x51\xfb\x5a\xe7\x7c\x5d\xf2\xed\xe4\x31\x5e\xf2\xb3\x56\x8c\xfd\xf1\xe1\xad\x06\x99\x49\x93\xf9\x37\x9a\xd6\x0d\x98\x9f\x08\x75\x53\xcf\x6b\x20\x07\x6d\xb3\xa1\xaa\xe4\xbd\x68\x8a\x0d\x18\x37\x40\x07\x90\xb0\x99\x8c\x29\x08\x9f\x09\x02\xfa\x27\x6e\xe6\x8d\xf3\xd0\xba\xa9\x55\x8d\x0c\x08\x9d\x24\x79\x3d\x37\xed\x8c\xfd\x65\x30\x59\x70\xa3\x2d\xc2\xce\x4d\x8c\xd1\x3e\x50\x6e\x1e\x6e\x44\xee\x46\x52\x08\x0f\xb8\x85\x94\x6a\xc8\x67\x3d\x86\x59\x9e\x80\x78\xc0\xe5\x00\xe3\x44\x45\xef\xdd\x34\x66\xfd\xff\x34\xdd\x1f\x8b\xdb\x64\x62\xe3\x5c\xd7\xd7\xc5\x19\xbd\x1e\xa4\xdf\x89\xb9\x84\x61\x6a\x06\x4d\x33\x86\x51\xfa\xd2\xa5\x8a\x15\xd2\xf5\x49\x77\x26\x5b\x2a\x15\xe7\xf2\x4c\x7e\x6a\xed\x7a\x75\x7d\x9e\x7c\x50\x37\x5f\xe1\xe5\x4e\x3c\xe5\x9e\xc1\x2c\xad\xd7\xf1\x5d\xe6\x68\xc3\x1d\x7c\xff\x36\x3e\xdf\xaf\xe2\x83\x98\xe3\xfc\x0d\x00\x00\xff\xff\x52\x12\x88\xe9\x0d\x06\x00\x00")
 
 func static_partials_index_list_html_bytes() ([]byte, error) {
 	return bindata_read(
@@ -937,7 +937,7 @@ func static_partials_index_list_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/list.html", size: 1192, mode: os.FileMode(420), modTime: time.Unix(1426526713, 0)}
+	info := bindata_file_info{name: "static/partials/index/list.html", size: 1549, mode: os.FileMode(420), modTime: time.Unix(1429165907, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -957,7 +957,7 @@ func static_partials_index_new_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/new.html", size: 4552, mode: os.FileMode(420), modTime: time.Unix(1428602915, 0)}
+	info := bindata_file_info{name: "static/partials/index/new.html", size: 4552, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -977,7 +977,7 @@ func static_partials_index_query_noresults_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/query-noresults.html", size: 59, mode: os.FileMode(420), modTime: time.Unix(1417219735, 0)}
+	info := bindata_file_info{name: "static/partials/index/query-noresults.html", size: 59, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -997,7 +997,7 @@ func static_partials_index_query_results_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/query-results.html", size: 1569, mode: os.FileMode(420), modTime: time.Unix(1418431119, 0)}
+	info := bindata_file_info{name: "static/partials/index/query-results.html", size: 1569, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1017,7 +1017,7 @@ func static_partials_index_tab_manage_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tab-manage.html", size: 3370, mode: os.FileMode(420), modTime: time.Unix(1428786991, 0)}
+	info := bindata_file_info{name: "static/partials/index/tab-manage.html", size: 3370, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1037,7 +1037,7 @@ func static_partials_index_tab_monitor_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tab-monitor.html", size: 3986, mode: os.FileMode(420), modTime: time.Unix(1428954716, 0)}
+	info := bindata_file_info{name: "static/partials/index/tab-monitor.html", size: 3986, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1057,7 +1057,7 @@ func static_partials_index_tab_query_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tab-query.html", size: 1891, mode: os.FileMode(420), modTime: time.Unix(1418431425, 0)}
+	info := bindata_file_info{name: "static/partials/index/tab-query.html", size: 1891, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1077,7 +1077,7 @@ func static_partials_index_tab_summary_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tab-summary.html", size: 290, mode: os.FileMode(420), modTime: time.Unix(1428776934, 0)}
+	info := bindata_file_info{name: "static/partials/index/tab-summary.html", size: 290, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1097,7 +1097,7 @@ func static_partials_index_tabs_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tabs.html", size: 625, mode: os.FileMode(420), modTime: time.Unix(1428955136, 0)}
+	info := bindata_file_info{name: "static/partials/index/tabs.html", size: 625, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1117,7 +1117,7 @@ func static_partials_logs_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/logs.html", size: 1187, mode: os.FileMode(420), modTime: time.Unix(1428957538, 0)}
+	info := bindata_file_info{name: "static/partials/logs.html", size: 1187, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1137,7 +1137,7 @@ func static_partials_manage_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/manage.html", size: 1483, mode: os.FileMode(420), modTime: time.Unix(1417651634, 0)}
+	info := bindata_file_info{name: "static/partials/manage.html", size: 1483, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1157,7 +1157,7 @@ func static_partials_monitor_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/monitor.html", size: 449, mode: os.FileMode(420), modTime: time.Unix(1426602691, 0)}
+	info := bindata_file_info{name: "static/partials/monitor.html", size: 449, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1177,7 +1177,7 @@ func static_partials_node_list_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/node/list.html", size: 1492, mode: os.FileMode(420), modTime: time.Unix(1426526376, 0)}
+	info := bindata_file_info{name: "static/partials/node/list.html", size: 1492, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1197,7 +1197,7 @@ func static_partials_node_node_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/node/node.html", size: 456, mode: os.FileMode(420), modTime: time.Unix(1417626087, 0)}
+	info := bindata_file_info{name: "static/partials/node/node.html", size: 456, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1217,7 +1217,7 @@ func static_partials_node_tab_summary_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/node/tab-summary.html", size: 1525, mode: os.FileMode(420), modTime: time.Unix(1428787193, 0)}
+	info := bindata_file_info{name: "static/partials/node/tab-summary.html", size: 1525, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1237,7 +1237,7 @@ func static_partials_node_tabs_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/node/tabs.html", size: 172, mode: os.FileMode(420), modTime: time.Unix(1417625947, 0)}
+	info := bindata_file_info{name: "static/partials/node/tabs.html", size: 172, mode: os.FileMode(420), modTime: time.Unix(1429133302, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
