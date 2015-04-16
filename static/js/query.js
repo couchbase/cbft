@@ -24,6 +24,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.page = 1;
     $scope.errorMessage = null;
+    $scope.errorMessageFull = null;
+
     $scope.results = null;
     $scope.numPages = 0;
     $scope.maxPagesToShow = 5;
@@ -62,6 +64,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $location.search('p', $scope.page);
 
         $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
         $scope.results = null;
         $scope.numPages = 0;
 
@@ -77,8 +80,13 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.processResults(data);
         }).
         error(function(data, code) {
-            $scope.errorMessage =
-                data || ("error" + (code || " accessing server"));
+            $scope.errorMessageFull = data;
+            if (data) {
+                $scope.errorMessage = errorMessage(data, code);
+            } else {
+                $scope.errorMessage =
+                    data || ("error" + (code || " accessing server"));
+            }
         });
     };
 
