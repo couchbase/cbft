@@ -14,8 +14,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	log "github.com/couchbase/clog"
 )
 
 func docIDLookup(req *http.Request) string {
@@ -213,9 +211,6 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("rest_index: Query indexName: %s, requestBody: %s",
-		indexName, requestBody)
-
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
 		if errCW, ok := err.(*ErrorConsistencyWait); ok {
@@ -242,9 +237,6 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			indexName, requestBody, req, err), 400)
 		return
 	}
-
-	log.Printf("rest_index: Query indexName: %s, DONE, requestBody: %s",
-		indexName, requestBody)
 }
 
 // ---------------------------------------------------
@@ -410,8 +402,6 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	log.Printf("rest_index: CountPIndex pindexName: %s", pindexName)
-
 	count, err := pindex.Dest.Count(pindex, cancelCh)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
@@ -483,9 +473,6 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	log.Printf("rest_index: QueryPIndex pindexName: %s, requestBody: %s",
-		pindexName, requestBody)
-
 	err = pindex.Dest.Query(pindex, requestBody, w, cancelCh)
 	if err != nil {
 		if errCW, ok := err.(*ErrorConsistencyWait); ok {
@@ -512,7 +499,4 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 			pindexName, requestBody, req, err), 400)
 		return
 	}
-
-	log.Printf("rest_index: QueryPIndex pindexName: %s, DONE, requestBody: %s",
-		pindexName, requestBody)
 }
