@@ -103,6 +103,10 @@ func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
 
 // ---------------------------------------------------------
 
+const bleveQueryHelp = `<a href="https://github.com/blevesearch/bleve/wiki/Query%20String%20Query">
+       bleve query syntax help
+     </a>`
+
 func init() {
 	RegisterPIndexImplType("bleve", &PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
@@ -115,6 +119,7 @@ func init() {
 		Description: "general/bleve" +
 			" - full-text index powered by the bleve full-text engine",
 		StartSample: NewBleveParams(),
+		QueryHelp:   bleveQueryHelp,
 	})
 }
 

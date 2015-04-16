@@ -29,6 +29,18 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
 
+    var indexDefType = ($scope.indexDef && $scope.indexDef.type) || "bleve";
+
+    if (!$scope.meta) {
+        $http.get('/api/managerMeta').success(function(data) {
+            $scope.meta = data;
+            $scope.queryHelp =
+                $sce.trustAsHtml(data.indexTypes[indexDefType].queryHelp);
+            console.log($scope.indexDef)
+            console.log(data.indexTypes[indexDefType].queryHelp)
+        });
+    }
+
     $scope.runQuery = function() {
         if (!$scope.query) {
             $scope.errorMessage = "please enter a query";
@@ -41,8 +53,6 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.errorMessage = null;
         $scope.results = null;
         $scope.numPages = 0;
-
-        var indexDefType = ($scope.indexDef && $scope.indexDef.type) || "bleve";
 
         var req = prepQueryRequest($scope);
         req.consistency = {

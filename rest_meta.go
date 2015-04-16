@@ -30,16 +30,24 @@ type MetaDesc struct {
 	StartSample interface{} `json:"startSample"`
 }
 
+type MetaDescSource MetaDesc
+
+type MetaDescIndex struct {
+	MetaDesc
+
+	QueryHelp string `json:"queryHelp"`
+}
+
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	startSamples := map[string]interface{}{
 		"planParams": &PlanParams{},
 	}
 
 	// Key is sourceType, value is description.
-	sourceTypes := map[string]*MetaDesc{}
+	sourceTypes := map[string]*MetaDescSource{}
 	for sourceType, f := range feedTypes {
 		if f.Public {
-			sourceTypes[sourceType] = &MetaDesc{
+			sourceTypes[sourceType] = &MetaDescSource{
 				Description: f.Description,
 				StartSample: f.StartSample,
 			}
@@ -47,11 +55,14 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	// Key is indexType, value is description.
-	indexTypes := map[string]*MetaDesc{}
+	indexTypes := map[string]*MetaDescIndex{}
 	for indexType, t := range pindexImplTypes {
-		indexTypes[indexType] = &MetaDesc{
-			Description: t.Description,
-			StartSample: t.StartSample,
+		indexTypes[indexType] = &MetaDescIndex{
+			MetaDesc: MetaDesc{
+				Description: t.Description,
+				StartSample: t.StartSample,
+			},
+			QueryHelp: t.QueryHelp,
 		}
 	}
 
@@ -83,9 +94,9 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	mustEncode(w, struct {
 		Status       string                         `json:"status"`
 		StartSamples map[string]interface{}         `json:"startSamples"`
-		SourceTypes  map[string]*MetaDesc           `json:"sourceTypes"`
+		SourceTypes  map[string]*MetaDescSource     `json:"sourceTypes"`
 		IndexNameRE  string                         `json:"indexNameRE"`
-		IndexTypes   map[string]*MetaDesc           `json:"indexTypes"`
+		IndexTypes   map[string]*MetaDescIndex      `json:"indexTypes"`
 		RefREST      map[string]RESTMeta            `json:"refREST"`
 		RegBleve     map[string]map[string][]string `json:"regBleve"`
 	}{

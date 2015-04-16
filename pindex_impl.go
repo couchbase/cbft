@@ -45,6 +45,8 @@ type PIndexImplType struct {
 	// A prototype instance of indexParams that is usable for
 	// Validate() and New().
 	StartSample interface{}
+
+	QueryHelp string
 }
 
 var pindexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
