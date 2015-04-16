@@ -32,6 +32,9 @@
   }
 }
 
+.navbar ul.navbar-nav li a {
+  color: #aaa;
+}
 .navbar-inverse .overide-brand {
   color: white;
 }
