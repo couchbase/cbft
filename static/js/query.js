@@ -51,7 +51,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.processResults(data);
         }).
         error(function(data, code) {
-            $scope.errorMessage = data;
+            $scope.errorMessage =
+                data || ("error" + (code || " accessing server"));
         });
     };
 

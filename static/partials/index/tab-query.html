@@ -1,5 +1,9 @@
 <div ng-controller="QueryCtrl">
 
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
 <form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
     <input ng-model="query"
@@ -37,20 +41,14 @@
   </div>
 </form>
 
-<style>
-.queryAdvanced .row label {
-  text-align: right;
-}
-</style>
-
-<div ng-show="results && results.hits">
-  <div ng-show="results.hits.length < 1"
-       ng-include
-       src="'/static/partials/index/query-noresults.html'"></div>
-  <div ng-show="results && results.hits.length > 0"
-       ng-include
-       src="'/static/partials/index/query-results.html'"></div>
+<div ng-show="results && !results.total_hits"
+     class="queryNoResults">
+  <h5>no results for your query</h5>
 </div>
+
+<div ng-show="results && results.hits && results.hits.length > 0"
+     ng-include
+     src="'/static/partials/index/query-results.html'"></div>
 
 <div ng-show="results && results.results">
   <ul>
@@ -63,3 +61,12 @@
 </div>
 
 </div>
+
+<style>
+.queryAdvanced .row label {
+  text-align: right;
+}
+.queryNoResults {
+  margin-left: 30px;
+}
+</style>
