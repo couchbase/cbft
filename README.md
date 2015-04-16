@@ -16,53 +16,75 @@ Indexes can be partitioned amongst multiple cbft processes, and
 queries on the index will be scatter/gather'ed across the distributed
 index partitions.
 
-### Usage
+# Getting started
 
-Getting
+## Getting cbft...
 
-```go get -u github.com/couchbaselabs/cbft/...```
+Download a pre-built cbft from the [releases](https://github.com/couchbaselabs/cbft/releases) page.  For example, for OSX...
 
-Create a directory for index data
+    wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+    tar -xzvf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+    ./cbft.darwin.amd64 --help
 
-```mkdir data```
+Or, to build cbft from source (requires golang 1.4)...
 
-Running against local Couchbase Server
+    go get -u github.com/couchbaselabs/cbft/...
+    $GOPATH/bin/cbft --help
 
-```./cbft -server http://localhost:8091```
+## First time setup...
 
-More complex example
+Prerequisites: you should have a Couchbase Server (3.0+) already
+installed and running somewhere.
 
-```./cbft -addr=localhost:9090 -cfgConnect=couchbase:http://cfg@localhost:8091 -server=http://localhost:8091```
+Create a directory where cbft will store its config and data files...
 
-Create a new index (for the default bucket)
+    mkdir -p data
 
-```curl -XPUT http://localhost:8095/api/index/default```
+## Running cbft...
 
-Check how many documents are indexed
+Start cbft, pointing it to the Couchbase Server as its datasource
+server...
 
-```curl http://localhost:8095/api/index/default/count```
+    ./cbft -server http://localhost:8091
 
-Submit search query
+Next, you can use a web browser on cbft's web admin UI...
 
-```curl -XPOST -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' --header Content-Type:text/json http://localhost:9090/api/index/default/query```
+    http://localhost:8095
 
-Delete index
+Create a new full-text index, which will be powered by the
+[bleve](http://blevesearch.com) full-text engine; the index will be
+called "default" and will have the "default" bucket from Couchbase as
+its datasource...
 
-```curl -XDELETE http://localhost:8095/api/index/default```
+    curl -XPUT 'http://localhost:8095/api/index/default?indexType=bleve&sourceType=couchbase'
 
-### For cbft developers
+Check how many documents are indexed...
 
-Getting
+    curl http://localhost:8095/api/index/default/count
 
-    mkdir -p $GOPATH/src/github.com/couchbaselabs
-    cd $GOPATH/src/github.com/couchbaselabs
-    git clone git://github.com/couchbaselabs/cbft.git
+Query the index...
 
-Building
+    curl -XPOST --header Content-Type:text/json \
+         -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' \
+         http://localhost:8095/api/index/default/query
+
+Delete the index...
+
+    curl -XDELETE http://localhost:8095/api/index/default
+
+# For cbft developers
+
+Setup...
+
+    go get -u github.com/couchbaselabs/cbft/...
+    cd $GOPATH/src/github.com/couchbaselabs/cbft
+    make prereqs
+
+Building...
 
     make
 
-Unit tests
+Unit tests...
 
     make test
 
@@ -72,16 +94,12 @@ To get local coverage reports with heatmaps...
 
 To get more coverage reports that include dependencies like the bleve library...
 
-    go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index -coverprofile=coverage.out -covermode=count && go tool cover -html=coverage.out
+    go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index \
+        -coverprofile=coverage.out \
+        -covermode=count && \
+    go tool cover -html=coverage.out
 
-Error messages
-
-In the cbft project, fmt.Errorf() message strings follow a rough
-convention, like...
-
-    source_file_base_name: short msg, arg0: val0, arg1: val1
-
-Generating documentation
+Generating documentation...
 
 We use the [MkDocs](http://mkdocs.org) tool to help generate docs.
 
@@ -94,8 +112,22 @@ generates on changes, run...
 
     mkdocs serve
 
-Then browse to http://127.0.0.1:8000
+Then browse to http://127.0.0.1:8000 to see the docs.
 
 To deploy to github's gh-pages, run...
 
     mkdocs gh-deploy
+
+Releasing...
+
+To do a full release, see the Makefile's "release" target.
+
+Error message conventions...
+
+In the cbft project, fmt.Errorf() and log.Printf() messages follow a
+rough convention, like...
+
+    source_file_base_name: short static msg, arg0: val0, arg1: val1
+
+The "short static msg" should be unique enough so that ```git grep```
+works well.
