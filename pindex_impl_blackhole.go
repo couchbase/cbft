@@ -29,7 +29,7 @@ func init() {
 			req []byte, res io.Writer) error {
 			return fmt.Errorf("blackhole: not queryable")
 		},
-		Description: "blackhole - ignores all incoming data" +
+		Description: "blackhole - (advanced) ignores all incoming data" +
 			" and is not queryable; used for testing",
 	})
 }
