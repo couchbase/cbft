@@ -113,7 +113,7 @@ func main() {
 		u = "localhost" + u
 	}
 	log.Printf("------------------------------------------------------------")
-	log.Printf("admin web UI is available: http://%s", u)
+	log.Printf("web UI / REST API is available: http://%s", u)
 	log.Printf("------------------------------------------------------------")
 	err = http.ListenAndServe(flags.BindHttp, nil)
 	if err != nil {
