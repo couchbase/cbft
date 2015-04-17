@@ -28,7 +28,8 @@ func init() {
 		},
 		Public: true,
 		Description: "advanced/nil" +
-			" - a NO-OP data source, used for index aliases and testing",
+			" - a nil data source has no data;" +
+			" used for index aliases and testing",
 	})
 }
 

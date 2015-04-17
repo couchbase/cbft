@@ -31,7 +31,7 @@ func init() {
 			return fmt.Errorf("blackhole: not queryable")
 		},
 		Description: "advanced/blackhole" +
-			" - ignores all incoming data and is not queryable;" +
+			" - a blackhole index ignores all data and is not queryable;" +
 			" used for testing",
 	})
 }

@@ -30,7 +30,8 @@ func init() {
 		Count:    CountAlias,
 		Query:    QueryAlias,
 		Description: "advanced/alias" +
-			" - supports fan-out of queries to multiple index targets",
+			" - an alias provides a naming level of indirection" +
+			" to one or more actual, target indexes",
 		StartSample: &AliasParams{
 			Targets: map[string]*AliasParamsTarget{
 				"yourIndexName": &AliasParamsTarget{},

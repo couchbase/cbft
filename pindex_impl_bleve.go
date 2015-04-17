@@ -117,7 +117,7 @@ func init() {
 		Query: QueryBlevePIndexImpl,
 
 		Description: "general/full-text (bleve)" +
-			" - index powered by the bleve full-text engine",
+			" - a full-text index powered by the bleve engine",
 		StartSample: NewBleveParams(),
 		QueryHelp:   bleveQueryHelp,
 	})
