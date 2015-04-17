@@ -70,7 +70,8 @@ dist-build:
 	$(MAKE) build        GOOS=linux   GOARCH=386         CBFT_OUT=./dist/out/cbft.linux.386
 	$(MAKE) build        GOOS=linux   GOARCH=arm         CBFT_OUT=./dist/out/cbft.linux.arm
 	$(MAKE) build        GOOS=linux   GOARCH=arm GOARM=5 CBFT_OUT=./dist/out/cbft.linux.arm5
-	$(MAKE) build-static GOOS=linux   GOARCH=amd64       CBFT_OUT=./dist/out/cbft.linux.amd64
+	$(MAKE) build        GOOS=linux   GOARCH=amd64       CBFT_OUT=./dist/out/cbft.linux.amd64
+	$(MAKE) build-static GOOS=linux   GOARCH=amd64       CBFT_OUT=./dist/out/cbft-full.linux.amd64
 	$(MAKE) build        GOOS=freebsd GOARCH=amd64       CBFT_OUT=./dist/out/cbft.freebsd.amd64
 	$(MAKE) build        GOOS=windows GOARCH=386         CBFT_OUT=./dist/out/cbft.windows.386.exe
 	$(MAKE) build        GOOS=windows GOARCH=amd64       CBFT_OUT=./dist/out/cbft.windows.amd64.exe
