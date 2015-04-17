@@ -27,7 +27,7 @@
       <th>Rate Mean</th>
       <th class="sourceName">Source</th>
     </tr>
-    <tr ng-show="!ss.scalar || allStats"
+    <tr ng-show="!ss.advanced || allStats"
         ng-repeat="(s, ss) in indexStatsFlat">
       <td class="statKind">{{ss.statKind}}</td>
       <td class="statName">{{ss.statName}}</td>

@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -499,7 +500,9 @@ type JSONStatsWriter interface {
 	WriteJSON(w io.Writer)
 }
 
-func (t *BleveDest) Stats(w io.Writer) error {
+func (t *BleveDest) Stats(w io.Writer) (err error) {
+	var c uint64
+
 	w.Write(prefixPIndexStoreStats)
 
 	t.m.Lock()
@@ -514,11 +517,21 @@ func (t *BleveDest) Stats(w io.Writer) error {
 				m.WriteJSON(w)
 			}
 		}
+
+		c, err = t.bindex.DocCount()
 	}
+
 	t.m.Unlock()
 
-	_, err := w.Write(jsonCloseBrace)
-	return err
+	if err == nil {
+		w.Write([]byte(`,"basic":{"DocCount":`))
+		w.Write([]byte(strconv.FormatUint(c, 10)))
+		w.Write(jsonCloseBrace)
+	}
+
+	w.Write(jsonCloseBrace)
+
+	return nil
 }
 
 // ---------------------------------------------------------

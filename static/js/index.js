@@ -201,7 +201,10 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                                 continue;
                             }
                             if (typeof(ss) == "number") {
-                                ss = jj[s] = { count: ss, scalar: true };
+                                ss = jj[s] = {
+                                    count: ss,
+                                    advanced: j != "basic"
+                                };
                             }
                             ss.prev = ss;
                             if (indexStatsPrev) {
