@@ -103,6 +103,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
         success(function(data) {
             data.indexDef.params = JSON.parse(data.indexDef.params);
             data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+
             $scope.indexDef = data.indexDef
             $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
             $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
@@ -331,21 +332,31 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $http.get('/api/managerMeta').success(function(data) {
         $scope.meta = data;
 
+        var sourceTypesArr = []
         for (var k in data.sourceTypes) {
+            sourceTypesArr.push(data.sourceTypes[k]);
+
             var parts = data.sourceTypes[k].description.split("/");
             data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
             data.sourceTypes[k].label = parts[parts.length - 1];
+            data.sourceTypes[k].sourceType = k;
 
             $scope.newSourceParams[k] =
                 JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
             $scope.paramNumLines[k] =
                 $scope.newSourceParams[k].split("\n").length + 1;
         }
+        sourceTypesArr.sort(compareCategoryLabel);
+        $scope.sourceTypesArr = sourceTypesArr;
 
+        var indexTypesArr = [];
         for (var k in data.indexTypes) {
+            indexTypesArr.push(data.indexTypes[k]);
+
             var parts = data.indexTypes[k].description.split("/");
             data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
             data.indexTypes[k].label = parts[parts.length - 1];
+            data.indexTypes[k].indexType = k;
 
             $scope.newIndexParams[k] = {};
             for (var j in data.indexTypes[k].startSample) {
@@ -355,6 +366,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                     $scope.newIndexParams[k][j].split("\n").length + 1;
             }
         }
+        indexTypesArr.sort(compareCategoryLabel);
+        $scope.indexTypesArr = indexTypesArr;
 
         $scope.newPlanParams =
             JSON.stringify(data.startSamples["planParams"], undefined, 2);
@@ -513,4 +526,20 @@ function collapseNeighbors(arr) {
         }
     }
     return r;
+}
+
+function compareCategoryLabel(a, b) {
+    if (a.category < b.category) {
+        return 1;
+    }
+    if (a.category > b.category) {
+        return -1;
+    }
+    if (a.sourceType < b.sourceType) {
+        return -1;
+    }
+    if (a.sourceType > b.sourceType) {
+        return 1;
+    }
+    return 0;
 }
