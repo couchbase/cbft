@@ -62,7 +62,7 @@ func ValidateAlias(indexType, indexName, indexParams string) error {
 
 func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
-		indexName, indexUUID, nil, nil)
+		indexName, indexUUID, false, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -83,7 +83,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
-		bleveQueryParams.Consistency, cancelCh)
+		true, bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,8 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 //
 // TODO: One day support user-defined aliases for non-bleve indexes.
 func bleveIndexAliasForUserIndexAlias(mgr *Manager,
-	indexName, indexUUID string, consistencyParams *ConsistencyParams,
+	indexName, indexUUID string, ensureCanRead bool,
+	consistencyParams *ConsistencyParams,
 	cancelCh <-chan bool) (
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
@@ -179,7 +180,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 				}
 			} else if strings.HasPrefix(targetDef.Type, "bleve") {
 				subAlias, err := bleveIndexAlias(mgr, targetName,
-					targetSpec.IndexUUID, consistencyParams, cancelCh)
+					targetSpec.IndexUUID, ensureCanRead,
+					consistencyParams, cancelCh)
 				if err != nil {
 					return err
 				}

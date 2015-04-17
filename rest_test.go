@@ -2448,9 +2448,9 @@ func TestNodePlanParams(t *testing.T) {
 			Desc:   "count myIdx should be 0, 1 nodes",
 			Path:   "/api/index/myIdx/count",
 			Method: "GET",
-			Status: 500,
+			Status: 200,
 			ResponseMatch: map[string]bool{
-				`err`: true,
+				`{"status":"ok","count":0}`: true,
 			},
 		},
 	}

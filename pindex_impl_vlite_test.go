@@ -22,13 +22,13 @@ import (
 )
 
 func TestHandlersForOneVLiteIndexWithNILFeed(t *testing.T) {
-	if pindexImplTypes["vlite"] != nil {
+	if PIndexImplTypes["vlite"] != nil {
 		testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite")
 	}
 }
 
 func TestHandlersForOneVLiteMemIndexWithNILFeed(t *testing.T) {
-	if pindexImplTypes["vlite"] != nil {
+	if PIndexImplTypes["vlite-mem"] != nil {
 		testHandlersForOneVLiteTypeIndexWithNILFeed(t, "vlite-mem")
 	}
 }

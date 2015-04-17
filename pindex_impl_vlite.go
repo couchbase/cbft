@@ -261,7 +261,7 @@ func OpenVLitePIndexImpl(indexType, path string,
 
 func CountVLitePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	uint64, error) {
-	vg, err := vliteGatherer(mgr, indexName, indexUUID, nil, nil)
+	vg, err := vliteGatherer(mgr, indexName, indexUUID, false, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("vlite: CountVLitePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -281,7 +281,7 @@ func QueryVLitePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 	cancelCh := TimeoutCancelChan(vliteQueryParams.Timeout)
 
-	vg, err := vliteGatherer(mgr, indexName, indexUUID,
+	vg, err := vliteGatherer(mgr, indexName, indexUUID, true,
 		vliteQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
@@ -793,10 +793,15 @@ func (t *VLitePartition) applyBatchUnlocked() error {
 // chain should close the cancelCh to help stop any other inflight
 // activities.
 func vliteGatherer(mgr *Manager, indexName, indexUUID string,
-	consistencyParams *ConsistencyParams,
+	ensureCanRead bool, consistencyParams *ConsistencyParams,
 	cancelCh <-chan bool) (*VLiteGatherer, error) {
+	planPIndexNodeFilter := PlanPIndexNodeOk
+	if ensureCanRead {
+		planPIndexNodeFilter = PlanPIndexNodeCanRead
+	}
+
 	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead,
+		mgr.CoveringPIndexes(indexName, indexUUID, planPIndexNodeFilter,
 			"queries")
 	if err != nil {
 		return nil, fmt.Errorf("vlite: gatherer, err: %v", err)

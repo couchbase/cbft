@@ -146,6 +146,10 @@ func PlanPIndexNodeCanWrite(p *PlanPIndexNode) bool {
 	return p != nil && p.CanWrite
 }
 
+func PlanPIndexNodeOk(p *PlanPIndexNode) bool {
+	return true
+}
+
 // ------------------------------------------------------------------------
 
 const INDEX_DEFS_KEY = "indexDefs"

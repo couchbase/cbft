@@ -214,7 +214,7 @@ func OpenBlevePIndexImpl(indexType, path string,
 
 func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	uint64, error) {
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, nil, nil)
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("bleve: CountBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -234,7 +234,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
 
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID,
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
@@ -753,10 +753,15 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // chain should close the cancelCh to help stop any other inflight
 // activities.
 func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
-	consistencyParams *ConsistencyParams,
+	ensureCanRead bool, consistencyParams *ConsistencyParams,
 	cancelCh <-chan bool) (bleve.IndexAlias, error) {
+	planPIndexNodeFilter := PlanPIndexNodeOk
+	if ensureCanRead {
+		planPIndexNodeFilter = PlanPIndexNodeCanRead
+	}
+
 	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead,
+		mgr.CoveringPIndexes(indexName, indexUUID, planPIndexNodeFilter,
 			"queries")
 	if err != nil {
 		return nil, fmt.Errorf("bleve: bleveIndexAlias, err: %v", err)

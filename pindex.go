@@ -183,6 +183,8 @@ type RemotePlanPIndex struct {
 	NodeDef    *NodeDef
 }
 
+type PlanPIndexFilter func(*PlanPIndexNode) bool
+
 // Returns a non-overlapping, disjoint set (or cut) of PIndexes
 // (either local or remote) that cover all the partitons of an index
 // so that the caller can perform scatter/gather queries, etc.  Only
@@ -204,8 +206,7 @@ type RemotePlanPIndex struct {
 // up-to-date node and hitting it with load just makes the
 // rebalance take longer?
 func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
-	wantNode func(*PlanPIndexNode) bool,
-	wantKind string) (
+	wantNode PlanPIndexFilter, wantKind string) (
 	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
