@@ -69,6 +69,8 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     $scope.indexStats = null;
     $scope.planPIndexes = null;
     $scope.planPIndexesStr = ""
+
+    $scope.statsRefresh = null;
     $scope.warnings = null;
 
     $scope.tab = $routeParams.tabName;
@@ -171,11 +173,13 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     };
 
     $scope.loadIndexStats = function() {
+        $scope.statsRefresh = "refreshing...";
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
         $http.get('/api/stats/index/' + $scope.indexName).
         success(function(data) {
+            $scope.statsRefresh = null;
             $scope.indexStats = data;
 
             var indexStatsPrev = indexStatsPrevs[$scope.indexName];
@@ -258,6 +262,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             $scope.indexStatsFlat = stats;
         }).
         error(function(data, code) {
+            $scope.statsRefresh = "error";
             $scope.errorMessage = errorMessage(data, code);
             $scope.errorMessageFull = data;
         });
@@ -312,10 +317,6 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             $scope.errorMessageFull = data;
         });
     };
-
-    $scope.refresh = function() {
-        $scope.loadIndexStats();
-    }
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {

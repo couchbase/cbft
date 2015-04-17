@@ -1,10 +1,12 @@
 <div class="indexStats" ng-if="indexStatsFlat.length > 0">
   <h3>Stats</h3>
 
-  <button ng-click="refresh()" class="indexMonitorRefresh">
+  <button ng-click="loadIndexStats()" class="indexMonitorRefresh">
     <span class="glyphicon glyphicon-refresh"></span>
     Refresh
   </button>
+  <span class="statsRefresh"
+        ng-if="statsRefresh">{{statsRefresh}}</span>
 
   <input ng-model="allStats" type="checkbox" class="allStats">
     Show all stats
@@ -66,10 +68,12 @@
     </tr>
   </table>
 
-  <button ng-click="refresh()" class="indexMonitorRefresh">
+  <button ng-click="loadIndexStats()" class="indexMonitorRefresh">
     <span class="glyphicon glyphicon-refresh"></span>
     Refresh
   </button>
+  <span class="statsRefresh"
+        ng-if="statsRefresh">{{statsRefresh}}</span>
 </div>
 
 <div class="indexErrors">
@@ -99,10 +103,12 @@
     no errors
   </div>
 
-  <button ng-click="refresh()" class="indexMonitorRefresh">
+  <button ng-click="loadIndexStats()" class="indexMonitorRefresh">
     <span class="glyphicon glyphicon-refresh"></span>
     Refresh
   </button>
+  <span class="statsRefresh"
+        ng-if="statsRefresh">{{statsRefresh}}</span>
 </div>
 
 <style>
@@ -146,5 +152,9 @@
 }
 .indexMonitorRefresh {
   margin: 10px 10px 10px 10px;
+}
+.statsRefresh {
+  font-size: 8pt;
+  padding-right: 20px;
 }
 </style>
