@@ -3,6 +3,10 @@
 
   <button ng-click="refresh()" class="indexMonitorRefresh">Refresh</button>
 
+  <input ng-model="allStats" type="checkbox" class="allStats">
+    Show all stats
+  </input>
+
   <table>
     <tr>
       <th class="statKind">Kind</th>
@@ -23,7 +27,8 @@
       <th>Rate Mean</th>
       <th class="sourceName">Source</th>
     </tr>
-    <tr ng-repeat="(s, ss) in indexStatsFlat">
+    <tr ng-show="!ss.scalar || allStats"
+        ng-repeat="(s, ss) in indexStatsFlat">
       <td class="statKind">{{ss.statKind}}</td>
       <td class="statName">{{ss.statName}}</td>
       <td ng-class="{changed: ss.prev.count != ss.count}">
