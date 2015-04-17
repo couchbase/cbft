@@ -312,7 +312,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     };
 
     $scope.refresh = function() {
-        $route.reload();
+        $scope.loadIndexStats();
     }
 }
 
