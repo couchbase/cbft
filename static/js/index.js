@@ -127,6 +127,25 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                     collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
             }
             $scope.warnings = data.warnings;
+
+            $scope.indexCanWrite =
+                !data.indexDef ||
+                !data.indexDef.planParams ||
+                !data.indexDef.planParams.nodePlanParams ||
+                !data.indexDef.planParams.nodePlanParams[''] ||
+                !data.indexDef.planParams.nodePlanParams[''][''] ||
+                data.indexDef.planParams.nodePlanParams[''][''].canWrite;
+            $scope.indexCanRead =
+                !data.indexDef ||
+                !data.indexDef.planParams ||
+                !data.indexDef.planParams.nodePlanParams ||
+                !data.indexDef.planParams.nodePlanParams[''] ||
+                !data.indexDef.planParams.nodePlanParams[''][''] ||
+                data.indexDef.planParams.nodePlanParams[''][''].canRead;
+            $scope.indexPlanFrozen =
+                data.indexDef &&
+                data.indexDef.planParams &&
+                data.indexDef.planParams.planFrozen;
         }).
         error(function(data, code) {
             $scope.errorMessage = errorMessage(data, code);
@@ -280,11 +299,9 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
         $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).
         success(function(data) {
-            alert("index " + what + " " + op);
             $scope.loadIndexDetails();
         }).
         error(function(data, code) {
-            alert("index " + what + " " + op + " error: " + data);
             $scope.errorMessage = errorMessage(data, code);
             $scope.errorMessageFull = data;
         });
