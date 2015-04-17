@@ -156,9 +156,10 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 			}
 			targetDef := indexDefs.IndexDefs[targetName]
 			if targetDef == nil {
-				return fmt.Errorf("alias: no indexDef for targetName: %s,"+
-					" aliasName: %s, indexName: %s",
-					targetName, aliasName, indexName)
+				return fmt.Errorf("alias: the alias depends upon"+
+					" a target index that does not exist,"+
+					" targetName: %q, aliasName: %q",
+					targetName, aliasName)
 			}
 			if targetSpec.IndexUUID != "" &&
 				targetSpec.IndexUUID != targetDef.UUID {
