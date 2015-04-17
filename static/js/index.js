@@ -223,11 +223,14 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                             ss.sourceName = k;
                             ss.statKind = indexStatsLabels[aa];
                             ss.statName = s;
+                            ss.label = s.replace(/^Timer/, "");
+
                             stats.push(ss);
 
                             var agg = aggs[s] = aggs[s] || {
-                                count: 0,
                                 advanced: ss.advanced,
+                                count: 0,
+                                label: ss.label
                             };
                             agg.count = agg.count + (ss.count || 0);
                             if (indexStatsAggsPrev) {

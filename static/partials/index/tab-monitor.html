@@ -15,7 +15,7 @@
   </input>
 
   <input ng-model="details" type="checkbox">
-    Show index partition details and timings
+    Show details and timings for each index partition
   </input>
 
   <table ng-show="!details">
@@ -25,7 +25,7 @@
     </tr>
     <tr ng-repeat="(s, ss) in indexStatsAgg"
         ng-show="!ss.advanced || allStats">
-      <td class="statName">{{s}}</td>
+      <td class="statName">{{ss.label}}</td>
       <td ng-class="{changed: ss.prev.count != ss.count}">
         {{ss.count | number:0}}
       </td>
@@ -53,7 +53,7 @@
     </tr>
     <tr ng-repeat="(s, ss) in indexStatsFlat"
         ng-show="!ss.advanced || allStats">
-      <td class="statName">{{ss.statName}}</td>
+      <td class="statName">{{ss.label}}</td>
       <td ng-class="{changed: ss.prev.count != ss.count}">
         {{ss.count}}</td>
       <td ng-class="{changed: ss.prev.percentiles['99.9%'] != ss.percentiles['99.9%']}">
