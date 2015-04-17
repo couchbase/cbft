@@ -204,7 +204,8 @@ type RemotePlanPIndex struct {
 // up-to-date node and hitting it with load just makes the
 // rebalance take longer?
 func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
-	wantNode func(*PlanPIndexNode) bool) (
+	wantNode func(*PlanPIndexNode) bool,
+	wantKind string) (
 	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
@@ -279,8 +280,10 @@ build_loop:
 			}
 		}
 
-		return nil, nil, fmt.Errorf("pindex: no node covers planPIndex: %#v",
-			planPIndex)
+		return nil, nil, fmt.Errorf("pindex:"+
+			" %s may have been disabled; no nodes are enabled/allocated"+
+			" to serve %s for the index partition(s)",
+			wantKind, wantKind)
 	}
 
 	return localPIndexes, remotePlanPIndexes, nil

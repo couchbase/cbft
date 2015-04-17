@@ -796,7 +796,8 @@ func vliteGatherer(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
 	cancelCh <-chan bool) (*VLiteGatherer, error) {
 	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
+		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead,
+			"queries")
 	if err != nil {
 		return nil, fmt.Errorf("vlite: gatherer, err: %v", err)
 	}

@@ -743,7 +743,8 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	consistencyParams *ConsistencyParams,
 	cancelCh <-chan bool) (bleve.IndexAlias, error) {
 	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead)
+		mgr.CoveringPIndexes(indexName, indexUUID, PlanPIndexNodeCanRead,
+			"queries")
 	if err != nil {
 		return nil, fmt.Errorf("bleve: bleveIndexAlias, err: %v", err)
 	}
