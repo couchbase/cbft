@@ -155,6 +155,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     };
 
     $scope.loadIndexDocCount = function() {
+        $scope.indexDocCount = "..."
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
@@ -163,6 +164,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             $scope.indexDocCount = data.count;
         }).
         error(function(data, code) {
+            $scope.indexDocCount = "error"
             $scope.errorMessage = errorMessage(data, code);
             $scope.errorMessageFull = data;
         });

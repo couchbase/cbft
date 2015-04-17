@@ -1,6 +1,13 @@
 <dl class="dl-horizontal index-summary">
   <dt>Document Count:</dt>
-  <dd>{{indexDocCount}}</dd>
+  <dd>{{indexDocCount}}
+
+    <button ng-click="loadIndexDocCount()"
+            class="btn btn-default btn-xs">
+      <span class="glyphicon glyphicon-refresh"></span>
+      Refresh
+    </button>
+  </dd>
 
   <dt>Index Definition:</dt>
   <dd>
