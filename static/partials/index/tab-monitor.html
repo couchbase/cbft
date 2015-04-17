@@ -8,13 +8,30 @@
   <span class="statsRefresh"
         ng-if="statsRefresh">{{statsRefresh}}</span>
 
-  <input ng-model="allStats" type="checkbox" class="allStats">
+  <input ng-model="allStats" type="checkbox">
     Show all stats
   </input>
 
-  <table>
+  <input ng-model="details" type="checkbox">
+    Show index partition details and timings
+  </input>
+
+  <table ng-show="!details">
     <tr>
-      <th class="statKind">Kind</th>
+      <th class="statName">Stat</th>
+      <th>Count</th>
+    </tr>
+    <tr ng-repeat="(s, ss) in indexStatsAgg"
+        ng-show="!ss.advanced || allStats">
+      <td class="statName">{{s}}</td>
+      <td ng-class="{changed: ss.prev.count != ss.count}">
+        {{ss.count | number:0}}
+      </td>
+    </tr>
+  </table>
+
+  <table ng-show="details">
+    <tr>
       <th class="statName">Stat</th>
       <th>Count</th>
       <th>99.9%tile</th>
@@ -32,9 +49,8 @@
       <th>Rate Mean</th>
       <th class="sourceName">Source</th>
     </tr>
-    <tr ng-show="!ss.advanced || allStats"
-        ng-repeat="(s, ss) in indexStatsFlat">
-      <td class="statKind">{{ss.statKind}}</td>
+    <tr ng-repeat="(s, ss) in indexStatsFlat"
+        ng-show="!ss.advanced || allStats">
       <td class="statName">{{ss.statName}}</td>
       <td ng-class="{changed: ss.prev.count != ss.count}">
         {{ss.count}}</td>
@@ -136,6 +152,9 @@
 }
 .indexStats td.changed {
   background-color: #ddd;
+}
+.indexStats input[type=checkbox] {
+  margin-left: 20px;
 }
 .indexErrors {
   margin-left: 20px;

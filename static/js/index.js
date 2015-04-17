@@ -1,4 +1,5 @@
 var indexStatsPrevs = {};
+var indexStatsAggsPrevs = {};
 
 var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
@@ -183,10 +184,12 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             $scope.indexStats = data;
 
             var indexStatsPrev = indexStatsPrevs[$scope.indexName];
-            indexStatsPrevs[$scope.indexName] = data;
+            var indexStatsAggsPrev = indexStatsAggsPrevs[$scope.indexName];
 
             var errors = [];
             var stats = [];
+            var aggs = {};
+
             var kinds = ["pindexes", "feeds"];
             for (var a in kinds) {
                 var aa = kinds[a];
@@ -221,10 +224,22 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                             ss.statKind = indexStatsLabels[aa];
                             ss.statName = s;
                             stats.push(ss);
+
+                            var agg = aggs[s] = aggs[s] || {
+                                count: 0,
+                                advanced: ss.advanced,
+                            };
+                            agg.count = agg.count + (ss.count || 0);
+                            if (indexStatsAggsPrev) {
+                                agg.prev = indexStatsAggsPrev[s];
+                            }
                         }
                     }
                 }
             }
+
+            indexStatsPrevs[$scope.indexName] = data;
+            indexStatsAggsPrevs[$scope.indexName] = aggs;
 
             stats.sort(function(a, b) {
                 if (a.statKind < b.statKind) {
@@ -260,6 +275,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
             $scope.indexErrors = errors;
             $scope.indexStatsFlat = stats;
+            $scope.indexStatsAgg = aggs;
         }).
         error(function(data, code) {
             $scope.statsRefresh = "error";
