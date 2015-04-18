@@ -325,8 +325,8 @@ func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {
 			return err
 		}
 
-		return dest.SetOpaque(partition, value)
-	}, r.stats.TimerSetOpaque)
+		return dest.OpaqueSet(partition, value)
+	}, r.stats.TimerOpaqueSet)
 }
 
 func (r *DCPFeed) GetMetaData(vbucketId uint16) (
@@ -338,10 +338,10 @@ func (r *DCPFeed) GetMetaData(vbucketId uint16) (
 			return err
 		}
 
-		value, lastSeq, err = dest.GetOpaque(partition)
+		value, lastSeq, err = dest.OpaqueGet(partition)
 
 		return err
-	}, r.stats.TimerGetOpaque)
+	}, r.stats.TimerOpaqueGet)
 
 	return value, lastSeq, err
 }
@@ -354,7 +354,7 @@ func (r *DCPFeed) Rollback(vbucketId uint16, rollbackSeq uint64) error {
 			return err
 		}
 
-		opaqueValue, lastSeq, err := dest.GetOpaque(partition)
+		opaqueValue, lastSeq, err := dest.OpaqueGet(partition)
 		if err != nil {
 			return err
 		}

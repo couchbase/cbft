@@ -39,25 +39,25 @@ type Dest interface {
 	// preparing a batch write to application-specific storage.
 	OnSnapshotStart(partition string, snapStart, snapEnd uint64) error
 
-	// The Dest implementation should persist the value parameter of
-	// SetOpaque() for retrieval during some future call to
-	// GetOpaque() by the system.  The metadata value should be
-	// considered "in-stream", or as part of the sequence history of
-	// mutations.  That is, a later Rollback() to some previous
-	// sequence number for a particular partition should rollback
-	// both persisted metadata and regular data.  The Dest
-	// implementation should make its own copy of the value data.
-	SetOpaque(partition string, value []byte) error
-
-	// GetOpaque() should return the opaque value previously
-	// provided by an earlier call to SetOpaque().  If there was no
-	// previous call to SetOpaque(), such as in the case of a brand
+	// OpaqueGet() should return the opaque value previously
+	// provided by an earlier call to OpaqueSet().  If there was no
+	// previous call to OpaqueSet(), such as in the case of a brand
 	// new instance of a Dest (as opposed to a restarted or reloaded
 	// Dest), the Dest should return (nil, 0, nil) for (value,
 	// lastSeq, err), respectively.  The lastSeq should be the last
 	// sequence number received and persisted during calls to the
 	// Dest's OnDataUpdate() & OnDataDelete() methods.
-	GetOpaque(partition string) (value []byte, lastSeq uint64, err error)
+	OpaqueGet(partition string) (value []byte, lastSeq uint64, err error)
+
+	// The Dest implementation should persist the value parameter of
+	// OpaqueSet() for retrieval during some future call to
+	// OpaqueGet() by the system.  The metadata value should be
+	// considered "in-stream", or as part of the sequence history of
+	// mutations.  That is, a later Rollback() to some previous
+	// sequence number for a particular partition should rollback
+	// both persisted metadata and regular data.  The Dest
+	// implementation should make its own copy of the value data.
+	OpaqueSet(partition string, value []byte) error
 
 	// Invoked by when the datasource signals a rollback during dest
 	// initialization.  Note that both regular data and opaque data
@@ -96,8 +96,8 @@ type DestStats struct {
 	TimerOnDataUpdate    metrics.Timer
 	TimerOnDataDelete    metrics.Timer
 	TimerOnSnapshotStart metrics.Timer
-	TimerSetOpaque       metrics.Timer
-	TimerGetOpaque       metrics.Timer
+	TimerOpaqueGet       metrics.Timer
+	TimerOpaqueSet       metrics.Timer
 	TimerRollback        metrics.Timer
 }
 
@@ -106,8 +106,8 @@ func NewDestStats() *DestStats {
 		TimerOnDataUpdate:    metrics.NewTimer(),
 		TimerOnDataDelete:    metrics.NewTimer(),
 		TimerOnSnapshotStart: metrics.NewTimer(),
-		TimerSetOpaque:       metrics.NewTimer(),
-		TimerGetOpaque:       metrics.NewTimer(),
+		TimerOpaqueGet:       metrics.NewTimer(),
+		TimerOpaqueSet:       metrics.NewTimer(),
 		TimerRollback:        metrics.NewTimer(),
 	}
 }
@@ -122,10 +122,10 @@ func (d *DestStats) WriteJSON(w io.Writer) {
 	WriteTimerJSON(w, d.TimerOnDataDelete)
 	w.Write([]byte(`,"TimerOnSnapshotStart":`))
 	WriteTimerJSON(w, d.TimerOnSnapshotStart)
-	w.Write([]byte(`,"TimerSetOpaque":`))
-	WriteTimerJSON(w, d.TimerSetOpaque)
-	w.Write([]byte(`,"TimerGetOpaque":`))
-	WriteTimerJSON(w, d.TimerGetOpaque)
+	w.Write([]byte(`,"TimerOpaqueGet":`))
+	WriteTimerJSON(w, d.TimerOpaqueGet)
+	w.Write([]byte(`,"TimerOpaqueSet":`))
+	WriteTimerJSON(w, d.TimerOpaqueSet)
 	w.Write([]byte(`,"TimerRollback":`))
 	WriteTimerJSON(w, d.TimerRollback)
 

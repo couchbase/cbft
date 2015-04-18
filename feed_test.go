@@ -163,10 +163,10 @@ func TestPrimaryFeed(t *testing.T) {
 	if df.OnSnapshotStart("unknown-partition", seq, seq) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	if df.SetOpaque("unknown-partition", val) == nil {
+	if df.OpaqueSet("unknown-partition", val) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	_, _, err = df.GetOpaque("unknown-partition")
+	_, _, err = df.OpaqueGet("unknown-partition")
 	if err == nil {
 		t.Errorf("expected err on bad partition")
 	}

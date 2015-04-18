@@ -675,16 +675,7 @@ func (t *VLitePartition) OnSnapshotStart(partition string,
 	return nil
 }
 
-func (t *VLitePartition) SetOpaque(partition string, value []byte) error {
-	t.vlite.m.Lock()
-	defer t.vlite.m.Unlock()
-
-	t.lastUUID = parseOpaqueToUUID(value)
-
-	return t.vlite.opaqueColl.Set(t.partitionKey, append([]byte(nil), value...))
-}
-
-func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
+func (t *VLitePartition) OpaqueGet(partition string) ([]byte, uint64, error) {
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()
 
@@ -710,6 +701,15 @@ func (t *VLitePartition) GetOpaque(partition string) ([]byte, uint64, error) {
 	}
 
 	return opaqueBuf, t.seqMax, nil
+}
+
+func (t *VLitePartition) OpaqueSet(partition string, value []byte) error {
+	t.vlite.m.Lock()
+	defer t.vlite.m.Unlock()
+
+	t.lastUUID = parseOpaqueToUUID(value)
+
+	return t.vlite.opaqueColl.Set(t.partitionKey, append([]byte(nil), value...))
 }
 
 func (t *VLitePartition) Rollback(partition string, rollbackSeq uint64) error {

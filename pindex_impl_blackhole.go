@@ -93,13 +93,13 @@ func (t *BlackHole) OnSnapshotStart(partition string,
 	return nil
 }
 
-func (t *BlackHole) SetOpaque(partition string, value []byte) error {
-	return nil
-}
-
-func (t *BlackHole) GetOpaque(partition string) (
+func (t *BlackHole) OpaqueGet(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	return nil, 0, nil
+}
+
+func (t *BlackHole) OpaqueSet(partition string, value []byte) error {
+	return nil
 }
 
 func (t *BlackHole) Rollback(partition string, rollbackSeq uint64) error {

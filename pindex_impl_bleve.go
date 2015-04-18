@@ -67,7 +67,7 @@ type BleveDestPartition struct {
 	bdest           *BleveDest
 	bindex          bleve.Index
 	partition       string
-	partitionOpaque []byte // Key used to implement SetOpaque/GetOpaque().
+	partitionOpaque []byte // Key used to implement OpaqueSet/OpaqueGet().
 
 	m           sync.Mutex   // Protects the fields that follow.
 	seqMax      uint64       // Max seq # we've seen for this partition.
@@ -77,7 +77,7 @@ type BleveDestPartition struct {
 	buf         []byte       // Batch points to slices of buf, which we reuse.
 	batch       *bleve.Batch // Batch applied when we hit seqSnapEnd.
 
-	lastOpaque []byte // Cache most recent value for SetOpaque()/GetOpaque().
+	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
 	cwrQueue cwrQueue
@@ -596,19 +596,7 @@ func (t *BleveDestPartition) OnSnapshotStart(partition string,
 	return nil
 }
 
-func (t *BleveDestPartition) SetOpaque(partition string, value []byte) error {
-	t.m.Lock()
-
-	t.lastOpaque = append(t.lastOpaque[0:0], value...)
-	t.lastUUID = parseOpaqueToUUID(value)
-
-	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
-
-	t.m.Unlock()
-	return nil
-}
-
-func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error) {
+func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error) {
 	t.m.Lock()
 
 	if t.lastOpaque == nil {
@@ -647,6 +635,18 @@ func (t *BleveDestPartition) GetOpaque(partition string) ([]byte, uint64, error)
 
 	t.m.Unlock()
 	return lastOpaque, seqMax, nil
+}
+
+func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
+	t.m.Lock()
+
+	t.lastOpaque = append(t.lastOpaque[0:0], value...)
+	t.lastUUID = parseOpaqueToUUID(value)
+
+	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
+
+	t.m.Unlock()
+	return nil
 }
 
 func (t *BleveDestPartition) Rollback(partition string, rollbackSeq uint64) error {

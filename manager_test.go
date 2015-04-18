@@ -860,7 +860,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 			}
 
 			partition := "0"
-			v, lastSeq, err := sf.GetOpaque(partition)
+			v, lastSeq, err := sf.OpaqueGet(partition)
 			if err != nil {
 				t.Errorf("expected no error to get, err: %v", err)
 			}
@@ -872,7 +872,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
 
-			err = sf.SetOpaque(partition, []byte("dinner"))
+			err = sf.OpaqueSet(partition, []byte("dinner"))
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -881,7 +881,7 @@ func TestStreamGetSetMeta(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
 
-			v, lastSeq, err = sf.GetOpaque(partition)
+			v, lastSeq, err = sf.OpaqueGet(partition)
 			if err != nil {
 				t.Errorf("expected no error to get, err: %v", err)
 			}
@@ -912,7 +912,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 			}
 
 			partition := "0"
-			v, lastSeq, err := sf.GetOpaque(partition)
+			v, lastSeq, err := sf.OpaqueGet(partition)
 			if err != nil {
 				t.Errorf("expected no error to get, err: %v", err)
 			}
@@ -924,7 +924,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex, got: %d", n)
 			}
 
-			err = sf.SetOpaque(partition, []byte("dinner"))
+			err = sf.OpaqueSet(partition, []byte("dinner"))
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -933,7 +933,7 @@ func TestMultiStreamGetSetMeta(t *testing.T) {
 				t.Errorf("expected 0 docs in bindex after set, got: %d", n)
 			}
 
-			v, lastSeq, err = sf.GetOpaque(partition)
+			v, lastSeq, err = sf.OpaqueGet(partition)
 			if err != nil {
 				t.Errorf("expected no error to get, err: %v", err)
 			}

@@ -40,12 +40,12 @@ func (s *TestDest) OnSnapshotStart(partition string,
 	return nil
 }
 
-func (s *TestDest) SetOpaque(partition string,
+func (s *TestDest) OpaqueSet(partition string,
 	value []byte) error {
 	return nil
 }
 
-func (s *TestDest) GetOpaque(partition string) (
+func (s *TestDest) OpaqueGet(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	return nil, 0, nil
 }
@@ -136,10 +136,10 @@ func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
 	if df.OnSnapshotStart("", 0, 0) == nil {
 		t.Errorf("expected err")
 	}
-	if df.SetOpaque("", nil) == nil {
+	if df.OpaqueSet("", nil) == nil {
 		t.Errorf("expected err")
 	}
-	value, lastSeq, err := df.GetOpaque("")
+	value, lastSeq, err := df.OpaqueGet("")
 	if err == nil || value != nil || lastSeq != 0 {
 		t.Errorf("expected err")
 	}

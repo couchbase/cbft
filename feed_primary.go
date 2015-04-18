@@ -138,22 +138,22 @@ func (t *PrimaryFeed) OnSnapshotStart(partition string,
 	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
 }
 
-func (t *PrimaryFeed) SetOpaque(partition string,
+func (t *PrimaryFeed) OpaqueSet(partition string,
 	value []byte) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
 		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.SetOpaque(partition, value)
+	return dest.OpaqueSet(partition, value)
 }
 
-func (t *PrimaryFeed) GetOpaque(partition string) (
+func (t *PrimaryFeed) OpaqueGet(partition string) (
 	value []byte, lastSeq uint64, err error) {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
 		return nil, 0, fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.GetOpaque(partition)
+	return dest.OpaqueGet(partition)
 }
 
 func (t *PrimaryFeed) Rollback(partition string,

@@ -122,7 +122,7 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		dest.OnDataUpdate("", nil, 0, nil) != nil ||
 		dest.OnDataDelete("", nil, 0) != nil ||
 		dest.OnSnapshotStart("", 0, 0) != nil ||
-		dest.SetOpaque("", nil) != nil ||
+		dest.OpaqueSet("", nil) != nil ||
 		dest.Rollback("", 0) != nil ||
 		dest.ConsistencyWait("", "", "", 0, nil) != nil ||
 		dest.Query(nil, nil, nil, nil) != nil {
@@ -143,9 +143,9 @@ func TestBlackholePIndexImpl(t *testing.T) {
 		t.Errorf("expected null")
 	}
 
-	v, lastSeq, err := dest.GetOpaque("")
+	v, lastSeq, err := dest.OpaqueGet("")
 	if err != nil || v != nil || lastSeq != 0 {
-		t.Errorf("expected nothing from blackhole.GetOpaque()")
+		t.Errorf("expected nothing from blackhole.OpaqueGet()")
 	}
 
 	bt := PIndexImplTypes["blackhole"]
