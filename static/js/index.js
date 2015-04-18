@@ -245,12 +245,6 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             indexStatsAggsPrevs[$scope.indexName] = aggs;
 
             stats.sort(function(a, b) {
-                if (a.statKind < b.statKind) {
-                    return 1;
-                }
-                if (a.statKind > b.statKind) {
-                    return -1;
-                }
                 if (a.statName < b.statName) {
                     return -1;
                 }
