@@ -81,7 +81,13 @@ dist-clean: clean
 	rm -rf ./static/dist/*
 	git checkout bindata_assetfs.go
 
-# The release target requires...
+# The release target prerequisites...
+#
+# - A cbft-builder docker image.
+#
+# See: ./dist/Dockerfile
+#
+# - Access tokens to be able to publish releases on couchbaselabs/cbft...
 #
 #   export GITHUB_TOKEN=/* a github access token */
 #   export GITHUB_USER=couchbaselabs
@@ -92,7 +98,7 @@ dist-clean: clean
 #
 #   git grep v0.0.1 # Look for old version strings.
 #   git grep v0.0   # Look for old version strings.
-#   <edit/update files, like cmd/cbft/main.go and mkdocs.yml>
+#   <edit/update files, especially cmd/cbft/main.go and mkdocs.yml>
 #   make test
 #   <and, more tests, etc>
 #   git commit -m "v0.0.2"
