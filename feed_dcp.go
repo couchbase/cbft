@@ -275,14 +275,14 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		err = dest.OnDataUpdate(partition, key, seq, req.Body)
+		err = dest.DataUpdate(partition, key, seq, req.Body)
 		if err != nil {
 			return fmt.Errorf("feed_dcp: DataUpdate,"+
 				" name: %s, partition: %s, key: %s, seq: %d, err: %v",
 				r.name, partition, key, seq, err)
 		}
 		return nil
-	}, r.stats.TimerOnDataUpdate)
+	}, r.stats.TimerDataUpdate)
 }
 
 func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
@@ -294,14 +294,14 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		err = dest.OnDataDelete(partition, key, seq)
+		err = dest.DataDelete(partition, key, seq)
 		if err != nil {
 			return fmt.Errorf("feed_dcp: DataDelete,"+
 				" name: %s, partition: %s, key: %s, seq: %d, err: %v",
 				r.name, partition, key, seq, err)
 		}
 		return nil
-	}, r.stats.TimerOnDataDelete)
+	}, r.stats.TimerDataDelete)
 }
 
 func (r *DCPFeed) SnapshotStart(vbucketId uint16,

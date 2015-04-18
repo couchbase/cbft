@@ -25,12 +25,12 @@ func (s *TestDest) Close() error {
 	return nil
 }
 
-func (s *TestDest) OnDataUpdate(partition string,
+func (s *TestDest) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	return nil
 }
 
-func (s *TestDest) OnDataDelete(partition string,
+func (s *TestDest) DataDelete(partition string,
 	key []byte, seq uint64) error {
 	return nil
 }
@@ -127,10 +127,10 @@ func (dp *ErrorOnlyDestProvider) Close() error {
 
 func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
 	df := &DestForwarder{&ErrorOnlyDestProvider{}}
-	if df.OnDataUpdate("", nil, 0, nil) == nil {
+	if df.DataUpdate("", nil, 0, nil) == nil {
 		t.Errorf("expected err")
 	}
-	if df.OnDataDelete("", nil, 0) == nil {
+	if df.DataDelete("", nil, 0) == nil {
 		t.Errorf("expected err")
 	}
 	if df.OnSnapshotStart("", 0, 0) == nil {

@@ -38,24 +38,24 @@ func (t *DestForwarder) Close() error {
 	return t.DestProvider.Close()
 }
 
-func (t *DestForwarder) OnDataUpdate(partition string,
+func (t *DestForwarder) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
 	}
 
-	return dest.OnDataUpdate(partition, key, seq, val)
+	return dest.DataUpdate(partition, key, seq, val)
 }
 
-func (t *DestForwarder) OnDataDelete(partition string,
+func (t *DestForwarder) DataDelete(partition string,
 	key []byte, seq uint64) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
 	}
 
-	return dest.OnDataDelete(partition, key, seq)
+	return dest.DataDelete(partition, key, seq)
 }
 
 func (t *DestForwarder) OnSnapshotStart(partition string,

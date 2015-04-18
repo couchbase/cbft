@@ -78,12 +78,12 @@ func (t *BlackHole) Close() error {
 	return nil
 }
 
-func (t *BlackHole) OnDataUpdate(partition string,
+func (t *BlackHole) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	return nil
 }
 
-func (t *BlackHole) OnDataDelete(partition string,
+func (t *BlackHole) DataDelete(partition string,
 	key []byte, seq uint64) error {
 	return nil
 }

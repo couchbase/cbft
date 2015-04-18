@@ -781,14 +781,14 @@ func TestBasicStreamMutations(t *testing.T) {
 			key := []byte("hello")
 			seq := uint64(0)
 			val := []byte("{}")
-			err := sf.OnDataUpdate(partition, key, seq, val)
+			err := sf.DataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
 
 			key = []byte("goodbye")
 			val = []byte("{}")
-			err = sf.OnDataUpdate(partition, key, seq, val)
+			err = sf.DataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -799,7 +799,7 @@ func TestBasicStreamMutations(t *testing.T) {
 			}
 
 			key = []byte("goodbye")
-			err = sf.OnDataDelete(partition, key, seq)
+			err = sf.DataDelete(partition, key, seq)
 			if err != nil {
 				t.Errorf("expected no error to DELETE, err: %v", err)
 			}
@@ -1075,7 +1075,7 @@ func TestPartitioningMutations(t *testing.T) {
 			key := []byte("hello")
 			seq := uint64(0)
 			val := []byte("{}")
-			err = sf.OnDataUpdate(partition, key, seq, val)
+			err = sf.DataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1144,7 +1144,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			key := []byte("hello")
 			seq := uint64(0)
 			val := []byte("{}")
-			err = sf.OnDataUpdate(partition, key, seq, val)
+			err = sf.DataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
@@ -1160,7 +1160,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			partition = "2"
 			key = []byte("hi")
 			val = []byte("{}")
-			err = sf.OnDataUpdate(partition, key, seq, val)
+			err = sf.DataUpdate(partition, key, seq, val)
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}

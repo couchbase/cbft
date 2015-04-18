@@ -226,9 +226,9 @@ loop:
 			}
 
 			if req.Opcode == memcached.TapMutation {
-				err = dest.OnDataUpdate(partition, req.Key, 0, req.Value)
+				err = dest.DataUpdate(partition, req.Key, 0, req.Value)
 			} else if req.Opcode == memcached.TapDeletion {
-				err = dest.OnDataDelete(partition, req.Key, 0)
+				err = dest.DataDelete(partition, req.Key, 0)
 			}
 			if err != nil {
 				return 1, err

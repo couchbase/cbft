@@ -540,7 +540,7 @@ func (t *BleveDestPartition) Close() error {
 	return t.bdest.Close()
 }
 
-func (t *BleveDestPartition) OnDataUpdate(partition string,
+func (t *BleveDestPartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	k := string(key)
 
@@ -569,7 +569,7 @@ func (t *BleveDestPartition) OnDataUpdate(partition string,
 	return err
 }
 
-func (t *BleveDestPartition) OnDataDelete(partition string,
+func (t *BleveDestPartition) DataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.m.Lock()
 

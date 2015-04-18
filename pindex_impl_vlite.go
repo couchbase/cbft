@@ -576,7 +576,7 @@ func (t *VLitePartition) Close() error {
 	return t.vlite.Close()
 }
 
-func (t *VLitePartition) OnDataUpdate(partition string,
+func (t *VLitePartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte) error {
 	storeKey := append([]byte(nil), key...)
 	storeVal := append([]byte(nil), val...)
@@ -641,7 +641,7 @@ func (t *VLitePartition) OnDataUpdate(partition string,
 	return err
 }
 
-func (t *VLitePartition) OnDataDelete(partition string,
+func (t *VLitePartition) DataDelete(partition string,
 	key []byte, seq uint64) error {
 	t.vlite.m.Lock()
 

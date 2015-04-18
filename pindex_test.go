@@ -119,8 +119,8 @@ func TestBlackholePIndexImpl(t *testing.T) {
 	}
 
 	if dest.Close() != nil ||
-		dest.OnDataUpdate("", nil, 0, nil) != nil ||
-		dest.OnDataDelete("", nil, 0) != nil ||
+		dest.DataUpdate("", nil, 0, nil) != nil ||
+		dest.DataDelete("", nil, 0) != nil ||
 		dest.OnSnapshotStart("", 0, 0) != nil ||
 		dest.OpaqueSet("", nil) != nil ||
 		dest.Rollback("", 0) != nil ||

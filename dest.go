@@ -26,12 +26,12 @@ type Dest interface {
 	// Invoked when there's a new mutation from a data source for a
 	// partition.  Dest implementation is responsible for making its
 	// own copies of the key and val data.
-	OnDataUpdate(partition string, key []byte, seq uint64, val []byte) error
+	DataUpdate(partition string, key []byte, seq uint64, val []byte) error
 
 	// Invoked by the data source when there's a data deletion in a
 	// partition.  Dest implementation is responsible for making its
 	// own copies of the key data.
-	OnDataDelete(partition string, key []byte, seq uint64) error
+	DataDelete(partition string, key []byte, seq uint64) error
 
 	// An callback invoked by the data source when there's a start of
 	// a new snapshot for a partition.  The Receiver implementation,
@@ -46,7 +46,7 @@ type Dest interface {
 	// Dest), the Dest should return (nil, 0, nil) for (value,
 	// lastSeq, err), respectively.  The lastSeq should be the last
 	// sequence number received and persisted during calls to the
-	// Dest's OnDataUpdate() & OnDataDelete() methods.
+	// Dest's DataUpdate() & DataDelete() methods.
 	OpaqueGet(partition string) (value []byte, lastSeq uint64, err error)
 
 	// The Dest implementation should persist the value parameter of
@@ -93,8 +93,8 @@ type Dest interface {
 type DestStats struct {
 	TotError uint64
 
-	TimerOnDataUpdate    metrics.Timer
-	TimerOnDataDelete    metrics.Timer
+	TimerDataUpdate      metrics.Timer
+	TimerDataDelete      metrics.Timer
 	TimerOnSnapshotStart metrics.Timer
 	TimerOpaqueGet       metrics.Timer
 	TimerOpaqueSet       metrics.Timer
@@ -103,8 +103,8 @@ type DestStats struct {
 
 func NewDestStats() *DestStats {
 	return &DestStats{
-		TimerOnDataUpdate:    metrics.NewTimer(),
-		TimerOnDataDelete:    metrics.NewTimer(),
+		TimerDataUpdate:      metrics.NewTimer(),
+		TimerDataDelete:      metrics.NewTimer(),
 		TimerOnSnapshotStart: metrics.NewTimer(),
 		TimerOpaqueGet:       metrics.NewTimer(),
 		TimerOpaqueSet:       metrics.NewTimer(),
@@ -116,10 +116,10 @@ func (d *DestStats) WriteJSON(w io.Writer) {
 	t := atomic.LoadUint64(&d.TotError)
 	fmt.Fprintf(w, `{"TotError":%d`, t)
 
-	w.Write([]byte(`,"TimerOnDataUpdate":`))
-	WriteTimerJSON(w, d.TimerOnDataUpdate)
-	w.Write([]byte(`,"TimerOnDataDelete":`))
-	WriteTimerJSON(w, d.TimerOnDataDelete)
+	w.Write([]byte(`,"TimerDataUpdate":`))
+	WriteTimerJSON(w, d.TimerDataUpdate)
+	w.Write([]byte(`,"TimerDataDelete":`))
+	WriteTimerJSON(w, d.TimerDataDelete)
 	w.Write([]byte(`,"TimerOnSnapshotStart":`))
 	WriteTimerJSON(w, d.TimerOnSnapshotStart)
 	w.Write([]byte(`,"TimerOpaqueGet":`))
