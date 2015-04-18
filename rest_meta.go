@@ -26,8 +26,9 @@ func NewManagerMetaHandler(mgr *Manager,
 }
 
 type MetaDesc struct {
-	Description string      `json:"description"`
-	StartSample interface{} `json:"startSample"`
+	Description     string            `json:"description"`
+	StartSample     interface{}       `json:"startSample"`
+	StartSampleDocs map[string]string `json:"startSampleDocs"`
 }
 
 type MetaDescSource MetaDesc
@@ -48,8 +49,9 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	for sourceType, f := range FeedTypes {
 		if f.Public {
 			sourceTypes[sourceType] = &MetaDescSource{
-				Description: f.Description,
-				StartSample: f.StartSample,
+				Description:     f.Description,
+				StartSample:     f.StartSample,
+				StartSampleDocs: f.StartSampleDocs,
 			}
 		}
 	}
