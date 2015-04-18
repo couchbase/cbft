@@ -244,31 +244,8 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
             indexStatsPrevs[$scope.indexName] = data;
             indexStatsAggsPrevs[$scope.indexName] = aggs;
 
-            stats.sort(function(a, b) {
-                if (a.statName < b.statName) {
-                    return -1;
-                }
-                if (a.statName > b.statName) {
-                    return 1;
-                }
-                if (a.sourceName < b.sourceName) {
-                    return -1;
-                }
-                if (a.sourceName > b.sourceName) {
-                    return 1;
-                }
-                return 0;
-            });
-
-            errors.sort(function(a, b) { // More recent errors sort first.
-                if (a.Time < b.Time) {
-                    return 1;
-                }
-                if (a.Time > b.Time) {
-                    return -1;
-                }
-                return 0;
-            });
+            stats.sort(compareStats);
+            errors.sort(compareTime);
 
             $scope.indexErrors = errors;
             $scope.indexStatsFlat = stats;
@@ -559,6 +536,32 @@ function compareCategoryLabel(a, b) {
     }
     if (a.sourceType > b.sourceType) {
         return 1;
+    }
+    return 0;
+}
+
+function compareStats(a, b) {
+    if (a.statName < b.statName) {
+        return -1;
+    }
+    if (a.statName > b.statName) {
+        return 1;
+    }
+    if (a.sourceName < b.sourceName) {
+        return -1;
+    }
+    if (a.sourceName > b.sourceName) {
+        return 1;
+    }
+    return 0;
+}
+
+function compareTime(a, b) { // More recent first.
+    if (a.Time < b.Time) {
+        return 1;
+    }
+    if (a.Time > b.Time) {
+        return -1;
     }
     return 0;
 }
