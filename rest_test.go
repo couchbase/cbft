@@ -827,7 +827,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				partition := "0"
 				snapStart := uint64(1)
 				snapEnd := uint64(10)
-				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				err = feed.SnapshotStart(partition, snapStart, snapEnd)
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
@@ -913,7 +913,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				partition := "0"
 				snapStart := uint64(11)
 				snapEnd := uint64(20)
-				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				err = feed.SnapshotStart(partition, snapStart, snapEnd)
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
@@ -1274,7 +1274,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				partition := "0"
 				snapStart := uint64(21)
 				snapEnd := uint64(30)
-				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				err = feed.SnapshotStart(partition, snapStart, snapEnd)
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
@@ -1523,7 +1523,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				partition := "0"
 				snapStart := uint64(1)
 				snapEnd := uint64(10)
-				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				err = feed.SnapshotStart(partition, snapStart, snapEnd)
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
@@ -1609,7 +1609,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				partition := "0"
 				snapStart := uint64(11)
 				snapEnd := uint64(20)
-				err = feed.OnSnapshotStart(partition, snapStart, snapEnd)
+				err = feed.SnapshotStart(partition, snapStart, snapEnd)
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}

@@ -88,7 +88,7 @@ func (t *BlackHole) DataDelete(partition string,
 	return nil
 }
 
-func (t *BlackHole) OnSnapshotStart(partition string,
+func (t *BlackHole) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	return nil
 }

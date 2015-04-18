@@ -37,7 +37,7 @@ type Dest interface {
 	// a new snapshot for a partition.  The Receiver implementation,
 	// for example, might choose to optimize persistence perhaps by
 	// preparing a batch write to application-specific storage.
-	OnSnapshotStart(partition string, snapStart, snapEnd uint64) error
+	SnapshotStart(partition string, snapStart, snapEnd uint64) error
 
 	// OpaqueGet() should return the opaque value previously
 	// provided by an earlier call to OpaqueSet().  If there was no
@@ -93,22 +93,22 @@ type Dest interface {
 type DestStats struct {
 	TotError uint64
 
-	TimerDataUpdate      metrics.Timer
-	TimerDataDelete      metrics.Timer
-	TimerOnSnapshotStart metrics.Timer
-	TimerOpaqueGet       metrics.Timer
-	TimerOpaqueSet       metrics.Timer
-	TimerRollback        metrics.Timer
+	TimerDataUpdate    metrics.Timer
+	TimerDataDelete    metrics.Timer
+	TimerSnapshotStart metrics.Timer
+	TimerOpaqueGet     metrics.Timer
+	TimerOpaqueSet     metrics.Timer
+	TimerRollback      metrics.Timer
 }
 
 func NewDestStats() *DestStats {
 	return &DestStats{
-		TimerDataUpdate:      metrics.NewTimer(),
-		TimerDataDelete:      metrics.NewTimer(),
-		TimerOnSnapshotStart: metrics.NewTimer(),
-		TimerOpaqueGet:       metrics.NewTimer(),
-		TimerOpaqueSet:       metrics.NewTimer(),
-		TimerRollback:        metrics.NewTimer(),
+		TimerDataUpdate:    metrics.NewTimer(),
+		TimerDataDelete:    metrics.NewTimer(),
+		TimerSnapshotStart: metrics.NewTimer(),
+		TimerOpaqueGet:     metrics.NewTimer(),
+		TimerOpaqueSet:     metrics.NewTimer(),
+		TimerRollback:      metrics.NewTimer(),
 	}
 }
 
@@ -120,8 +120,8 @@ func (d *DestStats) WriteJSON(w io.Writer) {
 	WriteTimerJSON(w, d.TimerDataUpdate)
 	w.Write([]byte(`,"TimerDataDelete":`))
 	WriteTimerJSON(w, d.TimerDataDelete)
-	w.Write([]byte(`,"TimerOnSnapshotStart":`))
-	WriteTimerJSON(w, d.TimerOnSnapshotStart)
+	w.Write([]byte(`,"TimerSnapshotStart":`))
+	WriteTimerJSON(w, d.TimerSnapshotStart)
 	w.Write([]byte(`,"TimerOpaqueGet":`))
 	WriteTimerJSON(w, d.TimerOpaqueGet)
 	w.Write([]byte(`,"TimerOpaqueSet":`))

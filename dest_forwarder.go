@@ -58,14 +58,14 @@ func (t *DestForwarder) DataDelete(partition string,
 	return dest.DataDelete(partition, key, seq)
 }
 
-func (t *DestForwarder) OnSnapshotStart(partition string,
+func (t *DestForwarder) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
 	}
 
-	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
+	return dest.SnapshotStart(partition, snapStart, snapEnd)
 }
 
 func (t *DestForwarder) OpaqueGet(partition string) (

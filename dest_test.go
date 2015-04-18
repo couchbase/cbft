@@ -35,7 +35,7 @@ func (s *TestDest) DataDelete(partition string,
 	return nil
 }
 
-func (s *TestDest) OnSnapshotStart(partition string,
+func (s *TestDest) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	return nil
 }
@@ -133,7 +133,7 @@ func TestErrorOnlyDestProviderWithDestForwarder(t *testing.T) {
 	if df.DataDelete("", nil, 0) == nil {
 		t.Errorf("expected err")
 	}
-	if df.OnSnapshotStart("", 0, 0) == nil {
+	if df.SnapshotStart("", 0, 0) == nil {
 		t.Errorf("expected err")
 	}
 	if df.OpaqueSet("", nil) == nil {

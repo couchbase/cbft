@@ -660,7 +660,7 @@ func (t *VLitePartition) DataDelete(partition string,
 	return err
 }
 
-func (t *VLitePartition) OnSnapshotStart(partition string,
+func (t *VLitePartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.vlite.m.Lock()
 	defer t.vlite.m.Unlock()

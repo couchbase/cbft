@@ -313,8 +313,8 @@ func (r *DCPFeed) SnapshotStart(vbucketId uint16,
 			return err
 		}
 
-		return dest.OnSnapshotStart(partition, snapStart, snapEnd)
-	}, r.stats.TimerOnSnapshotStart)
+		return dest.SnapshotStart(partition, snapStart, snapEnd)
+	}, r.stats.TimerSnapshotStart)
 }
 
 func (r *DCPFeed) SetMetaData(vbucketId uint16, value []byte) error {

@@ -580,7 +580,7 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	return err
 }
 
-func (t *BleveDestPartition) OnSnapshotStart(partition string,
+func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 

@@ -129,13 +129,13 @@ func (t *PrimaryFeed) DataDelete(partition string,
 	return dest.DataDelete(partition, key, seq)
 }
 
-func (t *PrimaryFeed) OnSnapshotStart(partition string,
+func (t *PrimaryFeed) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	dest, err := t.pf(partition, nil, t.dests)
 	if err != nil {
 		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.OnSnapshotStart(partition, snapStart, snapEnd)
+	return dest.SnapshotStart(partition, snapStart, snapEnd)
 }
 
 func (t *PrimaryFeed) OpaqueSet(partition string,
