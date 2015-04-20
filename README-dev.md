@@ -49,11 +49,6 @@ To deploy the HTML docs website to github's gh-pages, run...
 
     mkdocs gh-deploy
 
-## Releasing
-
-To do a full release with a new (semver) tag, see the Makefile's
-"release" target.
-
 ## Coding conventions
 
 You must pass ```go fmt```.
@@ -61,9 +56,31 @@ You must pass ```go fmt```.
 Error message conventions...
 
 In the cbft project, fmt.Errorf() and log.Printf() messages follow a
-rough convention, like...
+rough formatting convention, like...
 
-    source_file_base_name: short static msg, arg0: val0, arg1: val1
+    <source_file_base_name>: <short static msg string>, <arg0>: <val0>, <arg1>: <val1>
 
-The "short static msg" should be unique enough so that ```git grep```
+The "short static msg string" should be unique enough so that ```git grep```
 works well.
+
+## Contributing fixes/improvements
+
+We require a contributor license agreement (CLA) to be signed before
+we can merge any pull requests.  To sign this agreement, please
+register at the [couchbase code review
+site](http://review.couchbase.org/). The cbft project currently does
+not use this code review app, but it is still used to track acceptance
+of the CLA.
+
+All types of contributions are welcome, but please keep the following
+in mind:
+
+Existing tests should continue to pass ("make test"), and new tests
+for contributions are quite nice to have.
+
+All code should have pass "go fmt ./..." and "go vet ./...".
+
+## Releasing
+
+To do a full release with a new (semver) tag, see the Makefile's
+"release" target.
