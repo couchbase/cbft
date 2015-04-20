@@ -7,14 +7,14 @@
         
         
         
-        <link rel="shortcut icon" href="../img/favicon.ico">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
 
-        <title>Developer's Guide - cbft Technical Documentation (0.0 DP)</title>
+        <title>Defining indexes - cbft Technical Documentation (0.0 DP)</title>
 
-        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
-        <link href="../css/prettify-1.0.css" rel="stylesheet">
-        <link href="../css/base.css" rel="stylesheet">
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link href="../../css/prettify-1.0.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
 
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
@@ -39,7 +39,7 @@
             </button>
 
             <!-- Main title -->
-            <a class="navbar-brand" href="..">cbft Technical Documentation (0.0 DP)</a>
+            <a class="navbar-brand" href="../..">cbft Technical Documentation (0.0 DP)</a>
         </div>
 
         <!-- Expanded navigation -->
@@ -48,14 +48,45 @@
             <ul class="nav navbar-nav">
             
             
-                <li class="active">
-                    <a href=".">Developer's Guide</a>
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Developer's Guide <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../overview">Developer's guide overview</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href=".">Defining indexes</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../datasources">Index data sources</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../querying">Queries</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../performance">Performance</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../advanced">Advanced topics</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../samples">Sample apps</a>
+                        </li>
+                    
+                    </ul>
                 </li>
             
             
             
                 <li >
-                    <a href="../api-ref">API Reference</a>
+                    <a href="../../api-ref">API Reference</a>
                 </li>
             
             
@@ -65,35 +96,35 @@
                     <ul class="dropdown-menu">
                     
                         <li >
-                            <a href="../admin-guide/overview">Administration overview</a>
+                            <a href="../../admin-guide/overview">Administrator's guide overview</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/planning">Planning your deployment</a>
+                            <a href="../../admin-guide/planning">Planning your deployment</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/dependencies">Dependencies</a>
+                            <a href="../../admin-guide/dependencies">Dependencies</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/running">Running cbft</a>
+                            <a href="../../admin-guide/running">Running cbft</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/clustering">Clustering cbft</a>
+                            <a href="../../admin-guide/clustering">Clustering cbft</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/index-management">Index management</a>
+                            <a href="../../admin-guide/index-management">Index management</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/monitoring">Monitoring cbft</a>
+                            <a href="../../admin-guide/monitoring">Monitoring cbft</a>
                         </li>
                     
                         <li >
-                            <a href="../admin-guide/diagnosing">Diagnosing issues</a>
+                            <a href="../../admin-guide/diagnosing">Diagnosing issues</a>
                         </li>
                     
                     </ul>
@@ -102,7 +133,7 @@
             
             
                 <li >
-                    <a href="../links">Links</a>
+                    <a href="../../links">Links</a>
                 </li>
             
             
@@ -112,12 +143,12 @@
             <ul class="nav navbar-nav navbar-right">
                 
                 <li >
-                    <a rel="next" href="..">
+                    <a rel="next" href="../overview">
                         <i class="fa fa-arrow-left"></i> Previous
                     </a>
                 </li>
                 <li >
-                    <a rel="prev" href="../api-ref">
+                    <a rel="prev" href="../datasources">
                         Next <i class="fa fa-arrow-right"></i>
                     </a>
                 </li>
@@ -131,76 +162,22 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#development-overview">Development overview</a></li>
-        
-    
-        <li class="main "><a href="#datasources-for-indexes">Datasources for indexes</a></li>
-        
-    
-        <li class="main "><a href="#defining-indexes">Defining indexes</a></li>
+        <li class="main active"><a href="#defining-indexes">Defining indexes</a></li>
         
             <li><a href="#index-aliases">Index aliases</a></li>
         
             <li><a href="#index-definition-tips-tricks">Index definition tips &amp; tricks</a></li>
         
     
-        <li class="main "><a href="#querying-indexes">Querying indexes</a></li>
-        
-            <li><a href="#results-highlighting">Results highlighting</a></li>
-        
-            <li><a href="#faceted-searches">Faceted searches</a></li>
-        
-            <li><a href="#index-consistency">Index consistency</a></li>
-        
-    
-        <li class="main "><a href="#testing-your-indexes">Testing your indexes</a></li>
-        
-    
-        <li class="main "><a href="#increasing-performance">Increasing performance</a></li>
-        
-            <li><a href="#indexing-speed-versus-querying-speed">Indexing speed versus querying speed</a></li>
-        
-    
-        <li class="main "><a href="#advanced-topics">Advanced topics</a></li>
-        
-            <li><a href="#type-ahead-dropdowns">Type-ahead dropdowns</a></li>
-        
-    
-        <li class="main "><a href="#sample-applications">Sample applications</a></li>
-        
-    
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="development-overview">Development overview</h1>
-<p>tbd</p>
-<h1 id="datasources-for-indexes">Datasources for indexes</h1>
-<p>tbd</p>
 <h1 id="defining-indexes">Defining indexes</h1>
 <p>tbd</p>
 <h2 id="index-aliases">Index aliases</h2>
 <p>tbd</p>
 <h2 id="index-definition-tips-tricks">Index definition tips &amp; tricks</h2>
-<p>tbd</p>
-<h1 id="querying-indexes">Querying indexes</h1>
-<p>tbd</p>
-<h2 id="results-highlighting">Results highlighting</h2>
-<p>tbd</p>
-<h2 id="faceted-searches">Faceted searches</h2>
-<p>tbd</p>
-<h2 id="index-consistency">Index consistency</h2>
-<p>tbd</p>
-<h1 id="testing-your-indexes">Testing your indexes</h1>
-<p>tbd</p>
-<h1 id="increasing-performance">Increasing performance</h1>
-<p>tbd</p>
-<h2 id="indexing-speed-versus-querying-speed">Indexing speed versus querying speed</h2>
-<h1 id="advanced-topics">Advanced topics</h1>
-<p>tbd</p>
-<h2 id="type-ahead-dropdowns">Type-ahead dropdowns</h2>
-<p>tbd</p>
-<h1 id="sample-applications">Sample applications</h1>
 <p>tbd</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
@@ -210,8 +187,8 @@
         
 
         <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/prettify-1.0.min.js"></script>
-        <script src="../js/base.js"></script>
+        <script src="../../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../../js/prettify-1.0.min.js"></script>
+        <script src="../../js/base.js"></script>
     </body>
 </html>
