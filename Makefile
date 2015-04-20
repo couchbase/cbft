@@ -98,9 +98,14 @@ dist-clean: clean
 #
 #   git grep v0.0.1 # Look for old version strings.
 #   git grep v0.0   # Look for old version strings.
-#   <edit/update files, especially cmd/cbft/main.go and mkdocs.yml>
+#   # Edit/update files, especially cmd/cbft/main.go and mkdocs.yml...
+#   # Then, ensure that bindata_assetfs.go is up-to-date, by running...
+#   make build
+#   # Then, run tests, etc...
 #   make test
-#   <and, more tests, etc>
+#   # Then, run a diff against the previous version...
+#   git log v0.0.1...
+#   # Then, update the CHANGES.md file based on diff.
 #   git commit -m "v0.0.2"
 #   git push
 #   git tag -a "v0.0.2" -m "v0.0.2"
