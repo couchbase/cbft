@@ -41,11 +41,11 @@ validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
 **param: indexType**: required, string, form parameter
 
-supported index types:
+supported index types: (category)/(indexType)
 
-* alias - supports fan-out of queries to multiple index targets
-* blackhole - ignores all incoming data and is not queryable; used for testing
-* bleve - full-text index powered by the bleve full-text-search engine
+* advanced/alias - an alias provides a naming level of indirection to one or more actual, target indexes
+* advanced/blackhole - a blackhole index ignores all data and is not queryable; used for testing
+* general/full-text (bleve) - a full-text index powered by the bleve engine
 
 **param: planParams**: optional, string (JSON), form parameter
 
@@ -61,9 +61,8 @@ Intended for clients that want to check that they are not overwriting the index 
 
 supported source types:
 
-* couchbase - Couchbase Server/Cluster data source
-* nil - a NO-OP data source, used for index aliases and testing
-* primary - a primary data source
+* advanced/nil - a nil data source has no data; used for index aliases and testing
+* general/couchbase - a Couchbase Server bucket will be the data source
 
 **param: sourceUUID**: optional, string, form parameter
 
