@@ -1,4 +1,4 @@
-# 0.0.3
+# v0.0.3
 
 - web-UI: index monitoring UI improvements, including hiding advanced.
   stats, aggregates, and refresh buttons.
