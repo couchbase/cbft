@@ -61,9 +61,10 @@ dist-meta:
 	rm -rf ./dist/out/*
 	rm -rf ./static/dist/*
 	echo $(version) > ./static/dist/version.txt
-	cp ./static/dist/version.txt ./dist/out/version.txt
+	cp ./static/dist/version.txt ./dist/out
 	./dist/go-manifest > ./static/dist/manifest.txt
-	cp ./static/dist/manifest.txt ./dist/out/manifest.txt
+	cp ./static/dist/manifest.txt ./dist/out
+	cp ./CHANGES.md ./dist/out
 
 dist-build:
 	$(MAKE) build        GOOS=darwin  GOARCH=amd64       CBFT_OUT=./dist/out/cbft.darwin.amd64
@@ -160,7 +161,7 @@ release-github-register:
 		--pre-release
 
 release-github-upload: # Must be run in ./tmp/dist-out directory.
-	(cd ./tmp/dist-out; for f in *.gz *.zip; do \
+	(cd ./tmp/dist-out; for f in *.gz *.zip *.md; do \
 		$(GOPATH)/bin/github-release upload \
 			--repo cbft \
 			--tag $(strip $(shell git describe --abbrev=0 --tags \
