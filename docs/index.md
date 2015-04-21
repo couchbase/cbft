@@ -179,12 +179,13 @@ indexing progress.
 
 Next, click on the ```Query``` tab.
 
-In the query field, type in a query term and hit enter/return to
-execute your first cbft full-text query!
+In the query field, type in a query term (how about "beer").
+
+Hit enter/return to execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
-That's it for now for getting started.  The web admin UI has more
+That's about it for getting started.  The web admin UI has more
 screens and features, so be sure to click around and explore!
 
 # Where to go next
