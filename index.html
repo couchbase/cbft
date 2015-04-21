@@ -179,7 +179,7 @@
         
             <li><a href="#creating-a-full-text-index">Creating a full-text index</a></li>
         
-            <li><a href="#your-first-full-text-query">Your first full-text query</a></li>
+            <li><a href="#querying-your-full-text-index">Querying your full-text index</a></li>
         
     
         <li class="main "><a href="#where-to-go-next">Where to go next</a></li>
@@ -201,8 +201,8 @@ performance.</p>
 running somewhere.</p>
 <p>You should also have a bucket with JSON documents that you'd like to
 index.</p>
-<p>For example, Couchbase Server comes with beers and breweries JSON
-sample data (the <code>beer-sample</code> bucket).</p>
+<p>For example, you can have Couchbase Server create and populate a
+<code>beer-sample</code>bucket of sample JSON documents.</p>
 <h2 id="getting-cbft">Getting cbft</h2>
 <p>Download a pre-built cbft from the
 <a href="https://github.com/couchbaselabs/cbft/releases">releases</a> page.  For
@@ -211,11 +211,18 @@ example, for OSX...</p>
 </code></pre>
 <p>Note: some platforms support both <code>cbft-full</code> and <code>cbft</code>
 builds.</p>
+<ul>
+<li>
 <p>The <code>cbft-full</code> builds are currently compiled with some
-platform-specific advanced features (text stemmers, etc) that are not
-part of the <code>cbft</code> basic builds.</p>
-<p>For the purposes of these getting start steps, though, downloading
-either one is fine.</p>
+  platform-specific advanced features (text stemmers, etc).</p>
+</li>
+<li>
+<p>The <code>cbft</code> basic builds are exactly the same across all
+  platforms, for deployment consistency.</p>
+</li>
+</ul>
+<p>For the purposes of these getting started steps, let's just download
+<code>cbft</code> basic builds.</p>
 <p>Next, uncompress what you downloaded...</p>
 <pre><code>tar -xzf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
 </code></pre>
@@ -234,22 +241,23 @@ like <code>./cbft.darwin.amd64</code>.</p>
 server...</p>
 <pre><code>./cbft -server http://localhost:8091
 </code></pre>
-<p>Note: cbft defaults to using a <code>data</code> subdirectory in the current
-working directory.  You can change this using the <code>-dataDir</code>
-command-line parameter.</p>
+<p>Note: cbft defaults to using the directory named "data" as its data
+directory.  You can change this using the <code>-dataDir</code> command-line
+parameter.</p>
 <h2 id="the-web-admin-ui">The web admin UI</h2>
 <p>Next, point your web browser to cbft's web admin UI...</p>
 <pre><code>http://localhost:8095
 </code></pre>
 <p>In your web browser, you should see a "Welcome to cbft" page in the
 web admin UI.</p>
-<p>That page, also called "Indexes", will list all the indexes you've
-defined (there should be no indexes at this point).</p>
+<p>That welcome page will list all the indexes that you've defined; of
+course, there should be no indexes at this point.</p>
 <h2 id="creating-a-full-text-index">Creating a full-text index</h2>
-<p>On the Indexes page (the "Welcome to cbft" page), click on the <code>New
-Index</code> button.</p>
+<p>On the Indexes listing page (the "Welcome to cbft" page), click on the
+<code>New Index</code> button.</p>
 <p>A form should appear where you can define your new index
-specification, and you next need to fill in some fields...</p>
+configuration.</p>
+<p>Next, let's fill in the form fields...</p>
 <h3 id="index-name">Index Name</h3>
 <p>Each index needs a unique name.</p>
 <p>In the Index Name field, type in a name, such as "test-index".</p>
@@ -265,7 +273,7 @@ let's ignore them for now.</p>
 <p>The Source Type specifies what kind of datasource will be used for the
 index.</p>
 <p>From the Source Type dropdown, choose <code>couchbase</code>.</p>
-<p>As soon as you make an Source Type dropdown selection, some additional
+<p>As soon as you make a Source Type dropdown selection, some additional
 type-dependent input fields (Source Name and Source Params) should
 appear.</p>
 <p>Let's fill in just the bare minimum...</p>
@@ -311,13 +319,13 @@ supply an <code>authUser</code> and possibly an <code>authPassword</code>.</p>
 of how many documents have been indexed so far.  You can click on the
 <code>Refresh</code> button next to the Document Count in order to see
 indexing progress.</p>
-<h2 id="your-first-full-text-query">Your first full-text query</h2>
+<h2 id="querying-your-full-text-index">Querying your full-text index</h2>
 <p>Next, click on the <code>Query</code> tab.</p>
 <p>In the query field, type in a query term and hit enter/return to
 execute your first cbft full-text query!</p>
 <p>You should see query results appearing below the query field.</p>
-<p>That's it for Getting Started.  The web admin UI has more screens and
-features that are worth exploring, so be sure to click around.</p>
+<p>That's it for now for getting started.  The web admin UI has more
+screens and features, so be sure to click around and explore!</p>
 <h1 id="where-to-go-next">Where to go next</h1>
 <p>Please see
 the <a href="dev-guide/overview/">Developer's Guide</a>,
