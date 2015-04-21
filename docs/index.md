@@ -8,25 +8,50 @@ performance.
 
 # Getting started
 
+## Prerequisites
+
+You should have a Couchbase Server (3.0+) already installed and
+running somewhere.
+
+You should also have a bucket with JSON documents that you'd like to
+index.
+
+For example, Couchbase Server comes with beers and breweries JSON
+sample data (the ```beer-sample``` bucket).
+
 ## Getting cbft
 
-Download a pre-built cbft from the [releases](https://github.com/couchbaselabs/cbft/releases) page.  For example, for OSX...
+Download a pre-built cbft from the
+[releases](https://github.com/couchbaselabs/cbft/releases) page.  For
+example, for OSX...
 
     wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
-    tar -xzvf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+
+Note: some platforms support both ```cbft-full``` and ```cbft```
+builds.
+
+The ```cbft-full``` builds are currently compiled with some
+platform-specific advanced features (text stemmers, etc) that are not
+part of the ```cbft``` basic builds.
+
+For the purposes of these getting start steps, though, downloading
+either one is fine.
+
+Next, uncompress what you downloaded...
+
+    tar -xzf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+
+A quick way to make sure it worked is to try the command-line help...
+
     ./cbft.darwin.amd64 --help
 
-Note: ```cbft-full``` builds are currently compiled with more advanced
-features (text stemmers, etc) than ```cbft``` basic builds.  For the
-purposes of these getting start steps, though, downloading either one
-is fine.
+For the rest of this documentation, we'll just refer to the cbft
+executable as ```./cbft``` rather than some platform specific name
+like ```./cbft.darwin.amd64```.
 
-## First time setup
+## A data directory for cbft
 
-Prerequisites: you should have a Couchbase Server (3.0+) already
-installed and running somewhere.
-
-Create a directory where cbft will store its config and data files...
+Create a directory where cbft can store its config and data files...
 
     mkdir -p data
 
@@ -37,9 +62,126 @@ server...
 
     ./cbft -server http://localhost:8091
 
-Next, you can use a web browser on cbft's web admin UI...
+Note: cbft defaults to using a ```data``` subdirectory in the current
+working directory.  You can change this using the ```-dataDir```
+command-line parameter.
+
+## The web admin UI
+
+Next, point your web browser to cbft's web admin UI...
 
     http://localhost:8095
+
+In your web browser, you should see a "Welcome to cbft" page in the
+web admin UI.
+
+That page, also called "Indexes", will list all the indexes you've
+defined (there should be no indexes at this point).
+
+## Creating a full-text index
+
+On the Indexes page (the "Welcome to cbft" page), click on the ```New
+Index``` button.
+
+A form should appear where you can define your new index
+specification, and you next need to fill in some fields...
+
+### Index Name
+
+Each index needs a unique name.
+
+In the Index Name field, type in a name, such as "test-index".
+
+Only alphanumeric characters, hyphens and underscores are allowed for
+index names.
+
+### Index Type
+
+The Index Type specifies what kind of index that cbft will create.
+
+From the Index Type dropdown, choose ```full-text (bleve)```.
+
+As soon as you make an Index Type dropdown selection, some additional,
+type-dependent input fields should appear (Mapping and Store), but
+let's ignore them for now.
+
+### Source Type
+
+The Source Type specifies what kind of datasource will be used for the
+index.
+
+From the Source Type dropdown, choose ```couchbase```.
+
+As soon as you make an Source Type dropdown selection, some additional
+type-dependent input fields (Source Name and Source Params) should
+appear.
+
+Let's fill in just the bare minimum...
+
+### Source Name
+
+Since our Source Type is ```couchbase```, the Source Name should be
+name of a bucket.
+
+Next, type in your bucket's name into the Source Name field.
+
+For example, to index the "default" bucket from your Couchbase
+server, type in "default'.
+
+### Source Params
+
+The Source Params allow for extra parameters to be defined.
+
+Most of these are advanced tuning parameters.
+
+However, if you'd like to index a non-default bucket, then you need to
+supply an ```authUser``` and possibly an ```authPassword```.
+
+For example, perhaps you'd like to index the ```beer-sample``` bucket.
+
+Then, in the Source Params JSON textarea...
+
+- specify the "authUser" to be the bucket's name (```"beer-sample"```).
+
+- specify the "authPassword" to be the bucket's password (the empty password is just ```""```).
+
+For example, your Source Params JSON might look like...
+
+    {
+      "authUser": "beer-sample",
+      "authPassword": "",
+      "clusterManagerBackoffFactor": 0,
+      "clusterManagerSleepInitMS": 0,
+      "clusterManagerSleepMaxMS": 20000,
+      "dataManagerBackoffFactor": 0,
+      "dataManagerSleepInitMS": 0,
+      "dataManagerSleepMaxMS": 20000,
+      "feedBufferSizeBytes": 0,
+      "feedBufferAckThreshold": 0
+    }
+
+### Your new index
+
+Finally, click the ```Create Index``` button.
+
+You should see a summary page of your new full-text index.
+
+The ```Document Count``` field on the index summary page is a snapshot
+of how many documents have been indexed so far.  You can click on the
+```Refresh``` button next to the Document Count in order to see
+indexing progress.
+
+## Your first full-text query
+
+Next, click on the ```Query``` tab.
+
+In the query field, type in a query term and hit enter/return to
+execute your first cbft full-text query!
+
+You should see query results appearing below the query field.
+
+That's it for Getting Started.  The web admin UI has more screens and
+features that are worth exploring, so be sure to click around.
 
 # Where to go next
 
