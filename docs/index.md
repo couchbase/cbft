@@ -17,7 +17,7 @@ You should also have a bucket with JSON documents that you'd like to
 index.
 
 For example, you can have Couchbase Server create and populate a
-```beer-sample```bucket of sample JSON documents.
+```beer-sample``` bucket of sample JSON documents.
 
 ## Getting cbft
 
@@ -145,9 +145,11 @@ For example, perhaps you'd like to index the ```beer-sample``` bucket.
 
 Then, in the Source Params JSON textarea...
 
-- specify the "authUser" to be the bucket's name (```"beer-sample"```).
+- specify the "authUser" to be the bucket's name
+  (```"beer-sample"```).
 
-- specify the "authPassword" to be the bucket's password (the empty password is just ```""```).
+- specify the "authPassword" to be the bucket's password (the empty
+  password is just ```""```).
 
 For example, your Source Params JSON might look like...
 
