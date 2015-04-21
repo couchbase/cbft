@@ -31,15 +31,17 @@ func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
 
 func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
-	for _, t := range PIndexImplTypes {
-		indexTypes = append(indexTypes, t.Description)
+	for indexType, t := range PIndexImplTypes {
+		indexTypes = append(indexTypes,
+			indexType+": "+strings.Split(t.Description, " - ")[1])
 	}
 	sort.Strings(indexTypes)
 
 	sourceTypes := []string(nil)
-	for _, t := range FeedTypes {
+	for sourceType, t := range FeedTypes {
 		if t.Public {
-			sourceTypes = append(sourceTypes, t.Description)
+			sourceTypes = append(sourceTypes,
+				sourceType+": "+strings.Split(t.Description, " - ")[1])
 		}
 	}
 	sort.Strings(sourceTypes)
@@ -51,7 +53,7 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 			INDEX_NAME_REGEXP + "```."
 	opts["param: indexType"] =
 		"required, string, form parameter\n\n" +
-			"supported index types: (category)/(indexType)\n\n* " +
+			"supported index types:\n\n* " +
 			strings.Join(indexTypes, "\n* ")
 	opts["param: indexParams"] =
 		"optional, string (JSON), form parameter"
