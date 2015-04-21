@@ -26,7 +26,7 @@ import (
 
 type Manager struct {
 	startTime time.Time
-	version   string // Our software VERSION.
+	version   string // See VERSION.
 	cfg       Cfg
 	uuid      string          // Unique to every Manager instance.
 	tags      []string        // The tags at Manager start.

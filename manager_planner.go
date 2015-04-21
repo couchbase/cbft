@@ -23,9 +23,9 @@ import (
 	"github.com/couchbaselabs/blance"
 )
 
-// A planner assigns partitions to cbft's and to PIndexes on each cbft.
-// NOTE: You *must* update PLANNER_VERSION if the planning algorithm
-// or schema changes, following semver rules.
+// A planner assigns partitions to cbft's and to PIndexes on each
+// cbft.  NOTE: You *must* update VERSION if the planning algorithm or
+// config data schema changes, following semver rules.
 
 // PlannerNOOP sends a synchronous NOOP request to the manager's planner, if any.
 func (mgr *Manager) PlannerNOOP(msg string) {
