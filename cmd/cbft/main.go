@@ -116,6 +116,9 @@ func main() {
 	if u[0] == ':' {
 		u = "localhost" + u
 	}
+	if strings.HasPrefix(u, "0.0.0.0:") {
+		u = "localhost" + u[len("0.0.0.0"):]
+	}
 	log.Printf("------------------------------------------------------------")
 	log.Printf("web UI / REST API is available: http://%s", u)
 	log.Printf("------------------------------------------------------------")
