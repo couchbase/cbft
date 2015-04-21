@@ -41,7 +41,9 @@ type MetaDescIndex struct {
 
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	startSamples := map[string]interface{}{
-		"planParams": &PlanParams{},
+		"planParams": &PlanParams{
+			MaxPartitionsPerPIndex: 20,
+		},
 	}
 
 	// Key is sourceType, value is description.
