@@ -84,7 +84,7 @@ func initFlags(flags *Flags) map[string][]string {
 			"\nfor clustering multiple cbft nodes:"+
 			"\n* couchbase:http://BUCKET_USER:BUCKET_PSWD@CB_HOST:CB_PORT"+
 			"\n     - manages a cbft cluster configuration in a couchbase"+
-			"\n       bucket; for example:"+
+			"\n       3.x bucket; for example:"+
 			"\n       'couchbase:http://my-cfg-bucket@127.0.0.1:8091';"+
 			"\n* simple"+
 			"\n     - intended for development usage, the 'simple'"+
@@ -123,7 +123,7 @@ func initFlags(flags *Flags) map[string][]string {
 			"\ndefault is 'wanted'.")
 	s(&flags.Server,
 		[]string{"server", "s"}, "URL", "",
-		"URL to datasource server; example when using couchbase as"+
+		"URL to datasource server; example when using couchbase 3.x as"+
 			"\nyour datasource server: 'http://localhost:8091';"+
 			"\nuse '.' when there is no datasource server.")
 	s(&flags.StaticDir,
