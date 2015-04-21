@@ -127,8 +127,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Indexing|Index management",
 			"_about":    `Freeze the assignment of index partitions to nodes.`,
-			"param: op": `Allowed values for op are
-                          "freeze" or "unfreeze".`,
+			"param: op": "required, string, URL path parameter\n\n" +
+				`Allowed values for op are "freeze" or "unfreeze".`,
 			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
@@ -140,8 +140,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"_category": "Indexing|Index management",
 			"_about": `Pause index updates and maintenance (no more
                           ingesting document mutations).`,
-			"param: op": `Allowed values for op are
-                          "pause" or "resume".`,
+			"param: op": "required, string, URL path parameter\n\n" +
+				`Allowed values for op are "pause" or "resume".`,
 			"version introduced": "0.0.1",
 		})
 	handle("/api/index/{indexName}/queryControl/{op}", "POST",
@@ -152,8 +152,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		map[string]string{
 			"_category": "Indexing|Index management",
 			"_about":    `Disallow queries on an index.`,
-			"param: op": `Allowed values for op are
-                          "allow" or "disallow".`,
+			"param: op": "required, string, URL path parameter\n\n" +
+				`Allowed values for op are "allow" or "disallow".`,
 			"version introduced": "0.0.1",
 		})
 

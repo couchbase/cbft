@@ -97,8 +97,9 @@ Pause index updates and maintenance (no more
 
 The name of the index whose control values will be modified.
 
-**param: op**: Allowed values for op are
-                          "pause" or "resume".
+**param: op**: required, string, URL path parameter
+
+Allowed values for op are "pause" or "resume".
 
 **version introduced**: 0.0.1
 
@@ -112,8 +113,9 @@ Freeze the assignment of index partitions to nodes.
 
 The name of the index whose control values will be modified.
 
-**param: op**: Allowed values for op are
-                          "freeze" or "unfreeze".
+**param: op**: required, string, URL path parameter
+
+Allowed values for op are "freeze" or "unfreeze".
 
 **version introduced**: 0.0.1
 
@@ -127,8 +129,9 @@ Disallow queries on an index.
 
 The name of the index whose control values will be modified.
 
-**param: op**: Allowed values for op are
-                          "allow" or "disallow".
+**param: op**: required, string, URL path parameter
+
+Allowed values for op are "allow" or "disallow".
 
 **version introduced**: 0.0.1
 
