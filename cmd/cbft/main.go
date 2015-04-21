@@ -56,6 +56,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if os.Getenv("GOMAXPROCS") == "" {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
+
 	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
 		log.Fatalf("main: could not create MsgRing, err: %v", err)
