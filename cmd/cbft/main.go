@@ -79,6 +79,10 @@ func main() {
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := MainCfg(flags.CfgConnect, flags.BindHttp, flags.DataDir)
 	if err != nil {
+		if err == ErrorBindHttp {
+			log.Fatalf("%v", err)
+			return
+		}
 		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
 			"  Please check that your -cfg/-cfgConnect parameter (%q)\n"+
 			"  is correct and/or that your configuration provider\n"+

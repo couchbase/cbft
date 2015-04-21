@@ -12,6 +12,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -19,6 +20,12 @@ import (
 
 	"github.com/couchbaselabs/cbft"
 )
+
+var ErrorBindHttp = errors.New("main_cfg:" +
+	" couchbase cfg needs network/IP address for bindHttp,\n" +
+	"  Please specify a network/IP address for the -bindHttp parameter\n" +
+	"  (non-loopback, non-127.0.0.1/localhost, non-0.0.0.0)\n" +
+	"  so that this node can be clustered with other nodes.")
 
 func MainCfg(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
@@ -54,12 +61,7 @@ func MainCfgCB(urlStr, bindHttp, dataDir string) (cbft.Cfg, error) {
 		strings.HasPrefix(bindHttp, "0.0.0.0:") ||
 		strings.HasPrefix(bindHttp, "127.0.0.1:") ||
 		strings.HasPrefix(bindHttp, "localhost:") {
-		return nil, fmt.Errorf("main_cfg:"+
-			" not a network/IP address, bindHttp: %s\n"+
-			"  Please specify a -bindHttp parameter that's a\n"+
-			"  real IP address (must be non-loopback, non-0.0.0.0)\n"+
-			"  through which others nodes can connect to this node.",
-			bindHttp)
+		return nil, ErrorBindHttp
 	}
 
 	u, err := url.Parse(urlStr)
