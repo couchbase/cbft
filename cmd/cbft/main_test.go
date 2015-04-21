@@ -67,13 +67,15 @@ func TestMainCfg(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	bindHttp := "10.1.1.20:8095"
+	register := "wanted"
 
-	cfg, err := MainCfg("an unknown cfg provider", bindHttp, emptyDir)
+	cfg, err := MainCfg("an unknown cfg provider",
+		bindHttp, register, emptyDir)
 	if err == nil || cfg != nil {
 		t.Errorf("expected MainCfg() to fail on unknown provider")
 	}
 
-	cfg, err = MainCfg("simple", bindHttp, emptyDir)
+	cfg, err = MainCfg("simple", bindHttp, register, emptyDir)
 	if err != nil || cfg == nil {
 		t.Errorf("expected MainCfg() to work on simple provider")
 	}
@@ -82,18 +84,18 @@ func TestMainCfg(t *testing.T) {
 		t.Errorf("expected Set() to work")
 	}
 
-	cfg, err = MainCfg("simple", bindHttp, emptyDir)
+	cfg, err = MainCfg("simple", bindHttp, register, emptyDir)
 	if err != nil || cfg == nil {
 		t.Errorf("expected MainCfg() to work on simple provider when reload")
 	}
 
-	cfg, err = MainCfg("couchbase:http://", bindHttp, emptyDir)
+	cfg, err = MainCfg("couchbase:http://", bindHttp, register, emptyDir)
 	if err == nil || cfg != nil {
 		t.Errorf("expected err on bad url")
 	}
 
 	cfg, err = MainCfg("couchbase:http://user:pswd@127.0.0.1:666",
-		bindHttp, emptyDir)
+		bindHttp, register, emptyDir)
 	if err == nil || cfg != nil {
 		t.Errorf("expected err on bad server")
 	}

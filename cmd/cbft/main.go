@@ -77,7 +77,7 @@ func main() {
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
-	cfg, err := MainCfg(flags.CfgConnect, flags.BindHttp, flags.DataDir)
+	cfg, err := MainCfg(flags.CfgConnect, flags.BindHttp, flags.Register, flags.DataDir)
 	if err != nil {
 		if err == ErrorBindHttp {
 			log.Fatalf("%v", err)

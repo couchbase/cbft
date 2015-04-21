@@ -27,18 +27,20 @@ var ErrorBindHttp = errors.New("main_cfg:" +
 	"  (non-loopback, non-127.0.0.1/localhost, non-0.0.0.0)\n" +
 	"  so that this node can be clustered with other nodes.")
 
-func MainCfg(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
+func MainCfg(connect, bindHttp, register, dataDir string) (cbft.Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
 	if connect == "" || connect == "simple" {
-		return MainCfgSimple(connect, bindHttp, dataDir)
+		return MainCfgSimple(connect, bindHttp, register, dataDir)
 	}
 	if strings.HasPrefix(connect, "couchbase:") {
-		return MainCfgCB(connect[len("couchbase:"):], bindHttp, dataDir)
+		return MainCfgCB(connect[len("couchbase:"):],
+			bindHttp, register, dataDir)
 	}
 	return nil, fmt.Errorf("main_cfg: unsupported cfg connect: %s", connect)
 }
 
-func MainCfgSimple(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
+func MainCfgSimple(connect, bindHttp, register, dataDir string) (
+	cbft.Cfg, error) {
 	cfgPath := dataDir + string(os.PathSeparator) + "cbft.cfg"
 	cfgPathExists := false
 	if _, err := os.Stat(cfgPath); err == nil {
@@ -56,11 +58,14 @@ func MainCfgSimple(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
 	return cfg, nil
 }
 
-func MainCfgCB(urlStr, bindHttp, dataDir string) (cbft.Cfg, error) {
-	if bindHttp[0] == ':' ||
+func MainCfgCB(urlStr, bindHttp, register, dataDir string) (
+	cbft.Cfg, error) {
+	if (bindHttp[0] == ':' ||
 		strings.HasPrefix(bindHttp, "0.0.0.0:") ||
 		strings.HasPrefix(bindHttp, "127.0.0.1:") ||
-		strings.HasPrefix(bindHttp, "localhost:") {
+		strings.HasPrefix(bindHttp, "localhost:")) &&
+		register != "unwanted" &&
+		register != "unknown" {
 		return nil, ErrorBindHttp
 	}
 
