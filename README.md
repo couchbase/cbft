@@ -26,6 +26,11 @@ Download a pre-built cbft from the [releases](https://github.com/couchbaselabs/c
     tar -xzvf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
     ./cbft.darwin.amd64 --help
 
+Note: ```cbft-full``` builds are currently compiled with more advanced
+features (text stemmers, etc) than ```cbft``` basic builds.  For the
+purposes of these getting start steps, though, downloading either one
+is fine.
+
 Or, to build cbft from source (requires golang 1.4)...
 
     go get -u github.com/couchbaselabs/cbft/...
@@ -42,7 +47,7 @@ Create a directory where cbft will store its config and data files...
 
 ## Running cbft
 
-Start cbft, pointing it to the Couchbase Server as its datasource
+Start cbft, pointing it to your Couchbase Server as its datasource
 server...
 
     ./cbft -server http://localhost:8091
