@@ -56,11 +56,12 @@ type Manager struct {
 type ManagerStats struct {
 	TotKick uint64
 
-	TotSaveNodeDef        uint64
-	TotSaveNodeDefGetErr  uint64
-	TotSaveNodeDefSetErr  uint64
-	TotSaveNodeDefUUIDErr uint64
-	TotSaveNodeDefOk      uint64
+	TotSaveNodeDef             uint64
+	TotSaveNodeDefGetErr       uint64
+	TotSaveNodeDefSetErr       uint64
+	TotSaveNodeDefUUIDTakenErr uint64
+	TotSaveNodeDefUUIDErr      uint64
+	TotSaveNodeDefOk           uint64
 
 	TotCreateIndex    uint64
 	TotCreateIndexOk  uint64
@@ -227,6 +228,16 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		if nodeDefs == nil {
 			nodeDefs = NewNodeDefs(mgr.version)
 		}
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			if nodeDef.UUID == mgr.uuid &&
+				nodeDef.HostPort != mgr.bindHttp {
+				atomic.AddUint64(&mgr.stats.TotSaveNodeDefUUIDTakenErr, 1)
+				return fmt.Errorf("manager:"+
+					" another node is running with our uuid: %s,"+
+					" but at different bindHttp: %s, than our bindHttp: %s",
+					mgr.uuid, nodeDef.HostPort, mgr.bindHttp)
+			}
+		}
 		nodeDefPrev, exists := nodeDefs.NodeDefs[mgr.bindHttp]
 		if exists && !force {
 			// If a previous entry exists, do some double-checking
@@ -234,7 +245,7 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 			if nodeDefPrev.UUID != mgr.uuid {
 				atomic.AddUint64(&mgr.stats.TotSaveNodeDefUUIDErr, 1)
 				return fmt.Errorf("manager:"+
-					" some other node is running at our bindHttp: %s,"+
+					" another node is running at our bindHttp: %s,"+
 					" with a different uuid: %s, than our uuid: %s",
 					mgr.bindHttp, nodeDefPrev.UUID, mgr.uuid)
 			}
