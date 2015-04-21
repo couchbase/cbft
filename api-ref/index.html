@@ -256,24 +256,24 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
                           ingesting document mutations).</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index whose control values will be modified.</p>
-<p><strong>param: op</strong>: Allowed values for op are
-                          "pause" or "resume".</p>
+<p><strong>param: op</strong>: required, string, URL path parameter</p>
+<p>Allowed values for op are "pause" or "resume".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/index/{indexName}/planFreezeControl/{op}</code></p>
 <p>Freeze the assignment of index partitions to nodes.</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index whose control values will be modified.</p>
-<p><strong>param: op</strong>: Allowed values for op are
-                          "freeze" or "unfreeze".</p>
+<p><strong>param: op</strong>: required, string, URL path parameter</p>
+<p>Allowed values for op are "freeze" or "unfreeze".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/index/{indexName}/queryControl/{op}</code></p>
 <p>Disallow queries on an index.</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index whose control values will be modified.</p>
-<p><strong>param: op</strong>: Allowed values for op are
-                          "allow" or "disallow".</p>
+<p><strong>param: op</strong>: required, string, URL path parameter</p>
+<p>Allowed values for op are "allow" or "disallow".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <h2 id="index-monitoring">Index monitoring</h2>
 <hr />
