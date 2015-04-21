@@ -167,13 +167,19 @@
     
         <li class="main "><a href="#getting-started">Getting started</a></li>
         
+            <li><a href="#prerequisites">Prerequisites</a></li>
+        
             <li><a href="#getting-cbft">Getting cbft</a></li>
         
-            <li><a href="#starting-cbft">Starting cbft</a></li>
+            <li><a href="#a-data-directory-for-cbft">A data directory for cbft</a></li>
         
-            <li><a href="#a-simple-index">A simple index</a></li>
+            <li><a href="#running-cbft">Running cbft</a></li>
         
-            <li><a href="#a-simple-query">A simple query</a></li>
+            <li><a href="#the-web-admin-ui">The web admin UI</a></li>
+        
+            <li><a href="#creating-a-full-text-index">Creating a full-text index</a></li>
+        
+            <li><a href="#your-first-full-text-query">Your first full-text query</a></li>
         
     
         <li class="main "><a href="#where-to-go-next">Where to go next</a></li>
@@ -190,19 +196,131 @@ manages can be automatically distributed across multiple, clustered
 cbft server processes to allow for larger indexes and for higher
 performance.</p>
 <h1 id="getting-started">Getting started</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>You should have a Couchbase Server (3.0+) already installed and
+running somewhere.</p>
+<p>You should also have a bucket with JSON documents that you'd like to
+index.</p>
+<p>For example, Couchbase Server comes with beers and breweries JSON
+sample data (the <code>beer-sample</code> bucket).</p>
 <h2 id="getting-cbft">Getting cbft</h2>
+<p>Download a pre-built cbft from the
+<a href="https://github.com/couchbaselabs/cbft/releases">releases</a> page.  For
+example, for OSX...</p>
+<pre><code>wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+</code></pre>
+<p>Note: some platforms support both <code>cbft-full</code> and <code>cbft</code>
+builds.</p>
+<p>The <code>cbft-full</code> builds are currently compiled with some
+platform-specific advanced features (text stemmers, etc) that are not
+part of the <code>cbft</code> basic builds.</p>
+<p>For the purposes of these getting start steps, though, downloading
+either one is fine.</p>
+<p>Next, uncompress what you downloaded...</p>
+<pre><code>tar -xzf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+</code></pre>
+<p>A quick way to make sure it worked is to try the command-line help...</p>
+<pre><code>./cbft.darwin.amd64 --help
+</code></pre>
+<p>For the rest of this documentation, we'll just refer to the cbft
+executable as <code>./cbft</code> rather than some platform specific name
+like <code>./cbft.darwin.amd64</code>.</p>
+<h2 id="a-data-directory-for-cbft">A data directory for cbft</h2>
+<p>Create a directory where cbft can store its config and data files...</p>
+<pre><code>mkdir -p data
+</code></pre>
+<h2 id="running-cbft">Running cbft</h2>
+<p>Start cbft, pointing it to your Couchbase Server as its datasource
+server...</p>
+<pre><code>./cbft -server http://localhost:8091
+</code></pre>
+<p>Note: cbft defaults to using a <code>data</code> subdirectory in the current
+working directory.  You can change this using the <code>-dataDir</code>
+command-line parameter.</p>
+<h2 id="the-web-admin-ui">The web admin UI</h2>
+<p>Next, point your web browser to cbft's web admin UI...</p>
+<pre><code>http://localhost:8095
+</code></pre>
+<p>In your web browser, you should see a "Welcome to cbft" page in the
+web admin UI.</p>
+<p>That page, also called "Indexes", will list all the indexes you've
+defined (there should be no indexes at this point).</p>
+<h2 id="creating-a-full-text-index">Creating a full-text index</h2>
+<p>On the Indexes page (the "Welcome to cbft" page), click on the <code>New
+Index</code> button.</p>
+<p>A form should appear where you can define your new index
+specification, and you next need to fill in some fields...</p>
+<h3 id="index-name">Index Name</h3>
+<p>Each index needs a unique name.</p>
+<p>In the Index Name field, type in a name, such as "test-index".</p>
+<p>Only alphanumeric characters, hyphens and underscores are allowed for
+index names.</p>
+<h3 id="index-type">Index Type</h3>
+<p>The Index Type specifies what kind of index that cbft will create.</p>
+<p>From the Index Type dropdown, choose <code>full-text (bleve)</code>.</p>
+<p>As soon as you make an Index Type dropdown selection, some additional,
+type-dependent input fields should appear (Mapping and Store), but
+let's ignore them for now.</p>
+<h3 id="source-type">Source Type</h3>
+<p>The Source Type specifies what kind of datasource will be used for the
+index.</p>
+<p>From the Source Type dropdown, choose <code>couchbase</code>.</p>
+<p>As soon as you make an Source Type dropdown selection, some additional
+type-dependent input fields (Source Name and Source Params) should
+appear.</p>
+<p>Let's fill in just the bare minimum...</p>
+<h3 id="source-name">Source Name</h3>
+<p>Since our Source Type is <code>couchbase</code>, the Source Name should be
+name of a bucket.</p>
+<p>Next, type in your bucket's name into the Source Name field.</p>
+<p>For example, to index the "default" bucket from your Couchbase
+server, type in "default'.</p>
+<h3 id="source-params">Source Params</h3>
+<p>The Source Params allow for extra parameters to be defined.</p>
+<p>Most of these are advanced tuning parameters.</p>
+<p>However, if you'd like to index a non-default bucket, then you need to
+supply an <code>authUser</code> and possibly an <code>authPassword</code>.</p>
+<p>For example, perhaps you'd like to index the <code>beer-sample</code> bucket.</p>
+<p>Then, in the Source Params JSON textarea...</p>
 <ul>
-<li><code>cbft foo [dir-name]</code> - Create a new thingy.</li>
-<li><code>cbft bar</code> - Start the live-reloading thingy server.</li>
+<li>
+<p>specify the "authUser" to be the bucket's name (<code>"beer-sample"</code>).</p>
+</li>
+<li>
+<p>specify the "authPassword" to be the bucket's password (the empty password is just <code>""</code>).</p>
+</li>
 </ul>
-<h2 id="starting-cbft">Starting cbft</h2>
-<p>tbd</p>
-<h2 id="a-simple-index">A simple index</h2>
-<p>tbd</p>
-<h2 id="a-simple-query">A simple query</h2>
-<p>tbd</p>
+<p>For example, your Source Params JSON might look like...</p>
+<pre><code>{
+  "authUser": "beer-sample",
+  "authPassword": "",
+  "clusterManagerBackoffFactor": 0,
+  "clusterManagerSleepInitMS": 0,
+  "clusterManagerSleepMaxMS": 20000,
+  "dataManagerBackoffFactor": 0,
+  "dataManagerSleepInitMS": 0,
+  "dataManagerSleepMaxMS": 20000,
+  "feedBufferSizeBytes": 0,
+  "feedBufferAckThreshold": 0
+}
+</code></pre>
+<h3 id="your-new-index">Your new index</h3>
+<p>Finally, click the <code>Create Index</code> button.</p>
+<p>You should see a summary page of your new full-text index.</p>
+<p>The <code>Document Count</code> field on the index summary page is a snapshot
+of how many documents have been indexed so far.  You can click on the
+<code>Refresh</code> button next to the Document Count in order to see
+indexing progress.</p>
+<h2 id="your-first-full-text-query">Your first full-text query</h2>
+<p>Next, click on the <code>Query</code> tab.</p>
+<p>In the query field, type in a query term and hit enter/return to
+execute your first cbft full-text query!</p>
+<p>You should see query results appearing below the query field.</p>
+<p>That's it for Getting Started.  The web admin UI has more screens and
+features that are worth exploring, so be sure to click around.</p>
 <h1 id="where-to-go-next">Where to go next</h1>
-<p>Please see the <a href="dev-guide/overview/">Developer's Guide</a>,
+<p>Please see
+the <a href="dev-guide/overview/">Developer's Guide</a>,
 the <a href="api-ref/">API Reference</a> and
 the <a href="admin-guide/overview/">Administrator's Guide</a>.</p>
 <hr />
