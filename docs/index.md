@@ -16,8 +16,8 @@ running somewhere.
 You should also have a bucket with JSON documents that you'd like to
 index.
 
-For example, Couchbase Server comes with beers and breweries JSON
-sample data (the ```beer-sample``` bucket).
+For example, you can have Couchbase Server create and populate a
+```beer-sample```bucket of sample JSON documents.
 
 ## Getting cbft
 
@@ -30,12 +30,14 @@ example, for OSX...
 Note: some platforms support both ```cbft-full``` and ```cbft```
 builds.
 
-The ```cbft-full``` builds are currently compiled with some
-platform-specific advanced features (text stemmers, etc) that are not
-part of the ```cbft``` basic builds.
+- The ```cbft-full``` builds are currently compiled with some
+  platform-specific advanced features (text stemmers, etc).
 
-For the purposes of these getting start steps, though, downloading
-either one is fine.
+- The ```cbft``` basic builds are exactly the same across all
+  platforms, for deployment consistency.
+
+For the purposes of these getting started steps, let's just download
+```cbft``` basic builds.
 
 Next, uncompress what you downloaded...
 
@@ -62,9 +64,9 @@ server...
 
     ./cbft -server http://localhost:8091
 
-Note: cbft defaults to using a ```data``` subdirectory in the current
-working directory.  You can change this using the ```-dataDir```
-command-line parameter.
+Note: cbft defaults to using the directory named "data" as its data
+directory.  You can change this using the ```-dataDir``` command-line
+parameter.
 
 ## The web admin UI
 
@@ -75,16 +77,18 @@ Next, point your web browser to cbft's web admin UI...
 In your web browser, you should see a "Welcome to cbft" page in the
 web admin UI.
 
-That page, also called "Indexes", will list all the indexes you've
-defined (there should be no indexes at this point).
+That welcome page will list all the indexes that you've defined; of
+course, there should be no indexes at this point.
 
 ## Creating a full-text index
 
-On the Indexes page (the "Welcome to cbft" page), click on the ```New
-Index``` button.
+On the Indexes listing page (the "Welcome to cbft" page), click on the
+```New Index``` button.
 
 A form should appear where you can define your new index
-specification, and you next need to fill in some fields...
+configuration.
+
+Next, let's fill in the form fields...
 
 ### Index Name
 
@@ -112,7 +116,7 @@ index.
 
 From the Source Type dropdown, choose ```couchbase```.
 
-As soon as you make an Source Type dropdown selection, some additional
+As soon as you make a Source Type dropdown selection, some additional
 type-dependent input fields (Source Name and Source Params) should
 appear.
 
@@ -171,7 +175,7 @@ of how many documents have been indexed so far.  You can click on the
 ```Refresh``` button next to the Document Count in order to see
 indexing progress.
 
-## Your first full-text query
+## Querying your full-text index
 
 Next, click on the ```Query``` tab.
 
@@ -180,8 +184,8 @@ execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
-That's it for Getting Started.  The web admin UI has more screens and
-features that are worth exploring, so be sure to click around.
+That's it for now for getting started.  The web admin UI has more
+screens and features, so be sure to click around and explore!
 
 # Where to go next
 
