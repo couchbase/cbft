@@ -20,18 +20,18 @@ import (
 	"github.com/couchbaselabs/cbft"
 )
 
-func MainCfg(connect, dataDir string) (cbft.Cfg, error) {
+func MainCfg(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
 	// TODO: One day, the default cfg provider should not be simple
 	if connect == "" || connect == "simple" {
-		return MainCfgSimple(connect, dataDir)
+		return MainCfgSimple(connect, bindHttp, dataDir)
 	}
 	if strings.HasPrefix(connect, "couchbase:") {
-		return MainCfgCB(connect[len("couchbase:"):], dataDir)
+		return MainCfgCB(connect[len("couchbase:"):], bindHttp, dataDir)
 	}
-	return nil, fmt.Errorf("error: unsupported cfg connect: %s", connect)
+	return nil, fmt.Errorf("main_cfg: unsupported cfg connect: %s", connect)
 }
 
-func MainCfgSimple(connect, dataDir string) (cbft.Cfg, error) {
+func MainCfgSimple(connect, bindHttp, dataDir string) (cbft.Cfg, error) {
 	cfgPath := dataDir + string(os.PathSeparator) + "cbft.cfg"
 	cfgPathExists := false
 	if _, err := os.Stat(cfgPath); err == nil {
@@ -49,7 +49,19 @@ func MainCfgSimple(connect, dataDir string) (cbft.Cfg, error) {
 	return cfg, nil
 }
 
-func MainCfgCB(urlStr, dataDir string) (cbft.Cfg, error) {
+func MainCfgCB(urlStr, bindHttp, dataDir string) (cbft.Cfg, error) {
+	if bindHttp[0] == ':' ||
+		strings.HasPrefix(bindHttp, "0.0.0.0:") ||
+		strings.HasPrefix(bindHttp, "127.0.0.1:") ||
+		strings.HasPrefix(bindHttp, "localhost:") {
+		return nil, fmt.Errorf("main_cfg:"+
+			" not a network/IP address, bindHttp: %s\n"+
+			"  Please specify a -bindHttp parameter that's a\n"+
+			"  real IP address (must be non-loopback, non-0.0.0.0)\n"+
+			"  through which others nodes can connect to this node.",
+			bindHttp)
+	}
+
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
