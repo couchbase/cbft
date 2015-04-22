@@ -183,7 +183,7 @@ The name of the index to be queried.
 
 The request's POST body depends on the index type:
 
-**index type: bleve**
+For index type: **bleve**, example POST body
 
     {
       "timeout": 0,

@@ -196,7 +196,8 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 				err = json.Indent(&buf, j, "    ", "  ")
 				if err == nil {
 					indexTypes = append(indexTypes,
-						"**index type: "+indexType+"**\n\n    "+buf.String())
+						"For index type **"+indexType+"**"+
+							", an example POST body:\n\n    "+buf.String())
 				}
 			}
 		}
