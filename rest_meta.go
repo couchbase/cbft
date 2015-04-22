@@ -36,7 +36,8 @@ type MetaDescSource MetaDesc
 type MetaDescIndex struct {
 	MetaDesc
 
-	QueryHelp string `json:"queryHelp"`
+	QuerySample interface{} `json:"querySample"`
+	QueryHelp   string      `json:"queryHelp"`
 }
 
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -66,7 +67,8 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				Description: t.Description,
 				StartSample: t.StartSample,
 			},
-			QueryHelp: t.QueryHelp,
+			QuerySample: t.QuerySample,
+			QueryHelp:   t.QueryHelp,
 		}
 	}
 

@@ -120,7 +120,13 @@ func init() {
 		Description: "general/full-text (bleve)" +
 			" - a full-text index powered by the bleve engine",
 		StartSample: NewBleveParams(),
-		QueryHelp:   bleveQueryHelp,
+		QuerySample: &BleveQueryParams{
+			Consistency: &ConsistencyParams{
+				Vectors: map[string]ConsistencyVector{},
+			},
+			Query: &bleve.SearchRequest{},
+		},
+		QueryHelp: bleveQueryHelp,
 	})
 }
 

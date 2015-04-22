@@ -46,6 +46,8 @@ type PIndexImplType struct {
 	// Validate() and New().
 	StartSample interface{}
 
+	QuerySample interface{}
+
 	QueryHelp string
 }
 
