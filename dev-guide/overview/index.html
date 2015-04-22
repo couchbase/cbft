@@ -162,15 +162,76 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#development-overview">Development overview</a></li>
+        <li class="main active"><a href="#developers-guide">Developer's guide</a></li>
+        
+            <li><a href="#key-concepts">Key concepts</a></li>
+        
+            <li><a href="#architecture">Architecture</a></li>
+        
+            <li><a href="#index-types">Index Types</a></li>
+        
+            <li><a href="#source-types">Source Types</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="development-overview">Development overview</h1>
-<p>tbd</p>
+<h1 id="developers-guide">Developer's guide</h1>
+<h2 id="key-concepts">Key concepts</h2>
+<h3 id="index">Index</h3>
+<p>An index or "logical index" defines a data system that supports fast
+lookup of documents based on query criteria.</p>
+<p>An often used analogy is that an index of a database is similar to a
+book index.  A book index is comprised of alphabetically sorted
+entries that allow readers to quickly locate relevant pages in the
+book based on some search words.</p>
+<p>Similarly, a cbft index allows users to quickly locate relevant
+documents from a Couchbase bucket (for example), based on some search
+terms or query criteria.</p>
+<h3 id="index-name">Index Name</h3>
+<p>An index has a name, or <em>Index Name</em>, that is used as a unique
+identifier for the index.  An index name is comprised of alphanumeric
+characters, hyphens and underscores (no whitespace characters).</p>
+<h3 id="index-type">Index Type</h3>
+<p>An index has a type, or <em>Index Type</em>.  An often used index type, for
+example, would be "bleve", for full-text indexing.</p>
+<h3 id="source-type">Source Type</h3>
+<p>An index has a <em>Source Type</em>, which specifies the kind of data-source
+that is used to populate the index.  An often used source type, for
+example, would be "couchbase", which would be used when a user wants
+to index all the documents that are stored in a Couchbase bucket.</p>
+<h3 id="source-name-and-source-params">Source Name and Source Params</h3>
+<p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.  The
+meaning of the source name and source params depend on the source
+type.  For example, when the source type is "couchbase", then the
+source name is treated as a Couchbase bucket name, and the source
+params would define any extra, additional parameters needed to connect
+that named Couchbase bucket.</p>
+<h3 id="index-partition">Index Partition</h3>
+<p>At runtime, the entries maintained in a cbft index will be split into
+one or more partitions, or <em>Index Partition</em>'s.</p>
+<p>Index partitions will be dynamically assigned at runtime to one or
+more cbft processes, or <em>Node</em>'s.  A user can deploy multiple nodes, via
+cbft's clustering features, in order to increase performance and/or
+availability via replication.</p>
+<p>An index partition is sometimes abbreviated as "pindex" or "PIndex",
+as you'll sometimes see in cbft's log files, stats entries and/or JSON
+data.</p>
+<p>An index partition is different than, but related to, the partitions
+from a data source.  For example, Couchbase has a concept of
+partitions of a bucket (a.k.a, "vbuckets").  One index partition might
+be assigned to index all the data for a set of vbuckets.  Another
+index partition might be assigned to index all the data for a different,
+non-overlapping set of vbuckets.</p>
+<h3 id="node">Node</h3>
+<p>A <em>Node</em> is a cbft process.</p>
+<p>A node has a unique <em>Node UUID</em> and listens on a unique HTTP/REST IP
+address and port, or <em>BindHttp</em> parameter (host:port).</p>
+<p>A node's UUID and host:port must be unique across a cbft cluster.</p>
+<h2 id="architecture">Architecture</h2>
+<h2 id="index-types">Index Types</h2>
+<h2 id="source-types">Source Types</h2>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
