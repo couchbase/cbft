@@ -253,9 +253,9 @@ data.</p>
 from a data source, or <em>Source Partition</em>'s.</p>
 <p>For example, Couchbase has a concept of partitions of a bucket (a.k.a,
 "vbuckets").  So, a first index partition in cbft might be assigned to
-ingest the data from some subset of source partitions.  A second index
-partition in cbft might be assigned to ingest the data from a
-different subset of source partitions.</p>
+ingest the data from some subset of source partitions / vbuckets.
+A second index partition in cbft might be assigned to ingest the data
+from a different subset of source partitions / vbuckets.</p>
 <h2 id="node">Node</h2>
 <p>Index partitions are an important part of cbft's design that allows
 cbft to support a scale-out, distributed cluster of cbft processes, or
@@ -273,19 +273,24 @@ node startup).</p>
 a cbft cluster.</p>
 <p>The nodes in a cbft cluster must all have the same Cfg provider.</p>
 <h2 id="cfg">Cfg</h2>
-<p>A <em>Cfg</em> (or "config") provider is a configuration system required by
-cbft nodes.</p>
-<p>A cbft node will store its configuration data into a Cfg system,
-including all the index definitions, the registrations of known nodes
-of a cluster, and the allocations of index partitions to nodes.</p>
-<p>Some available Cfg implementations...</p>
+<p>A <em>Cfg</em> (or "config") provider is a configuration-oriented data system
+required by cbft nodes.</p>
+<p>A cbft node will store its configuration data into a Cfg provider.</p>
+<p>For example, index definitions (but not actual index data entries)
+will be stored into a Cfg provider.</p>
+<p>Some available Cfg providers...</p>
 <ul>
 <li>
-<p>simple - for development-time-only, non-clustered usage; the simple
-  Cfg implementation uses a local JSON file to store config data.</p>
+<p>simple - for basic, non-clustered usage; the simple Cfg provider
+  uses a local JSON file to store configuration data.  This is the
+  default Cfg provider and is intended primarily to simplify the
+  development-time experience and usage of cbft.</p>
 </li>
 <li>
-<p>couchbase - uses a Couchbase bucket to store config data.</p>
+<p>couchbase - uses a Couchbase bucket to store configuration data.  A
+  couchbase Cfg provider is often used for clustering multiple cbft
+  nodes, where all the cbft nodes in a cluster need to be connected to
+  the same Couchbase bucket for their Cfg.</p>
 </li>
 </ul>
 <hr />
