@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import commands
+import string
+
+print "# cbft command-line"
+print ""
+print "Command-line help is available by running..."
+print ""
+print "    ./cbft --help"
+print ""
+print "That will print out usage/help output..."
+print ""
+
+status, o = commands.getstatusoutput("./cbft --help")
+print "    " + string.join(string.split(o, "\n"), "\n    ")
+
+print "---"
+print ""
+print "Copyright (c) 2015 Couchbase, Inc."
