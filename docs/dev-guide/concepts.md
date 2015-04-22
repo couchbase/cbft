@@ -103,19 +103,25 @@ The nodes in a cbft cluster must all have the same Cfg provider.
 
 ## Cfg
 
-A _Cfg_ (or "config") provider is a configuration system required by
-cbft nodes.
+A _Cfg_ (or "config") provider is a configuration-oriented data system
+required by cbft nodes.
 
-A cbft node will store its configuration data into a Cfg system,
-including all the index definitions, the registrations of known nodes
-of a cluster, and the allocations of index partitions to nodes.
+A cbft node will store its configuration data into a Cfg provider.
 
-Some available Cfg implementations...
+For example, index definitions (but not actual index data entries)
+will be stored into a Cfg provider.
 
-- simple - for development-time-only, non-clustered usage; the simple
-  Cfg implementation uses a local JSON file to store config data.
+Some available Cfg providers...
 
-- couchbase - uses a Couchbase bucket to store config data.
+- simple - for basic, non-clustered usage; the simple Cfg provider
+  uses a local JSON file to store configuration data.  This is the
+  default Cfg provider and is intended primarily to simplify the
+  development-time experience and usage of cbft.
+
+- couchbase - uses a Couchbase bucket to store configuration data.  A
+  couchbase Cfg provider is often used for clustering multiple cbft
+  nodes, where all the cbft nodes in a cluster need to be connected to
+  the same Couchbase bucket for their Cfg.
 
 ---
 
