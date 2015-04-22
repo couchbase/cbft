@@ -10,10 +10,13 @@
 package cbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
+	"strings"
 )
 
 func docIDLookup(req *http.Request) string {
@@ -184,8 +187,26 @@ func NewQueryHandler(mgr *Manager) *QueryHandler {
 }
 
 func (h *QueryHandler) RESTOpts(opts map[string]string) {
+	indexTypes := []string(nil)
+	for indexType, t := range PIndexImplTypes {
+		if t.QuerySample != nil {
+			j, err := json.Marshal(t.QuerySample)
+			if err == nil {
+				var buf bytes.Buffer
+				err = json.Indent(&buf, j, "    ", "  ")
+				if err == nil {
+					indexTypes = append(indexTypes,
+						"**index type: "+indexType+"**\n\n    "+buf.String())
+				}
+			}
+		}
+	}
+	sort.Strings(indexTypes)
+
 	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
 		"The name of the index to be queried."
+	opts[""] = "The request's POST body depends on the index type:\n\n" +
+		strings.Join(indexTypes, "\n")
 }
 
 func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

@@ -131,6 +131,10 @@ func main() {
 				for _, optName := range optNames {
 					fmt.Printf("**%s**: %s\n\n", optName, m.Opts[optName])
 				}
+
+				if m.Opts != nil && m.Opts[""] != "" {
+					fmt.Printf("%s\n\n", m.Opts[""])
+				}
 			}
 		}
 	}

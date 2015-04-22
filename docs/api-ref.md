@@ -181,6 +181,27 @@ The name of the index to be queried.
 
 **version introduced**: 0.0.1
 
+The request's POST body depends on the index type:
+
+**index type: bleve**
+
+    {
+      "timeout": 0,
+      "consistency": {
+        "level": "",
+        "vectors": {}
+      },
+      "query": {
+        "query": null,
+        "size": 0,
+        "from": 0,
+        "highlight": null,
+        "fields": null,
+        "facets": null,
+        "explain": false
+      }
+    }
+
 ---
 
 # Node
