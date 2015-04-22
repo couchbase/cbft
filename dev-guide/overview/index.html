@@ -162,24 +162,33 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#developers-guide">Developer's guide</a></li>
+        <li class="main active"><a href="#key-concepts">Key concepts</a></li>
         
-            <li><a href="#key-concepts">Key concepts</a></li>
+            <li><a href="#index">Index</a></li>
         
-            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#index-name">Index Name</a></li>
         
-            <li><a href="#index-types">Index Types</a></li>
+            <li><a href="#index-type">Index Type</a></li>
         
-            <li><a href="#source-types">Source Types</a></li>
+            <li><a href="#source-type">Source Type</a></li>
+        
+            <li><a href="#source-name-and-source-params">Source Name and Source Params</a></li>
+        
+            <li><a href="#index-partition">Index Partition</a></li>
+        
+            <li><a href="#source-partition">Source Partition</a></li>
+        
+            <li><a href="#node">Node</a></li>
+        
+            <li><a href="#cfg">Cfg</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="developers-guide">Developer's guide</h1>
-<h2 id="key-concepts">Key concepts</h2>
-<h3 id="index">Index</h3>
+<h1 id="key-concepts">Key concepts</h1>
+<h2 id="index">Index</h2>
 <p>An index or "logical index" defines a data system that supports fast
 lookup of documents based on query criteria.</p>
 <p>An often used analogy is that an index of a database is similar to a
@@ -189,49 +198,92 @@ book based on some search words.</p>
 <p>Similarly, a cbft index allows users to quickly locate relevant
 documents from a Couchbase bucket (for example), based on some search
 terms or query criteria.</p>
-<h3 id="index-name">Index Name</h3>
+<h2 id="index-name">Index Name</h2>
 <p>An index has a name, or <em>Index Name</em>, that is used as a unique
 identifier for the index.  An index name is comprised of alphanumeric
 characters, hyphens and underscores (no whitespace characters).</p>
-<h3 id="index-type">Index Type</h3>
+<h2 id="index-type">Index Type</h2>
 <p>An index has a type, or <em>Index Type</em>.  An often used index type, for
 example, would be "bleve", for full-text indexing.</p>
-<h3 id="source-type">Source Type</h3>
-<p>An index has a <em>Source Type</em>, which specifies the kind of data-source
+<p>Some available index types include...</p>
+<ul>
+<li>
+<p>bleve - a full-text index powered by the
+  <a href="http://blevesearch.com">bleve</a> engine.</p>
+</li>
+<li>
+<p>blackhole - for testing; a blackhole index type ignores all incoming
+  data, and returns errors on any queries.</p>
+</li>
+<li>
+<p>alias - an alias provides a naming level of indirection to one or
+  more actual, target indexes; similar to a symbolic link in a
+  filesystem or to an email mailing list group alias.</p>
+</li>
+</ul>
+<h2 id="source-type">Source Type</h2>
+<p>An index has a <em>Source Type</em>, which specifies the kind of data source
 that is used to populate the index.  An often used source type, for
 example, would be "couchbase", which would be used when a user wants
 to index all the documents that are stored in a Couchbase bucket.</p>
-<h3 id="source-name-and-source-params">Source Name and Source Params</h3>
+<p>Some available source types include...</p>
+<ul>
+<li>couchbase - a Couchbase Server bucket will be the data source.</li>
+<li>nil - for testing; a nil data source never has any data.</li>
+</ul>
+<h2 id="source-name-and-source-params">Source Name and Source Params</h2>
 <p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.  The
 meaning of the source name and source params depend on the source
 type.  For example, when the source type is "couchbase", then the
 source name is treated as a Couchbase bucket name, and the source
 params would define any extra, additional parameters needed to connect
 that named Couchbase bucket.</p>
-<h3 id="index-partition">Index Partition</h3>
-<p>At runtime, the entries maintained in a cbft index will be split into
-one or more partitions, or <em>Index Partition</em>'s.</p>
-<p>Index partitions will be dynamically assigned at runtime to one or
-more cbft processes, or <em>Node</em>'s.  A user can deploy multiple nodes, via
-cbft's clustering features, in order to increase performance and/or
-availability via replication.</p>
+<h2 id="index-partition">Index Partition</h2>
+<p>At runtime, the data maintained in a cbft index will be split into one
+or more partitions, or <em>Index Partition</em>'s.</p>
 <p>An index partition is sometimes abbreviated as "pindex" or "PIndex",
 as you'll sometimes see in cbft's log files, stats entries and/or JSON
 data.</p>
+<h2 id="source-partition">Source Partition</h2>
 <p>An index partition is different than, but related to, the partitions
-from a data source.  For example, Couchbase has a concept of
-partitions of a bucket (a.k.a, "vbuckets").  One index partition might
-be assigned to index all the data for a set of vbuckets.  Another
-index partition might be assigned to index all the data for a different,
-non-overlapping set of vbuckets.</p>
-<h3 id="node">Node</h3>
-<p>A <em>Node</em> is a cbft process.</p>
-<p>A node has a unique <em>Node UUID</em> and listens on a unique HTTP/REST IP
-address and port, or <em>BindHttp</em> parameter (host:port).</p>
-<p>A node's UUID and host:port must be unique across a cbft cluster.</p>
-<h2 id="architecture">Architecture</h2>
-<h2 id="index-types">Index Types</h2>
-<h2 id="source-types">Source Types</h2>
+from a data source, or <em>Source Partition</em>'s.</p>
+<p>For example, Couchbase has a concept of partitions of a bucket (a.k.a,
+"vbuckets").  So, a first index partition in cbft might be assigned to
+ingest the data from some subset of source partitions.  A second index
+partition in cbft might be assigned to ingest the data from a
+different subset of source partitions.</p>
+<h2 id="node">Node</h2>
+<p>Index partitions are an important part of cbft's design that allows
+cbft to support a scale-out, distributed cluster of cbft processes, or
+cbft <em>Node</em>'s.</p>
+<p>Users can deploy multiple cbft nodes and cluster them together in
+order to increase performance and/or availability via replication.</p>
+<p>Index partitions are dynamically assigned at runtime to one or more
+cbft nodes, depending on replication policies and an index partition
+assignment algorithm that attempts to achieve balanced workloads
+across the cbft nodes in a cluster.</p>
+<p>Each node has a unique <em>Node UUID</em> and listens on a unique HTTP/REST
+IP address and port (a.k.a, the <em>BindHttp</em> command-line parameter on
+node startup).</p>
+<p>A node's UUID and HTTP/REST IP address and port must be unique across
+a cbft cluster.</p>
+<p>The nodes in a cbft cluster must all have the same Cfg provider.</p>
+<h2 id="cfg">Cfg</h2>
+<p>A <em>Cfg</em> (or "config") provider is a configuration system required by
+cbft nodes.</p>
+<p>A cbft node will store its configuration data into a Cfg system,
+including all the index definitions, the registrations of known nodes
+of a cluster, and the allocations of index partitions to nodes.</p>
+<p>Some available Cfg implementations...</p>
+<ul>
+<li>
+<p>simple - for development-time-only, non-clustered usage; the simple
+  Cfg implementation uses a local JSON file to store config data.</p>
+</li>
+<li>
+<p>couchbase - uses a Couchbase bucket to store config data.</p>
+</li>
+</ul>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
