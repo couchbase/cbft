@@ -3,6 +3,7 @@ site_name: cbft Technical Documentation (0.0 DP)
 pages:
 - ['index.md', 'Home']
 - ['dev-guide/concepts.md', "Developer's Guide", "Key concepts"]
+- ['dev-guide/command.md', "Developer's Guide", "cbft command-line"]
 - ['dev-guide/defining.md', "Developer's Guide", "Defining indexes"]
 - ['dev-guide/datasources.md', "Developer's Guide", "Index data sources"]
 - ['dev-guide/querying.md', "Developer's Guide", "Queries"]
