@@ -120,8 +120,8 @@ Some available Cfg providers...
 
 - couchbase - uses a Couchbase bucket to store configuration data.  A
   couchbase Cfg provider is often used for clustering multiple cbft
-  nodes, where all the cbft nodes in a cluster need to be connected to
-  the same Couchbase bucket for their Cfg.
+  nodes, where all the cbft nodes need to be connected to the same
+  Couchbase bucket for their configuration data.
 
 ---
 
