@@ -303,6 +303,25 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index to be queried.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>The request's POST body depends on the index type:</p>
+<p><strong>index type: bleve</strong></p>
+<pre><code>{
+  "timeout": 0,
+  "consistency": {
+    "level": "",
+    "vectors": {}
+  },
+  "query": {
+    "query": null,
+    "size": 0,
+    "from": 0,
+    "highlight": null,
+    "fields": null,
+    "facets": null,
+    "explain": false
+  }
+}
+</code></pre>
 <hr />
 <h1 id="node">Node</h1>
 <h2 id="node-configuration">Node configuration</h2>
