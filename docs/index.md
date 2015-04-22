@@ -193,7 +193,7 @@ screens and features, so be sure to click around and explore!
 # Where to go next
 
 Please see
-the [Developer's Guide](dev-guide/overview.md),
+the [Developer's Guide](dev-guide/concepts.md),
 the [API Reference](api-ref.md) and
 the [Administrator's Guide](admin-guide/overview.md).
 
