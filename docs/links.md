@@ -18,7 +18,9 @@ cbft is [Apache 2](https://github.com/couchbaselabs/cbft/blob/master/LICENSE) li
 
 ## Contributing to cbft
 
-tbd
+Please see the "Contributing fixes/improvements"
+section in the
+[developer's README](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md).
 
 ## bleve
 
