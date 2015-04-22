@@ -20,16 +20,23 @@ cbft processes.
 
 ## Getting cbft
 
-Download a pre-built cbft from the [releases](https://github.com/couchbaselabs/cbft/releases) page.  For example, for OSX...
+Please see the
+[releases](https://github.com/couchbaselabs/cbft/releases) page for
+released cbft downloadables.
+
+For example, for OSX...
 
     wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
     tar -xzvf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
     ./cbft.darwin.amd64 --help
 
 Note: ```cbft-full``` builds are currently compiled with more advanced
-features (text stemmers, etc) than ```cbft``` basic builds.  For the
-purposes of these getting start steps, though, downloading either one
-is fine.
+features (text stemmers, etc) than ```cbft``` basic builds.
+
+For the purposes of these getting start steps, though, downloading a
+```cbft``` build is fine.
+
+### Building cbft from source
 
 Or, to build cbft from source (requires golang 1.4)...
 
