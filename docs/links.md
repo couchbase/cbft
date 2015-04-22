@@ -2,7 +2,7 @@
 
 ## Getting help
 
-tbd (gitter or link to forums here?)
+Please visit the [Couchbase Forums](https://forums.couchbase.com/) with your questions.
 
 ## Reporting issues
 
