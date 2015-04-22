@@ -16,9 +16,9 @@ terms or query criteria.
 
 ## Index Name
 
-An index has a name, or _Index Name_, that is used as a unique
-identifier for the index.  An index name is comprised of alphanumeric
-characters, hyphens and underscores (no whitespace characters).
+An index has a name, or _Index Name_, that is a unique identifier for
+the index.  An index name is comprised of alphanumeric characters,
+hyphens and underscores (no whitespace characters).
 
 ## Index Type
 
