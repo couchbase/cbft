@@ -74,9 +74,9 @@ from a data source, or _Source Partition_'s.
 
 For example, Couchbase has a concept of partitions of a bucket (a.k.a,
 "vbuckets").  So, a first index partition in cbft might be assigned to
-ingest the data from some subset of source partitions.  A second index
-partition in cbft might be assigned to ingest the data from a
-different subset of source partitions.
+ingest the data from some subset of source partitions / vbuckets.
+A second index partition in cbft might be assigned to ingest the data
+from a different subset of source partitions / vbuckets.
 
 ## Node
 
