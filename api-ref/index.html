@@ -220,8 +220,8 @@
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the to-be-created/updated index definition,
 validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.</p>
-<p><strong>param: indexParams</strong>: optional, string (JSON), form parameter</p>
-<p>For index type <code>alias</code>, an example index params JSON:</p>
+<p><strong>param: indexParams</strong>: optional (depends on the value of the indexType), string (JSON), form parameter</p>
+<p>For indexType <code>alias</code>, an example indexParams JSON:</p>
 <pre><code>{
   "targets": {
     "yourIndexName": {
@@ -230,8 +230,8 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
   }
 }
 </code></pre>
-<p>For index type <code>blackhole</code>, there are no extra index params.</p>
-<p>For index type <code>bleve</code>, an example index params JSON:</p>
+<p>For indexType <code>blackhole</code>, the indexParams can be null.</p>
+<p>For indexType <code>bleve</code>, an example indexParams JSON:</p>
 <pre><code>{
   "mapping": {
     "default_mapping": {
@@ -253,7 +253,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 }
 </code></pre>
 <p><strong>param: indexType</strong>: required, string, form parameter</p>
-<p>supported index types:</p>
+<p>Supported indexType's:</p>
 <ul>
 <li><code>alias</code>: an alias provides a naming level of indirection to one or more actual, target indexes</li>
 <li><code>blackhole</code>: a blackhole index ignores all data and is not queryable; used for testing</li>
@@ -263,8 +263,8 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: prevIndexUUID</strong>: optional, string, form parameter</p>
 <p>Intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients.</p>
 <p><strong>param: sourceName</strong>: optional, string, form parameter</p>
-<p><strong>param: sourceParams</strong>: optional, string (JSON), form parameter</p>
-<p>For source type <code>couchbase</code>, an example source params JSON:</p>
+<p><strong>param: sourceParams</strong>: optional (depends on the value of the sourceType), string (JSON), form parameter</p>
+<p>For sourceType <code>couchbase</code>, an example sourceParams JSON:</p>
 <pre><code>{
   "authUser": "",
   "authPassword": "",
@@ -278,9 +278,9 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
   "feedBufferAckThreshold": 0
 }
 </code></pre>
-<p>For source type <code>nil</code>, there are no extra source params.</p>
+<p>For sourceType <code>nil</code>, the sourceParams can be null.</p>
 <p><strong>param: sourceType</strong>: required, string, form parameter</p>
-<p>supported source types:</p>
+<p>Supported sourceType's:</p>
 <ul>
 <li><code>couchbase</code>: a Couchbase Server bucket will be the data source</li>
 <li><code>nil</code>: a nil data source has no data; used for index aliases and testing</li>
