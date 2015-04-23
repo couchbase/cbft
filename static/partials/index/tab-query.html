@@ -7,7 +7,8 @@
 <form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
     <input ng-model="query"
-           type="text" class="form-control" placeholder="Query"/>
+           type="text" class="form-control"
+           placeholder="please enter a query"/>
     <div class="input-group-btn">
       <button class="btn btn-primary" type="submit"
               ng-click="runQuery()">
@@ -19,7 +20,8 @@
   <div class="querySub">
     <div class="col-lg-9"
          ng-if="queryHelp && queryHelp.length"
-         ng-bind-html="queryHelpSafe"></div>
+         ng-bind-html="queryHelpSafe">
+    </div>
     <div class="col-lg-offset-9">
       <label>Advanced:</label>
       <input ng-model="queryAdvancedToggle" type="checkbox"/>
@@ -53,7 +55,8 @@
 
 <div ng-show="results && results.hits && results.hits.length > 0"
      ng-include
-     src="'/static/partials/index/query-results.html'"></div>
+     src="'/static/partials/index/query-results.html'">
+</div>
 
 <div ng-show="results && results.results">
   <ul>
