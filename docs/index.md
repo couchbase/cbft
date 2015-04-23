@@ -111,7 +111,7 @@ From the Index Type dropdown, choose ```full-text (bleve)```.
 
 As soon as you make an Index Type dropdown selection, some additional,
 type-dependent input fields should appear (Mapping and Store), but
-let's ignore them for now.
+let's ignore them for now and use the provided defaults.
 
 ### Source Type
 
