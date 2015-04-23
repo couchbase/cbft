@@ -33,8 +33,8 @@ Some available index types include...
 - blackhole - for testing; a blackhole index type ignores all incoming
   data, and returns errors on any queries.
 
-- alias - an alias provides a naming level of indirection to one or
-  more actual, target indexes.
+- alias - an index alias provides a naming level of indirection to one
+  or more actual, target indexes.
 
 ## Index Alias
 
@@ -46,8 +46,10 @@ naming level of indirection, so that applications can refer to a
 stable name (the alias' name) while administrators can dynamically
 retarget or re-point the index alias to different, real indexes.
 
-Similar to an email list alias, an index alias in cbft can also
-"fan-out" to multiple, real indexes.
+Similar to an email list alias, too, an index alias in cbft can also
+"fan-out" and refer to multiple, real indexes.  A query on an index
+alias will scatter-gather the query request against all of the actual,
+real indexes and merge results.
 
 ## Source Type
 
