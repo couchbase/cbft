@@ -461,7 +461,17 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
         if (sourceParams[sourceType]) {
             try {
-                JSON.parse(sourceParams[sourceType]);
+                var s = JSON.parse(sourceParams[sourceType]);
+
+                // NOTE: Special case to auto-fill-in authUser with bucket name.
+                // TODO: Doesn't handle bucket password, though.
+                if (sourceType == "couchbase" &&
+                    s &&
+                    s.authUser == "" &&
+                    s.authPassword == "") {
+                    s.authUser = sourceName;
+                    sourceParams[sourceType] = JSON.stringify(s);
+                }
             } catch (e) {
                 $scope.errorFields["sourceParams"] = {};
                 $scope.errorFields["sourceParams"][sourceType] = true;
