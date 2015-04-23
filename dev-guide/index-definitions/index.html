@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../../img/favicon.ico">
 
-        <title>Diagnosing issues - cbft Technical Documentation (0.0 DP)</title>
+        <title>Index Definitions - cbft Technical Documentation (0.0 DP)</title>
 
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -48,36 +48,36 @@
             <ul class="nav navbar-nav">
             
             
-                <li class="dropdown">
+                <li class="dropdown active">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">Developer's Guide <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                     
                         <li >
-                            <a href="../../dev-guide/concepts">Key concepts</a>
+                            <a href="../concepts">Key concepts</a>
                         </li>
                     
                         <li >
-                            <a href="../../dev-guide/command">cbft command-line</a>
+                            <a href="../command">cbft command-line</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href=".">Index Definitions</a>
                         </li>
                     
                         <li >
-                            <a href="../../dev-guide/index-definitions">Index Definitions</a>
+                            <a href="../index-querying">Index Querying</a>
                         </li>
                     
                         <li >
-                            <a href="../../dev-guide/index-querying">Index Querying</a>
+                            <a href="../performance">Performance</a>
                         </li>
                     
                         <li >
-                            <a href="../../dev-guide/performance">Performance</a>
+                            <a href="../advanced">Advanced topics</a>
                         </li>
                     
                         <li >
-                            <a href="../../dev-guide/advanced">Advanced topics</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../../dev-guide/samples">Sample apps</a>
+                            <a href="../samples">Sample apps</a>
                         </li>
                     
                     </ul>
@@ -91,40 +91,40 @@
             
             
             
-                <li class="dropdown active">
+                <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">Administrator's Guide <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                     
                         <li >
-                            <a href="../overview">Administrator's guide overview</a>
+                            <a href="../../admin-guide/overview">Administrator's guide overview</a>
                         </li>
                     
                         <li >
-                            <a href="../planning">Planning your deployment</a>
+                            <a href="../../admin-guide/planning">Planning your deployment</a>
                         </li>
                     
                         <li >
-                            <a href="../dependencies">Dependencies</a>
+                            <a href="../../admin-guide/dependencies">Dependencies</a>
                         </li>
                     
                         <li >
-                            <a href="../running">Running cbft</a>
+                            <a href="../../admin-guide/running">Running cbft</a>
                         </li>
                     
                         <li >
-                            <a href="../clustering">Clustering cbft</a>
+                            <a href="../../admin-guide/clustering">Clustering cbft</a>
                         </li>
                     
                         <li >
-                            <a href="../index-management">Index management</a>
+                            <a href="../../admin-guide/index-management">Index management</a>
                         </li>
                     
                         <li >
-                            <a href="../monitoring">Monitoring cbft</a>
+                            <a href="../../admin-guide/monitoring">Monitoring cbft</a>
                         </li>
                     
-                        <li class="active">
-                            <a href=".">Diagnosing issues</a>
+                        <li >
+                            <a href="../../admin-guide/diagnosing">Diagnosing issues</a>
                         </li>
                     
                     </ul>
@@ -143,12 +143,12 @@
             <ul class="nav navbar-nav navbar-right">
                 
                 <li >
-                    <a rel="next" href="../monitoring">
+                    <a rel="next" href="../command">
                         <i class="fa fa-arrow-left"></i> Previous
                     </a>
                 </li>
                 <li >
-                    <a rel="prev" href="../../links">
+                    <a rel="prev" href="../index-querying">
                         Next <i class="fa fa-arrow-right"></i>
                     </a>
                 </li>
@@ -162,14 +162,31 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#diagnosing-issues">Diagnosing issues</a></li>
+        <li class="main active"><a href="#defining-indexes">Defining indexes</a></li>
+        
+            <li><a href="#updating-index-definitions">Updating index definitions</a></li>
+        
+            <li><a href="#deleting-indexes">Deleting indexes</a></li>
+        
+            <li><a href="#index-aliases">Index aliases</a></li>
+        
+            <li><a href="#index-definition-tips-tricks">Index definition tips &amp; tricks</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="diagnosing-issues">Diagnosing issues</h1>
+<h1 id="defining-indexes">Defining indexes</h1>
+<p>You can list, retrieve, create and delete index definitions in cbft
+using its REST API or using its web admin UI.</p>
+<p>Please see the <a href="../../api-ref/#index-definition">REST API reference</a> for
+documentation on GET'ing, PUT'ing, and DELETE'ing index definitions.</p>
+<h2 id="updating-index-definitions">Updating index definitions</h2>
+<h2 id="deleting-indexes">Deleting indexes</h2>
+<h2 id="index-aliases">Index aliases</h2>
+<p>tbd</p>
+<h2 id="index-definition-tips-tricks">Index definition tips &amp; tricks</h2>
 <p>tbd</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
