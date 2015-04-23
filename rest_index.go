@@ -191,7 +191,8 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 		if t.QuerySample != nil {
 			indexTypes = append(indexTypes,
 				"For index type ```"+indexType+"```"+
-					", an example POST body:\n\n    "+IndentJSON(t.QuerySample, "    ", "  "))
+					", an example POST body:\n\n    "+
+					IndentJSON(t.QuerySample, "    ", "  "))
 		}
 	}
 	sort.Strings(indexTypes)

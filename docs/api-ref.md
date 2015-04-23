@@ -39,6 +39,40 @@ validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
 **param: indexParams**: optional, string (JSON), form parameter
 
+For index type ```alias```, an example index params JSON:
+
+    {
+      "targets": {
+        "yourIndexName": {
+          "indexUUID": ""
+        }
+      }
+    }
+
+For index type ```blackhole```, there are no extra index params.
+
+For index type ```bleve```, an example index params JSON:
+
+    {
+      "mapping": {
+        "default_mapping": {
+          "enabled": true,
+          "dynamic": true,
+          "default_analyzer": ""
+        },
+        "type_field": "_type",
+        "default_type": "_default",
+        "default_analyzer": "standard",
+        "default_datetime_parser": "dateTimeOptional",
+        "default_field": "_all",
+        "byte_array_converter": "json",
+        "analysis": {}
+      },
+      "store": {
+        "kvStoreName": "boltdb"
+      }
+    }
+
 **param: indexType**: required, string, form parameter
 
 supported index types:

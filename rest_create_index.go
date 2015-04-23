@@ -38,6 +38,22 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	}
 	sort.Strings(indexTypes)
 
+	indexParams := []string(nil)
+	for _, indexDesc := range indexTypes {
+		indexType := strings.Split(indexDesc, "```")[1]
+		t := PIndexImplTypes[indexType]
+		if t.StartSample != nil {
+			indexParams = append(indexParams,
+				"For index type ```"+indexType+"```"+
+					", an example index params JSON:\n\n    "+
+					IndentJSON(t.StartSample, "    ", "  "))
+		} else {
+			indexParams = append(indexParams,
+				"For index type ```"+indexType+"```"+
+					", there are no extra index params.")
+		}
+	}
+
 	sourceTypes := []string(nil)
 	for sourceType, t := range FeedTypes {
 		if t.Public {
@@ -58,7 +74,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 			"supported index types:\n\n* " +
 			strings.Join(indexTypes, "\n* ")
 	opts["param: indexParams"] =
-		"optional, string (JSON), form parameter"
+		"optional, string (JSON), form parameter\n\n" +
+			strings.Join(indexParams, "\n\n")
 	opts["param: sourceType"] =
 		"required, string, form parameter\n\n" +
 			"supported source types:\n\n* " +
