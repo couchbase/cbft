@@ -33,7 +33,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
 	for indexType, t := range PIndexImplTypes {
 		indexTypes = append(indexTypes,
-			indexType+": "+strings.Split(t.Description, " - ")[1])
+			"```"+indexType+"```: "+
+				strings.Split(t.Description, " - ")[1])
 	}
 	sort.Strings(indexTypes)
 
@@ -41,7 +42,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	for sourceType, t := range FeedTypes {
 		if t.Public {
 			sourceTypes = append(sourceTypes,
-				sourceType+": "+strings.Split(t.Description, " - ")[1])
+				"```"+sourceType+"```: "+
+					strings.Split(t.Description, " - ")[1])
 		}
 	}
 	sort.Strings(sourceTypes)

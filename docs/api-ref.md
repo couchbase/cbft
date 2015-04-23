@@ -43,9 +43,9 @@ validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
 supported index types:
 
-* alias: an alias provides a naming level of indirection to one or more actual, target indexes
-* blackhole: a blackhole index ignores all data and is not queryable; used for testing
-* bleve: a full-text index powered by the bleve engine
+* ```alias```: an alias provides a naming level of indirection to one or more actual, target indexes
+* ```blackhole```: a blackhole index ignores all data and is not queryable; used for testing
+* ```bleve```: a full-text index powered by the bleve engine
 
 **param: planParams**: optional, string (JSON), form parameter
 
@@ -61,8 +61,8 @@ Intended for clients that want to check that they are not overwriting the index 
 
 supported source types:
 
-* couchbase: a Couchbase Server bucket will be the data source
-* nil: a nil data source has no data; used for index aliases and testing
+* ```couchbase```: a Couchbase Server bucket will be the data source
+* ```nil```: a nil data source has no data; used for index aliases and testing
 
 **param: sourceUUID**: optional, string, form parameter
 
@@ -183,7 +183,7 @@ The name of the index to be queried.
 
 The request's POST body depends on the index type:
 
-For index type **bleve**, an example POST body:
+For index type ```bleve```, an example POST body:
 
     {
       "timeout": 0,
