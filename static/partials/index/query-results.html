@@ -13,6 +13,10 @@
     <li ng-repeat="hit in results.hits">
       <b>{{hit.id}}</b>
       <span class="badge">{{hit.roundedScore}}</span>
+      <div class="well" ng-show="explainScoring">
+        Scoring
+        <ul><li><span ng-bind-html="hit.explanationStringSafe"></span></li></ul>
+      </div>
       <div class="well">
         <div ng-repeat="(fieldName, fragments) in hit.fragments">
           <div ng-show="fragments.length > 0">{{fieldName}}</div>
@@ -20,10 +24,6 @@
             <li ng-repeat="fragment in fragments" ng-bind-html="fragment"></li>
           </ul>
         </div>
-      </div>
-      <div class="well" ng-show="explainScoring">
-        Scoring
-        <ul><li><span ng-bind-html="hit.explanationStringSafe"></span></li></ul>
       </div>
     </li>
   </ol>
