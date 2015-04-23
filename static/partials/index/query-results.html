@@ -12,7 +12,7 @@
   <ol start="{{firstResult}}">
     <li ng-repeat="hit in results.hits">
       <b>{{hit.id}}</b>
-      <span class="badge">{{hit.roundedScore}}</span>
+      <span class="badge" ng-show="explainScoring">{{hit.roundedScore}}</span>
       <div class="well" ng-show="explainScoring">
         Scoring
         <ul><li><span ng-bind-html="hit.explanationStringSafe"></span></li></ul>
