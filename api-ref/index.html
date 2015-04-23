@@ -224,9 +224,9 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: indexType</strong>: required, string, form parameter</p>
 <p>supported index types:</p>
 <ul>
-<li>alias: an alias provides a naming level of indirection to one or more actual, target indexes</li>
-<li>blackhole: a blackhole index ignores all data and is not queryable; used for testing</li>
-<li>bleve: a full-text index powered by the bleve engine</li>
+<li><code>alias</code>: an alias provides a naming level of indirection to one or more actual, target indexes</li>
+<li><code>blackhole</code>: a blackhole index ignores all data and is not queryable; used for testing</li>
+<li><code>bleve</code>: a full-text index powered by the bleve engine</li>
 </ul>
 <p><strong>param: planParams</strong>: optional, string (JSON), form parameter</p>
 <p><strong>param: prevIndexUUID</strong>: optional, string, form parameter</p>
@@ -236,8 +236,8 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: sourceType</strong>: required, string, form parameter</p>
 <p>supported source types:</p>
 <ul>
-<li>couchbase: a Couchbase Server bucket will be the data source</li>
-<li>nil: a nil data source has no data; used for index aliases and testing</li>
+<li><code>couchbase</code>: a Couchbase Server bucket will be the data source</li>
+<li><code>nil</code>: a nil data source has no data; used for index aliases and testing</li>
 </ul>
 <p><strong>param: sourceUUID</strong>: optional, string, form parameter</p>
 <p><strong>result on error</strong>: non-200 HTTP error code</p>
@@ -300,7 +300,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>The name of the index to be queried.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <p>The request's POST body depends on the index type:</p>
-<p>For index type <strong>bleve</strong>, an example POST body:</p>
+<p>For index type <code>bleve</code>, an example POST body:</p>
 <pre><code>{
   "timeout": 0,
   "consistency": {
