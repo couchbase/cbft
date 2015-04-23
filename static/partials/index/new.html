@@ -19,7 +19,7 @@
            class="indexName">{{newIndexName}}</div>
       <input ng-show="!isEdit" ng-model="newIndexName"
              type="text" class="form-control"
-             id="inputIndexName" placeholder="index-name">
+             id="inputIndexName" placeholder="index-name"/>
     </div>
   </div>
   <div class="form-group">
@@ -63,11 +63,11 @@
     <div class="col-sm-8">
       <input ng-model="newSourceName"
              type="text" class="form-control" id="inputSourceName"
-             placeholder="bucket-name">
+             placeholder="bucket-name"/>
     </div>
   </div>
   <div class="form-group"
-       ng-show="newSourceType && newSourceType != 'nil'">
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
     <label for="inputSourceParams"
            class="col-sm-4 control-label">Source Params</label>
     <div class="col-sm-8"
@@ -86,16 +86,14 @@
     <div class="col-sm-8">
       <input ng-model="newSourceUUID"
              type="text" class="form-control" id="inputSourceUUID"
-             placeholder="(optional bucket-uuid)">
+             placeholder="(optional bucket-uuid)"/>
     </div>
   </div>
   <div class="form-group">
     <label for="inputPlanParams"
-           class="col-sm-2 control-label">&nbsp;</label>
+           ng-show="advanced"
+           class="col-sm-2 control-label">Plan Params</label>
     <div class="col-sm-8">
-      <input ng-model="advanced" type="checkbox" class="advanced">
-        Show advanced settings
-      </input>
       <textarea ng-show="advanced"
                 ng-model="newPlanParams" rows="{{paramNumLines['planParams']}}"
                 class="form-control" id="inputPlanParams"></textarea>
@@ -103,6 +101,10 @@
   </div>
   <div class="form-group newIndexSubmit">
     <div class="col-sm-offset-2 col-sm-10">
+      <input ng-model="advanced" type="checkbox" class="advanced">
+        Show advanced settings
+      </input>
+      <br/>
       <a href="/indexes/">
         <button class="btn btn-cancel">Cancel</button>
       </a>
@@ -130,7 +132,7 @@ form .form-group label.indexParam {
   text-transform: capitalize;
 }
 form input.advanced {
-  margin-top: 10px;
+  margin-bottom: 30px;
 }
 form .newIndexSubmit {
   margin-top: 20px;
