@@ -172,6 +172,8 @@
         
             <li><a href="#index-alias">Index Alias</a></li>
         
+            <li><a href="#index-params">Index Params</a></li>
+        
             <li><a href="#source-type">Source Type</a></li>
         
             <li><a href="#source-name-and-source-params">Source Name and Source Params</a></li>
@@ -202,24 +204,26 @@ documents from a Couchbase bucket (for example), based on some search
 terms or query criteria.</p>
 <h2 id="index-name">Index Name</h2>
 <p>An index has a name, or <em>Index Name</em>, that is a unique identifier for
-the index.  An index name is comprised of alphanumeric characters,
-hyphens and underscores (no whitespace characters).</p>
+the index.</p>
+<p>An index name is comprised of alphanumeric characters, hyphens and
+underscores (no whitespace characters).</p>
 <h2 id="index-type">Index Type</h2>
-<p>An index has a type, or <em>Index Type</em>.  An often used index type, for
-example, would be "bleve", for full-text indexing.</p>
+<p>An index has a type, or <em>Index Type</em>.</p>
+<p>An often used index type, for example, would be <code>bleve</code>, for
+full-text indexing.</p>
 <p>Some available index types include...</p>
 <ul>
 <li>
-<p>bleve - a full-text index powered by the
+<p><code>bleve</code> - a full-text index powered by the
   <a href="http://blevesearch.com">bleve</a> engine.</p>
 </li>
 <li>
-<p>blackhole - for testing; a blackhole index type ignores all incoming
+<p><code>blackhole</code> - for testing; a blackhole index type ignores all incoming
   data, and returns errors on any queries.</p>
 </li>
 <li>
-<p>alias - an alias provides a naming level of indirection to one or
-  more actual, target indexes.</p>
+<p><code>alias</code> - an index alias provides a naming level of indirection to one
+  or more actual, target indexes.</p>
 </li>
 </ul>
 <h2 id="index-alias">Index Alias</h2>
@@ -229,25 +233,38 @@ more of a virtual index that points to other, real indexes.</p>
 naming level of indirection, so that applications can refer to a
 stable name (the alias' name) while administrators can dynamically
 retarget or re-point the index alias to different, real indexes.</p>
-<p>Similar to an email list alias, an index alias in cbft can also
-"fan-out" to multiple, real indexes.</p>
+<p>Similar to an email list alias, too, an index alias in cbft can also
+"fan-out" and refer to multiple, real indexes.  A query on an index
+alias will scatter-gather the query request against all of the actual,
+real indexes and merge results.</p>
+<h2 id="index-params">Index Params</h2>
+<p>An index has optional <em>Index Params</em>.</p>
+<p>The meaning of the index params depends on the index type.</p>
+<p>For example, if the index type is <code>bleve</code>, then the index params
+includes the JSON mapping information that is used to configure the
+bleve full-text engine.</p>
+<p>For example, if the index type is <code>alias</code>, then the index params
+is the JSON that defines one or more target indexes for the index
+alias.</p>
 <h2 id="source-type">Source Type</h2>
 <p>An index has a <em>Source Type</em>, which specifies the kind of data source
-that is used to populate the index.  An often used source type, for
-example, would be "couchbase", which would be used when a user wants
-to index all the documents that are stored in a Couchbase bucket.</p>
+that is used to populate the index.</p>
+<p>An often used source type, for example, would be <code>couchbase</code>,
+which would be used when a user wants to index all the documents that
+are stored in a Couchbase bucket.</p>
 <p>Some available source types include...</p>
 <ul>
-<li>couchbase - a Couchbase Server bucket will be the data source.</li>
-<li>nil - for testing; a nil data source never has any data.</li>
+<li><code>couchbase</code> - a Couchbase Server bucket will be the data source.</li>
+<li><code>nil</code> - for testing; a nil data source never has any data.</li>
 </ul>
 <h2 id="source-name-and-source-params">Source Name and Source Params</h2>
-<p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.  The
-meaning of the source name and source params depend on the source
-type.  For example, when the source type is "couchbase", then the
-source name is treated as a Couchbase bucket name, and the source
-params would define any extra, additional parameters needed to connect
-that named Couchbase bucket.</p>
+<p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.</p>
+<p>The meaning of the source name and source params depend on the source
+type of the index.</p>
+<p>For example, when the source type is "couchbase", then the source name
+is treated as a Couchbase bucket name, and the source params would
+define any optional, additional parameters needed to connect that
+named Couchbase bucket.</p>
 <h2 id="index-partition">Index Partition</h2>
 <p>At runtime, the data maintained in a cbft index will be split into one
 or more partitions, or <em>Index Partition</em>'s.</p>
