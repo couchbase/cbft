@@ -166,17 +166,9 @@
         
             <li><a href="#index">Index</a></li>
         
-            <li><a href="#index-name">Index Name</a></li>
-        
-            <li><a href="#index-type">Index Type</a></li>
+            <li><a href="#data-source">Data Source</a></li>
         
             <li><a href="#index-alias">Index Alias</a></li>
-        
-            <li><a href="#index-params">Index Params</a></li>
-        
-            <li><a href="#source-type">Source Type</a></li>
-        
-            <li><a href="#source-name-and-source-params">Source Name and Source Params</a></li>
         
             <li><a href="#index-partition">Index Partition</a></li>
         
@@ -193,39 +185,22 @@
 
 <h1 id="key-concepts">Key concepts</h1>
 <h2 id="index">Index</h2>
-<p>An index or "logical index" defines a data system that supports fast
+<p>An index, or <em>Logical Index</em>, defines a data system that supports fast
 lookup of documents based on query criteria.</p>
 <p>An often used analogy is that an index of a database is similar to a
 book index.  A book index is comprised of alphabetically sorted
 entries that allow readers to quickly locate relevant pages in the
 book based on some search words.</p>
 <p>Similarly, a cbft index allows users to quickly locate relevant
-documents from a Couchbase bucket (for example), based on some search
-terms or query criteria.</p>
-<h2 id="index-name">Index Name</h2>
-<p>An index has a name, or <em>Index Name</em>, that is a unique identifier for
-the index.</p>
-<p>An index name is comprised of alphanumeric characters, hyphens and
-underscores (no whitespace characters).</p>
-<h2 id="index-type">Index Type</h2>
-<p>An index has a type, or <em>Index Type</em>.</p>
-<p>An often used index type, for example, would be <code>bleve</code>, for
-full-text indexing.</p>
-<p>Some available index types include...</p>
-<ul>
-<li>
-<p><code>bleve</code> - a full-text index powered by the
-  <a href="http://blevesearch.com">bleve</a> engine.</p>
-</li>
-<li>
-<p><code>blackhole</code> - for testing; a blackhole index type ignores all incoming
-  data, and returns errors on any queries.</p>
-</li>
-<li>
-<p><code>alias</code> - an index alias provides a naming level of indirection to one
-  or more actual, target indexes.</p>
-</li>
-</ul>
+documents from diferent data sources based on some search terms or
+query criteria.</p>
+<p>cbft supports multiple types of indexes, such as full-text indexes
+and index aliases.</p>
+<p>cbft also supports multiple kinds of data sources.</p>
+<h2 id="data-source">Data Source</h2>
+<p>The data used to populate an index comes from a <em>Data Source</em>.</p>
+<p>A data source, for example, might be all the documents stored in a
+Couchbase bucket.</p>
 <h2 id="index-alias">Index Alias</h2>
 <p>An <em>Index Alias</em> is a type of index that's not a normal index, but is
 more of a virtual index that points to other, real indexes.</p>
@@ -237,54 +212,29 @@ retarget or re-point the index alias to different, real indexes.</p>
 "fan-out" and refer to multiple, real indexes.  A query on an index
 alias will scatter-gather the query request against all of the actual,
 real indexes and merge results.</p>
-<h2 id="index-params">Index Params</h2>
-<p>An index has optional <em>Index Params</em>.</p>
-<p>The meaning of the index params depends on the index type.</p>
-<p>For example, if the index type is <code>bleve</code>, then the index params
-includes the JSON mapping information that is used to configure the
-bleve full-text engine.</p>
-<p>For example, if the index type is <code>alias</code>, then the index params
-is the JSON that defines one or more target indexes for the index
-alias.</p>
-<h2 id="source-type">Source Type</h2>
-<p>An index has a <em>Source Type</em>, which specifies the kind of data source
-that is used to populate the index.</p>
-<p>An often used source type, for example, would be <code>couchbase</code>,
-which would be used when a user wants to index all the documents that
-are stored in a Couchbase bucket.</p>
-<p>Some available source types include...</p>
-<ul>
-<li><code>couchbase</code> - a Couchbase Server bucket will be the data source.</li>
-<li><code>nil</code> - for testing; a nil data source never has any data.</li>
-</ul>
-<h2 id="source-name-and-source-params">Source Name and Source Params</h2>
-<p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.</p>
-<p>The meaning of the source name and source params depend on the source
-type of the index.</p>
-<p>For example, when the source type is "couchbase", then the source name
-is treated as a Couchbase bucket name, and the source params would
-define any optional, additional parameters needed to connect that
-named Couchbase bucket.</p>
 <h2 id="index-partition">Index Partition</h2>
-<p>At runtime, the data maintained in a cbft index will be split into one
-or more partitions, or <em>Index Partition</em>'s.</p>
+<p>At runtime, the data entries maintained in a cbft index will be split
+into one or more partitions, or <em>Index Partition</em>'s.</p>
 <p>An index partition is sometimes abbreviated as "pindex" or "PIndex",
 as you'll sometimes see in cbft's log files, stats entries and/or JSON
 data.</p>
+<p>Put another way, a logical index is partitioned into one or more index
+partitions.</p>
 <h2 id="source-partition">Source Partition</h2>
 <p>An index partition is different than, but related to, the partitions
 from a data source, or <em>Source Partition</em>'s.</p>
 <p>For example, Couchbase has a concept of partitions of a bucket (a.k.a,
 "vbuckets").  So, a first index partition in cbft might be assigned to
-ingest the data from some subset of source partitions / vbuckets.
-A second index partition in cbft might be assigned to ingest the data
-from a different subset of source partitions / vbuckets.</p>
+ingest the data from some subset of source partitions or vbuckets.  A
+second index partition in cbft might be assigned to ingest the data
+from a different subset of source partitions or vbuckets.</p>
 <h2 id="node">Node</h2>
 <p>Index partitions are an important part of cbft's design that allows
 cbft to support a scale-out, distributed cluster of cbft processes, or
 cbft <em>Node</em>'s.</p>
 <p>Users can deploy multiple cbft nodes and cluster them together in
-order to increase performance and/or availability via replication.</p>
+order to increase performance and/or increase availability via
+replication.</p>
 <p>Index partitions are dynamically assigned at runtime to one or more
 cbft nodes, depending on replication policies and an index partition
 assignment algorithm that attempts to achieve balanced workloads
@@ -294,20 +244,20 @@ IP address and port (a.k.a, the <em>BindHttp</em> command-line parameter on
 node startup).</p>
 <p>A node's UUID and HTTP/REST IP address and port must be unique across
 a cbft cluster.</p>
-<p>The nodes in a cbft cluster must all have the same Cfg provider.</p>
+<p>The nodes in a cbft cluster must also all use the same Cfg provider.</p>
 <h2 id="cfg">Cfg</h2>
 <p>A <em>Cfg</em> (or "config") provider is a configuration-oriented data system
 required by cbft nodes.</p>
 <p>A cbft node will store its configuration data into a Cfg provider.</p>
-<p>For example, index definitions (but not actual index data entries)
-will be stored into a Cfg provider.</p>
+<p>For example, index definitions or metadata (but not large amounts of
+index data entries) will be stored into a Cfg provider.</p>
 <p>Some available Cfg providers...</p>
 <ul>
 <li>
 <p>simple - for basic, non-clustered usage; the simple Cfg provider
   uses a local JSON file to store configuration data.  This is the
   default Cfg provider and is intended primarily to simplify the
-  development-time experience and usage of cbft.</p>
+  development-time experience and developer's usage of cbft.</p>
 </li>
 <li>
 <p>couchbase - uses a Couchbase bucket to store configuration data.  A
