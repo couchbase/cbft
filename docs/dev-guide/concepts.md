@@ -34,8 +34,20 @@ Some available index types include...
   data, and returns errors on any queries.
 
 - alias - an alias provides a naming level of indirection to one or
-  more actual, target indexes; similar to a symbolic link in a
-  filesystem or to an email mailing list group alias.
+  more actual, target indexes.
+
+## Index Alias
+
+An _Index Alias_ is a type of index that's not a normal index, but is
+more of a virtual index that points to other, real indexes.
+
+Similar to a symbolic link in a filesystem, an index alias allows a
+naming level of indirection, so that applications can refer to a
+stable name (the alias' name) while administrators can dynamically
+retarget or re-point the index alias to different, real indexes.
+
+Similar to an email list alias, an index alias in cbft can also
+"fan-out" to multiple, real indexes.
 
 ## Source Type
 
