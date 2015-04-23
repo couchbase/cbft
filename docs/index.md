@@ -13,8 +13,8 @@ performance.
 You should have a Couchbase Server (3.0+) already installed and
 running somewhere.
 
-You should also have a bucket with JSON documents that you'd like to
-index.
+You should also have a bucket in Couchbase Server with JSON documents
+that you'd like to index.
 
 For example, you can have Couchbase Server create and populate a
 ```beer-sample``` bucket of sample JSON documents.
