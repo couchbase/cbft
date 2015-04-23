@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +36,19 @@ var jsonOpenBrace = []byte("{")
 var jsonCloseBrace = []byte("}")
 var jsonCloseBraceComma = []byte("},")
 var jsonComma = []byte(",")
+
+func IndentJSON(x interface{}, prefix, indent string) string {
+	j, err := json.Marshal(x)
+	if err != nil {
+		return fmt.Sprintf("misc: IndentJSON marshal, err: %v", err)
+	}
+	var buf bytes.Buffer
+	err = json.Indent(&buf, j, prefix, indent)
+	if err != nil {
+		return fmt.Sprintf("misc: IndentJSON indent, err: %v", err)
+	}
+	return buf.String()
+}
 
 func ErrorToString(e error) string {
 	if e != nil {

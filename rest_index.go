@@ -10,7 +10,6 @@
 package cbft
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -190,16 +189,9 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
 	for indexType, t := range PIndexImplTypes {
 		if t.QuerySample != nil {
-			j, err := json.Marshal(t.QuerySample)
-			if err == nil {
-				var buf bytes.Buffer
-				err = json.Indent(&buf, j, "    ", "  ")
-				if err == nil {
-					indexTypes = append(indexTypes,
-						"For index type ```"+indexType+"```"+
-							", an example POST body:\n\n    "+buf.String())
-				}
-			}
+			indexTypes = append(indexTypes,
+				"For index type ```"+indexType+"```"+
+					", an example POST body:\n\n    "+IndentJSON(t.QuerySample, "    ", "  "))
 		}
 	}
 	sort.Strings(indexTypes)
