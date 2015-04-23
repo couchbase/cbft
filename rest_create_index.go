@@ -44,13 +44,13 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 		t := PIndexImplTypes[indexType]
 		if t.StartSample != nil {
 			indexParams = append(indexParams,
-				"For index type ```"+indexType+"```"+
-					", an example index params JSON:\n\n    "+
+				"For indexType ```"+indexType+"```"+
+					", an example indexParams JSON:\n\n    "+
 					IndentJSON(t.StartSample, "    ", "  "))
 		} else {
 			indexParams = append(indexParams,
-				"For index type ```"+indexType+"```"+
-					", there are no extra index params.")
+				"For indexType ```"+indexType+"```"+
+					", the indexParams can be null.")
 		}
 	}
 
@@ -70,13 +70,13 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 		t := FeedTypes[sourceType]
 		if t.StartSample != nil {
 			sourceParams = append(sourceParams,
-				"For source type ```"+sourceType+"```"+
-					", an example source params JSON:\n\n    "+
+				"For sourceType ```"+sourceType+"```"+
+					", an example sourceParams JSON:\n\n    "+
 					IndentJSON(t.StartSample, "    ", "  "))
 		} else {
 			sourceParams = append(sourceParams,
-				"For source type ```"+sourceType+"```"+
-					", there are no extra source params.")
+				"For sourceType ```"+sourceType+"```"+
+					", the sourceParams can be null.")
 		}
 	}
 
@@ -87,21 +87,23 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 			INDEX_NAME_REGEXP + "```."
 	opts["param: indexType"] =
 		"required, string, form parameter\n\n" +
-			"supported index types:\n\n* " +
+			"Supported indexType's:\n\n* " +
 			strings.Join(indexTypes, "\n* ")
 	opts["param: indexParams"] =
-		"optional, string (JSON), form parameter\n\n" +
+		"optional (depends on the value of the indexType)," +
+			" string (JSON), form parameter\n\n" +
 			strings.Join(indexParams, "\n\n")
 	opts["param: sourceType"] =
 		"required, string, form parameter\n\n" +
-			"supported source types:\n\n* " +
+			"Supported sourceType's:\n\n* " +
 			strings.Join(sourceTypes, "\n* ")
 	opts["param: sourceName"] =
 		"optional, string, form parameter"
 	opts["param: sourceUUID"] =
 		"optional, string, form parameter"
 	opts["param: sourceParams"] =
-		"optional, string (JSON), form parameter\n\n" +
+		"optional (depends on the value of the sourceType)," +
+			" string (JSON), form parameter\n\n" +
 			strings.Join(sourceParams, "\n\n")
 	opts["param: planParams"] =
 		"optional, string (JSON), form parameter"
@@ -125,7 +127,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	indexType := req.FormValue("indexType")
 	if indexType == "" {
-		showError(w, req, "rest_create_index: index type is required", 400)
+		showError(w, req, "rest_create_index: indexType is required", 400)
 		return
 	}
 
@@ -133,7 +135,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
-		showError(w, req, "rest_create_index: source type is required", 400)
+		showError(w, req, "rest_create_index: sourceType is required", 400)
 		return
 	}
 

@@ -37,9 +37,9 @@ Creates/updates an index definition.
 The name of the to-be-created/updated index definition,
 validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
-**param: indexParams**: optional, string (JSON), form parameter
+**param: indexParams**: optional (depends on the value of the indexType), string (JSON), form parameter
 
-For index type ```alias```, an example index params JSON:
+For indexType ```alias```, an example indexParams JSON:
 
     {
       "targets": {
@@ -49,9 +49,9 @@ For index type ```alias```, an example index params JSON:
       }
     }
 
-For index type ```blackhole```, there are no extra index params.
+For indexType ```blackhole```, the indexParams can be null.
 
-For index type ```bleve```, an example index params JSON:
+For indexType ```bleve```, an example indexParams JSON:
 
     {
       "mapping": {
@@ -75,7 +75,7 @@ For index type ```bleve```, an example index params JSON:
 
 **param: indexType**: required, string, form parameter
 
-supported index types:
+Supported indexType's:
 
 * ```alias```: an alias provides a naming level of indirection to one or more actual, target indexes
 * ```blackhole```: a blackhole index ignores all data and is not queryable; used for testing
@@ -89,9 +89,9 @@ Intended for clients that want to check that they are not overwriting the index 
 
 **param: sourceName**: optional, string, form parameter
 
-**param: sourceParams**: optional, string (JSON), form parameter
+**param: sourceParams**: optional (depends on the value of the sourceType), string (JSON), form parameter
 
-For source type ```couchbase```, an example source params JSON:
+For sourceType ```couchbase```, an example sourceParams JSON:
 
     {
       "authUser": "",
@@ -106,11 +106,11 @@ For source type ```couchbase```, an example source params JSON:
       "feedBufferAckThreshold": 0
     }
 
-For source type ```nil```, there are no extra source params.
+For sourceType ```nil```, the sourceParams can be null.
 
 **param: sourceType**: required, string, form parameter
 
-supported source types:
+Supported sourceType's:
 
 * ```couchbase```: a Couchbase Server bucket will be the data source
 * ```nil```: a nil data source has no data; used for index aliases and testing
