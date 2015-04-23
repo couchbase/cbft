@@ -1,4 +1,4 @@
-# Defining indexes
+# Index definitions
 
 You can list, retrieve, create and delete index definitions in cbft
 using its REST API or using its web admin UI.

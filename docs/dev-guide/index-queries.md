@@ -1,4 +1,4 @@
-# Querying indexes
+# Index queries
 
 tbd
 
