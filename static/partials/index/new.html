@@ -103,6 +103,9 @@
   </div>
   <div class="form-group newIndexSubmit">
     <div class="col-sm-offset-2 col-sm-10">
+      <a href="/indexes/">
+        <button class="btn btn-cancel">Cancel</button>
+      </a>
       <button ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
               type="submit" class="btn btn-default">
         <span ng-show="!isEdit">
@@ -112,9 +115,6 @@
           Update Index
         </span>
       </button>
-      <a href="/indexes/">
-        <button class="btn btn-cancel">Cancel</button>
-      </a>
     </div>
   </div>
 </form>
