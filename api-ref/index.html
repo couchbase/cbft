@@ -221,6 +221,37 @@
 <p>The name of the to-be-created/updated index definition,
 validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.</p>
 <p><strong>param: indexParams</strong>: optional, string (JSON), form parameter</p>
+<p>For index type <code>alias</code>, an example index params JSON:</p>
+<pre><code>{
+  "targets": {
+    "yourIndexName": {
+      "indexUUID": ""
+    }
+  }
+}
+</code></pre>
+<p>For index type <code>blackhole</code>, there are no extra index params.</p>
+<p>For index type <code>bleve</code>, an example index params JSON:</p>
+<pre><code>{
+  "mapping": {
+    "default_mapping": {
+      "enabled": true,
+      "dynamic": true,
+      "default_analyzer": ""
+    },
+    "type_field": "_type",
+    "default_type": "_default",
+    "default_analyzer": "standard",
+    "default_datetime_parser": "dateTimeOptional",
+    "default_field": "_all",
+    "byte_array_converter": "json",
+    "analysis": {}
+  },
+  "store": {
+    "kvStoreName": "boltdb"
+  }
+}
+</code></pre>
 <p><strong>param: indexType</strong>: required, string, form parameter</p>
 <p>supported index types:</p>
 <ul>
@@ -233,6 +264,21 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>Intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients.</p>
 <p><strong>param: sourceName</strong>: optional, string, form parameter</p>
 <p><strong>param: sourceParams</strong>: optional, string (JSON), form parameter</p>
+<p>For source type <code>couchbase</code>, an example source params JSON:</p>
+<pre><code>{
+  "authUser": "",
+  "authPassword": "",
+  "clusterManagerBackoffFactor": 0,
+  "clusterManagerSleepInitMS": 0,
+  "clusterManagerSleepMaxMS": 20000,
+  "dataManagerBackoffFactor": 0,
+  "dataManagerSleepInitMS": 0,
+  "dataManagerSleepMaxMS": 20000,
+  "feedBufferSizeBytes": 0,
+  "feedBufferAckThreshold": 0
+}
+</code></pre>
+<p>For source type <code>nil</code>, there are no extra source params.</p>
 <p><strong>param: sourceType</strong>: required, string, form parameter</p>
 <p>supported source types:</p>
 <ul>
