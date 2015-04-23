@@ -91,6 +91,23 @@ Intended for clients that want to check that they are not overwriting the index 
 
 **param: sourceParams**: optional, string (JSON), form parameter
 
+For source type ```couchbase```, an example source params JSON:
+
+    {
+      "authUser": "",
+      "authPassword": "",
+      "clusterManagerBackoffFactor": 0,
+      "clusterManagerSleepInitMS": 0,
+      "clusterManagerSleepMaxMS": 20000,
+      "dataManagerBackoffFactor": 0,
+      "dataManagerSleepInitMS": 0,
+      "dataManagerSleepMaxMS": 20000,
+      "feedBufferSizeBytes": 0,
+      "feedBufferAckThreshold": 0
+    }
+
+For source type ```nil```, there are no extra source params.
+
 **param: sourceType**: required, string, form parameter
 
 supported source types:

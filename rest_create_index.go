@@ -64,6 +64,22 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	}
 	sort.Strings(sourceTypes)
 
+	sourceParams := []string(nil)
+	for _, sourceDesc := range sourceTypes {
+		sourceType := strings.Split(sourceDesc, "```")[1]
+		t := FeedTypes[sourceType]
+		if t.StartSample != nil {
+			sourceParams = append(sourceParams,
+				"For source type ```"+sourceType+"```"+
+					", an example source params JSON:\n\n    "+
+					IndentJSON(t.StartSample, "    ", "  "))
+		} else {
+			sourceParams = append(sourceParams,
+				"For source type ```"+sourceType+"```"+
+					", there are no extra source params.")
+		}
+	}
+
 	opts["param: indexName"] =
 		"required, string, URL path parameter\n\n" +
 			"The name of the to-be-created/updated index definition,\n" +
@@ -85,7 +101,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	opts["param: sourceUUID"] =
 		"optional, string, form parameter"
 	opts["param: sourceParams"] =
-		"optional, string (JSON), form parameter"
+		"optional, string (JSON), form parameter\n\n" +
+			strings.Join(sourceParams, "\n\n")
 	opts["param: planParams"] =
 		"optional, string (JSON), form parameter"
 	opts["param: prevIndexUUID"] =
