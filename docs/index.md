@@ -1,10 +1,14 @@
-# Overview
+# What is cbft
 
-cbft is a full-text indexing server for documents that you've created
-and stored into a Couchbase bucket.  The full-text indexes that cbft
-manages can be automatically distributed across multiple, clustered
-cbft server processes to allow for larger indexes and for higher
-performance.
+cbft is distributed, clusterable, data indexing server.
+
+It includes the ability to manage full-text and other kinds of indexes
+for JSON documents that you've created and stored into a Couchbase
+bucket and other data sources.
+
+The indexes that cbft manages can be automatically distributed across
+multiple, clustered cbft server processes on different server machines
+to support larger indexes, higher performance and higher availability.
 
 # Getting started
 
