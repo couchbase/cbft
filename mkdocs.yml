@@ -2,6 +2,7 @@ site_name: cbft Technical Documentation (0.0 DP)
 
 pages:
 - ['index.md', 'Home']
+- ['dev-guide/overview.md', "Developer's Guide", "Developer's guide overview"]
 - ['dev-guide/concepts.md', "Developer's Guide", "Key concepts"]
 - ['dev-guide/index-definitions.md', "Developer's Guide", "Index definitions"]
 - ['dev-guide/index-queries.md', "Developer's Guide", "Index queries"]

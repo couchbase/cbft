@@ -169,7 +169,7 @@ around and explore!
 # Where to go next
 
 Please see
-the [Developer's Guide](dev-guide/concepts.md),
+the [Developer's Guide](dev-guide/overview.md),
 the [API Reference](api-ref.md) and
 the [Administrator's Guide](admin-guide/overview.md).
 
