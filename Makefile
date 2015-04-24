@@ -161,14 +161,16 @@ release-github-register:
 				$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
 		--pre-release
 
-release-github-upload: # Must be run in ./tmp/dist-out directory.
+release-github-upload:
 	(cd ./tmp/dist-out; for f in *.gz *.zip *.md; do \
-		$(GOPATH)/bin/github-release upload \
-			--repo cbft \
-			--tag $(strip $(shell git describe --abbrev=0 --tags \
-					$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
-			--name $(strip $(shell cat ./tmp/dist-out/version.txt))_$$f \
-			--file $$f; \
+		echo $$f | \
+			sed -e s/\\./-$(strip $(shell cat ./tmp/dist-out/version.txt))\\./1 | \
+			xargs $(GOPATH)/bin/github-release upload \
+				--file $$f \
+				--repo cbft \
+				--tag $(strip $(shell git describe --abbrev=0 --tags \
+						$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
+				--name; \
 	done)
 
 release-github-docs:
