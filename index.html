@@ -57,10 +57,6 @@
                         </li>
                     
                         <li >
-                            <a href="dev-guide/command/">cbft command-line</a>
-                        </li>
-                    
-                        <li >
                             <a href="dev-guide/index-definitions/">Index definitions</a>
                         </li>
                     
@@ -97,6 +93,10 @@
                     
                         <li >
                             <a href="admin-guide/overview/">Administrator's guide overview</a>
+                        </li>
+                    
+                        <li >
+                            <a href="admin-guide/command/">cbft command-line</a>
                         </li>
                     
                         <li >
@@ -276,46 +276,19 @@ let's ignore them for now and use the provided defaults.</p>
 index.</p>
 <p>From the Source Type dropdown, choose <code>couchbase</code>.</p>
 <p>As soon as you make a Source Type dropdown selection, some additional
-type-dependent input fields (Source Name and Source Params) should
+type-dependent input fields (such as Source Name) should
 appear.</p>
-<p>Let's fill in just the bare minimum...</p>
 <h3 id="source-name">Source Name</h3>
 <p>Since our Source Type is <code>couchbase</code>, the Source Name should be
 name of a bucket.</p>
 <p>Next, type in your bucket's name into the Source Name field.</p>
 <p>For example, to index the "default" bucket from your Couchbase
-server, type in "default'.</p>
-<h3 id="source-params">Source Params</h3>
-<p>The Source Params allow for extra parameters to be defined.</p>
-<p>Most of these are advanced tuning parameters.</p>
-<p>However, if you'd like to index a non-default bucket, then you need to
-supply an <code>authUser</code> and possibly an <code>authPassword</code>.</p>
-<p>For example, perhaps you'd like to index the <code>beer-sample</code> bucket.</p>
-<p>Then, in the Source Params JSON textarea...</p>
-<ul>
-<li>
-<p>specify the "authUser" to be the bucket's name
-  (<code>"beer-sample"</code>).</p>
-</li>
-<li>
-<p>specify the "authPassword" to be the bucket's password (the empty
-  password is just <code>""</code>).</p>
-</li>
-</ul>
-<p>For example, your Source Params JSON might look like...</p>
-<pre><code>{
-  "authUser": "beer-sample",
-  "authPassword": "",
-  "clusterManagerBackoffFactor": 0,
-  "clusterManagerSleepInitMS": 0,
-  "clusterManagerSleepMaxMS": 20000,
-  "dataManagerBackoffFactor": 0,
-  "dataManagerSleepInitMS": 0,
-  "dataManagerSleepMaxMS": 20000,
-  "feedBufferSizeBytes": 0,
-  "feedBufferAckThreshold": 0
-}
-</code></pre>
+server, type in a Source Name of "default".</p>
+<p>NOTE: if your bucket has a password, you can supply the password by
+clicking on the <code>Show advanced settings</code> checkbox, which will
+display the <code>Source Params</code> JSON textarea.  Then, fill in the
+<code>authUser</code> field in the JSON with the name of the Couchbase bucket
+and the <code>authPassword</code> field with the bucket's password.</p>
 <h3 id="your-new-index">Your new index</h3>
 <p>Finally, click the <code>Create Index</code> button.</p>
 <p>You should see a summary page of your new full-text index.</p>
@@ -325,11 +298,12 @@ of how many documents have been indexed so far.  You can click on the
 indexing progress.</p>
 <h2 id="querying-your-full-text-index">Querying your full-text index</h2>
 <p>Next, click on the <code>Query</code> tab.</p>
-<p>In the query field, type in a query term (how about "beer").</p>
+<p>In the query field, type in a query term.</p>
 <p>Hit enter/return to execute your first cbft full-text query!</p>
 <p>You should see query results appearing below the query field.</p>
-<p>That's about it for getting started.  The web admin UI has more
-screens and features, so be sure to click around and explore!</p>
+<p>That's about it for getting started.</p>
+<p>The web admin UI has more screens and features, so be sure to click
+around and explore!</p>
 <h1 id="where-to-go-next">Where to go next</h1>
 <p>Please see
 the <a href="dev-guide/concepts/">Developer's Guide</a>,

@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../../img/favicon.ico">
 
-        <title>Index management - cbft Technical Documentation (0.0 DP)</title>
+        <title>cbft command-line - cbft Technical Documentation (0.0 DP)</title>
 
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -95,8 +95,8 @@
                             <a href="../overview">Administrator's guide overview</a>
                         </li>
                     
-                        <li >
-                            <a href="../command">cbft command-line</a>
+                        <li class="active">
+                            <a href=".">cbft command-line</a>
                         </li>
                     
                         <li >
@@ -115,8 +115,8 @@
                             <a href="../clustering">Clustering cbft</a>
                         </li>
                     
-                        <li class="active">
-                            <a href=".">Index management</a>
+                        <li >
+                            <a href="../index-management">Index management</a>
                         </li>
                     
                         <li >
@@ -143,12 +143,12 @@
             <ul class="nav navbar-nav navbar-right">
                 
                 <li >
-                    <a rel="next" href="../clustering">
+                    <a rel="next" href="../overview">
                         <i class="fa fa-arrow-left"></i> Previous
                     </a>
                 </li>
                 <li >
-                    <a rel="prev" href="../monitoring">
+                    <a rel="prev" href="../planning">
                         Next <i class="fa fa-arrow-right"></i>
                     </a>
                 </li>
@@ -162,54 +162,101 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#index-management">Index management</a></li>
-        
-            <li><a href="#creating-an-index">Creating an index</a></li>
-        
-            <li><a href="#index-building">Index building</a></li>
-        
-            <li><a href="#index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</a></li>
-        
-            <li><a href="#rebuilding-indexes">Rebuilding indexes</a></li>
-        
-            <li><a href="#pausing-indexing">Pausing indexing</a></li>
-        
-            <li><a href="#disabling-queries">Disabling queries</a></li>
-        
-            <li><a href="#advanced-storage-options">Advanced storage options</a></li>
+        <li class="main active"><a href="#cbft-command-line">cbft command-line</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="index-management">Index management</h1>
-<h2 id="creating-an-index">Creating an index</h2>
-<p>An index definition is specified via JSON, and describes to cbft all
-that it needs to know to build and maintain your index.  For more
-information on index definitions see <code>link TODO</code>.</p>
-<p>Once you have an index definition JSON, to create an index, use...</p>
-<pre><code>curl magic magic TBD
+<h1 id="cbft-command-line">cbft command-line</h1>
+<p>Command-line help is available by running...</p>
+<pre><code>./cbft --help
 </code></pre>
-<p>You can check that your index was created correctly via...</p>
-<pre><code>curl magic TBD
+<p>That will print out usage/help output...</p>
+<pre><code>cbft: couchbase full-text server
+
+Usage: cbft [flags]
+
+Flags:
+  -b, -bindHttp ADDR:PORT
+      local address:port where this node will listen and
+      serve HTTP/REST API requests and the web-based
+      admin UI; default is '0.0.0.0:8095'.
+  -c, -cfg, -cfgConnect CFG_CONNECT
+      connection string to a configuration provider/server
+      for clustering multiple cbft nodes:
+      * couchbase:http://BUCKET_USER:BUCKET_PSWD@CB_HOST:CB_PORT
+           - manages a cbft cluster configuration in a couchbase
+             3.x bucket; for example:
+             'couchbase:http://my-cfg-bucket@127.0.0.1:8091';
+      * simple
+           - intended for development usage, the 'simple'
+             configuration provider manages a configuration
+             for a single, unclustered cbft node in a local
+             file that's stored in the dataDir;
+      default is 'simple'.
+  -container PATH
+      optional slash separated path of logical parent containers
+      for this node, for shelf/rack/row/zone awareness.
+  -data, -dataDir DIR
+      optional directory path where local index data and
+      local config files will be stored for this node;
+      default is 'data'.
+  -h, -H, -?, -help 
+      print this usage message and exit.
+  -register STATE
+      optional flag to register this node in the cluster as:
+      * wanted      - make node wanted in the cluster,
+                      if not already, so that it will participate
+                      fully in data operations;
+      * wantedForce - same as wanted, but forces a cfg update;
+      * known       - make node known to the cluster,
+                      if not already, so it will be admin'able
+                      but won't yet participate in data operations;
+                      this is useful for staging several nodes into
+                      the cluster before making them fully wanted;
+      * knownForce  - same as known, but forces a cfg update;
+      * unwanted    - make node unwanted, but still known to the cluster;
+      * unknown     - make node unwanted and unknown to the cluster;
+      * unchanged   - don't change the node's registration state;
+      default is 'wanted'.
+  -s, -server URL
+      URL to datasource server; example when using couchbase 3.x as
+      your datasource server: 'http://localhost:8091';
+      use '.' when there is no datasource server.
+  -staticDir DIR
+      optional directory for web UI static content;
+      default is using the static resources embedded
+      in the program binary.
+  -staticETag ETAG
+      optional ETag for web UI static content.
+  -tags TAGS
+      optional comma-separated list of tags or enabled roles
+      for this node, such as:
+      * feed    - node can connect feeds to datasources;
+      * janitor - node can run a local janitor;
+      * pindex  - node can maintain local index partitions;
+      * planner - node can replan cluster-wide resource allocations;
+      * queryer - node can execute queries;
+      default is ("") which means all roles are enabled.
+  -v, -version 
+      print version string and exit.
+  -weight INTEGER
+      optional weight of this node, where a more capable
+      node should have higher weight; default is 1.
+
+Examples:
+  Getting started, where a couchbase running on localhost is the datasource:
+    mkdir -p data
+    ./cbft -server=http://localhost:8091
+
+  Example where cbft's configuration is kept in a couchbase "cfg-bucket":
+    ./cbft -cfg=couchbase:http://cfg-bucket@CB_HOST:8091 \
+           -server=http://CB_HOST:8091
+
+See also: http://github.com/couchbaselabs/cbft
 </code></pre>
-<h2 id="index-building">Index building</h2>
-<p>Index building is the process by which cbft sets up connections to data sources, retrieves data from the data sources, analyzes that data, and updates index data in memory and persisted to storage.</p>
-<p>To monitor that your index builds you can use...</p>
-<pre><code>curl magic something TBD
-</code></pre>
-<h2 id="index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</h2>
-<p>tbd</p>
-<h2 id="rebuilding-indexes">Rebuilding indexes</h2>
-<p>tbd</p>
-<h2 id="pausing-indexing">Pausing indexing</h2>
-<p>tbd</p>
-<h2 id="disabling-queries">Disabling queries</h2>
-<p>tbd</p>
-<h2 id="advanced-storage-options">Advanced storage options</h2>
-<p>EXPERIMENTAL!</p>
-<p>tbd</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>

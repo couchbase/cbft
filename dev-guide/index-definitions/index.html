@@ -56,10 +56,6 @@
                             <a href="../concepts">Key concepts</a>
                         </li>
                     
-                        <li >
-                            <a href="../command">cbft command-line</a>
-                        </li>
-                    
                         <li class="active">
                             <a href=".">Index definitions</a>
                         </li>
@@ -97,6 +93,10 @@
                     
                         <li >
                             <a href="../../admin-guide/overview">Administrator's guide overview</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../../admin-guide/command">cbft command-line</a>
                         </li>
                     
                         <li >
@@ -143,7 +143,7 @@
             <ul class="nav navbar-nav navbar-right">
                 
                 <li >
-                    <a rel="next" href="../command">
+                    <a rel="next" href="../concepts">
                         <i class="fa fa-arrow-left"></i> Previous
                     </a>
                 </li>
@@ -164,19 +164,10 @@
     
         <li class="main active"><a href="#index-definitions">Index definitions</a></li>
         
-            <li><a href="#index-properties">Index properties</a></li>
+            <li><a href="#index-attributes">Index attributes</a></li>
         
-            <li><a href="#index-name">Index Name</a></li>
-        
-            <li><a href="#index-type">Index Type</a></li>
-        
-            <li><a href="#index-params">Index Params</a></li>
-        
-            <li><a href="#source-type">Source Type</a></li>
-        
-            <li><a href="#source-name-and-source-params">Source Name and Source Params</a></li>
-        
-            <li><a href="#index-definition-operations">Index definition operations</a></li>
+    
+        <li class="main "><a href="#index-definition-operations">Index definition operations</a></li>
         
     
         <li class="main "><a href="#using-the-web-admin-ui">Using the web admin UI</a></li>
@@ -197,13 +188,30 @@
             <div class="col-md-9" role="main">
 
 <h1 id="index-definitions">Index definitions</h1>
-<h2 id="index-properties">Index properties</h2>
-<h2 id="index-name">Index Name</h2>
+<h2 id="index-attributes">Index attributes</h2>
+<p>An index has several attributes that a user needs to specify when
+defining an index:</p>
+<ul>
+<li>Index Name - required</li>
+<li>Index Type - required</li>
+<li>Index Params</li>
+<li>Source Type - required</li>
+<li>Source Name</li>
+<li>Source UUID</li>
+<li>Source Params</li>
+<li>Plan Params</li>
+</ul>
+<p>And, an index has system-generated properties when the an index is
+first created:</p>
+<ul>
+<li>Index UUID</li>
+</ul>
+<h3 id="index-name-indexname">Index Name (indexName)</h3>
 <p>An index has a name, or <em>Index Name</em>, that is a unique identifier for
 the index.</p>
 <p>An index name is comprised of alphanumeric characters, hyphens and
 underscores (no whitespace characters).</p>
-<h2 id="index-type">Index Type</h2>
+<h3 id="index-type-indextype">Index Type (indexType)</h3>
 <p>An index has a type, or <em>Index Type</em>.</p>
 <p>An often used index type, for example, would be <code>bleve</code>, for
 full-text indexing.</p>
@@ -222,7 +230,7 @@ full-text indexing.</p>
   or more actual, target indexes.</p>
 </li>
 </ul>
-<h2 id="index-params">Index Params</h2>
+<h3 id="index-params-indexparams">Index Params (indexParams)</h3>
 <p>An index has optional <em>Index Params</em>.</p>
 <p>The meaning of the index params depends on the index type.</p>
 <p>For example, if the index type is <code>bleve</code>, then the index params
@@ -231,7 +239,7 @@ bleve full-text engine.</p>
 <p>For example, if the index type is <code>alias</code>, then the index params
 is the JSON that defines one or more target indexes for the index
 alias.</p>
-<h2 id="source-type">Source Type</h2>
+<h3 id="source-type-sourcetype">Source Type (sourceType)</h3>
 <p>An index has a <em>Source Type</em>, which specifies the kind of data source
 that is used to populate the index.</p>
 <p>An often used source type, for example, would be <code>couchbase</code>,
@@ -242,15 +250,56 @@ are stored in a Couchbase bucket.</p>
 <li><code>couchbase</code> - a Couchbase Server bucket will be the data source.</li>
 <li><code>nil</code> - for testing; a nil data source never has any data.</li>
 </ul>
-<h2 id="source-name-and-source-params">Source Name and Source Params</h2>
-<p>An index also has <em>Source Name</em> and optional <em>Source Params</em>.</p>
-<p>The meaning of the source name and source params depend on the source
-type of the index.</p>
+<h3 id="source-name-sourcename">Source Name (sourceName)</h3>
+<p>An index also has an optional <em>Source Name</em>, whose meaning is
+dependent on the source type of the index.</p>
 <p>For example, when the source type is "couchbase", then the source name
 is treated as a Couchbase bucket name, and the source params would
 define any optional, additional parameters needed to connect that
 named Couchbase bucket.</p>
-<h2 id="index-definition-operations">Index definition operations</h2>
+<h3 id="source-uuid-sourceuuid">Source UUID (sourceUUID)</h3>
+<h3 id="source-params-sourceparams">Source Params (sourceParams)</h3>
+<p>An index also has an optional <em>Source Params</em>, whose meaning is
+dependent on the source type of the index.</p>
+<p>The Source Params allow for extra parameters to be defined.</p>
+<p>Most of these are advanced connection and tuning parameters.</p>
+<p>However, if you'd like to index a non-default bucket that has a
+password, then you need to supply an <code>authUser</code> and possibly an
+<code>authPassword</code>.</p>
+<p>For example, perhaps you'd like to index the <code>beer-sample</code> bucket.</p>
+<p>Then, in the Source Params JSON textarea...</p>
+<ul>
+<li>
+<p>specify the "authUser" to be the bucket's name
+  (<code>"beer-sample"</code>).</p>
+</li>
+<li>
+<p>specify the "authPassword" to be the bucket's password (the empty
+  password is just <code>""</code>).</p>
+</li>
+</ul>
+<p>For example, your Source Params JSON would then look like...</p>
+<pre><code>{
+  "authUser": "beer-sample",
+  "authPassword": "",
+  "clusterManagerBackoffFactor": 0,
+  "clusterManagerSleepInitMS": 0,
+  "clusterManagerSleepMaxMS": 20000,
+  "dataManagerBackoffFactor": 0,
+  "dataManagerSleepInitMS": 0,
+  "dataManagerSleepMaxMS": 20000,
+  "feedBufferSizeBytes": 0,
+  "feedBufferAckThreshold": 0
+}
+</code></pre>
+<h3 id="plan-params-planparams">Plan Params (planParams)</h3>
+<h3 id="index-uuid-indexuuid">Index UUID (indexUUID)</h3>
+<p>The cbft system generates and assigns a unique <em>Index UUID</em> to an
+index when an index is first created and every time the index
+definition is updated.</p>
+<p>That is, an edit or update of an index definition by a user would
+result in a new Index UUID being generated and assigned to the index.</p>
+<h1 id="index-definition-operations">Index definition operations</h1>
 <p>You can list, retrieve, create and delete index definitions in cbft
 using its REST API or using its web admin UI.</p>
 <p>Please see the <a href="../../api-ref/#index-definition">REST API reference</a> for
