@@ -150,15 +150,29 @@ An example plan params JSON:
 
 The fields in a plan params include:
 
-* maxPartitionsPerPIndex: integer >= 0
+* ```maxPartitionsPerPIndex```: integer >= 0
+* ```numReplicas```: integer >= 0
+* ```hierarchyRules```: JSON object
+* ```nodePlanParams```: JSON object
+* ```planFrozen```: bool, frozen == true
 
-* numReplicas: integer >= 0
+```maxPartitionsPerPIndex``` limits how many source partitions that
+cbft can assign to an index partition.  A value of 0 means no limit.
 
-* hierarchyRules: JSON object
+```numReplicas``` defines how many index partitions replicas cbft
+should allocate, not counting the first, master index partition.  For
+example, a value of 1 means there should be two copies: the first
+master copy plus 1 replica copy.
 
-* nodePlanParams: JSON object
+```hierarchyRules``` defines replica allocation rules or policies for
+shelf/rack/row/zone awarenewss.
 
-* planFrozen: bool, frozen == true
+```nodePlanParams``` defines rules on whether a node is paused for
+index ingest and/or index queries for a given index or index
+partition.
+
+```planFrozen``` defines whether an index is frozen or paused for
+reassignment or rebalancing of index partitions.
 
 ### Index UUID (indexUUID)
 
