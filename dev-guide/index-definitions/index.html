@@ -193,20 +193,20 @@
 
 <h1 id="index-definitions">Index definitions</h1>
 <h2 id="index-attributes">Index attributes</h2>
-<p>An index has several attributes that a user needs to specify when
-defining an index:</p>
+<p>An index has several attributes that a user can specify when defining
+an index:</p>
 <ul>
 <li>Index Name - required</li>
 <li>Index Type - required</li>
 <li>Index Params</li>
 <li>Source Type - required</li>
 <li>Source Name</li>
-<li>Source UUID</li>
 <li>Source Params</li>
+<li>Source UUID</li>
 <li>Plan Params</li>
 </ul>
-<p>And, an index has system-generated properties when the an index is
-first created:</p>
+<p>And, an index will have (read-only) system-generated attributes when
+the an index is first created:</p>
 <ul>
 <li>Index UUID</li>
 </ul>
@@ -214,7 +214,8 @@ first created:</p>
 <p>An index has a name, or <em>Index Name</em>, that is a unique identifier for
 the index.</p>
 <p>An index name is comprised of alphanumeric characters, hyphens and
-underscores (no whitespace characters).</p>
+underscores (no whitespace characters).  The first character of an
+index name must be an alphabetic character (a-z or A-Z).</p>
 <h3 id="index-type-indextype">Index Type (indexType)</h3>
 <p>An index has a type, or <em>Index Type</em>.</p>
 <p>An often used index type, for example, would be <code>bleve</code>, for
@@ -226,23 +227,23 @@ full-text indexing.</p>
   <a href="http://blevesearch.com">bleve</a> engine.</p>
 </li>
 <li>
-<p><code>blackhole</code> - for testing; a blackhole index type ignores all incoming
-  data, and returns errors on any queries.</p>
+<p><code>blackhole</code> - for testing; a blackhole index type ignores all
+  incoming data, and returns errors on any queries.</p>
 </li>
 <li>
-<p><code>alias</code> - an index alias provides a naming level of indirection to one
-  or more actual, target indexes.</p>
+<p><code>alias</code> - an index alias provides a naming level of indirection
+  to one or more actual, target indexes.</p>
 </li>
 </ul>
 <h3 id="index-params-indexparams">Index Params (indexParams)</h3>
-<p>An index has optional <em>Index Params</em>.</p>
+<p>An index has an optional <em>Index Params</em> JSON attribute.</p>
 <p>The meaning of the index params depends on the index type.</p>
 <p>For example, if the index type is <code>bleve</code>, then the index params
 includes the JSON mapping information that is used to configure the
 bleve full-text engine.</p>
 <p>For example, if the index type is <code>alias</code>, then the index params
-is the JSON that defines one or more target indexes for the index
-alias.</p>
+should be the JSON that defines one or more target indexes for the
+index alias.</p>
 <h3 id="source-type-sourcetype">Source Type (sourceType)</h3>
 <p>An index has a <em>Source Type</em>, which specifies the kind of data source
 that is used to populate the index.</p>
@@ -261,17 +262,18 @@ dependent on the source type of the index.</p>
 is treated as a Couchbase bucket name, and the source params would
 define any optional, additional parameters needed to connect that
 named Couchbase bucket.</p>
-<h3 id="source-uuid-sourceuuid">Source UUID (sourceUUID)</h3>
 <h3 id="source-params-sourceparams">Source Params (sourceParams)</h3>
-<p>An index also has an optional <em>Source Params</em>, whose meaning is
-dependent on the source type of the index.</p>
-<p>The Source Params allow for extra parameters to be defined.</p>
-<p>Most of these are advanced connection and tuning parameters.</p>
-<p>However, if you'd like to index a non-default bucket that has a
-password, then you need to supply an <code>authUser</code> and possibly an
-<code>authPassword</code>.</p>
+<p>An index also has an optional <em>Source Params</em> JSON attribute, whose
+meaning is dependent on the source type of the index.</p>
+<p>The Source Params allow for extra parameters to be defined, and are
+usually advanced connection and tuning parameters for configuring how
+cbft should retrieve data from a data source.</p>
+<p>For example, when your source type is <code>couchbase</code>, and you'd like
+to index a Couchbase bucket that has a password, then you need to
+specify an <code>authUser</code> and an <code>authPassword</code> as part of the
+source params JSON.</p>
 <p>For example, perhaps you'd like to index the <code>beer-sample</code> bucket.</p>
-<p>Then, in the Source Params JSON textarea...</p>
+<p>Then, in the Source Params JSON...</p>
 <ul>
 <li>
 <p>specify the "authUser" to be the bucket's name
@@ -296,13 +298,49 @@ password, then you need to supply an <code>authUser</code> and possibly an
   "feedBufferAckThreshold": 0
 }
 </code></pre>
+<h3 id="source-uuid-sourceuuid">Source UUID (sourceUUID)</h3>
+<p>An index also has an optional <em>Source UUID</em> attribute, whose meaning
+is dependent on the source type of the index.</p>
+<p>For example, when the source type is "couchbase", then the source
+UUID, which is optional, is treated as a Couchbase bucket UUID, in
+order to allow a strict identification of the correct bucket.</p>
 <h3 id="plan-params-planparams">Plan Params (planParams)</h3>
+<p>An index has a <em>Plan Params</em> JSON attribute, by which a user can
+specify how cbft should plan to partition the index and to allocate
+index partitions across cbft nodes in a cbft cluster.</p>
+<p>An example plan params JSON:</p>
+<pre><code>{
+    "maxPartitionsPerPIndex": 20,
+    "numReplicas": 1,
+    "hierarchyRules": null,
+    "nodePlanParams": null,
+    "planFrozen": false
+}
+</code></pre>
+<p>The fields in a plan params include:</p>
+<ul>
+<li>
+<p>maxPartitionsPerPIndex: integer &gt;= 0</p>
+</li>
+<li>
+<p>numReplicas: integer &gt;= 0</p>
+</li>
+<li>
+<p>hierarchyRules: JSON object</p>
+</li>
+<li>
+<p>nodePlanParams: JSON object</p>
+</li>
+<li>
+<p>planFrozen: bool, frozen == true</p>
+</li>
+</ul>
 <h3 id="index-uuid-indexuuid">Index UUID (indexUUID)</h3>
 <p>The cbft system generates and assigns a unique <em>Index UUID</em> to an
-index when an index is first created and every time the index
-definition is updated.</p>
-<p>That is, an edit or update of an index definition by a user would
-result in a new Index UUID being generated and assigned to the index.</p>
+index when an index is first created and whenever the index definition
+is updated.</p>
+<p>That is, if you edit or update an index definition, the cbft system
+will re-generate a new Index UUID for changed index definition.</p>
 <h1 id="index-definition-operations">Index definition operations</h1>
 <p>You can list, retrieve, create and delete index definitions in cbft
 using its REST API or using its web admin UI.</p>
