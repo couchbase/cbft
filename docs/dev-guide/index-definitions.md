@@ -2,20 +2,20 @@
 
 ## Index attributes
 
-An index has several attributes that a user needs to specify when
-defining an index:
+An index has several attributes that a user can specify when defining
+an index:
 
-- Index Name - required
-- Index Type - required
-- Index Params
-- Source Type - required
-- Source Name
-- Source UUID
-- Source Params
-- Plan Params
+* Index Name - required
+* Index Type - required
+* Index Params
+* Source Type - required
+* Source Name
+* Source Params
+* Source UUID
+* Plan Params
 
-And, an index has system-generated properties when the an index is
-first created:
+And, an index will have (read-only) system-generated attributes when
+the an index is first created:
 
 * Index UUID
 
@@ -25,7 +25,8 @@ An index has a name, or _Index Name_, that is a unique identifier for
 the index.
 
 An index name is comprised of alphanumeric characters, hyphens and
-underscores (no whitespace characters).
+underscores (no whitespace characters).  The first character of an
+index name must be an alphabetic character (a-z or A-Z).
 
 ### Index Type (indexType)
 
@@ -39,15 +40,15 @@ Some available index types include...
 - ```bleve``` - a full-text index powered by the
   [bleve](http://blevesearch.com) engine.
 
-- ```blackhole``` - for testing; a blackhole index type ignores all incoming
-  data, and returns errors on any queries.
+- ```blackhole``` - for testing; a blackhole index type ignores all
+  incoming data, and returns errors on any queries.
 
-- ```alias``` - an index alias provides a naming level of indirection to one
-  or more actual, target indexes.
+- ```alias``` - an index alias provides a naming level of indirection
+  to one or more actual, target indexes.
 
 ### Index Params (indexParams)
 
-An index has optional _Index Params_.
+An index has an optional _Index Params_ JSON attribute.
 
 The meaning of the index params depends on the index type.
 
@@ -56,8 +57,8 @@ includes the JSON mapping information that is used to configure the
 bleve full-text engine.
 
 For example, if the index type is ```alias```, then the index params
-is the JSON that defines one or more target indexes for the index
-alias.
+should be the JSON that defines one or more target indexes for the
+index alias.
 
 ### Source Type (sourceType)
 
@@ -83,24 +84,23 @@ is treated as a Couchbase bucket name, and the source params would
 define any optional, additional parameters needed to connect that
 named Couchbase bucket.
 
-### Source UUID (sourceUUID)
-
 ### Source Params (sourceParams)
 
-An index also has an optional _Source Params_, whose meaning is
-dependent on the source type of the index.
+An index also has an optional _Source Params_ JSON attribute, whose
+meaning is dependent on the source type of the index.
 
-The Source Params allow for extra parameters to be defined.
+The Source Params allow for extra parameters to be defined, and are
+usually advanced connection and tuning parameters for configuring how
+cbft should retrieve data from a data source.
 
-Most of these are advanced connection and tuning parameters.
-
-However, if you'd like to index a non-default bucket that has a
-password, then you need to supply an ```authUser``` and possibly an
-```authPassword```.
+For example, when your source type is ```couchbase```, and you'd like
+to index a Couchbase bucket that has a password, then you need to
+specify an ```authUser``` and an ```authPassword``` as part of the
+source params JSON.
 
 For example, perhaps you'd like to index the ```beer-sample``` bucket.
 
-Then, in the Source Params JSON textarea...
+Then, in the Source Params JSON...
 
 - specify the "authUser" to be the bucket's name
   (```"beer-sample"```).
@@ -123,16 +123,51 @@ For example, your Source Params JSON would then look like...
       "feedBufferAckThreshold": 0
     }
 
+### Source UUID (sourceUUID)
+
+An index also has an optional _Source UUID_ attribute, whose meaning
+is dependent on the source type of the index.
+
+For example, when the source type is "couchbase", then the source
+UUID, which is optional, is treated as a Couchbase bucket UUID, in
+order to allow a strict identification of the correct bucket.
+
 ### Plan Params (planParams)
+
+An index has a _Plan Params_ JSON attribute, by which a user can
+specify how cbft should plan to partition the index and to allocate
+index partitions across cbft nodes in a cbft cluster.
+
+An example plan params JSON:
+
+    {
+        "maxPartitionsPerPIndex": 20,
+        "numReplicas": 1,
+        "hierarchyRules": null,
+        "nodePlanParams": null,
+        "planFrozen": false
+    }
+
+The fields in a plan params include:
+
+* maxPartitionsPerPIndex: integer >= 0
+
+* numReplicas: integer >= 0
+
+* hierarchyRules: JSON object
+
+* nodePlanParams: JSON object
+
+* planFrozen: bool, frozen == true
 
 ### Index UUID (indexUUID)
 
 The cbft system generates and assigns a unique _Index UUID_ to an
-index when an index is first created and every time the index
-definition is updated.
+index when an index is first created and whenever the index definition
+is updated.
 
-That is, an edit or update of an index definition by a user would
-result in a new Index UUID being generated and assigned to the index.
+That is, if you edit or update an index definition, the cbft system
+will re-generate a new Index UUID for changed index definition.
 
 # Index definition operations
 
