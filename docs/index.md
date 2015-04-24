@@ -121,10 +121,8 @@ index.
 From the Source Type dropdown, choose ```couchbase```.
 
 As soon as you make a Source Type dropdown selection, some additional
-type-dependent input fields (Source Name and Source Params) should
+type-dependent input fields (such as Source Name) should
 appear.
-
-Let's fill in just the bare minimum...
 
 ### Source Name
 
@@ -134,41 +132,13 @@ name of a bucket.
 Next, type in your bucket's name into the Source Name field.
 
 For example, to index the "default" bucket from your Couchbase
-server, type in "default'.
+server, type in a Source Name of "default".
 
-### Source Params
-
-The Source Params allow for extra parameters to be defined.
-
-Most of these are advanced tuning parameters.
-
-However, if you'd like to index a non-default bucket, then you need to
-supply an ```authUser``` and possibly an ```authPassword```.
-
-For example, perhaps you'd like to index the ```beer-sample``` bucket.
-
-Then, in the Source Params JSON textarea...
-
-- specify the "authUser" to be the bucket's name
-  (```"beer-sample"```).
-
-- specify the "authPassword" to be the bucket's password (the empty
-  password is just ```""```).
-
-For example, your Source Params JSON might look like...
-
-    {
-      "authUser": "beer-sample",
-      "authPassword": "",
-      "clusterManagerBackoffFactor": 0,
-      "clusterManagerSleepInitMS": 0,
-      "clusterManagerSleepMaxMS": 20000,
-      "dataManagerBackoffFactor": 0,
-      "dataManagerSleepInitMS": 0,
-      "dataManagerSleepMaxMS": 20000,
-      "feedBufferSizeBytes": 0,
-      "feedBufferAckThreshold": 0
-    }
+NOTE: if your bucket has a password, you can supply the password by
+clicking on the ```Show advanced settings``` checkbox, which will
+display the ```Source Params``` JSON textarea.  Then, fill in the
+```authUser``` field in the JSON with the name of the Couchbase bucket
+and the ```authPassword``` field with the bucket's password.
 
 ### Your new index
 
@@ -185,14 +155,16 @@ indexing progress.
 
 Next, click on the ```Query``` tab.
 
-In the query field, type in a query term (how about "beer").
+In the query field, type in a query term.
 
 Hit enter/return to execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
-That's about it for getting started.  The web admin UI has more
-screens and features, so be sure to click around and explore!
+That's about it for getting started.
+
+The web admin UI has more screens and features, so be sure to click
+around and explore!
 
 # Where to go next
 

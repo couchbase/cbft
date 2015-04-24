@@ -56,17 +56,53 @@ Some available source types include...
 - ```couchbase``` - a Couchbase Server bucket will be the data source.
 - ```nil``` - for testing; a nil data source never has any data.
 
-## Source Name and Source Params
+## Source Name
 
-An index also has _Source Name_ and optional _Source Params_.
-
-The meaning of the source name and source params depend on the source
-type of the index.
+An index also has an optional _Source Name_, whose meaning is
+dependent on the source type of the index.
 
 For example, when the source type is "couchbase", then the source name
 is treated as a Couchbase bucket name, and the source params would
 define any optional, additional parameters needed to connect that
 named Couchbase bucket.
+
+## Source Params
+
+An index also has an optional _Source Params_, whose meaning is
+dependent on the source type of the index.
+
+The Source Params allow for extra parameters to be defined.
+
+Most of these are advanced connection and tuning parameters.
+
+However, if you'd like to index a non-default bucket that has a
+password, then you need to supply an ```authUser``` and possibly an
+```authPassword```.
+
+For example, perhaps you'd like to index the ```beer-sample``` bucket.
+
+Then, in the Source Params JSON textarea...
+
+- specify the "authUser" to be the bucket's name
+  (```"beer-sample"```).
+
+- specify the "authPassword" to be the bucket's password (the empty
+  password is just ```""```).
+
+For example, your Source Params JSON would then look like...
+
+    {
+      "authUser": "beer-sample",
+      "authPassword": "",
+      "clusterManagerBackoffFactor": 0,
+      "clusterManagerSleepInitMS": 0,
+      "clusterManagerSleepMaxMS": 20000,
+      "dataManagerBackoffFactor": 0,
+      "dataManagerSleepInitMS": 0,
+      "dataManagerSleepMaxMS": 20000,
+      "feedBufferSizeBytes": 0,
+      "feedBufferAckThreshold": 0
+    }
 
 ## Index definition operations
 
