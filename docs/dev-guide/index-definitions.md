@@ -229,7 +229,70 @@ definition.
 
 ## Index type: bleve
 
-tbd
+For the ```bleve``` index type, here is an example, default index
+params JSON:
+
+    {
+      "mapping": {
+        "default_mapping": {
+          "enabled": true,
+          "dynamic": true,
+          "default_analyzer": ""
+        },
+        "type_field": "_type",
+        "default_type": "_default",
+        "default_analyzer": "standard",
+        "default_datetime_parser": "dateTimeOptional",
+        "default_field": "_all",
+        "byte_array_converter": "json",
+        "analysis": {}
+      },
+      "store": {
+        "kvStoreName": "boltdb"
+      }
+    }
+
+There are two "top-level" fields in that bleve index params JSON:
+
+- ```mapping```
+- ```store```
+
+The ```mapping``` field is a JSON sub-object and is a representation
+of bleve's ```IndexMapping``` configuration settings.
+
+That is, the value of the ```mapping``` field is passed directly to
+the bleve full-text engine's ```IndexMapping``` parser.
+
+A bleve ```IndexMapping``` is a complete, standalone, declarative
+configuration of a logical bleve full-text index.
+
+The ```store```field is a JSON sub-object and is a representation of
+bleve's ```kvconfig``` configuration settings.
+
+In addition, the ```store``` field has an important sub-field,
+```kvStoreName```.
+
+The ```kvStoreName``` defines the persistent storage implementation
+that will be used for the bleve index.
+
+The other sub-fields under the ```store``` sub-object are dependent on
+the persistent storage implementation that is being used.
+
+Allowed values for ```kvStoreName``` include:
+
+- ```"boltdb"``` - a pure-golang key-value storage library
+
+- ```"mem"``` - a memory-only "storage" implementation, that does not
+  actually persist index data entries to disk.
+
+- ```"goleveldb"``` - a pure-golang re-implementation of the leveldb
+  storage library (EXPERIMENTAL)
+
+- TBD (leveldb, forestdb, once we get the builds working correctly)
+
+Note: underneath the hood, both the parsed ```mapping``` and
+```store``` objects are used when cbft invoke's bleve's ```NewUsing```
+API when cbft needs to construct a new full-text index.
 
 ## Index type: alias
 
