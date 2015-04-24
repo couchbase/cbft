@@ -319,22 +319,25 @@ index partitions across cbft nodes in a cbft cluster.</p>
 </code></pre>
 <p>The fields in a plan params include:</p>
 <ul>
-<li>
-<p>maxPartitionsPerPIndex: integer &gt;= 0</p>
-</li>
-<li>
-<p>numReplicas: integer &gt;= 0</p>
-</li>
-<li>
-<p>hierarchyRules: JSON object</p>
-</li>
-<li>
-<p>nodePlanParams: JSON object</p>
-</li>
-<li>
-<p>planFrozen: bool, frozen == true</p>
-</li>
+<li><code>maxPartitionsPerPIndex</code>: integer &gt;= 0</li>
+<li><code>numReplicas</code>: integer &gt;= 0</li>
+<li><code>hierarchyRules</code>: JSON object</li>
+<li><code>nodePlanParams</code>: JSON object</li>
+<li><code>planFrozen</code>: bool, frozen == true</li>
 </ul>
+<p><code>maxPartitionsPerPIndex</code> limits how many source partitions that
+cbft can assign to an index partition.  A value of 0 means no limit.</p>
+<p><code>numReplicas</code> defines how many index partitions replicas cbft
+should allocate, not counting the first, master index partition.  For
+example, a value of 1 means there should be two copies: the first
+master copy plus 1 replica copy.</p>
+<p><code>hierarchyRules</code> defines replica allocation rules or policies for
+shelf/rack/row/zone awarenewss.</p>
+<p><code>nodePlanParams</code> defines rules on whether a node is paused for
+index ingest and/or index queries for a given index or index
+partition.</p>
+<p><code>planFrozen</code> defines whether an index is frozen or paused for
+reassignment or rebalancing of index partitions.</p>
 <h3 id="index-uuid-indexuuid">Index UUID (indexUUID)</h3>
 <p>The cbft system generates and assigns a unique <em>Index UUID</em> to an
 index when an index is first created and whenever the index definition
