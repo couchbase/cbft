@@ -38,7 +38,7 @@ gen-bindata:
 gen-docs: cmd/cbft_docs/main.go
 	go build -o ./cbft_docs ./cmd/cbft_docs
 	./cbft_docs > docs/api-ref.md
-	./dist/gen-command-docs > docs/dev-guide/command.md
+	./dist/gen-command-docs > docs/admin-guide/command.md
 
 test:
 	go test -v -tags "debug kagome $(CBFT_TAGS)" .

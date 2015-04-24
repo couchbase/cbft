@@ -3,7 +3,6 @@ site_name: cbft Technical Documentation (0.0 DP)
 pages:
 - ['index.md', 'Home']
 - ['dev-guide/concepts.md', "Developer's Guide", "Key concepts"]
-- ['dev-guide/command.md', "Developer's Guide", "cbft command-line"]
 - ['dev-guide/index-definitions.md', "Developer's Guide", "Index definitions"]
 - ['dev-guide/index-queries.md', "Developer's Guide", "Index queries"]
 - ['dev-guide/performance.md', "Developer's Guide", "Performance"]
@@ -11,6 +10,7 @@ pages:
 - ['dev-guide/samples.md', "Developer's Guide", "Sample apps"]
 - ['api-ref.md', "API Reference"]
 - ['admin-guide/overview.md', "Administrator's Guide", "Administrator's guide overview"]
+- ['admin-guide/command.md', "Administrator's Guide", "cbft command-line"]
 - ['admin-guide/planning.md', "Administrator's Guide", "Planning your deployment"]
 - ['admin-guide/dependencies.md', "Administrator's Guide", "Dependencies"]
 - ['admin-guide/running.md', "Administrator's Guide", "Running cbft"]
