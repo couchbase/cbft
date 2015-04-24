@@ -36,15 +36,15 @@
     <tr>
       <th class="statName">Stat</th>
       <th>Count</th>
-      <th>99.9%tile</th>
-      <th>99%tile</th>
-      <th>95%tile</th>
-      <th>75%tile</th>
-      <th>Median</th>
-      <th>Mean</th>
-      <th>Max</th>
-      <th>Min</th>
-      <th>Stddev</th>
+      <th>Max ns</th>
+      <th>99.9%tile ns</th>
+      <th>99%tile ns</th>
+      <th>95%tile ns</th>
+      <th>75%tile ns</th>
+      <th>Median ns</th>
+      <th>Mean ns</th>
+      <th>Min ns</th>
+      <th>Stddev ns</th>
       <th>Rate 1-min</th>
       <th>Rate 5-min</th>
       <th>Rate 15-min</th>
@@ -57,6 +57,8 @@
       <td class="statName">{{ss.label}}</td>
       <td ng-class="{changed: ss.prev.count != ss.count}">
         {{ss.count}}</td>
+      <td ng-class="{changed: ss.prev.max != ss.max}">
+        {{ss.max | number:0}}</td>
       <td ng-class="{changed: ss.prev.percentiles['99.9%'] != ss.percentiles['99.9%']}">
         {{ss.percentiles["99.9%"] | number:0}}</td>
       <td ng-class="{changed: ss.prev.percentiles['99%'] != ss.percentiles['99%']}">
@@ -69,8 +71,6 @@
         {{ss.percentiles.median | number:0}}</td>
       <td ng-class="{changed: ss.prev.mean != ss.mean}">
         {{ss.mean | number:0}}</td>
-      <td ng-class="{changed: ss.prev.max != ss.max}">
-        {{ss.max | number:0}}</td>
       <td ng-class="{changed: ss.prev.min != ss.min}">
         {{ss.min | number:0}}</td>
       <td ng-class="{changed: ss.prev.stddev != ss.stddev}">
