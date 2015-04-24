@@ -1,8 +1,25 @@
 # Index definitions
 
-## Index properties
+## Index attributes
 
-## Index Name
+An index has several attributes that a user needs to specify when
+defining an index:
+
+- Index Name - required
+- Index Type - required
+- Index Params
+- Source Type - required
+- Source Name
+- Source UUID
+- Source Params
+- Plan Params
+
+And, an index has system-generated properties when the an index is
+first created:
+
+* Index UUID
+
+### Index Name (indexName)
 
 An index has a name, or _Index Name_, that is a unique identifier for
 the index.
@@ -10,7 +27,7 @@ the index.
 An index name is comprised of alphanumeric characters, hyphens and
 underscores (no whitespace characters).
 
-## Index Type
+### Index Type (indexType)
 
 An index has a type, or _Index Type_.
 
@@ -28,7 +45,7 @@ Some available index types include...
 - ```alias``` - an index alias provides a naming level of indirection to one
   or more actual, target indexes.
 
-## Index Params
+### Index Params (indexParams)
 
 An index has optional _Index Params_.
 
@@ -42,7 +59,7 @@ For example, if the index type is ```alias```, then the index params
 is the JSON that defines one or more target indexes for the index
 alias.
 
-## Source Type
+### Source Type (sourceType)
 
 An index has a _Source Type_, which specifies the kind of data source
 that is used to populate the index.
@@ -56,7 +73,7 @@ Some available source types include...
 - ```couchbase``` - a Couchbase Server bucket will be the data source.
 - ```nil``` - for testing; a nil data source never has any data.
 
-## Source Name
+### Source Name (sourceName)
 
 An index also has an optional _Source Name_, whose meaning is
 dependent on the source type of the index.
@@ -66,7 +83,9 @@ is treated as a Couchbase bucket name, and the source params would
 define any optional, additional parameters needed to connect that
 named Couchbase bucket.
 
-## Source Params
+### Source UUID (sourceUUID)
+
+### Source Params (sourceParams)
 
 An index also has an optional _Source Params_, whose meaning is
 dependent on the source type of the index.
@@ -104,7 +123,18 @@ For example, your Source Params JSON would then look like...
       "feedBufferAckThreshold": 0
     }
 
-## Index definition operations
+### Plan Params (planParams)
+
+### Index UUID (indexUUID)
+
+The cbft system generates and assigns a unique _Index UUID_ to an
+index when an index is first created and every time the index
+definition is updated.
+
+That is, an edit or update of an index definition by a user would
+result in a new Index UUID being generated and assigned to the index.
+
+# Index definition operations
 
 You can list, retrieve, create and delete index definitions in cbft
 using its REST API or using its web admin UI.
