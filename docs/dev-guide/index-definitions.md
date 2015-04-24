@@ -296,7 +296,80 @@ API when cbft needs to construct a new full-text index.
 
 ## Index type: alias
 
-tbd
+For the ```bleve``` index type, here is an example, default index
+params JSON:
+
+    {
+      "targets": {
+        "yourIndexName": {
+          "indexUUID": ""
+        }
+      }
+    }
+
+You can specify one or more "yourIndexName" entries.
+
+For example, perhaps you wish to have a naming level-of-indirection so
+that applications can make index queries without any application-side
+reconfiguration.
+
+In one scenario, perhaps you have a sales management application that
+making queries against a "LastQuarterSales" alias.  The alias is
+targeted against a "sales-2014-Q4" index, such as...
+
+    {
+      "targets": {
+        "sales-2014-Q4": {
+          "indexUUID": ""
+        }
+      }
+    }
+
+Later, when 2015 Q1 sales data is completed and a new index is built,
+"sales-2015-Q1", then the "LastQuarterSales" alias can be
+retargetted to point to the "sales-2015-Q1" index...
+
+    {
+      "targets": {
+        "sales-2015-Q1": {
+          "indexUUID": ""
+        }
+      }
+    }
+
+The ```indexUUID``` field in the index alias definition allows you to
+exactly specify a specific target index via the target index
+definition's ```indexUUID```.
+
+If the target index is redefined, so its ```indexUUID``` value will be
+regenerated, then queries against an index alias with a mismatched
+indexUUID will result in error responses.
+
+### Multi-target index alias
+
+You can also have an index alias point to more than one target index.
+
+For example, perhaps you wish to have a LastSixMonthsSales alias.  It
+can be configured to point to the last two quarters of real indexes...
+
+    {
+      "targets": {
+        "sales-2014-Q4": {
+          "indexUUID": ""
+        },
+        "sales-2015-Q1": {
+          "indexUUID": ""
+        }
+      }
+    }
+
+This is also useful for situations where you have indexes holding data
+from different datasources, such as a "product-catalog-index",
+"customer-index", "employee-index", "intranet-docs-index".
+
+You can then have a single alias that points to all the above target
+indexes so that applications can query just a single endpoint (the
+index alias).
 
 # Source types
 
