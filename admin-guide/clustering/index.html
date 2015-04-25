@@ -160,6 +160,8 @@
         
             <li><a href="#adding-cbft-nodes">Adding cbft nodes</a></li>
         
+            <li><a href="#a-cluster-running-on-a-single-machine">A cluster running on a single machine</a></li>
+        
             <li><a href="#availability-of-the-cfg-provider">Availability of the Cfg provider</a></li>
         
             <li><a href="#removing-cbft-nodes">Removing cbft nodes</a></li>
@@ -207,14 +209,17 @@ at the same <code>cfg-bucket</code>...</p>
 </code></pre>
 <p>Since those two cbft nodes are using the same <code>cfg-bucket</code> as
 their Cfg provider, those two cbft nodes are now clustered.</p>
+<h2 id="a-cluster-running-on-a-single-machine">A cluster running on a single machine</h2>
 <p>Additionally, you can run another cbft node on the same machine, but
 specify a different, unique <code>bindHttp</code> port number and
 <code>dataDir</code> for each cbft node.  For example:</p>
 <pre><code>mkdir -p /data/cbft-9090
 mkdir -p /data/cbft-9091
 mkdir -p /data/cbft-9092
-
-./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+</code></pre>
+<p>Then run the following three commands on the same machine, each in its
+own terminal or shell session:</p>
+<pre><code>./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091 \
        -dataDir=/data/cbft-9090 \
        -bindHttp=:9090
@@ -229,6 +234,11 @@ mkdir -p /data/cbft-9092
        -dataDir=/data/cbft-9092 \
        -bindHttp=:9092
 </code></pre>
+<p>The above will result in a three node cbft cluster all running on the
+same machine.</p>
+<p>This can be usefule for testing and for experimenting with cbft
+cluster capabilities and behavior, without the cost of needing
+separate machines.</p>
 <h2 id="availability-of-the-cfg-provider">Availability of the Cfg provider</h2>
 <p>Of note, if the Couchbase cluster goes down, the cbft nodes will
 continue to run and service query requests, but you will not be able
