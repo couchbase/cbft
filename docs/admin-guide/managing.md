@@ -1,6 +1,6 @@
 # Managing cbft
 
-This document talks about the "levers and dials" available to manage
+This document talks about the "levers and toggles" available to manage
 cbft indexes and cbft nodes.
 
 # Managing cbft indexes
@@ -143,9 +143,6 @@ tbd
 tbd
 
 # Managing cbft nodes
-
-This document talks about the "levers and dials" available to manage
-cbft nodes.
 
 ## Forcing a manager kick
 
