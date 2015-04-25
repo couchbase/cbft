@@ -36,6 +36,8 @@ at the same ```cfg-bucket```...
 Since those two cbft nodes are using the same ```cfg-bucket``` as
 their Cfg provider, those two cbft nodes are now clustered.
 
+## A cluster running on a single machine
+
 Additionally, you can run another cbft node on the same machine, but
 specify a different, unique ```bindHttp``` port number and
 ```dataDir``` for each cbft node.  For example:
@@ -43,6 +45,9 @@ specify a different, unique ```bindHttp``` port number and
     mkdir -p /data/cbft-9090
     mkdir -p /data/cbft-9091
     mkdir -p /data/cbft-9092
+
+Then run the following three commands on the same machine, each in its
+own terminal or shell session:
 
     ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
@@ -58,6 +63,13 @@ specify a different, unique ```bindHttp``` port number and
            -server=http://couchbase-01:8091 \
            -dataDir=/data/cbft-9092 \
            -bindHttp=:9092
+
+The above will result in a three node cbft cluster all running on the
+same machine.
+
+This can be usefule for testing and for experimenting with cbft
+cluster capabilities and behavior, without the cost of needing
+separate machines.
 
 ## Availability of the Cfg provider
 
