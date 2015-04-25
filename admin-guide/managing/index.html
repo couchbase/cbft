@@ -169,6 +169,8 @@
         
             <li><a href="#disablingenabling-partition-reassignments">Disabling/enabling partition reassignments</a></li>
         
+            <li><a href="#nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</a></li>
+        
             <li><a href="#index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</a></li>
         
             <li><a href="#backup-and-restore">Backup and restore</a></li>
@@ -289,7 +291,7 @@ date.</p>
 <p>Navigate to the <code>Indexes</code> page.</p>
 </li>
 <li>
-<p>Click on the index name link for the index whose querying you witsh
+<p>Click on the index name link for the index whose querying you wish
   to disable.</p>
 </li>
 <li>
@@ -309,6 +311,41 @@ receive error responses.</p>
 <li>Click on the <code>Enable Queries</code> button.</li>
 </ul>
 <h2 id="disablingenabling-partition-reassignments">Disabling/enabling partition reassignments</h2>
+<p>Normally, as cbft nodes are added or removed from a cbft cluster, the
+cbft system automatically rebalances and reassigns index partitions to
+the remaining nodes in the cluster.</p>
+<p>Sometimes, an administrator needs to disable this automatic index
+partition reassignment, on a per index basis, because reassigned index
+partitions need to go through index building, and any queries during
+an index rebuild will see only the responses for data that have been
+indexed so far.</p>
+<p>To disable index parittion reassignments, in the web admin UI:</p>
+<ul>
+<li>
+<p>Navigate to the <code>Indexes</code> page.</p>
+</li>
+<li>
+<p>Click on the index name link for the index whose index partitions
+  you wish to to have reassignments disabled.</p>
+</li>
+<li>
+<p>Click on the <code>Manage</code> sub-tab for the index.</p>
+</li>
+<li>
+<p>Click <code>Disable Reassignments</code> button.</p>
+</li>
+</ul>
+<p>The <code>Index Partition Reassignments</code> state will turn from
+<code>enabled</code> to <code>disabled</code>, and the button you just clicked will
+turn into an <code>Enable Reassignments</code> button.</p>
+<p>At this time, any cluster membership changes (cbft nodes added or
+removed) will not trigger an automatic index partitions reassignment
+for the index.</p>
+<p>To re-enable index partition reassignments on your index:</p>
+<ul>
+<li>Click on the <code>Enable Reassignments</code> button.</li>
+</ul>
+<h2 id="nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</h2>
 <p>tbd</p>
 <h2 id="index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</h2>
 <p>tbd</p>
