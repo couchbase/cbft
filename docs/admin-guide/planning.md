@@ -46,9 +46,10 @@ provided by application developers in order to setup and configure
 their testing and staging cbft clusters.
 
 For safety of operations, it is recommended that similar to other
-indexing systems, that testing/staging cbft clusters not uses direct
-production data sources, but snapshots or copies of production data
-sources.
+databases and external indexing systems, that testing/staging cbft
+clusters not uses direct production data sources, but should instead
+try to use independent snapshots or copies of production data sources
+for any validation and testing needs.
 
 The testing/staging cbft clusters would also be a good place to
 reconfirm any sizing assumptions.  For example, perhaps an updated
