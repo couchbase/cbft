@@ -164,11 +164,20 @@
     
         <li class="main active"><a href="#index-queries">Index queries</a></li>
         
-            <li><a href="#results-highlighting">Results highlighting</a></li>
+            <li><a href="#web-admin-ui-queries">Web admin UI queries</a></li>
         
-            <li><a href="#faceted-searches">Faceted searches</a></li>
+            <li><a href="#rest-api-queries">REST API queries</a></li>
         
-            <li><a href="#index-consistency">Index consistency</a></li>
+    
+        <li class="main "><a href="#index-types-and-queries">Index types and queries</a></li>
+        
+            <li><a href="#index-type-bleve">Index type: bleve</a></li>
+        
+    
+        <li class="main "><a href="#index-document-counts">Index document counts</a></li>
+        
+    
+        <li class="main "><a href="#index-consistency">Index consistency</a></li>
         
     
     </ul>
@@ -176,12 +185,106 @@
             <div class="col-md-9" role="main">
 
 <h1 id="index-queries">Index queries</h1>
+<p>You can query indexes either using cbft's REST API or using its web
+admin UI.</p>
+<h2 id="web-admin-ui-queries">Web admin UI queries</h2>
+<p>You can use cbft's web admin UI in order to query an index using your
+web browser:</p>
+<ul>
+<li>
+<p>Navigate to the <code>Indexes</code> screen.</p>
+</li>
+<li>
+<p>Click on your index's name link to naviate to the summary screen for
+  your index.</p>
+</li>
+<li>
+<p>Click on the <code>Query</code> sub-tab for your index.</p>
+</li>
+<li>
+<p>Enter your query statement in the input field.</p>
+</li>
+</ul>
+<p>The kind of query statement you should enter depends on the index
+type.</p>
+<p>Please see below in this document for more information on the query
+statement requirements for different index types.</p>
+<ul>
+<li>You can click on the <code>Advanced</code> checkbox in order to see
+  more optional, advanced query parameters.</li>
+</ul>
+<h2 id="rest-api-queries">REST API queries</h2>
+<p>Please see the <a href="../../api-ref">REST API reference</a> for documentation on
+programmatically POST'ing query requests to cbft.</p>
+<p>You can POST a query request to any cbft node in a cbft cluster.</p>
+<p>To process your query request, that cbft node will then in turn
+perform distributed requests against the other nodes in the cbft
+cluster and gather their responses.</p>
+<p>Your REST client will then receive a processed, merged response from
+the cbft node that received the original REST query request.</p>
+<p>Programmatically, the POST body for REST API bleve queries would look
+similar to the following example JSON:</p>
+<pre><code>{
+  "timeout": 0,
+  "consistency": {
+    "level": "",
+    "vectors": {}
+  },
+  "query": ...
+}
+</code></pre>
+<p>There are several fields:</p>
+<ul>
+<li>
+<p><code>timeout</code> - integer, timeout in milliseconds, 0 for no timeout.</p>
+</li>
+<li>
+<p><code>consistency</code> - a JSON sub-object to ensure that the index has
+  reached a consistency level required by the application, where the
+  index has incorporated enough required data from the data source of
+  the index.  See below in this document for more information.</p>
+</li>
+<li>
+<p><code>query</code> - a JSON sub-object or string whose interpretation
+  depends on the index type of your index.</p>
+</li>
+</ul>
+<h1 id="index-types-and-queries">Index types and queries</h1>
+<h2 id="index-type-bleve">Index type: bleve</h2>
+<p>When using the <code>bleve</code> index type, the query statement that you
+use in cbfts web admin UI must follow bleve's full-text index <a href="https://github.com/blevesearch/bleve/wiki/Query%20String%20Query">query
+string</a>
+syntax rules.</p>
+<p>See: <a href="https://github.com/blevesearch/bleve/wiki/Query%20String%20Query">https://github.com/blevesearch/bleve/wiki/Query%20String%20Query</a></p>
+<p>tbd - worked examples of queries and their JSON.</p>
+<pre><code>{
+  "timeout": 0,
+  "consistency": {
+    "level": "",
+    "vectors": {}
+  },
+  "query": {
+    "query": null,
+    "size": 0,
+    "from": 0,
+    "highlight": null,
+    "fields": null,
+    "facets": null,
+    "explain": false
+  }
+}
+</code></pre>
+<h3 id="scoring">Scoring</h3>
 <p>tbd</p>
-<h2 id="results-highlighting">Results highlighting</h2>
+<h3 id="pagination">Pagination</h3>
 <p>tbd</p>
-<h2 id="faceted-searches">Faceted searches</h2>
+<h3 id="results-highlighting">Results highlighting</h3>
 <p>tbd</p>
-<h2 id="index-consistency">Index consistency</h2>
+<h3 id="faceted-searches">Faceted searches</h3>
+<p>tbd</p>
+<h1 id="index-document-counts">Index document counts</h1>
+<p>tbd</p>
+<h1 id="index-consistency">Index consistency</h1>
 <p>tbd</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>

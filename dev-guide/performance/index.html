@@ -164,16 +164,44 @@
     
         <li class="main active"><a href="#increasing-performance">Increasing performance</a></li>
         
-            <li><a href="#indexing-speed-versus-querying-speed">Indexing speed versus querying speed</a></li>
-        
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
 <h1 id="increasing-performance">Increasing performance</h1>
-<p>tbd</p>
-<h2 id="indexing-speed-versus-querying-speed">Indexing speed versus querying speed</h2>
+<p>There are several aspects to performance, often with competing tradeoffs:</p>
+<ul>
+<li>
+<p>indexing performance, or ingest performance - the speed at which the
+  indexing system can incorporate data from the data source</p>
+</li>
+<li>
+<p>query performance - how fast the system responds to a query</p>
+</li>
+</ul>
+<p>There a several orthogonal dimensions, too...</p>
+<ul>
+<li>
+<p>latency</p>
+</li>
+<li>
+<p>throughput</p>
+</li>
+</ul>
+<p>And, several ways to address the above aspects...</p>
+<ul>
+<li>more cpu</li>
+<li>more memory</li>
+<li>faster storage (e.g., SSD's)</li>
+<li>more or fewer nodes</li>
+<li>smaller indexes</li>
+<li>tighter queries (smaller result sets)</li>
+</ul>
+<p>Distributing an index across multiple cbft nodes can increase indexing
+speed but potentially at the cost or tradeoff of slower query speeds
+(more scatter/gather work is needed).</p>
+<p>tbd - more here</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
