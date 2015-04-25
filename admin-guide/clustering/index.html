@@ -168,9 +168,9 @@
         
             <li><a href="#removing-cbft-nodes">Removing cbft nodes</a></li>
         
-            <li><a href="#index-replicas">Index replicas</a></li>
+            <li><a href="#node-identity">Node identity</a></li>
         
-            <li><a href="#restarts-of-cbft-nodes">Restarts of cbft nodes</a></li>
+            <li><a href="#index">Index</a></li>
         
     
     </ul>
@@ -292,8 +292,9 @@ of resources.</p>
   but will not be assigned any index partitions.</p>
 </li>
 <li>
-<p><code>unknown</code>: this is a node that is not part of the cluster, and
-  by definition, will not be assigned any index partitions.</p>
+<p><code>unknown</code>: this is a node that is not part of the cluster, is
+  not actually listed in cbft's cluster configuration data, and by
+  definition, will not be assigned any index partitions.</p>
 </li>
 </ul>
 <h2 id="removing-cbft-nodes">Removing cbft nodes</h2>
@@ -319,13 +320,31 @@ previously as...</p>
        -register=unknown</p>
 </li>
 </ul>
-<p>That will move the cbft into <code>unknown</code> state in the cluster, and
-any of its previously assigned index partitions will be re-assigned to
-other, remaining wanted cbft nodes in the cluster.</p>
-<h2 id="index-replicas">Index replicas</h2>
-<p>tbd</p>
-<h2 id="restarts-of-cbft-nodes">Restarts of cbft nodes</h2>
-<p>tbd</p>
+<p>The key to removing a node with the <code>--register=unknown</code>
+command-line parameter is that your invocation must have the same
+<code>-bindHttp</code>, <code>-cfg</code>, and node UUID (stored previously in the
+dataDir as the <code>cbft.uuid</code> file)</p>
+<p>That will move the cbft node into <code>unknown</code> state in the cluster,
+and any of the cbft node's previously assigned index partitions will
+be re-assigned to other, remaining wanted cbft nodes in the cluster.</p>
+<h2 id="node-identity">Node identity</h2>
+<p>The cbft node's UUID and bindHttp (address:port) values must be unique
+for a new cbft node to join a cluster.</p>
+<p>Please see the administrator's guide on <a href="../../running">running cbft
+definitions</a> for more information on the node UUID and
+bindHTTP values.</p>
+<h2 id="index">Index</h2>
+<p>replicas</p>
+<p>Once you have more than one cbft node in a cluster, then you can
+leverage cbft's index replica features.</p>
+<p>Index replicas are indexes built up by just re-indexing the data again
+from the original data source on a different cbft node.  That is, it
+is not chain replication (A -&gt; X -&gt; Y) but is instead star replication
+(A -&gt; X; A -&gt; Y).</p>
+<p>To enable replicas for an index, you need to set the <code>numReplicas</code>
+configuration field for an index definition to greater than 0.  Please
+see <code>numReplicas</code> documentation in the developer's guide on <a href="../../../dev-guide/index-definitions">index
+definitions</a> for more information.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
