@@ -102,7 +102,7 @@ To disable index query'ability, in the web admin UI:
 
 - Navigate to the ```Indexes``` page.
 
-- Click on the index name link for the index whose querying you witsh
+- Click on the index name link for the index whose querying you wish
   to disable.
 
 - Click on the ```Manage``` sub-tab for the index.
@@ -121,6 +121,41 @@ To re-enable queries on your index:
 - Click on the ```Enable Queries``` button.
 
 ## Disabling/enabling partition reassignments
+
+Normally, as cbft nodes are added or removed from a cbft cluster, the
+cbft system automatically rebalances and reassigns index partitions to
+the remaining nodes in the cluster.
+
+Sometimes, an administrator needs to disable this automatic index
+partition reassignment, on a per index basis, because reassigned index
+partitions need to go through index building, and any queries during
+an index rebuild will see only the responses for data that have been
+indexed so far.
+
+To disable index parittion reassignments, in the web admin UI:
+
+- Navigate to the ```Indexes``` page.
+
+- Click on the index name link for the index whose index partitions
+  you wish to to have reassignments disabled.
+
+- Click on the ```Manage``` sub-tab for the index.
+
+- Click ```Disable Reassignments``` button.
+
+The ```Index Partition Reassignments``` state will turn from
+```enabled``` to ```disabled```, and the button you just clicked will
+turn into an ```Enable Reassignments``` button.
+
+At this time, any cluster membership changes (cbft nodes added or
+removed) will not trigger an automatic index partitions reassignment
+for the index.
+
+To re-enable index partition reassignments on your index:
+
+- Click on the ```Enable Reassignments``` button.
+
+## Node/cluster changes and zero downtime
 
 tbd
 
