@@ -157,18 +157,17 @@
         <li class="main active"><a href="#managing-cbft">Managing cbft</a></li>
         
     
-        <li class="main "><a href="#managing-cbft-nodes">Managing cbft nodes</a></li>
-        
-    
         <li class="main "><a href="#managing-cbft-indexes">Managing cbft indexes</a></li>
         
             <li><a href="#index-building">Index building</a></li>
         
             <li><a href="#rebuilding-indexes">Rebuilding indexes</a></li>
         
-            <li><a href="#pausing-indexing">Pausing indexing</a></li>
+            <li><a href="#disablingenabling-indexing">Disabling/enabling indexing</a></li>
         
-            <li><a href="#disabling-queries">Disabling queries</a></li>
+            <li><a href="#disablingenabling-queries">Disabling/enabling queries</a></li>
+        
+            <li><a href="#disablingenabling-partition-reassignments">Disabling/enabling partition reassignments</a></li>
         
             <li><a href="#index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</a></li>
         
@@ -176,27 +175,140 @@
         
             <li><a href="#advanced-storage-options">Advanced storage options</a></li>
         
+            <li><a href="#compacting-data">Compacting data</a></li>
+        
+    
+        <li class="main "><a href="#managing-cbft-nodes">Managing cbft nodes</a></li>
+        
+            <li><a href="#forcing-a-manager-kick">Forcing a manager kick</a></li>
+        
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
 <h1 id="managing-cbft">Managing cbft</h1>
-<h1 id="managing-cbft-nodes">Managing cbft nodes</h1>
-<p>tbd</p>
+<p>This document talks about the "levers and toggles" available to manage
+cbft indexes and cbft nodes.</p>
 <h1 id="managing-cbft-indexes">Managing cbft indexes</h1>
 <h2 id="index-building">Index building</h2>
 <p>Index building is the process by which cbft sets up connections to
 data sources, retrieves data from the data sources, analyzes that
-data, and updates index data in memory and persisted to storage.</p>
-<p>To monitor that your index builds you can use...</p>
-<pre><code>curl magic something TBD
-</code></pre>
+data, and updates index data in memory and persisted to storage, in
+concurrent fashion.</p>
+<p>By concurrent, we mean that cbft uses internal pipelines or data
+streams, as opposed to, for example, completely retrieving all the
+data from a data source as a complete step before starting any
+analysis.  Instead, cbft's approach allows for incremental processing,
+which is suited to also handle updates or mutations of data from the
+data source over time.</p>
+<p>cbft will automatically start its concurrent index building steps as
+soon as you create an index.</p>
+<p>During the index building phase, the index is queryable.  However,
+cbft may not have processed or ingested all the data, of course, from
+the data source yet.  In this case, queries will return responses for
+the data so far incorporated in a "best effort" fashion.</p>
+<p>If a cbft node has to restart will in the midst of index building, the
+restarted cbft will attempt to "pick up where it left off" as much as
+possible and if the data source allows.</p>
 <h2 id="rebuilding-indexes">Rebuilding indexes</h2>
-<p>tbd</p>
-<h2 id="pausing-indexing">Pausing indexing</h2>
-<p>tbd</p>
-<h2 id="disabling-queries">Disabling queries</h2>
+<p>Sometimes, an administrator wishes to rebuild an index from scratch,
+or as is sometimes described, "rebuilding an index from zero" (in
+reference to an empty start condition and/or to a 0 sequence number or
+very beginning of a sequence of data).</p>
+<p>To rebuild an index from scratch in cbft, using your web browser in
+the web admin UI:</p>
+<ul>
+<li>
+<p>Navgiate to the <code>Indexes</code> page.</p>
+</li>
+<li>
+<p>Find the row for the index you wish to rebuild.</p>
+</li>
+<li>
+<p>On that same row, click on the <code>edit</code> button, where you'll next
+  see an edit form for you index definition.</p>
+</li>
+<li>
+<p>Without making any changes to your index definition form (especially
+  don't change the index name), click on the <code>Update Index</code> button
+  at the bottom of the form.</p>
+</li>
+<li>
+<p>Your index will start rebuilding from scratch or from zero.</p>
+</li>
+<li>
+<p>Of note, the index UUID will change as part of this operation, which
+  allows applications to detect that the index definition has
+  "changed".  This may be important for some applications that are
+  caching results, etc.</p>
+</li>
+</ul>
+<h2 id="disablingenabling-indexing">Disabling/enabling indexing</h2>
+<p>Sometimes, an administrator needs to pause index maintenance or
+ingest.  For example, perhaps during key hours of heavy traffic, the
+administrator would like to dedicate more resources to query
+performance, at the cost of an out of date index.</p>
+<p>To pause index ingest activities, in the web admin UI:</p>
+<ul>
+<li>
+<p>Navigate to the <code>Indexes</code> page.</p>
+</li>
+<li>
+<p>Click on the index name link for the index whose ingest you wish to
+  pause.</p>
+</li>
+<li>
+<p>Click on the <code>Manage</code> sub-tab for the index.</p>
+</li>
+<li>
+<p>Click <code>Disable Ingest</code> button.</p>
+</li>
+</ul>
+<p>The <code>Index Ingest</code> state will turn from <code>enabled</code> to
+<code>disabled</code>, and the button you just clicked will turn into an
+<code>Enable Ingest</code> button.</p>
+<p>To re-enable index processing and data ingest:</p>
+<ul>
+<li>Click on the <code>Enable Ingest</code> button.</li>
+</ul>
+<h2 id="disablingenabling-queries">Disabling/enabling queries</h2>
+<p>Sometimes, an administrator needs to temporarily disable the ability
+for applications to make queries on an index.  For example, perhaps
+during some 2:00AM hours of maintenance time, the administrator would
+like to index processing or ingest to "catch up" to the most recent
+data source mutations.  Or perhaps, the administrator would like to
+rebuild indexes from scratch at this point.  In any case, by disabling
+queries, the administrator can help ensure more resources are going to
+index ingest processing.  That is, a slow, massive query might steal
+system resources from the main priority of getting the index up to
+date.</p>
+<p>To disable index query'ability, in the web admin UI:</p>
+<ul>
+<li>
+<p>Navigate to the <code>Indexes</code> page.</p>
+</li>
+<li>
+<p>Click on the index name link for the index whose querying you witsh
+  to disable.</p>
+</li>
+<li>
+<p>Click on the <code>Manage</code> sub-tab for the index.</p>
+</li>
+<li>
+<p>Click <code>Disable Queries</code> button.</p>
+</li>
+</ul>
+<p>The <code>Index Queries</code> state will turn from <code>enabled</code> to
+<code>disabled</code>, and the button you just clicked will turn into an
+<code>Enable Queries</code> button.</p>
+<p>At this time, applications sending query requests for your index will
+receive error responses.</p>
+<p>To re-enable queries on your index:</p>
+<ul>
+<li>Click on the <code>Enable Queries</code> button.</li>
+</ul>
+<h2 id="disablingenabling-partition-reassignments">Disabling/enabling partition reassignments</h2>
 <p>tbd</p>
 <h2 id="index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</h2>
 <p>tbd</p>
@@ -205,6 +317,22 @@ data, and updates index data in memory and persisted to storage.</p>
 <h2 id="advanced-storage-options">Advanced storage options</h2>
 <p>EXPERIMENTAL!</p>
 <p>tbd</p>
+<h2 id="compacting-data">Compacting data</h2>
+<p>tbd</p>
+<h1 id="managing-cbft-nodes">Managing cbft nodes</h1>
+<h2 id="forcing-a-manager-kick">Forcing a manager kick</h2>
+<p>A button to <code>Kick Manager</code> is available in the web admin UI, on
+the <code>Manage</code> page.  Clicking it forces the cbft node to re-run its
+management activities, which include re-partitioning indexes into
+index partitions and re-assigning index partitions to nodes in the
+cluster.</p>
+<p>Of note, if the nodes and index definitions in a cluster have not
+changed, then the re-paritioning and re-assignment activities of a
+manager kick should result in the exact same "plan"; hence, a manager
+kick in that case would result effectively with a no-op.</p>
+<p>An optional <code>Kick Message</code> input field allows the user to provide
+text that will be logged by the cbft node, so that an administrator
+can correlate manage kick requests with server-side activities.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
