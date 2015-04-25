@@ -154,9 +154,13 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#clustering-cbft-nodes">Clustering cbft nodes</a></li>
+        <li class="main active"><a href="#clustering-cbft">Clustering cbft</a></li>
+        
+            <li><a href="#setting-up-a-couchbase-cfg-provider">Setting up a Couchbase Cfg provider</a></li>
         
             <li><a href="#adding-cbft-nodes">Adding cbft nodes</a></li>
+        
+            <li><a href="#availability-of-the-cfg-provider">Availability of the Cfg provider</a></li>
         
             <li><a href="#removing-cbft-nodes">Removing cbft nodes</a></li>
         
@@ -169,11 +173,79 @@
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="clustering-cbft-nodes">Clustering cbft nodes</h1>
-<p>tbd</p>
-<h3 id="adding-cbft-nodes">Adding cbft nodes</h3>
-<p>tbd</p>
-<h3 id="removing-cbft-nodes">Removing cbft nodes</h3>
+<h1 id="clustering-cbft">Clustering cbft</h1>
+<p>To run multiple cbft nodes in a cluster, you need to use a Cfg
+provider that supports clustering.</p>
+<p>Of note: the default <code>simple</code> Cfg provider that often used for
+developer environments is local-only and is non-cluster'able.</p>
+<h2 id="setting-up-a-couchbase-cfg-provider">Setting up a Couchbase Cfg provider</h2>
+<p>The <code>couchbase</code> Cfg provider supports clustering.  It uses a
+Couchbase bucket to store cbft's configuration data, and multiple cbft
+nodes are all pointed to the same Couchbase bucket to coordinate and
+rendevous the cluster-wide configuration information.  To use the
+<code>couchbase</code> Cfg provider:</p>
+<ul>
+<li>
+<p>Pick a name for the Couchbase bucket that will be used to store cbft
+  cluster configuration data.  For example, <code>cfg-bucket</code>.</p>
+</li>
+<li>
+<p>Using Couchbase's web UI or tools, create the <code>cfg-bucket</code>.</p>
+</li>
+<li>
+<p>Start cbft with the <code>couchbase</code> Cfg provider, pointed at the
+  <code>cfg-bucket</code>...</p>
+<p>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091</p>
+</li>
+</ul>
+<h2 id="adding-cbft-nodes">Adding cbft nodes</h2>
+<p>On a different machine, you can next start another cbft node, pointed
+at the same <code>cfg-bucket</code>...</p>
+<pre><code>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091
+</code></pre>
+<p>Since those two cbft nodes are using the same <code>cfg-bucket</code> as
+their Cfg provider, those two cbft nodes are now clustered.</p>
+<p>Additionally, you can run another cbft node on the same machine, but
+specify a different, unique <code>bindHttp</code> port number and
+<code>dataDir</code> for each cbft node.  For example:</p>
+<pre><code>mkdir -p /data/cbft-9090
+mkdir -p /data/cbft-9091
+mkdir -p /data/cbft-9092
+
+./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091 \
+       -dataDir=/data/cbft-9090 \
+       -bindHttp=:9090
+
+./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091 \
+       -dataDir=/data/cbft-9091 \
+       -bindHttp=:9091
+
+./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091 \
+       -dataDir=/data/cbft-9092 \
+       -bindHttp=:9092
+</code></pre>
+<h2 id="availability-of-the-cfg-provider">Availability of the Cfg provider</h2>
+<p>Of note, if the Couchbase cluster goes down, the cbft nodes will
+continue to run and service query requests, but you will not be able
+to make any cbft cluster configuration changes (modify index
+definitions or add/remove cbft nodes) until the Couchbase cluster
+returns to online, normal running health.</p>
+<p>Another note, if the Couchbase bucket is deleted (e.g., someone
+deletes the <code>cfg-bucket</code>), the cbft nodes will continue to
+independently run and service query requests, but you also will not be
+able to make any cbft cluster configuration changes (modify index
+definitions or add/remove cbft nodes).</p>
+<p>Additionally, if the Couchbase bucket (<code>cfg-bucket</code>) is recreated
+but in blank, new, empty state, or was flush'ed, the cbft nodes will
+also reset to empty.  That is the Couchbase bucket (<code>cfg-bucket</code>)
+is considered the <em>source of truth</em> for the cbft cluster's
+configuration.</p>
+<h2 id="removing-cbft-nodes">Removing cbft nodes</h2>
 <p>tbd</p>
 <h2 id="index-replicas">Index replicas</h2>
 <p>tbd</p>
