@@ -164,6 +164,8 @@
         
             <li><a href="#availability-of-the-cfg-provider">Availability of the Cfg provider</a></li>
         
+            <li><a href="#cbft-node-states">cbft node states</a></li>
+        
             <li><a href="#removing-cbft-nodes">Removing cbft nodes</a></li>
         
             <li><a href="#index-replicas">Index replicas</a></li>
@@ -181,11 +183,13 @@ provider that supports clustering.</p>
 <p>Of note: the default <code>simple</code> Cfg provider that often used for
 developer environments is local-only and is non-cluster'able.</p>
 <h2 id="setting-up-a-couchbase-cfg-provider">Setting up a Couchbase Cfg provider</h2>
-<p>The <code>couchbase</code> Cfg provider supports clustering.  It uses a
-Couchbase bucket to store cbft's configuration data, and multiple cbft
-nodes are all pointed to the same Couchbase bucket to coordinate and
-rendevous the cluster-wide configuration information.  To use the
-<code>couchbase</code> Cfg provider:</p>
+<p>The <code>couchbase</code> Cfg provider supports clustering.</p>
+<p>The <code>couchbase</code> Cfg provider uses a Couchbase bucket to store
+cbft's configuration data, where multiple cbft nodes that are all
+pointed to the same Couchbase bucket will use the Couchbase bucket to
+coordinate and rendevous on cbft's cluster-wide configuration
+information.</p>
+<p>To use the <code>couchbase</code> Cfg provider:</p>
 <ul>
 <li>
 <p>Pick a name for the Couchbase bucket that will be used to store cbft
@@ -195,15 +199,22 @@ rendevous the cluster-wide configuration information.  To use the
 <p>Using Couchbase's web UI or tools, create the <code>cfg-bucket</code>.</p>
 </li>
 <li>
-<p>Start cbft with the <code>couchbase</code> Cfg provider, pointed at the
-  <code>cfg-bucket</code>...</p>
+<p>Choose the smallest memory resource quota for the <code>cfg-bucket</code>
+  (e.g., 100MB RAM).  The amount of data that will be stored in the
+  <code>cfg-bucket</code> will be very small, even for large cluster sizes,
+  as only cbft cluster configuration and metadata will be maintained
+  in the <code>cfg-bucket</code>.</p>
+</li>
+<li>
+<p>Next, start cbft with the <code>couchbase</code> Cfg provider, pointed at
+  the <code>cfg-bucket</code>...</p>
 <p>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091</p>
 </li>
 </ul>
 <h2 id="adding-cbft-nodes">Adding cbft nodes</h2>
-<p>On a different machine, you can next start another cbft node, pointed
-at the same <code>cfg-bucket</code>...</p>
+<p>On a different machine, you can next start a second cbft node, pointed
+at the same, shared <code>cfg-bucket</code>...</p>
 <pre><code>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091
 </code></pre>
@@ -240,23 +251,77 @@ same machine.</p>
 cluster capabilities and behavior, without the cost of needing
 separate machines.</p>
 <h2 id="availability-of-the-cfg-provider">Availability of the Cfg provider</h2>
-<p>Of note, if the Couchbase cluster goes down, the cbft nodes will
-continue to run and service query requests, but you will not be able
-to make any cbft cluster configuration changes (modify index
-definitions or add/remove cbft nodes) until the Couchbase cluster
-returns to online, normal running health.</p>
-<p>Another note, if the Couchbase bucket is deleted (e.g., someone
-deletes the <code>cfg-bucket</code>), the cbft nodes will continue to
-independently run and service query requests, but you also will not be
-able to make any cbft cluster configuration changes (modify index
-definitions or add/remove cbft nodes).</p>
-<p>Additionally, if the Couchbase bucket (<code>cfg-bucket</code>) is recreated
-but in blank, new, empty state, or was flush'ed, the cbft nodes will
-also reset to empty.  That is the Couchbase bucket (<code>cfg-bucket</code>)
-is considered the <em>source of truth</em> for the cbft cluster's
-configuration.</p>
+<p>If the Couchbase cluster that powers the <code>cfg-bucket</code> goes down,
+the cbft nodes will continue to run and service query requests, but
+you will not be able to make any cbft cluster configuration changes
+(modify index definitions or add/remove cbft nodes) until the
+Couchbase cluster returns to online, normal running health.</p>
+<p>Related, if the Couchbase <code>cfg-bucket</code> is accidentally deleted,
+the cbft nodes will continue to independently run and service query
+requests, but you will also not be able to make any cbft cluster
+configuration changes (modify index definitions or add/remove cbft
+nodes).</p>
+<p>Additionally, if the Couchbase <code>cfg-bucket</code> is deleted and
+recreated (so ends up in blank, new, empty state, or was flush'ed),
+the cbft nodes will also reset to an empty, brand new cbft cluster
+without any indexes defined.</p>
+<p>Put another way, the Couchbase bucket (<code>cfg-bucket</code>) is considered
+the <em>source of truth</em> for the cbft cluster's configuration and is a
+key platform dependency of the cbft cluster.</p>
+<h2 id="cbft-node-states">cbft node states</h2>
+<p>Each cbft node is registered into the cbft cluster with node state.</p>
+<p>The node states:</p>
+<ul>
+<li><code>wanted</code>: a cbft node in wanted state is expected to be part of
+  the cluster and will have index partitions automatically assigned to
+  it.</li>
+</ul>
+<p>If a cbft node in wanted state temporarily disappears (e.g. machine or
+process stops), it will not lose its previous index partition
+assignments, but will be expected to come back soon (machine reboot
+and/or process restart) so that it can continue servicing its
+previously assigned index partitions.</p>
+<p>This design approach was favored because a cbft node might have a
+large amount of persistent index data that will be inefficient for
+other cbft nodes to rebuild, and having index partition assignments
+"bounce around" different cbft nodes would lead to wasteful thrashing
+of resources.</p>
+<ul>
+<li>
+<p><code>known</code>: a cbft node in known state is listed in the cluster,
+  but will not be assigned any index partitions.</p>
+</li>
+<li>
+<p><code>unknown</code>: this is a node that is not part of the cluster, and
+  by definition, will not be assigned any index partitions.</p>
+</li>
+</ul>
 <h2 id="removing-cbft-nodes">Removing cbft nodes</h2>
-<p>tbd</p>
+<p>To remove a cbft node from a cluster, you need to change its
+registered state to unknown.  To do so, if you had a cbft node running
+previously as...</p>
+<pre><code>./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091 \
+       -dataDir=/data/cbft-9090 \
+       -bindHttp=:9090
+</code></pre>
+<ul>
+<li>
+<p>First, stop the cbft node process (e.g., kill the process on linux).</p>
+</li>
+<li>
+<p>Then, run the cbft node with the additional command-line parameters
+  of <code>--register=unknown</code></p>
+<p>./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
+       -server=http://couchbase-01:8091 \
+       -dataDir=/data/cbft-9090 \
+       -bindHttp=:9090 \
+       -register=unknown</p>
+</li>
+</ul>
+<p>That will move the cbft into <code>unknown</code> state in the cluster, and
+any of its previously assigned index partitions will be re-assigned to
+other, remaining wanted cbft nodes in the cluster.</p>
 <h2 id="index-replicas">Index replicas</h2>
 <p>tbd</p>
 <h2 id="restarts-of-cbft-nodes">Restarts of cbft nodes</h2>
