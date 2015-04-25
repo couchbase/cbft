@@ -154,9 +154,13 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#running-a-single-cbft-node">Running a single cbft node</a></li>
+        <li class="main active"><a href="#running-cbft">Running cbft</a></li>
         
-            <li><a href="#command-line-parameters">Command-line parameters</a></li>
+            <li><a href="#cbft-dependencies">cbft dependencies</a></li>
+        
+            <li><a href="#data-directory">Data directory</a></li>
+        
+            <li><a href="#port-numbers">Port numbers</a></li>
         
             <li><a href="#securing-cbft">Securing cbft</a></li>
         
@@ -165,14 +169,46 @@
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="running-a-single-cbft-node">Running a single cbft node</h1>
-<p>tbd</p>
-<h2 id="command-line-parameters">Command-line parameters</h2>
-<p>tbd</p>
+<h1 id="running-cbft">Running cbft</h1>
+<p>The <a href="../..">getting started</a> guide provides a basic introduction
+to starting cbft.</p>
+<p>This document provides information on some additional considerations.</p>
+<h2 id="cbft-dependencies">cbft dependencies</h2>
+<p>The cbft program executable is designed to be a single, standalone,
+self-sufficient binary image and should not require additional shared
+libraries or pre-installed dependencies.</p>
+<h2 id="data-directory">Data directory</h2>
+<p>cbft requires a data directory where it can store and maintain local
+configuration data and index data.</p>
+<p>This data directory path is defined by the <code>dataDir</code> command-line
+parameter.</p>
+<p>Advanced users may wish to have a separate filesystem which can handle
+large data volumes and high storage I/O performance.</p>
+<p>Users running in cloud-based environments may wish to consider
+non-ephemeral, mounted block stores, such as EBS (Elastic Block Store)
+on Amazon Web Services EC2 systems or equivalent for your cloud
+hosting provider.</p>
+<p>In a container-based environment, such as Docker or equivalent, users
+should consider a non-ephemeral, high performance host volume for
+their cbft data directory.</p>
+<h2 id="port-numbers">Port numbers</h2>
+<p>cbft provides a HTTP/REST API endpoint, listening on the address:port
+specified by the <code>bindHttp</code> command-line parameter.  By default,
+that is address 0.0.0.0 and port number 8095.</p>
+<p>For example:</p>
+<pre><code>./cbft -bindHttp=0.0.0.0:8095 -server=http://cb-01:8091
+</code></pre>
+<p>For clustering and for application/client accessibility, that port
+number (e.g., 8095) must be enabled for access by any firewall
+systems.</p>
+<p>Each cbft node in a cbft cluster can have its own, different port
+number.  This allows users to test out cbft clusters on a local
+machine, by specifying a different port number for each cbft node,
+even though they're all running on the same machine.</p>
 <h2 id="securing-cbft">Securing cbft</h2>
-<p>tbd</p>
-<h3 id="port-numbers">Port numbers</h3>
-<p>tbd</p>
+<p>WARNING / TODO: cbft Developer Preview release currently does not
+provide security features (e.g., encryption, authentication) and
+should also not be used in production settings.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
