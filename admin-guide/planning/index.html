@@ -154,29 +154,74 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#planning">Planning</a></li>
+        <li class="main active"><a href="#planning-your-deployment">Planning your deployment</a></li>
         
-            <li><a href="#deployment-environments">Deployment environments</a></li>
-        
-            <li><a href="#sizing">Sizing</a></li>
+            <li><a href="#development">Development</a></li>
         
     
     </ul>
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="planning">Planning</h1>
-<p>tbd</p>
-<h2 id="deployment-environments">Deployment environments</h2>
-<p>tbd</p>
-<h3 id="development">Development</h3>
-<p>tbd</p>
+<h1 id="planning-your-deployment">Planning your deployment</h1>
+<p>This document provides considerations on how a cbft deployment might
+be planned, across different environments and application lifecycle
+stages:</p>
+<ul>
+<li>from development</li>
+<li>to staging/test</li>
+<li>and to production</li>
+</ul>
+<h2 id="development">Development</h2>
+<p>Developers are expected to likely run cbft in "single node" fashion or
+in non-clustered <em>simple</em> mode, directly on their personal development
+workstations or laptop machines.</p>
+<p>Developers can write applications which query their single, local cbft
+node using their favorite web-stack technologies and REST client
+software to access their cbft node.</p>
+<p>Similar to how developers would have separate scripts to initialize a
+database with tables or buckets or schemas -- the so-called "DDL"
+(data definition language) instructions of "CREATE TABLE..." / "CREATE
+INDEX...", it is expected that developers would also code up separate
+scripts to create cbft index definitions.</p>
+<p>These index definition scripts would then often be checked into the
+developer's source code control systems (e.g., like svn or git or
+mercurial or equivalent), for repeatability and for sharability with
+colleagues.</p>
+<p>cbft is designed so that index defintions which developers define and
+create on their local, personal development workstations or laptops
+can be deployed to production clusters without any changes to
+application code that depends on those indexes.</p>
+<p>Of note, though, developer's application code should ideally be
+defensively coded to expect error responses in cases when cbft is not
+running or has underlying error conditions (e.g., storage systems are
+full; network is down; etc).</p>
 <h3 id="staging-and-test">Staging and test</h3>
-<p>tbd</p>
+<p>Testing engineers would likely use the index definition scripts
+provided by application developers in order to setup and configure
+their testing and staging cbft clusters.</p>
+<p>For safety of operations, it is recommended that similar to other
+indexing systems, that testing/staging cbft clusters not uses direct
+production data sources, but snapshots or copies of production data
+sources.</p>
+<p>The testing/staging cbft clusters would also be a good place to
+reconfirm any sizing assumptions.  For example, perhaps an updated
+index definition utilizes new features of the bleve full-text engine,
+but those new features require more resources (cpu, memory, storage)
+and these changes would ideally need to be accounted for and
+reconfirmed before "going live" with production changes.</p>
 <h3 id="production">Production</h3>
-<p>tbd</p>
-<h2 id="sizing">Sizing</h2>
-<p>tbd</p>
+<p>Deployment of index definitions or updated index definitions to
+production clusters would ideally follow the same steps that were
+tested in testing/staging cbft clusters.</p>
+<p>One useful technique would be to utilize cbft's index alias feature to
+allow for updated indexes to be be built up in the background without
+affecting existing application queries.  Applications would still
+continue to query, through the alias, to previous index versions.
+When a new index version is finally built up enough and ready for
+querying, an administrator would then redefine her index alias to
+point at the new, target index version which was built with the
+updated index definition.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
