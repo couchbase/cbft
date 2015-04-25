@@ -129,8 +129,9 @@ of resources.
 - ```known```: a cbft node in known state is listed in the cluster,
   but will not be assigned any index partitions.
 
-- ```unknown```: this is a node that is not part of the cluster, and
-  by definition, will not be assigned any index partitions.
+- ```unknown```: this is a node that is not part of the cluster, is
+  not actually listed in cbft's cluster configuration data, and by
+  definition, will not be assigned any index partitions.
 
 ## Removing cbft nodes
 
@@ -154,17 +155,39 @@ previously as...
            -bindHttp=:9090 \
            -register=unknown
 
-That will move the cbft into ```unknown``` state in the cluster, and
-any of its previously assigned index partitions will be re-assigned to
-other, remaining wanted cbft nodes in the cluster.
+The key to removing a node with the ```--register=unknown```
+command-line parameter is that your invocation must have the same
+```-bindHttp```, ```-cfg```, and node UUID (stored previously in the
+dataDir as the ```cbft.uuid``` file)
 
-## Index replicas
+That will move the cbft node into ```unknown``` state in the cluster,
+and any of the cbft node's previously assigned index partitions will
+be re-assigned to other, remaining wanted cbft nodes in the cluster.
 
-tbd
+## Node identity
 
-## Restarts of cbft nodes
+The cbft node's UUID and bindHttp (address:port) values must be unique
+for a new cbft node to join a cluster.
 
-tbd
+Please see the administrator's guide on [running cbft
+definitions](running) for more information on the node UUID and
+bindHTTP values.
+
+## Index
+replicas
+
+Once you have more than one cbft node in a cluster, then you can
+leverage cbft's index replica features.
+
+Index replicas are indexes built up by just re-indexing the data again
+from the original data source on a different cbft node.  That is, it
+is not chain replication (A -> X -> Y) but is instead star replication
+(A -> X; A -> Y).
+
+To enable replicas for an index, you need to set the ```numReplicas```
+configuration field for an index definition to greater than 0.  Please
+see ```numReplicas``` documentation in the developer's guide on [index
+definitions](../dev-guide/index-definitions) for more information.
 
 ---
 

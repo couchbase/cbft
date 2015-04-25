@@ -31,19 +31,44 @@ In a container-based environment, such as Docker or equivalent, users
 should consider a non-ephemeral, high performance host volume for
 their cbft data directory.
 
-## Port numbers
+## Node UUID
+
+An important file stored in the data directory is the ```cbft.uuid```
+file.
+
+The ```cbft.uuid``` file records the _Node UUID_ of the cbft node,
+which is a unique, persistent identifier for a cbft node that is
+critical for clustering multiple cbft nodes together.
+
+The ```cbft.uuid``` file must remain the same and readable across
+restarts of the cbft process for cbft clustering to work properly.
+
+The first time a cbft is started, with an empty data directory, cbft
+will detect that the ```cbft.uuid``` file does not exist and will
+generate a new node UUID and save it to a new ```cbft.uuid``` file.
+
+On a restart of the cbft node, it should find the same ```cbft.uuid```
+file.
+
+If you move the data directory (e.g., such as to move the data
+directory a storage volume with more dist space) be sure to also
+move/copy over the ```cbft.uuid``` file.
+
+## BindHttp / Port numbers
 
 cbft provides a HTTP/REST API endpoint, listening on the address:port
-specified by the ```bindHttp``` command-line parameter.  By default,
-that is address 0.0.0.0 and port number 8095.
+specified by the ```bindHttp``` command-line parameter.
+
+The default value for ```bindHttp``` is "0.0.0.0:8095", so the default
+bind address is 0.0.0.0 and default port number is 8095.
 
 For example:
 
     ./cbft -bindHttp=0.0.0.0:8095 -server=http://cb-01:8091
 
-For clustering and for application/client accessibility, that port
-number (e.g., 8095) must be enabled for access by any firewall
-systems.
+For clustering and for application/client accessibility, the port
+number (e.g., 8095) must be enabled on your firewall systems, if any,
+for remote access.
 
 Each cbft node in a cbft cluster can have its own, different port
 number.  This allows users to test out cbft clusters on a local
