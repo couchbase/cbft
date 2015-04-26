@@ -169,15 +169,15 @@
         
             <li><a href="#disablingenabling-partition-reassignments">Disabling/enabling partition reassignments</a></li>
         
-            <li><a href="#nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</a></li>
-        
             <li><a href="#index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</a></li>
         
-            <li><a href="#backup-and-restore">Backup and restore</a></li>
+            <li><a href="#nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</a></li>
         
             <li><a href="#advanced-storage-options">Advanced storage options</a></li>
         
             <li><a href="#compacting-data">Compacting data</a></li>
+        
+            <li><a href="#backup-and-restore">Backup and restore</a></li>
         
     
         <li class="main "><a href="#managing-cbft-nodes">Managing cbft nodes</a></li>
@@ -345,17 +345,71 @@ for the index.</p>
 <ul>
 <li>Click on the <code>Enable Reassignments</code> button.</li>
 </ul>
-<h2 id="nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</h2>
-<p>tbd</p>
 <h2 id="index-definition-changes-and-zero-downtime">Index definition changes and zero downtime</h2>
-<p>tbd</p>
-<h2 id="backup-and-restore">Backup and restore</h2>
+<p>When an index definition is created or modified, cbft will rebuild the
+index partitions for that index from scratch, starting from an empty
+state for that index.</p>
+<p>During that time, queries against a modified index will see "missing"
+results, as an index rebuild can take time to ingest or process data
+from the data source.</p>
+<p>To alleviate this situation and have "zero downtime" with respect to
+query'ability, a user can utilize cbft's index alias feature.</p>
+<p>The idea is to leverage the level of indirection in naming that an
+alias provides, where an application sends its queries to an index
+alias instead of directly to real indexes.</p>
+<p>As an example, imagine the user creates a real index definition, such
+as for <code>ProductCatalogIndex-01</code>.</p>
+<p>Then the user also creates an index alias, called
+<code>ProductCatalogAlias</code>, which has <code>ProductCatalogIndex-01</code> as
+its target.</p>
+<p>The user's application is configured to make queries against
+<code>ProductCatalogAlias</code>, and everything works fine.</p>
+<p>Some time later, however, the team discovers a need for additional
+features, such as perhaps needing to adjust bleve's full-text
+tokenization configuration.</p>
+<p>Rather than directly editing the <code>ProductCatalogIndex-01</code>, instead
+the team creates a brand new index, <code>ProductCatalogIndex-02</code>,
+which has the improved index configuration.</p>
+<p>The team lets <code>ProductCatalogIndex-02</code> index build up to
+acceptable amount of data.</p>
+<p>The team may also, optionally, wish to turn off indexing ingest for
+<code>ProductCatalogIndex-01</code>, if application requirements allow for
+some amount of stale'ness in indexes.</p>
+<p>When <code>ProductCatalogIndex-02</code> is ready, the team edits the
+<code>ProductCatalogAlias</code> definition to point to
+<code>ProductCatalogIndex-02</code> instead of pointing to the previous
+<code>ProductCatalogIndex-01</code>.</p>
+<p>The application continues to query <code>ProductCatalogAlias</code> with no
+apparent downtime of queries.</p>
+<p>As an advanced approach, the team may also allow some subset of the
+application or subset of users (e.g., "beta" users) to instead query
+the <code>ProductCatalogIndex-02</code>, even whil it is building up, in
+order to get a preview of the changed index configuration's behavior.</p>
+<p>The resource cost of using an index alias for zero downtime to queries
+is double that of a single index, but some applications may have zero
+downtime as a necessary requirement for production and are willing to
+bear the extra cost.</p>
+<h2 id="nodecluster-changes-and-zero-downtime">Node/cluster changes and zero downtime</h2>
 <p>tbd</p>
 <h2 id="advanced-storage-options">Advanced storage options</h2>
 <p>EXPERIMENTAL!</p>
 <p>tbd</p>
 <h2 id="compacting-data">Compacting data</h2>
 <p>tbd</p>
+<h2 id="backup-and-restore">Backup and restore</h2>
+<p>cbft includes various REST API endpoints to be able request the cbft
+cluster's current configuration and index definitions, which can be
+used for restoration purposes.</p>
+<p>The Cfg provider (i.e., a Couchbase <code>my-cfg-bucket</code>) should also
+have replication enabled and be backed up for production usage.</p>
+<p>Because cbft is used as an indexing server, the index data entries
+maintained by cbft should also be able to be rebuilt "from scratch"
+from the original "source of truth" data sources.</p>
+<p>At root, though, the end-all/be-all safety net and recommended
+practice is that cbft index creation scripts should be checked into
+source-code control systems so that any development, test or
+administration colleagues on the user's team can replicate a cbft
+configuration at will.</p>
 <h1 id="managing-cbft-nodes">Managing cbft nodes</h1>
 <h2 id="forcing-a-manager-kick">Forcing a manager kick</h2>
 <p>A button to <code>Kick Manager</code> is available in the web admin UI, on

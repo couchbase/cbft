@@ -162,7 +162,19 @@
             <div class="col-md-9" role="main">
 
 <h1 id="diagnosing-issues">Diagnosing issues</h1>
-<p>tbd</p>
+<p>cbft includes several REST API endpoints to programatically gather
+stats, counters and health information as JSON responses.</p>
+<p>A key REST API endpoint, however, is the <code>/api/diag</code>, which
+attempts to gather as much information as possible in a single
+request.  For example:</p>
+<pre><code>curl http://cbft-01:8095/api/diag &gt; cbft-01.json
+curl http://cbft-02:8095/api/diag &gt; cbft-02.json
+curl http://cbft-03:8095/api/diag &gt; cbft-03.json
+</code></pre>
+<p>Although these the <code>/api/diag</code> output may seem to be large, the
+motivation with <code>/api/diag</code> is to simplify diagnosis of issues,
+and with working with the Couchbase community, forums, technical
+support and other engineers by making data capture easy in one shot.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
