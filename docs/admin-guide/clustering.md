@@ -173,8 +173,7 @@ Please see the administrator's guide on [running cbft
 definitions](running) for more information on the node UUID and
 bindHTTP values.
 
-## Index
-replicas
+## Index replicas
 
 Once you have more than one cbft node in a cluster, then you can
 leverage cbft's index replica features.
