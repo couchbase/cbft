@@ -158,9 +158,17 @@
         
             <li><a href="#logs">Logs</a></li>
         
-            <li><a href="#heartbeats">Heartbeats</a></li>
+            <li><a href="#node-monitoring">Node monitoring</a></li>
         
-            <li><a href="#resources-consumption">Resources consumption</a></li>
+            <li><a href="#node-index-monitoring">Node index monitoring</a></li>
+        
+            <li><a href="#memory">Memory</a></li>
+        
+            <li><a href="#cpu">CPU</a></li>
+        
+            <li><a href="#storage">Storage</a></li>
+        
+            <li><a href="#networking">Networking</a></li>
         
             <li><a href="#performance">Performance</a></li>
         
@@ -170,21 +178,66 @@
             <div class="col-md-9" role="main">
 
 <h1 id="monitoring-cbft">Monitoring cbft</h1>
-<p>tbd</p>
+<p>cbft provides the following monitoring features:</p>
 <h2 id="logs">Logs</h2>
+<p>The web admin UI <code>Logs</code> screen shows the most recent 1000 log
+messages for the cbft node.  It is a convenience feature so that an
+administrator does not have to log into the machine to see recent
+logs.</p>
+<p>Recommended practice: an administrator should consider capturing
+cbft's stdout/stderr output to rotated files or to a centralized log
+service.</p>
+<h2 id="node-monitoring">Node monitoring</h2>
+<p>The web admin UI of cbft provides a <code>Monitor</code> screen that shows
+node-related memory and GC (garbage collection utlization).</p>
+<h2 id="node-index-monitoring">Node index monitoring</h2>
+<p>The web admin UI provides a dropdown on the <code>Monitor</code> screen to
+control graphs that can allow an administrator to focus in on the
+index partition performance of the current cbft node.</p>
+<p>Index partition specific graphs include:</p>
+<ul>
+<li>Updates (count of updates)</li>
+<li>Deletes (count of deletes)</li>
+<li>Analysis/Index Time</li>
+<li>Searches (count of searches)</li>
+<li>Search Time</li>
+</ul>
+<p>The web admin UI also includes more numeric, per index monitoring
+statistics.  Using a web browser...</p>
+<ul>
+<li>
+<p>Navigate to the <code>Indexes</code> screen.</p>
+</li>
+<li>
+<p>Click on the index name link of the index you're interested in.</p>
+</li>
+<li>
+<p>Click on the Monitor sub-tab to see per-index specific stats and
+  counters.</p>
+</li>
+</ul>
+<p>The displayed stats and counters are only for the current cbft node.</p>
+<p>The <code>Refresh</code> button will request the latest information from the
+current cbft node.</p>
+<p>Selecting the <code>Show all stats</code> checkbox will display even more
+stats and counters.</p>
+<p>By default, aggregated stats across index partitions for the current
+cbft node are shown.</p>
+<p>Selecting the <code>Show details and timings for each index partition</code>
+checkbox will display non-aggregated details from every index
+partition from the current cbft node.</p>
+<h2 id="memory">Memory</h2>
 <p>tbd</p>
-<h2 id="heartbeats">Heartbeats</h2>
+<h3 id="gc-pauses">GC pauses</h3>
 <p>tbd</p>
-<h2 id="resources-consumption">Resources consumption</h2>
-<h3 id="memory">Memory</h3>
+<h2 id="cpu">CPU</h2>
 <p>tbd</p>
-<h4 id="gc-pauses">GC pauses</h4>
+<h2 id="storage">Storage</h2>
 <p>tbd</p>
-<h3 id="cpu">CPU</h3>
-<p>tbd</p>
-<h3 id="storage">Storage</h3>
+<h2 id="networking">Networking</h2>
 <p>tbd</p>
 <h2 id="performance">Performance</h2>
+<p>tbd</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
