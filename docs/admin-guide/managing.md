@@ -217,7 +217,47 @@ bear the extra cost.
 
 ## Node/cluster changes and zero downtime
 
-tbd
+Similar to with handling index definition changes with zero downtime,
+an administrator can use index aliases in order to provide zero
+downtime for application queries even as cluster membership changes
+(cbft nodes are added or removed).
+
+Normally, as nodes are added or removed from a cbft cluster (as
+different cbft nodes are registered as wanted or unwanted or unknown),
+the cbft system will automatically reassign index partitions amongst
+the remaining nodes.  The reassigned index partitions need to build
+from scratch, however, which leads to queries not providing responses
+to all data as the index partitions are rebuilt.
+
+The solution is to use an index alias so that applications can
+continue to query the old index.
+
+Additionally, _before_ the administrator adds or removes nodes from a
+cbft cluster, the administrator should disable index partition
+reassignments for the current index definition.  See the instructions
+above for how to disable index partition reassignments.
+
+Then, the administrator can add new cbft nodes, and the current index
+definition will remain "stable", where its index partitions will
+remain assigned to the set of old cbft nodes.
+
+The administrator would next define a new index, where the index
+partitions of the new index would be assigned to both the old,
+remaining cbft nodes and also to the newly added cbft nodes.
+
+The administrator would then monitor the cbft cluster, watching for
+indexing and ingest progress on the new index.
+
+When the new index has indexed or ingested enough data from the data
+source, the administrator can then edit the index alias and repoint
+the alias away from the old index definition and instead point the
+alias to the new index definition.
+
+Then the administrator can delete the old index definition.
+
+This operation allows applications to query the index alias with no
+loss of indexed data, but at the cost of requiring twice the resources
+to support two indexes in a cluster.
 
 ## Advanced storage options
 
