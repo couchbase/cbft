@@ -155,11 +155,67 @@ To re-enable index partition reassignments on your index:
 
 - Click on the ```Enable Reassignments``` button.
 
-## Node/cluster changes and zero downtime
-
-tbd
-
 ## Index definition changes and zero downtime
+
+When an index definition is created or modified, cbft will rebuild the
+index partitions for that index from scratch, starting from an empty
+state for that index.
+
+During that time, queries against a modified index will see "missing"
+results, as an index rebuild can take time to ingest or process data
+from the data source.
+
+To alleviate this situation and have "zero downtime" with respect to
+query'ability, a user can utilize cbft's index alias feature.
+
+The idea is to leverage the level of indirection in naming that an
+alias provides, where an application sends its queries to an index
+alias instead of directly to real indexes.
+
+As an example, imagine the user creates a real index definition, such
+as for ```ProductCatalogIndex-01```.
+
+Then the user also creates an index alias, called
+```ProductCatalogAlias```, which has ```ProductCatalogIndex-01``` as
+its target.
+
+The user's application is configured to make queries against
+```ProductCatalogAlias```, and everything works fine.
+
+Some time later, however, the team discovers a need for additional
+features, such as perhaps needing to adjust bleve's full-text
+tokenization configuration.
+
+Rather than directly editing the ```ProductCatalogIndex-01```, instead
+the team creates a brand new index, ```ProductCatalogIndex-02```,
+which has the improved index configuration.
+
+The team lets ```ProductCatalogIndex-02``` index build up to
+acceptable amount of data.
+
+The team may also, optionally, wish to turn off indexing ingest for
+```ProductCatalogIndex-01```, if application requirements allow for
+some amount of stale'ness in indexes.
+
+When ```ProductCatalogIndex-02``` is ready, the team edits the
+```ProductCatalogAlias``` definition to point to
+```ProductCatalogIndex-02``` instead of pointing to the previous
+```ProductCatalogIndex-01```.
+
+The application continues to query ```ProductCatalogAlias``` with no
+apparent downtime of queries.
+
+As an advanced approach, the team may also allow some subset of the
+application or subset of users (e.g., "beta" users) to instead query
+the ```ProductCatalogIndex-02```, even whil it is building up, in
+order to get a preview of the changed index configuration's behavior.
+
+The resource cost of using an index alias for zero downtime to queries
+is double that of a single index, but some applications may have zero
+downtime as a necessary requirement for production and are willing to
+bear the extra cost.
+
+## Node/cluster changes and zero downtime
 
 tbd
 
