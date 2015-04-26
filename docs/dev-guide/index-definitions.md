@@ -168,16 +168,22 @@ The fields in a plan params include:
 * ```nodePlanParams```: JSON object
 * ```planFrozen```: bool, frozen == true
 
-```maxPartitionsPerPIndex``` limits how many source partitions that
-cbft can assign to an index partition.  A value of 0 means no limit,
-which effectively means that cbft will just assign all source
-partitions (for example, 1024 Couchbase "vbuckets") to a single index
-partition.
+```maxPartitionsPerPIndex```, or "max number of source partitions per
+index partition", limits how many source partitions that cbft can
+assign to or allocate toto an index partition.
+
+A value of 0 means no limit, which effectively means that cbft will
+just allocate all source partitions to a single index partition.
 
 For example, with a Couchbase bucket as your data source, you will
-have 1024 source partitions (1024 Couchbase "vbuckets").  If your
-```maxPartitionsPerPIndex``` is 200, then you would have 6 index
-partitions...
+have 1024 source partitions (1024 Couchbase "vbuckets")...
+
+If your ```maxPartitionsPerPIndex``` is 0, then you would have a
+single index partition that will be assigned to be responsible for all
+vbuckets (assuming your ```numReplicas``` value is 0).
+
+If your ```maxPartitionsPerPIndex``` is 200, then you would have 6
+index partitions...
 
 - index partition A covers vbuckets 0 through 199
 - index partition B covers vbuckets 200 through 399
@@ -186,10 +192,12 @@ partitions...
 - index partition E covers vbuckets 800 through 999
 - index partition F covers vbuckets 1000 through 1023
 
-Note: cbft acutally uses unique hexadecimal hashes (like
+cbft acutally uses unique hexadecimal hashes (like
 "beer-sample_58dc74c09923851d_607744fc") to identify index partitions
 instead of simple alphabetic characters as shown above (the 'A'
-through 'F' above).
+through 'F' above).  The format of the index partition is...
+
+    <indexName>_<indexUUID>_<hash-of-source-partition-identifiers>
 
 ```numReplicas``` defines how many index partitions replicas cbft
 should allocate, not counting the first, master index partition.  For
