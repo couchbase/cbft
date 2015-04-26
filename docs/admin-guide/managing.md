@@ -163,10 +163,6 @@ tbd
 
 tbd
 
-## Backup and restore
-
-tbd
-
 ## Advanced storage options
 
 EXPERIMENTAL!
@@ -176,6 +172,25 @@ tbd
 ## Compacting data
 
 tbd
+
+## Backup and restore
+
+cbft includes various REST API endpoints to be able request the cbft
+cluster's current configuration and index definitions, which can be
+used for restoration purposes.
+
+The Cfg provider (i.e., a Couchbase ```my-cfg-bucket```) should also
+have replication enabled and be backed up for production usage.
+
+Because cbft is used as an indexing server, the index data entries
+maintained by cbft should also be able to be rebuilt "from scratch"
+from the original "source of truth" data sources.
+
+At root, though, the end-all/be-all safety net and recommended
+practice is that cbft index creation scripts should be checked into
+source-code control systems so that any development, test or
+administration colleagues on the user's team can replicate a cbft
+configuration at will.
 
 # Managing cbft nodes
 
