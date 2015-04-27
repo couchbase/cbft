@@ -33,7 +33,19 @@ To use the ```couchbase``` Cfg provider:
   the ```cfg-bucket```...
 
     ./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
-           -server=http://couchbase-01:8091
+           -server=http://couchbase-01:8091 \
+           -bindHttp=10.1.1.10:8095
+
+## The bindHttp address and port
+
+You must specify a valid bind IP address with the ```bindHttp```
+command-line parameter for clustering to work.
+
+The IP address allows clients and peer cbft nodes to contact the cbft
+node using the provided ```bindHttp``` IP address.
+
+Each node in the cbft cluster should have its own, unique
+```bindHttp``` address and port.
 
 ## Adding cbft nodes
 
@@ -41,7 +53,8 @@ On a different machine, you can next start a second cbft node, pointed
 at the same, shared ```cfg-bucket```...
 
     ./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
-           -server=http://couchbase-01:8091
+           -server=http://couchbase-01:8091 \
+           -bindHttp=10.1.1.11:8095
 
 Since those two cbft nodes are using the same ```cfg-bucket``` as
 their Cfg provider, those two cbft nodes are now clustered.
@@ -62,17 +75,17 @@ own terminal or shell session:
     ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
            -dataDir=/data/cbft-9090 \
-           -bindHttp=:9090
+           -bindHttp=10.1.1.10:9090
 
     ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
            -dataDir=/data/cbft-9091 \
-           -bindHttp=:9091
+           -bindHttp=10.1.1.10:9091
 
     ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
            -dataDir=/data/cbft-9092 \
-           -bindHttp=:9092
+           -bindHttp=10.1.1.10:9092
 
 The above will result in a three node cbft cluster all running on the
 same machine.
@@ -152,7 +165,7 @@ previously as...
     ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
            -dataDir=/data/cbft-9090 \
-           -bindHttp=:9090 \
+           -bindHttp=10.1.1.10:9090 \
            -register=unknown
 
 The key to removing a node with the ```--register=unknown```
