@@ -163,8 +163,6 @@
         
             <li><a href="#getting-cbft">Getting cbft</a></li>
         
-            <li><a href="#a-data-directory-for-cbft">A data directory for cbft</a></li>
-        
             <li><a href="#running-cbft">Running cbft</a></li>
         
             <li><a href="#the-web-admin-ui">The web admin UI</a></li>
@@ -226,18 +224,15 @@ builds.</p>
 <p>For the rest of this documentation, we'll just refer to the cbft
 executable as <code>./cbft</code> rather than some platform specific name
 like <code>./cbft.darwin.amd64</code>.</p>
-<h2 id="a-data-directory-for-cbft">A data directory for cbft</h2>
-<p>Create a directory where cbft can store its config and data files...</p>
-<pre><code>mkdir -p data
-</code></pre>
 <h2 id="running-cbft">Running cbft</h2>
 <p>Start cbft, pointing it to your Couchbase Server as its datasource
 server...</p>
 <pre><code>./cbft -server http://localhost:8091
 </code></pre>
-<p>Note: cbft defaults to using the directory named "data" as its data
-directory.  You can change this using the <code>-dataDir</code> command-line
-parameter.</p>
+<p>Note: cbft defaults to using a directory named "data" as its data
+directory, which it will create in the current working directory if it
+does not exist yet.  You can change the data directory path by using
+the <code>-dataDir</code> command-line parameter.</p>
 <h2 id="the-web-admin-ui">The web admin UI</h2>
 <p>Next, point your web browser to cbft's web admin UI...</p>
 <pre><code>http://localhost:8095
