@@ -522,6 +522,7 @@ func restGetRuntimeStatsMem(w http.ResponseWriter, r *http.Request) {
 
 func restGetRuntimeStats(w http.ResponseWriter, r *http.Request) {
 	mustEncode(w, map[string]interface{}{
+		"currTime":  time.Now(),
 		"startTime": startTime,
 		"go": map[string]interface{}{
 			"numGoroutine":   runtime.NumGoroutine(),
