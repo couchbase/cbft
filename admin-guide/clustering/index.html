@@ -158,6 +158,8 @@
         
             <li><a href="#setting-up-a-couchbase-cfg-provider">Setting up a Couchbase Cfg provider</a></li>
         
+            <li><a href="#the-bindhttp-address-and-port">The bindHttp address and port</a></li>
+        
             <li><a href="#adding-cbft-nodes">Adding cbft nodes</a></li>
         
             <li><a href="#a-cluster-running-on-a-single-machine">A cluster running on a single machine</a></li>
@@ -209,14 +211,23 @@ information.</p>
 <p>Next, start cbft with the <code>couchbase</code> Cfg provider, pointed at
   the <code>cfg-bucket</code>...</p>
 <p>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
-       -server=http://couchbase-01:8091</p>
+       -server=http://couchbase-01:8091 \
+       -bindHttp=10.1.1.10:8095</p>
 </li>
 </ul>
+<h2 id="the-bindhttp-address-and-port">The bindHttp address and port</h2>
+<p>You must specify a valid bind IP address with the <code>bindHttp</code>
+command-line parameter for clustering to work.</p>
+<p>The IP address allows clients and peer cbft nodes to contact the cbft
+node using the provided <code>bindHttp</code> IP address.</p>
+<p>Each node in the cbft cluster should have its own, unique
+<code>bindHttp</code> address and port.</p>
 <h2 id="adding-cbft-nodes">Adding cbft nodes</h2>
 <p>On a different machine, you can next start a second cbft node, pointed
 at the same, shared <code>cfg-bucket</code>...</p>
 <pre><code>./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
-       -server=http://couchbase-01:8091
+       -server=http://couchbase-01:8091 \
+       -bindHttp=10.1.1.11:8095
 </code></pre>
 <p>Since those two cbft nodes are using the same <code>cfg-bucket</code> as
 their Cfg provider, those two cbft nodes are now clustered.</p>
@@ -233,17 +244,17 @@ own terminal or shell session:</p>
 <pre><code>./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091 \
        -dataDir=/data/cbft-9090 \
-       -bindHttp=:9090
+       -bindHttp=10.1.1.10:9090
 
 ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091 \
        -dataDir=/data/cbft-9091 \
-       -bindHttp=:9091
+       -bindHttp=10.1.1.10:9091
 
 ./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091 \
        -dataDir=/data/cbft-9092 \
-       -bindHttp=:9092
+       -bindHttp=10.1.1.10:9092
 </code></pre>
 <p>The above will result in a three node cbft cluster all running on the
 same machine.</p>
@@ -316,7 +327,7 @@ previously as...</p>
 <p>./cbft -cfg=couchbase:http://my-cfg-bucket@couchbase-01:8091 \
        -server=http://couchbase-01:8091 \
        -dataDir=/data/cbft-9090 \
-       -bindHttp=:9090 \
+       -bindHttp=10.1.1.10:9090 \
        -register=unknown</p>
 </li>
 </ul>
