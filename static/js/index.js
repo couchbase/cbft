@@ -342,91 +342,89 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.prevIndexUUID = "";
     $scope.paramNumLines = {};
 
-    $http.get('/api/managerMeta').success(function(data) {
-        $scope.meta = data;
+    var data = $scope.meta = getManagerMeta();
 
-        var sourceTypesArr = []
-        for (var k in data.sourceTypes) {
-            sourceTypesArr.push(data.sourceTypes[k]);
+    var sourceTypesArr = []
+    for (var k in data.sourceTypes) {
+        sourceTypesArr.push(data.sourceTypes[k]);
 
-            var parts = data.sourceTypes[k].description.split("/");
-            data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
-            data.sourceTypes[k].label = parts[parts.length - 1];
-            data.sourceTypes[k].sourceType = k;
+        var parts = data.sourceTypes[k].description.split("/");
+        data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
+        data.sourceTypes[k].label = parts[parts.length - 1];
+        data.sourceTypes[k].sourceType = k;
 
-            $scope.newSourceParams[k] =
-                JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
-            $scope.paramNumLines[k] =
-                $scope.newSourceParams[k].split("\n").length + 1;
+        $scope.newSourceParams[k] =
+            JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
+        $scope.paramNumLines[k] =
+            $scope.newSourceParams[k].split("\n").length + 1;
+    }
+    sourceTypesArr.sort(compareCategoryLabel);
+    $scope.sourceTypesArr = sourceTypesArr;
+
+    var indexTypesArr = [];
+    for (var k in data.indexTypes) {
+        indexTypesArr.push(data.indexTypes[k]);
+
+        var parts = data.indexTypes[k].description.split("/");
+        data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
+        data.indexTypes[k].label = parts[parts.length - 1];
+        data.indexTypes[k].indexType = k;
+
+        $scope.newIndexParams[k] = {};
+        for (var j in data.indexTypes[k].startSample) {
+            $scope.newIndexParams[k][j] =
+                JSON.stringify(data.indexTypes[k].startSample[j], undefined, 2);
+            $scope.paramNumLines[j] =
+                $scope.newIndexParams[k][j].split("\n").length + 1;
         }
-        sourceTypesArr.sort(compareCategoryLabel);
-        $scope.sourceTypesArr = sourceTypesArr;
+    }
+    indexTypesArr.sort(compareCategoryLabel);
+    $scope.indexTypesArr = indexTypesArr;
 
-        var indexTypesArr = [];
-        for (var k in data.indexTypes) {
-            indexTypesArr.push(data.indexTypes[k]);
+    $scope.newPlanParams =
+        JSON.stringify(data.startSamples["planParams"], undefined, 2);
+    $scope.paramNumLines["planParams"] =
+        $scope.newPlanParams.split("\n").length + 1;
 
-            var parts = data.indexTypes[k].description.split("/");
-            data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
-            data.indexTypes[k].label = parts[parts.length - 1];
-            data.indexTypes[k].indexType = k;
+    origIndexName = $routeParams.indexName;
+    if (origIndexName && origIndexName.length > 0) {
+        $scope.isEdit = $location.path().match(/_edit$/);
+        $scope.isClone = $location.path().match(/_clone$/);
 
-            $scope.newIndexParams[k] = {};
-            for (var j in data.indexTypes[k].startSample) {
-                $scope.newIndexParams[k][j] =
-                    JSON.stringify(data.indexTypes[k].startSample[j], undefined, 2);
-                $scope.paramNumLines[j] =
-                    $scope.newIndexParams[k][j].split("\n").length + 1;
+        $http.get('/api/index/' + origIndexName).
+        success(function(data) {
+            $scope.newIndexName = data.indexDef.name;
+            if ($scope.isClone) {
+                $scope.newIndexName = data.indexDef.name + "-copy";
             }
-        }
-        indexTypesArr.sort(compareCategoryLabel);
-        $scope.indexTypesArr = indexTypesArr;
 
-        $scope.newPlanParams =
-            JSON.stringify(data.startSamples["planParams"], undefined, 2);
-        $scope.paramNumLines["planParams"] =
-            $scope.newPlanParams.split("\n").length + 1;
-
-        origIndexName = $routeParams.indexName;
-        if (origIndexName && origIndexName.length > 0) {
-            $scope.isEdit = $location.path().match(/_edit$/);
-            $scope.isClone = $location.path().match(/_clone$/);
-
-            $http.get('/api/index/' + origIndexName).
-            success(function(data) {
-                $scope.newIndexName = data.indexDef.name;
-                if ($scope.isClone) {
-                    $scope.newIndexName = data.indexDef.name + "-copy";
-                }
-
-                $scope.newIndexType = data.indexDef.type;
-                $scope.newIndexParams[data.indexDef.type] =
-                    JSON.parse(data.indexDef.params);
-                for (var j in $scope.newIndexParams[data.indexDef.type]) {
-                    $scope.newIndexParams[data.indexDef.type][j] =
-                        JSON.stringify($scope.newIndexParams[data.indexDef.type][j],
-                                       undefined, 2);
-                }
-                $scope.newSourceType = data.indexDef.sourceType;
-                $scope.newSourceName = data.indexDef.sourceName;
-                $scope.newSourceUUID = data.indexDef.sourceUUID;
-                $scope.newSourceParams[data.indexDef.sourceType] =
-                    data.indexDef.sourceParams;
-                $scope.newPlanParams =
-                    JSON.stringify(data.indexDef.planParams,
+            $scope.newIndexType = data.indexDef.type;
+            $scope.newIndexParams[data.indexDef.type] =
+                JSON.parse(data.indexDef.params);
+            for (var j in $scope.newIndexParams[data.indexDef.type]) {
+                $scope.newIndexParams[data.indexDef.type][j] =
+                    JSON.stringify($scope.newIndexParams[data.indexDef.type][j],
                                    undefined, 2);
+            }
+            $scope.newSourceType = data.indexDef.sourceType;
+            $scope.newSourceName = data.indexDef.sourceName;
+            $scope.newSourceUUID = data.indexDef.sourceUUID;
+            $scope.newSourceParams[data.indexDef.sourceType] =
+                data.indexDef.sourceParams;
+            $scope.newPlanParams =
+                JSON.stringify(data.indexDef.planParams,
+                               undefined, 2);
 
-                $scope.prevIndexUUID = "";
-                if ($scope.isEdit) {
-                    $scope.prevIndexUUID = data.indexDef.uuid;
-                }
-            }).
-            error(function(data, code) {
-                $scope.errorMessage = errorMessage(data, code);
-                $scope.errorMessageFull = data;
-            })
-        }
-    })
+            $scope.prevIndexUUID = "";
+            if ($scope.isEdit) {
+                $scope.prevIndexUUID = data.indexDef.uuid;
+            }
+        }).
+        error(function(data, code) {
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
+        })
+    }
 
     $scope.putIndex = function(indexName, indexType, indexParams,
                                sourceType, sourceName,
