@@ -1,3 +1,7 @@
+var lastQueryIndex = null;
+var lastQueryReq = null;
+var lastQueryRes = null;
+
 function prepQueryRequest(scope) {
     return {
         "q": scope.query,
@@ -75,6 +79,10 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
         $http.post('/api/index/' + $scope.indexName + '/query', req).
         success(function(data) {
+            lastQueryIndex = $scope.indexName;
+            lastQueryReq = req;
+            lastQueryRes = JSON.stringify(data);
+
             $scope.processResults(data);
         }).
         error(function(data, code) {
@@ -87,18 +95,6 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             }
         });
     };
-
-    if($location.search().p !== undefined) {
-        var page = parseInt($location.search().p, 10);
-        if (typeof page == 'number' && !isNaN(page) && isFinite(page) && page > 0 ){
-            $scope.page = page;
-        }
-    }
-
-    if($location.search().q !== undefined) {
-        $scope.query = $location.search().q;
-        $scope.runQuery();
-    }
 
     $scope.expl = function(explanation) {
         var rv = "" + $scope.roundScore(explanation.value) +
@@ -206,5 +202,33 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.page = pageNum;
         $scope.runQuery();
     };
+
+    if($location.search().p !== undefined) {
+        var page = parseInt($location.search().p, 10);
+        if (typeof page == 'number' && !isNaN(page) && isFinite(page) && page > 0 ){
+            $scope.page = page;
+        }
+    }
+
+    if($location.search().q !== undefined) {
+        $scope.query = $location.search().q;
+
+        $scope.runQuery();
+    } else {
+        if (!$scope.query &&
+            lastQueryIndex == $scope.indexName &&
+            lastQueryReq &&
+            lastQueryRes) {
+            $scope.query = lastQueryReq.q;
+            $scope.errorMessage = null;
+            $scope.errorMessageFull = null;
+            $scope.results = null;
+            $scope.numPages = 0;
+
+            $scope.processResults(JSON.parse(lastQueryRes));
+
+            $location.search('q', lastQueryReq.q);
+        }
+    }
 
 }
