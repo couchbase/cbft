@@ -310,6 +310,10 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 }
 
 function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+    $scope.advancedFields = {
+        "store": true
+    };
+
     $scope.errorFields = {};
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;

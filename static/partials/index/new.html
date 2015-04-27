@@ -36,7 +36,7 @@
        ng-repeat="(indexType, p) in newIndexParams">
     <div class="form-group"
          ng-repeat="(k, v) in p"
-         ng-show="newIndexType == indexType"
+         ng-show="newIndexType == indexType && (advanced || !advancedFields[k])"
          ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
       <label class="col-sm-4 control-label indexParam">{{k}}</label>
       <div class="col-sm-8">
