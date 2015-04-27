@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+const DEFAULT_DATA_DIR = "data"
+
 type Flags struct {
 	BindHttp   string
 	CfgConnect string
@@ -97,10 +99,10 @@ func initFlags(flags *Flags) map[string][]string {
 		"optional slash separated path of logical parent containers"+
 			"\nfor this node, for shelf/rack/row/zone awareness.")
 	s(&flags.DataDir,
-		[]string{"dataDir", "data"}, "DIR", "data",
+		[]string{"dataDir", "data"}, "DIR", DEFAULT_DATA_DIR,
 		"optional directory path where local index data and"+
 			"\nlocal config files will be stored for this node;"+
-			"\ndefault is 'data'.")
+			"\ndefault is '"+DEFAULT_DATA_DIR+"'.")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit.")

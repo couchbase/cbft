@@ -75,9 +75,38 @@ func main() {
 
 	MainWelcome(flagAliases)
 
+	s, err := os.Stat(flags.DataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if flags.DataDir == DEFAULT_DATA_DIR {
+				log.Printf("main: creating data directory, dataDir: %s",
+					flags.DataDir)
+				err = os.Mkdir(flags.DataDir, 0777)
+				if err != nil {
+					log.Fatalf("main: could not create data directory,"+
+						" dataDir: %s, err: %v", flags.DataDir, err)
+				}
+			} else {
+				log.Fatalf("main: data directory does not exist,"+
+					" dataDir: %s", flags.DataDir)
+				return
+			}
+		} else {
+			log.Fatalf("main: could not access data directory,"+
+				" dataDir: %s, err: %v", flags.DataDir, err)
+			return
+		}
+	} else {
+		if !s.IsDir() {
+			log.Fatalf("main: not a directory, dataDir: %s", flags.DataDir)
+			return
+		}
+	}
+
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
-	cfg, err := MainCfg(flags.CfgConnect, flags.BindHttp, flags.Register, flags.DataDir)
+	cfg, err := MainCfg(flags.CfgConnect,
+		flags.BindHttp, flags.Register, flags.DataDir)
 	if err != nil {
 		if err == ErrorBindHttp {
 			log.Fatalf("%v", err)
