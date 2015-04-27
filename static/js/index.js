@@ -104,8 +104,17 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
         $http.get('/api/index/' + $scope.indexName).
         success(function(data) {
-            data.indexDef.params = JSON.parse(data.indexDef.params);
-            data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+            data.indexDef.params = {};
+            try {
+                data.indexDef.params = JSON.parse(data.indexDef.params);
+            } catch (e) {
+            }
+
+            data.indexDef.sourceParams = {};
+            try {
+                data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+            } catch (e) {
+            }
 
             $scope.indexDef = data.indexDef
             $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
