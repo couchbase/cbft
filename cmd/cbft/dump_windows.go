@@ -14,6 +14,14 @@
 
 package main
 
+import (
+	log "github.com/couchbase/clog"
+)
+
 func dumpOnSignalForPlatform() {
 	// No-op for windows.
+}
+
+func init() {
+	log.DisableColor()
 }

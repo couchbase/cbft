@@ -1037,7 +1037,7 @@ func static_partials_index_tab_query_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "static/partials/index/tab-query.html", size: 2190, mode: os.FileMode(420), modTime: time.Unix(1429831805, 0)}
+	info := bindata_file_info{name: "static/partials/index/tab-query.html", size: 2190, mode: os.FileMode(420), modTime: time.Unix(1430175818, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
