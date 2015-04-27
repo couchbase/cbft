@@ -3,7 +3,8 @@
 <div ng-show="results.total_hits">
   <h5 class="resultsTop">
     <span ng-hide="page < 2">Page {{page}} of </span>
-    {{results.total_hits}} results ({{results.roundTook}})
+    {{results.total_hits}} results
+    <span class="roundTook">({{results.roundTook}} server-side)</span>
   </h5>
   <div class="pull-right" ng-show="results.hits">
     <input type="checkbox" ng-model="explainScoring"> Show Scoring
@@ -53,5 +54,8 @@
 <style>
 .resultsContainer {
   margin-left: 30px;
+}
+.roundTook {
+  color: #999;
 }
 </style>
