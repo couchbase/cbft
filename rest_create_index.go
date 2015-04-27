@@ -14,6 +14,7 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
@@ -125,13 +126,38 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		showError(w, req, fmt.Sprintf("rest_create_index:"+
+			" could not read request body, indexName: %s, err: %v",
+			indexName, err), 400)
+		return
+	}
+
+	var indexDef IndexDef
+	if len(requestBody) > 0 {
+		err := json.Unmarshal(requestBody, &indexDef)
+		if err != nil {
+			showError(w, req, fmt.Sprintf("rest_create_index:"+
+				" could not unmarshal json, indexName: %s, err: %v",
+				indexName, err), 400)
+			return
+		}
+	}
+
 	indexType := req.FormValue("indexType")
+	if indexType == "" {
+		indexType = indexDef.Type
+	}
 	if indexType == "" {
 		showError(w, req, "rest_create_index: indexType is required", 400)
 		return
 	}
 
 	indexParams := req.FormValue("indexParams")
+	if indexParams == "" {
+		indexParams = indexDef.Params
+	}
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
@@ -141,6 +167,9 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceName := req.FormValue("sourceName")
 	if sourceName == "" {
+		sourceName = indexDef.SourceName
+	}
+	if sourceName == "" {
 		// NOTE: Some sourceTypes (like "nil") don't care if sourceName is "".
 		if sourceType == "couchbase" {
 			sourceName = indexName // TODO: Revisit default of sourceName as indexName.
@@ -148,8 +177,14 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	sourceUUID := req.FormValue("sourceUUID") // Defaults to "".
+	if sourceUUID == "" {
+		sourceUUID = indexDef.SourceUUID
+	}
 
 	sourceParams := req.FormValue("sourceParams") // Defaults to "".
+	if sourceParams == "" {
+		sourceParams = indexDef.SourceParams
+	}
 
 	planParams := &PlanParams{}
 	planParamsStr := req.FormValue("planParams")
@@ -161,11 +196,13 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				planParamsStr, err), 400)
 			return
 		}
+	} else {
+		planParams = &indexDef.PlanParams
 	}
 
 	prevIndexUUID := req.FormValue("prevIndexUUID") // Defaults to "".
 
-	err := h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 		indexType, indexName, string(indexParams), *planParams, prevIndexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_create_index:"+

@@ -2831,3 +2831,64 @@ func TestMultiFeedStats(t *testing.T) {
 
 	testRESTHandlers(t, tests, router)
 }
+
+func TestIndexDefWithJSON(t *testing.T) {
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(),
+		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr.Write([]byte("hello"))
+	mr.Write([]byte("world"))
+
+	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+
+	tests := []*RESTHandlerTest{
+		{
+			Desc:   "try create index with bad JSON",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body:   []byte(`BAAAAD json! :-{`),
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`: true,
+			},
+		},
+		{
+			Desc:   "create index with primary feed",
+			Path:   "/api/index/idx0",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"bleve"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body: []byte(`{ "indexType": "bleve",
+                            "indexParams": "{}",
+                            "sourceType": "primary",
+                            "sourceUUID": "beefbeef",
+                            "sourceParams": "{\"numPartitions\":10}"
+                          }`),
+			Status: http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+	}
+
+	testRESTHandlers(t, tests, router)
+}
