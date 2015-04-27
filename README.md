@@ -43,14 +43,10 @@ Or, to build cbft from source (requires golang 1.4)...
     go get -u github.com/couchbaselabs/cbft/...
     $GOPATH/bin/cbft --help
 
-## First time setup
+## Prerequisites
 
-Prerequisites: you should have a Couchbase Server (3.0+) already
-installed and running somewhere.
-
-Create a directory where cbft will store its config and data files...
-
-    mkdir -p data
+You should have a Couchbase Server (3.0+) already installed and
+running somewhere.
 
 ## Running cbft
 

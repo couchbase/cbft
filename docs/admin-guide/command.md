@@ -79,8 +79,7 @@ That will print out usage/help output...
           node should have higher weight; default is 1.
     
     Examples:
-      Getting started, where a couchbase running on localhost is the datasource:
-        mkdir -p data
+      Getting started, using a couchbase (3.x) on localhost as the datasource:
         ./cbft -server=http://localhost:8091
     
       Example where cbft's configuration is kept in a couchbase "cfg-bucket":

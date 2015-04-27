@@ -55,12 +55,6 @@ For the rest of this documentation, we'll just refer to the cbft
 executable as ```./cbft``` rather than some platform specific name
 like ```./cbft.darwin.amd64```.
 
-## A data directory for cbft
-
-Create a directory where cbft can store its config and data files...
-
-    mkdir -p data
-
 ## Running cbft
 
 Start cbft, pointing it to your Couchbase Server as its datasource
@@ -68,9 +62,10 @@ server...
 
     ./cbft -server http://localhost:8091
 
-Note: cbft defaults to using the directory named "data" as its data
-directory.  You can change this using the ```-dataDir``` command-line
-parameter.
+Note: cbft defaults to using a directory named "data" as its data
+directory, which it will create in the current working directory if it
+does not exist yet.  You can change the data directory path by using
+the ```-dataDir``` command-line parameter.
 
 ## The web admin UI
 
