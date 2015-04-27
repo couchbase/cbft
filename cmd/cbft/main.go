@@ -113,6 +113,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if flags.Register == "unknown" {
+		log.Printf("main: unregistered node; now exiting")
+		os.Exit(0)
+	}
+
 	http.Handle("/", router)
 
 	log.Printf("main: listening on: %s", flags.BindHttp)
