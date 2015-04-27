@@ -43,6 +43,7 @@ func staticFileRouter(staticDir, staticETag string,
 		r.PathPrefix(p).Handler(RewriteURL("/", http.FileServer(s)))
 	}
 
+	r.Handle("/index.html", http.RedirectHandler("/static/index.html", 302))
 	r.Handle("/", http.RedirectHandler("/static/index.html", 302))
 
 	return r
