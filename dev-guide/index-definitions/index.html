@@ -347,15 +347,18 @@ index partitions across cbft nodes in a cbft cluster.</p>
 <li><code>nodePlanParams</code>: JSON object</li>
 <li><code>planFrozen</code>: bool, frozen == true</li>
 </ul>
-<p><code>maxPartitionsPerPIndex</code> limits how many source partitions that
-cbft can assign to an index partition.  A value of 0 means no limit,
-which effectively means that cbft will just assign all source
-partitions (for example, 1024 Couchbase "vbuckets") to a single index
-partition.</p>
+<p><code>maxPartitionsPerPIndex</code>, or "max number of source partitions per
+index partition", limits how many source partitions that cbft can
+assign to or allocate toto an index partition.</p>
+<p>A value of 0 means no limit, which effectively means that cbft will
+just allocate all source partitions to a single index partition.</p>
 <p>For example, with a Couchbase bucket as your data source, you will
-have 1024 source partitions (1024 Couchbase "vbuckets").  If your
-<code>maxPartitionsPerPIndex</code> is 200, then you would have 6 index
-partitions...</p>
+have 1024 source partitions (1024 Couchbase "vbuckets")...</p>
+<p>If your <code>maxPartitionsPerPIndex</code> is 0, then you would have a
+single index partition that will be assigned to be responsible for all
+vbuckets (assuming your <code>numReplicas</code> value is 0).</p>
+<p>If your <code>maxPartitionsPerPIndex</code> is 200, then you would have 6
+index partitions...</p>
 <ul>
 <li>index partition A covers vbuckets 0 through 199</li>
 <li>index partition B covers vbuckets 200 through 399</li>
@@ -364,10 +367,12 @@ partitions...</p>
 <li>index partition E covers vbuckets 800 through 999</li>
 <li>index partition F covers vbuckets 1000 through 1023</li>
 </ul>
-<p>Note: cbft acutally uses unique hexadecimal hashes (like
+<p>cbft actually uses unique hexadecimal hashes (like
 "beer-sample_58dc74c09923851d_607744fc") to identify index partitions
 instead of simple alphabetic characters as shown above (the 'A'
-through 'F' above).</p>
+through 'F' above).  The format of the index partition is...</p>
+<pre><code>&lt;indexName&gt;_&lt;indexUUID&gt;_&lt;hash-of-source-partition-identifiers&gt;
+</code></pre>
 <p><code>numReplicas</code> defines how many index partitions replicas cbft
 should allocate, not counting the first, master index partition.  For
 example, a value of 1 means there should be two copies: the first
@@ -429,12 +434,12 @@ the bleve full-text engine's <code>IndexMapping</code> parser.</p>
 configuration of a logical bleve full-text index.</p>
 <p>The <code>store</code>field is a JSON sub-object and is a representation of
 bleve's <code>kvconfig</code> configuration settings.</p>
-<p>In addition, the <code>store</code> field has an important sub-field,
-<code>kvStoreName</code>.</p>
+<p>NOTE: For web admin UI users, the <code>store</code> field input textarea is
+hidden by default.  To make it visible, click on the <code>Show advanced
+settings</code> checkbox.</p>
+<p>The <code>store</code> field has an important sub-field: <code>kvStoreName</code>.</p>
 <p>The <code>kvStoreName</code> defines the persistent storage implementation
 that will be used for the bleve index.</p>
-<p>The other sub-fields under the <code>store</code> sub-object are dependent on
-the persistent storage implementation that is being used.</p>
 <p>Allowed values for <code>kvStoreName</code> include:</p>
 <ul>
 <li>
@@ -452,6 +457,8 @@ the persistent storage implementation that is being used.</p>
 <p>TBD (leveldb, forestdb, once we get the builds working correctly)</p>
 </li>
 </ul>
+<p>The other sub-fields under the <code>store</code> JSON sub-object are
+dependent on the persistent storage implementation that is being used.</p>
 <p>Note: underneath the hood, both the parsed <code>mapping</code> and
 <code>store</code> objects are used when cbft invoke's bleve's <code>NewUsing</code>
 API when cbft needs to construct a new full-text index.</p>

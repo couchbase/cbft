@@ -164,20 +164,21 @@
 <h1 id="diagnosing-issues">Diagnosing issues</h1>
 <p>cbft includes several REST API endpoints to programatically gather
 stats, counters and health information as JSON responses.</p>
-<p>A key REST API endpoint, however, is the <code>/api/diag</code>, which
-attempts to gather as much information as possible in a single
-request.</p>
-<p>For example, for three node cluster, you would capture the
+<p>A key REST API endpoint, however, is <code>/api/diag</code>, which will
+gather as much diagnosis information as possible about a cbft node to
+be sent in a single JSON response.</p>
+<p>For example, for a three node cluster, you could capture the
 <code>/api/diag</code> output of each node with something like:</p>
 <pre><code>curl http://cbft-01:8095/api/diag &gt; cbft-01.json
 curl http://cbft-02:8095/api/diag &gt; cbft-02.json
 curl http://cbft-03:8095/api/diag &gt; cbft-03.json
 </code></pre>
-<p>The <code>/api/diag</code> outputs can be quite large for JSON (100's of KB
-and often much more).</p>
+<p>The <code>/api/diag</code> response can be a quite large JSON object (100's
+of KB and often much more).</p>
 <p>The motivation with <code>/api/diag</code> is to simplify working with the
 Couchbase community, forums, technical support and other engineers by
 making data capture from each cbft node easy in one shot.</p>
+<p>tbd - explaining the different sections of the /api/diag JSON.</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
