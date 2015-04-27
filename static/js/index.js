@@ -307,6 +307,10 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
+        if (!confirm("Are you sure you want to change this setting?")) {
+            return;
+        }
+
         $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).
         success(function(data) {
             $scope.loadIndexDetails();
