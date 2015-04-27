@@ -192,7 +192,7 @@ index partitions...
 - index partition E covers vbuckets 800 through 999
 - index partition F covers vbuckets 1000 through 1023
 
-cbft acutally uses unique hexadecimal hashes (like
+cbft actually uses unique hexadecimal hashes (like
 "beer-sample_58dc74c09923851d_607744fc") to identify index partitions
 instead of simple alphabetic characters as shown above (the 'A'
 through 'F' above).  The format of the index partition is...
@@ -277,14 +277,14 @@ configuration of a logical bleve full-text index.
 The ```store```field is a JSON sub-object and is a representation of
 bleve's ```kvconfig``` configuration settings.
 
-In addition, the ```store``` field has an important sub-field,
-```kvStoreName```.
+NOTE: For web admin UI users, the ```store``` field input textarea is
+hidden by default.  To make it visible, click on the ```Show advanced
+settings``` checkbox.
+
+The ```store``` field has an important sub-field: ```kvStoreName```.
 
 The ```kvStoreName``` defines the persistent storage implementation
 that will be used for the bleve index.
-
-The other sub-fields under the ```store``` sub-object are dependent on
-the persistent storage implementation that is being used.
 
 Allowed values for ```kvStoreName``` include:
 
@@ -297,6 +297,9 @@ Allowed values for ```kvStoreName``` include:
   storage library (EXPERIMENTAL)
 
 - TBD (leveldb, forestdb, once we get the builds working correctly)
+
+The other sub-fields under the ```store``` JSON sub-object are
+dependent on the persistent storage implementation that is being used.
 
 Note: underneath the hood, both the parsed ```mapping``` and
 ```store``` objects are used when cbft invoke's bleve's ```NewUsing```
