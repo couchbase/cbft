@@ -40,7 +40,7 @@ func testHandlersForOneVLiteTypeIndexWithNILFeed(t *testing.T, indexType string)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "shelf/rack/row", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "shelf/rack/row", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 

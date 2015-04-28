@@ -34,7 +34,7 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	ring, err := NewMsgRing(nil, 1)
 
 	cfg := NewCfgMem()
-	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, ":1000",
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil)
 	r, meta, err := NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
 	if r == nil || meta == nil || err != nil {
@@ -42,7 +42,7 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	}
 
 	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"},
-		"", 1, ":1000", emptyDir, "some-datasource", nil)
+		"", 1, "", ":1000", emptyDir, "some-datasource", nil)
 	r, meta, err = NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
 	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
@@ -119,7 +119,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -197,7 +197,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -418,7 +418,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "shelf/rack/row", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "shelf/rack/row", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -760,7 +760,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -1471,7 +1471,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -1704,9 +1704,9 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	meh0 := &TestMEH{}
 	meh1 := &TestMEH{}
 	mgr0 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:1000", emptyDir0, "some-datasource", meh0)
+		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource", meh0)
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 
 	mgr0.Start("wanted")
 	mgr1.Start("wanted")
@@ -1984,7 +1984,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 
 	meh0 := &TestMEH{}
 	mgr0 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:1000", emptyDir0, "some-datasource", meh0)
+		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource", meh0)
 	mgr0.Start("wanted")
 	mgr0.Kick("test-start-kick")
 	mr0, _ := NewMsgRing(os.Stderr, 1000)
@@ -2154,7 +2154,7 @@ func TestCreateIndexAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2235,7 +2235,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2318,7 +2318,7 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2395,7 +2395,7 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2466,7 +2466,7 @@ func TestNodePlanParams(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2529,7 +2529,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -2769,7 +2769,7 @@ func TestMultiFeedStats(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -2839,7 +2839,7 @@ func TestIndexDefWithJSON(t *testing.T) {
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
 	mgr := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, ":1000", emptyDir, "some-datasource", meh)
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 

@@ -33,6 +33,7 @@ type Manager struct {
 	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
 	container string          // Slash ('/') separated containment path (optional).
 	weight    int
+	extras    string
 	bindHttp  string
 	dataDir   string
 	server    string // The datasource that cbft will index.
@@ -100,7 +101,7 @@ type ManagerEventHandlers interface {
 }
 
 func NewManager(version string, cfg Cfg, uuid string, tags []string,
-	container string, weight int, bindHttp, dataDir string, server string,
+	container string, weight int, extras, bindHttp, dataDir, server string,
 	meh ManagerEventHandlers) *Manager {
 	return &Manager{
 		startTime: time.Now(),
@@ -111,6 +112,7 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		tagsMap:   StringsToMap(tags),
 		container: container,
 		weight:    weight,
+		extras:    extras,
 		bindHttp:  bindHttp, // TODO: Need FQDN:port instead of ":8095".
 		dataDir:   dataDir,
 		server:    server,
@@ -217,6 +219,7 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 		Tags:        mgr.tags,
 		Container:   mgr.container,
 		Weight:      mgr.weight,
+		Extras:      mgr.extras,
 	}
 
 	for {

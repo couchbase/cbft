@@ -206,7 +206,7 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 	}
 
 	mgr := cbft.NewManager(cbft.VERSION, cfg, uuid, tags, container, weight,
-		bindHttp, dataDir, server, &MainHandlers{})
+		"", bindHttp, dataDir, server, &MainHandlers{})
 	err := mgr.Start(register)
 	if err != nil {
 		return nil, err
