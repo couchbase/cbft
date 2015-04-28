@@ -80,7 +80,8 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     }
     $scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
 
-    $http.get('/api/cfg').success(function(data) {
+    $http.get('/api/cfg').
+    success(function(data) {
         $scope.nodeDefsByUUID = {}
         $scope.nodeDefsByAddr = {}
         $scope.nodeAddrsArr = []
@@ -104,15 +105,17 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
         $http.get('/api/index/' + $scope.indexName).
         success(function(data) {
-            data.indexDef.params = {};
             try {
-                data.indexDef.params = JSON.parse(data.indexDef.params);
+                if (typeof(data.indexDef.params) == "string") {
+                    data.indexDef.params = JSON.parse(data.indexDef.params);
+                }
             } catch (e) {
             }
 
-            data.indexDef.sourceParams = {};
             try {
-                data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+                if (typeof(data.indexDef.sourceParams) == "string") {
+                    data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+                }
             } catch (e) {
             }
 
