@@ -53,6 +53,13 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		"/debug",
 	})
 
+	return InitManagerRESTRouter(r, versionMain, mgr,
+		staticDir, staticETag, mr)
+}
+
+func InitManagerRESTRouter(r *mux.Router, versionMain string,
+	mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
+	*mux.Router, map[string]RESTMeta, error) {
 	methodOrds := map[string]string{
 		"GET":    "0",
 		"POST":   "1",
