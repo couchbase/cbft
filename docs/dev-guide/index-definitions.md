@@ -312,20 +312,20 @@ params JSON:
 
     {
       "targets": {
-        "yourIndexName": {
+        "%yourIndexName%": {
           "indexUUID": ""
         }
       }
     }
 
-You can specify one or more "yourIndexName" entries.
+You can specify one or more "%yourIndexName%" entries listed under the ```targets``` field.
 
 For example, perhaps you wish to have a naming level-of-indirection so
-that applications can make index queries without any application-side
-reconfiguration.
+that applications can make queries without any application-side
+reconfigurations.
 
 In one scenario, perhaps you have a sales management application that
-making queries against a "LastQuarterSales" alias.  The alias is
+makes queries against a "LastQuarterSales" alias.  The alias is
 targeted against a "sales-2014-Q4" index, such as...
 
     {
@@ -336,9 +336,10 @@ targeted against a "sales-2014-Q4" index, such as...
       }
     }
 
-Later, when 2015 Q1 sales data is completed and a new index is built,
-"sales-2015-Q1", then the "LastQuarterSales" alias can be
-retargetted to point to the "sales-2015-Q1" index...
+Later, when 2015 Q1 sales data is completed (end of the quarter) and a
+new index is built, "sales-2015-Q1", then the "LastQuarterSales" alias
+can be retargetted by the administrator to point to the latest
+"sales-2015-Q1" index...
 
     {
       "targets": {
@@ -349,12 +350,12 @@ retargetted to point to the "sales-2015-Q1" index...
     }
 
 The ```indexUUID``` field in the index alias definition allows you to
-exactly specify a specific target index via the target index
-definition's ```indexUUID```.
+exactly specify a specific target index definition via the target
+index definition's ```indexUUID```.
 
-If the target index is redefined, so its ```indexUUID``` value will be
-regenerated, then queries against an index alias with a mismatched
-indexUUID will result in error responses.
+If the target index is redefined and its ```indexUUID``` value is
+regenerated or reassigned by cbft, then queries against an index alias
+with a mismatched indexUUID will result in error responses.
 
 ### Multi-target index alias
 
@@ -378,9 +379,9 @@ This is also useful for situations where you have indexes holding data
 from different datasources, such as a "product-catalog-index",
 "customer-index", "employee-index", "intranet-docs-index".
 
-You can then have a single alias that points to all the above target
-indexes so that applications can query just a single endpoint (the
-index alias).
+You can then have a single index alias that points to all the above
+target indexes so that applications can query just a single endpoint
+(the index alias).
 
 # Source types
 
