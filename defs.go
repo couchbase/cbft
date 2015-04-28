@@ -104,6 +104,7 @@ type NodeDef struct {
 	Tags        []string `json:"tags"`
 	Container   string   `json:"container"`
 	Weight      int      `json:"weight"`
+	Extras      string   `json:"extras"`
 }
 
 // ------------------------------------------------------------------------

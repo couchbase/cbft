@@ -26,7 +26,7 @@ import (
 // NOTE: You *must* update cbft.VERSION if you change what's stored in
 // the Cfg (such as the JSON/struct definitions or the planning
 // algorithms).
-const VERSION = "3.0.0"
+const VERSION = "3.1.0"
 const VERSION_KEY = "version"
 
 // Returns true if a given version is modern enough to modify the Cfg.
