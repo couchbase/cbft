@@ -307,7 +307,7 @@ API when cbft needs to construct a new full-text index.
 
 ## Index type: alias
 
-For the ```bleve``` index type, here is an example, default index
+For the ```alias``` index type, here is an example, default index
 params JSON:
 
     {
