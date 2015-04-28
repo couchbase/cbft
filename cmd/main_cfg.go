@@ -9,7 +9,7 @@
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
 
-package main
+package cmd
 
 import (
 	"errors"
@@ -27,21 +27,22 @@ var ErrorBindHttp = errors.New("main_cfg:" +
 	"  (non-loopback, non-127.0.0.1/localhost, non-0.0.0.0)\n" +
 	"  so that this node can be clustered with other nodes.")
 
-func MainCfg(connect, bindHttp, register, dataDir string) (cbft.Cfg, error) {
-	// TODO: One day, the default cfg provider should not be simple
+func MainCfg(baseName, connect, bindHttp, register, dataDir string) (cbft.Cfg, error) {
+	// TODO: One day, the default cfg provider should not be simple.
+	// TODO: One day, cfg provider lookup should be table driven.
 	if connect == "" || connect == "simple" {
-		return MainCfgSimple(connect, bindHttp, register, dataDir)
+		return MainCfgSimple(baseName, connect, bindHttp, register, dataDir)
 	}
 	if strings.HasPrefix(connect, "couchbase:") {
-		return MainCfgCB(connect[len("couchbase:"):],
+		return MainCfgCB(baseName, connect[len("couchbase:"):],
 			bindHttp, register, dataDir)
 	}
 	return nil, fmt.Errorf("main_cfg: unsupported cfg connect: %s", connect)
 }
 
-func MainCfgSimple(connect, bindHttp, register, dataDir string) (
+func MainCfgSimple(baseName, connect, bindHttp, register, dataDir string) (
 	cbft.Cfg, error) {
-	cfgPath := dataDir + string(os.PathSeparator) + "cbft.cfg"
+	cfgPath := dataDir + string(os.PathSeparator) + baseName + ".cfg"
 	cfgPathExists := false
 	if _, err := os.Stat(cfgPath); err == nil {
 		cfgPathExists = true
@@ -58,7 +59,7 @@ func MainCfgSimple(connect, bindHttp, register, dataDir string) (
 	return cfg, nil
 }
 
-func MainCfgCB(urlStr, bindHttp, register, dataDir string) (
+func MainCfgCB(baseName, urlStr, bindHttp, register, dataDir string) (
 	cbft.Cfg, error) {
 	if (bindHttp[0] == ':' ||
 		strings.HasPrefix(bindHttp, "0.0.0.0:") ||

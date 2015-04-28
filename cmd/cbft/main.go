@@ -15,7 +15,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
@@ -36,6 +35,7 @@ import (
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbaselabs/cbft"
+	"github.com/couchbaselabs/cbft/cmd"
 )
 
 var VERSION = "v0.0.4"
@@ -105,10 +105,10 @@ func main() {
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
-	cfg, err := MainCfg(flags.CfgConnect,
+	cfg, err := cmd.MainCfg("cbft", flags.CfgConnect,
 		flags.BindHttp, flags.Register, flags.DataDir)
 	if err != nil {
-		if err == ErrorBindHttp {
+		if err == cmd.ErrorBindHttp {
 			log.Fatalf("%v", err)
 			return
 		}
@@ -120,7 +120,7 @@ func main() {
 		return
 	}
 
-	uuid, err := MainUUID(flags.DataDir)
+	uuid, err := cmd.MainUUID("cbft", flags.DataDir)
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("%v", err))
 		return
@@ -184,33 +184,6 @@ func MainWelcome(flagAliases map[string][]string) {
 	for _, s := range instances {
 		log.Printf("  %s", s)
 	}
-}
-
-func MainUUID(dataDir string) (string, error) {
-	uuid := cbft.NewUUID()
-	uuidPath := dataDir + string(os.PathSeparator) + "cbft.uuid"
-	uuidBuf, err := ioutil.ReadFile(uuidPath)
-	if err == nil {
-		uuid = strings.TrimSpace(string(uuidBuf))
-		if uuid == "" {
-			return "", fmt.Errorf("error: could not parse uuidPath: %s",
-				uuidPath)
-		}
-		log.Printf("main: manager uuid: %s", uuid)
-		log.Printf("main: manager uuid was reloaded")
-	} else {
-		log.Printf("main: manager uuid: %s", uuid)
-		log.Printf("main: manager uuid was generated")
-	}
-	err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
-	if err != nil {
-		return "", fmt.Errorf("error: could not write uuidPath: %s\n"+
-			"  Please check that your -data/-dataDir parameter (%q)\n"+
-			"  is to a writable directory where cbft can store\n"+
-			"  index data.",
-			uuidPath, dataDir)
-	}
-	return uuid, nil
 }
 
 func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,

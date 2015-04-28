@@ -12,7 +12,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -34,70 +33,6 @@ func TestMainStart(t *testing.T) {
 		"bad data dir", "./static", "etag", "bad server", "", mr)
 	if router != nil || err == nil {
 		t.Errorf("expected bad server string to fail mainStart()")
-	}
-}
-
-func TestMainUUID(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	uuid, err := MainUUID(emptyDir)
-	if err != nil || uuid == "" {
-		t.Errorf("expected MainUUID() to work, err: %v", err)
-	}
-
-	uuid2, err := MainUUID(emptyDir)
-	if err != nil || uuid2 != uuid {
-		t.Errorf("expected MainUUID() reload to give same uuid,"+
-			" uuid: %s vs %s, err: %v", uuid, uuid2, err)
-	}
-
-	path := emptyDir + string(os.PathSeparator) + "cbft.uuid"
-	os.Remove(path)
-	ioutil.WriteFile(path, []byte{}, 0600)
-
-	uuid3, err := MainUUID(emptyDir)
-	if err == nil || uuid3 != "" {
-		t.Errorf("expected MainUUID() to fail on empty file")
-	}
-}
-
-func TestMainCfg(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
-
-	bindHttp := "10.1.1.20:8095"
-	register := "wanted"
-
-	cfg, err := MainCfg("an unknown cfg provider",
-		bindHttp, register, emptyDir)
-	if err == nil || cfg != nil {
-		t.Errorf("expected MainCfg() to fail on unknown provider")
-	}
-
-	cfg, err = MainCfg("simple", bindHttp, register, emptyDir)
-	if err != nil || cfg == nil {
-		t.Errorf("expected MainCfg() to work on simple provider")
-	}
-
-	if _, err := cfg.Set("k", []byte("value"), 0); err != nil {
-		t.Errorf("expected Set() to work")
-	}
-
-	cfg, err = MainCfg("simple", bindHttp, register, emptyDir)
-	if err != nil || cfg == nil {
-		t.Errorf("expected MainCfg() to work on simple provider when reload")
-	}
-
-	cfg, err = MainCfg("couchbase:http://", bindHttp, register, emptyDir)
-	if err == nil || cfg != nil {
-		t.Errorf("expected err on bad url")
-	}
-
-	cfg, err = MainCfg("couchbase:http://user:pswd@127.0.0.1:666",
-		bindHttp, register, emptyDir)
-	if err == nil || cfg != nil {
-		t.Errorf("expected err on bad server")
 	}
 }
 
