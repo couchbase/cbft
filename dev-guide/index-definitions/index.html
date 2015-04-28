@@ -467,18 +467,18 @@ API when cbft needs to construct a new full-text index.</p>
 params JSON:</p>
 <pre><code>{
   "targets": {
-    "yourIndexName": {
+    "%yourIndexName%": {
       "indexUUID": ""
     }
   }
 }
 </code></pre>
-<p>You can specify one or more "yourIndexName" entries.</p>
+<p>You can specify one or more "%yourIndexName%" entries listed under the <code>targets</code> field.</p>
 <p>For example, perhaps you wish to have a naming level-of-indirection so
-that applications can make index queries without any application-side
-reconfiguration.</p>
+that applications can make queries without any application-side
+reconfigurations.</p>
 <p>In one scenario, perhaps you have a sales management application that
-making queries against a "LastQuarterSales" alias.  The alias is
+makes queries against a "LastQuarterSales" alias.  The alias is
 targeted against a "sales-2014-Q4" index, such as...</p>
 <pre><code>{
   "targets": {
@@ -488,9 +488,10 @@ targeted against a "sales-2014-Q4" index, such as...</p>
   }
 }
 </code></pre>
-<p>Later, when 2015 Q1 sales data is completed and a new index is built,
-"sales-2015-Q1", then the "LastQuarterSales" alias can be
-retargetted to point to the "sales-2015-Q1" index...</p>
+<p>Later, when 2015 Q1 sales data is completed (end of the quarter) and a
+new index is built, "sales-2015-Q1", then the "LastQuarterSales" alias
+can be retargetted by the administrator to point to the latest
+"sales-2015-Q1" index...</p>
 <pre><code>{
   "targets": {
     "sales-2015-Q1": {
@@ -500,11 +501,11 @@ retargetted to point to the "sales-2015-Q1" index...</p>
 }
 </code></pre>
 <p>The <code>indexUUID</code> field in the index alias definition allows you to
-exactly specify a specific target index via the target index
-definition's <code>indexUUID</code>.</p>
-<p>If the target index is redefined, so its <code>indexUUID</code> value will be
-regenerated, then queries against an index alias with a mismatched
-indexUUID will result in error responses.</p>
+exactly specify a specific target index definition via the target
+index definition's <code>indexUUID</code>.</p>
+<p>If the target index is redefined and its <code>indexUUID</code> value is
+regenerated or reassigned by cbft, then queries against an index alias
+with a mismatched indexUUID will result in error responses.</p>
 <h3 id="multi-target-index-alias">Multi-target index alias</h3>
 <p>You can also have an index alias point to more than one target index.</p>
 <p>For example, perhaps you wish to have a LastSixMonthsSales alias.  It
@@ -523,9 +524,9 @@ can be configured to point to the last two quarters of real indexes...</p>
 <p>This is also useful for situations where you have indexes holding data
 from different datasources, such as a "product-catalog-index",
 "customer-index", "employee-index", "intranet-docs-index".</p>
-<p>You can then have a single alias that points to all the above target
-indexes so that applications can query just a single endpoint (the
-index alias).</p>
+<p>You can then have a single index alias that points to all the above
+target indexes so that applications can query just a single endpoint
+(the index alias).</p>
 <h1 id="source-types">Source types</h1>
 <h2 id="source-type-couchbase">Source type: couchbase</h2>
 <p>When your source type is <code>couchbase</code>, and you'd like to index a
