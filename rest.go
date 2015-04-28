@@ -44,7 +44,7 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
 	// create a router to serve static files
-	r := staticFileRouter(staticDir, staticETag, []string{
+	r := StaticFileRouter(staticDir, staticETag, []string{
 		"/indexes",
 		"/nodes",
 		"/monitor",

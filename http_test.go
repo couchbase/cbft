@@ -17,11 +17,11 @@ import (
 	"testing"
 )
 
-func TestAsset(t *testing.T) {
+func TestAssetFS(t *testing.T) {
 	// Get code coverage for the assets embedded into
 	// bindata_assetfs.go via the
 	// github.com/elazarl/go-bindata-assetfs tool.
-	if assetFS() == nil {
+	if AssetFS() == nil {
 		t.Errorf("expected an assetFS")
 	}
 

@@ -13,12 +13,18 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/elazarl/go-bindata-assetfs"
+
 	"github.com/gorilla/mux"
 
 	log "github.com/couchbase/clog"
 )
 
-func staticFileRouter(staticDir, staticETag string,
+func AssetFS() *assetfs.AssetFS {
+	return assetFS()
+}
+
+func StaticFileRouter(staticDir, staticETag string,
 	pages []string) *mux.Router {
 	r := mux.NewRouter()
 	if staticDir == "" {
@@ -31,7 +37,7 @@ func staticFileRouter(staticDir, staticETag string,
 		s = http.Dir(staticDir)
 	} else {
 		log.Printf("http: serving assets from embedded data")
-		s = assetFS()
+		s = AssetFS()
 	}
 
 	r.StrictSlash(true)
