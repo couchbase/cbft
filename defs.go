@@ -136,7 +136,7 @@ type PlanPIndex struct {
 type PlanPIndexNode struct {
 	CanRead  bool `json:"canRead"`
 	CanWrite bool `json:"canWrite"`
-	Priority int  `json:"priority"`
+	Priority int  `json:"priority"` // Lower is higher priority, 0 is highest.
 }
 
 func PlanPIndexNodeCanRead(p *PlanPIndexNode) bool {
