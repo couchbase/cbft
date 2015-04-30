@@ -281,3 +281,91 @@ func TestDCPFeedBasics(t *testing.T) {
 		t.Errorf("expected stats to work")
 	}
 }
+
+func TestCouchbaseParseSourceName(t *testing.T) {
+	s, p, b := CouchbaseParseSourceName("s", "p", "b")
+	if s != "s" ||
+		p != "p" ||
+		b != "b" {
+		t.Errorf("expected s, p, b")
+	}
+
+	badURL := "http://a/badURL"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091/pools"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091/pools/default"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091/pools/default/buckets"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091/pools/default/buckets/"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	badURL = "http://a:8091/pools//buckets/theBucket"
+	s, p, b = CouchbaseParseSourceName("s", "p", badURL)
+	if s != "s" ||
+		p != "p" ||
+		b != badURL {
+		t.Errorf("expected s, p, badURL: %s, got: %s %s %s",
+			badURL, s, p, b)
+	}
+
+	bu := "http://a:8091/pools/myPool/buckets/theBucket"
+	s, p, b = CouchbaseParseSourceName("s", "p", bu)
+	if s != "http://a:8091" ||
+		p != "myPool" ||
+		b != "theBucket" {
+		t.Errorf("expected theBucket, got: %s %s %s", s, p, b)
+	}
+
+	bu = "https://a:8091/pools/myPool/buckets/theBucket"
+	s, p, b = CouchbaseParseSourceName("s", "p", bu)
+	if s != "https://a:8091" ||
+		p != "myPool" ||
+		b != "theBucket" {
+		t.Errorf("expected theBucket, got: %s %s %s", s, p, b)
+	}
+}

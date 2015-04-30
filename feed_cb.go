@@ -14,7 +14,9 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/gomemcached"
@@ -75,9 +77,9 @@ type CBFeedParams struct {
 }
 
 func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
-	server string) (partitions []string, err error) {
-	poolName := "default" // TODO: Parameterize poolName.
-	bucketName := sourceName
+	serverIn string) (partitions []string, err error) {
+	server, poolName, bucketName :=
+		CouchbaseParseSourceName(serverIn, "default", sourceName)
 
 	params := CBFeedParams{}
 	if sourceParams != "" {
@@ -141,4 +143,44 @@ func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 		rv[i] = strconv.Itoa(i)
 	}
 	return rv, nil
+}
+
+// CouchbaseParseSourceName parses a sourceName, if it's a couchbase
+// REST/HTTP URL, into a server URL, poolName and bucketName.
+// Otherwise, returns the serverURLDefault, poolNameDefault, and treat
+// the sourceName as a bucketName.
+func CouchbaseParseSourceName(
+	serverURLDefault, poolNameDefault, sourceName string) (
+	string, string, string) {
+	if !strings.HasPrefix(sourceName, "http://") &&
+		!strings.HasPrefix(sourceName, "https://") {
+		return serverURLDefault, poolNameDefault, sourceName
+	}
+
+	u, err := url.Parse(sourceName)
+	if err != nil {
+		return serverURLDefault, poolNameDefault, sourceName
+	}
+
+	a := strings.Split(u.Path, "/")
+	if len(a) != 5 ||
+		a[0] != "" ||
+		a[1] != "pools" ||
+		a[2] == "" ||
+		a[3] != "buckets" ||
+		a[4] == "" {
+		return serverURLDefault, poolNameDefault, sourceName
+	}
+
+	v := url.URL{
+		Scheme: u.Scheme,
+		User:   u.User,
+		Host:   u.Host,
+	}
+
+	server := v.String()
+	poolName := a[2]
+	bucketName := a[4]
+
+	return server, poolName, bucketName
 }

@@ -34,9 +34,12 @@ func init() {
 }
 
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
-	sourceType, bucketName, bucketUUID, params string,
+	sourceType, sourceName, bucketUUID, params string,
 	dests map[string]Dest) error {
-	feed, err := NewTAPFeed(feedName, indexName, mgr.server, "default",
+	server, poolName, bucketName :=
+		CouchbaseParseSourceName(mgr.server, "default", sourceName)
+
+	feed, err := NewTAPFeed(feedName, indexName, server, poolName,
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
