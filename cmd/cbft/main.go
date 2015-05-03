@@ -81,7 +81,7 @@ func main() {
 			if flags.DataDir == DEFAULT_DATA_DIR {
 				log.Printf("main: creating data directory, dataDir: %s",
 					flags.DataDir)
-				err = os.Mkdir(flags.DataDir, 0777)
+				err = os.Mkdir(flags.DataDir, 0700)
 				if err != nil {
 					log.Fatalf("main: could not create data directory,"+
 						" dataDir: %s, err: %v", flags.DataDir, err)
