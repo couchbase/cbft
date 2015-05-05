@@ -113,6 +113,7 @@ dist-clean: clean
 #   git push
 #   git tag -a "v0.0.2" -m "v0.0.2"
 #   git push --tags
+#   # Don't forget to set your GITHUB_TOKEN/USER env vars; see above.
 #   make release
 #
 # Remember, we use semver versioning rules.
