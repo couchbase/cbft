@@ -1,3 +1,19 @@
+# v0.0.5
+
+- general: use 0700 if we mkdir the default dataDir
+- general: URL's ok as index source name, so -server becomes a default
+- library: added extras param to NewManager()
+- library: added extras field to NodeDef JSON
+- library: exposed AssetFS() and StaticFileRouter()
+- library: refactored out InitManagerRESTRouter()
+- library: refactored main helper funcs into cmd package
+- web UI: fix, don't clear params before JSON parsing them
+- web UI: remember user's last query
+- web UI: hint that query timings are server-side
+- web UI: retrieve managerMeta REST data only once at web UI load
+- windows: disable colors on windows for clog
+- docs: typo/grammar fixes
+
 # v0.0.4
 
 - build: releases have new naming pattern: cbft-VERSION.platform.gz
