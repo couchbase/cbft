@@ -26,30 +26,34 @@ Re-run the planner and janitor...
 
 <h3 style="clear: both;">Cfg</h3>
 
-Contents of Cfg system...
+<input ng-model="cfgDetails" type="checkbox">
+  Show Cfg contents as JSON
+</input>
 
-<button type="button" class="btn btn-default pull-right"
-        ng-click="cfgRefresh()">
-  <span class="glyphicon glyphicon-refresh"></span> Refresh Cfg
-</button>
+<div ng-show="cfgDetails" class="cfgDetails">
+  <button type="button" class="btn btn-default pull-right"
+          ng-click="cfgRefresh()">
+    <span class="glyphicon glyphicon-refresh"></span> Refresh Cfg
+  </button>
 
-<div ng-show="resultCfgRefresh" style="clear: both;">
-  <br/>
-  <pre>{{resultCfgRefresh}}</pre>
-</div>
+  <div ng-show="resultCfgRefresh" style="clear: both;">
+    <br/>
+    <pre>{{resultCfgRefresh}}</pre>
+  </div>
 
-<br style="clear: both;"/>
+  <br style="clear: both;"/>
 
-<div>
-  <pre nag-prism source="{{resultCfgJSON}}" class="language-javascript"></pre>
-</div>
+  <div>
+    <pre nag-prism source="{{resultCfgJSON}}" class="language-javascript"></pre>
+  </div>
 
-<button type="button" class="btn btn-default pull-right"
-        ng-click="cfgRefresh()">
-  <span class="glyphicon glyphicon-refresh"></span> Refresh Cfg
-</button>
+  <button type="button" class="btn btn-default pull-right"
+          ng-click="cfgRefresh()">
+    <span class="glyphicon glyphicon-refresh"></span> Refresh Cfg
+  </button>
 
-<div ng-show="resultCfgRefresh" style="clear: both;">
-  <br/>
-  <pre>{{resultCfgRefresh}}</pre>
+  <div ng-show="resultCfgRefresh" style="clear: both;">
+    <br/>
+    <pre>{{resultCfgRefresh}}</pre>
+  </div>
 </div>
