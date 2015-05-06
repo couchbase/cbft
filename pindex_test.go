@@ -155,13 +155,11 @@ func TestBlackholePIndexImpl(t *testing.T) {
 	if bt.New == nil || bt.Open == nil {
 		t.Errorf("blackhole should have open and new funcs")
 	}
-	count, err := bt.Count(nil, "", "")
-	if err == nil || count != 0 {
-		t.Errorf("expected blackhole count to err")
+	if bt.Count != nil {
+		t.Errorf("expected blackhole count nil")
 	}
-	err = bt.Query(nil, "", "", nil, nil)
-	if err == nil {
-		t.Errorf("expected blackhole query to err")
+	if bt.Query != nil {
+		t.Errorf("expected blackhole query nil")
 	}
 }
 
