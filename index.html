@@ -199,7 +199,7 @@ that you'd like to index.</p>
 <p>Download a pre-built cbft from the
 <a href="https://github.com/couchbaselabs/cbft/releases">releases</a> page.  For
 example, for OSX...</p>
-<pre><code>wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+<pre><code>wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 </code></pre>
 <p>Note: some platforms support both <code>cbft-full</code> and <code>cbft</code>
 builds.</p>
@@ -216,14 +216,14 @@ builds.</p>
 <p>For the purposes of these getting started steps, let's just download
 <code>cbft</code> basic builds.</p>
 <p>Next, uncompress what you downloaded...</p>
-<pre><code>tar -xzf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+<pre><code>tar -xzf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 </code></pre>
 <p>A quick way to make sure it worked is to try the command-line help...</p>
-<pre><code>./cbft.darwin.amd64 --help
+<pre><code>./cbft.macos.amd64 --help
 </code></pre>
 <p>For the rest of this documentation, we'll just refer to the cbft
 executable as <code>./cbft</code> rather than some platform specific name
-like <code>./cbft.darwin.amd64</code>.</p>
+like <code>./cbft.macos.amd64</code>.</p>
 <h2 id="running-cbft">Running cbft</h2>
 <p>Start cbft, pointing it to your Couchbase Server as its datasource
 server...</p>
