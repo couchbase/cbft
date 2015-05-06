@@ -20,16 +20,10 @@ import (
 
 func init() {
 	RegisterPIndexImplType("blackhole", &PIndexImplType{
-		New:  NewBlackHolePIndexImpl,
-		Open: OpenBlackHolePIndexImpl,
-		Count: func(mgr *Manager, indexName, indexUUID string) (
-			uint64, error) {
-			return 0, fmt.Errorf("blackhole: not countable")
-		},
-		Query: func(mgr *Manager, indexName, indexUUID string,
-			req []byte, res io.Writer) error {
-			return fmt.Errorf("blackhole: not queryable")
-		},
+		New:   NewBlackHolePIndexImpl,
+		Open:  OpenBlackHolePIndexImpl,
+		Count: nil, // Content of blackhole isn't countable.
+		Query: nil, // Content of blackhole isn't queryable.
 		Description: "advanced/blackhole" +
 			" - a blackhole index ignores all data and is not queryable;" +
 			" used for testing",

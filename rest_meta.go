@@ -36,6 +36,9 @@ type MetaDescSource MetaDesc
 type MetaDescIndex struct {
 	MetaDesc
 
+	CanCount bool `json:"canCount"`
+	CanQuery bool `json:"canQuery"`
+
 	QuerySample interface{} `json:"querySample"`
 	QueryHelp   string      `json:"queryHelp"`
 }
@@ -67,6 +70,8 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				Description: t.Description,
 				StartSample: t.StartSample,
 			},
+			CanCount:    t.Count != nil,
+			CanQuery:    t.Query != nil,
 			QuerySample: t.QuerySample,
 			QueryHelp:   t.QueryHelp,
 		}

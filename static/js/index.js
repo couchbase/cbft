@@ -56,6 +56,8 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
 function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
+    var meta = $scope.meta = getManagerMeta();
+
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
 
@@ -143,6 +145,18 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                     collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
             }
             $scope.warnings = data.warnings;
+
+            $scope.indexCanCount =
+                meta &&
+                meta.indexTypes &&
+                meta.indexTypes[data.indexDef.type] &&
+                meta.indexTypes[data.indexDef.type].canCount
+
+            $scope.indexCanQuery =
+                meta &&
+                meta.indexTypes &&
+                meta.indexTypes[data.indexDef.type] &&
+                meta.indexTypes[data.indexDef.type].canQuery
 
             $scope.indexCanWrite =
                 !data.indexDef ||
