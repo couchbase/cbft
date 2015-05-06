@@ -29,7 +29,7 @@ Download a pre-built cbft from the
 [releases](https://github.com/couchbaselabs/cbft/releases) page.  For
 example, for OSX...
 
-    wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+    wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.macos.amd64.tar.gz
 
 Note: some platforms support both ```cbft-full``` and ```cbft```
 builds.
@@ -45,15 +45,15 @@ For the purposes of these getting started steps, let's just download
 
 Next, uncompress what you downloaded...
 
-    tar -xzf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
+    tar -xzf vX.Y.Z-AAA_cbft.macos.amd64.tar.gz
 
 A quick way to make sure it worked is to try the command-line help...
 
-    ./cbft.darwin.amd64 --help
+    ./cbft.macos.amd64 --help
 
 For the rest of this documentation, we'll just refer to the cbft
 executable as ```./cbft``` rather than some platform specific name
-like ```./cbft.darwin.amd64```.
+like ```./cbft.macos.amd64```.
 
 ## Running cbft
 

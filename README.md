@@ -20,15 +20,23 @@ cbft processes.
 
 ## Getting cbft
 
-Please see the
+Please see the github
 [releases](https://github.com/couchbaselabs/cbft/releases) page for
-released cbft downloadables.
+released cbft downloadables...
 
-For example, for OSX...
+* [https://github.com/couchbaselabs/cbft/releases](https://github.com/couchbaselabs/cbft/releases)
 
-    wget https://github.com/couchbaselabs/cbft/releases/download/vX.Y.Z/vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
-    tar -xzvf vX.Y.Z-AAA_cbft.darwin.amd64.tar.gz
-    ./cbft.darwin.amd64 --help
+For example, for mac OSX...
+
+    # Download from the github releases page using your
+    # favorite web browser.  Or, by using wget, for example...
+    wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}>/v{X.Y.Z-AAA}_cbft.macos.amd64.tar.gz
+
+    # Uncompress, untar...
+    tar -xzvf v{X.Y.Z-AAA}_cbft.macos.amd64.tar.gz
+
+    # Check out the command-line help...
+    ./cbft.macos.amd64 --help
 
 Note: ```cbft-full``` builds are currently compiled with more advanced
 features (text stemmers, etc) than ```cbft``` basic builds.
