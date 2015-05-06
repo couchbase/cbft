@@ -26,8 +26,14 @@ For example, you can have Couchbase Server create and populate a
 ## Getting cbft
 
 Download a pre-built cbft from the
-[releases](https://github.com/couchbaselabs/cbft/releases) page.  For
-example, for OSX...
+[releases](https://github.com/couchbaselabs/cbft/releases) page...
+
+* [https://github.com/couchbaselabs/cbft/releases](https://github.com/couchbaselabs/cbft/releases)
+
+You can use your favorite web browser to download.
+
+Or, you can use ```wget``` or equivalent command-line tool.  For example,
+for mac OSX...
 
     wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
