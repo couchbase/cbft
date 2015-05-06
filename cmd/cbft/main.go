@@ -197,10 +197,21 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 	if server != "." {
 		_, err := couchbase.Connect(server)
 		if err != nil {
-			return nil, fmt.Errorf("error: could not connect to server,"+
-				" URL: %s, err: %v\n"+
+			if !strings.HasPrefix(server, "http://") ||
+				!strings.HasPrefix(server, "https://") {
+				return nil, fmt.Errorf("error: not a URL, server: %q\n"+
+					"  Please check that your -server parameter"+
+					" is a valid URL\n"+
+					"  (http://HOST:PORT),"+
+					" such as \"http://localhost:8091\",\n"+
+					"  to a couchbase server",
+					server)
+			}
+
+			return nil, fmt.Errorf("error: could not connect to server (%q),"+
+				" err: %v\n"+
 				"  Please check that your -server parameter (%q)\n"+
-				"  is correct and the server is available.",
+				"  is correct and the couchbase server is available.",
 				server, err, server)
 		}
 	}
