@@ -29,7 +29,7 @@ Download a pre-built cbft from the
 [releases](https://github.com/couchbaselabs/cbft/releases) page.  For
 example, for OSX...
 
-    wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/v{X.Y.Z-AAA}_cbft.macos.amd64.tar.gz
+    wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
 Note: some platforms support both ```cbft-full``` and ```cbft```
 builds.
@@ -45,7 +45,7 @@ For the purposes of these getting started steps, let's just download
 
 Next, uncompress what you downloaded...
 
-    tar -xzf v{X.Y.Z-AAA}_cbft.macos.amd64.tar.gz
+    tar -xzf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
 A quick way to make sure it worked is to try the command-line help...
 
