@@ -49,6 +49,27 @@ func init() {
 	})
 }
 
+// FilesFeed is a feed implementation that that emits file contents
+// from a local subdirectory tree.
+//
+// The subdirectory tree lives under the dataDir...
+//
+//    <dataDir>/<sourceName/**
+//
+// FilesFeed supports optional regexp patterns to allow you to filter
+// for only the file paths that you want.
+//
+// Limitations:
+//
+// - Only a small number of files will work well (hundreds to low
+// thousands, not millions).
+//
+// - FilesFeed uses file modification timestamps as a poor-man's
+// approach instead of properly tracking sequence numbers.  That has
+// implications such as whenever a FilesFeed (re-)starts (e.g., the
+// process restarts), the FilesFeed will re-emits all files and then
+// track the max modification timestamp going forwards as it regularly
+// polls for file changes.
 type FilesFeed struct {
 	mgr        *Manager
 	name       string
