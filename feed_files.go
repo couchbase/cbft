@@ -27,8 +27,6 @@ import (
 	"time"
 
 	log "github.com/couchbase/clog"
-
-	"github.com/couchbase/go-couchbase/cbdatasource"
 )
 
 const FILES_FEED_SLEEP_START_MS = 5000
@@ -187,7 +185,7 @@ func (t *FilesFeed) Start() error {
 
 		var prevStartTime time.Time
 
-		cbdatasource.ExponentialBackoffLoop(t.Name(),
+		ExponentialBackoffLoop(t.Name(),
 			func() int {
 				select {
 				case <-t.closeCh:
