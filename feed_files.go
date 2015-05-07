@@ -51,8 +51,6 @@ func init() {
 	})
 }
 
-// A FilesFeed implements both the Feed and Dest interfaces, for
-// chainability; and is also useful for testing.
 type FilesFeed struct {
 	mgr        *Manager
 	name       string
