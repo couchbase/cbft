@@ -40,10 +40,6 @@ type PrimaryFeed struct {
 	indexName string
 	pf        DestPartitionFunc
 	dests     map[string]Dest
-	closeCh   chan bool
-	doneCh    chan bool
-	doneErr   error
-	doneMsg   string
 }
 
 func NewPrimaryFeed(name, indexName string, pf DestPartitionFunc,
@@ -53,10 +49,6 @@ func NewPrimaryFeed(name, indexName string, pf DestPartitionFunc,
 		indexName: indexName,
 		pf:        pf,
 		dests:     dests,
-		closeCh:   make(chan bool),
-		doneCh:    make(chan bool),
-		doneErr:   nil,
-		doneMsg:   "",
 	}
 }
 
