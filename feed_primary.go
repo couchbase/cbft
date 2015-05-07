@@ -29,7 +29,7 @@ func init() {
 		Partitions:  PrimaryFeedPartitions,
 		Public:      false,
 		Description: "general/primary - a primary data source",
-		StartSample: &DestSourceParams{},
+		StartSample: &PrimarySourceParams{},
 	})
 }
 
@@ -87,13 +87,13 @@ func (t *PrimaryFeed) Stats(w io.Writer) error {
 
 // -----------------------------------------------------
 
-type DestSourceParams struct {
+type PrimarySourceParams struct {
 	NumPartitions int `json:"numPartitions"`
 }
 
 func PrimaryFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
-	dsp := &DestSourceParams{}
+	dsp := &PrimarySourceParams{}
 	if sourceParams != "" {
 		err := json.Unmarshal([]byte(sourceParams), dsp)
 		if err != nil {
