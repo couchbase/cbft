@@ -189,6 +189,12 @@ func (t *FilesFeed) Start() error {
 
 		cbdatasource.ExponentialBackoffLoop(t.Name(),
 			func() int {
+				select {
+				case <-t.closeCh:
+					return -1
+				default:
+				}
+
 				h := crc32.NewIEEE()
 
 				startTime := time.Now()
@@ -232,6 +238,12 @@ func (t *FilesFeed) Start() error {
 				snapshotSent := map[string]bool{}
 
 				for _, path := range paths {
+					select {
+					case <-t.closeCh:
+						return -1
+					default:
+					}
+
 					partition := FilesPathToPartition(h, partitions, path)
 
 					dest := t.dests[partition]
