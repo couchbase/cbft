@@ -49,8 +49,8 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	}
 
 	// First, check that the source exists.
-	_, err = DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
-		mgr.server)
+	_, err = DataSourcePartitions(sourceType, sourceName, sourceUUID,
+		sourceParams, mgr.server)
 	if err != nil {
 		return fmt.Errorf("manager_api: failed to connect to"+
 			" or retrieve information from source,"+

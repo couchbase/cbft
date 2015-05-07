@@ -61,5 +61,6 @@ func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 		return nil, fmt.Errorf("feed: unknown sourceType: %s", sourceType)
 	}
 
-	return feedType.Partitions(sourceType, sourceName, sourceUUID, sourceParams, server)
+	return feedType.Partitions(sourceType, sourceName, sourceUUID,
+		sourceParams, server)
 }
