@@ -54,13 +54,15 @@ Deployment of index definitions or updated index definitions to
 production clusters would ideally follow the same steps that were
 tested in testing/staging cbft clusters.
 
-One useful technique would be to utilize cbft's index alias feature to
-allow for updated indexes to be be built up in the background without
-affecting existing application queries.  Applications would still
-continue to query, by using index aliases, to previous index
-definitions.  When a new index definition is finally built up enough
-and ready for querying, an administrator would then redefine their
-index aliases to point at the new, target index definition.
+One useful technique to increase availability would be to utilize
+cbft's index alias feature to allow for updated indexes to be be built
+up in the background without affecting existing application queries.
+
+Applications would still continue to query, by using index aliases, to
+previous index definitions.  When the new index definitions are
+finally built up enough and ready for querying, an administrator would
+then redefine their index aliases to point at their newly ready target
+index definitions.
 
 # Additional reading
 
