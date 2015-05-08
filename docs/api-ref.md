@@ -106,6 +106,20 @@ For sourceType ```couchbase```, an example sourceParams JSON:
       "feedBufferAckThreshold": 0
     }
 
+For sourceType ```files```, an example sourceParams JSON:
+
+    {
+      "regExps": [
+        ".txt$",
+        ".md$"
+      ],
+      "maxFileSize": 0,
+      "numPartitions": 0,
+      "sleepStartMS": 5000,
+      "backoffFactor": 1.5,
+      "maxSleepMS": 300000
+    }
+
 For sourceType ```nil```, the sourceParams can be null.
 
 **param: sourceType**: required, string, form parameter
@@ -113,6 +127,7 @@ For sourceType ```nil```, the sourceParams can be null.
 Supported sourceType's:
 
 * ```couchbase```: a Couchbase Server bucket will be the data source
+* ```files```: files under a dataDir subdirectory tree will be the data source
 * ```nil```: a nil data source has no data; used for index aliases and testing
 
 **param: sourceUUID**: optional, string, form parameter
