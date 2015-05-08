@@ -10,18 +10,18 @@ web browser:
 
 - Navigate to the ```Indexes``` screen.
 
-- Click on your index's name link to naviate to the summary screen for
-  your index.
+- Click on your index's name link to navigate to your index's summary
+  screen.
 
-- Click on the ```Query``` sub-tab for your index.
+- Click on the ```Query``` tab for your index.
 
 - Enter your query statement in the input field.
 
-The kind of query statement you should enter depends on the index
+The kind of query statement you can enter depends on your index's
 type.
 
 Please see below in this document for more information on the query
-statement requirements for different index types.
+statement requirements for the different index types.
 
 - You can click on the ```Advanced``` checkbox in order to see
   more optional, advanced query parameters.
@@ -33,15 +33,15 @@ programmatically POST'ing query requests to cbft.
 
 You can POST a query request to any cbft node in a cbft cluster.
 
-To process your query request, that cbft node will then in turn
-perform distributed requests against the other nodes in the cbft
-cluster and gather their responses.
+To process your query request, the cbft node that receives your REST
+query will then in turn perform distributed requests against the other
+nodes in the cbft cluster and gather their responses.
 
 Your REST client will then receive a processed, merged response from
 the cbft node that received the original REST query request.
 
-Programmatically, the POST body for REST API bleve queries would look
-similar to the following example JSON:
+Programmatically, the POST body for REST API ```bleve``` queries would
+look similar to the following example JSON:
 
     {
       "timeout": 0,
@@ -52,7 +52,7 @@ similar to the following example JSON:
       "query": ...
     }
 
-There are several fields:
+There are several common fields:
 
 - ```timeout``` - integer, timeout in milliseconds, 0 for no timeout.
 
@@ -69,13 +69,13 @@ There are several fields:
 ## Index type: bleve
 
 When using the ```bleve``` index type, the query statement that you
-use in cbfts web admin UI must follow bleve's full-text index [query
+use in cbft's web admin UI must follow bleve's full-text index [query
 string](https://github.com/blevesearch/bleve/wiki/Query%20String%20Query)
 syntax rules.
 
 See: [https://github.com/blevesearch/bleve/wiki/Query%20String%20Query](https://github.com/blevesearch/bleve/wiki/Query%20String%20Query)
 
-tbd - worked examples of queries and their JSON.
+TBD - add worked examples of queries and their resuling JSON.
 
     {
       "timeout": 0,
@@ -96,27 +96,27 @@ tbd - worked examples of queries and their JSON.
 
 ### Scoring
 
-tbd
+TBD
 
 ### Pagination
 
-tbd
+TBD
 
 ### Results highlighting
 
-tbd
+TBD
 
 ### Faceted searches
 
-tbd
+TBD
 
 # Index document counts
 
-tbd
+TBD
 
 # Index consistency
 
-tbd
+TBD
 
 ---
 
