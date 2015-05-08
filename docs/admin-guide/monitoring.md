@@ -9,6 +9,9 @@ messages for the cbft node.  It is a convenience feature so that an
 administrator does not have to log into the machine to see recent
 logs.
 
+Note: the ```Logs``` screen does not show cluster-wide logs, but only
+the logs from the cbft node that the web browser is pointed at.
+
 Recommended practice: an administrator should consider capturing
 cbft's stdout/stderr output to rotated files or to a centralized log
 service.
@@ -59,27 +62,27 @@ partition from the current cbft node.
 
 ## Memory
 
-tbd
+TBD
 
 ### GC pauses
 
-tbd
+TBD
 
 ## CPU
 
-tbd
+TBD
 
 ## Storage
 
-tbd
+TBD
 
 ## Networking
 
-tbd
+TBD
 
 ## Performance
 
-tbd
+TBD
 
 ---
 

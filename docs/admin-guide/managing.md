@@ -310,6 +310,26 @@ cbft configuration at will.
 
 # Managing cbft nodes
 
+## Web admin UI
+
+The ```Nodes``` screen in cbft's web admin UI shows a list of all the
+cbft nodes in a cbft cluster.
+
+Detailed information with you click on any particular cbft node link
+includes:
+
+- the cbft node's version number
+
+- the cbft node's UUID or ```cbft.uuid```
+
+- the cbft node's tags (e.g., such as whether the node is just a
+  ```queryer```)
+
+- the cbft node's container path for shelf/rack/row/zone/DC awareness
+
+- the cbft node's weight, to allow more powerful servers to service
+  more load
+
 ## Forcing a manager kick
 
 A button to ```Kick Manager``` is available in the web admin UI, on
