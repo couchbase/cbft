@@ -229,21 +229,27 @@ browser:</p>
 <p>Navigate to the <code>Indexes</code> screen.</p>
 </li>
 <li>
-<p>There you will find a list of indexes.</p>
+<p>There you will find a list of the indexes, if any, that you had
+  previously defined.</p>
 </li>
 </ul>
 <p>Each listed index will have buttons for these operations:</p>
 <ul>
 <li>
-<p>the <code>edit</code> button allows you to update an index definition.</p>
+<p>the index <code>edit</code> button allows you to update an index
+  definition.</p>
 </li>
 <li>
-<p>the <code>clone</code> button allows you to copy an index definition.</p>
+<p>the index <code>clone</code> button allows you to copy an index definition.</p>
 </li>
 <li>
-<p>the <code>delete</code> button allows you to delete an index definition.</p>
+<p>the index <code>delete</code> button (trash can icon) allows you to delete
+  an index definition.</p>
 </li>
 </ul>
+<p>Note: if you click on the index <code>delete</code> button, you will have a
+chance to first confirm the index definition deletion operation.
+Deleting an index, importantly, is a permanent operation.</p>
 <h1 id="index-attributes">Index attributes</h1>
 <p>An index has several attributes, several of which are required to be
 specified when defining index:</p>
@@ -259,20 +265,20 @@ specified when defining index:</p>
 <li>Index UUID - <em>system generated / read-only</em></li>
 </ul>
 <h2 id="index-name-indexname">Index Name (indexName)</h2>
-<p>An index has a name, or <em>Index Name</em>, that is a unique identifier for
-the index.</p>
+<p>An index has a required name, or <em>Index Name</em>, which is a unique
+identifier for the index.</p>
 <p>An index name is comprised of alphanumeric characters, hyphens and
 underscores (no whitespace characters).  The first character of an
 index name must be an alphabetic character (a-z or A-Z).</p>
 <h2 id="index-type-indextype">Index Type (indexType)</h2>
-<p>An index has a type, or <em>Index Type</em>.</p>
+<p>An index has a required type, or <em>Index Type</em>.</p>
 <p>An often used index type, for example, would be <code>bleve</code>, for
 full-text indexing.</p>
 <p>Some available index types include...</p>
 <ul>
 <li>
 <p><code>bleve</code> - a full-text index powered by the
-  <a href="http://blevesearch.com">bleve</a> engine.</p>
+  <a href="http://blevesearch.com">bleve</a> full-text engine.</p>
 </li>
 <li>
 <p><code>blackhole</code> - for testing; a blackhole index type ignores all
@@ -294,9 +300,11 @@ bleve full-text engine.</p>
 <p>For example, if the index type is <code>alias</code>, then the index params
 should be the JSON that defines one or more target indexes for the
 index alias.</p>
+<p>More information on the <code>bleve</code> and <code>alias</code> index params JSON are
+available further below in this document.</p>
 <h2 id="source-type-sourcetype">Source Type (sourceType)</h2>
-<p>An index has a <em>Source Type</em>, which specifies the kind of data source
-that is used to populate the index.</p>
+<p>An index has a required <em>Source Type</em>, which specifies the kind of
+data source that is used to populate the index.</p>
 <p>An often used source type, for example, would be <code>couchbase</code>,
 which would be used when a user wants to index all the documents that
 are stored in a Couchbase bucket.</p>
@@ -305,15 +313,15 @@ are stored in a Couchbase bucket.</p>
 <li><code>couchbase</code> - a Couchbase Server bucket will be the data source.</li>
 <li><code>nil</code> - for testing; a nil data source never has any data.</li>
 </ul>
-<p>More information on the <code>couchbase</code> source type is
-available further below in this document.</p>
+<p>More information on the <code>couchbase</code> source types are available
+further below in this document.</p>
 <h2 id="source-name-sourcename">Source Name (sourceName)</h2>
 <p>An index also has an optional <em>Source Name</em>, whose interpretation is
 dependent on the source type of the index.</p>
-<p>For example, when the source type is "couchbase", then the source name
-is treated as a Couchbase bucket name, and the source params would
-define any optional, additional parameters needed to connect that
-named Couchbase bucket.</p>
+<p>For example, when the source type is <code>couchbase</code>, then the source
+name is treated as a Couchbase bucket name, and the source params
+would define any optional, additional parameters needed to connect
+that named Couchbase bucket.</p>
 <h2 id="source-params-sourceparams">Source Params (sourceParams)</h2>
 <p>An index also has an optional <em>Source Params</em> JSON attribute, whose
 interpretation depends on the source type of the index.</p>
@@ -323,7 +331,7 @@ cbft should retrieve data from a data source.</p>
 <h2 id="source-uuid-sourceuuid">Source UUID (sourceUUID)</h2>
 <p>An index also has an optional <em>Source UUID</em> attribute, whose meaning
 depends on the source type of the index.</p>
-<p>For example, when the source type is "couchbase", then the source
+<p>For example, when the source type is <code>couchbase</code>, then the source
 UUID, which is optional, is treated as a Couchbase bucket UUID, in
 order to allow a strict identification of the correct bucket.</p>
 <h2 id="plan-params-planparams">Plan Params (planParams)</h2>
@@ -352,11 +360,12 @@ index partition", limits how many source partitions that cbft can
 assign to or allocate toto an index partition.</p>
 <p>A value of 0 means no limit, which effectively means that cbft will
 just allocate all source partitions to a single index partition.</p>
-<p>For example, with a Couchbase bucket as your data source, you will
-have 1024 source partitions (1024 Couchbase "vbuckets")...</p>
+<p>For example, with a Couchbase bucket as your data source (the source
+type is <code>couchbase</code>), you will have 1024 source partitions (1024
+Couchbase "vbuckets"), and then:</p>
 <p>If your <code>maxPartitionsPerPIndex</code> is 0, then you would have a
 single index partition that will be assigned to be responsible for all
-vbuckets (assuming your <code>numReplicas</code> value is 0).</p>
+vbuckets.</p>
 <p>If your <code>maxPartitionsPerPIndex</code> is 200, then you would have 6
 index partitions...</p>
 <ul>
@@ -368,35 +377,41 @@ index partitions...</p>
 <li>index partition F covers vbuckets 1000 through 1023</li>
 </ul>
 <p>cbft actually uses unique hexadecimal hashes (like
-"beer-sample_58dc74c09923851d_607744fc") to identify index partitions
-instead of simple alphabetic characters as shown above (the 'A'
-through 'F' above).  The format of the index partition is...</p>
+"beer-sample_58dc74c09923851d_607744fc") to identify those index
+partitions instead of simple alphabetic characters as shown above (the
+'A' through 'F' above).</p>
+<p>The format of the index partition identifier is...</p>
 <pre><code>&lt;indexName&gt;_&lt;indexUUID&gt;_&lt;hash-of-source-partition-identifiers&gt;
 </code></pre>
-<p><code>numReplicas</code> defines how many index partitions replicas cbft
-should allocate, not counting the first, master index partition.  For
-example, a value of 1 means there should be two copies: the first
-master copy plus 1 replica copy.</p>
+<p><code>numReplicas</code> defines how many additional index partitions
+replicas cbft should allocate, not counting the first assigned index
+partition.</p>
+<p>For example, a value of 1 for <code>numReplicas</code> means there should be
+two copies: the first copy plus 1 replica copy of the index
+partitions.</p>
+<p>For example, a value of 0 for <code>numReplicas</code> means there should be
+only the first copy and no extra replica copies of the index
+partitions.</p>
 <p><code>hierarchyRules</code> defines replica allocation rules or policies for
 shelf/rack/row/zone awareness.</p>
 <p>TBD</p>
 <p><code>nodePlanParams</code> defines rules on whether a node is paused for
-index ingest and/or index queries for a given index or index
-partition.</p>
+index ingest and/or index queries are allowed for a given index or
+index partition.</p>
 <p>TBD</p>
 <p><code>planFrozen</code> defines whether an index is frozen or paused for
-reassignment or rebalancing of index partitions.</p>
+automatic reassignment or rebalancing of index partitions.</p>
 <h2 id="index-uuid-indexuuid">Index UUID (indexUUID)</h2>
 <p>The cbft system generates and assigns a unique <em>Index UUID</em> to an
-index when an index is first created and whenever the index definition
-is updated.</p>
+index when an index definition is first created and whenever the index
+definition is updated.</p>
 <p>That is, if you edit or update an index definition, the cbft system
-will re-generate a new Index UUID for changed index definition.</p>
+will re-generate a new Index UUID for the changed index definition.</p>
 <p>When using the REST API to edit or update an index definition, you can
-pass in the index definition's current <code>indexUUID</code> via the
-<code>prevIndexUUID</code> parameter to ensure that concurrent clients are
-not inadvertently overwriting each other's changes to an index
-definition.</p>
+optionally pass in the index definition's current <code>indexUUID</code> via
+the <code>prevIndexUUID</code> parameter on your request to ensure that
+concurrent clients are not inadvertently overwriting each other's
+changes to an index definition.</p>
 <h1 id="index-types">Index types</h1>
 <h2 id="index-type-bleve">Index type: bleve</h2>
 <p>For the <code>bleve</code> index type, here is an example, default index
@@ -432,11 +447,13 @@ of bleve's <code>IndexMapping</code> configuration settings.</p>
 the bleve full-text engine's <code>IndexMapping</code> parser.</p>
 <p>A bleve <code>IndexMapping</code> is a complete, standalone, declarative
 configuration of a logical bleve full-text index.</p>
+<p>Please see <a href="http://blevesearch.com">bleve's documentation</a> for more
+information on the <code>IndexMapping</code>.</p>
 <p>The <code>store</code>field is a JSON sub-object and is a representation of
 bleve's <code>kvconfig</code> configuration settings.</p>
 <p>NOTE: For web admin UI users, the <code>store</code> field input textarea is
 hidden by default.  To make it visible, click on the <code>Show advanced
-settings</code> checkbox.</p>
+settings</code> checkbox in the index creation form or index edit form.</p>
 <p>The <code>store</code> field has an important sub-field: <code>kvStoreName</code>.</p>
 <p>The <code>kvStoreName</code> defines the persistent storage implementation
 that will be used for the bleve index.</p>
@@ -454,7 +471,7 @@ that will be used for the bleve index.</p>
   storage library (EXPERIMENTAL)</p>
 </li>
 <li>
-<p>TBD (leveldb, forestdb, once we get the builds working correctly)</p>
+<p>TBD (leveldb, forestdb, ...others...)</p>
 </li>
 </ul>
 <p>The other sub-fields under the <code>store</code> JSON sub-object are
@@ -473,7 +490,8 @@ params JSON:</p>
   }
 }
 </code></pre>
-<p>You can specify one or more "%yourIndexName%" entries listed under the <code>targets</code> field.</p>
+<p>You can specify one or more "%yourIndexName%" entries listed under the
+<code>targets</code> sub-object.</p>
 <p>For example, perhaps you wish to have a naming level-of-indirection so
 that applications can make queries without any application-side
 reconfigurations.</p>
@@ -500,9 +518,9 @@ can be retargetted by the administrator to point to the latest
   }
 }
 </code></pre>
-<p>The <code>indexUUID</code> field in the index alias definition allows you to
-exactly specify a specific target index definition via the target
-index definition's <code>indexUUID</code>.</p>
+<p>The optional <code>indexUUID</code> field in the index alias definition
+allows you to exactly specify a specific target index definition via
+the target index definition's <code>indexUUID</code>.</p>
 <p>If the target index is redefined and its <code>indexUUID</code> value is
 regenerated or reassigned by cbft, then queries against an index alias
 with a mismatched indexUUID will result in error responses.</p>
@@ -533,7 +551,8 @@ target indexes so that applications can query just a single endpoint
 Couchbase bucket that has a password, then you need to specify an
 <code>authUser</code> and an <code>authPassword</code> as part of the Source Params
 (<code>sourceParams</code>) JSON.</p>
-<p>For example, perhaps you'd like to index a <code>product-catalog</code> bucket.</p>
+<p>For example, perhaps you'd like to index a <code>product-catalog</code>
+Couchbase bucket.</p>
 <p>Then, in the Source Params JSON...</p>
 <ul>
 <li>
@@ -560,16 +579,18 @@ Couchbase bucket that has a password, then you need to specify an
 }
 </code></pre>
 <p>The other parameters are for specifying optional, advanced connection
-tuning and error-handling behavior for Couchbase DCP streams:</p>
+tuning and error-handling behavior for how cbft creates and manages
+Couchbase DCP (data change protocol) streams:</p>
 <ul>
 <li>
 <p><code>clusterManagerBackoffFactor</code>: float - numeric factor (like 1.5)
   for how cbft should increase its sleep time in between retries when
-  (re-)connecting to a Couchbase cluster manager.</p>
+  re-connecting to a Couchbase cluster manager.</p>
 </li>
 <li>
 <p><code>clusterManagerSleepInitMS</code>: int - initial sleep time
-  (millisecs) before first retry to a Couchbase cluster manager.</p>
+  (millisecs) for cbft's first retry on re-connecting to a Couchbase
+  cluster manager.</p>
 </li>
 <li>
 <p><code>clusterManagerSleepMaxMS</code>: int - maximum sleep time (millisecs)
@@ -578,12 +599,12 @@ tuning and error-handling behavior for Couchbase DCP streams:</p>
 <li>
 <p><code>dataManagerBackoffFactor</code>: float - numeric factor (like 1.5)
   for how cbft should increase its sleep time in between retries when
-  (re-)connecting to a Couchbase data manager node
-  (memcached/ep-engine).</p>
+  re-connecting to a Couchbase data manager node
+  (memcached/ep-engine server).</p>
 </li>
 <li>
 <p><code>dataManagerSleepInitMS</code>: int - initial sleep time (millisecs)
-  before first retry to a Couchbase data manager.</p>
+  for cbft's first retry on re-connecting to a Couchbase data manager.</p>
 </li>
 <li>
 <p><code>dataManagerSleepMaxMS</code>: int - maximum sleep time (millisecs)
@@ -595,8 +616,8 @@ tuning and error-handling behavior for Couchbase DCP streams:</p>
 </li>
 <li>
 <p><code>feedBufferAckThreshold</code>: float - used for DCP flow control and
-  buffer-ack messages when this percentage of FeedBufferSizeBytes is
-  reached.</p>
+  buffer-ack messages when this percentage of
+  <code>feedBufferSizeBytes</code> is reached.</p>
 </li>
 </ul>
 <hr />

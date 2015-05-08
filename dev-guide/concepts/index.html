@@ -190,20 +190,25 @@ query criteria.</p>
 and index aliases.</p>
 <p>cbft also supports multiple kinds of data sources.</p>
 <h2 id="data-source">Data Source</h2>
-<p>The data used to populate an index comes from a <em>Data Source</em>.</p>
+<p>The data used to populate an index comes from a <em>Data Source</em>, or
+sometimes just called a <em>Source</em>.</p>
 <p>A data source, for example, might be all the documents stored in a
 Couchbase bucket.</p>
+<p>Another data source, for example, might be all the files in a
+subdirectory tree that match some naming patterns.</p>
+<p>Each index is defined with a single data source.</p>
 <h2 id="index-alias">Index Alias</h2>
-<p>An <em>Index Alias</em> is a type of index that's not a normal index, but is
-more of a virtual index that points to other, real indexes.</p>
+<p>An <em>Index Alias</em> is a type of index that's a "virtual index" that
+points to other, real indexes.</p>
 <p>Similar to a symbolic link in a filesystem, an index alias allows a
 naming level of indirection, so that applications can refer to a
 stable name (the alias' name) while administrators can dynamically
 retarget or re-point the index alias to different, real indexes.</p>
 <p>Similar to an email list alias, too, an index alias in cbft can also
 "fan-out" and refer to multiple, real indexes.  A query on an index
-alias will scatter-gather the query request against all of the actual,
-real indexes and merge results.</p>
+alias will be scatter-gather'ed by cbft to all of the actual, real
+indexes and cbft will provide merged results from those
+scatter-gather'ed queries.</p>
 <h2 id="index-partition">Index Partition</h2>
 <p>At runtime, the data entries maintained in a cbft index will be split
 into one or more partitions, or <em>Index Partition</em>'s.</p>
@@ -211,7 +216,7 @@ into one or more partitions, or <em>Index Partition</em>'s.</p>
 as you'll sometimes see in cbft's log files, stats entries and/or JSON
 data.</p>
 <p>Put another way, a logical index is partitioned into one or more index
-partitions.</p>
+partitions or "pindexes".</p>
 <h2 id="source-partition">Source Partition</h2>
 <p>An index partition is different than, but related to, the partitions
 from a data source, or <em>Source Partition</em>'s.</p>
@@ -241,8 +246,8 @@ a cbft cluster.</p>
 <p>A <em>Cfg</em> (or "config") provider is a configuration-oriented data system
 required by cbft nodes.</p>
 <p>A cbft node will store its configuration data into a Cfg provider.</p>
-<p>For example, index definitions or metadata (but not large amounts of
-index data entries) will be stored into a Cfg provider.</p>
+<p>For example, index definitions and cluster information will be stored
+into a Cfg provider.</p>
 <p>Some available Cfg providers...</p>
 <ul>
 <li>
@@ -252,10 +257,10 @@ index data entries) will be stored into a Cfg provider.</p>
   development-time experience and developer's usage of cbft.</p>
 </li>
 <li>
-<p>couchbase - uses a Couchbase bucket to store configuration data.  A
-  couchbase Cfg provider is often used for clustering multiple cbft
-  nodes, where all the cbft nodes need to be connected to the same
-  Couchbase bucket for their configuration data.</p>
+<p>couchbase - a Couchbase bucket is used to store configuration data.
+  A couchbase Cfg provider is often used for clustering multiple cbft
+  nodes together, where all the cbft nodes need to be connected to the
+  same Couchbase bucket for their configuration data.</p>
 </li>
 </ul>
 <hr />

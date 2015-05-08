@@ -230,14 +230,14 @@ builds.</p>
 executable as <code>./cbft</code> rather than some platform specific name
 like <code>./cbft.macos.amd64</code>.</p>
 <h2 id="running-cbft">Running cbft</h2>
-<p>Start cbft, pointing it to your Couchbase Server as its datasource
-server...</p>
+<p>Start cbft, pointing it to your Couchbase Server as your default
+datasource server...</p>
 <pre><code>./cbft -server http://localhost:8091
 </code></pre>
-<p>Note: cbft defaults to using a directory named "data" as its data
-directory, which it will create in the current working directory if it
-does not exist yet.  You can change the data directory path by using
-the <code>-dataDir</code> command-line parameter.</p>
+<p>Note: cbft also defaults to using a directory named "data" as its data
+directory, which cbft will create in the current working directory if
+it does not exist yet.  You can change the data directory path by
+using the <code>-dataDir</code> command-line parameter.</p>
 <h2 id="the-web-admin-ui">The web admin UI</h2>
 <p>Next, point your web browser to cbft's web admin UI...</p>
 <pre><code>http://localhost:8095
@@ -247,6 +247,7 @@ web admin UI.</p>
 <p>That welcome page will list all the indexes that you've defined; of
 course, there should be no indexes at this point.</p>
 <h2 id="creating-a-full-text-index">Creating a full-text index</h2>
+<p>Next, let's create your first full-text index in cbft.</p>
 <p>On the Indexes listing page (the "Welcome to cbft" page), click on the
 <code>New Index</code> button.</p>
 <p>A form should appear where you can define your new index
@@ -256,13 +257,15 @@ configuration.</p>
 <p>Each index needs a unique name.</p>
 <p>In the Index Name field, type in a name, such as "test-index".</p>
 <p>Only alphanumeric characters, hyphens and underscores are allowed for
-index names.</p>
+index names.  Also, the first character must be a alphabetic
+character.</p>
 <h3 id="index-type">Index Type</h3>
 <p>The Index Type specifies what kind of index that cbft will create.</p>
 <p>From the Index Type dropdown, choose <code>full-text (bleve)</code>.</p>
 <p>As soon as you make an Index Type dropdown selection, some additional,
-type-dependent input fields should appear (Mapping and Store), but
-let's ignore them for now and use the provided defaults.</p>
+type-dependent input fields should appear (such as a <code>Mapping</code>
+textarea of JSON), but let's ignore them for now and use the provided
+defaults.</p>
 <h3 id="source-type">Source Type</h3>
 <p>The Source Type specifies what kind of datasource will be used for the
 index.</p>
@@ -293,14 +296,21 @@ indexing progress.</p>
 <p>In the query field, type in a query term.</p>
 <p>Hit enter/return to execute your first cbft full-text query!</p>
 <p>You should see query results appearing below the query field.</p>
-<p>That's about it for getting started.</p>
-<p>The web admin UI has more screens and features, so be sure to click
-around and explore!</p>
 <h1 id="where-to-go-next">Where to go next</h1>
-<p>Please see
-the <a href="dev-guide/overview/">Developer's Guide</a>,
-the <a href="api-ref/">API Reference</a> and
-the <a href="admin-guide/overview/">Administrator's Guide</a>.</p>
+<p>That's about it for getting started.</p>
+<p>You can see the other command-line parameters of cbft with the
+<code>-h</code> flag...</p>
+<pre><code>./cbft -h
+</code></pre>
+<p>Additionally, cbft's web admin UI has more screens and features, so be
+sure to click around and explore!</p>
+<p>Finally, don't forget to take a look at these additional documents...</p>
+<ul>
+<li><a href="dev-guide/overview/">Developer's guide</a></li>
+<li><a href="api-ref/">API reference</a></li>
+<li><a href="admin-guide/overview/">Administrator's guide</a></li>
+<li><a href="links/">Links to more resources</a></li>
+</ul>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
