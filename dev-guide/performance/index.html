@@ -170,6 +170,8 @@
         
             <li><a href="#heterogeneous-node-capabilities">Heterogeneous node capabilities</a></li>
         
+            <li><a href="#relaxing-consistency">Relaxing consistency</a></li>
+        
             <li><a href="#testing-and-experiments">Testing and experiments</a></li>
         
     
@@ -270,6 +272,19 @@ machines more index partitions than the less powerful machines.</p>
 <code>-weight</code> command-line flag.  For example...</p>
 <pre><code>./cbft -weight 2 [...other cbft params...]
 </code></pre>
+<h2 id="relaxing-consistency">Relaxing consistency</h2>
+<p>cbft includes the optional ability when processing a query to ensure
+that indexes are "caught up", where all the latest data from the data
+source has been incorporated into the index, before the query
+processing proceeeds.</p>
+<p>This allows an application to "read your own writes" (RYOW), where
+query results will reflect the latest mutations done by an application
+thread.</p>
+<p>However, if application requirements allow, cbft supports the ability
+to instead query the index even if the index is out of date.  This may
+be useful for some cases to increase the apparent or perceived
+performance to the users of the overall application, at the tradeoff
+of sometimes receiving older or "stale" index results.</p>
 <h2 id="testing-and-experiments">Testing and experiments</h2>
 <p>At the end of all these complex design tradeoffs and theories, the
 ultimate answers will come from real-world data and results from
