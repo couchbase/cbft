@@ -121,6 +121,23 @@ To tell cbft that a machine is more powerful, please see the
 
     ./cbft -weight 2 [...other cbft params...]
 
+## Relaxing consistency
+
+cbft includes the optional ability when processing a query to ensure
+that indexes are "caught up", where all the latest data from the data
+source has been incorporated into the index, before the query
+processing proceeeds.
+
+This allows an application to "read your own writes" (RYOW), where
+query results will reflect the latest mutations done by an application
+thread.
+
+However, if application requirements allow, cbft supports the ability
+to instead query the index even if the index is out of date.  This may
+be useful for some cases to increase the apparent or perceived
+performance to the users of the overall application, at the tradeoff
+of sometimes receiving older or "stale" index results.
+
 ## Testing and experiments
 
 At the end of all these complex design tradeoffs and theories, the
