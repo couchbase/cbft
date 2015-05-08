@@ -58,8 +58,8 @@ running somewhere.
 
 ## Running cbft
 
-Start cbft, pointing it to your Couchbase Server as its datasource
-server...
+Start cbft, pointing it to your Couchbase Server as its default
+datasource server...
 
     ./cbft -server http://localhost:8091
 

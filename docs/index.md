@@ -63,15 +63,15 @@ like ```./cbft.macos.amd64```.
 
 ## Running cbft
 
-Start cbft, pointing it to your Couchbase Server as its datasource
-server...
+Start cbft, pointing it to your Couchbase Server as your default
+datasource server...
 
     ./cbft -server http://localhost:8091
 
-Note: cbft defaults to using a directory named "data" as its data
-directory, which it will create in the current working directory if it
-does not exist yet.  You can change the data directory path by using
-the ```-dataDir``` command-line parameter.
+Note: cbft also defaults to using a directory named "data" as its data
+directory, which cbft will create in the current working directory if
+it does not exist yet.  You can change the data directory path by
+using the ```-dataDir``` command-line parameter.
 
 ## The web admin UI
 
@@ -86,6 +86,8 @@ That welcome page will list all the indexes that you've defined; of
 course, there should be no indexes at this point.
 
 ## Creating a full-text index
+
+Next, let's create your first full-text index in cbft.
 
 On the Indexes listing page (the "Welcome to cbft" page), click on the
 ```New Index``` button.
@@ -102,7 +104,8 @@ Each index needs a unique name.
 In the Index Name field, type in a name, such as "test-index".
 
 Only alphanumeric characters, hyphens and underscores are allowed for
-index names.
+index names.  Also, the first character must be a alphabetic
+character.
 
 ### Index Type
 
@@ -111,8 +114,9 @@ The Index Type specifies what kind of index that cbft will create.
 From the Index Type dropdown, choose ```full-text (bleve)```.
 
 As soon as you make an Index Type dropdown selection, some additional,
-type-dependent input fields should appear (Mapping and Store), but
-let's ignore them for now and use the provided defaults.
+type-dependent input fields should appear (such as a ```Mapping```
+textarea of JSON), but let's ignore them for now and use the provided
+defaults.
 
 ### Source Type
 
@@ -162,17 +166,24 @@ Hit enter/return to execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
-That's about it for getting started.
-
-The web admin UI has more screens and features, so be sure to click
-around and explore!
-
 # Where to go next
 
-Please see
-the [Developer's Guide](dev-guide/overview.md),
-the [API Reference](api-ref.md) and
-the [Administrator's Guide](admin-guide/overview.md).
+That's about it for getting started.
+
+You can see the other command-line parameters of cbft with the
+```-h``` flag...
+
+    ./cbft -h
+
+Additionally, cbft's web admin UI has more screens and features, so be
+sure to click around and explore!
+
+Finally, don't forget to take a look at these additional documents...
+
+* [Developer's guide](dev-guide/overview.md)
+* [API reference](api-ref.md)
+* [Administrator's guide](admin-guide/overview.md)
+* [Links to more resources](links.md)
 
 ---
 
