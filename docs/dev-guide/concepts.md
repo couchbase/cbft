@@ -21,15 +21,21 @@ cbft also supports multiple kinds of data sources.
 
 ## Data Source
 
-The data used to populate an index comes from a _Data Source_.
+The data used to populate an index comes from a _Data Source_, or
+sometimes just called a _Source_.
 
 A data source, for example, might be all the documents stored in a
 Couchbase bucket.
 
+Another data source, for example, might be all the files in a
+subdirectory tree that match some naming patterns.
+
+Each index is defined with a single data source.
+
 ## Index Alias
 
-An _Index Alias_ is a type of index that's not a normal index, but is
-more of a virtual index that points to other, real indexes.
+An _Index Alias_ is a type of index that's a "virtual index" that
+points to other, real indexes.
 
 Similar to a symbolic link in a filesystem, an index alias allows a
 naming level of indirection, so that applications can refer to a
@@ -38,8 +44,9 @@ retarget or re-point the index alias to different, real indexes.
 
 Similar to an email list alias, too, an index alias in cbft can also
 "fan-out" and refer to multiple, real indexes.  A query on an index
-alias will scatter-gather the query request against all of the actual,
-real indexes and merge results.
+alias will be scatter-gather'ed by cbft to all of the actual, real
+indexes and cbft will provide merged results from those
+scatter-gather'ed queries.
 
 ## Index Partition
 
@@ -51,7 +58,7 @@ as you'll sometimes see in cbft's log files, stats entries and/or JSON
 data.
 
 Put another way, a logical index is partitioned into one or more index
-partitions.
+partitions or "pindexes".
 
 ## Source Partition
 
@@ -95,8 +102,8 @@ required by cbft nodes.
 
 A cbft node will store its configuration data into a Cfg provider.
 
-For example, index definitions or metadata (but not large amounts of
-index data entries) will be stored into a Cfg provider.
+For example, index definitions and cluster information will be stored
+into a Cfg provider.
 
 Some available Cfg providers...
 
@@ -105,10 +112,10 @@ Some available Cfg providers...
   default Cfg provider and is intended primarily to simplify the
   development-time experience and developer's usage of cbft.
 
-- couchbase - uses a Couchbase bucket to store configuration data.  A
-  couchbase Cfg provider is often used for clustering multiple cbft
-  nodes, where all the cbft nodes need to be connected to the same
-  Couchbase bucket for their configuration data.
+- couchbase - a Couchbase bucket is used to store configuration data.
+  A couchbase Cfg provider is often used for clustering multiple cbft
+  nodes together, where all the cbft nodes need to be connected to the
+  same Couchbase bucket for their configuration data.
 
 ---
 
