@@ -138,6 +138,14 @@ be useful for some cases to increase the apparent or perceived
 performance to the users of the overall application, at the tradeoff
 of sometimes receiving older or "stale" index results.
 
+## Advanced storage options
+
+TBD
+
+## Compacting data
+
+TBD
+
 ## Testing and experiments
 
 At the end of all these complex design tradeoffs and theories, the

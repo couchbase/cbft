@@ -9,13 +9,13 @@ cbft indexes and cbft nodes.
 
 Index building is the process by which cbft sets up connections to
 data sources, retrieves data from the data sources, analyzes that
-data, and updates index data in memory and persisted to storage, in
+data, and updates index data in memory and in persisted storage, in
 concurrent fashion.
 
 By concurrent, we mean that cbft uses internal pipelines or data
 streams, as opposed to, for example, completely retrieving all the
-data from a data source as a complete step before starting any
-analysis.  Instead, cbft's approach allows for incremental processing,
+data from a data source as one phase before starting any analysis
+phase.  Instead, cbft's approach allows for incremental processing,
 which is suited to also handle updates or mutations of data from the
 data source over time.
 
@@ -23,20 +23,24 @@ cbft will automatically start its concurrent index building steps as
 soon as you create an index.
 
 During the index building phase, the index is queryable.  However,
-cbft may not have processed or ingested all the data, of course, from
-the data source yet.  In this case, queries will return responses for
-the data so far incorporated in a "best effort" fashion.
+cbft may not have processed or ingested all the data for the index, of
+course, from its data source yet.  In this case, queries will return
+responses for the data so far incorporated in a "best effort" fashion.
 
-If a cbft node has to restart will in the midst of index building, the
-restarted cbft will attempt to "pick up where it left off" as much as
-possible and if the data source allows.
+If a cbft node has to restart in the midst of index building, the
+restarted cbft will attempt to "pick up where it left off" on its
+indexing activites, as much as possible and if the data source allows
+for restartability of data streams.
+
+The ```couchbase``` data source type, of note, allows for
+restartability of data streams.
 
 ## Rebuilding indexes
 
 Sometimes, an administrator wishes to rebuild an index from scratch,
-or as is sometimes described, "rebuilding an index from zero" (in
-reference to an empty start condition and/or to a 0 sequence number or
-very beginning of a sequence of data).
+or as is sometimes described, "rebuilding an index from zero" or "from
+scratch" (in reference to an empty start condition and/or to a 0
+sequence number or very beginning of a sequence of data).
 
 To rebuild an index from scratch in cbft, using your web browser in
 the web admin UI:
@@ -46,18 +50,22 @@ the web admin UI:
 - Find the row for the index you wish to rebuild.
 
 - On that same row, click on the ```edit``` button, where you'll next
-  see an edit form for you index definition.
+  see an edit form for your index definition.
 
-- Without making any changes to your index definition form (especially
-  don't change the index name), click on the ```Update Index``` button
-  at the bottom of the form.
+- Optional: you can make changes to your index definition at this
+  point, but you do not need to do just to get a rebuild.
+
+- Click on the ```Update Index``` button at the bottom of the form.
 
 - Your index will start rebuilding from scratch or from zero.
 
-- Of note, the index UUID will change as part of this operation, which
-  allows applications to detect that the index definition has
-  "changed".  This may be important for some applications that are
-  caching results, etc.
+- If you had made changes to your index definition, your new index
+  will reflect your index definition changes.
+
+Of note, the index UUID will change as part of this operation, which
+allows applications to detect that the index definition has "changed".
+This may be important for some applications that are caching results,
+etc.
 
 ## Disabling/enabling indexing
 
@@ -73,7 +81,7 @@ To pause index ingest activities, in the web admin UI:
 - Click on the index name link for the index whose ingest you wish to
   pause.
 
-- Click on the ```Manage``` sub-tab for the index.
+- Click on the ```Manage``` tab for your index.
 
 - Click ```Disable Ingest``` button.
 
@@ -85,18 +93,29 @@ To re-enable index processing and data ingest:
 
 - Click on the ```Enable Ingest``` button.
 
+Note: if index ingest is disabled or paused, and your application is
+querying the index and is specifying optional consistency parameters
+(it is trying to "read its own writes") those queries will be paused
+until the index ingest is re-enabled and the index has ingested all
+the data up to the required consistency point.  This can lead to
+apparently slow application behavior and application timeouts.
+
 ## Disabling/enabling queries
 
 Sometimes, an administrator needs to temporarily disable the ability
 for applications to make queries on an index.  For example, perhaps
 during some 2:00AM hours of maintenance time, the administrator would
-like to index processing or ingest to "catch up" to the most recent
-data source mutations.  Or perhaps, the administrator would like to
-rebuild indexes from scratch at this point.  In any case, by disabling
-queries, the administrator can help ensure more resources are going to
-index ingest processing.  That is, a slow, massive query might steal
-system resources from the main priority of getting the index up to
-date.
+like the index ingest to "catch up" to the most recent data source
+mutations.
+
+Or perhaps, the administrator would like to rebuild indexes from
+scratch at this point.
+
+In any case, by disabling queries, the administrator can help ensure
+more resources will be used for index ingest processing.  That is, a
+slow, massive query might take resources away from the main priority
+of getting the index up to date, so pausing index query'ability can be
+a useful feature.
 
 To disable index query'ability, in the web admin UI:
 
@@ -105,7 +124,7 @@ To disable index query'ability, in the web admin UI:
 - Click on the index name link for the index whose querying you wish
   to disable.
 
-- Click on the ```Manage``` sub-tab for the index.
+- Click on the ```Manage``` tab for your index.
 
 - Click ```Disable Queries``` button.
 
@@ -113,8 +132,8 @@ The ```Index Queries``` state will turn from ```enabled``` to
 ```disabled```, and the button you just clicked will turn into an
 ```Enable Queries``` button.
 
-At this time, applications sending query requests for your index will
-receive error responses.
+At this time, applications sending new query requests for your index
+will receive error responses.
 
 To re-enable queries on your index:
 
@@ -139,7 +158,7 @@ To disable index parittion reassignments, in the web admin UI:
 - Click on the index name link for the index whose index partitions
   you wish to to have reassignments disabled.
 
-- Click on the ```Manage``` sub-tab for the index.
+- Click on the ```Manage``` tab for your index.
 
 - Click ```Disable Reassignments``` button.
 
@@ -149,7 +168,7 @@ turn into an ```Enable Reassignments``` button.
 
 At this time, any cluster membership changes (cbft nodes added or
 removed) will not trigger an automatic index partitions reassignment
-for the index.
+for your index.
 
 To re-enable index partition reassignments on your index:
 
@@ -158,10 +177,9 @@ To re-enable index partition reassignments on your index:
 ## Index definition changes and zero downtime
 
 When an index definition is created or modified, cbft will rebuild the
-index partitions for that index from scratch, starting from an empty
-state for that index.
+ index from scratch, starting from an empty state for that index.
 
-During that time, queries against a modified index will see "missing"
+During that time, queries against a modified index can see "missing"
 results, as an index rebuild can take time to ingest or process data
 from the data source.
 
@@ -184,7 +202,7 @@ The user's application is configured to make queries against
 
 Some time later, however, the team discovers a need for additional
 features, such as perhaps needing to adjust bleve's full-text
-tokenization configuration.
+tokenization configuration to improve its search results relevancy.
 
 Rather than directly editing the ```ProductCatalogIndex-01```, instead
 the team creates a brand new index, ```ProductCatalogIndex-02```,
@@ -207,7 +225,7 @@ apparent downtime of queries.
 
 As an advanced approach, the team may also allow some subset of the
 application or subset of users (e.g., "beta" users) to instead query
-the ```ProductCatalogIndex-02```, even whil it is building up, in
+the ```ProductCatalogIndex-02```, even while it is building up, in
 order to get a preview of the changed index configuration's behavior.
 
 The resource cost of using an index alias for zero downtime to queries
@@ -225,17 +243,20 @@ downtime for application queries even as cluster membership changes
 Normally, as nodes are added or removed from a cbft cluster (as
 different cbft nodes are registered as wanted or unwanted or unknown),
 the cbft system will automatically reassign index partitions amongst
-the remaining nodes.  The reassigned index partitions need to build
-from scratch, however, which leads to queries not providing responses
-to all data as the index partitions are rebuilt.
+the remaining nodes.  The reassigned index partitions need to be built
+up from scratch, however, which leads to queries not providing
+responses to all data as the reassigned index partitions are being
+built.
 
 The solution is to use an index alias so that applications can
 continue to query the old index.
 
 Additionally, _before_ the administrator adds or removes nodes from a
 cbft cluster, the administrator should disable index partition
-reassignments for the current index definition.  See the instructions
-above for how to disable index partition reassignments.
+reassignments for the current index definition.
+
+Please see the instructions above for how to disable index partition
+reassignments for an index.
 
 Then, the administrator can add new cbft nodes, and the current index
 definition will remain "stable", where its index partitions will
@@ -250,24 +271,22 @@ indexing and ingest progress on the new index.
 
 When the new index has indexed or ingested enough data from the data
 source, the administrator can then edit the index alias and repoint
-the alias away from the old index definition and instead point the
-alias to the new index definition.
+the index alias away from the old index definition and instead point
+the index alias to the new index definition.
 
 Then the administrator can delete the old index definition.
 
 This operation allows applications to query the index alias with no
 loss of indexed data, but at the cost of requiring twice the resources
-to support two indexes in a cluster.
+to temporarily support two indexes in a cluster.
 
 ## Advanced storage options
 
-EXPERIMENTAL!
-
-tbd
+TBD
 
 ## Compacting data
 
-tbd
+TBD
 
 ## Backup and restore
 
@@ -279,14 +298,15 @@ The Cfg provider (i.e., a Couchbase ```my-cfg-bucket```) should also
 have replication enabled and be backed up for production usage.
 
 Because cbft is used as an indexing server, the index data entries
-maintained by cbft should also be able to be rebuilt "from scratch"
-from the original "source of truth" data sources.
+maintained by cbft should also be able to be rebuilt "from scratch",
+at the cost of rebuild time, from the original "source of truth" data
+sources.
 
 At root, though, the end-all/be-all safety net and recommended
 practice is that cbft index creation scripts should be checked into
 source-code control systems so that any development, test or
-administration colleagues on the user's team can replicate a cbft
-configuration at will.
+administration colleagues on the application's team can replicate a
+cbft configuration at will.
 
 # Managing cbft nodes
 
@@ -301,11 +321,11 @@ cluster.
 Of note, if the nodes and index definitions in a cluster have not
 changed, then the re-paritioning and re-assignment activities of a
 manager kick should result in the exact same "plan"; hence, a manager
-kick in that case would result effectively with a no-op.
+kick in that case would result effectively with nothing changing.
 
 An optional ```Kick Message``` input field allows the user to provide
 text that will be logged by the cbft node, so that an administrator
-can correlate manage kick requests with server-side activities.
+can correlate manager kick requests with server-side logs.
 
 ---
 
