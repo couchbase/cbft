@@ -270,11 +270,25 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
   "feedBufferAckThreshold": 0
 }
 </code></pre>
+<p>For sourceType <code>files</code>, an example sourceParams JSON:</p>
+<pre><code>{
+  "regExps": [
+    ".txt$",
+    ".md$"
+  ],
+  "maxFileSize": 0,
+  "numPartitions": 0,
+  "sleepStartMS": 5000,
+  "backoffFactor": 1.5,
+  "maxSleepMS": 300000
+}
+</code></pre>
 <p>For sourceType <code>nil</code>, the sourceParams can be null.</p>
 <p><strong>param: sourceType</strong>: required, string, form parameter</p>
 <p>Supported sourceType's:</p>
 <ul>
 <li><code>couchbase</code>: a Couchbase Server bucket will be the data source</li>
+<li><code>files</code>: files under a dataDir subdirectory tree will be the data source</li>
 <li><code>nil</code>: a nil data source has no data; used for index aliases and testing</li>
 </ul>
 <p><strong>param: sourceUUID</strong>: optional, string, form parameter</p>
