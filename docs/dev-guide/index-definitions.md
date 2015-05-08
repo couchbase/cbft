@@ -30,15 +30,22 @@ browser:
 
 - Navigate to the ```Indexes``` screen.
 
-- There you will find a list of indexes.
+- There you will find a list of the indexes, if any, that you had
+  previously defined.
 
 Each listed index will have buttons for these operations:
 
-- the ```edit``` button allows you to update an index definition.
+- the index ```edit``` button allows you to update an index
+  definition.
 
-- the ```clone``` button allows you to copy an index definition.
+- the index ```clone``` button allows you to copy an index definition.
 
-- the ```delete``` button allows you to delete an index definition.
+- the index ```delete``` button (trash can icon) allows you to delete
+  an index definition.
+
+Note: if you click on the index ```delete``` button, you will have a
+chance to first confirm the index definition deletion operation.
+Deleting an index, importantly, is a permanent operation.
 
 # Index attributes
 
@@ -57,8 +64,8 @@ specified when defining index:
 
 ## Index Name (indexName)
 
-An index has a name, or _Index Name_, that is a unique identifier for
-the index.
+An index has a required name, or _Index Name_, which is a unique
+identifier for the index.
 
 An index name is comprised of alphanumeric characters, hyphens and
 underscores (no whitespace characters).  The first character of an
@@ -66,7 +73,7 @@ index name must be an alphabetic character (a-z or A-Z).
 
 ## Index Type (indexType)
 
-An index has a type, or _Index Type_.
+An index has a required type, or _Index Type_.
 
 An often used index type, for example, would be ```bleve```, for
 full-text indexing.
@@ -74,7 +81,7 @@ full-text indexing.
 Some available index types include...
 
 - ```bleve``` - a full-text index powered by the
-  [bleve](http://blevesearch.com) engine.
+  [bleve](http://blevesearch.com) full-text engine.
 
 - ```blackhole``` - for testing; a blackhole index type ignores all
   incoming data, and returns errors on any queries.
@@ -99,10 +106,13 @@ For example, if the index type is ```alias```, then the index params
 should be the JSON that defines one or more target indexes for the
 index alias.
 
+More information on the ```bleve``` and ```alias``` index params JSON are
+available further below in this document.
+
 ## Source Type (sourceType)
 
-An index has a _Source Type_, which specifies the kind of data source
-that is used to populate the index.
+An index has a required _Source Type_, which specifies the kind of
+data source that is used to populate the index.
 
 An often used source type, for example, would be ```couchbase```,
 which would be used when a user wants to index all the documents that
@@ -113,18 +123,18 @@ Some available source types include...
 - ```couchbase``` - a Couchbase Server bucket will be the data source.
 - ```nil``` - for testing; a nil data source never has any data.
 
-More information on the ```couchbase``` source type is
-available further below in this document.
+More information on the ```couchbase``` source types are available
+further below in this document.
 
 ## Source Name (sourceName)
 
 An index also has an optional _Source Name_, whose interpretation is
 dependent on the source type of the index.
 
-For example, when the source type is "couchbase", then the source name
-is treated as a Couchbase bucket name, and the source params would
-define any optional, additional parameters needed to connect that
-named Couchbase bucket.
+For example, when the source type is ```couchbase```, then the source
+name is treated as a Couchbase bucket name, and the source params
+would define any optional, additional parameters needed to connect
+that named Couchbase bucket.
 
 ## Source Params (sourceParams)
 
@@ -140,7 +150,7 @@ cbft should retrieve data from a data source.
 An index also has an optional _Source UUID_ attribute, whose meaning
 depends on the source type of the index.
 
-For example, when the source type is "couchbase", then the source
+For example, when the source type is ```couchbase```, then the source
 UUID, which is optional, is treated as a Couchbase bucket UUID, in
 order to allow a strict identification of the correct bucket.
 
@@ -175,12 +185,13 @@ assign to or allocate toto an index partition.
 A value of 0 means no limit, which effectively means that cbft will
 just allocate all source partitions to a single index partition.
 
-For example, with a Couchbase bucket as your data source, you will
-have 1024 source partitions (1024 Couchbase "vbuckets")...
+For example, with a Couchbase bucket as your data source (the source
+type is ```couchbase```), you will have 1024 source partitions (1024
+Couchbase "vbuckets"), and then:
 
 If your ```maxPartitionsPerPIndex``` is 0, then you would have a
 single index partition that will be assigned to be responsible for all
-vbuckets (assuming your ```numReplicas``` value is 0).
+vbuckets.
 
 If your ```maxPartitionsPerPIndex``` is 200, then you would have 6
 index partitions...
@@ -193,16 +204,25 @@ index partitions...
 - index partition F covers vbuckets 1000 through 1023
 
 cbft actually uses unique hexadecimal hashes (like
-"beer-sample_58dc74c09923851d_607744fc") to identify index partitions
-instead of simple alphabetic characters as shown above (the 'A'
-through 'F' above).  The format of the index partition is...
+"beer-sample_58dc74c09923851d_607744fc") to identify those index
+partitions instead of simple alphabetic characters as shown above (the
+'A' through 'F' above).
+
+The format of the index partition identifier is...
 
     <indexName>_<indexUUID>_<hash-of-source-partition-identifiers>
 
-```numReplicas``` defines how many index partitions replicas cbft
-should allocate, not counting the first, master index partition.  For
-example, a value of 1 means there should be two copies: the first
-master copy plus 1 replica copy.
+```numReplicas``` defines how many additional index partitions
+replicas cbft should allocate, not counting the first assigned index
+partition.
+
+For example, a value of 1 for ```numReplicas``` means there should be
+two copies: the first copy plus 1 replica copy of the index
+partitions.
+
+For example, a value of 0 for ```numReplicas``` means there should be
+only the first copy and no extra replica copies of the index
+partitions.
 
 ```hierarchyRules``` defines replica allocation rules or policies for
 shelf/rack/row/zone awareness.
@@ -210,28 +230,28 @@ shelf/rack/row/zone awareness.
 TBD
 
 ```nodePlanParams``` defines rules on whether a node is paused for
-index ingest and/or index queries for a given index or index
-partition.
+index ingest and/or index queries are allowed for a given index or
+index partition.
 
 TBD
 
 ```planFrozen``` defines whether an index is frozen or paused for
-reassignment or rebalancing of index partitions.
+automatic reassignment or rebalancing of index partitions.
 
 ## Index UUID (indexUUID)
 
 The cbft system generates and assigns a unique _Index UUID_ to an
-index when an index is first created and whenever the index definition
-is updated.
+index when an index definition is first created and whenever the index
+definition is updated.
 
 That is, if you edit or update an index definition, the cbft system
-will re-generate a new Index UUID for changed index definition.
+will re-generate a new Index UUID for the changed index definition.
 
 When using the REST API to edit or update an index definition, you can
-pass in the index definition's current ```indexUUID``` via the
-```prevIndexUUID``` parameter to ensure that concurrent clients are
-not inadvertently overwriting each other's changes to an index
-definition.
+optionally pass in the index definition's current ```indexUUID``` via
+the ```prevIndexUUID``` parameter on your request to ensure that
+concurrent clients are not inadvertently overwriting each other's
+changes to an index definition.
 
 # Index types
 
@@ -274,12 +294,15 @@ the bleve full-text engine's ```IndexMapping``` parser.
 A bleve ```IndexMapping``` is a complete, standalone, declarative
 configuration of a logical bleve full-text index.
 
+Please see [bleve's documentation](http://blevesearch.com) for more
+information on the ```IndexMapping```.
+
 The ```store```field is a JSON sub-object and is a representation of
 bleve's ```kvconfig``` configuration settings.
 
 NOTE: For web admin UI users, the ```store``` field input textarea is
 hidden by default.  To make it visible, click on the ```Show advanced
-settings``` checkbox.
+settings``` checkbox in the index creation form or index edit form.
 
 The ```store``` field has an important sub-field: ```kvStoreName```.
 
@@ -296,7 +319,7 @@ Allowed values for ```kvStoreName``` include:
 - ```"goleveldb"``` - a pure-golang re-implementation of the leveldb
   storage library (EXPERIMENTAL)
 
-- TBD (leveldb, forestdb, once we get the builds working correctly)
+- TBD (leveldb, forestdb, ...others...)
 
 The other sub-fields under the ```store``` JSON sub-object are
 dependent on the persistent storage implementation that is being used.
@@ -318,7 +341,8 @@ params JSON:
       }
     }
 
-You can specify one or more "%yourIndexName%" entries listed under the ```targets``` field.
+You can specify one or more "%yourIndexName%" entries listed under the
+```targets``` sub-object.
 
 For example, perhaps you wish to have a naming level-of-indirection so
 that applications can make queries without any application-side
@@ -349,9 +373,9 @@ can be retargetted by the administrator to point to the latest
       }
     }
 
-The ```indexUUID``` field in the index alias definition allows you to
-exactly specify a specific target index definition via the target
-index definition's ```indexUUID```.
+The optional ```indexUUID``` field in the index alias definition
+allows you to exactly specify a specific target index definition via
+the target index definition's ```indexUUID```.
 
 If the target index is redefined and its ```indexUUID``` value is
 regenerated or reassigned by cbft, then queries against an index alias
@@ -392,7 +416,8 @@ Couchbase bucket that has a password, then you need to specify an
 ```authUser``` and an ```authPassword``` as part of the Source Params
 (```sourceParams```) JSON.
 
-For example, perhaps you'd like to index a ```product-catalog``` bucket.
+For example, perhaps you'd like to index a ```product-catalog```
+Couchbase bucket.
 
 Then, in the Source Params JSON...
 
@@ -418,25 +443,27 @@ For example, your Source Params JSON would then look like...
     }
 
 The other parameters are for specifying optional, advanced connection
-tuning and error-handling behavior for Couchbase DCP streams:
+tuning and error-handling behavior for how cbft creates and manages
+Couchbase DCP (data change protocol) streams:
 
 - ```clusterManagerBackoffFactor```: float - numeric factor (like 1.5)
   for how cbft should increase its sleep time in between retries when
-  (re-)connecting to a Couchbase cluster manager.
+  re-connecting to a Couchbase cluster manager.
 
 - ```clusterManagerSleepInitMS```: int - initial sleep time
-  (millisecs) before first retry to a Couchbase cluster manager.
+  (millisecs) for cbft's first retry on re-connecting to a Couchbase
+  cluster manager.
 
 - ```clusterManagerSleepMaxMS```: int - maximum sleep time (millisecs)
   between re-connection attempts to a Couchbase cluster manager.
 
 - ```dataManagerBackoffFactor```: float - numeric factor (like 1.5)
   for how cbft should increase its sleep time in between retries when
-  (re-)connecting to a Couchbase data manager node
-  (memcached/ep-engine).
+  re-connecting to a Couchbase data manager node
+  (memcached/ep-engine server).
 
 - ```dataManagerSleepInitMS```: int - initial sleep time (millisecs)
-  before first retry to a Couchbase data manager.
+  for cbft's first retry on re-connecting to a Couchbase data manager.
 
 - ```dataManagerSleepMaxMS```: int - maximum sleep time (millisecs)
   between re-connection attempts to a Couchbase data manager.
@@ -445,8 +472,8 @@ tuning and error-handling behavior for Couchbase DCP streams:
   for DCP flow control.
 
 - ```feedBufferAckThreshold```: float - used for DCP flow control and
-  buffer-ack messages when this percentage of FeedBufferSizeBytes is
-  reached.
+  buffer-ack messages when this percentage of
+  ```feedBufferSizeBytes``` is reached.
 
 ---
 
