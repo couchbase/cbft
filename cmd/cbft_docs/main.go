@@ -161,7 +161,7 @@ func main() {
 				mainCategoryFirst = false
 
 				if subCategoryFirst {
-					fmt.Printf("## %s\n\n", scVis)
+					fmt.Printf("---\n\n## %s\n\n", scVis)
 				}
 				subCategoryFirst = false
 
@@ -197,7 +197,7 @@ func main() {
 						if err == nil {
 							s, err := json.MarshalIndent(j, "    ", "  ")
 							if err == nil {
-								fmt.Printf("Sample response:\n\n    %s\n", s)
+								fmt.Printf("Sample response:\n\n    %s\n\n", s)
 							}
 						}
 					}

@@ -4,6 +4,8 @@
 
 # Indexing
 
+---
+
 ## Index definition
 
 ---
@@ -20,6 +22,7 @@ Sample response:
       "indexDefs": null,
       "status": "ok"
     }
+
 ---
 
 GET `/api/index/{indexName}`
@@ -156,6 +159,8 @@ The name of the index definition to be deleted.
 
 **version introduced**: 0.0.1
 
+---
+
 ## Index management
 
 ---
@@ -206,6 +211,8 @@ The name of the index whose control values will be modified.
 Allowed values for op are "allow" or "disallow".
 
 **version introduced**: 0.0.1
+
+---
 
 ## Index monitoring
 
@@ -258,6 +265,7 @@ Sample response:
       },
       "pindexes": {}
     }
+
 ---
 
 GET `/api/stats/index/{indexName}`
@@ -273,6 +281,9 @@ Sample response:
       "feeds": {},
       "pindexes": {}
     }
+
+---
+
 ## Index querying
 
 ---
@@ -324,6 +335,8 @@ For index type ```bleve```, an example POST body:
 
 # Node
 
+---
+
 ## Node configuration
 
 ---
@@ -352,6 +365,7 @@ Sample response:
       "planPIndexesErr": null,
       "status": "ok"
     }
+
 ---
 
 POST `/api/cfgRefresh`
@@ -383,6 +397,8 @@ Returns information on the node's capabilities,
 
 **version introduced**: 0.0.1
 
+---
+
 ## Node diagnostics
 
 ---
@@ -413,6 +429,7 @@ Sample response:
       "events": [],
       "messages": []
     }
+
 ---
 
 GET `/api/runtime`
@@ -438,6 +455,7 @@ Sample response:
       "versionData": "v0.0.5",
       "versionMain": "v0.0.5"
     }
+
 ---
 
 GET `/api/runtime/args`
@@ -466,6 +484,8 @@ Requests the node to capture lcoal
 
 **version introduced**: 0.0.1
 
+---
+
 ## Node management
 
 ---
@@ -475,6 +495,8 @@ POST `/api/runtime/gc`
 Requests the node to perform a GC.
 
 **version introduced**: 0.0.1
+
+---
 
 ## Node monitoring
 
@@ -500,6 +522,8 @@ Returns information on the node's
 
 # Advanced
 
+---
+
 ## Index partition definition
 
 ---
@@ -514,6 +538,7 @@ Sample response:
       "pindexes": {},
       "status": "ok"
     }
+
 ---
 
 GET `/api/pindex-bleve`
@@ -526,6 +551,7 @@ Sample response:
       "indexes": [],
       "status": "ok"
     }
+
 ---
 
 GET `/api/pindex-bleve/{pindexName}`
@@ -537,6 +563,8 @@ GET `/api/pindex-bleve/{pindexName}`
 GET `/api/pindex/{pindexName}`
 
 **version introduced**: 0.0.1
+
+---
 
 ## Index partition querying
 
@@ -563,6 +591,8 @@ GET `/api/pindex/{pindexName}/count`
 POST `/api/pindex/{pindexName}/query`
 
 **version introduced**: 0.0.1
+
+---
 
 ## bleve index diagnostics
 
