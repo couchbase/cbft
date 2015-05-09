@@ -195,17 +195,91 @@
 <h1 id="api-reference">API Reference</h1>
 <hr />
 <h1 id="indexing">Indexing</h1>
+<hr />
 <h2 id="index-definition">Index definition</h2>
 <hr />
 <p>GET <code>/api/index</code></p>
 <p>Returns all index definitions as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "indexDefs": {
+    "implVersion": "3.1.0",
+    "indexDefs": {
+      "myFirstIndex": {
+        "name": "myFirstIndex",
+        "params": "",
+        "planParams": {
+          "hierarchyRules": null,
+          "maxPartitionsPerPIndex": 0,
+          "nodePlanParams": null,
+          "numReplicas": 0,
+          "planFrozen": false
+        },
+        "sourceName": "",
+        "sourceParams": "",
+        "sourceType": "nil",
+        "sourceUUID": "",
+        "type": "blackhole",
+        "uuid": "6cc599ab7a85bf3b"
+      }
+    },
+    "uuid": "6cc599ab7a85bf3b"
+  },
+  "status": "ok"
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/index/{indexName}</code></p>
 <p>Returns the definition of an index as JSON.</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index definition to be retrieved.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "indexDef": {
+    "name": "myFirstIndex",
+    "params": "",
+    "planParams": {
+      "hierarchyRules": null,
+      "maxPartitionsPerPIndex": 0,
+      "nodePlanParams": null,
+      "numReplicas": 0,
+      "planFrozen": false
+    },
+    "sourceName": "",
+    "sourceParams": "",
+    "sourceType": "nil",
+    "sourceUUID": "",
+    "type": "blackhole",
+    "uuid": "6cc599ab7a85bf3b"
+  },
+  "planPIndexes": [
+    {
+      "indexName": "myFirstIndex",
+      "indexParams": "",
+      "indexType": "blackhole",
+      "indexUUID": "6cc599ab7a85bf3b",
+      "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+      "nodes": {
+        "78fc2ffac2fd9401": {
+          "canRead": true,
+          "canWrite": true,
+          "priority": 0
+        }
+      },
+      "sourceName": "",
+      "sourceParams": "",
+      "sourcePartitions": "",
+      "sourceType": "nil",
+      "sourceUUID": "",
+      "uuid": "64bed6e2edf354c3"
+    }
+  ],
+  "status": "ok",
+  "warnings": []
+}
+</code></pre>
 <hr />
 <p>PUT <code>/api/index/{indexName}</code></p>
 <p>Creates/updates an index definition.</p>
@@ -301,6 +375,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index definition to be deleted.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="index-management">Index management</h2>
 <hr />
 <p>POST <code>/api/index/{indexName}/ingestControl/{op}</code></p>
@@ -327,17 +402,73 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>param: op</strong>: required, string, URL path parameter</p>
 <p>Allowed values for op are "allow" or "disallow".</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="index-monitoring">Index monitoring</h2>
 <hr />
 <p>GET <code>/api/stats</code></p>
 <p>Returns indexing and data related metrics,
                        timings and counters from the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "feeds": {
+    "myFirstIndex_6cc599ab7a85bf3b": {}
+  },
+  "manager": {
+    "TotCreateIndex": 1,
+    "TotCreateIndexOk": 1,
+    "TotDeleteIndex": 0,
+    "TotDeleteIndexOk": 0,
+    "TotIndexControl": 0,
+    "TotIndexControlOk": 0,
+    "TotJanitorClosePIndex": 0,
+    "TotJanitorKick": 2,
+    "TotJanitorKickErr": 0,
+    "TotJanitorKickOk": 2,
+    "TotJanitorKickStart": 2,
+    "TotJanitorNOOP": 0,
+    "TotJanitorNOOPOk": 0,
+    "TotJanitorRemovePIndex": 0,
+    "TotJanitorSubscriptionEvent": 0,
+    "TotJanitorUnknownErr": 0,
+    "TotKick": 0,
+    "TotPlannerKick": 2,
+    "TotPlannerKickChanged": 1,
+    "TotPlannerKickErr": 0,
+    "TotPlannerKickOk": 2,
+    "TotPlannerKickStart": 2,
+    "TotPlannerNOOP": 0,
+    "TotPlannerNOOPOk": 0,
+    "TotPlannerSubscriptionEvent": 0,
+    "TotPlannerUnknownErr": 0,
+    "TotSaveNodeDef": 2,
+    "TotSaveNodeDefGetErr": 0,
+    "TotSaveNodeDefOk": 2,
+    "TotSaveNodeDefSetErr": 0,
+    "TotSaveNodeDefUUIDErr": 0,
+    "TotSaveNodeDefUUIDTakenErr": 0
+  },
+  "pindexes": {
+    "myFirstIndex_6cc599ab7a85bf3b_0": null
+  }
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/stats/index/{indexName}</code></p>
 <p>Returns metrics, timings and counters
                        for a single index from the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "feeds": {
+    "myFirstIndex_6cc599ab7a85bf3b": {}
+  },
+  "pindexes": {
+    "myFirstIndex_6cc599ab7a85bf3b_0": null
+  }
+}
+</code></pre>
+<hr />
 <h2 id="index-querying">Index querying</h2>
 <hr />
 <p>GET <code>/api/index/{indexName}/count</code></p>
@@ -372,12 +503,108 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 </code></pre>
 <hr />
 <h1 id="node">Node</h1>
+<hr />
 <h2 id="node-configuration">Node configuration</h2>
 <hr />
 <p>GET <code>/api/cfg</code></p>
 <p>Returns the node's current view
                        of the cluster's configuration as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "indexDefs": {
+    "implVersion": "3.1.0",
+    "indexDefs": {
+      "myFirstIndex": {
+        "name": "myFirstIndex",
+        "params": "",
+        "planParams": {
+          "hierarchyRules": null,
+          "maxPartitionsPerPIndex": 0,
+          "nodePlanParams": null,
+          "numReplicas": 0,
+          "planFrozen": false
+        },
+        "sourceName": "",
+        "sourceParams": "",
+        "sourceType": "nil",
+        "sourceUUID": "",
+        "type": "blackhole",
+        "uuid": "6cc599ab7a85bf3b"
+      }
+    },
+    "uuid": "6cc599ab7a85bf3b"
+  },
+  "indexDefsCAS": 3,
+  "indexDefsErr": null,
+  "nodeDefsKnown": {
+    "implVersion": "3.1.0",
+    "nodeDefs": {
+      "0.0.0.0:8095": {
+        "container": "",
+        "extras": "",
+        "hostPort": "0.0.0.0:8095",
+        "implVersion": "3.1.0",
+        "tags": null,
+        "uuid": "78fc2ffac2fd9401",
+        "weight": 1
+      }
+    },
+    "uuid": "2f0d18fb750b2d4a"
+  },
+  "nodeDefsKnownCAS": 1,
+  "nodeDefsKnownErr": null,
+  "nodeDefsWanted": {
+    "implVersion": "3.1.0",
+    "nodeDefs": {
+      "0.0.0.0:8095": {
+        "container": "",
+        "extras": "",
+        "hostPort": "0.0.0.0:8095",
+        "implVersion": "3.1.0",
+        "tags": null,
+        "uuid": "78fc2ffac2fd9401",
+        "weight": 1
+      }
+    },
+    "uuid": "72d6750878551451"
+  },
+  "nodeDefsWantedCAS": 2,
+  "nodeDefsWantedErr": null,
+  "planPIndexes": {
+    "implVersion": "3.1.0",
+    "planPIndexes": {
+      "myFirstIndex_6cc599ab7a85bf3b_0": {
+        "indexName": "myFirstIndex",
+        "indexParams": "",
+        "indexType": "blackhole",
+        "indexUUID": "6cc599ab7a85bf3b",
+        "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+        "nodes": {
+          "78fc2ffac2fd9401": {
+            "canRead": true,
+            "canWrite": true,
+            "priority": 0
+          }
+        },
+        "sourceName": "",
+        "sourceParams": "",
+        "sourcePartitions": "",
+        "sourceType": "nil",
+        "sourceUUID": "",
+        "uuid": "64bed6e2edf354c3"
+      }
+    },
+    "uuid": "6327debf817a5ec7",
+    "warnings": {
+      "myFirstIndex": []
+    }
+  },
+  "planPIndexesCAS": 5,
+  "planPIndexesErr": null,
+  "status": "ok"
+}
+</code></pre>
 <hr />
 <p>POST <code>/api/cfgRefresh</code></p>
 <p>Requests the node to refresh its configuration
@@ -397,6 +624,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
                        and is intended to help management tools and web UI's
                        to be more dynamically metadata driven.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="node-diagnostics">Node diagnostics</h2>
 <hr />
 <p>GET <code>/api/diag</code></p>
@@ -412,12 +640,33 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>Returns recent log messages
                        and key events for the node as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "events": [],
+  "messages": []
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/runtime</code></p>
 <p>Returns information on the node's software,
                        such as version strings and slow-changing
                        runtime settings as JSON.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "arch": "amd64",
+  "go": {
+    "GOMAXPROCS": 1,
+    "GOROOT": "/usr/local/go",
+    "compiler": "gc",
+    "version": "go1.4"
+  },
+  "numCPU": 8,
+  "os": "darwin",
+  "versionData": "3.1.0",
+  "versionMain": "v0.0.5"
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/runtime/args</code></p>
 <p>Returns information on the node's command-line,
@@ -434,11 +683,13 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>Requests the node to capture lcoal
                        memory usage profiling information.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="node-management">Node management</h2>
 <hr />
 <p>POST <code>/api/runtime/gc</code></p>
 <p>Requests the node to perform a GC.</p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="node-monitoring">Node monitoring</h2>
 <hr />
 <p>GET <code>/api/runtime/stats</code></p>
@@ -452,19 +703,47 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <h1 id="advanced">Advanced</h1>
+<hr />
 <h2 id="index-partition-definition">Index partition definition</h2>
 <hr />
 <p>GET <code>/api/pindex</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "pindexes": {
+    "myFirstIndex_6cc599ab7a85bf3b_0": {
+      "indexName": "myFirstIndex",
+      "indexParams": "",
+      "indexType": "blackhole",
+      "indexUUID": "6cc599ab7a85bf3b",
+      "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+      "sourceName": "",
+      "sourceParams": "",
+      "sourcePartitions": "",
+      "sourceType": "nil",
+      "sourceUUID": "",
+      "uuid": "2d9ecb8b574a9f6a"
+    }
+  },
+  "status": "ok"
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/pindex-bleve</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<p>Sample response:</p>
+<pre><code>{
+  "indexes": [],
+  "status": "ok"
+}
+</code></pre>
 <hr />
 <p>GET <code>/api/pindex-bleve/{pindexName}</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>GET <code>/api/pindex/{pindexName}</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="index-partition-querying">Index partition querying</h2>
 <hr />
 <p>GET <code>/api/pindex-bleve/{pindexName}/count</code></p>
@@ -478,6 +757,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <hr />
 <p>POST <code>/api/pindex/{pindexName}/query</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
+<hr />
 <h2 id="bleve-index-diagnostics">bleve index diagnostics</h2>
 <hr />
 <p>GET <code>/api/pindex-bleve/{pindexName}/doc/{docID}</code></p>
