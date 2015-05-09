@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -71,8 +72,10 @@ var skipSampleResponses = map[string]bool{
 
 // Emits markdown docs of cbft's REST API.
 func main() {
-	tmpDir, _ := ioutil.TempDir("./tmp", "data")
-	defer os.RemoveAll(tmpDir)
+	rand.Seed(0)
+
+	dataDir, _ := ioutil.TempDir("./tmp", "data")
+	defer os.RemoveAll(dataDir)
 
 	cfg := cbft.NewCfgMem()
 	tags := []string(nil)
@@ -81,9 +84,27 @@ func main() {
 	extras := ""
 	bindHttp := "0.0.0.0:8095"
 
-	mgr := cbft.NewManager(cbftCmd.VERSION, cfg, cbft.NewUUID(),
+	mgr := cbft.NewManager(cbft.VERSION, cfg, cbft.NewUUID(),
 		tags, container, weight, extras, bindHttp,
-		tmpDir, "http://localhost:8091", nil)
+		dataDir, "http://localhost:8091", nil)
+
+	sourceType := "nil"
+	sourceName := ""
+	sourceUUID := ""
+	sourceParams := ""
+	indexType := "blackhole"
+	indexName := "myFirstIndex"
+	indexParams := ""
+	prevIndexUUID := ""
+
+	mgr.Start("wanted")
+
+	err := mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+		indexType, indexName, indexParams,
+		cbft.PlanParams{}, prevIndexUUID)
+	if err != nil {
+		log.Fatalf("could not create myFirstIndex, err: %v", err)
+	}
 
 	staticDir := ""
 	staticETag := ""
@@ -190,9 +211,13 @@ func main() {
 				}
 
 				if m.Method == "GET" && !skipSampleResponses[pathParts[0]] {
-					res := sampleRequest(router, m.Method, pathParts[0], nil)
+					url := strings.Replace(pathParts[0],
+						"{indexName}", "myFirstIndex", 1)
+
+					res := sampleRequest(router, m.Method, url, nil)
 					if res != nil {
 						var j map[string]interface{}
+
 						err = json.Unmarshal(res, &j)
 						if err == nil {
 							s, err := json.MarshalIndent(j, "    ", "  ")

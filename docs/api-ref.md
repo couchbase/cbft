@@ -19,7 +19,29 @@ Returns all index definitions as JSON.
 Sample response:
 
     {
-      "indexDefs": null,
+      "indexDefs": {
+        "implVersion": "3.1.0",
+        "indexDefs": {
+          "myFirstIndex": {
+            "name": "myFirstIndex",
+            "params": "",
+            "planParams": {
+              "hierarchyRules": null,
+              "maxPartitionsPerPIndex": 0,
+              "nodePlanParams": null,
+              "numReplicas": 0,
+              "planFrozen": false
+            },
+            "sourceName": "",
+            "sourceParams": "",
+            "sourceType": "nil",
+            "sourceUUID": "",
+            "type": "blackhole",
+            "uuid": "6cc599ab7a85bf3b"
+          }
+        },
+        "uuid": "6cc599ab7a85bf3b"
+      },
       "status": "ok"
     }
 
@@ -34,6 +56,52 @@ Returns the definition of an index as JSON.
 The name of the index definition to be retrieved.
 
 **version introduced**: 0.0.1
+
+Sample response:
+
+    {
+      "indexDef": {
+        "name": "myFirstIndex",
+        "params": "",
+        "planParams": {
+          "hierarchyRules": null,
+          "maxPartitionsPerPIndex": 0,
+          "nodePlanParams": null,
+          "numReplicas": 0,
+          "planFrozen": false
+        },
+        "sourceName": "",
+        "sourceParams": "",
+        "sourceType": "nil",
+        "sourceUUID": "",
+        "type": "blackhole",
+        "uuid": "6cc599ab7a85bf3b"
+      },
+      "planPIndexes": [
+        {
+          "indexName": "myFirstIndex",
+          "indexParams": "",
+          "indexType": "blackhole",
+          "indexUUID": "6cc599ab7a85bf3b",
+          "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+          "nodes": {
+            "78fc2ffac2fd9401": {
+              "canRead": true,
+              "canWrite": true,
+              "priority": 0
+            }
+          },
+          "sourceName": "",
+          "sourceParams": "",
+          "sourcePartitions": "",
+          "sourceType": "nil",
+          "sourceUUID": "",
+          "uuid": "64bed6e2edf354c3"
+        }
+      ],
+      "status": "ok",
+      "warnings": []
+    }
 
 ---
 
@@ -228,42 +296,46 @@ Returns indexing and data related metrics,
 Sample response:
 
     {
-      "feeds": {},
+      "feeds": {
+        "myFirstIndex_6cc599ab7a85bf3b": {}
+      },
       "manager": {
-        "TotCreateIndex": 0,
-        "TotCreateIndexOk": 0,
+        "TotCreateIndex": 1,
+        "TotCreateIndexOk": 1,
         "TotDeleteIndex": 0,
         "TotDeleteIndexOk": 0,
         "TotIndexControl": 0,
         "TotIndexControlOk": 0,
         "TotJanitorClosePIndex": 0,
-        "TotJanitorKick": 0,
+        "TotJanitorKick": 2,
         "TotJanitorKickErr": 0,
-        "TotJanitorKickOk": 0,
-        "TotJanitorKickStart": 0,
+        "TotJanitorKickOk": 2,
+        "TotJanitorKickStart": 2,
         "TotJanitorNOOP": 0,
         "TotJanitorNOOPOk": 0,
         "TotJanitorRemovePIndex": 0,
         "TotJanitorSubscriptionEvent": 0,
         "TotJanitorUnknownErr": 0,
         "TotKick": 0,
-        "TotPlannerKick": 0,
-        "TotPlannerKickChanged": 0,
+        "TotPlannerKick": 2,
+        "TotPlannerKickChanged": 1,
         "TotPlannerKickErr": 0,
-        "TotPlannerKickOk": 0,
-        "TotPlannerKickStart": 0,
+        "TotPlannerKickOk": 2,
+        "TotPlannerKickStart": 2,
         "TotPlannerNOOP": 0,
         "TotPlannerNOOPOk": 0,
         "TotPlannerSubscriptionEvent": 0,
         "TotPlannerUnknownErr": 0,
-        "TotSaveNodeDef": 0,
+        "TotSaveNodeDef": 2,
         "TotSaveNodeDefGetErr": 0,
-        "TotSaveNodeDefOk": 0,
+        "TotSaveNodeDefOk": 2,
         "TotSaveNodeDefSetErr": 0,
         "TotSaveNodeDefUUIDErr": 0,
         "TotSaveNodeDefUUIDTakenErr": 0
       },
-      "pindexes": {}
+      "pindexes": {
+        "myFirstIndex_6cc599ab7a85bf3b_0": null
+      }
     }
 
 ---
@@ -278,8 +350,12 @@ Returns metrics, timings and counters
 Sample response:
 
     {
-      "feeds": {},
-      "pindexes": {}
+      "feeds": {
+        "myFirstIndex_6cc599ab7a85bf3b": {}
+      },
+      "pindexes": {
+        "myFirstIndex_6cc599ab7a85bf3b_0": null
+      }
     }
 
 ---
@@ -351,17 +427,95 @@ Returns the node's current view
 Sample response:
 
     {
-      "indexDefs": null,
-      "indexDefsCAS": 0,
+      "indexDefs": {
+        "implVersion": "3.1.0",
+        "indexDefs": {
+          "myFirstIndex": {
+            "name": "myFirstIndex",
+            "params": "",
+            "planParams": {
+              "hierarchyRules": null,
+              "maxPartitionsPerPIndex": 0,
+              "nodePlanParams": null,
+              "numReplicas": 0,
+              "planFrozen": false
+            },
+            "sourceName": "",
+            "sourceParams": "",
+            "sourceType": "nil",
+            "sourceUUID": "",
+            "type": "blackhole",
+            "uuid": "6cc599ab7a85bf3b"
+          }
+        },
+        "uuid": "6cc599ab7a85bf3b"
+      },
+      "indexDefsCAS": 3,
       "indexDefsErr": null,
-      "nodeDefsKnown": null,
-      "nodeDefsKnownCAS": 0,
+      "nodeDefsKnown": {
+        "implVersion": "3.1.0",
+        "nodeDefs": {
+          "0.0.0.0:8095": {
+            "container": "",
+            "extras": "",
+            "hostPort": "0.0.0.0:8095",
+            "implVersion": "3.1.0",
+            "tags": null,
+            "uuid": "78fc2ffac2fd9401",
+            "weight": 1
+          }
+        },
+        "uuid": "2f0d18fb750b2d4a"
+      },
+      "nodeDefsKnownCAS": 1,
       "nodeDefsKnownErr": null,
-      "nodeDefsWanted": null,
-      "nodeDefsWantedCAS": 0,
+      "nodeDefsWanted": {
+        "implVersion": "3.1.0",
+        "nodeDefs": {
+          "0.0.0.0:8095": {
+            "container": "",
+            "extras": "",
+            "hostPort": "0.0.0.0:8095",
+            "implVersion": "3.1.0",
+            "tags": null,
+            "uuid": "78fc2ffac2fd9401",
+            "weight": 1
+          }
+        },
+        "uuid": "72d6750878551451"
+      },
+      "nodeDefsWantedCAS": 2,
       "nodeDefsWantedErr": null,
-      "planPIndexes": null,
-      "planPIndexesCAS": 0,
+      "planPIndexes": {
+        "implVersion": "3.1.0",
+        "planPIndexes": {
+          "myFirstIndex_6cc599ab7a85bf3b_0": {
+            "indexName": "myFirstIndex",
+            "indexParams": "",
+            "indexType": "blackhole",
+            "indexUUID": "6cc599ab7a85bf3b",
+            "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+            "nodes": {
+              "78fc2ffac2fd9401": {
+                "canRead": true,
+                "canWrite": true,
+                "priority": 0
+              }
+            },
+            "sourceName": "",
+            "sourceParams": "",
+            "sourcePartitions": "",
+            "sourceType": "nil",
+            "sourceUUID": "",
+            "uuid": "64bed6e2edf354c3"
+          }
+        },
+        "uuid": "6327debf817a5ec7",
+        "warnings": {
+          "myFirstIndex": []
+        }
+      },
+      "planPIndexesCAS": 5,
       "planPIndexesErr": null,
       "status": "ok"
     }
@@ -452,7 +606,7 @@ Sample response:
       },
       "numCPU": 8,
       "os": "darwin",
-      "versionData": "v0.0.5",
+      "versionData": "3.1.0",
       "versionMain": "v0.0.5"
     }
 
@@ -535,7 +689,21 @@ GET `/api/pindex`
 Sample response:
 
     {
-      "pindexes": {},
+      "pindexes": {
+        "myFirstIndex_6cc599ab7a85bf3b_0": {
+          "indexName": "myFirstIndex",
+          "indexParams": "",
+          "indexType": "blackhole",
+          "indexUUID": "6cc599ab7a85bf3b",
+          "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+          "sourceName": "",
+          "sourceParams": "",
+          "sourcePartitions": "",
+          "sourceType": "nil",
+          "sourceUUID": "",
+          "uuid": "2d9ecb8b574a9f6a"
+        }
+      },
       "status": "ok"
     }
 
