@@ -14,6 +14,12 @@ Returns all index definitions as JSON.
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "indexDefs": null,
+      "status": "ok"
+    }
 ---
 
 GET `/api/index/{indexName}`
@@ -212,6 +218,46 @@ Returns indexing and data related metrics,
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "feeds": {},
+      "manager": {
+        "TotCreateIndex": 0,
+        "TotCreateIndexOk": 0,
+        "TotDeleteIndex": 0,
+        "TotDeleteIndexOk": 0,
+        "TotIndexControl": 0,
+        "TotIndexControlOk": 0,
+        "TotJanitorClosePIndex": 0,
+        "TotJanitorKick": 0,
+        "TotJanitorKickErr": 0,
+        "TotJanitorKickOk": 0,
+        "TotJanitorKickStart": 0,
+        "TotJanitorNOOP": 0,
+        "TotJanitorNOOPOk": 0,
+        "TotJanitorRemovePIndex": 0,
+        "TotJanitorSubscriptionEvent": 0,
+        "TotJanitorUnknownErr": 0,
+        "TotKick": 0,
+        "TotPlannerKick": 0,
+        "TotPlannerKickChanged": 0,
+        "TotPlannerKickErr": 0,
+        "TotPlannerKickOk": 0,
+        "TotPlannerKickStart": 0,
+        "TotPlannerNOOP": 0,
+        "TotPlannerNOOPOk": 0,
+        "TotPlannerSubscriptionEvent": 0,
+        "TotPlannerUnknownErr": 0,
+        "TotSaveNodeDef": 0,
+        "TotSaveNodeDefGetErr": 0,
+        "TotSaveNodeDefOk": 0,
+        "TotSaveNodeDefSetErr": 0,
+        "TotSaveNodeDefUUIDErr": 0,
+        "TotSaveNodeDefUUIDTakenErr": 0
+      },
+      "pindexes": {}
+    }
 ---
 
 GET `/api/stats/index/{indexName}`
@@ -221,6 +267,12 @@ Returns metrics, timings and counters
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "feeds": {},
+      "pindexes": {}
+    }
 ## Index querying
 
 ---
@@ -283,6 +335,23 @@ Returns the node's current view
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "indexDefs": null,
+      "indexDefsCAS": 0,
+      "indexDefsErr": null,
+      "nodeDefsKnown": null,
+      "nodeDefsKnownCAS": 0,
+      "nodeDefsKnownErr": null,
+      "nodeDefsWanted": null,
+      "nodeDefsWantedCAS": 0,
+      "nodeDefsWantedErr": null,
+      "planPIndexes": null,
+      "planPIndexesCAS": 0,
+      "planPIndexesErr": null,
+      "status": "ok"
+    }
 ---
 
 POST `/api/cfgRefresh`
@@ -338,6 +407,12 @@ Returns recent log messages
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "events": [],
+      "messages": []
+    }
 ---
 
 GET `/api/runtime`
@@ -348,6 +423,21 @@ Returns information on the node's software,
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "arch": "amd64",
+      "go": {
+        "GOMAXPROCS": 1,
+        "GOROOT": "/usr/local/go",
+        "compiler": "gc",
+        "version": "go1.4"
+      },
+      "numCPU": 8,
+      "os": "darwin",
+      "versionData": "v0.0.5",
+      "versionMain": "v0.0.5"
+    }
 ---
 
 GET `/api/runtime/args`
@@ -418,12 +508,24 @@ GET `/api/pindex`
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "pindexes": {},
+      "status": "ok"
+    }
 ---
 
 GET `/api/pindex-bleve`
 
 **version introduced**: 0.0.1
 
+Sample response:
+
+    {
+      "indexes": [],
+      "status": "ok"
+    }
 ---
 
 GET `/api/pindex-bleve/{pindexName}`

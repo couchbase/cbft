@@ -12,10 +12,19 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
 	"sort"
 	"strings"
+
+	"github.com/gorilla/mux"
 
 	"github.com/couchbaselabs/cbft"
 
@@ -36,10 +45,53 @@ func categoryParse(categoryFull string) (string, string, string, string) {
 	return mainCategory, mainCategoryVis, subCategory, subCategoryVis
 }
 
+func sampleRequest(router *mux.Router,
+	method string, urlPath string, body []byte) []byte {
+	req := &http.Request{
+		Method: method,
+		URL:    &url.URL{Path: urlPath},
+		Form:   url.Values(nil),
+		Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+	}
+	record := httptest.NewRecorder()
+	router.ServeHTTP(record, req)
+	if record.Code != 200 {
+		return nil
+	}
+	return record.Body.Bytes()
+}
+
+var skipSampleResponses = map[string]bool{
+	"/api/managerMeta":      true,
+	"/api/diag":             true,
+	"/api/runtime/args":     true,
+	"/api/runtime/stats":    true,
+	"/api/runtime/statsMem": true,
+}
+
 // Emits markdown docs of cbft's REST API.
 func main() {
-	_, meta, err :=
-		cbft.NewManagerRESTRouter(cbftCmd.VERSION, nil, "", "", nil)
+	tmpDir, _ := ioutil.TempDir("./tmp", "data")
+	defer os.RemoveAll(tmpDir)
+
+	cfg := cbft.NewCfgMem()
+	tags := []string(nil)
+	container := ""
+	weight := 1
+	extras := ""
+	bindHttp := "0.0.0.0:8095"
+
+	mgr := cbft.NewManager(cbftCmd.VERSION, cfg, cbft.NewUUID(),
+		tags, container, weight, extras, bindHttp,
+		tmpDir, "http://localhost:8091", nil)
+
+	staticDir := ""
+	staticETag := ""
+
+	mr, _ := cbft.NewMsgRing(ioutil.Discard, 1)
+
+	router, meta, err := cbft.NewManagerRESTRouter(cbftCmd.VERSION, mgr,
+		staticDir, staticETag, mr)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -116,6 +168,7 @@ func main() {
 				pathParts := strings.Split(path, " ")
 				fmt.Printf("---\n\n")
 				fmt.Printf("%s `%s`\n\n", m.Method, pathParts[0])
+
 				if m.Opts != nil && m.Opts["_about"] != "" {
 					fmt.Printf("%s\n\n", m.Opts["_about"])
 				}
@@ -134,6 +187,20 @@ func main() {
 
 				if m.Opts != nil && m.Opts[""] != "" {
 					fmt.Printf("%s\n\n", m.Opts[""])
+				}
+
+				if m.Method == "GET" && !skipSampleResponses[pathParts[0]] {
+					res := sampleRequest(router, m.Method, pathParts[0], nil)
+					if res != nil {
+						var j map[string]interface{}
+						err = json.Unmarshal(res, &j)
+						if err == nil {
+							s, err := json.MarshalIndent(j, "    ", "  ")
+							if err == nil {
+								fmt.Printf("Sample response:\n\n    %s\n", s)
+							}
+						}
+					}
 				}
 			}
 		}
