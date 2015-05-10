@@ -120,7 +120,8 @@ func NewPIndex(mgr *Manager, name, uuid,
 
 // NOTE: Path argument must be a directory.
 func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
-	buf, err := ioutil.ReadFile(path + string(os.PathSeparator) + PINDEX_META_FILENAME)
+	buf, err := ioutil.ReadFile(path +
+		string(os.PathSeparator) + PINDEX_META_FILENAME)
 	if err != nil {
 		return nil, fmt.Errorf("pindex: could not load PINDEX_META_FILENAME,"+
 			" path: %s, err: %v", path, err)
@@ -185,11 +186,11 @@ type RemotePlanPIndex struct {
 
 type PlanPIndexFilter func(*PlanPIndexNode) bool
 
-// Returns a non-overlapping, disjoint set (or cut) of PIndexes
-// (either local or remote) that cover all the partitons of an index
-// so that the caller can perform scatter/gather queries, etc.  Only
-// PlanPIndexes on wanted nodes that pass the wantNode filter will be
-// returned.
+// CoveringPIndexes returns a non-overlapping, disjoint set (or cut)
+// of PIndexes (either local or remote) that cover all the partitons
+// of an index so that the caller can perform scatter/gather queries,
+// etc.  Only PlanPIndexes on wanted nodes that pass the wantNode
+// filter will be returned.
 //
 // TODO: Perhaps need a tighter check around indexUUID, as the current
 // implementation might have a race where old pindexes with a matching
@@ -207,7 +208,9 @@ type PlanPIndexFilter func(*PlanPIndexNode) bool
 // rebalance take longer?
 func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 	wantNode PlanPIndexFilter, wantKind string) (
-	localPIndexes []*PIndex, remotePlanPIndexes []*RemotePlanPIndex, err error) {
+	localPIndexes []*PIndex,
+	remotePlanPIndexes []*RemotePlanPIndex,
+	err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
 		return nil, nil, fmt.Errorf("pindex: could not retrieve wanted nodeDefs,"+
