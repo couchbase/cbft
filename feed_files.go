@@ -299,7 +299,7 @@ func (t *FilesFeed) Start() error {
 						if err != nil {
 							log.Printf("feed_files: SnapshotStart,"+
 								" name: %s, partition: %s,"+
-								" seqCur: %d, seqEnd: %s, err: %v",
+								" seqCur: %d, seqEnd: %d, err: %v",
 								t.Name(), partition,
 								seqCur, seqEnds[partition], err)
 							return -1
