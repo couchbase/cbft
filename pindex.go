@@ -19,11 +19,12 @@ import (
 	"strings"
 )
 
-// A PIndex represents a "physical" index or a index "partition".
-
 const PINDEX_META_FILENAME string = "PINDEX_META"
 const pindexPathSuffix string = ".pindex"
 
+// A PIndex represents a partition of an index, or an "index
+// partition".  A logical index definition will be split into one or
+// more pindexes.
 type PIndex struct {
 	Name             string     `json:"name"`
 	UUID             string     `json:"uuid"`

@@ -22,6 +22,7 @@ import (
 // NOTE: You *must* update VERSION if you change these
 // definitions or the planning algorithms change.
 
+// An IndexDefs is zero or more index definitions.
 type IndexDefs struct {
 	// IndexDefs.UUID changes whenever any child IndexDef changes.
 	UUID        string               `json:"uuid"`
@@ -29,6 +30,7 @@ type IndexDefs struct {
 	ImplVersion string               `json:"implVersion"` // See VERSION.
 }
 
+// An IndexDef is a logical index definition.
 type IndexDef struct {
 	Type         string     `json:"type"` // Ex: "bleve", "alias", "blackhole", etc.
 	Name         string     `json:"name"`
@@ -44,6 +46,10 @@ type IndexDef struct {
 	// stored as part of SourceParams.
 }
 
+// A PlanParams holds input parameters to the planner, that control
+// how the planner should split an index definition into one or more
+// index partitions, and how the planner should assign those index
+// partitions to nodes.
 type PlanParams struct {
 	// MaxPartitionsPerPIndex controls the maximum number of source
 	// partitions the planner can assign to or clump into a PIndex (or
@@ -83,6 +89,8 @@ type PlanParams struct {
 	PlanFrozen bool `json:"planFrozen"`
 }
 
+// A NodePlanParam defines whether a particular node can service a
+// particular index indefinition.
 type NodePlanParam struct {
 	CanRead  bool `json:"canRead"`
 	CanWrite bool `json:"canWrite"`
@@ -90,6 +98,7 @@ type NodePlanParam struct {
 
 // ------------------------------------------------------------------------
 
+// A NodeDefs is comprised of zero or more node definitions.
 type NodeDefs struct {
 	// NodeDefs.UUID changes whenever any child NodeDef changes.
 	UUID        string              `json:"uuid"`
@@ -97,6 +106,7 @@ type NodeDefs struct {
 	ImplVersion string              `json:"implVersion"` // See VERSION.
 }
 
+// A NodeDef is a node definition.
 type NodeDef struct {
 	HostPort    string   `json:"hostPort"`
 	UUID        string   `json:"uuid"`
@@ -109,6 +119,7 @@ type NodeDef struct {
 
 // ------------------------------------------------------------------------
 
+// A PlanPIndexes is comprised of zero or more planPIndexes.
 type PlanPIndexes struct {
 	// PlanPIndexes.UUID changes whenever any child PlanPIndex changes.
 	UUID         string                 `json:"uuid"`
@@ -117,6 +128,10 @@ type PlanPIndexes struct {
 	Warnings     map[string][]string    `json:"warnings"`     // Key is IndexDef.Name.
 }
 
+// A PlanPIndex represents the plan for a particular index partition,
+// including on what nodes that the index partition is assigned to.
+// An index partition might be assigned to more than one node if the
+// "plan params" has a replica count > 0.
 type PlanPIndex struct {
 	Name             string `json:"name"` // Stable & unique cluster wide.
 	UUID             string `json:"uuid"`
@@ -133,6 +148,8 @@ type PlanPIndex struct {
 	Nodes map[string]*PlanPIndexNode `json:"nodes"` // Keyed by NodeDef.UUID.
 }
 
+// A PlanPIndexNode represents the kind of service a node has been
+// assigned to provide for an index partition.
 type PlanPIndexNode struct {
 	CanRead  bool `json:"canRead"`
 	CanWrite bool `json:"canWrite"`
@@ -155,6 +172,7 @@ func PlanPIndexNodeOk(p *PlanPIndexNode) bool {
 
 const INDEX_DEFS_KEY = "indexDefs"
 
+// Returns an intiialized IndexDefs.
 func NewIndexDefs(version string) *IndexDefs {
 	return &IndexDefs{
 		UUID:        NewUUID(),
@@ -163,6 +181,7 @@ func NewIndexDefs(version string) *IndexDefs {
 	}
 }
 
+// Returns index definitions from a Cfg provider.
 func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 	v, cas, err := cfg.Get(INDEX_DEFS_KEY, 0)
 	if err != nil {
@@ -179,6 +198,7 @@ func CfgGetIndexDefs(cfg Cfg) (*IndexDefs, uint64, error) {
 	return rv, cas, nil
 }
 
+// Updates index definitions on a Cfg provider.
 func CfgSetIndexDefs(cfg Cfg, indexDefs *IndexDefs, cas uint64) (uint64, error) {
 	buf, err := json.Marshal(indexDefs)
 	if err != nil {
@@ -189,6 +209,9 @@ func CfgSetIndexDefs(cfg Cfg, indexDefs *IndexDefs, cas uint64) (uint64, error) 
 
 // ------------------------------------------------------------------------
 
+// GetNodePlanParam returns a relevant NodePlanParam for a given node
+// from a nodePlanParams, defaulting to a less-specific NodePlanParam
+// if needed.
 func GetNodePlanParam(nodePlanParams map[string]map[string]*NodePlanParam,
 	nodeUUID, indexDefName, planPIndexName string) *NodePlanParam {
 	var nodePlanParam *NodePlanParam
@@ -216,6 +239,7 @@ const NODE_DEFS_KEY = "nodeDefs"
 const NODE_DEFS_KNOWN = "known"
 const NODE_DEFS_WANTED = "wanted"
 
+// Returns an initialized NodeDefs.
 func NewNodeDefs(version string) *NodeDefs {
 	return &NodeDefs{
 		UUID:        NewUUID(),
@@ -228,6 +252,7 @@ func CfgNodeDefsKey(kind string) string {
 	return NODE_DEFS_KEY + "-" + kind
 }
 
+// Retrieves node definitions from a Cfg provider.
 func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 	v, cas, err := cfg.Get(CfgNodeDefsKey(kind), 0)
 	if err != nil {
@@ -244,6 +269,7 @@ func CfgGetNodeDefs(cfg Cfg, kind string) (*NodeDefs, uint64, error) {
 	return rv, cas, nil
 }
 
+// Updates node definitions on a Cfg provider.
 func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs,
 	cas uint64) (uint64, error) {
 	buf, err := json.Marshal(nodeDefs)
@@ -257,6 +283,7 @@ func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs,
 
 const PLAN_PINDEXES_KEY = "planPIndexes"
 
+// Returns an initialized PlanPIndexes.
 func NewPlanPIndexes(version string) *PlanPIndexes {
 	return &PlanPIndexes{
 		UUID:         NewUUID(),
@@ -266,6 +293,7 @@ func NewPlanPIndexes(version string) *PlanPIndexes {
 	}
 }
 
+// Retrieves PlanPIndexes from a Cfg provider.
 func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
 	v, cas, err := cfg.Get(PLAN_PINDEXES_KEY, 0)
 	if err != nil {
@@ -282,7 +310,9 @@ func CfgGetPlanPIndexes(cfg Cfg) (*PlanPIndexes, uint64, error) {
 	return rv, cas, nil
 }
 
-func CfgSetPlanPIndexes(cfg Cfg, planPIndexes *PlanPIndexes, cas uint64) (uint64, error) {
+// Updates PlanPIndexes on a Cfg provider.
+func CfgSetPlanPIndexes(cfg Cfg, planPIndexes *PlanPIndexes, cas uint64) (
+	uint64, error) {
 	buf, err := json.Marshal(planPIndexes)
 	if err != nil {
 		return 0, err
