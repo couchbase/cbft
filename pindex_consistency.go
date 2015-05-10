@@ -17,6 +17,8 @@ import (
 	"sync"
 )
 
+// ConsistencyParams represent the consistency requirements of a
+// client's request.
 type ConsistencyParams struct {
 	// A Level value of "" means stale is ok; "at_plus" means we need
 	// consistency at least at or beyond the consistency vector but
@@ -32,6 +34,8 @@ type ConsistencyParams struct {
 // "vbucketId" or "vbucketId/vbucketUUID".
 type ConsistencyVector map[string]uint64
 
+// ConsistencyWaiter interface represents a service that can wait for
+// consistency.
 type ConsistencyWaiter interface {
 	ConsistencyWait(partition, partitionUUID string,
 		consistencyLevel string,
@@ -39,6 +43,8 @@ type ConsistencyWaiter interface {
 		cancelCh <-chan bool) error
 }
 
+// A ConsistencyWaitReq represents a runtime consistency wait request
+// for a partition.
 type ConsistencyWaitReq struct {
 	PartitionUUID    string
 	ConsistencyLevel string
@@ -47,6 +53,8 @@ type ConsistencyWaitReq struct {
 	DoneCh           chan error
 }
 
+// An ErrorConsistencyWait represents an error or timeout while
+// waiting for a partition to reach some consistency requirements.
 type ErrorConsistencyWait struct {
 	Err    error  // The underlying, wrapped error.
 	Status string // Short status reason, like "timeout", "cancelled", etc.
@@ -62,6 +70,8 @@ func (e *ErrorConsistencyWait) Error() string {
 
 // ---------------------------------------------------------
 
+// ConsistencyWaitDone() waits for either the cancelCh or doneCh to
+// finish, and provides the partition's seq if it was the cancelCh.
 func ConsistencyWaitDone(partition string,
 	cancelCh <-chan bool,
 	doneCh chan error,
@@ -86,6 +96,8 @@ func ConsistencyWaitDone(partition string,
 	}
 }
 
+// ConsistencyWaitPIndex waits for all the partitions in a pindex to
+// reach the required consistency level.
 func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
 	consistencyParams *ConsistencyParams, cancelCh <-chan bool) error {
 	if consistencyParams != nil &&
@@ -103,6 +115,8 @@ func ConsistencyWaitPIndex(pindex *PIndex, t ConsistencyWaiter,
 	return nil
 }
 
+// ConsistencyWaitGroup waits for all the partitions from a group of
+// pindexes to reach a required consistency level.
 func ConsistencyWaitGroup(indexName string,
 	consistencyParams *ConsistencyParams, cancelCh <-chan bool,
 	localPIndexes []*PIndex,
@@ -167,6 +181,8 @@ func ConsistencyWaitGroup(indexName string,
 	return nil
 }
 
+// ConsistencyWaitPartitions waits for the given partitions to reach
+// the required consistency level.
 func ConsistencyWaitPartitions(
 	t ConsistencyWaiter,
 	partitions map[string]bool,
@@ -198,25 +214,26 @@ func ConsistencyWaitPartitions(
 
 // ---------------------------------------------------------
 
-// A cwrQueue is a consistency wait request queue, implementing the
-// heap.Interface for consistencyWaitReq's.
-type cwrQueue []*ConsistencyWaitReq
+// A CwrQueue is a consistency wait request queue, implementing the
+// heap.Interface for ConsistencyWaitReq's, and is heap ordered by
+// sequence number.
+type CwrQueue []*ConsistencyWaitReq
 
-func (pq cwrQueue) Len() int { return len(pq) }
+func (pq CwrQueue) Len() int { return len(pq) }
 
-func (pq cwrQueue) Less(i, j int) bool {
+func (pq CwrQueue) Less(i, j int) bool {
 	return pq[i].ConsistencySeq < pq[j].ConsistencySeq
 }
 
-func (pq cwrQueue) Swap(i, j int) {
+func (pq CwrQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 }
 
-func (pq *cwrQueue) Push(x interface{}) {
+func (pq *CwrQueue) Push(x interface{}) {
 	*pq = append(*pq, x.(*ConsistencyWaitReq))
 }
 
-func (pq *cwrQueue) Pop() interface{} {
+func (pq *CwrQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n-1]

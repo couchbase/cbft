@@ -80,7 +80,7 @@ type BleveDestPartition struct {
 	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
-	cwrQueue cwrQueue
+	cwrQueue CwrQueue
 }
 
 type BleveQueryParams struct {
@@ -285,7 +285,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           t.bindex.NewBatch(),
-			cwrQueue:        cwrQueue{},
+			cwrQueue:        CwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
 

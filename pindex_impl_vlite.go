@@ -83,7 +83,7 @@ type VLitePartition struct {
 
 	lastUUID string // Cache most recent partition UUID from lastOpaque.
 
-	cwrQueue cwrQueue
+	cwrQueue CwrQueue
 }
 
 type VLiteQueryParams struct {
@@ -310,7 +310,7 @@ func (t *VLite) getPartitionUnlocked(partition string) (*VLitePartition, error) 
 			vlite:        t,
 			partition:    partition,
 			partitionKey: []byte(partition),
-			cwrQueue:     cwrQueue{},
+			cwrQueue:     CwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
 
