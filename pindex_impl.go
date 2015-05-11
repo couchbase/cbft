@@ -21,38 +21,66 @@ import (
 
 type PIndexImpl interface{}
 
+// PIndexImplType defines the functions that every pindex
+// implementation type must register on startup.
 type PIndexImplType struct {
+	// Invoked by the manager when it wants validate indef definition
+	// inputs before doing the actual creation.
 	Validate func(indexType, indexName, indexParams string) error
 
+	// Invoked by the manager when it wants to create an index
+	// partition.  The pindex implementation should persist enough
+	// info into the path subdirectory so that it can reconstitute the
+	// pindex during restart and Open().
 	New func(indexType, indexParams, path string, restart func()) (
 		PIndexImpl, Dest, error)
 
+	// Invoked by the manager when it wants a pindex implementation to
+	// reconstitute and reload a pindex instance back into the
+	// process, such as when the process has re-started.
 	Open func(indexType, path string, restart func()) (
 		PIndexImpl, Dest, error)
 
+	// Invoked by the manager when it wants a count of documents from
+	// an index.  The registered Count() function can be nil.
 	Count func(mgr *Manager, indexName, indexUUID string) (
 		uint64, error)
 
+	// Invoked by the manager when it wants to query an index.  The
+	// registered Query() function can be nil.
 	Query func(mgr *Manager, indexName, indexUUID string,
 		req []byte, res io.Writer) error
 
+	// Description is used to populate docs, UI, etc, such as index
+	// type drop-down control in the web admin UI.  Format of the
+	// description string:
+	//
+	//    $categoryName/$indexType - short descriptive string
+	//
+	// The $categoryName is something like "advanced", or "general".
 	Description string
 
-	// A prototype instance of indexParams that is usable for
+	// A prototype instance of indexParams JSON that is usable for
 	// Validate() and New().
 	StartSample interface{}
 
+	// A prototype instance of JSON that is usable for Query().
 	QuerySample interface{}
 
+	// Displayed in docs, web admin UI, etc, and often might be a link
+	// to even further help.
 	QueryHelp string
 }
 
 var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
 
+// RegisterPIndexImplType registers a index type into the system.
 func RegisterPIndexImplType(indexType string, t *PIndexImplType) {
 	PIndexImplTypes[indexType] = t
 }
 
+// NewPIndexImpl creates an index partition of the given, registered
+// index type.
 func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := PIndexImplTypes[indexType]
@@ -64,6 +92,8 @@ func NewPIndexImpl(indexType, indexParams, path string, restart func()) (
 	return t.New(indexType, indexParams, path, restart)
 }
 
+// OpenPIndexImpl loads an index partition of the given, registered
+// index type from a given path.
 func OpenPIndexImpl(indexType, path string, restart func()) (
 	PIndexImpl, Dest, error) {
 	t, exists := PIndexImplTypes[indexType]
@@ -75,6 +105,8 @@ func OpenPIndexImpl(indexType, path string, restart func()) (
 	return t.Open(indexType, path, restart)
 }
 
+// PIndexImplTypeForIndex retrieves from the Cfg provider the index
+// type for a given index.
 func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 	*PIndexImplType, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
