@@ -44,6 +44,7 @@ type PIndex struct {
 	sourcePartitionsMap map[string]bool // Non-persisted memoization.
 }
 
+// Close down a pindex, optionally removing its stored files.
 func (p *PIndex) Close(remove bool) error {
 	if p.Dest != nil {
 		err := p.Dest.Close()
@@ -59,6 +60,8 @@ func (p *PIndex) Close(remove bool) error {
 	return nil
 }
 
+// Creates a pindex, including its backend implementation structures,
+// and its files.
 func NewPIndex(mgr *Manager, name, uuid,
 	indexType, indexName, indexUUID, indexParams,
 	sourceType, sourceName, sourceUUID, sourceParams, sourcePartitions string,
@@ -160,11 +163,13 @@ func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	return pindex, nil
 }
 
+// Computes the storage path for a pindex.
 func PIndexPath(dataDir, pindexName string) string {
 	// TODO: Need path security checks / mapping here; ex: "../etc/pswd"
 	return dataDir + string(os.PathSeparator) + pindexName + pindexPathSuffix
 }
 
+// Retrieves a pindex name from a pindex path.
 func ParsePIndexPath(dataDir, pindexPath string) (string, bool) {
 	if !strings.HasSuffix(pindexPath, pindexPathSuffix) {
 		return "", false
@@ -180,11 +185,14 @@ func ParsePIndexPath(dataDir, pindexPath string) (string, bool) {
 
 // ---------------------------------------------------------
 
+// RemotePlanPIndex associations are returned by CoveringPIndexes().
 type RemotePlanPIndex struct {
 	PlanPIndex *PlanPIndex
 	NodeDef    *NodeDef
 }
 
+// PlanPIndexFilter is used to filter out nodes being considered by
+// CoveringPIndexes().
 type PlanPIndexFilter func(*PlanPIndexNode) bool
 
 // CoveringPIndexes returns a non-overlapping, disjoint set (or cut)
