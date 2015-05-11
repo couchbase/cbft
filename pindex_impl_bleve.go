@@ -35,6 +35,8 @@ import (
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
 
+const BLEVE_QUERY_DEFAULT_TIMEOUT_MS = int64(10000)
+
 type BleveParams struct {
 	Mapping bleve.IndexMapping     `json:"mapping"`
 	Store   map[string]interface{} `json:"store"`
@@ -121,6 +123,7 @@ func init() {
 			" - a full-text index powered by the bleve engine",
 		StartSample: NewBleveParams(),
 		QuerySample: &BleveQueryParams{
+			Timeout: BLEVE_QUERY_DEFAULT_TIMEOUT_MS,
 			Consistency: &ConsistencyParams{
 				Vectors: map[string]ConsistencyVector{},
 			},
@@ -231,7 +234,10 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	var bleveQueryParams BleveQueryParams
+	bleveQueryParams := BleveQueryParams{
+		Timeout: BLEVE_QUERY_DEFAULT_TIMEOUT_MS,
+	}
+
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBlevePIndexImpl parsing bleveQueryParams,"+
