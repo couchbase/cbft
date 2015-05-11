@@ -19,10 +19,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-var entryKeyPrefix = []byte("{\"key\":")
-var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
-var entryValPrefix = []byte(", \"val\":")
-
 type PIndexImpl interface{}
 
 type PIndexImplType struct {

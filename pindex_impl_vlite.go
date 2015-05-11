@@ -39,6 +39,10 @@ import (
 // TODO: Partial rollback.
 // TODO: Aliases work for vlite.
 
+var entryKeyPrefix = []byte("{\"key\":")
+var entryKeyPrefixSep = append([]byte("\n,"), entryKeyPrefix...)
+var entryValPrefix = []byte(", \"val\":")
+
 var VLiteFileService = NewFileService(30)
 
 type VLiteParams struct {
