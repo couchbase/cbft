@@ -87,7 +87,8 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	return rv.Count, nil
 }
 
-func (r *IndexClient) Search(req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+func (r *IndexClient) Search(req *bleve.SearchRequest) (
+	*bleve.SearchResult, error) {
 	if r.QueryURL == "" {
 		return nil, fmt.Errorf("remote: no QueryURL provided")
 	}
