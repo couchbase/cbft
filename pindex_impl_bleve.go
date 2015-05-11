@@ -251,14 +251,26 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 		return err
 	}
 
-	searchResponse, err := alias.Search(bleveQueryParams.Query)
-	if err != nil {
-		return err
+	doneCh := make(chan struct{})
+
+	var searchResult *bleve.SearchResult
+
+	go func() {
+		searchResult, err = alias.Search(bleveQueryParams.Query)
+		close(doneCh)
+	}()
+
+	select {
+	case <-cancelCh:
+		err = fmt.Errorf("pindex_impl_bleve: query timeout")
+
+	case <-doneCh:
+		if searchResult != nil {
+			mustEncode(res, searchResult)
+		}
 	}
 
-	mustEncode(res, searchResponse)
-
-	return nil
+	return err
 }
 
 // ---------------------------------------------------------
