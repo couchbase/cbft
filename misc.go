@@ -25,8 +25,6 @@ import (
 	"time"
 
 	"github.com/rcrowley/go-metrics"
-
-	log "github.com/couchbase/clog"
 )
 
 var EMPTY_BYTES = []byte{}
@@ -106,11 +104,9 @@ func ExponentialBackoffLoop(name string,
 		}
 		if progress > 0 {
 			// When there was some progress, we can reset nextSleepMS.
-			log.Printf("backoff: %s, progress: %d", name, progress)
 			nextSleepMS = startSleepMS
 		} else {
 			// If zero progress was made this cycle, then sleep.
-			log.Printf("backoff: %s, sleep: %d (ms)", name, nextSleepMS)
 			time.Sleep(time.Duration(nextSleepMS) * time.Millisecond)
 
 			// Increase nextSleepMS in case next time also has 0 progress.
