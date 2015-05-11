@@ -238,15 +238,15 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 			" req: %s, err: %v", req, err)
 	}
 
-	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
-
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
-		bleveQueryParams.Consistency, cancelCh)
+	err = bleveQueryParams.Query.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	err = bleveQueryParams.Query.Query.Validate()
+	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
+
+	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
+		bleveQueryParams.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
