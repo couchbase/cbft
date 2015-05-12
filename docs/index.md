@@ -167,7 +167,7 @@ Hit enter/return to execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
-# Where to go next
+## Where to go next
 
 That's about it for getting started.
 
@@ -185,6 +185,18 @@ Finally, don't forget to take a look at these additional documents...
 * [API reference](api-ref.md)
 * [Administrator's guide](admin-guide/overview.md)
 * [Links to more resources](links.md)
+
+# Getting help
+
+cbft is still in its infancy and under active development.
+
+If you need help, would like to contribute, or would like to talk
+about the cbft with like-minded folks, please have a look at the
+[Couchbase forums](https://forums.couchbase.com/) and the links to
+[more resources](links.md).
+
+To report bugs or feature requests, please use the issue tracker at
+[github](https://github.com/couchbaselabs/cbft/issues).
 
 ---
 
