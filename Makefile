@@ -183,6 +183,11 @@ release-github-docs:
 	mkdocs gh-deploy
 
 # -------------------------------------------------------------------
+
+LICENSE-thirdparty.txt:
+	./dist/go-manifest | ./dist/gen-license-thirdparty > LICENSE-thirdparty.txt
+
+# -------------------------------------------------------------------
 # The prereqs are for one time setup of required build/dist tools...
 
 prereqs:

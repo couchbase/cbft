@@ -1,0 +1,87 @@
+#!/usr/bin/python
+
+# Example invocation:
+#
+#   ./dist/gen-license-thirdparty < ./dist/out/manifest.txt
+#
+import fileinput
+import urllib2
+
+projects = {} # Keyed by "server/org/project".
+
+licenses = {} # Keyed by license text, and
+              # value is array of "server/org/project"'s.
+
+print "# third party licenses of cbft"
+print ""
+
+# Some line examples:
+#   "github.com/blevesearch/bleve e98ae8a"
+#   "bitbucket.org/tebeka/snowball 452d6d324dea"
+#   "golang.org/x/text/transform 5b2527008a4c"
+#
+for line in fileinput.input():
+    source, version = line.split(" ")
+    server, org, project = source.split("/")[0:3]
+
+    sop = server + "/" + org + "/" + project
+    if sop in projects:
+        continue
+
+    for branch in ["master", "default"]:
+        if sop in projects:
+            break
+
+        for license in ["LICENSE", "LICENSE.txt", "COPYING", "COPYING.txt"]:
+            if sop in projects:
+                break
+
+            url = None
+
+            if server == "github.com":
+                url = "https://raw.githubusercontent.com/" + \
+                    org + "/" + project + "/" + branch + "/" + license
+
+            elif server == "bitbucket.org":
+                # "https://bitbucket.org/tebeka/snowball/raw/default/LICENSE.txt"
+                url = "https://bitbucket.org/" + \
+                    org + "/" + project + "/raw/" + branch + "/" + license
+
+            elif server == "golang.org":
+                # "https://raw.githubusercontent.com/golang/text/master/LICENSE"
+                url = "https://raw.githubusercontent.com/golang/" + \
+                    project + "/" + branch + "/" + license
+
+            if url is None:
+                continue
+
+            try:
+                r = urllib2.urlopen(url)
+                l = r.read()
+                r.close()
+
+                if l in licenses:
+                    licenses[l].append(sop)
+                else:
+                    licenses[l] = [sop]
+
+                projects[sop] = True
+                break
+
+            except Exception:
+                pass
+
+lkeys = licenses.keys()
+lkeys.sort()
+
+for lkey in lkeys:
+    print "-----------------------------------------"
+
+    sops = licenses[lkey]
+    sops.sort()
+    for sop in sops:
+        print sop
+    print ""
+
+    print lkey
+    print ""
