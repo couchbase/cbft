@@ -11,6 +11,23 @@ The indexes that cbft manages can be automatically distributed across
 multiple, clustered cbft server processes on different server machines
 to support larger indexes, higher performance and higher availability.
 
+# Developer preview
+
+cbft is still in its infancy and under active development, and is
+currently available as a "developer preview" level of quality.
+
+Any feedback provided at this early stage by the early users and the
+community are greatly appreciated, and now's a great time to affect
+cbft's features and directions with your input!
+
+As a developer preview, some disclaimers/limitations...
+
+* quality level - cbft is not production ready.
+* cbft has not been performance optimized/tuned.
+* cbft's API are still subject to change.
+* cbft's file storage backends are still subject to change.
+* partial index rollbacks are not yet supported by cbft developer preview.
+
 # Getting started
 
 ## Prerequisites
@@ -187,8 +204,6 @@ Finally, don't forget to take a look at these additional documents...
 * [Links to more resources](links.md)
 
 # Providing your feedback
-
-cbft is still in its infancy and under active development.
 
 If you need help, would like to contribute feedback, or would like to
 talk about the cbft with like-minded folks, please have a look at the
