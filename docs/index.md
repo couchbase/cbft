@@ -186,16 +186,17 @@ Finally, don't forget to take a look at these additional documents...
 * [Administrator's guide](admin-guide/overview.md)
 * [Links to more resources](links.md)
 
-# Getting help
+# Providing your feedback
 
 cbft is still in its infancy and under active development.
 
-If you need help, would like to contribute, or would like to talk
-about the cbft with like-minded folks, please have a look at the
+If you need help, would like to contribute feedback, or would like to
+talk about the cbft with like-minded folks, please have a look at the
 [Couchbase forums](https://forums.couchbase.com/) and the links to
 [more resources](links.md).
 
-To report bugs or feature requests, please use the issue tracker at
+To report bugs or feature requests, please use the cbft issue tracker
+currently hosted at
 [github](https://github.com/couchbaselabs/cbft/issues).
 
 ---
