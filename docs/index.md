@@ -50,8 +50,9 @@ Download a pre-built cbft from the
 
 You can use your favorite web browser to download.
 
-Or, you can use ```wget``` or equivalent command-line tool.  For example,
-for mac OSX...
+Or, you can use ```wget``` or equivalent command-line tool.
+
+For example, for mac OS...
 
     wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
@@ -67,13 +68,21 @@ builds.
 For the purposes of these getting started steps, let's just download
 ```cbft``` basic builds.
 
-Next, uncompress what you downloaded...
+After downloading, then next uncompress what you downloaded...
 
     tar -xzf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
+
+On windows, for example, you would use unzip...
+
+    unzip cbft-v{X.Y.Z-AAA}.windows.amd64.exe.zip
 
 A quick way to make sure it worked is to try the command-line help...
 
     ./cbft.macos.amd64 --help
+
+On windows, for example, you would use...
+
+    cbft.windows.amd64.exe --help
 
 For the rest of this documentation, we'll just refer to the cbft
 executable as ```./cbft``` rather than some platform specific name
@@ -85,6 +94,10 @@ Start cbft, pointing it to your Couchbase Server as your default
 datasource server...
 
     ./cbft -server http://localhost:8091
+
+On windows, for example...
+
+    cbft -server http://localhost:8091
 
 Note: cbft also defaults to using a directory named "data" as its data
 directory, which cbft will create in the current working directory if
