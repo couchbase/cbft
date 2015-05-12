@@ -166,7 +166,7 @@ release-github-register:
 		--pre-release
 
 release-github-upload:
-	(cd ./tmp/dist-out; for f in *.gz *.zip *.md; do \
+	(cd ./tmp/dist-out; for f in *.gz *.zip *.md *.txt; do \
 		echo $$f | \
 			sed -e s/\\./-$(strip $(shell cat ./tmp/dist-out/version.txt))\\./1 | \
 			xargs $(GOPATH)/bin/github-release upload \
