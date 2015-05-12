@@ -222,8 +222,8 @@ that you'd like to index.</p>
 <li><a href="https://github.com/couchbaselabs/cbft/releases">https://github.com/couchbaselabs/cbft/releases</a></li>
 </ul>
 <p>You can use your favorite web browser to download.</p>
-<p>Or, you can use <code>wget</code> or equivalent command-line tool.  For example,
-for mac OSX...</p>
+<p>Or, you can use <code>wget</code> or equivalent command-line tool.</p>
+<p>For example, for mac OS...</p>
 <pre><code>wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 </code></pre>
 <p>Note: some platforms support both <code>cbft-full</code> and <code>cbft</code>
@@ -240,11 +240,17 @@ builds.</p>
 </ul>
 <p>For the purposes of these getting started steps, let's just download
 <code>cbft</code> basic builds.</p>
-<p>Next, uncompress what you downloaded...</p>
+<p>After downloading, then next uncompress what you downloaded...</p>
 <pre><code>tar -xzf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
+</code></pre>
+<p>On windows, for example, you would use unzip...</p>
+<pre><code>unzip cbft-v{X.Y.Z-AAA}.windows.amd64.exe.zip
 </code></pre>
 <p>A quick way to make sure it worked is to try the command-line help...</p>
 <pre><code>./cbft.macos.amd64 --help
+</code></pre>
+<p>On windows, for example, you would use...</p>
+<pre><code>cbft.windows.amd64.exe --help
 </code></pre>
 <p>For the rest of this documentation, we'll just refer to the cbft
 executable as <code>./cbft</code> rather than some platform specific name
@@ -253,6 +259,9 @@ like <code>./cbft.macos.amd64</code>.</p>
 <p>Start cbft, pointing it to your Couchbase Server as your default
 datasource server...</p>
 <pre><code>./cbft -server http://localhost:8091
+</code></pre>
+<p>On windows, for example...</p>
+<pre><code>cbft -server http://localhost:8091
 </code></pre>
 <p>Note: cbft also defaults to using a directory named "data" as its data
 directory, which cbft will create in the current working directory if
