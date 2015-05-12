@@ -68,6 +68,7 @@ dist-meta:
 	cp ./static/dist/manifest.txt ./dist/out
 	cp ./LICENSE.txt ./static/dist/LICENSE.txt
 	cp ./static/dist/LICENSE.txt ./dist/out
+	cp ./LICENSE-thirdparty.txt ./dist/out
 	cp ./CHANGES.md ./dist/out
 
 dist-build:
