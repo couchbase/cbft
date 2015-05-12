@@ -17,29 +17,44 @@ cbft is still in its infancy and under active development, and is
 currently available as a "developer preview" level of quality.
 
 Any feedback provided at this early stage by the early users and the
-community are greatly appreciated, and now's a great time to affect
-cbft's features and directions with your input!
+community are greatly appreciated by the development team.
 
-As a developer preview, some disclaimers/limitations...
+Now's a great time to affect cbft's features and its directions with
+your input!
 
-* quality level - cbft is not production ready.
-* cbft has not been performance optimized/tuned.
-* cbft's API are still subject to change.
+As a developer preview, some disclaimers and limitations...
+
+* quality level - cbft is not yet production ready quality.
+
+* cbft has not been performance optimized.
+
+* cbft's API are still subject to large, potentially
+  backwards-incompatible changes.
+
 * cbft's file storage backends are still subject to change.
-* partial index rollbacks are not yet supported by cbft developer preview.
+
+* partial index rollbacks are not yet supported by cbft developer
+  preview.
 
 # Getting started
 
 ## Prerequisites
 
-You should have a Couchbase Server (3.0+) already installed and
-running somewhere.
+You should have a Couchbase Server (3.x, 4.x or greater) already
+installed and running before trying the rest of these getting started
+steps.
+
+If you're not already running Couchbase Server and need to download
+it, please see...
+
+* [http://www.couchbase.com/downloads](http://www.couchbase.com/downloads)
 
 You should also have a bucket in Couchbase Server with JSON documents
 that you'd like to index.
 
-For example, you can have Couchbase Server create and populate a
-```beer-sample``` bucket of sample JSON documents.
+For example, while during the setup steps of Couchbase Server, you can
+have Couchbase Server create and populate a ```beer-sample``` bucket
+of sample JSON documents.
 
 ## Getting cbft
 
