@@ -16,6 +16,12 @@ can be optionally partitioned across multiple cbft processes.  Queries
 on an index will be scatter/gather'ed across the relevant, distributed
 cbft processes.
 
+# Documentation
+
+Full [cbft documentation](http://labs.couchbase.com/cbft) is here:
+
+* [http://labs.couchbase.com/cbft](http://labs.couchbase.com/cbft)
+
 # Getting started
 
 ## Getting cbft
@@ -26,7 +32,7 @@ released cbft downloadables...
 
 * [https://github.com/couchbaselabs/cbft/releases](https://github.com/couchbaselabs/cbft/releases)
 
-For example, for mac OSX...
+For example, for mac OS...
 
     # Download from the github releases page using your
     # favorite web browser.  Or, by using wget, for example...
