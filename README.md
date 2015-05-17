@@ -10,23 +10,23 @@ This project integrates the bleve full-text search engine and Couchbase Server.
 LICENSE: Apache 2.0
 
 A cbft process creates and maintains full-text indexes using the
-[bleve full-text indexing engine](http://www.blevesearch.com/).  Data
-sources for indexing include Couchbase 3.0 buckets.  Full-text indexes
-can be optionally partitioned across multiple cbft processes.  Queries
-on an index will be scatter/gather'ed across the relevant, distributed
-cbft processes.
+[bleve full-text indexing engine](http://www.blevesearch.com/).
 
-# Getting started
+Data sources for indexing include Couchbase 3.0+ and Couchbase 4.0+
+buckets.
 
-Please see the [getting started](http://labs.couchbase.com/cbft)
-guide for cbft.
+Full-text indexes can be optionally partitioned across multiple cbft
+processes.
 
-# Documentation
+Queries on a cbft index will be scatter/gather'ed across the relevant,
+distributed cbft processes.
 
-Full [cbft documentation](http://labs.couchbase.com/cbft) is here...
+# Getting started and documentation
 
-* [http://labs.couchbase.com/cbft](http://labs.couchbase.com/cbft)
+Please see the [getting started](http://labs.couchbase.com/cbft) guide
+for cbft, available at
+[http://labs.couchbase.com/cbft](http://labs.couchbase.com/cbft).
 
 # For developers / contributors
 
-Please see [the developer's README](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
+Please see the [README for developers](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
