@@ -195,6 +195,8 @@
         
             <li><a href="#source-type-couchbase">Source type: couchbase</a></li>
         
+            <li><a href="#index-definition-rest-api">Index definition REST API</a></li>
+        
     
     </ul>
 </div></div>
@@ -620,6 +622,21 @@ Couchbase DCP (data change protocol) streams:</p>
   <code>feedBufferSizeBytes</code> is reached.</p>
 </li>
 </ul>
+<h2 id="index-definition-rest-api">Index definition REST API</h2>
+<p>You can use the REST API to create and manage your index definitions.</p>
+<p>For example, using the curl command-line tool, here is an example of
+creating an index definition.  The index definition will be named
+<code>beer-sample</code>, will have index type of
+<a href="http://blevesearch.com">bleve</a>, and will have the "beer-sample"
+bucket from Couchbase as its datasource...</p>
+<pre><code>curl -XPUT 'http://localhost:8095/api/index/myFirstIndex?indexType=bleve&amp;sourceType=couchbase'
+</code></pre>
+<p>To list all your index definitions, you can use...</p>
+<pre><code>curl http://localhost:8095/api/index
+</code></pre>
+<p>Here's an example of using curl to delete that index definition...</p>
+<pre><code>curl -XDELETE http://localhost:8095/api/index/beer-sample
+</code></pre>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>

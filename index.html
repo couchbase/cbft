@@ -174,6 +174,8 @@
         
             <li><a href="#querying-your-full-text-index">Querying your full-text index</a></li>
         
+            <li><a href="#using-the-rest-api">Using the REST API</a></li>
+        
             <li><a href="#where-to-go-next">Where to go next</a></li>
         
     
@@ -345,6 +347,17 @@ indexing progress.</p>
 <p>In the query field, type in a query term.</p>
 <p>Hit enter/return to execute your first cbft full-text query!</p>
 <p>You should see query results appearing below the query field.</p>
+<h2 id="using-the-rest-api">Using the REST API</h2>
+<p>You can also use the REST API to access your index.</p>
+<p>For example, if your index is named <code>myFirstIndex</code>, here's how you
+can use the curl tool to check how many documents are indexed...</p>
+<pre><code>curl http://localhost:8095/api/index/myFirstIndex/count
+</code></pre>
+<p>Here's an example of using curl to query the <code>myFirstIndex</code>...</p>
+<pre><code>curl -XPOST --header Content-Type:text/json \
+     -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' \
+     http://localhost:8095/api/index/myFirstIndex/query
+</code></pre>
 <h2 id="where-to-go-next">Where to go next</h2>
 <p>That's about it for getting started.</p>
 <p>You can see the other command-line parameters of cbft with the
