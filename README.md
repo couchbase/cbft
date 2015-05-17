@@ -16,84 +16,17 @@ can be optionally partitioned across multiple cbft processes.  Queries
 on an index will be scatter/gather'ed across the relevant, distributed
 cbft processes.
 
+# Getting started
+
+Please see the [getting started](http://labs.couchbase.com/cbft)
+guide for cbft.
+
 # Documentation
 
-Full [cbft documentation](http://labs.couchbase.com/cbft) is here:
+Full [cbft documentation](http://labs.couchbase.com/cbft) is here...
 
 * [http://labs.couchbase.com/cbft](http://labs.couchbase.com/cbft)
 
-# Getting started
+# For developers / contributors
 
-## Getting cbft
-
-Please see the github
-[releases](https://github.com/couchbaselabs/cbft/releases) page for
-released cbft downloadables...
-
-* [https://github.com/couchbaselabs/cbft/releases](https://github.com/couchbaselabs/cbft/releases)
-
-For example, for mac OS...
-
-    # Download from the github releases page using your
-    # favorite web browser.  Or, by using wget, for example...
-    wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
-
-    # Uncompress, untar...
-    tar -xzvf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
-
-    # Check out the command-line help...
-    ./cbft.macos.amd64 --help
-
-Note: ```cbft-full``` builds are currently compiled with more advanced
-features (text stemmers, etc) than ```cbft``` basic builds.
-
-For the purposes of these getting start steps, though, downloading a
-```cbft``` build is fine.
-
-### Building cbft from source
-
-Or, to build cbft from source (requires golang 1.4)...
-
-    go get -u github.com/couchbaselabs/cbft/...
-    $GOPATH/bin/cbft --help
-
-## Prerequisites
-
-You should have a Couchbase Server (3.0+) already installed and
-running somewhere.
-
-## Running cbft
-
-Start cbft, pointing it to your Couchbase Server as its default
-datasource server...
-
-    ./cbft -server http://localhost:8091
-
-Next, you can use a web browser on cbft's web admin UI...
-
-    http://localhost:8095
-
-Create a new full-text index, which will be powered by the
-[bleve](http://blevesearch.com) full-text engine; the index will be
-called "default" and will have the "default" bucket from Couchbase as
-its datasource...
-
-    curl -XPUT 'http://localhost:8095/api/index/default?indexType=bleve&sourceType=couchbase'
-
-Check how many documents are indexed...
-
-    curl http://localhost:8095/api/index/default/count
-
-Query the index...
-
-    curl -XPOST --header Content-Type:text/json \
-         -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' \
-         http://localhost:8095/api/index/default/query
-
-Delete the index...
-
-    curl -XDELETE http://localhost:8095/api/index/default
-
-# More links
-
-* [cbft documentation](http://labs.couchbase.com/cbft)
+Please see [the developer's README](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
