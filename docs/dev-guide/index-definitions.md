@@ -475,6 +475,26 @@ Couchbase DCP (data change protocol) streams:
   buffer-ack messages when this percentage of
   ```feedBufferSizeBytes``` is reached.
 
+## Index definition REST API
+
+You can use the REST API to create and manage your index definitions.
+
+For example, using the curl command-line tool, here is an example of
+creating an index definition.  The index definition will be named
+```beer-sample```, will have index type of
+[bleve](http://blevesearch.com), and will have the "beer-sample"
+bucket from Couchbase as its datasource...
+
+    curl -XPUT 'http://localhost:8095/api/index/myFirstIndex?indexType=bleve&sourceType=couchbase'
+
+To list all your index definitions, you can use...
+
+    curl http://localhost:8095/api/index
+
+Here's an example of using curl to delete that index definition...
+
+    curl -XDELETE http://localhost:8095/api/index/beer-sample
+
 ---
 
 Copyright (c) 2015 Couchbase, Inc.
