@@ -212,6 +212,21 @@ Hit enter/return to execute your first cbft full-text query!
 
 You should see query results appearing below the query field.
 
+## Using the REST API
+
+You can also use the REST API to access your index.
+
+For example, if your index is named ```myFirstIndex```, here's how you
+can use the curl tool to check how many documents are indexed...
+
+    curl http://localhost:8095/api/index/myFirstIndex/count
+
+Here's an example of using curl to query the ```myFirstIndex```...
+
+    curl -XPOST --header Content-Type:text/json \
+         -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' \
+         http://localhost:8095/api/index/myFirstIndex/query
+
 ## Where to go next
 
 That's about it for getting started.
