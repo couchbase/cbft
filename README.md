@@ -7,8 +7,6 @@ This project integrates the bleve full-text search engine and Couchbase Server.
 
 [![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest) [![Coverage Status](https://coveralls.io/repos/couchbaselabs/cbft/badge.png?branch=master)](https://coveralls.io/r/couchbaselabs/cbft?branch=master) [![GoDoc](https://godoc.org/github.com/couchbaselabs/cbft?status.svg)](https://godoc.org/github.com/couchbaselabs/cbft)
 
-LICENSE: Apache 2.0
-
 A cbft process creates and maintains full-text indexes using the
 [bleve full-text indexing engine](http://www.blevesearch.com/).
 
@@ -30,3 +28,9 @@ for cbft, available at
 # For developers / contributors
 
 Please see the [README for developers](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
+
+# License
+
+* License for cbft: Apache 2.0
+* See also: [third party licenses](https://github.com/couchbaselabs/cbft/blob/master/LICENSE-thirdparty.txt)
+
