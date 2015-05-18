@@ -19,6 +19,11 @@ processes.
 Queries on a cbft index will be scatter/gather'ed across the relevant,
 distributed cbft processes.
 
+# Licenses
+
+* Apache 2.0.
+* See also: [third party licenses](https://github.com/couchbaselabs/cbft/blob/master/LICENSE-thirdparty.txt)
+
 # Getting started and documentation
 
 Please see the [getting started](http://labs.couchbase.com/cbft) guide
@@ -28,9 +33,3 @@ for cbft, available at
 # For developers / contributors
 
 Please see the [README for developers](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
-
-Licenses
-
-* Apache 2.0.
-* See also: [third party licenses](https://github.com/couchbaselabs/cbft/blob/master/LICENSE-thirdparty.txt)
-
