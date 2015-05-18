@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -198,5 +199,12 @@ func TestErrorToString(t *testing.T) {
 	}
 	if ErrorToString(nil) != "" {
 		t.Errorf("expected empty string")
+	}
+}
+
+func TestIndentJSON(t *testing.T) {
+	s := IndentJSON(TestIndentJSON, "prefix", "indent")
+	if strings.Index(s, "err") < 0 {
+		t.Errorf("expected err on bad non-json'able IndentJSON()")
 	}
 }
