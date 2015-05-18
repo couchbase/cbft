@@ -29,8 +29,8 @@ for cbft, available at
 
 Please see the [README for developers](https://github.com/couchbaselabs/cbft/blob/master/README-dev.md)
 
-# License
+Licenses
 
-* License for cbft: Apache 2.0
+* Apache 2.0.
 * See also: [third party licenses](https://github.com/couchbaselabs/cbft/blob/master/LICENSE-thirdparty.txt)
 
