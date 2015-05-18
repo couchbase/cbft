@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -189,4 +190,13 @@ func TestMustEncode(t *testing.T) {
 	}()
 	mustEncode(&bytes.Buffer{}, func() {})
 	t.Errorf("expected must encode panic")
+}
+
+func TestErrorToString(t *testing.T) {
+	if ErrorToString(fmt.Errorf("hi")) != "hi" {
+		t.Errorf("expected hi")
+	}
+	if ErrorToString(nil) != "" {
+		t.Errorf("expected empty string")
+	}
 }
