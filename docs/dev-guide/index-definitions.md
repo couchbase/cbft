@@ -495,6 +495,9 @@ Here's an example of using curl to delete that index definition...
 
     curl -XDELETE http://localhost:8095/api/index/beer-sample
 
+For more information on the REST API, please see the
+[REST API reference](api-ref) documentation.
+
 ---
 
 Copyright (c) 2015 Couchbase, Inc.
