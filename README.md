@@ -5,7 +5,7 @@ Couchbase Full Text server
 
 This project integrates the bleve full-text search engine and Couchbase Server.
 
-[![Build Status](https://drone.io/github.com/couchbaselabs/cbft/status.png)](https://drone.io/github.com/couchbaselabs/cbft/latest) [![Coverage Status](https://coveralls.io/repos/couchbaselabs/cbft/badge.png?branch=master)](https://coveralls.io/r/couchbaselabs/cbft?branch=master) [![GoDoc](https://godoc.org/github.com/couchbaselabs/cbft?status.svg)](https://godoc.org/github.com/couchbaselabs/cbft)
+[![Build Status](https://travis-ci.org/couchbaselabs/cbft.svg)](https://travis-ci.org/couchbaselabs/cbft) [![Coverage Status](https://coveralls.io/repos/couchbaselabs/cbft/badge.png?branch=master)](https://coveralls.io/r/couchbaselabs/cbft?branch=master) [![GoDoc](https://godoc.org/github.com/couchbaselabs/cbft?status.svg)](https://godoc.org/github.com/couchbaselabs/cbft)
 
 A cbft process creates and maintains full-text indexes using the
 [bleve full-text indexing engine](http://www.blevesearch.com/).
