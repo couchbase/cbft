@@ -46,6 +46,16 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
+	pindexTypesInitRouter := func(phase string) {
+		for _, t := range PIndexImplTypes {
+			if t.InitRouter != nil {
+				t.InitRouter(r, phase)
+			}
+		}
+	}
+
+	pindexTypesInitRouter("static.before")
+
 	r = InitStaticFileRouter(r,
 		staticDir, staticETag, []string{
 			"/indexes",
@@ -56,11 +66,14 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"/debug",
 		})
 
+	pindexTypesInitRouter("static.after")
+
+	pindexTypesInitRouter("manager.before")
+
 	r, meta, err := InitManagerRESTRouter(r, versionMain, mgr,
 		staticDir, staticETag, mr)
-	if err != nil {
-		return nil, nil, err
-	}
+
+	pindexTypesInitRouter("manager.after")
 
 	return r, meta, err
 }

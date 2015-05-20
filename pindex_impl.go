@@ -75,7 +75,7 @@ type PIndexImplType struct {
 
 	// Invoked during startup to allow pindex implementation to affect
 	// the REST API with its own endpoint.
-	InitRouter func(r *mux.Router, phase string) error
+	InitRouter func(r *mux.Router, phase string)
 }
 
 var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
