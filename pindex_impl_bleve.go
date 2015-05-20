@@ -31,10 +31,9 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/registry"
-
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveHttpMapping "github.com/blevesearch/bleve/http/mapping"
+	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
 )
@@ -140,6 +139,7 @@ func init() {
 		DiagHandlers: []DiagHandler{
 			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		},
+		MetaExtra: BleveMetaExtra,
 	})
 }
 
@@ -179,7 +179,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	_, exists := kvConfig["kvStoreName_actual"]
 	if !exists &&
 		kvStoreName != "metrics" &&
-		registry.KVStoreConstructorByName("metrics") != nil {
+		bleveRegistry.KVStoreConstructorByName("metrics") != nil {
 		kvConfig["kvStoreName_actual"] = kvStoreName
 		kvStoreName = "metrics"
 	}
@@ -891,4 +891,33 @@ func BlevePIndexImplInitRouter(r *mux.Router, phase string) {
 		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
 	}
+}
+
+func BleveMetaExtra(m map[string]interface{}) {
+	br := make(map[string]map[string][]string)
+
+	t, i := bleveRegistry.AnalyzerTypesAndInstances()
+	br["Analyzer"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.ByteArrayConverterTypesAndInstances()
+	br["ByteArrayConverter"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.CharFilterTypesAndInstances()
+	br["CharFilter"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.DateTimeParserTypesAndInstances()
+	br["DateTimeParser"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.FragmentFormatterTypesAndInstances()
+	br["FragmentFormatte"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.FragmenterTypesAndInstances()
+	br["Fragmenter"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.HighlighterTypesAndInstances()
+	br["Highlighter"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.KVStoreTypesAndInstances()
+	br["KVStore"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.TokenFilterTypesAndInstances()
+	br["TokenFilter"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.TokenMapTypesAndInstances()
+	br["TokenMap"] = map[string][]string{"types": t, "instances": i}
+	t, i = bleveRegistry.TokenizerTypesAndInstances()
+	br["Tokenizer"] = map[string][]string{"types": t, "instances": i}
+
+	m["regBleve"] = br
 }

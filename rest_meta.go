@@ -11,8 +11,6 @@ package cbft
 
 import (
 	"net/http"
-
-	bleveRegistry "github.com/blevesearch/bleve/registry"
 )
 
 type ManagerMetaHandler struct {
@@ -77,46 +75,20 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	br := make(map[string]map[string][]string)
+	r := map[string]interface{}{
+		"status":       "ok",
+		"startSamples": startSamples,
+		"sourceTypes":  sourceTypes,
+		"indexNameRE":  INDEX_NAME_REGEXP,
+		"indexTypes":   indexTypes,
+		"refREST":      h.meta,
+	}
 
-	t, i := bleveRegistry.AnalyzerTypesAndInstances()
-	br["Analyzer"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.ByteArrayConverterTypesAndInstances()
-	br["ByteArrayConverter"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.CharFilterTypesAndInstances()
-	br["CharFilter"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.DateTimeParserTypesAndInstances()
-	br["DateTimeParser"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.FragmentFormatterTypesAndInstances()
-	br["FragmentFormatte"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.FragmenterTypesAndInstances()
-	br["Fragmenter"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.HighlighterTypesAndInstances()
-	br["Highlighter"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.KVStoreTypesAndInstances()
-	br["KVStore"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.TokenFilterTypesAndInstances()
-	br["TokenFilter"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.TokenMapTypesAndInstances()
-	br["TokenMap"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.TokenizerTypesAndInstances()
-	br["Tokenizer"] = map[string][]string{"types": t, "instances": i}
+	for _, t := range PIndexImplTypes {
+		if t.MetaExtra != nil {
+			t.MetaExtra(r)
+		}
+	}
 
-	mustEncode(w, struct {
-		Status       string                         `json:"status"`
-		StartSamples map[string]interface{}         `json:"startSamples"`
-		SourceTypes  map[string]*MetaDescSource     `json:"sourceTypes"`
-		IndexNameRE  string                         `json:"indexNameRE"`
-		IndexTypes   map[string]*MetaDescIndex      `json:"indexTypes"`
-		RefREST      map[string]RESTMeta            `json:"refREST"`
-		RegBleve     map[string]map[string][]string `json:"regBleve"`
-	}{
-		Status:       "ok",
-		StartSamples: startSamples,
-		SourceTypes:  sourceTypes,
-		IndexNameRE:  INDEX_NAME_REGEXP,
-		IndexTypes:   indexTypes,
-		RefREST:      h.meta,
-		RegBleve:     br,
-	})
+	mustEncode(w, r)
 }

@@ -80,6 +80,10 @@ type PIndexImplType struct {
 	// Optional, additional handlers a pindex implementation may have
 	// for /api/diag output.
 	DiagHandlers []DiagHandler
+
+	// Optional, allows pindex implementaiton to add more information
+	// to the REST /api/managerMeta output.
+	MetaExtra func(map[string]interface{})
 }
 
 var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
