@@ -20,8 +20,6 @@ import (
 	"strings"
 	"time"
 
-	bleveHttp "github.com/blevesearch/bleve/http"
-
 	"github.com/gorilla/mux"
 )
 
@@ -36,23 +34,30 @@ func NewDiagGetHandler(versionMain string,
 	return &DiagGetHandler{versionMain: versionMain, mgr: mgr, mr: mr}
 }
 
+type DiagHandler struct {
+	Name        string
+	Handler     http.Handler
+	HandlerFunc http.HandlerFunc
+}
+
 func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	handlers := []struct {
-		Name        string
-		Handler     http.Handler
-		HandlerFunc http.HandlerFunc
-	}{
+	handlers := []DiagHandler{
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewLogGetHandler(h.mgr, h.mr), nil},
 		{"/api/managerMeta", NewManagerMetaHandler(h.mgr, nil), nil},
 		{"/api/pindex", NewListPIndexHandler(h.mgr), nil},
-		{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		{"/api/runtime", NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
 		{"/api/runtime/args", nil, restGetRuntimeArgs},
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
+	}
+
+	for _, t := range PIndexImplTypes {
+		for _, h := range t.DiagHandlers {
+			handlers = append(handlers, h)
+		}
 	}
 
 	w.Write(jsonOpenBrace)

@@ -137,6 +137,9 @@ func init() {
 		},
 		QueryHelp:  bleveQueryHelp,
 		InitRouter: BlevePIndexImplInitRouter,
+		DiagHandlers: []DiagHandler{
+			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
+		},
 	})
 }
 
