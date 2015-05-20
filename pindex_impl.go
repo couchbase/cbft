@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gorilla/mux"
+
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -70,6 +72,10 @@ type PIndexImplType struct {
 	// Displayed in docs, web admin UI, etc, and often might be a link
 	// to even further help.
 	QueryHelp string
+
+	// Invoked during startup to allow pindex implementation to affect
+	// the REST API with its own endpoint.
+	InitRouter func(r *mux.Router, phase string) error
 }
 
 var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
