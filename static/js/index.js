@@ -359,6 +359,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.prevIndexUUID = "";
     $scope.paramNumLines = {};
 
+    $scope.mapping = null;
+
     var data = $scope.meta = getManagerMeta();
 
     var sourceTypesArr = []
@@ -446,7 +448,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.putIndex = function(indexName, indexType, indexParams,
                                sourceType, sourceName,
                                sourceUUID, sourceParams,
-                               planParams, prevIndexUUID) {
+                               planParams, prevIndexUUID,
+                               bleveMapping) {
         $scope.errorFields = {};
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
@@ -489,6 +492,11 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                     "error: could not JSON parse index parameter: " + k;
                 return
             }
+        }
+
+        // Special case for bleve/http/mapping UI editor.
+        if (indexType == "bleve" && bleveMapping != null) {
+            indexParamsObj = bleveMapping;
         }
 
         if (sourceParams[sourceType]) {
