@@ -43,18 +43,26 @@ type RESTOpts interface {
 func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
-	// create a router to serve static files
-	r := StaticFileRouter(staticDir, staticETag, []string{
-		"/indexes",
-		"/nodes",
-		"/monitor",
-		"/manage",
-		"/logs",
-		"/debug",
-	})
+	r := mux.NewRouter()
+	r.StrictSlash(true)
 
-	return InitManagerRESTRouter(r, versionMain, mgr,
+	r = InitStaticFileRouter(r,
+		staticDir, staticETag, []string{
+			"/indexes",
+			"/nodes",
+			"/monitor",
+			"/manage",
+			"/logs",
+			"/debug",
+		})
+
+	r, meta, err := InitManagerRESTRouter(r, versionMain, mgr,
 		staticDir, staticETag, mr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return r, meta, err
 }
 
 func InitManagerRESTRouter(r *mux.Router, versionMain string,

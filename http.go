@@ -24,9 +24,8 @@ func AssetFS() *assetfs.AssetFS {
 	return assetFS()
 }
 
-func StaticFileRouter(staticDir, staticETag string,
+func InitStaticFileRouter(r *mux.Router, staticDir, staticETag string,
 	pages []string) *mux.Router {
-	r := mux.NewRouter()
 	if staticDir == "" {
 		return r
 	}
@@ -40,7 +39,6 @@ func StaticFileRouter(staticDir, staticETag string,
 		s = AssetFS()
 	}
 
-	r.StrictSlash(true)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		myFileHandler{http.FileServer(s), staticETag}))
 
