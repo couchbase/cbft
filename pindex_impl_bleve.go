@@ -575,7 +575,8 @@ func (t *BleveDestPartition) Close() error {
 }
 
 func (t *BleveDestPartition) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
+	key []byte, seq uint64, val []byte,
+	extrasType DestExtrasType, extras []byte) error {
 	k := string(key)
 
 	var v interface{}
@@ -604,7 +605,8 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 }
 
 func (t *BleveDestPartition) DataDelete(partition string,
-	key []byte, seq uint64) error {
+	key []byte, seq uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	t.m.Lock()
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?

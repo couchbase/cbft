@@ -19,6 +19,10 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
+type DestExtrasType uint16
+
+const DEST_EXTRAS_TYPE_NIL = DestExtrasType(0)
+
 type Dest interface {
 	// Invoked by PIndex.Close().
 	Close() error
@@ -26,12 +30,14 @@ type Dest interface {
 	// Invoked when there's a new mutation from a data source for a
 	// partition.  Dest implementation is responsible for making its
 	// own copies of the key and val data.
-	DataUpdate(partition string, key []byte, seq uint64, val []byte) error
+	DataUpdate(partition string, key []byte, seq uint64, val []byte,
+		extrasType DestExtrasType, extras []byte) error
 
 	// Invoked by the data source when there's a data deletion in a
 	// partition.  Dest implementation is responsible for making its
 	// own copies of the key data.
-	DataDelete(partition string, key []byte, seq uint64) error
+	DataDelete(partition string, key []byte, seq uint64,
+		extrasType DestExtrasType, extras []byte) error
 
 	// An callback invoked by the data source when there's a start of
 	// a new snapshot for a partition.  The Receiver implementation,

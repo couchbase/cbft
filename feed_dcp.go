@@ -26,6 +26,8 @@ import (
 	"github.com/couchbase/gomemcached"
 )
 
+const DEST_EXTRAS_TYPE_DCP = DestExtrasType(0x0002)
+
 func init() {
 	RegisterFeedType("couchbase", &FeedType{
 		Start:      StartDCPFeed,
@@ -278,7 +280,8 @@ func (r *DCPFeed) DataUpdate(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		err = dest.DataUpdate(partition, key, seq, req.Body)
+		err = dest.DataUpdate(partition, key, seq, req.Body,
+			DEST_EXTRAS_TYPE_DCP, req.Extras)
 		if err != nil {
 			return fmt.Errorf("feed_dcp: DataUpdate,"+
 				" name: %s, partition: %s, key: %s, seq: %d, err: %v",
@@ -297,7 +300,8 @@ func (r *DCPFeed) DataDelete(vbucketId uint16, key []byte, seq uint64,
 			return err
 		}
 
-		err = dest.DataDelete(partition, key, seq)
+		err = dest.DataDelete(partition, key, seq,
+			DEST_EXTRAS_TYPE_DCP, req.Extras)
 		if err != nil {
 			return fmt.Errorf("feed_dcp: DataDelete,"+
 				" name: %s, partition: %s, key: %s, seq: %d, err: %v",

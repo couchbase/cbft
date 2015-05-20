@@ -21,6 +21,8 @@ import (
 	"github.com/couchbase/gomemcached/client"
 )
 
+const DEST_EXTRAS_TYPE_TAP = DestExtrasType(0x0001)
+
 func init() {
 	RegisterFeedType("couchbase-tap",
 		&FeedType{
@@ -229,9 +231,13 @@ loop:
 			}
 
 			if req.Opcode == memcached.TapMutation {
-				err = dest.DataUpdate(partition, req.Key, 0, req.Value)
+				// TODO: TAP feed, what about CAS, flags, expiration, etc?
+				err = dest.DataUpdate(partition, req.Key, 0, req.Value,
+					DEST_EXTRAS_TYPE_NIL, nil)
 			} else if req.Opcode == memcached.TapDeletion {
-				err = dest.DataDelete(partition, req.Key, 0)
+				// TODO: TAP feed, what about CAS, flags, expiration, etc?
+				err = dest.DataDelete(partition, req.Key, 0,
+					DEST_EXTRAS_TYPE_NIL, nil)
 			}
 			if err != nil {
 				return 1, err

@@ -104,21 +104,23 @@ func PrimaryFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 // -----------------------------------------------------
 
 func (t *PrimaryFeed) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
+	key []byte, seq uint64, val []byte,
+	extrasType DestExtrasType, extras []byte) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
 		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.DataUpdate(partition, key, seq, val)
+	return dest.DataUpdate(partition, key, seq, val, extrasType, extras)
 }
 
 func (t *PrimaryFeed) DataDelete(partition string,
-	key []byte, seq uint64) error {
+	key []byte, seq uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	dest, err := t.pf(partition, key, t.dests)
 	if err != nil {
 		return fmt.Errorf("feed_primary: PrimaryFeed pf, err: %v", err)
 	}
-	return dest.DataDelete(partition, key, seq)
+	return dest.DataDelete(partition, key, seq, extrasType, extras)
 }
 
 func (t *PrimaryFeed) SnapshotStart(partition string,

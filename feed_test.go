@@ -154,10 +154,12 @@ func TestPrimaryFeed(t *testing.T) {
 	seq := uint64(123)
 	val := []byte("v")
 
-	if df.DataUpdate("unknown-partition", key, seq, val) == nil {
+	if df.DataUpdate("unknown-partition", key, seq, val,
+		DEST_EXTRAS_TYPE_NIL, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
-	if df.DataDelete("unknown-partition", key, seq) == nil {
+	if df.DataDelete("unknown-partition", key, seq,
+		DEST_EXTRAS_TYPE_NIL, nil) == nil {
 		t.Errorf("expected err on bad partition")
 	}
 	if df.SnapshotStart("unknown-partition", seq, seq) == nil {

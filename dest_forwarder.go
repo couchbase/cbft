@@ -39,23 +39,25 @@ func (t *DestForwarder) Close() error {
 }
 
 func (t *DestForwarder) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
+	key []byte, seq uint64, val []byte,
+	extrasType DestExtrasType, extras []byte) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
 	}
 
-	return dest.DataUpdate(partition, key, seq, val)
+	return dest.DataUpdate(partition, key, seq, val, extrasType, extras)
 }
 
 func (t *DestForwarder) DataDelete(partition string,
-	key []byte, seq uint64) error {
+	key []byte, seq uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	dest, err := t.DestProvider.Dest(partition)
 	if err != nil {
 		return err
 	}
 
-	return dest.DataDelete(partition, key, seq)
+	return dest.DataDelete(partition, key, seq, extrasType, extras)
 }
 
 func (t *DestForwarder) SnapshotStart(partition string,

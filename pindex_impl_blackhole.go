@@ -73,12 +73,14 @@ func (t *BlackHole) Close() error {
 }
 
 func (t *BlackHole) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
+	key []byte, seq uint64, val []byte,
+	extrasType DestExtrasType, extras []byte) error {
 	return nil
 }
 
 func (t *BlackHole) DataDelete(partition string,
-	key []byte, seq uint64) error {
+	key []byte, seq uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	return nil
 }
 
