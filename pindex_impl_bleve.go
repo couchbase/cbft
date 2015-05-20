@@ -19,16 +19,21 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/gorilla/mux"
+
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/registry"
+
+	bleveHttpMapping "github.com/blevesearch/bleve/http/mapping"
 
 	log "github.com/couchbase/clog"
 )
@@ -129,7 +134,8 @@ func init() {
 			},
 			Query: &bleve.SearchRequest{},
 		},
-		QueryHelp: bleveQueryHelp,
+		QueryHelp:  bleveQueryHelp,
+		InitRouter: BlevePIndexImplInitRouter,
 	})
 }
 
@@ -823,4 +829,22 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 	}
 
 	return alias, nil
+}
+
+// ---------------------------------------------------------
+
+func BlevePIndexImplInitRouter(router *mux.Router, phase string) {
+	if phase == "static.before" {
+		// Handlers from bleve/http/mapping need earlier precedence.
+		bleveHttpMappingStatic := http.FileServer(bleveHttpMapping.AssetFS())
+
+		router.PathPrefix("/static/partials/analysis").Handler(
+			http.StripPrefix("/static/", bleveHttpMappingStatic))
+		router.PathPrefix("/static/partials/mapping").Handler(
+			http.StripPrefix("/static/", bleveHttpMappingStatic))
+		router.PathPrefix("/static/js/mapping").Handler(
+			http.StripPrefix("/static/", bleveHttpMappingStatic))
+
+		bleveHttpMapping.RegisterHandlers(router, "/api")
+	}
 }
