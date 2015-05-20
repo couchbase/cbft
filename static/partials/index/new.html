@@ -32,10 +32,10 @@
       </select>
     </div>
   </div>
-  <div ng-show="newIndexType && newIndexType == 'bleve' && !isEdit">
+  <div ng-show="newIndexType && newIndexType == 'bleve' && !isEdit && !isClone">
     <div ng-controller="MappingCtrl" ng-include="'/static/partials/mapping/mapping.html'"/>
   </div>
-  <div ng-show="newIndexType && newIndexType != 'blackhole' && !(newIndexType == 'bleve' && !isEdit)"
+  <div ng-show="newIndexType && newIndexType != 'blackhole' && !(newIndexType == 'bleve' && !isEdit && !isClone)"
        ng-repeat="(indexType, p) in newIndexParams">
     <div class="form-group"
          ng-repeat="(k, v) in p"
