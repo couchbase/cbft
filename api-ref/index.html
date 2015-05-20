@@ -485,7 +485,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>The request's POST body depends on the index type:</p>
 <p>For index type <code>bleve</code>, an example POST body:</p>
 <pre><code>{
-  "timeout": 0,
+  "timeout": 10000,
   "consistency": {
     "level": "",
     "vectors": {}
