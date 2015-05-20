@@ -709,25 +709,6 @@ Sample response:
 
 ---
 
-GET `/api/pindex-bleve`
-
-**version introduced**: 0.0.1
-
-Sample response:
-
-    {
-      "indexes": [],
-      "status": "ok"
-    }
-
----
-
-GET `/api/pindex-bleve/{pindexName}`
-
-**version introduced**: 0.0.1
-
----
-
 GET `/api/pindex/{pindexName}`
 
 **version introduced**: 0.0.1
@@ -738,18 +719,6 @@ GET `/api/pindex/{pindexName}`
 
 ---
 
-GET `/api/pindex-bleve/{pindexName}/count`
-
-**version introduced**: 0.0.1
-
----
-
-POST `/api/pindex-bleve/{pindexName}/query`
-
-**version introduced**: 0.0.1
-
----
-
 GET `/api/pindex/{pindexName}/count`
 
 **version introduced**: 0.0.1
@@ -757,28 +726,6 @@ GET `/api/pindex/{pindexName}/count`
 ---
 
 POST `/api/pindex/{pindexName}/query`
-
-**version introduced**: 0.0.1
-
----
-
-## bleve index diagnostics
-
----
-
-GET `/api/pindex-bleve/{pindexName}/doc/{docID}`
-
-**version introduced**: 0.0.1
-
----
-
-GET `/api/pindex-bleve/{pindexName}/docDebug/{docID}`
-
-**version introduced**: 0.0.1
-
----
-
-GET `/api/pindex-bleve/{pindexName}/fields`
 
 **version introduced**: 0.0.1
 

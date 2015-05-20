@@ -21,8 +21,6 @@ import (
 	"strings"
 	"time"
 
-	bleveHttp "github.com/blevesearch/bleve/http"
-
 	"github.com/gorilla/mux"
 
 	log "github.com/couchbase/clog"
@@ -208,71 +206,6 @@ func InitManagerRESTRouter(r *mux.Router, versionMain string,
 			NewQueryPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.1",
-			})
-
-		// Using standard bleveHttp handlers for /api/pindex-bleve endpoints.
-		//
-		listIndexesHandler := bleveHttp.NewListIndexesHandler()
-		handle("/api/pindex-bleve", "GET", listIndexesHandler,
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.1",
-			})
-
-		getIndexHandler := bleveHttp.NewGetIndexHandler()
-		getIndexHandler.IndexNameLookup = pindexNameLookup
-		handle("/api/pindex-bleve/{pindexName}", "GET",
-			getIndexHandler,
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.1",
-			})
-
-		docCountHandler := bleveHttp.NewDocCountHandler("")
-		docCountHandler.IndexNameLookup = pindexNameLookup
-		handle("/api/pindex-bleve/{pindexName}/count", "GET",
-			docCountHandler,
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.1",
-			})
-
-		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = pindexNameLookup
-		handle("/api/pindex-bleve/{pindexName}/query", "POST",
-			searchHandler,
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.1",
-			})
-
-		docGetHandler := bleveHttp.NewDocGetHandler("")
-		docGetHandler.IndexNameLookup = pindexNameLookup
-		docGetHandler.DocIDLookup = docIDLookup
-		handle("/api/pindex-bleve/{pindexName}/doc/{docID}", "GET",
-			docGetHandler,
-			map[string]string{
-				"_category":          "x/Advanced|y/bleve index diagnostics",
-				"version introduced": "0.0.1",
-			})
-
-		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = pindexNameLookup
-		debugDocHandler.DocIDLookup = docIDLookup
-		handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}", "GET",
-			debugDocHandler,
-			map[string]string{
-				"_category":          "x/Advanced|y/bleve index diagnostics",
-				"version introduced": "0.0.1",
-			})
-
-		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-		listFieldsHandler.IndexNameLookup = pindexNameLookup
-		handle("/api/pindex-bleve/{pindexName}/fields", "GET",
-			listFieldsHandler,
-			map[string]string{
-				"_category":          "x/Advanced|y/bleve index diagnostics",
 				"version introduced": "0.0.1",
 			})
 	}
