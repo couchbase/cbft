@@ -391,7 +391,7 @@ The request's POST body depends on the index type:
 For index type ```bleve```, an example POST body:
 
     {
-      "timeout": 0,
+      "timeout": 10000,
       "consistency": {
         "level": "",
         "vectors": {}
