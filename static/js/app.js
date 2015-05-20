@@ -7,7 +7,12 @@ angular.module('myApp', [
   'myApp.services',
   'myApp.directives',
   'myApp.controllers',
-  'expvar'
+  'expvar',
+  'angularTreeview',
+  'ui.sortable',
+  'ui.bootstrap.transition',
+  'ui.bootstrap.modal',
+  'ui.bootstrap.tabs'
 ]).
 config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
   $routeProvider.when('/indexes/',

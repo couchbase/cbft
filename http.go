@@ -41,6 +41,9 @@ func InitStaticFileRouter(r *mux.Router, staticDir, staticETag string,
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		myFileHandler{http.FileServer(s), staticETag}))
+	// Bootstrap UI insists on loading templates from this path.
+	r.PathPrefix("/template/").Handler(http.StripPrefix("/template/",
+		myFileHandler{http.FileServer(s), staticETag}))
 
 	for _, p := range pages {
 		// If client ask for any of the pages, redirect.

@@ -121,6 +121,10 @@
   </div>
 </form>
 
+<div ng-if="newIndexType && newIndexType == 'bleve'">
+  <div ng-controller="MappingCtrl" ng-include="'/static/partials/mapping/mapping.html'"/>
+</div>
+
 <style>
 form .form-group div.indexName {
   padding-top: 7px;
