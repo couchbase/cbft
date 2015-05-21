@@ -849,7 +849,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(1)
 				val := []byte(`{"foo":"bar","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -872,7 +872,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(2)
 				val := []byte(`{"foo":"bing","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -895,7 +895,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(3)
 				val := []byte(`{"foo":"baz","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1249,7 +1249,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(11)
 				val := []byte(`{"foo":"boof","yow":"wXw"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1549,7 +1549,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(1)
 				val := []byte(`{"foo":"bar","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1572,7 +1572,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(2)
 				val := []byte(`{"foo":"bing","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1595,7 +1595,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(3)
 				val := []byte(`{"foo":"baz","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					0, DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}

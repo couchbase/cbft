@@ -231,13 +231,13 @@ loop:
 			}
 
 			if req.Opcode == memcached.TapMutation {
-				// TODO: TAP feed, what about CAS, flags, expiration, etc?
+				// TODO: TAP feed, what about flags, expiration, etc?
 				err = dest.DataUpdate(partition, req.Key, 0, req.Value,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					req.Cas, DEST_EXTRAS_TYPE_NIL, nil)
 			} else if req.Opcode == memcached.TapDeletion {
-				// TODO: TAP feed, what about CAS, flags, expiration, etc?
+				// TODO: TAP feed, what about flags, expiration, etc?
 				err = dest.DataDelete(partition, req.Key, 0,
-					DEST_EXTRAS_TYPE_NIL, nil)
+					req.Cas, DEST_EXTRAS_TYPE_NIL, nil)
 			}
 			if err != nil {
 				return 1, err

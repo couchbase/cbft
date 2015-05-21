@@ -311,7 +311,7 @@ func (t *FilesFeed) Start() error {
 					pathBuf := []byte(path)
 
 					err = dest.DataUpdate(partition, pathBuf, seqCur,
-						jbuf, DEST_EXTRAS_TYPE_NIL, nil)
+						jbuf, 0, DEST_EXTRAS_TYPE_NIL, nil)
 					if err != nil {
 						log.Printf("feed_files: DataUpdate,"+
 							" name: %s, path: %s, partition: %s,"+

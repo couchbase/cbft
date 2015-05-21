@@ -581,7 +581,9 @@ func (t *VLitePartition) Close() error {
 }
 
 func (t *VLitePartition) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte) error {
+	key []byte, seq uint64, val []byte,
+	cas uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	storeKey := append([]byte(nil), key...)
 	storeVal := append([]byte(nil), val...)
 
@@ -646,7 +648,9 @@ func (t *VLitePartition) DataUpdate(partition string,
 }
 
 func (t *VLitePartition) DataDelete(partition string,
-	key []byte, seq uint64) error {
+	key []byte, seq uint64,
+	cas uint64,
+	extrasType DestExtrasType, extras []byte) error {
 	t.vlite.m.Lock()
 
 	if t.vlite.params.Path != "" {

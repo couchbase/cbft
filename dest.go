@@ -29,14 +29,16 @@ type Dest interface {
 
 	// Invoked when there's a new mutation from a data source for a
 	// partition.  Dest implementation is responsible for making its
-	// own copies of the key and val data.
+	// own copies of the key, val and extras data.
 	DataUpdate(partition string, key []byte, seq uint64, val []byte,
+		cas uint64,
 		extrasType DestExtrasType, extras []byte) error
 
 	// Invoked by the data source when there's a data deletion in a
 	// partition.  Dest implementation is responsible for making its
-	// own copies of the key data.
+	// own copies of the key and extras data.
 	DataDelete(partition string, key []byte, seq uint64,
+		cas uint64,
 		extrasType DestExtrasType, extras []byte) error
 
 	// An callback invoked by the data source when there's a start of

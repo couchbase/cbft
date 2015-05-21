@@ -576,6 +576,7 @@ func (t *BleveDestPartition) Close() error {
 
 func (t *BleveDestPartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte,
+	cas uint64,
 	extrasType DestExtrasType, extras []byte) error {
 	k := string(key)
 
@@ -606,6 +607,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 
 func (t *BleveDestPartition) DataDelete(partition string,
 	key []byte, seq uint64,
+	cas uint64,
 	extrasType DestExtrasType, extras []byte) error {
 	t.m.Lock()
 
