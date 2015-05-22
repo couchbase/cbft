@@ -160,9 +160,8 @@ The Index Type specifies what kind of index that cbft will create.
 From the Index Type dropdown, choose ```full-text (bleve)```.
 
 As soon as you make an Index Type dropdown selection, some additional,
-type-dependent input fields should appear (such as a ```Mapping```
-textarea of JSON), but let's ignore them for now and use the provided
-defaults.
+type-dependent input fields should appear (such as an Index Mapping),
+but let's ignore them for now and use the provided defaults.
 
 ### Source Type
 
