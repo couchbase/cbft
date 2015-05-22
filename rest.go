@@ -44,16 +44,6 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
-	pindexTypesInitRouter := func(phase string) {
-		for _, t := range PIndexImplTypes {
-			if t.InitRouter != nil {
-				t.InitRouter(r, phase)
-			}
-		}
-	}
-
-	pindexTypesInitRouter("static.before")
-
 	r = InitStaticFileRouter(r,
 		staticDir, staticETag, []string{
 			"/indexes",
@@ -64,21 +54,15 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 			"/debug",
 		})
 
-	pindexTypesInitRouter("static.after")
-
-	pindexTypesInitRouter("manager.before")
-
-	r, meta, err := InitManagerRESTRouter(r, versionMain, mgr,
+	return InitManagerRESTRouter(r, versionMain, mgr,
 		staticDir, staticETag, mr)
-
-	pindexTypesInitRouter("manager.after")
-
-	return r, meta, err
 }
 
 func InitManagerRESTRouter(r *mux.Router, versionMain string,
 	mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
+	PIndexTypesInitRouter(r, "manager.before")
+
 	methodOrds := map[string]string{
 		"GET":    "0",
 		"POST":   "1",
@@ -343,7 +327,17 @@ func InitManagerRESTRouter(r *mux.Router, versionMain string,
 			"version introduced": "0.0.1",
 		})
 
+	PIndexTypesInitRouter(r, "manager.after")
+
 	return r, meta, nil
+}
+
+func PIndexTypesInitRouter(r *mux.Router, phase string) {
+	for _, t := range PIndexImplTypes {
+		if t.InitRouter != nil {
+			t.InitRouter(r, phase)
+		}
+	}
 }
 
 func muxVariableLookup(req *http.Request, name string) string {
