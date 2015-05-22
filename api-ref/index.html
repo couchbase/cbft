@@ -185,8 +185,6 @@
         
             <li><a href="#index-partition-querying">Index partition querying</a></li>
         
-            <li><a href="#bleve-index-diagnostics">bleve index diagnostics</a></li>
-        
     
     </ul>
 </div></div>
@@ -729,44 +727,15 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 }
 </code></pre>
 <hr />
-<p>GET <code>/api/pindex-bleve</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<p>Sample response:</p>
-<pre><code>{
-  "indexes": [],
-  "status": "ok"
-}
-</code></pre>
-<hr />
-<p>GET <code>/api/pindex-bleve/{pindexName}</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
 <p>GET <code>/api/pindex/{pindexName}</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <h2 id="index-partition-querying">Index partition querying</h2>
 <hr />
-<p>GET <code>/api/pindex-bleve/{pindexName}/count</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
-<p>POST <code>/api/pindex-bleve/{pindexName}/query</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
 <p>GET <code>/api/pindex/{pindexName}/count</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/pindex/{pindexName}/query</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
-<h2 id="bleve-index-diagnostics">bleve index diagnostics</h2>
-<hr />
-<p>GET <code>/api/pindex-bleve/{pindexName}/doc/{docID}</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
-<p>GET <code>/api/pindex-bleve/{pindexName}/docDebug/{docID}</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
-<hr />
-<p>GET <code>/api/pindex-bleve/{pindexName}/fields</code></p>
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
