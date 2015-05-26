@@ -298,6 +298,16 @@ func TestStartFilesFeed(t *testing.T) {
 	}
 
 	sourceType := "files"
+	sourceDir := mgr.DataDir() +
+		string(os.PathSeparator) + "files" +
+		string(os.PathSeparator) + "sourceName" +
+		string(os.PathSeparator)
+
+	os.MkdirAll(sourceDir, 0700)
+
+	ioutil.WriteFile(sourceDir+"hi.txt", []byte("hello"), 0600)
+	ioutil.WriteFile(sourceDir+"bye.txt", []byte("goodbye"), 0600)
+
 	err = StartFilesFeed(mgr, "feedName", "indexName", "indexUUID",
 		sourceType, "sourceName", "sourceUUID", params, dests)
 	if err != nil {
@@ -312,7 +322,7 @@ func TestStartFilesFeed(t *testing.T) {
 
 	err = StartFilesFeed(mgr, "feedNameX", "indexName", "indexUUID",
 		sourceType, "sourceName", "sourceUUID",
-		`{"numPartitions":100}`,
+		`{"numPartitions":1}`,
 		dests)
 	if err != nil {
 		t.Errorf("expected no err StartFilesFeed with 100 numPartitions")
@@ -332,4 +342,7 @@ func TestStartFilesFeed(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected err on StartFilesFeed with bad sourceNamepath")
 	}
+
+	// Let the file walkers run a little.
+	time.Sleep(100 * time.Millisecond)
 }
