@@ -496,7 +496,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
         // Special case for bleve/http/mapping UI editor.
         if (indexType == "bleve" && bleveMapping != null) {
-            indexParamsObj = bleveMapping;
+            indexParamsObj = fixupMapping(bleveMapping);
         }
 
         if (sourceParams[sourceType]) {
@@ -614,4 +614,30 @@ function compareTime(a, b) { // More recent first.
         return -1;
     }
     return 0;
+}
+
+function fixupEmptyFields(m) { // Originally from bleve-explorer.
+	var keepFields = [];
+	for (var fieldIndex in m.fields) {
+		if (m.fields[fieldIndex].type !== '') {
+			keepFields.push(m.fields[fieldIndex]);
+		}
+	}
+	m.fields = keepFields;
+
+	for (var propertyName in m.properties) {
+		fixupEmptyFields(m.properties[propertyName]);
+	}
+}
+
+function fixupMapping(m) { // Originally from bleve-explorer.
+	var newMapping = JSON.parse(JSON.stringify(m));
+    if (newMapping.default_mapping) {
+	    fixupEmptyFields(newMapping.default_mapping);
+	    for (var typeName in newMapping.types) {
+		    fixupEmptyFields(newmapping.types[typeName]);
+	    }
+    }
+
+	return newMapping;
 }
