@@ -297,10 +297,39 @@ func TestStartFilesFeed(t *testing.T) {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
 
-	sourceType := "nil"
+	sourceType := "files"
 	err = StartFilesFeed(mgr, "feedName", "indexName", "indexUUID",
 		sourceType, "sourceName", "sourceUUID", params, dests)
 	if err != nil {
 		t.Errorf("expected no err on StartFilesFeed")
+	}
+
+	err = StartFilesFeed(mgr, "feedName", "indexName", "indexUUID",
+		sourceType, "sourceName", "sourceUUID", params, dests)
+	if err == nil {
+		t.Errorf("expected no err StartFilesFeed re-register")
+	}
+
+	err = StartFilesFeed(mgr, "feedNameX", "indexName", "indexUUID",
+		sourceType, "sourceName", "sourceUUID",
+		`{"numPartitions":100}`,
+		dests)
+	if err != nil {
+		t.Errorf("expected no err StartFilesFeed with 100 numPartitions")
+	}
+
+	err = StartFilesFeed(mgr, "feedNameY", "indexName", "indexUUID",
+		sourceType, "sourceName", "sourceUUID",
+		`{"numPartitions":-100}`,
+		dests)
+	if err != nil {
+		t.Errorf("expected no err StartFilesFeed with negative numPartitions")
+	}
+
+	err = StartFilesFeed(mgr, "feedName2", "indexName", "indexUUID",
+		sourceType, "sourceName/../illegal/../security", "sourceUUID",
+		params, dests)
+	if err == nil {
+		t.Errorf("expected err on StartFilesFeed with bad sourceNamepath")
 	}
 }
