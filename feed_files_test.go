@@ -280,3 +280,27 @@ func TestNewFilesFeed(t *testing.T) {
 		t.Errorf("expected err on bad source name")
 	}
 }
+
+func TestStartFilesFeed(t *testing.T) {
+	params := ""
+	dests := map[string]Dest{}
+
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := NewCfgMem()
+	meh := &TestMEH{}
+	mgr := NewManager(VERSION, cfg, NewUUID(), nil,
+		"", 1, "", ":1000", emptyDir, "some-datasource", meh)
+	err := mgr.Start("wanted")
+	if err != nil {
+		t.Errorf("expected Manager.Start() to work, err: %v", err)
+	}
+
+	sourceType := "nil"
+	err = StartFilesFeed(mgr, "feedName", "indexName", "indexUUID",
+		sourceType, "sourceName", "sourceUUID", params, dests)
+	if err != nil {
+		t.Errorf("expected no err on StartFilesFeed")
+	}
+}
