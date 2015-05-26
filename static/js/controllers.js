@@ -10,7 +10,7 @@ function errorMessage(errorMessageFull, code) {
     return a[a.length - 1];
 }
 
-var managerMeta = {};
+var managerMeta = null;
 
 $.ajax('/api/managerMeta').done(function(data) {
     managerMeta = data;
