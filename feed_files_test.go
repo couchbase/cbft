@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"bytes"
 	"hash/crc32"
 	"io/ioutil"
 	"os"
@@ -211,6 +212,40 @@ func TestFilesFeedPartitions(t *testing.T) {
 	}
 	if len(partitions) != 13 {
 		t.Errorf("expected 13 partitions")
+	}
+}
+
+func TestFilesFeedDisabled(t *testing.T) {
+	params := ""
+	dests := map[string]Dest{}
+
+	ff, err := NewFilesFeed(nil, "name", "indexName", "sourceName",
+		params, dests, true)
+	if err != nil {
+		t.Errorf("expected no err, err: %v", err)
+	}
+	if ff == nil {
+		t.Errorf("expected ff")
+	}
+	err = ff.Start()
+	if err != nil {
+		t.Errorf("expected disabled ff start to work")
+	}
+	if ff.IndexName() != "indexName" {
+		t.Errorf("expected indexName")
+	}
+	d := ff.Dests()
+	if d == nil {
+		t.Errorf("expected dests")
+	}
+	var buf bytes.Buffer
+	err = ff.Stats(&buf)
+	if err != nil {
+		t.Errorf("expected stats to work")
+	}
+	err = ff.Close()
+	if err != nil {
+		t.Errorf("expected close to work")
 	}
 }
 
