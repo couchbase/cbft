@@ -495,7 +495,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         }
 
         // Special case for bleve/http/mapping UI editor.
-        if (indexType == "bleve" && bleveMapping != null) {
+        if (indexType == "bleve" &&
+            bleveMapping != null &&
+            !$scope.isEdit &&
+            !$scope.isClone) {
             indexParamsObj = fixupMapping(bleveMapping);
         }
 
