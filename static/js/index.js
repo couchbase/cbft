@@ -551,6 +551,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.errorMessageFull = data;
         });
     };
+
+    $scope.labelize = function(s) {
+        return s.replace(/_/g, ' ');
+    };
 }
 
 function collapseNeighbors(arr) {
