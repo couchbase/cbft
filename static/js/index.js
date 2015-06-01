@@ -499,7 +499,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             bleveMapping != null &&
             !$scope.isEdit &&
             !$scope.isClone) {
-            indexParamsObj = fixupMapping(bleveMapping);
+            indexParamsObj.mapping = fixupMapping(bleveMapping);
         }
 
         if (sourceParams[sourceType]) {
