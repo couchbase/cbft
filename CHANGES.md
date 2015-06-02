@@ -1,3 +1,27 @@
+# v0.1.0
+
+- web UI: fixes for angular slow retrieval of manager metadata
+- web UI: use bleve/http/mapping UI for index mapping creation
+- web-UI: hides doc count and query tab depending on pindex type
+- web-UI: hide cfg JSON with advanced checkbox
+- general: added files data source to index a local directory
+- general: refactorings and more API to be more library-like
+- general: propagating CAS through Dest interface
+- general: propagating extras in Dest.DataUpdate/Delete() interface
+- general: default bleve query timeout now 10secs
+- general: query timeout works
+- build: integrated travis CI
+- build: generate LICESNES-thirdparty.txt from golang dependencies
+- build: rename from cbft.darwin.amd64 to cbft.macos.amd64
+- build: instructions on GITHUB_TOKEN/USER when releasing
+- docs: various REST API and example fixes
+- docs: added some windows specific getting-started docs
+- docs: added section on dev preview limitations/disclaimers
+- docs: added info on providing feedback
+- docs: added braces to placeholder version number examples
+- general: fix blackhole Count and Query tests
+- general: better cmd-line error message for server param
+
 # v0.0.5
 
 - general: use 0700 if we mkdir the default dataDir
