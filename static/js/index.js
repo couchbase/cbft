@@ -14,8 +14,10 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.refreshIndexNames = function() {
         $http.get('/api/index').success(function(data) {
             var indexNames = [];
-            for (var indexName in data.indexDefs.indexDefs) {
-                indexNames.push(indexName)
+            if (data.indexDefs) {
+                for (var indexName in data.indexDefs.indexDefs) {
+                    indexNames.push(indexName);
+                }
             }
             $scope.indexNames = indexNames;
         }).
@@ -56,8 +58,6 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
 function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
-    var meta = $scope.meta = getManagerMeta();
-
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
 
@@ -82,106 +82,112 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
     }
     $scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
 
-    $http.get('/api/cfg').
+    $scope.meta = null;
+    $http.get('/api/managerMeta').
     success(function(data) {
-        $scope.nodeDefsByUUID = {}
-        $scope.nodeDefsByAddr = {}
-        $scope.nodeAddrsArr = []
-        for (var k in data.nodeDefsWanted.nodeDefs) {
-            var nodeDef = data.nodeDefsWanted.nodeDefs[k]
-            $scope.nodeDefsByUUID[nodeDef.uuid] = nodeDef
-            $scope.nodeDefsByAddr[nodeDef.hostPort] = nodeDef
-            $scope.nodeAddrsArr.push(nodeDef.hostPort);
-        }
-        $scope.nodeAddrsArr.sort();
-        $scope.loadIndexDetails()
-    }).
-    error(function(data, code) {
-        $scope.errorMessage = errorMessage(data, code);
-        $scope.errorMessageFull = data;
-    });
+        var meta = $scope.meta = data;
 
-    $scope.loadIndexDetails = function() {
-        $scope.errorMessage = null;
-        $scope.errorMessageFull = null;
-
-        $http.get('/api/index/' + $scope.indexName).
+        $http.get('/api/cfg').
         success(function(data) {
-            try {
-                if (typeof(data.indexDef.params) == "string") {
-                    data.indexDef.params = JSON.parse(data.indexDef.params);
-                }
-            } catch (e) {
+            $scope.nodeDefsByUUID = {}
+            $scope.nodeDefsByAddr = {}
+            $scope.nodeAddrsArr = []
+            for (var k in data.nodeDefsWanted.nodeDefs) {
+                var nodeDef = data.nodeDefsWanted.nodeDefs[k]
+                $scope.nodeDefsByUUID[nodeDef.uuid] = nodeDef
+                $scope.nodeDefsByAddr[nodeDef.hostPort] = nodeDef
+                $scope.nodeAddrsArr.push(nodeDef.hostPort);
             }
-
-            try {
-                if (typeof(data.indexDef.sourceParams) == "string") {
-                    data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
-                }
-            } catch (e) {
-            }
-
-            $scope.indexDef = data.indexDef
-            $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
-            $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
-            $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2);
-            $scope.planPIndexes = data.planPIndexes;
-            if ($scope.planPIndexes) {
-                $scope.planPIndexes.sort(
-                    function(x, y) {
-                        if (x.name > y.name) { return 1; }
-                        if (y.name > x.name) { return -1; }
-                        return 0;
-                    }
-                );
-            }
-            for (var k in $scope.planPIndexes) {
-                var planPIndex = $scope.planPIndexes[k];
-                planPIndex.sourcePartitionsArr =
-                    planPIndex.sourcePartitions.split(",").sort(
-                        function(x, y) { return parseInt(x) - parseInt(y); }
-                    );
-                planPIndex.sourcePartitionsStr =
-                    collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
-            }
-            $scope.warnings = data.warnings;
-
-            $scope.indexCanCount =
-                meta &&
-                meta.indexTypes &&
-                meta.indexTypes[data.indexDef.type] &&
-                meta.indexTypes[data.indexDef.type].canCount
-
-            $scope.indexCanQuery =
-                meta &&
-                meta.indexTypes &&
-                meta.indexTypes[data.indexDef.type] &&
-                meta.indexTypes[data.indexDef.type].canQuery
-
-            $scope.indexCanWrite =
-                !data.indexDef ||
-                !data.indexDef.planParams ||
-                !data.indexDef.planParams.nodePlanParams ||
-                !data.indexDef.planParams.nodePlanParams[''] ||
-                !data.indexDef.planParams.nodePlanParams[''][''] ||
-                data.indexDef.planParams.nodePlanParams[''][''].canWrite;
-            $scope.indexCanRead =
-                !data.indexDef ||
-                !data.indexDef.planParams ||
-                !data.indexDef.planParams.nodePlanParams ||
-                !data.indexDef.planParams.nodePlanParams[''] ||
-                !data.indexDef.planParams.nodePlanParams[''][''] ||
-                data.indexDef.planParams.nodePlanParams[''][''].canRead;
-            $scope.indexPlanFrozen =
-                data.indexDef &&
-                data.indexDef.planParams &&
-                data.indexDef.planParams.planFrozen;
+            $scope.nodeAddrsArr.sort();
+            $scope.loadIndexDetails()
         }).
         error(function(data, code) {
             $scope.errorMessage = errorMessage(data, code);
             $scope.errorMessageFull = data;
         });
-    };
+
+        $scope.loadIndexDetails = function() {
+            $scope.errorMessage = null;
+            $scope.errorMessageFull = null;
+
+            $http.get('/api/index/' + $scope.indexName).
+            success(function(data) {
+                try {
+                    if (typeof(data.indexDef.params) == "string") {
+                        data.indexDef.params = JSON.parse(data.indexDef.params);
+                    }
+                } catch (e) {
+                }
+
+                try {
+                    if (typeof(data.indexDef.sourceParams) == "string") {
+                        data.indexDef.sourceParams = JSON.parse(data.indexDef.sourceParams);
+                    }
+                } catch (e) {
+                }
+
+                $scope.indexDef = data.indexDef
+                $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
+                $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
+                $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2);
+                $scope.planPIndexes = data.planPIndexes;
+                if ($scope.planPIndexes) {
+                    $scope.planPIndexes.sort(
+                        function(x, y) {
+                            if (x.name > y.name) { return 1; }
+                            if (y.name > x.name) { return -1; }
+                            return 0;
+                        }
+                    );
+                }
+                for (var k in $scope.planPIndexes) {
+                    var planPIndex = $scope.planPIndexes[k];
+                    planPIndex.sourcePartitionsArr =
+                        planPIndex.sourcePartitions.split(",").sort(
+                            function(x, y) { return parseInt(x) - parseInt(y); }
+                        );
+                    planPIndex.sourcePartitionsStr =
+                        collapseNeighbors(planPIndex.sourcePartitionsArr).join(", ");
+                }
+                $scope.warnings = data.warnings;
+
+                $scope.indexCanCount =
+                    meta &&
+                    meta.indexTypes &&
+                    meta.indexTypes[data.indexDef.type] &&
+                    meta.indexTypes[data.indexDef.type].canCount
+
+                $scope.indexCanQuery =
+                    meta &&
+                    meta.indexTypes &&
+                    meta.indexTypes[data.indexDef.type] &&
+                    meta.indexTypes[data.indexDef.type].canQuery
+
+                $scope.indexCanWrite =
+                    !data.indexDef ||
+                    !data.indexDef.planParams ||
+                    !data.indexDef.planParams.nodePlanParams ||
+                    !data.indexDef.planParams.nodePlanParams[''] ||
+                    !data.indexDef.planParams.nodePlanParams[''][''] ||
+                    data.indexDef.planParams.nodePlanParams[''][''].canWrite;
+                $scope.indexCanRead =
+                    !data.indexDef ||
+                    !data.indexDef.planParams ||
+                    !data.indexDef.planParams.nodePlanParams ||
+                    !data.indexDef.planParams.nodePlanParams[''] ||
+                    !data.indexDef.planParams.nodePlanParams[''][''] ||
+                    data.indexDef.planParams.nodePlanParams[''][''].canRead;
+                $scope.indexPlanFrozen =
+                    data.indexDef &&
+                    data.indexDef.planParams &&
+                    data.indexDef.planParams.planFrozen;
+            }).
+            error(function(data, code) {
+                $scope.errorMessage = errorMessage(data, code);
+                $scope.errorMessageFull = data;
+            });
+        };
+    });
 
     $scope.loadIndexDocCount = function() {
         $scope.indexDocCount = "..."
@@ -361,49 +367,52 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
 
     $scope.mapping = null;
 
-    var data = $scope.meta = getManagerMeta();
+    $http.get('/api/managerMeta').
+    success(function(data) {
+        $scope.meta = data;
 
-    var sourceTypesArr = []
-    for (var k in data.sourceTypes) {
-        sourceTypesArr.push(data.sourceTypes[k]);
+        var sourceTypesArr = []
+        for (var k in data.sourceTypes) {
+            sourceTypesArr.push(data.sourceTypes[k]);
 
-        var parts = data.sourceTypes[k].description.split("/");
-        data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
-        data.sourceTypes[k].label = parts[parts.length - 1];
-        data.sourceTypes[k].sourceType = k;
+            var parts = data.sourceTypes[k].description.split("/");
+            data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
+            data.sourceTypes[k].label = parts[parts.length - 1];
+            data.sourceTypes[k].sourceType = k;
 
-        $scope.newSourceParams[k] =
-            JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
-        $scope.paramNumLines[k] =
-            $scope.newSourceParams[k].split("\n").length + 1;
-    }
-    sourceTypesArr.sort(compareCategoryLabel);
-    $scope.sourceTypesArr = sourceTypesArr;
-
-    var indexTypesArr = [];
-    for (var k in data.indexTypes) {
-        indexTypesArr.push(data.indexTypes[k]);
-
-        var parts = data.indexTypes[k].description.split("/");
-        data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
-        data.indexTypes[k].label = parts[parts.length - 1];
-        data.indexTypes[k].indexType = k;
-
-        $scope.newIndexParams[k] = {};
-        for (var j in data.indexTypes[k].startSample) {
-            $scope.newIndexParams[k][j] =
-                JSON.stringify(data.indexTypes[k].startSample[j], undefined, 2);
-            $scope.paramNumLines[j] =
-                $scope.newIndexParams[k][j].split("\n").length + 1;
+            $scope.newSourceParams[k] =
+                JSON.stringify(data.sourceTypes[k].startSample, undefined, 2);
+            $scope.paramNumLines[k] =
+                $scope.newSourceParams[k].split("\n").length + 1;
         }
-    }
-    indexTypesArr.sort(compareCategoryLabel);
-    $scope.indexTypesArr = indexTypesArr;
+        sourceTypesArr.sort(compareCategoryLabel);
+        $scope.sourceTypesArr = sourceTypesArr;
 
-    $scope.newPlanParams =
-        JSON.stringify(data.startSamples["planParams"], undefined, 2);
-    $scope.paramNumLines["planParams"] =
-        $scope.newPlanParams.split("\n").length + 1;
+        var indexTypesArr = [];
+        for (var k in data.indexTypes) {
+            indexTypesArr.push(data.indexTypes[k]);
+
+            var parts = data.indexTypes[k].description.split("/");
+            data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
+            data.indexTypes[k].label = parts[parts.length - 1];
+            data.indexTypes[k].indexType = k;
+
+            $scope.newIndexParams[k] = {};
+            for (var j in data.indexTypes[k].startSample) {
+                $scope.newIndexParams[k][j] =
+                    JSON.stringify(data.indexTypes[k].startSample[j], undefined, 2);
+                $scope.paramNumLines[j] =
+                    $scope.newIndexParams[k][j].split("\n").length + 1;
+            }
+        }
+        indexTypesArr.sort(compareCategoryLabel);
+        $scope.indexTypesArr = indexTypesArr;
+
+        $scope.newPlanParams =
+            JSON.stringify(data.startSamples["planParams"], undefined, 2);
+        $scope.paramNumLines["planParams"] =
+            $scope.newPlanParams.split("\n").length + 1;
+    });
 
     origIndexName = $routeParams.indexName;
     if (origIndexName && origIndexName.length > 0) {
@@ -459,8 +468,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.errorFields["indexName"] = true;
             errs.push("index name is required");
         } else if ($scope.meta &&
-            $scope.meta.indexNameRE &&
-            !indexName.match($scope.meta.indexNameRE)) {
+                   $scope.meta.indexNameRE &&
+                   !indexName.match($scope.meta.indexNameRE)) {
             $scope.errorFields["indexName"] = true;
             errs.push("index name '" + indexName + "'" +
                       " does not pass validation regexp (" +
