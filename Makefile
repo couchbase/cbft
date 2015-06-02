@@ -174,9 +174,7 @@ release-github-upload:
 				--file $$f \
 				--repo cbft \
 				--tag $(strip $(shell git describe --abbrev=0 --tags \
-						$(strip $(shell cat ./tmp/dist-out/version.txt)))) \
-				--name; \
-	done)
+						$(strip $(shell cat ./tmp/dist-out/version.txt)))) --name; done)
 
 release-github-docs:
 	rm -rf ./site/*
