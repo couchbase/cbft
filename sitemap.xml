@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    
+    <url>
+     <loc>None/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+        
+    <url>
+     <loc>None/dev-guide/overview/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/dev-guide/concepts/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/dev-guide/index-definitions/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/dev-guide/index-queries/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/dev-guide/performance/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
+    <url>
+     <loc>None/api-ref/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+        
+    <url>
+     <loc>None/admin-guide/overview/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/command/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/planning/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/running/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/clustering/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/managing/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/monitoring/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>None/admin-guide/diagnosing/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
+    <url>
+     <loc>None/links/</loc>
+     <lastmod>2015-06-02</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+</urlset>
