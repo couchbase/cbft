@@ -16,6 +16,14 @@ import (
 	"io"
 )
 
+// A Feed interface represents an abstract data source.  A Feed
+// instance is hooked up to one-or-more Dest instances.  When incoming
+// data is received by a Feed, the Feed will invoke relvate methods on
+// the relevant Dest instances.
+//
+// In this codebase, the words "index source", "source" and "data
+// source" are often associated with and used roughly as synonyms with
+// "feed".
 type Feed interface {
 	Name() string
 	IndexName() string
@@ -32,8 +40,12 @@ const FEED_SLEEP_MAX_MS = 10000
 const FEED_SLEEP_INIT_MS = 100
 const FEED_BACKOFF_FACTOR = 1.5
 
+// FeedTypes is a global registry of available feed types and is
+// initialized on startup.  It should be immutable after startup time.
 var FeedTypes = make(map[string]*FeedType) // Key is sourceType.
 
+// A FeedType represents an immutable registration of a single feed
+// type or data source type.
 type FeedType struct {
 	Start           FeedStartFunc
 	Partitions      FeedPartitionsFunc
@@ -43,17 +55,25 @@ type FeedType struct {
 	StartSampleDocs map[string]string
 }
 
+// A FeedStartFunc is part of a FeedType registration as is invoked by
+// a Manager when a new feed instance needs to be started.
 type FeedStartFunc func(mgr *Manager, feedName, indexName, indexUUID string,
 	sourceType, sourceName, sourceUUID, sourceParams string,
 	dests map[string]Dest) error
 
+// Each Feed or data-source type knows of the data partitions for a
+// data source.
 type FeedPartitionsFunc func(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error)
 
+// RegisterFeedType is invoked at init/startup time to register a
+// FeedType.
 func RegisterFeedType(sourceType string, f *FeedType) {
 	FeedTypes[sourceType] = f
 }
 
+// DataSourcePartitions is a helper function that returns the data
+// source partitions for a named data source or feed type.
 func DataSourcePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
 	feedType, exists := FeedTypes[sourceType]
