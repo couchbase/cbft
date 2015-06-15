@@ -33,14 +33,19 @@ func init() {
 	})
 }
 
-// A NILFeed never feeds any data to its dests.  It's useful for
-// testing and for pindexes that are actually primary data sources.
+// A NILFeed implements the Feed interface and never feeds any data to
+// its Dest instances.  It's useful for testing and for pindexes that are
+// actually primary data sources.
+//
+// See also the "blackhole" pindex type for the "opposite equivalent"
+// of a NILFeed.
 type NILFeed struct {
 	name      string
 	indexName string
 	dests     map[string]Dest
 }
 
+// NewNILFeed creates a ready-to-be-started NILFeed instance.
 func NewNILFeed(name, indexName string, dests map[string]Dest) *NILFeed {
 	return &NILFeed{name: name, indexName: indexName, dests: dests}
 }
