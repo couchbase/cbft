@@ -35,6 +35,15 @@ func init() {
 
 // A PrimaryFeed implements both the Feed and Dest interfaces, for
 // chainability; and is also useful for testing.
+//
+// One motivation for a PrimaryFeed implementation is from the
+// realization that some pindex backends might not actually be
+// secondary indexes, but are instead better considered as primary
+// data sources in their own right.  For example, you can imagine some
+// kind of KeyValuePIndex backend.  The system design, however, still
+// requires hooking such "primary pindexes" up to a feed.  Instead of
+// using a NILFeed, you might instead use a PrimaryFeed, as unlike a
+// NILFeed the PrimaryFeed provides a "NumPartitions" functionality.
 type PrimaryFeed struct {
 	name      string
 	indexName string
@@ -79,10 +88,14 @@ func (t *PrimaryFeed) Stats(w io.Writer) error {
 
 // -----------------------------------------------------
 
+// PrimarySourceParams represents the JSON for the sourceParams for a
+// primary feed.
 type PrimarySourceParams struct {
 	NumPartitions int `json:"numPartitions"`
 }
 
+// PrimaryFeedPartitions generates partition strings based on a
+// PrimarySourceParams.NumPartitions parameter.
 func PrimaryFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
 	dsp := &PrimarySourceParams{}
