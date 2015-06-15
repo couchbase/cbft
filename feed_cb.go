@@ -78,8 +78,8 @@ func init() {
 
 // ----------------------------------------------------------------
 
-// CBFeedParams are couchbase data-source/feed specific connection
-// parameters that may be part of a sourceParams JSON.
+// CBFeedParams are common couchbase data-source/feed specific
+// connection parameters that may be part of a sourceParams JSON.
 type CBFeedParams struct {
 	AuthUser     string `json:"authUser"` // May be "" for no auth.
 	AuthPassword string `json:"authPassword"`

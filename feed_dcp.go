@@ -26,6 +26,8 @@ import (
 	"github.com/couchbase/gomemcached"
 )
 
+// DEST_EXTRAS_TYPE_DCP represents the extras that comes from DCP
+// protocol.
 const DEST_EXTRAS_TYPE_DCP = DestExtrasType(0x0002)
 
 func init() {
@@ -48,6 +50,8 @@ func init() {
 	})
 }
 
+// StartDCPFeed starts a DCP related feed and is registered at
+// init/startup time with the system via RegisterFeedType().
 func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, sourceName, bucketUUID, params string,
 	dests map[string]Dest) error {
@@ -75,7 +79,9 @@ func StartDCPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	return nil
 }
 
-// A DCPFeed implements both Feed and cbdatasource.Receiver interfaces.
+// A DCPFeed implements both Feed and cbdatasource.Receiver
+// interfaces, and forwards any incoming cbdatasource.Receiver
+// callbacks to the relevant, hooked-up Dest instances.
 type DCPFeed struct {
 	name       string
 	indexName  string
@@ -95,6 +101,12 @@ type DCPFeed struct {
 	stats   *DestStats
 }
 
+// DCPFeedParams are DCP data-source/feed specific connection
+// parameters that may be part of a sourceParams JSON and is a
+// superset of CBFeedParams.  DCPFeedParams holds the information used
+// to populate a cbdatasource.BucketDataSourceOptions on calls to
+// cbdatasource.NewBucketDataSource().  DCPFeedParams also implements
+// the couchbase.AuthHandler interface.
 type DCPFeedParams struct {
 	AuthUser     string `json:"authUser"` // May be "" for no auth.
 	AuthPassword string `json:"authPassword"`
@@ -127,6 +139,8 @@ type DCPFeedParams struct {
 	FeedBufferAckThreshold float32 `json:"feedBufferAckThreshold"`
 }
 
+// NewDCPFeedParams returns a DCPFeedParams initialized with default
+// values.
 func NewDCPFeedParams() *DCPFeedParams {
 	return &DCPFeedParams{
 		ClusterManagerSleepMaxMS: 20000,
@@ -134,11 +148,13 @@ func NewDCPFeedParams() *DCPFeedParams {
 	}
 }
 
+// GetCredentials is part of the couchbase.AuthHandler interface.
 func (d *DCPFeedParams) GetCredentials() (string, string, string) {
 	// TODO: bucketName not necessarily userName.
 	return d.AuthUser, d.AuthPassword, d.AuthUser
 }
 
+// NewDCPFeed creates a new, ready-to-be-started DCP feed.
 func NewDCPFeed(name, indexName, url, poolName,
 	bucketName, bucketUUID, paramsStr string,
 	pf DestPartitionFunc, dests map[string]Dest,
