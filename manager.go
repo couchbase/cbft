@@ -24,6 +24,10 @@ import (
 	log "github.com/couchbase/clog"
 )
 
+// A Manager represents a runtime node in a cluster.
+//
+// Although often used like a singleton, multiple Manager instances
+// can be instantiated in a process to simulate a cluster of nodes.
 type Manager struct {
 	startTime time.Time
 	version   string // See VERSION.
@@ -54,6 +58,8 @@ type Manager struct {
 	events *list.List
 }
 
+// ManagerStats represents the stats/metrics tracked by a Manager
+// instance.
 type ManagerStats struct {
 	TotKick uint64
 
@@ -93,13 +99,18 @@ type ManagerStats struct {
 	TotJanitorSubscriptionEvent uint64
 }
 
+// MANAGER_MAX_EVENTS limits the number of events tracked by a Manager
+// for diagnosis/debugging.
 const MANAGER_MAX_EVENTS = 10
 
+// ManagerEventHandlers represents the callback interface where an
+// application can receive important event callbacks from a Manager.
 type ManagerEventHandlers interface {
 	OnRegisterPIndex(pindex *PIndex)
 	OnUnregisterPIndex(pindex *PIndex)
 }
 
+// NewManager returns a new, ready-to-be-started Manager instance.
 func NewManager(version string, cfg Cfg, uuid string, tags []string,
 	container string, weight int, extras, bindHttp, dataDir, server string,
 	meh ManagerEventHandlers) *Manager {
@@ -125,6 +136,9 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 	}
 }
 
+// Start will start and register a Manager instance with its
+// configured Cfg system, based on the register parameter.  See
+// Manager.StartRegister().
 func (mgr *Manager) Start(register string) error {
 	err := mgr.StartRegister(register)
 	if err != nil {
@@ -168,6 +182,16 @@ func (mgr *Manager) Start(register string) error {
 	return nil
 }
 
+// StartRegister will register or unregister a Manager with its
+// configured Cfg system, based on the register parameter, which can
+// have these values:
+// * wanted - register this node as wanted
+// * wantedForce - same as wanted, but force a Cfg update
+// * known - register this node as known
+// * knownForce - same as unknown, but force a Cfg update
+// * unwanted - unregister this node no longer wanted
+// * unknown - unregister this node no longer wanted and no longer known
+// * unchanged - don't change any Cfg registrations for this node
 func (mgr *Manager) StartRegister(register string) error {
 	if register == "unchanged" {
 		return nil
@@ -204,6 +228,8 @@ func (mgr *Manager) StartRegister(register string) error {
 
 // ---------------------------------------------------------------
 
+// SaveNodeDef updates the NodeDef registrations in the Cfg system for
+// this Manager node instance.
 func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 	atomic.AddUint64(&mgr.stats.TotSaveNodeDef, 1)
 
@@ -281,6 +307,8 @@ func (mgr *Manager) SaveNodeDef(kind string, force bool) error {
 
 // ---------------------------------------------------------------
 
+// SaveNodeDef removes the NodeDef registrations in the Cfg system for
+// this Manager node instance.
 func (mgr *Manager) RemoveNodeDef(kind string) error {
 	if mgr.cfg == nil {
 		return nil // Occurs during testing.
@@ -320,7 +348,7 @@ func (mgr *Manager) RemoveNodeDef(kind string) error {
 
 // ---------------------------------------------------------------
 
-// Walk the data dir and register pindexes.
+// Walk the data dir and register pindexes for a Manager instance.
 func (mgr *Manager) LoadDataDir() error {
 	log.Printf("manager: loading dataDir...")
 
@@ -354,6 +382,7 @@ func (mgr *Manager) LoadDataDir() error {
 
 // ---------------------------------------------------------------
 
+// Schedule kicks of the planner and janitor of a Manager.
 func (mgr *Manager) Kick(msg string) {
 	atomic.AddUint64(&mgr.stats.TotKick, 1)
 
@@ -363,16 +392,19 @@ func (mgr *Manager) Kick(msg string) {
 
 // ---------------------------------------------------------------
 
+// ClosePIndex synchronously has the janitor close a pindex.
 func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
 	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX,
 		"api-ClosePIndex", pindex)
 }
 
+// ClosePIndex synchronously has the janitor remove a pindex.
 func (mgr *Manager) RemovePIndex(pindex *PIndex) error {
 	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX,
 		"api-RemovePIndex", pindex)
 }
 
+// GetPIndex retrieves a named pindex instance.
 func (mgr *Manager) GetPIndex(pindexName string) *PIndex {
 	mgr.m.Lock()
 	defer mgr.m.Unlock()
@@ -514,24 +546,31 @@ func (mgr *Manager) GetPlanPIndexes(refresh bool) (
 
 // ---------------------------------------------------------------
 
+// PIndexPath returns the filesystem path for a given named pindex.
+// See also ParsePIndexPath().
 func (mgr *Manager) PIndexPath(pindexName string) string {
 	return PIndexPath(mgr.dataDir, pindexName)
 }
 
+// ParsePIndexPath returns the name for a pindex given a filesystem
+// path.  See also PIndexPath().
 func (mgr *Manager) ParsePIndexPath(pindexPath string) (string, bool) {
 	return ParsePIndexPath(mgr.dataDir, pindexPath)
 }
 
 // ---------------------------------------------------------------
 
+// Returns the configured Cfg of a Manager.
 func (mgr *Manager) Cfg() Cfg {
 	return mgr.cfg
 }
 
+// Returns the UUID (the "node UUID") of a Manager.
 func (mgr *Manager) UUID() string {
 	return mgr.uuid
 }
 
+// Returns the configured data dir of a Manager.
 func (mgr *Manager) DataDir() string {
 	return mgr.dataDir
 }
