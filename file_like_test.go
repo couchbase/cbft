@@ -57,8 +57,8 @@ func TestFileLike(t *testing.T) {
 
 	// An immediate read should fail because we're write only.
 	n, err = f.ReadAt(buf, 4096)
-	if err != unReadable {
-		t.Fatalf("Should've failed read with unReadable, "+
+	if err != FileNotReadable {
+		t.Fatalf("Should've failed read with FileNotReadable, "+
 			"got %v and %v bytes instead", err, n)
 	}
 

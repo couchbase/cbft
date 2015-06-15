@@ -17,10 +17,11 @@ import (
 	"os"
 )
 
-var unReadable = errors.New("file is not open for reading")
-var unWritable = errors.New("file is not open for writing")
+var FileNotReadable = errors.New("file is not open for reading")
+var FileNotWritable = errors.New("file is not open for writing")
 
-// A FileLike does things kind of like a file.
+// A FileLike looks like a File, but file opening/closing is delayed
+// until the actual read/write/etc operation.  See also FileService.
 type FileLike interface {
 	io.Closer
 	io.ReaderAt
@@ -46,7 +47,7 @@ func (f *fileLike) Stat() (os.FileInfo, error) {
 
 func (f *fileLike) ReadAt(p []byte, off int64) (n int, err error) {
 	if f.mode&os.O_WRONLY == os.O_WRONLY {
-		return 0, unReadable
+		return 0, FileNotReadable
 	}
 	err = f.fs.Do(f.path, f.mode, func(file *os.File) error {
 		n, err = file.ReadAt(p, off)
@@ -57,7 +58,7 @@ func (f *fileLike) ReadAt(p []byte, off int64) (n int, err error) {
 
 func (f *fileLike) WriteAt(p []byte, off int64) (n int, err error) {
 	if f.mode&(os.O_WRONLY|os.O_RDWR) == 0 {
-		return 0, unWritable
+		return 0, FileNotWritable
 	}
 	err = f.fs.Do(f.path, f.mode, func(file *os.File) error {
 		n, err = file.WriteAt(p, off)
@@ -68,7 +69,7 @@ func (f *fileLike) WriteAt(p []byte, off int64) (n int, err error) {
 
 func (f *fileLike) Truncate(size int64) (err error) {
 	if f.mode&(os.O_WRONLY|os.O_RDWR) == 0 {
-		return unWritable
+		return FileNotWritable
 	}
 	err = f.fs.Do(f.path, f.mode, func(file *os.File) error {
 		return file.Truncate(size)
