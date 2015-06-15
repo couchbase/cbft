@@ -21,6 +21,8 @@ import (
 	"github.com/couchbase/gomemcached/client"
 )
 
+// DEST_EXTRAS_TYPE_TAP represents the extras that comes from TAP
+// protocol.
 const DEST_EXTRAS_TYPE_TAP = DestExtrasType(0x0001)
 
 func init() {
@@ -35,6 +37,8 @@ func init() {
 		})
 }
 
+// StartDCPFeed starts a TAP related feed and is registered at
+// init/startup time with the system via RegisterFeedType().
 func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, sourceName, bucketUUID, params string,
 	dests map[string]Dest) error {
@@ -45,7 +49,7 @@ func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 		bucketName, bucketUUID, params, BasicPartitionFunc, dests,
 		mgr.tagsMap != nil && !mgr.tagsMap["feed"])
 	if err != nil {
-		return fmt.Errorf("feed_tap: could not prepare TAP stream to server: %s,"+
+		return fmt.Errorf("feed_tap: could not prepare TAP to server: %s,"+
 			" bucketName: %s, indexName: %s, err: %v",
 			mgr.server, bucketName, indexName, err)
 	}
@@ -62,7 +66,8 @@ func StartTAPFeed(mgr *Manager, feedName, indexName, indexUUID,
 	return nil
 }
 
-// A TAPFeed uses TAP protocol to dump data from a couchbase data source.
+// A TAPFeed implements the Feed interface and handles the TAP
+// protocol to receive data from a couchbase data source.
 type TAPFeed struct {
 	name       string
 	indexName  string
@@ -80,12 +85,15 @@ type TAPFeed struct {
 	doneMsg    string
 }
 
+// TAPFeedParams represents the JSON of the sourceParams for a TAP
+// feed.
 type TAPFeedParams struct {
 	BackoffFactor float32 `json:"backoffFactor"`
 	SleepInitMS   int     `json:"sleepInitMS"`
 	SleepMaxMS    int     `json:"sleepMaxMS"`
 }
 
+// NewTAPFeed creates a new, ready-to-be-started TAPFeed.
 func NewTAPFeed(name, indexName, url, poolName, bucketName, bucketUUID,
 	paramsStr string, pf DestPartitionFunc, dests map[string]Dest,
 	disable bool) (*TAPFeed, error) {
