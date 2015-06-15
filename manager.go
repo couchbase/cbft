@@ -30,19 +30,19 @@ type Manager struct {
 	cfg       Cfg
 	uuid      string          // Unique to every Manager instance.
 	tags      []string        // The tags at Manager start.
-	tagsMap   map[string]bool // The tags at Manager start, mapped for performance.
-	container string          // Slash ('/') separated containment path (optional).
+	tagsMap   map[string]bool // The tags at Manager start, performance opt.
+	container string          // '/' separated containment path (optional).
 	weight    int
 	extras    string
 	bindHttp  string
 	dataDir   string
-	server    string // The datasource that cbft will index.
+	server    string // The default datasource that will be indexed.
 
 	m         sync.Mutex
 	feeds     map[string]Feed    // Key is Feed.Name().
 	pindexes  map[string]*PIndex // Key is PIndex.Name().
-	plannerCh chan *WorkReq      // Used to kick the planner that there's more work.
-	janitorCh chan *WorkReq      // Used to kick the janitor that there's more work.
+	plannerCh chan *WorkReq      // Used to kick planner that there's more work.
+	janitorCh chan *WorkReq      // Used to kick janitor that there's more work.
 	meh       ManagerEventHandlers
 
 	lastIndexDefs          *IndexDefs
@@ -364,11 +364,13 @@ func (mgr *Manager) Kick(msg string) {
 // ---------------------------------------------------------------
 
 func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
-	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX, "api-ClosePIndex", pindex)
+	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX,
+		"api-ClosePIndex", pindex)
 }
 
 func (mgr *Manager) RemovePIndex(pindex *PIndex) error {
-	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX, "api-RemovePIndex", pindex)
+	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX,
+		"api-RemovePIndex", pindex)
 }
 
 func (mgr *Manager) GetPIndex(pindexName string) *PIndex {
@@ -383,7 +385,7 @@ func (mgr *Manager) registerPIndex(pindex *PIndex) error {
 	defer mgr.m.Unlock()
 
 	if _, exists := mgr.pindexes[pindex.Name]; exists {
-		return fmt.Errorf("manager: registered pindex already exists, name: %s",
+		return fmt.Errorf("manager: registered pindex exists, name: %s",
 			pindex.Name)
 	}
 	mgr.pindexes[pindex.Name] = pindex
@@ -558,7 +560,8 @@ func (s *ManagerStats) AtomicCopyTo(r *ManagerStats) {
 		if rvef.CanAddr() && svef.CanAddr() {
 			rvefp := rvef.Addr().Interface()
 			svefp := svef.Addr().Interface()
-			atomic.StoreUint64(rvefp.(*uint64), atomic.LoadUint64(svefp.(*uint64)))
+			atomic.StoreUint64(rvefp.(*uint64),
+				atomic.LoadUint64(svefp.(*uint64)))
 		}
 	}
 }
