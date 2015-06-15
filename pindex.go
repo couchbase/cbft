@@ -122,7 +122,8 @@ func NewPIndex(mgr *Manager, name, uuid,
 	return pindex, nil
 }
 
-// NOTE: Path argument must be a directory.
+// OpenPIndex reopens a previously created pindex.  The path argument
+// must be a directory for the pindex.
 func OpenPIndex(mgr *Manager, path string) (*PIndex, error) {
 	buf, err := ioutil.ReadFile(path +
 		string(os.PathSeparator) + PINDEX_META_FILENAME)
@@ -222,8 +223,9 @@ func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 	err error) {
 	nodeDefs, _, err := CfgGetNodeDefs(mgr.Cfg(), NODE_DEFS_WANTED)
 	if err != nil {
-		return nil, nil, fmt.Errorf("pindex: could not retrieve wanted nodeDefs,"+
-			" err: %v", err)
+		return nil, nil,
+			fmt.Errorf("pindex: could not retrieve wanted nodeDefs,"+
+				" err: %v", err)
 	}
 
 	// Returns true if the node has the "pindex" tag.
@@ -245,14 +247,16 @@ func (mgr *Manager) CoveringPIndexes(indexName, indexUUID string,
 
 	_, allPlanPIndexes, err := mgr.GetPlanPIndexes(false)
 	if err != nil {
-		return nil, nil, fmt.Errorf("pindex: could not retrieve allPlanPIndexes,"+
-			" err: %v", err)
+		return nil, nil,
+			fmt.Errorf("pindex: could not retrieve allPlanPIndexes,"+
+				" err: %v", err)
 	}
 
 	planPIndexes, exists := allPlanPIndexes[indexName]
 	if !exists || len(planPIndexes) <= 0 {
-		return nil, nil, fmt.Errorf("pindex: no planPIndexes for indexName: %s",
-			indexName)
+		return nil, nil,
+			fmt.Errorf("pindex: no planPIndexes for indexName: %s",
+				indexName)
 	}
 
 	localPIndexes = make([]*PIndex, 0)
@@ -284,10 +288,11 @@ build_loop:
 			if nodeUUID != selfUUID {
 				nodeDef, ok := nodeDoesPIndexes(nodeUUID)
 				if ok && wantNode(planPIndexNode) {
-					remotePlanPIndexes = append(remotePlanPIndexes, &RemotePlanPIndex{
-						PlanPIndex: planPIndex,
-						NodeDef:    nodeDef,
-					})
+					remotePlanPIndexes =
+						append(remotePlanPIndexes, &RemotePlanPIndex{
+							PlanPIndex: planPIndex,
+							NodeDef:    nodeDef,
+						})
 					continue build_loop
 				}
 			}
