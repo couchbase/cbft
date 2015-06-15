@@ -35,6 +35,8 @@ var jsonCloseBrace = []byte("}")
 var jsonCloseBraceComma = []byte("},")
 var jsonComma = []byte(",")
 
+// IndentJSON is a helper func that returns indented JSON for its
+// interface{} x parameter.
 func IndentJSON(x interface{}, prefix, indent string) string {
 	j, err := json.Marshal(x)
 	if err != nil {
@@ -48,6 +50,8 @@ func IndentJSON(x interface{}, prefix, indent string) string {
 	return buf.String()
 }
 
+// ErrorToString is a helper func that returns e.Error(), but also
+// returns "" for nil error.
 func ErrorToString(e error) string {
 	if e != nil {
 		return e.Error()
@@ -118,6 +122,9 @@ func ExponentialBackoffLoop(name string,
 	}
 }
 
+// StringsToMap connverts an array of (perhaps duplicated) strings
+// into a map with key of those strings and values of true, and is
+// useful for simple set-like operations.
 func StringsToMap(strsArr []string) map[string]bool {
 	if strsArr == nil {
 		return nil
@@ -157,6 +164,8 @@ func StringsIntersectStrings(a, b []string) []string {
 	return rv
 }
 
+// TimeoutCancelChan creates a channel that closes after a given
+// timeout in milliseconds.
 func TimeoutCancelChan(timeout int64) <-chan bool {
 	if timeout > 0 {
 		cancelCh := make(chan bool, 1)
@@ -182,7 +191,11 @@ func mustEncode(w io.Writer, i interface{}) {
 	}
 }
 
-func Time(f func() error, totalDuration, totalCount, maxDuration *uint64) error {
+// Time invokes a func f and updates the totalDuration, totalCount and
+// maxDuration metrics.  See also Timer() for a metrics based
+// alternative.
+func Time(f func() error,
+	totalDuration, totalCount, maxDuration *uint64) error {
 	startTime := time.Now()
 	err := f()
 	duration := uint64(time.Since(startTime))
@@ -203,6 +216,8 @@ func Time(f func() error, totalDuration, totalCount, maxDuration *uint64) error 
 	return err
 }
 
+// Timer updates a metrics.Timer.  Unlike metrics.Timer.Time(), this
+// version also captures any error return value.
 func Timer(f func() error, t metrics.Timer) error {
 	var err error
 	t.Time(func() {
@@ -241,6 +256,8 @@ func AtomicCopyMetrics(s, r interface{},
 
 var timerPercentiles = []float64{0.5, 0.75, 0.95, 0.99, 0.999}
 
+// WriteTimerJSON writes a metrics.Timer instance as JSON to a
+// io.Writer.
 func WriteTimerJSON(w io.Writer, timer metrics.Timer) {
 	t := timer.Snapshot()
 	p := t.Percentiles(timerPercentiles)
