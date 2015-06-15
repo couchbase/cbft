@@ -19,10 +19,11 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-type DestExtrasType uint16
-
-const DEST_EXTRAS_TYPE_NIL = DestExtrasType(0)
-
+// Dest interface defines the data sink or destination for data that
+// cames from a data-source.  In other words, a data-source (or a Feed
+// instance) is hooked up to one or more Dest instances.  As a Feed
+// receives incoming data, the Feed will invoke methods on its Dest
+// instances.
 type Dest interface {
 	// Invoked by PIndex.Close().
 	Close() error
@@ -98,6 +99,15 @@ type Dest interface {
 	Stats(io.Writer) error
 }
 
+// DestExtrasType represents the encoding for the
+// Dest.DataUpdate/DataDelete() extras parameter.
+type DestExtrasType uint16
+
+// DEST_EXTRAS_TYPE_NIL means there are no extras as part of a
+// Dest.DataUpdate/DataDelete invocation.
+const DEST_EXTRAS_TYPE_NIL = DestExtrasType(0)
+
+// DestStats holds the common stats or metrics for a Dest.
 type DestStats struct {
 	TotError uint64
 
@@ -109,6 +119,7 @@ type DestStats struct {
 	TimerRollback      metrics.Timer
 }
 
+// NewDestStats creates a new, ready-to-use DestStats.
 func NewDestStats() *DestStats {
 	return &DestStats{
 		TimerDataUpdate:    metrics.NewTimer(),
@@ -140,6 +151,15 @@ func (d *DestStats) WriteJSON(w io.Writer) {
 	w.Write(jsonCloseBrace)
 }
 
+// A DestPartitionFunc allows a level of indirection/abstraction for
+// the Feed-to-Dest relationship.  A Feed is hooked up in a
+// one-to-many relationship with multiple Dest instances.  The
+// DestPartitionFunc provided to a Feed instance defines the mapping
+// of which Dest the Feed should invoke when the Feed receives an
+// incoming data item.
+//
+// The partition parameter is encoded as a string, instead of a uint16
+// or number, to allow for future range partitioning functionality.
 type DestPartitionFunc func(partition string, key []byte,
 	dests map[string]Dest) (Dest, error)
 
