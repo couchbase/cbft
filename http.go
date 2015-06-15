@@ -20,10 +20,16 @@ import (
 	log "github.com/couchbase/clog"
 )
 
+// AssetFS returns the assetfs.AssetFS "filesystem" that holds static
+// HTTP resources (css/html/js/images, etc) for the web UI.
+//
+// Users might introduce their own static HTTP resources and override
+// resources from AssetFS() with their own resource lookup chaining.
 func AssetFS() *assetfs.AssetFS {
 	return assetFS()
 }
 
+// InitStaticFileRouter adds static HTTP resource routes to a router.
 func InitStaticFileRouter(r *mux.Router, staticDir, staticETag string,
 	pages []string) *mux.Router {
 	PIndexTypesInitRouter(r, "static.before")
@@ -71,6 +77,8 @@ func (mfh myFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mfh.h.ServeHTTP(w, r)
 }
 
+// RewriteURL is a helper function that returns a URL path rewriter
+// HandlerFunc, rewriting the URL path to a provided "to" string.
 func RewriteURL(to string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = to
