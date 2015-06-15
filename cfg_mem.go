@@ -16,9 +16,8 @@ import (
 	"sync"
 )
 
-// A local-only, memory-only implementation of Cfg interface, useful
-// for development and testing.
-
+// CfgMem is a local-only, memory-only implementation of Cfg
+// interface that's useful for development and testing.
 type CfgMem struct {
 	m             sync.Mutex
 	CASNext       uint64
@@ -26,11 +25,13 @@ type CfgMem struct {
 	subscriptions map[string][]chan<- CfgEvent // Keyed by key.
 }
 
+// CfgMemEntry is a CAS-Val pairing tracked by CfgMem.
 type CfgMemEntry struct {
 	CAS uint64
 	Val []byte
 }
 
+// NewCfgMem returns an empty CfgMem instance.
 func NewCfgMem() *CfgMem {
 	return &CfgMem{
 		CASNext:       1,
