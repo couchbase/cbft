@@ -17,11 +17,11 @@ import (
 	"sync/atomic"
 )
 
-// INDEX_NAME_REGEXP is used to validate index names.
+// INDEX_NAME_REGEXP is used to validate index definition names.
 const INDEX_NAME_REGEXP = `^[A-Za-z][0-9A-Za-z_\-]*$`
 
-// Creates a logical index, which might be comprised of many PIndex objects.
-// A non-"" prevIndexUUID means an update to an existing index.
+// Creates a logical index definition.  A non-"" prevIndexUUID means
+// an update to an existing index.
 func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
 	indexType, indexName, indexParams string, planParams PlanParams,
 	prevIndexUUID string) error {
@@ -164,7 +164,8 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 	return nil
 }
 
-// IndexControl is used to change runtime properties of an index.
+// IndexControl is used to change runtime properties of an index
+// definition.
 func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 	planFreezeOp string) error {
 	atomic.AddUint64(&mgr.stats.TotIndexControl, 1)
