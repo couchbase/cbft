@@ -28,6 +28,9 @@ func init() {
 	}
 }
 
+// ParsePartitionsToVBucketIds is specific to couchbase
+// data-sources/feeds, converting a set of partition strings from a
+// dests map to vbucketId numbers.
 func ParsePartitionsToVBucketIds(dests map[string]Dest) ([]uint16, error) {
 	vbuckets := make([]uint16, 0, len(dests))
 	for partition, _ := range dests {
@@ -43,6 +46,8 @@ func ParsePartitionsToVBucketIds(dests map[string]Dest) ([]uint16, error) {
 	return vbuckets, nil
 }
 
+// VBucketIdToPartitionDest is specific to couchbase
+// data-sources/feeds, choosing the right Dest based on a vbucketId.
 func VBucketIdToPartitionDest(pf DestPartitionFunc,
 	dests map[string]Dest, vbucketId uint16, key []byte) (
 	partition string, dest Dest, err error) {
@@ -60,6 +65,8 @@ func VBucketIdToPartitionDest(pf DestPartitionFunc,
 	return partition, dest, err
 }
 
+// vbucketIdStrings is a memoized array of 1024 entries for fast
+// conversion of vbucketId's to partition strings via an index lookup.
 var vbucketIdStrings []string
 
 func init() {
@@ -71,11 +78,15 @@ func init() {
 
 // ----------------------------------------------------------------
 
+// CBFeedParams are couchbase data-source/feed specific connection
+// parameters that may be part of a sourceParams JSON.
 type CBFeedParams struct {
 	AuthUser     string `json:"authUser"` // May be "" for no auth.
 	AuthPassword string `json:"authPassword"`
 }
 
+// CouchbasePartitions parses a sourceParams for a couchbase
+// data-source/feed.
 func CouchbasePartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	serverIn string) (partitions []string, err error) {
 	server, poolName, bucketName :=
