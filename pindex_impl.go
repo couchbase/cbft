@@ -21,6 +21,8 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
+// PIndexImpl represents a runtime pindex implementation instance,
+// whose runtime type depends on the pindex's type.
 type PIndexImpl interface{}
 
 // PIndexImplType defines the functions that every pindex
@@ -86,7 +88,10 @@ type PIndexImplType struct {
 	MetaExtra func(map[string]interface{})
 }
 
-var PIndexImplTypes = make(map[string]*PIndexImplType) // Keyed by indexType.
+// PIndexImplTypes is a global registry of pindex type backends or
+// implementations.  It is keyed by indexType and should be treated as
+// immutable/read-only after process init/startup.
+var PIndexImplTypes = make(map[string]*PIndexImplType)
 
 // RegisterPIndexImplType registers a index type into the system.
 func RegisterPIndexImplType(indexType string, t *PIndexImplType) {
@@ -145,8 +150,12 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 
 // ------------------------------------------------
 
+// PINDEX_STORE_MAX_ERRORS is the max number of errors that a
+// PIndexStoreStats will track.
 var PINDEX_STORE_MAX_ERRORS = 40
 
+// PIndexStoreStats provides some common stats/metrics and error
+// tracking that some pindex type backends can reuse.
 type PIndexStoreStats struct {
 	TimerBatchStore metrics.Timer
 	Errors          *list.List // Capped list of string (json).
