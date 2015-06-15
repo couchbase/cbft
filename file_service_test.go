@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-const testfileservicename = ",file_server_test"
+const testfileservicename = ",file_service_test"
 
 func TestFileService(t *testing.T) {
 	defer os.Remove(testfileservicename)
