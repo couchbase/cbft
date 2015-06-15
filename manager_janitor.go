@@ -22,9 +22,6 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-// A janitor maintains PIndexes and Feeds, creating, deleting &
-// hooking them up as necessary to try to match to latest plans.
-
 const JANITOR_CLOSE_PINDEX = "janitor_close_pindex"
 const JANITOR_REMOVE_PINDEX = "janitor_remove_pindex"
 
@@ -96,6 +93,7 @@ func (mgr *Manager) JanitorLoop() {
 	}
 }
 
+// JanitorOnce is the main body of a JanitorLoop.
 func (mgr *Manager) JanitorOnce(reason string) error {
 	if mgr.cfg == nil { // Can occur during testing.
 		return fmt.Errorf("janitor: skipped due to nil cfg")
@@ -295,10 +293,12 @@ func CalcFeedsDelta(nodeUUID string, planPIndexes *PlanPIndexes,
 	return addFeeds, removeFeeds
 }
 
+// FeedName functionally computes the name of a feed given a pindex.
+//
+// NOTE: We're depending on the IndexName/IndexUUID to "cover" the
+// SourceType, SourceName, SourceUUID, SourceParams values, so we
+// don't need to encode those source parts into the feed name.
 func FeedName(pindex *PIndex) string {
-	// NOTE: We're depending on the IndexName/IndexUUID to "cover" the
-	// SourceType, SourceName, SourceUUID, SourceParams values, so we
-	// don't need to encode those source parts into the feed name.
 	return pindex.IndexName + "_" + pindex.IndexUUID
 }
 
@@ -364,7 +364,7 @@ func (mgr *Manager) stopPIndex(pindex *PIndex, remove bool) error {
 		for _, dest := range feed.Dests() {
 			if dest == pindex.Dest {
 				if err := mgr.stopFeed(feed); err != nil {
-					panic(fmt.Sprintf("janitor: could not stop feed, err: %v", err))
+					panic(fmt.Sprintf("janitor: stopping feed, err: %v", err))
 				}
 			}
 		}

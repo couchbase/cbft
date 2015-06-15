@@ -28,6 +28,21 @@ import (
 //
 // Although often used like a singleton, multiple Manager instances
 // can be instantiated in a process to simulate a cluster of nodes.
+//
+// A Manager has two related child, actor-like goroutines:
+// - planner
+// - janitor
+//
+// A planner splits index definitions into index partitions (pindexes)
+// and assigns those pindexes to nodes.  A planner wakes up and runs
+// whenever the index definitions change or the set of nodes changes
+// (which are both read from the Cfg system).  A planner stores the
+// latest plans into the Cfg system.
+//
+// A janitor running on each node maintains runtime PIndex and Feed
+// instances, creating, deleting & hooking them up as necessary to try
+// to match to latest plans from the planner.  A janitor wakes up and
+// runs whenever it sees that latest plans in the Cfg have changed.
 type Manager struct {
 	startTime time.Time
 	version   string // See VERSION.

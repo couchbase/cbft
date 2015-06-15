@@ -23,9 +23,8 @@ import (
 	"github.com/couchbaselabs/blance"
 )
 
-// A planner assigns partitions to cbft's and to PIndexes on each
-// cbft.  NOTE: You *must* update VERSION if the planning algorithm or
-// config data schema changes, following semver rules.
+// NOTE: You *must* update VERSION if the planning algorithm or config
+// data schema changes, following semver rules.
 
 // PlannerNOOP sends a synchronous NOOP request to the manager's planner, if any.
 func (mgr *Manager) PlannerNOOP(msg string) {
@@ -90,6 +89,7 @@ func (mgr *Manager) PlannerLoop() {
 	}
 }
 
+// PlannerOnce is the main body of a PlannerLoop.
 func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	log.Printf("planner: awakes, reason: %s", reason)
 
@@ -104,7 +104,8 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	nodeDefs, err := PlannerGetNodeDefs(mgr.cfg, mgr.version, mgr.uuid, mgr.bindHttp)
+	nodeDefs, err := PlannerGetNodeDefs(mgr.cfg, mgr.version,
+		mgr.uuid, mgr.bindHttp)
 	if err != nil {
 		return false, err
 	}
@@ -130,6 +131,7 @@ func (mgr *Manager) PlannerOnce(reason string) (bool, error) {
 	return true, nil
 }
 
+// PlannerCheckVersion errors if a version string is too low.
 func PlannerCheckVersion(cfg Cfg, version string) error {
 	ok, err := CheckVersion(cfg, version)
 	if err != nil {
@@ -141,6 +143,7 @@ func PlannerCheckVersion(cfg Cfg, version string) error {
 	return nil
 }
 
+// PlannerGetIndexDefs retrives index definitions from a Cfg.
 func PlannerGetIndexDefs(cfg Cfg, version string) (*IndexDefs, error) {
 	indexDefs, _, err := CfgGetIndexDefs(cfg)
 	if err != nil {
@@ -156,6 +159,7 @@ func PlannerGetIndexDefs(cfg Cfg, version string) (*IndexDefs, error) {
 	return indexDefs, nil
 }
 
+// PlannerGetNodeDefs retrives node definitions from a Cfg.
 func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindHttp string) (
 	*NodeDefs, error) {
 	nodeDefs, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
@@ -199,7 +203,9 @@ func PlannerGetNodeDefs(cfg Cfg, version, uuid, bindHttp string) (
 	return nodeDefs, nil
 }
 
-func PlannerGetPlanPIndexes(cfg Cfg, version string) (*PlanPIndexes, uint64, error) {
+// PlannerGetPlanPIndexes retrieves the planned pindexes from a Cfg.
+func PlannerGetPlanPIndexes(cfg Cfg, version string) (
+	*PlanPIndexes, uint64, error) {
 	planPIndexesPrev, cas, err := CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		return nil, 0, fmt.Errorf("planner: CfgGetPlanPIndexes err: %v", err)
@@ -234,12 +240,14 @@ func CalcPlan(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 	// Examine every indexDef...
 	for _, indexDef := range indexDefs.IndexDefs {
 		if indexDef.PlanParams.PlanFrozen {
-			// If the planner is frozen, just copy over the previous plan for this index.
+			// If the planner is frozen, just copy over
+			// the previous plan for this index.
 			if planPIndexesPrev != nil {
 				for planPIndexNamePrev, planPIndexPrev := range planPIndexesPrev.PlanPIndexes {
 					if planPIndexPrev.IndexName == indexDef.Name &&
 						planPIndexPrev.IndexUUID == indexDef.UUID {
-						planPIndexes.PlanPIndexes[planPIndexNamePrev] = planPIndexPrev
+						planPIndexes.PlanPIndexes[planPIndexNamePrev] =
+							planPIndexPrev
 					}
 				}
 			}
@@ -325,13 +333,15 @@ func getNodesLayout(indexDefs *IndexDefs, nodeDefs *NodeDefs,
 			}
 		}
 	}
-	nodeUUIDsPrev = StringsIntersectStrings(nodeUUIDsPrev, nodeUUIDsPrev) // Remove dupes.
+
+	// Dedupe.
+	nodeUUIDsPrev = StringsIntersectStrings(nodeUUIDsPrev, nodeUUIDsPrev)
 
 	// Calculate node deltas (nodes added & nodes removed).
 	nodeUUIDsAll = make([]string, 0)
 	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDs...)
 	nodeUUIDsAll = append(nodeUUIDsAll, nodeUUIDsPrev...)
-	nodeUUIDsAll = StringsIntersectStrings(nodeUUIDsAll, nodeUUIDsAll) // Remove dupes.
+	nodeUUIDsAll = StringsIntersectStrings(nodeUUIDsAll, nodeUUIDsAll) // Dedupe.
 	nodeUUIDsToAdd = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDsPrev)
 	nodeUUIDsToRemove = StringsRemoveStrings(nodeUUIDsAll, nodeUUIDs)
 
@@ -438,15 +448,17 @@ func blancePlanPIndexes(indexDef *IndexDef,
 		}
 		blancePrevMap[planPIndex.Name] = blancePartition
 		if planPIndexesPrev != nil {
-			planPIndexPrev, exists := planPIndexesPrev.PlanPIndexes[planPIndex.Name]
+			planPIndexPrev, exists :=
+				planPIndexesPrev.PlanPIndexes[planPIndex.Name]
 			if exists && planPIndexPrev != nil {
 				// Sort by planPIndexNode.Priority for stability.
 				planPIndexNodeRefs := PlanPIndexNodeRefs{}
 				for nodeUUIDPrev, planPIndexNode := range planPIndexPrev.Nodes {
-					planPIndexNodeRefs = append(planPIndexNodeRefs, &PlanPIndexNodeRef{
-						UUID: nodeUUIDPrev,
-						Node: planPIndexNode,
-					})
+					planPIndexNodeRefs =
+						append(planPIndexNodeRefs, &PlanPIndexNodeRef{
+							UUID: nodeUUIDPrev,
+							Node: planPIndexNode,
+						})
 				}
 				sort.Sort(planPIndexNodeRefs)
 
@@ -456,7 +468,8 @@ func blancePlanPIndexes(indexDef *IndexDef,
 						state = "primary"
 					}
 					blancePartition.NodesByState[state] =
-						append(blancePartition.NodesByState[state], planPIndexNodeRef.UUID)
+						append(blancePartition.NodesByState[state],
+							planPIndexNodeRef.UUID)
 				}
 			}
 		}
@@ -535,11 +548,13 @@ func PlanPIndexName(indexDef *IndexDef, sourcePartitions string) string {
 
 // --------------------------------------------------------
 
+// PlanPIndexNodeRef represents an assignment of a pindex to a node.
 type PlanPIndexNodeRef struct {
 	UUID string
 	Node *PlanPIndexNode
 }
 
+// PlanPIndexNodeRefs represents assignments of pindexes to nodes.
 type PlanPIndexNodeRefs []*PlanPIndexNodeRef
 
 func (pms PlanPIndexNodeRefs) Len() int {
