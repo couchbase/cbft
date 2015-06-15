@@ -17,14 +17,17 @@ import (
 	"sync"
 )
 
-// Local-only, persisted (in a single file) implementation of Cfg.
-
+// CfgSimple is a local-only, persisted (in a single file)
+// implementation of the Cfg interface that's useful for
+// non-clustered, single-node instances of cbft for developers.
 type CfgSimple struct {
 	m      sync.Mutex
 	path   string
 	cfgMem *CfgMem
 }
 
+// NewCfgSimple returns a CfgSimple that reads and stores its single
+// configuration file in the provided file path.
 func NewCfgSimple(path string) *CfgSimple {
 	return &CfgSimple{
 		path:   path,
