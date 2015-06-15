@@ -49,8 +49,8 @@ func init() {
 	})
 }
 
-// FilesFeed is a feed implementation that that emits file contents
-// from a local subdirectory tree.
+// FilesFeed is a Feed interface implementation that that emits file
+// contents from a local subdirectory tree.
 //
 // The subdirectory tree lives under the dataDir...
 //
@@ -64,12 +64,12 @@ func init() {
 // - Only a small number of files will work well (hundreds to low
 // thousands, not millions).
 //
-// - FilesFeed uses file modification timestamps as a poor-man's
-// approach instead of properly tracking sequence numbers.  That has
-// implications such as whenever a FilesFeed (re-)starts (e.g., the
-// process restarts), the FilesFeed will re-emits all files and then
-// track the max modification timestamp going forwards as it regularly
-// polls for file changes.
+// - FilesFeed polls for file modification timestamp changes as a
+// poor-man's approach instead of properly tracking sequence numbers.
+// That has implications such as whenever a FilesFeed (re-)starts
+// (e.g., the process restarts), the FilesFeed will re-emits all files
+// and then track the max modification timestamp going forwards as it
+// regularly polls for file changes.
 type FilesFeed struct {
 	mgr        *Manager
 	name       string
@@ -83,6 +83,8 @@ type FilesFeed struct {
 	closeCh chan struct{}
 }
 
+// FilesFeedParams represents the JSON expected as the sourceParams
+// for a FilesFeed.
 type FilesFeedParams struct {
 	RegExps       []string `json:"regExps"`
 	MaxFileSize   int64    `json:"maxFileSize"`
@@ -92,12 +94,16 @@ type FilesFeedParams struct {
 	MaxSleepMS    int      `json:"maxSleepMS"`
 }
 
+// FileDoc represents the JSON for each file/document that will be
+// emitted by a FilesFeed as a data source.
 type FileDoc struct {
 	Name     string `json:"name"`
 	Path     string `json:"path"` // Path relative to the source name.
 	Contents string `json:"contents"`
 }
 
+// StartFilesFeed starts a FilesFeed and is the the callback function
+// registered at init/startup time.
 func StartFilesFeed(mgr *Manager, feedName, indexName, indexUUID,
 	sourceType, sourceName, sourceUUID, params string,
 	dests map[string]Dest) error {
@@ -120,6 +126,7 @@ func StartFilesFeed(mgr *Manager, feedName, indexName, indexUUID,
 	return nil
 }
 
+// NewFilesFeed creates a ready-to-be-started FilesFeed.
 func NewFilesFeed(mgr *Manager, name, indexName, sourceName,
 	paramsStr string, dests map[string]Dest, disable bool) (
 	*FilesFeed, error) {
@@ -375,6 +382,8 @@ func (t *FilesFeed) Stats(w io.Writer) error {
 
 // -----------------------------------------------------
 
+// FilesFeedPartitions returns the partitions, controlled by
+// FilesFeedParams.NumPartitions, for a FilesFeed instance.
 func FilesFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 	server string) ([]string, error) {
 	ffp := &FilesFeedParams{}
@@ -395,6 +404,15 @@ func FilesFeedPartitions(sourceType, sourceName, sourceUUID, sourceParams,
 
 // -----------------------------------------------------
 
+// FilesFindMatches finds all leaf file paths in a subdirectory tree
+// that match any in an optional array of regExps (regular expression
+// strings).  If regExps is nil, though, then all leaf file paths are
+// considered as a potential candidate match.  The regExps are with
+// respect to a path from filepath.Walk().
+//
+// Additionally, a candidate file must have been modified since a
+// modTimeGTE and (if maxSize is > 0) should have size that's <=
+// maxSize.
 func FilesFindMatches(dataDir, sourceName string,
 	regExps []string, modTimeGTE time.Time, maxSize int64) (
 	[]string, error) {
@@ -443,6 +461,7 @@ func FilesFindMatches(dataDir, sourceName string,
 	return pathsOk, nil
 }
 
+// FilesPathToPartition hashes a file path to a partition.
 func FilesPathToPartition(h hash.Hash32,
 	partitions []string, path string) string {
 	if len(partitions) <= 0 {
