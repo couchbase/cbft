@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 )
 
+// INDEX_NAME_REGEXP is used to validate index names.
 const INDEX_NAME_REGEXP = `^[A-Za-z][0-9A-Za-z_\-]*$`
 
 // Creates a logical index, which might be comprised of many PIndex objects.
@@ -122,9 +123,9 @@ func (mgr *Manager) CreateIndex(sourceType, sourceName, sourceUUID, sourceParams
 	return nil
 }
 
-// Deletes a logical index, which might be comprised of many PIndex objects.
+// Deletes a logical index definition.
 //
-// TODO: DeleteIndex should also take index UUID?
+// TODO: DeleteIndex should check an optional index UUID?
 func (mgr *Manager) DeleteIndex(indexName string) error {
 	atomic.AddUint64(&mgr.stats.TotDeleteIndex, 1)
 
@@ -133,7 +134,7 @@ func (mgr *Manager) DeleteIndex(indexName string) error {
 		return err
 	}
 	if indexDefs == nil {
-		return fmt.Errorf("manager_api: no indexes during deletion of indexName: %s",
+		return fmt.Errorf("manager_api: no indexes on deletion of indexName: %s",
 			indexName)
 	}
 	if VersionGTE(mgr.version, indexDefs.ImplVersion) == false {
@@ -191,10 +192,12 @@ func (mgr *Manager) IndexControl(indexName, indexUUID, readOp, writeOp,
 	}
 
 	if indexDef.PlanParams.NodePlanParams == nil {
-		indexDef.PlanParams.NodePlanParams = map[string]map[string]*NodePlanParam{}
+		indexDef.PlanParams.NodePlanParams =
+			map[string]map[string]*NodePlanParam{}
 	}
 	if indexDef.PlanParams.NodePlanParams[""] == nil {
-		indexDef.PlanParams.NodePlanParams[""] = map[string]*NodePlanParam{}
+		indexDef.PlanParams.NodePlanParams[""] =
+			map[string]*NodePlanParam{}
 	}
 	if indexDef.PlanParams.NodePlanParams[""][""] == nil {
 		indexDef.PlanParams.NodePlanParams[""][""] = &NodePlanParam{
