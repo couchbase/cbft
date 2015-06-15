@@ -17,6 +17,9 @@ import (
 	"sync"
 )
 
+// A MsgRing wraps an io.Writer, and remembers a ring of previous
+// writes to the io.Writer.  It is concurrent safe and is useful, for
+// example, for remembering recent log messages.
 type MsgRing struct {
 	m     sync.Mutex
 	inner io.Writer
@@ -24,6 +27,7 @@ type MsgRing struct {
 	Msgs  [][]byte `json:"msgs"`
 }
 
+// NewMsgRing returns a MsgRing of a given ringSize.
 func NewMsgRing(inner io.Writer, ringSize int) (*MsgRing, error) {
 	if inner == nil {
 		return nil, fmt.Errorf("msg_ring: nil inner io.Writer")
@@ -53,11 +57,11 @@ func (m *MsgRing) Write(p []byte) (n int, err error) {
 	return m.inner.Write(p)
 }
 
+// Retrieves the recent writes to the MsgRing.
 func (m *MsgRing) Messages() [][]byte {
 	rv := make([][]byte, 0, len(m.Msgs))
 
 	m.m.Lock()
-	defer m.m.Unlock()
 
 	n := len(m.Msgs)
 	i := 0
@@ -72,5 +76,8 @@ func (m *MsgRing) Messages() [][]byte {
 		}
 		i += 1
 	}
+
+	m.m.Unlock()
+
 	return rv
 }
