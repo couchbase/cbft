@@ -15,12 +15,19 @@ import (
 	"io"
 )
 
-// A DestForwarder forwards method calls on it to the Dest returned by
-// the DestProvider.
+// A DestForwarder implements the Dest interface by forwarding method
+// calls to the Dest returned by a DestProvider.
+//
+// It is useful for pindex backend implementations that have their own
+// level-of-indirection features.  One example would be pindex
+// backends that track a separate batch per partition (ex: see the
+// bleve pindex backend).
 type DestForwarder struct {
 	DestProvider DestProvider
 }
 
+// A DestProvider returns the Dest to use for different kinds of
+// operations and is used in conjunction with a DestForwarder.
 type DestProvider interface {
 	Dest(partition string) (Dest, error)
 
