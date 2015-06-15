@@ -23,8 +23,8 @@ import (
 	"github.com/blevesearch/bleve/index/store"
 )
 
-var httpPost = http.Post
-var httpGet = http.Get
+var httpPost = http.Post // Overridable for unit-testability.
+var httpGet = http.Get   // Overridable for unit-testability.
 
 var indexClientUnimplementedErr = errors.New("unimplemented")
 
