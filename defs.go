@@ -156,20 +156,27 @@ type PlanPIndexNode struct {
 	Priority int  `json:"priority"` // Lower is higher priority, 0 is highest.
 }
 
+// PlanPIndexNodeCanRead returns true if PlanPIndexNode.CanRead is
+// true; it's useful as a filter arg for Manager.CoveringPIndexes().
 func PlanPIndexNodeCanRead(p *PlanPIndexNode) bool {
 	return p != nil && p.CanRead
 }
 
+// PlanPIndexNodeCanWrite returns true if PlanPIndexNode.CanWrite is
+// true; it's useful as a filter arg for Manager.CoveringPIndexes().
 func PlanPIndexNodeCanWrite(p *PlanPIndexNode) bool {
 	return p != nil && p.CanWrite
 }
 
+// PlanPIndexNodeOk always returns true; it's useful as a filter arg
+// for Manager.CoveringPIndexes().
 func PlanPIndexNodeOk(p *PlanPIndexNode) bool {
 	return true
 }
 
 // ------------------------------------------------------------------------
 
+// INDEX_DEFS_KEY is the key used for Cfg access.
 const INDEX_DEFS_KEY = "indexDefs"
 
 // Returns an intiialized IndexDefs.
@@ -235,9 +242,9 @@ func GetNodePlanParam(nodePlanParams map[string]map[string]*NodePlanParam,
 
 // ------------------------------------------------------------------------
 
-const NODE_DEFS_KEY = "nodeDefs"
-const NODE_DEFS_KNOWN = "known"
-const NODE_DEFS_WANTED = "wanted"
+const NODE_DEFS_KEY = "nodeDefs"  // NODE_DEFS_KEY is used for Cfg access.
+const NODE_DEFS_KNOWN = "known"   // NODE_DEFS_KNOWN is used for Cfg access.
+const NODE_DEFS_WANTED = "wanted" // NODE_DEFS_WANTED is used for Cfg access.
 
 // Returns an initialized NodeDefs.
 func NewNodeDefs(version string) *NodeDefs {
@@ -248,6 +255,7 @@ func NewNodeDefs(version string) *NodeDefs {
 	}
 }
 
+// CfgNodeDefsKey returns the Cfg access key for a NodeDef kind.
 func CfgNodeDefsKey(kind string) string {
 	return NODE_DEFS_KEY + "-" + kind
 }
@@ -281,6 +289,7 @@ func CfgSetNodeDefs(cfg Cfg, kind string, nodeDefs *NodeDefs,
 
 // ------------------------------------------------------------------------
 
+// PLAN_PINDEXES_KEY is used for Cfg access.
 const PLAN_PINDEXES_KEY = "planPIndexes"
 
 // Returns an initialized PlanPIndexes.
