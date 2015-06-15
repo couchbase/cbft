@@ -96,7 +96,8 @@ type BleveQueryParams struct {
 	Query       *bleve.SearchRequest `json:"query"`
 }
 
-func NewBleveDest(path string, bindex bleve.Index, restart func()) *BleveDest {
+func NewBleveDest(path string, bindex bleve.Index,
+	restart func()) *BleveDest {
 	return &BleveDest{
 		path:       path,
 		restart:    restart,
@@ -250,8 +251,8 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 	err := json.Unmarshal(req, &bleveQueryParams)
 	if err != nil {
-		return fmt.Errorf("bleve: QueryBlevePIndexImpl parsing bleveQueryParams,"+
-			" req: %s, err: %v", req, err)
+		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+			" parsing bleveQueryParams, req: %s, err: %v", req, err)
 	}
 
 	err = bleveQueryParams.Query.Query.Validate()
@@ -687,11 +688,13 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 	return nil
 }
 
-func (t *BleveDestPartition) Rollback(partition string, rollbackSeq uint64) error {
+func (t *BleveDestPartition) Rollback(partition string,
+	rollbackSeq uint64) error {
 	return t.bdest.Rollback(partition, rollbackSeq)
 }
 
-func (t *BleveDestPartition) ConsistencyWait(partition, partitionUUID string,
+func (t *BleveDestPartition) ConsistencyWait(
+	partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
@@ -699,12 +702,14 @@ func (t *BleveDestPartition) ConsistencyWait(partition, partitionUUID string,
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *BleveDestPartition) Count(pindex *PIndex, cancelCh <-chan bool) (
+func (t *BleveDestPartition) Count(pindex *PIndex,
+	cancelCh <-chan bool) (
 	uint64, error) {
 	return t.bdest.Count(pindex, cancelCh)
 }
 
-func (t *BleveDestPartition) Query(pindex *PIndex, req []byte, res io.Writer,
+func (t *BleveDestPartition) Query(pindex *PIndex,
+	req []byte, res io.Writer,
 	cancelCh <-chan bool) error {
 	return t.bdest.Query(pindex, req, res, cancelCh)
 }
