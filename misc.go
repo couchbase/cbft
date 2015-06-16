@@ -61,6 +61,8 @@ func ErrorToString(e error) string {
 
 // Compares two dotted versioning strings, like "1.0.1" and "1.2.3".
 // Returns true when x >= y.
+//
+// TODO: Need to handle non-numeric parts?
 func VersionGTE(x, y string) bool {
 	xa := strings.Split(x, ".")
 	ya := strings.Split(y, ".")
