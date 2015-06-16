@@ -22,6 +22,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// CreateIndexHandler is a REST handler that processes an index
+// creation request.
 type CreateIndexHandler struct {
 	mgr *Manager
 }
@@ -172,7 +174,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	if sourceName == "" {
 		// NOTE: Some sourceTypes (like "nil") don't care if sourceName is "".
 		if sourceType == "couchbase" {
-			sourceName = indexName // TODO: Revisit default of sourceName as indexName.
+			// TODO: Revisit default sourceName as indexName.
+			sourceName = indexName
 		}
 	}
 
@@ -211,7 +214,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	mustEncode(w, struct { // TODO: Should return created instead of 200 HTTP code?
+	mustEncode(w, struct { // TODO: Should return created vs 200 HTTP code?
 		Status string `json:"status"`
 	}{Status: "ok"})
 }

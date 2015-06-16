@@ -28,16 +28,25 @@ import (
 
 var startTime = time.Now()
 
+// RESTMeta represents the metadata of a REST API endpoint and is used
+// for auto-generated REST API documentation.
 type RESTMeta struct {
 	Path   string
 	Method string
 	Opts   map[string]string
 }
 
+// RESTOpts interface may be optionally implemented by REST API
+// handlers to provide even more information for auto-generated REST
+// API documentation.
 type RESTOpts interface {
 	RESTOpts(map[string]string)
 }
 
+// NewManagerRESTRouter creates a mux.Router initialized with the REST
+// API and web UI routes.  See also InitStaticFileRouter and
+// InitManagerRESTRouter if you need finer control of the router
+// initialization.
 func NewManagerRESTRouter(versionMain string, mgr *Manager,
 	staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
@@ -58,6 +67,8 @@ func NewManagerRESTRouter(versionMain string, mgr *Manager,
 		staticDir, staticETag, mr)
 }
 
+// InitManagerRESTRouter initializes a mux.Router with REST API
+// routes.
 func InitManagerRESTRouter(r *mux.Router, versionMain string,
 	mgr *Manager, staticDir, staticETag string, mr *MsgRing) (
 	*mux.Router, map[string]RESTMeta, error) {
@@ -332,6 +343,8 @@ func InitManagerRESTRouter(r *mux.Router, versionMain string,
 	return r, meta, nil
 }
 
+// PIndexTypesInitRouter initializes a mux.Router with the REST API
+// routes provided by registered pindex types.
 func PIndexTypesInitRouter(r *mux.Router, phase string) {
 	for _, t := range PIndexImplTypes {
 		if t.InitRouter != nil {
@@ -344,6 +357,9 @@ func muxVariableLookup(req *http.Request, name string) string {
 	return mux.Vars(req)[name]
 }
 
+// --------------------------------------------------------
+
+// RuntimeGetHandler is a REST handler for runtime GET endpoint.
 type RuntimeGetHandler struct {
 	versionMain string
 	mgr         *Manager

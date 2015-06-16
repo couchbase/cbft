@@ -23,6 +23,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// DiagHandler represents a part of the DiagGetHandler response.
+// Different modules can provide their parts of a DiagGetHandler
+// response via their own DiagHandler's.
+type DiagHandler struct {
+	Name        string
+	Handler     http.Handler
+	HandlerFunc http.HandlerFunc
+}
+
+// DiagGetHandler is a REST handler that retrieves diagnostic
+// information for a node.
 type DiagGetHandler struct {
 	versionMain string
 	mgr         *Manager
@@ -32,12 +43,6 @@ type DiagGetHandler struct {
 func NewDiagGetHandler(versionMain string,
 	mgr *Manager, mr *MsgRing) *DiagGetHandler {
 	return &DiagGetHandler{versionMain: versionMain, mgr: mgr, mr: mr}
-}
-
-type DiagHandler struct {
-	Name        string
-	Handler     http.Handler
-	HandlerFunc http.HandlerFunc
 }
 
 func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -130,6 +135,8 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// StatsHandler is a REST handler that provides stats/metrics for a
+// node.
 type StatsHandler struct {
 	mgr *Manager
 }
@@ -211,6 +218,8 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// ManagerKickHandler is a REST handler that processes a request to
+// kick a manager.
 type ManagerKickHandler struct {
 	mgr *Manager
 }
@@ -228,6 +237,8 @@ func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 // ---------------------------------------------------
 
+// CfgGetHandler is a REST handler that retrieves the contents of the
+// Cfg system.
 type CfgGetHandler struct {
 	mgr *Manager
 }
@@ -280,6 +291,9 @@ func (h *CfgGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// CfgRefreshHandler is a REST handler that processes a request for
+// the manager/node to refresh its cached snapshot of the Cfg system
+// contents.
 type CfgRefreshHandler struct {
 	mgr *Manager
 }

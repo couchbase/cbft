@@ -15,6 +15,7 @@ import (
 	"bytes"
 )
 
+// A ScanCursor represents a scan of a resultset.
 type ScanCursor interface {
 	Done() bool
 	Key() []byte

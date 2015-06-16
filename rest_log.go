@@ -19,6 +19,7 @@ import (
 // TODO: Need to give the entire cbft codebase a scrub of its log
 // messages and fmt.Errorf()'s.
 
+// LogGetHandler is a REST handler that retrieves recent log messages.
 type LogGetHandler struct {
 	mgr *Manager
 	mr  *MsgRing

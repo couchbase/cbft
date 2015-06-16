@@ -13,6 +13,8 @@ import (
 	"net/http"
 )
 
+// ManagerMetaHandler is a REST handler that returns metadata about a
+// manager/node.
 type ManagerMetaHandler struct {
 	mgr  *Manager
 	meta map[string]RESTMeta
@@ -23,14 +25,20 @@ func NewManagerMetaHandler(mgr *Manager,
 	return &ManagerMetaHandler{mgr: mgr, meta: meta}
 }
 
+// MetaDesc represents a part of the JSON of a ManagerMetaHandler REST
+// response.
 type MetaDesc struct {
 	Description     string            `json:"description"`
 	StartSample     interface{}       `json:"startSample"`
 	StartSampleDocs map[string]string `json:"startSampleDocs"`
 }
 
+// MetaDescSource represents the source-type/feed-type parts of the
+// JSON of a ManagerMetaHandler REST response.
 type MetaDescSource MetaDesc
 
+// MetaDescSource represents the index-type parts of
+// the JSON of a ManagerMetaHandler REST response.
 type MetaDescIndex struct {
 	MetaDesc
 

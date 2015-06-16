@@ -18,6 +18,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// DeleteIndexHandler is a REST handler that processes an index
+// deletion request.
 type DeleteIndexHandler struct {
 	mgr *Manager
 }

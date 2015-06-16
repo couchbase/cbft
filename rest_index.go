@@ -32,6 +32,7 @@ func pindexNameLookup(req *http.Request) string {
 
 // ------------------------------------------------------------------
 
+// ListIndexHandler is a REST handler for list indexes.
 type ListIndexHandler struct {
 	mgr *Manager
 }
@@ -59,6 +60,8 @@ func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// GetIndexHandler is a REST handler for retrieving an index
+// definition.
 type GetIndexHandler struct {
 	mgr *Manager
 }
@@ -129,6 +132,8 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// CountHandler is a REST handler for counting documents/entries in an
+// index.
 type CountHandler struct {
 	mgr *Manager
 }
@@ -177,6 +182,7 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// QueryHandler is a REST handler for querying an index.
 type QueryHandler struct {
 	mgr *Manager
 }
@@ -256,6 +262,8 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// IndexControlHandler is a REST handler for processing admin control
+// requests on an index.
 type IndexControlHandler struct {
 	mgr        *Manager
 	control    string
@@ -316,6 +324,7 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 
 // ------------------------------------------------------------------
 
+// ListPIndexHandler is a REST handler for listing pindexes.
 type ListPIndexHandler struct {
 	mgr *Manager
 }
@@ -339,6 +348,8 @@ func (h *ListPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 
 // ---------------------------------------------------
 
+// GetPIndexHandler is a REST handler for retrieving information on a
+// pindex.
 type GetPIndexHandler struct {
 	mgr *Manager
 }
@@ -372,6 +383,8 @@ func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // ---------------------------------------------------
 
+// CountPIndexHandler is a REST handler for counting the
+// documents/entries in a pindex.
 type CountPIndexHandler struct {
 	mgr *Manager
 }
@@ -436,6 +449,7 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 // ---------------------------------------------------
 
+// QueryPIndexHandler is a REST handler for querying a pindex.
 type QueryPIndexHandler struct {
 	mgr *Manager
 }
