@@ -44,25 +44,33 @@ Programmatically, the POST body for REST API ```bleve``` queries would
 look similar to the following example JSON:
 
     {
-      "timeout": 0,
-      "consistency": {
-        "level": "",
-        "vectors": {}
+      "ctl": {
+        "timeout": 0,
+        "consistency": {
+          "level": "",
+          "vectors": {}
+        },
       },
-      "query": ...
+      "query": {
+        "boost": 1.0,
+        "query": "your query string here"
+      }
     }
 
 There are several common fields:
 
-- ```timeout``` - integer, timeout in milliseconds, 0 for no timeout.
+- ```ctl``` - an optional JSON sub-object that contains generic query
+  request control information, such as ```timeout``` and
+  ```consistency```.
 
-- ```consistency``` - a JSON sub-object to ensure that the index has
-  reached a consistency level required by the application, where the
-  index has incorporated enough required data from the data source of
-  the index.  See below in this document for more information.
+- ```timeout``` - an optional integer in the ```ctl``` JSON
+  sub-object, timeout in milliseconds, 0 for no timeout.
 
-- ```query``` - a JSON sub-object or string whose interpretation
-  depends on the index type of your index.
+- ```consistency``` - an optional JSON sub-object in the ```ctl```
+  JSON sub-object to ensure that the index has reached a consistency
+  level required by the application, where the index has incorporated
+  enough required data from the data source of the index.  See below
+  in this document for more information.
 
 # Index types and queries
 
@@ -75,23 +83,49 @@ syntax rules.
 
 See: [https://github.com/blevesearch/bleve/wiki/Query%20String%20Query](https://github.com/blevesearch/bleve/wiki/Query%20String%20Query)
 
-TBD - add worked examples of queries and their resuling JSON.
+An example JSON for querying the ```bleve``` index type:
 
     {
-      "timeout": 0,
-      "consistency": {
-        "level": "",
-        "vectors": {}
+      "ctl": {
+        "timeout": 10000,    // Optional timeout, in milliseconds.
+        "consistency": {     // Optionally wait for index consistency.
+          "level": "",       // "" means wait that a stale index is ok to query.
+                             // "at_plus" means index must incorporate
+                             // the latest mutations up to the following optional vectors.
+          "vectors": {
+            "yourIndexName": { // This JSON map is keyed by strings of
+                               // "partitionId" (vbucketId) or by
+                               // "partitionId/partitionUUID" (vbucketId/vbucketUUID).
+                               // Values are data-source partition (vbucket)
+                               // sequence numbers that must incorporated
+                               // into the index before the query can proceed.
+              "0": 123,        // This example means the index partition for
+                               // partitionId "0" (or vbucketId 0) must
+                               // reach at least sequence number 123 before
+                               // the query can proceeed (or timeout).
+              "1": 444,        // The index partition for partitionId "1" (or vbucketId 1)
+                               // must reach at least sequence number 444
+                               // before the query can proceed (or timeout).
+              "2/a0b1c2": 555  // The index partition for partitionId "2" (or vbucketId 2)
+                               // which must have partition (or vbucket) UUID of "a0b1c2"
+                               // must reach at least sequence nubmer 555
+                               // before the query can proceed (or timeout).
+            }
+          }
+        },
       },
-      "query": {
-        "query": null,
-        "size": 0,
-        "from": 0,
-        "highlight": null,
-        "fields": null,
-        "facets": null,
-        "explain": false
-      }
+      // The remaining top-level fields come from bleve.SearchRequest.
+      "query": : {
+        "boost": 1.0,
+        "query": "your bleve query string here"
+      },
+      "size": 10,         // Limit the number of results that are returned.
+      "from": 0,          // Offset position of the first result returned,
+                          // starting from 0, used for resultset paging.
+      "highlight": null,  // See bleve's Highlight API for result snippet highlighting.
+      "fields": [ "*" ],  // Restricts the fields that bleve considers during the search.
+      "facets": null,     // For bleve's faceted search features.
+      "explain": false    // When true, bleve will provide scoring explaination.
     }
 
 ### Scoring

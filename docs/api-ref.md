@@ -394,17 +394,30 @@ For index type ```bleve```, an example POST body:
       "ctl": {
         "timeout": 10000,
         "consistency": {
-          "level": "",
-          "vectors": {}
+          "level": "at_plus",
+          "vectors": {
+            "yourIndexName": {
+              "0": 123,
+              "1/a0b1c2": 234
+            }
+          }
         }
       },
-      "query": null,
-      "size": 0,
+      "query": {
+        "query": "a sample query",
+        "boost": 1
+      },
+      "size": 10,
       "from": 0,
-      "highlight": null,
-      "fields": null,
+      "highlight": {
+        "style": null,
+        "fields": null
+      },
+      "fields": [
+        "*"
+      ],
       "facets": null,
-      "explain": false
+      "explain": true
     }
 
 ---
