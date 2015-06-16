@@ -73,27 +73,41 @@ func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
 
 func QueryAlias(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	var bleveQueryParams BleveQueryParams
-	err := json.Unmarshal(req, &bleveQueryParams)
-	if err != nil {
-		return fmt.Errorf("alias: QueryAlias parsing bleveQueryParams,"+
-			" err: %v", err)
+	queryCtlParams := QueryCtlParams{
+		Ctl: QueryCtl{
+			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+		},
 	}
 
-	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
+	err := json.Unmarshal(req, &queryCtlParams)
+	if err != nil {
+		return fmt.Errorf("alias: QueryAlias"+
+			" parsing queryCtlParams, req: %s, err: %v", req, err)
+	}
 
-	alias, err := bleveIndexAliasForUserIndexAlias(mgr, indexName, indexUUID,
-		true, bleveQueryParams.Consistency, cancelCh)
+	searchRequest := &bleve.SearchRequest{}
+
+	err = json.Unmarshal(req, searchRequest)
+	if err != nil {
+		return fmt.Errorf("alias: QueryAlias"+
+			" parsing searchRequest, req: %s, err: %v", req, err)
+	}
+
+	err = searchRequest.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	err = bleveQueryParams.Query.Query.Validate()
+	cancelCh := TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
+
+	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
+		indexName, indexUUID, true,
+		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
 
-	searchResponse, err := alias.Search(bleveQueryParams.Query)
+	searchResponse, err := alias.Search(searchRequest)
 	if err != nil {
 		return err
 	}

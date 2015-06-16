@@ -89,16 +89,27 @@ func (r *IndexClient) DocCount() (uint64, error) {
 
 func (r *IndexClient) Search(req *bleve.SearchRequest) (
 	*bleve.SearchResult, error) {
+	if req == nil {
+		return nil, fmt.Errorf("remote: no req provided")
+	}
+
 	if r.QueryURL == "" {
 		return nil, fmt.Errorf("remote: no QueryURL provided")
 	}
 
-	bleveQueryParams := &BleveQueryParams{
-		Query:       req,
-		Consistency: r.Consistency,
+	queryCtlParams := &QueryCtlParams{
+		Ctl: QueryCtl{
+			Consistency: r.Consistency,
+		},
 	}
 
-	buf, err := json.Marshal(bleveQueryParams)
+	buf, err := json.Marshal(struct {
+		*QueryCtlParams
+		*bleve.SearchRequest
+	}{
+		queryCtlParams,
+		req,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -40,8 +40,6 @@ import (
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
 
-const BLEVE_QUERY_DEFAULT_TIMEOUT_MS = int64(10000)
-
 type BleveParams struct {
 	Mapping bleve.IndexMapping     `json:"mapping"`
 	Store   map[string]interface{} `json:"store"`
@@ -90,12 +88,6 @@ type BleveDestPartition struct {
 	cwrQueue CwrQueue
 }
 
-type BleveQueryParams struct {
-	Timeout     int64                `json:"timeout"`
-	Consistency *ConsistencyParams   `json:"consistency"`
-	Query       *bleve.SearchRequest `json:"query"`
-}
-
 func NewBleveDest(path string, bindex bleve.Index,
 	restart func()) *BleveDest {
 	return &BleveDest{
@@ -128,12 +120,19 @@ func init() {
 		Description: "general/full-text (bleve)" +
 			" - a full-text index powered by the bleve engine",
 		StartSample: NewBleveParams(),
-		QuerySample: &BleveQueryParams{
-			Timeout: BLEVE_QUERY_DEFAULT_TIMEOUT_MS,
-			Consistency: &ConsistencyParams{
-				Vectors: map[string]ConsistencyVector{},
+		QuerySample: &struct {
+			*QueryCtlParams
+			*bleve.SearchRequest
+		}{
+			&QueryCtlParams{
+				Ctl: QueryCtl{
+					Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+					Consistency: &ConsistencyParams{
+						Vectors: map[string]ConsistencyVector{},
+					},
+				},
 			},
-			Query: &bleve.SearchRequest{},
+			&bleve.SearchRequest{},
 		},
 		QueryHelp:  bleveQueryHelp,
 		InitRouter: BlevePIndexImplInitRouter,
@@ -245,25 +244,35 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 
 func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	bleveQueryParams := BleveQueryParams{
-		Timeout: BLEVE_QUERY_DEFAULT_TIMEOUT_MS,
+	queryCtlParams := QueryCtlParams{
+		Ctl: QueryCtl{
+			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+		},
 	}
 
-	err := json.Unmarshal(req, &bleveQueryParams)
+	err := json.Unmarshal(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
-			" parsing bleveQueryParams, req: %s, err: %v", req, err)
+			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
 
-	err = bleveQueryParams.Query.Query.Validate()
+	searchRequest := &bleve.SearchRequest{}
+
+	err = json.Unmarshal(req, searchRequest)
+	if err != nil {
+		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+			" parsing searchRequest, req: %s, err: %v", req, err)
+	}
+
+	err = searchRequest.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	cancelCh := TimeoutCancelChan(bleveQueryParams.Timeout)
+	cancelCh := TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
 
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
-		bleveQueryParams.Consistency, cancelCh)
+		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
@@ -273,7 +282,8 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 	var searchResult *bleve.SearchResult
 
 	go func() {
-		searchResult, err = alias.Search(bleveQueryParams.Query)
+		searchResult, err = alias.Search(searchRequest)
+
 		close(doneCh)
 	}()
 
@@ -465,25 +475,38 @@ func (t *BleveDest) Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error) 
 
 func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 	cancelCh <-chan bool) error {
-	var bleveQueryParams BleveQueryParams
-	err := json.Unmarshal(req, &bleveQueryParams)
+	queryCtlParams := QueryCtlParams{
+		Ctl: QueryCtl{
+			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+		},
+	}
+
+	err := json.Unmarshal(req, &queryCtlParams)
 	if err != nil {
-		return fmt.Errorf("bleve: BleveDest.Query parsing bleveQueryParams,"+
-			" req: %s, err: %v", req, err)
+		return fmt.Errorf("bleve: BleveDest.Query"+
+			" parsing queryCtlParams, req: %s, err: %v", req, err)
+	}
+
+	searchRequest := &bleve.SearchRequest{}
+
+	err = json.Unmarshal(req, searchRequest)
+	if err != nil {
+		return fmt.Errorf("bleve: BleveDest.Query"+
+			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
 
 	err = ConsistencyWaitPIndex(pindex, t,
-		bleveQueryParams.Consistency, cancelCh)
+		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
 
-	err = bleveQueryParams.Query.Query.Validate()
+	err = searchRequest.Query.Validate()
 	if err != nil {
 		return err
 	}
 
-	searchResponse, err := t.bindex.Search(bleveQueryParams.Query)
+	searchResponse, err := t.bindex.Search(searchRequest)
 	if err != nil {
 		return err
 	}

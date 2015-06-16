@@ -150,6 +150,25 @@ func PIndexImplTypeForIndex(cfg Cfg, indexName string) (
 
 // ------------------------------------------------
 
+// QueryCtlParams defines the JSON that includes the "ctl" part of a
+// query request.  These "ctl" query request parameters are
+// independent of any specific pindex type.
+type QueryCtlParams struct {
+	Ctl QueryCtl `json:"ctl"`
+}
+
+// QueryCtl defines the JSON parameters that control query execution
+// and which are independent of any specific pindex type.
+type QueryCtl struct {
+	Timeout     int64              `json:"timeout"`
+	Consistency *ConsistencyParams `json:"consistency"`
+}
+
+// QUERY_CTL_DEFAULT_TIMEOUT_MS is the default query timeout.
+const QUERY_CTL_DEFAULT_TIMEOUT_MS = int64(10000)
+
+// ------------------------------------------------
+
 // PINDEX_STORE_MAX_ERRORS is the max number of errors that a
 // PIndexStoreStats will track.
 var PINDEX_STORE_MAX_ERRORS = 40

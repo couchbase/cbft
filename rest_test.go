@@ -632,7 +632,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"query":{"query":"foo"}}}`),
+			Body:   []byte(`{"query":{"query":"foo"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -947,7 +947,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"bar"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -958,7 +958,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"baz"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"baz"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -970,7 +970,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -993,7 +993,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/pindex/not-a-pindex/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`no pindex`: true,
@@ -1064,7 +1064,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				if pindex == nil {
 					t.Errorf("expected to be a pindex")
 				}
-				body := []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`)
+				body := []byte(`{"size":10,"query":{"query":"wow"}}`)
 				req := &http.Request{
 					Method: "POST",
 					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
@@ -1100,7 +1100,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				if pindex == nil {
 					t.Errorf("expected to be a pindex")
 				}
-				body := []byte(`{"query":{"size":10,"query":{"query":"wow"`)
+				body := []byte(`{"size":10,"query":{"query":"wow"`)
 				req := &http.Request{
 					Method: "POST",
 					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
@@ -1134,7 +1134,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				if pindex == nil {
 					t.Errorf("expected to be a pindex")
 				}
-				body := []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`)
+				body := []byte(`{"size":10,"query":{"query":"wow"}}`)
 				req := &http.Request{
 					Method: "POST",
 					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
@@ -1163,7 +1163,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0":1}}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"},"ctl":{"consistency":{"level":"at_plus","vectors":{"idx0":{"0":1}}}}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -1176,7 +1176,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"this is not your level","vectors":{"idx0":{"0":1}}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"},"ctl":{"consistency":{"level":"this is not your level","vectors":{"idx0":{"0":1}}}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`err`: true,
@@ -1187,7 +1187,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":["array","not","legal"]}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"},"ctl":{"consistency":{"level":"at_plus","vectors":["array","not","legal"]}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`err`: true,
@@ -1198,7 +1198,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0/badPartitionUUID":20}}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"},"ctl":{"consistency":{"level":"at_plus","vectors":{"idx0":{"0/badPartitionUUID":20}}}}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`err`: true,
@@ -1209,7 +1209,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}},"consistency":{"level":"","vectors":{"idx0":{"0":1000}}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"},"ctl":{"consistency":{"level":"","vectors":{"idx0":{"0":1000}}}}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`hello`: true,
@@ -1221,7 +1221,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Before: func() {
 				doneCh = make(chan *httptest.ResponseRecorder)
 				go func() {
-					body := []byte(`{"query":{"size":10,"query":{"query":"boof"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0":11}}}}`)
+					body := []byte(`{"size":10,"query":{"query":"boof"},"ctl":{"consistency":{"level":"at_plus","vectors":{"idx0":{"0":11}}}}}`)
 					req := &http.Request{
 						Method: "POST",
 						URL:    &url.URL{Path: "/api/index/idx0/query"},
@@ -1369,7 +1369,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aa0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"bar"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -1380,7 +1380,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aa0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"baz"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"baz"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -1392,7 +1392,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aa0/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"wow"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"wow"}}`),
 			Status: 200,
 			ResponseMatch: map[string]bool{
 				`"id":"hello"`:   true,
@@ -1434,7 +1434,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aaBadTarget/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"bar"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"bar"}}`),
 			Status: 400,
 			ResponseMatch: map[string]bool{
 				`err`: true,
@@ -1637,7 +1637,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 			Before: func() {
 				doneCh = make(chan *httptest.ResponseRecorder)
 				go func() {
-					body := []byte(`{"query":{"size":10,"query":{"query":"boof"}},"consistency":{"level":"at_plus","vectors":{"idx0":{"0":11}}}}`)
+					body := []byte(`{"size":10,"query":{"query":"boof"},"ctl":{"consistency":{"level":"at_plus","vectors":{"idx0":{"0":11}}}}}`)
 					req := &http.Request{
 						Method: "POST",
 						URL:    &url.URL{Path: "/api/index/idx0/query"},
@@ -1897,7 +1897,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Path:   "/api/index/myIdx/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"no-hits"}}`),
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -1971,7 +1971,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Path:   "/api/index/myAlias/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"no-hits"}}`),
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -2142,7 +2142,7 @@ func TestCreateIndexAddNode(t *testing.T) {
 			Path:   "/api/index/myIdx/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"no-hits"}}`),
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
@@ -2223,7 +2223,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 			Path:   "/api/index/myIdx/query",
 			Method: "POST",
 			Params: nil,
-			Body:   []byte(`{"query":{"size":10,"query":{"query":"no-hits"}}}`),
+			Body:   []byte(`{"size":10,"query":{"query":"no-hits"}}`),
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`"hits":[],"total_hits":0`: true,
