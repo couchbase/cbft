@@ -14,13 +14,17 @@ package cbft
 const WORK_NOOP = ""
 const WORK_KICK = "kick"
 
+// A workReq represents an asynchronous request for work or a task,
+// where results can be awaited upon via the resCh.
 type workReq struct {
-	op    string
-	msg   string
-	obj   interface{}
-	resCh chan error
+	op    string      // The operation.
+	msg   string      // Some simple msg as part of the request.
+	obj   interface{} // Any extra params for the request.
+	resCh chan error  // Response/result channel.
 }
 
+// syncWorkReq makes a workReq request and synchronously awaits for a
+// resCh response.
 func syncWorkReq(ch chan *workReq, op, msg string, obj interface{}) error {
 	resCh := make(chan error)
 	ch <- &workReq{op: op, msg: msg, obj: obj, resCh: resCh}
