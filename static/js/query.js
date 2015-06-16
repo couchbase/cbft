@@ -5,18 +5,16 @@ var lastQueryRes = null;
 function prepQueryRequest(scope) {
     return {
         "q": scope.query,
+        "indexName": scope.indexName,
+        "size": scope.resultsPerPage,
+        "from": (scope.page-1) * scope.resultsPerPage,
+        "explain": true,
+        "highlight": {},
         "query": {
-            "indexName": scope.indexName,
-            "size": scope.resultsPerPage,
-            "from": (scope.page-1) * scope.resultsPerPage,
-            "explain": true,
-            "highlight": {},
-            "query": {
-                "boost": 1.0,
-                "query": scope.query,
-            },
-            "fields": ["*"],
-        }
+            "boost": 1.0,
+            "query": scope.query,
+        },
+        "fields": ["*"],
     }
 }
 
@@ -74,11 +72,14 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.numPages = 0;
 
         var req = prepQueryRequest($scope);
-        req.consistency = {
-            "level": $scope.consistencyLevel,
-            "vectors": JSON.parse($scope.consistencyVectors || "null"),
-        }
-        req.timeout = parseInt($scope.timeout) || 0
+
+        req.ctl = {
+            "consistency": {
+                "level": $scope.consistencyLevel,
+                "vectors": JSON.parse($scope.consistencyVectors || "null"),
+            },
+            "timeout": parseInt($scope.timeout) || 0
+        };
 
         $http.post('/api/index/' + $scope.indexName + '/query', req).
         success(function(data) {
