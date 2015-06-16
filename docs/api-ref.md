@@ -384,7 +384,7 @@ Queries an index.
 
 The name of the index to be queried.
 
-**version introduced**: 0.0.1
+**version introduced**: 1.0.0
 
 The request's POST body depends on the index type:
 
@@ -727,7 +727,7 @@ GET `/api/pindex/{pindexName}/count`
 
 POST `/api/pindex/{pindexName}/query`
 
-**version introduced**: 0.0.1
+**version introduced**: 1.0.0
 
 ---
 
