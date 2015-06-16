@@ -16,7 +16,7 @@ import (
 )
 
 func TestSyncWorkReq(t *testing.T) {
-	ch := make(chan *WorkReq)
+	ch := make(chan *workReq)
 	go func() {
 		w, ok := <-ch
 		if !ok || w == nil {
@@ -32,7 +32,7 @@ func TestSyncWorkReq(t *testing.T) {
 		}
 	}()
 
-	err := SyncWorkReq(ch, "op", "msg", nil)
+	err := syncWorkReq(ch, "op", "msg", nil)
 	if err != nil {
 		t.Errorf("expect nil err")
 	}

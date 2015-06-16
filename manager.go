@@ -60,8 +60,8 @@ type Manager struct {
 	m         sync.Mutex
 	feeds     map[string]Feed    // Key is Feed.Name().
 	pindexes  map[string]*PIndex // Key is PIndex.Name().
-	plannerCh chan *WorkReq      // Used to kick planner that there's more work.
-	janitorCh chan *WorkReq      // Used to kick janitor that there's more work.
+	plannerCh chan *workReq      // Used to kick planner that there's more work.
+	janitorCh chan *workReq      // Used to kick janitor that there's more work.
 	meh       ManagerEventHandlers
 
 	lastIndexDefs          *IndexDefs
@@ -144,8 +144,8 @@ func NewManager(version string, cfg Cfg, uuid string, tags []string,
 		server:    server,
 		feeds:     make(map[string]Feed),
 		pindexes:  make(map[string]*PIndex),
-		plannerCh: make(chan *WorkReq),
-		janitorCh: make(chan *WorkReq),
+		plannerCh: make(chan *workReq),
+		janitorCh: make(chan *workReq),
 		meh:       meh,
 		events:    list.New(),
 	}
@@ -409,13 +409,13 @@ func (mgr *Manager) Kick(msg string) {
 
 // ClosePIndex synchronously has the janitor close a pindex.
 func (mgr *Manager) ClosePIndex(pindex *PIndex) error {
-	return SyncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX,
+	return syncWorkReq(mgr.janitorCh, JANITOR_CLOSE_PINDEX,
 		"api-ClosePIndex", pindex)
 }
 
 // ClosePIndex synchronously has the janitor remove a pindex.
 func (mgr *Manager) RemovePIndex(pindex *PIndex) error {
-	return SyncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX,
+	return syncWorkReq(mgr.janitorCh, JANITOR_REMOVE_PINDEX,
 		"api-RemovePIndex", pindex)
 }
 

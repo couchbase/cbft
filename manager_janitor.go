@@ -30,7 +30,7 @@ func (mgr *Manager) JanitorNOOP(msg string) {
 	atomic.AddUint64(&mgr.stats.TotJanitorNOOP, 1)
 
 	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
-		SyncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
+		syncWorkReq(mgr.janitorCh, WORK_NOOP, msg, nil)
 	}
 }
 
@@ -39,7 +39,7 @@ func (mgr *Manager) JanitorKick(msg string) {
 	atomic.AddUint64(&mgr.stats.TotJanitorKick, 1)
 
 	if mgr.tagsMap == nil || (mgr.tagsMap["pindex"] && mgr.tagsMap["janitor"]) {
-		SyncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
+		syncWorkReq(mgr.janitorCh, WORK_KICK, msg, nil)
 	}
 }
 

@@ -646,7 +646,8 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
-	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
+	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000",
+		emptyDir, "some-datasource", meh)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}
@@ -655,11 +656,11 @@ func TestManagerStrangeWorkReqs(t *testing.T) {
 		"bleve", "foo", "", PlanParams{}, ""); err != nil {
 		t.Errorf("expected simple CreateIndex() to work")
 	}
-	if err := SyncWorkReq(m.plannerCh, "whoa-this-isn't-a-valid-op",
+	if err := syncWorkReq(m.plannerCh, "whoa-this-isn't-a-valid-op",
 		"test", nil); err == nil {
 		t.Errorf("expected error on weird work req to planner")
 	}
-	if err := SyncWorkReq(m.janitorCh, "whoa-this-isn't-a-valid-op",
+	if err := syncWorkReq(m.janitorCh, "whoa-this-isn't-a-valid-op",
 		"test", nil); err == nil {
 		t.Errorf("expected error on weird work req to janitor")
 	}
@@ -669,7 +670,8 @@ func TestManagerStartFeedByType(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "", emptyDir, "", nil)
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "",
+		emptyDir, "", nil)
 	err := m.startFeedByType("feedName", "indexName", "indexUUID",
 		"sourceType-is-unknown", "sourceName", "sourceUUID", "sourceParams", nil)
 	if err == nil {
@@ -681,7 +683,8 @@ func TestManagerStartPIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "", emptyDir, "", nil)
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "",
+		emptyDir, "", nil)
 	err := m.startPIndex(&PlanPIndex{IndexType: "unknown-index-type"})
 	if err == nil {
 		t.Errorf("expected err on unknown index type")
@@ -697,7 +700,8 @@ func TestManagerReStartPIndex(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	meh := &TestMEH{}
-	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "", emptyDir, "", meh)
+	m := NewManager(VERSION, nil, NewUUID(), nil, "", 1, "", "",
+		emptyDir, "", meh)
 
 	err := m.startPIndex(&PlanPIndex{Name: "p", IndexType: "bleve", IndexName: "i"})
 	if err != nil {
@@ -720,7 +724,8 @@ func testManagerSimpleFeed(t *testing.T,
 	defer os.RemoveAll(emptyDir)
 	cfg := NewCfgMem()
 	meh := &TestMEH{}
-	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
+	m := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000",
+		emptyDir, "some-datasource", meh)
 	if err := m.Start("wanted"); err != nil {
 		t.Errorf("expected Manager.Start() to work, err: %v", err)
 	}

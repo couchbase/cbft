@@ -31,7 +31,7 @@ func (mgr *Manager) PlannerNOOP(msg string) {
 	atomic.AddUint64(&mgr.stats.TotPlannerNOOP, 1)
 
 	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
-		SyncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
+		syncWorkReq(mgr.plannerCh, WORK_NOOP, msg, nil)
 	}
 }
 
@@ -40,7 +40,7 @@ func (mgr *Manager) PlannerKick(msg string) {
 	atomic.AddUint64(&mgr.stats.TotPlannerKick, 1)
 
 	if mgr.tagsMap == nil || mgr.tagsMap["planner"] {
-		SyncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
+		syncWorkReq(mgr.plannerCh, WORK_KICK, msg, nil)
 	}
 }
 

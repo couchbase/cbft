@@ -14,15 +14,15 @@ package cbft
 const WORK_NOOP = ""
 const WORK_KICK = "kick"
 
-type WorkReq struct {
+type workReq struct {
 	op    string
 	msg   string
 	obj   interface{}
 	resCh chan error
 }
 
-func SyncWorkReq(ch chan *WorkReq, op, msg string, obj interface{}) error {
+func syncWorkReq(ch chan *workReq, op, msg string, obj interface{}) error {
 	resCh := make(chan error)
-	ch <- &WorkReq{op: op, msg: msg, obj: obj, resCh: resCh}
+	ch <- &workReq{op: op, msg: msg, obj: obj, resCh: resCh}
 	return <-resCh
 }
