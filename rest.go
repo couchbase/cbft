@@ -136,7 +136,7 @@ func InitManagerRESTRouter(r *mux.Router, versionMain string,
 			map[string]string{
 				"_category":          "Indexing|Index querying",
 				"_about":             `Queries an index.`,
-				"version introduced": "1.0.0",
+				"version introduced": "0.2.0",
 			})
 	}
 
@@ -201,7 +201,7 @@ func InitManagerRESTRouter(r *mux.Router, versionMain string,
 			NewQueryPIndexHandler(mgr),
 			map[string]string{
 				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "1.0.0",
+				"version introduced": "0.2.0",
 			})
 	}
 
