@@ -70,3 +70,8 @@
 ul.nav-tabs {
     margin-bottom: 2em;
 }
+
+.list-custom span.selected {
+  background-color: lightgrey;
+  font-weight: bold;
+}
