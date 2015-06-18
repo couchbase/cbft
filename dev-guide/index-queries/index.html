@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../../img/favicon.ico">
 
-        <title>Index queries - cbft Technical Documentation (v0.1 DP)</title>
+        <title>Index queries - cbft Technical Documentation (v0.2 DP)</title>
 
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -39,7 +39,7 @@
             </button>
 
             <!-- Main title -->
-            <a class="navbar-brand" href="../..">cbft Technical Documentation (v0.1 DP)</a>
+            <a class="navbar-brand" href="../..">cbft Technical Documentation (v0.2 DP)</a>
         </div>
 
         <!-- Expanded navigation -->
@@ -217,28 +217,36 @@ the cbft node that received the original REST query request.</p>
 <p>Programmatically, the POST body for REST API <code>bleve</code> queries would
 look similar to the following example JSON:</p>
 <pre><code>{
-  "timeout": 0,
-  "consistency": {
-    "level": "",
-    "vectors": {}
+  "ctl": {
+    "timeout": 0,
+    "consistency": {
+      "level": "",
+      "vectors": {}
+    },
   },
-  "query": ...
+  "query": {
+    "boost": 1.0,
+    "query": "your query string here"
+  }
 }
 </code></pre>
 <p>There are several common fields:</p>
 <ul>
 <li>
-<p><code>timeout</code> - integer, timeout in milliseconds, 0 for no timeout.</p>
+<p><code>ctl</code> - an optional JSON sub-object that contains generic query
+  request control information, such as <code>timeout</code> and
+  <code>consistency</code>.</p>
 </li>
 <li>
-<p><code>consistency</code> - a JSON sub-object to ensure that the index has
-  reached a consistency level required by the application, where the
-  index has incorporated enough required data from the data source of
-  the index.  See below in this document for more information.</p>
+<p><code>timeout</code> - an optional integer in the <code>ctl</code> JSON
+  sub-object, timeout in milliseconds, 0 for no timeout.</p>
 </li>
 <li>
-<p><code>query</code> - a JSON sub-object or string whose interpretation
-  depends on the index type of your index.</p>
+<p><code>consistency</code> - an optional JSON sub-object in the <code>ctl</code>
+  JSON sub-object to ensure that the index has reached a consistency
+  level required by the application, where the index has incorporated
+  enough required data from the data source of the index.  See below
+  in this document for more information.</p>
 </li>
 </ul>
 <h1 id="index-types-and-queries">Index types and queries</h1>
@@ -248,22 +256,48 @@ use in cbft's web admin UI must follow bleve's full-text index <a href="https://
 string</a>
 syntax rules.</p>
 <p>See: <a href="https://github.com/blevesearch/bleve/wiki/Query%20String%20Query">https://github.com/blevesearch/bleve/wiki/Query%20String%20Query</a></p>
-<p>TBD - add worked examples of queries and their resuling JSON.</p>
+<p>An example JSON for querying the <code>bleve</code> index type:</p>
 <pre><code>{
-  "timeout": 0,
-  "consistency": {
-    "level": "",
-    "vectors": {}
+  "ctl": {
+    "timeout": 10000,    // Optional timeout, in milliseconds.
+    "consistency": {     // Optionally wait for index consistency.
+      "level": "",       // "" means wait that a stale index is ok to query.
+                         // "at_plus" means index must incorporate
+                         // the latest mutations up to the following optional vectors.
+      "vectors": {
+        "yourIndexName": { // This JSON map is keyed by strings of
+                           // "partitionId" (vbucketId) or by
+                           // "partitionId/partitionUUID" (vbucketId/vbucketUUID).
+                           // Values are data-source partition (vbucket)
+                           // sequence numbers that must incorporated
+                           // into the index before the query can proceed.
+          "0": 123,        // This example means the index partition for
+                           // partitionId "0" (or vbucketId 0) must
+                           // reach at least sequence number 123 before
+                           // the query can proceeed (or timeout).
+          "1": 444,        // The index partition for partitionId "1" (or vbucketId 1)
+                           // must reach at least sequence number 444
+                           // before the query can proceed (or timeout).
+          "2/a0b1c2": 555  // The index partition for partitionId "2" (or vbucketId 2)
+                           // which must have partition (or vbucket) UUID of "a0b1c2"
+                           // must reach at least sequence nubmer 555
+                           // before the query can proceed (or timeout).
+        }
+      }
+    },
   },
-  "query": {
-    "query": null,
-    "size": 0,
-    "from": 0,
-    "highlight": null,
-    "fields": null,
-    "facets": null,
-    "explain": false
-  }
+  // The remaining top-level fields come from bleve.SearchRequest.
+  "query": : {
+    "boost": 1.0,
+    "query": "your bleve query string here"
+  },
+  "size": 10,         // Limit the number of results that are returned.
+  "from": 0,          // Offset position of the first result returned,
+                      // starting from 0, used for resultset paging.
+  "highlight": null,  // See bleve's Highlight API for result snippet highlighting.
+  "fields": [ "*" ],  // Restricts the fields that bleve considers during the search.
+  "facets": null,     // For bleve's faceted search features.
+  "explain": false    // When true, bleve will provide scoring explaination.
 }
 </code></pre>
 <h3 id="scoring">Scoring</h3>

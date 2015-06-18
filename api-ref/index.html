@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
 
-        <title>API Reference - cbft Technical Documentation (v0.1 DP)</title>
+        <title>API Reference - cbft Technical Documentation (v0.2 DP)</title>
 
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -39,7 +39,7 @@
             </button>
 
             <!-- Main title -->
-            <a class="navbar-brand" href="..">cbft Technical Documentation (v0.1 DP)</a>
+            <a class="navbar-brand" href="..">cbft Technical Documentation (v0.2 DP)</a>
         </div>
 
         <!-- Expanded navigation -->
@@ -479,24 +479,57 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p>Queries an index.</p>
 <p><strong>param: indexName</strong>: required, string, URL path parameter</p>
 <p>The name of the index to be queried.</p>
-<p><strong>version introduced</strong>: 0.0.1</p>
+<p><strong>version introduced</strong>: 0.2.0</p>
 <p>The request's POST body depends on the index type:</p>
-<p>For index type <code>bleve</code>, an example POST body:</p>
+<p>For index type <code>bleve</code>:</p>
+<p>A simple bleve query POST body:</p>
 <pre><code>{
-  "timeout": 10000,
-  "consistency": {
-    "level": "",
-    "vectors": {}
+  "query": {
+    "query": "a sample query",
+    "boost": 1
+  },
+  "size": 10,
+  "from": 0,
+  "highlight": null,
+  "fields": null,
+  "facets": null,
+  "explain": false
+}
+</code></pre>
+<p>An example POST body using from/size for results paging,
+using ctl for a timeout and for "at_plus" consistency level.
+On consistency, the index must have incorporated at least mutation
+sequence-number 123 for partition (vbucket) 0 and mutation
+sequence-number 234 for partition (vbucket) 1 (where vbucket 1
+should have a vbucketUUID of a0b1c2):</p>
+<pre><code>{
+  "ctl": {
+    "timeout": 10000,
+    "consistency": {
+      "level": "at_plus",
+      "vectors": {
+        "customerIndex": {
+          "0": 123,
+          "1/a0b1c2": 234
+        }
+      }
+    }
   },
   "query": {
-    "query": null,
-    "size": 0,
-    "from": 0,
-    "highlight": null,
-    "fields": null,
-    "facets": null,
-    "explain": false
-  }
+    "query": "alice smith",
+    "boost": 1
+  },
+  "size": 10,
+  "from": 20,
+  "highlight": {
+    "style": null,
+    "fields": null
+  },
+  "fields": [
+    "*"
+  ],
+  "facets": null,
+  "explain": true
 }
 </code></pre>
 <hr />
@@ -662,7 +695,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
   "numCPU": 8,
   "os": "darwin",
   "versionData": "3.1.0",
-  "versionMain": "v0.1.0"
+  "versionMain": "v0.2.0"
 }
 </code></pre>
 <hr />
@@ -736,7 +769,7 @@ validated with the regular expression of <code>^[A-Za-z][0-9A-Za-z_\-]*$</code>.
 <p><strong>version introduced</strong>: 0.0.1</p>
 <hr />
 <p>POST <code>/api/pindex/{pindexName}/query</code></p>
-<p><strong>version introduced</strong>: 0.0.1</p>
+<p><strong>version introduced</strong>: 0.2.0</p>
 <hr />
 <p>Copyright (c) 2015 Couchbase, Inc.</p>
 </div>
