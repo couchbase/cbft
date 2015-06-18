@@ -1,4 +1,17 @@
-# third party licenses of cbft
+# third party components / licenses
+
+javascript/css components:
+- angular
+- angular-route
+- angular-treeview
+- bootstrap
+- bootstrap-theme
+- d3.v3
+- humanize
+- jquery
+- jsonpointer
+- prism
+- rickshaw
 
 -----------------------------------------
 github.com/blevesearch/bleve
