@@ -109,8 +109,6 @@ const bleveQueryHelp = `<a href="https://github.com/blevesearch/bleve/wiki/Query
      </a>`
 
 func init() {
-	sampleQuery := bleve.NewQueryStringQuery("a sample query")
-
 	RegisterPIndexImplType("bleve", &PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
 
@@ -121,36 +119,10 @@ func init() {
 
 		Description: "general/full-text (bleve)" +
 			" - a full-text index powered by the bleve engine",
-		StartSample: NewBleveParams(),
-		QuerySample: &struct {
-			*QueryCtlParams
-			*bleve.SearchRequest
-		}{
-			&QueryCtlParams{
-				Ctl: QueryCtl{
-					Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
-					Consistency: &ConsistencyParams{
-						Level: "at_plus",
-						Vectors: map[string]ConsistencyVector{
-							"yourIndexName": ConsistencyVector{
-								"0":        123,
-								"1/a0b1c2": 234,
-							},
-						},
-					},
-				},
-			},
-			&bleve.SearchRequest{
-				From:      0,
-				Size:      10,
-				Fields:    []string{"*"},
-				Query:     sampleQuery,
-				Highlight: bleve.NewHighlight(),
-				Explain:   true,
-			},
-		},
-		QueryHelp:  bleveQueryHelp,
-		InitRouter: BlevePIndexImplInitRouter,
+		StartSample:  NewBleveParams(),
+		QuerySamples: BlevePIndexQuerySamples,
+		QueryHelp:    bleveQueryHelp,
+		InitRouter:   BlevePIndexImplInitRouter,
 		DiagHandlers: []DiagHandler{
 			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		},
@@ -967,4 +939,43 @@ func BleveMetaExtra(m map[string]interface{}) {
 	br["Tokenizer"] = map[string][]string{"types": t, "instances": i}
 
 	m["regBleve"] = br
+}
+
+// ---------------------------------------------------------
+
+func BlevePIndexQuerySamples() []Documentation {
+	sampleQuery := bleve.NewQueryStringQuery("a sample query")
+
+	return []Documentation{
+		Documentation{
+			Text: "An example POST body:",
+			JSON: &struct {
+				*QueryCtlParams
+				*bleve.SearchRequest
+			}{
+				&QueryCtlParams{
+					Ctl: QueryCtl{
+						Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+						Consistency: &ConsistencyParams{
+							Level: "at_plus",
+							Vectors: map[string]ConsistencyVector{
+								"yourIndexName": ConsistencyVector{
+									"0":        123,
+									"1/a0b1c2": 234,
+								},
+							},
+						},
+					},
+				},
+				&bleve.SearchRequest{
+					From:      0,
+					Size:      10,
+					Fields:    []string{"*"},
+					Query:     sampleQuery,
+					Highlight: bleve.NewHighlight(),
+					Explain:   true,
+				},
+			},
+		},
+	}
 }

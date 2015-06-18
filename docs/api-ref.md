@@ -388,7 +388,9 @@ The name of the index to be queried.
 
 The request's POST body depends on the index type:
 
-For index type ```bleve```, an example POST body:
+For index type ```bleve```:
+
+An example POST body:
 
     {
       "ctl": {
@@ -419,6 +421,7 @@ For index type ```bleve```, an example POST body:
       "facets": null,
       "explain": true
     }
+
 
 ---
 

@@ -27,6 +27,12 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
+// Documentation is used for auto-generated documentation.
+type Documentation struct {
+	Text string      // Optional documentation text (markdown).
+	JSON interface{} // Optional marshall'able to JSON.
+}
+
 var EMPTY_BYTES = []byte{}
 
 var jsonNULL = []byte("null")

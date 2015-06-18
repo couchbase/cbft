@@ -68,8 +68,9 @@ type PIndexImplType struct {
 	// Validate() and New().
 	StartSample interface{}
 
-	// A prototype instance of JSON that is usable for Query().
-	QuerySample interface{}
+	// Example instances of JSON that are usable for Query requests().
+	// These are used to help generate API documentation.
+	QuerySamples func() []Documentation
 
 	// Displayed in docs, web admin UI, etc, and often might be a link
 	// to even further help.

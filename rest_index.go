@@ -194,11 +194,21 @@ func NewQueryHandler(mgr *Manager) *QueryHandler {
 func (h *QueryHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
 	for indexType, t := range PIndexImplTypes {
-		if t.QuerySample != nil {
-			indexTypes = append(indexTypes,
-				"For index type ```"+indexType+"```"+
-					", an example POST body:\n\n    "+
-					IndentJSON(t.QuerySample, "    ", "  "))
+		if t.QuerySamples != nil {
+			s := "For index type ```" + indexType + "```:\n\n"
+
+			for _, sample := range t.QuerySamples() {
+				if sample.Text != "" {
+					s = s + sample.Text + "\n\n"
+				}
+
+				if sample.JSON != nil {
+					s = s + "    " +
+						IndentJSON(sample.JSON, "    ", "  ") + "\n"
+				}
+			}
+
+			indexTypes = append(indexTypes, s)
 		}
 	}
 	sort.Strings(indexTypes)

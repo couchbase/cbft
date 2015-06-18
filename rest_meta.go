@@ -45,8 +45,8 @@ type MetaDescIndex struct {
 	CanCount bool `json:"canCount"`
 	CanQuery bool `json:"canQuery"`
 
-	QuerySample interface{} `json:"querySample"`
-	QueryHelp   string      `json:"queryHelp"`
+	QuerySamples interface{} `json:"querySamples"`
+	QueryHelp    string      `json:"queryHelp"`
 }
 
 func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -71,16 +71,21 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	// Key is indexType, value is description.
 	indexTypes := map[string]*MetaDescIndex{}
 	for indexType, t := range PIndexImplTypes {
-		indexTypes[indexType] = &MetaDescIndex{
+		mdi := &MetaDescIndex{
 			MetaDesc: MetaDesc{
 				Description: t.Description,
 				StartSample: t.StartSample,
 			},
-			CanCount:    t.Count != nil,
-			CanQuery:    t.Query != nil,
-			QuerySample: t.QuerySample,
-			QueryHelp:   t.QueryHelp,
+			CanCount:  t.Count != nil,
+			CanQuery:  t.Query != nil,
+			QueryHelp: t.QueryHelp,
 		}
+
+		if t.QuerySamples != nil {
+			mdi.QuerySamples = t.QuerySamples()
+		}
+
+		indexTypes[indexType] = mdi
 	}
 
 	r := map[string]interface{}{
