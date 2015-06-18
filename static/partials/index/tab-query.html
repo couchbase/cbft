@@ -44,7 +44,7 @@
              class="form-control col-lg-8"/>
     </div>
     <div class="col-lg-offset-2 col-lg-8">
-      <label">Consistency Level:</label>
+      <label>Consistency Level:</label>
       <input ng-model="consistencyLevel" id="consistencyLevel"
              ng-change="queryChanged()"
              class="form-control col-lg-8"/>
@@ -55,9 +55,17 @@
              ng-change="queryChanged()"
              class="form-control col-lg-8"/>
     </div>
-    <div class="col-lg-offset-2 col-lg-8">
-      <label>JSON for query request:</label>
-      <pre>{{jsonQuery}}</pre>
+    <div class="col-lg-offset-2 col-lg-8 jsonQuery">
+      <label>JSON for query request:
+        <span class="curlToggle">
+          ( command-line curl example:
+            <input ng-model="curlToggle" type="checkbox"/> )
+        </span>
+      </label>
+      <pre ng-show="!curlToggle">{{jsonQuery}}</pre>
+      <pre ng-show="curlToggle">curl -XPOST -H "Content-Type: application/json" \
+ http://{{hostPort}}/api/index/{{indexName}}/query \
+ -d '{{jsonQuery}}'</pre>
     </div>
   </div>
 </div>
@@ -92,8 +100,11 @@
 .queryAdvanced {
   margin-top: 10px;
 }
-.queryAdvanced .row label {
-  text-align: right;
+.queryAdvanced label {
+  margin-top: 10px;
+}
+.queryAdvanced .curlToggle {
+  font-weight: normal;
 }
 .queryNoResults {
   margin-left: 30px;

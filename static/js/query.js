@@ -37,6 +37,11 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.consistencyVectors = "{}";
     $scope.jsonQuery = "";
 
+    $scope.hostPort = $location.host();
+    if ($location.port()) {
+        $scope.hostPort = $scope.hostPort + ":" + $location.port();
+    }
+
     $http.get("/api/managerMeta").
     success(function(data) {
         $scope.meta = data;
