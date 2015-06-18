@@ -1,3 +1,22 @@
+# v0.2.0 (2015/06/18)
+
+The 0.2.0 release has an incompatible REST API change for query
+requests (/api/index/{indexName}/query POST).  See the REST API
+reference documentation for more information on the new query request
+JSON structure and the new "ctl" sub-object.
+
+- REST-API: query JSON timeout/consistency fields moved to "ctl" sub-object
+- web UI: hide 2nd errorMessage element from bleve mapping
+- web UI: for query has toggle'able cmd-line curl example
+- web UI: query advanced checkbox shows JSON query request
+- web UI: bleve http/mapping tree selected CSS highlight
+- web UI: fix Tokenizer label alignment
+- docs: added a 2nd bleve query example
+- docs: pindexes can provide more than one QuerySample for auto docs
+- docs: more godoc documentation for those using cbft as a library
+- build: Makefile release fixes and instruction tweaks
+- general: privitized workReq/syncWorkReq functionality
+
 # v0.1.0
 
 - web UI: fixes for angular slow retrieval of manager metadata

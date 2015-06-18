@@ -642,7 +642,7 @@ Sample response:
       "numCPU": 8,
       "os": "darwin",
       "versionData": "3.1.0",
-      "versionMain": "v0.1.0"
+      "versionMain": "v0.2.0"
     }
 
 ---
