@@ -7,6 +7,7 @@
 <form class="navbar-form" role="query">
   <div class="input-group col-lg-12">
     <input ng-model="query"
+           ng-change="queryChanged()"
            type="text" class="form-control"
            placeholder="please enter a query"/>
     <div class="input-group-btn">
@@ -18,35 +19,48 @@
   </div>
 
   <div class="querySub">
-    <div class="col-lg-9"
-         ng-if="queryHelp && queryHelp.length"
-         ng-bind-html="queryHelpSafe">
+    <div class="col-lg-9">
+      <span ng-if="queryHelp && queryHelp.length"
+            ng-bind-html="queryHelpSafe">
+      </span>
     </div>
-    <div class="col-lg-offset-9">
-      <label>Advanced:</label>
-      <input ng-model="queryAdvancedToggle" type="checkbox"/>
+    <div class="col-lg-3">
+      <label>
+        <input ng-click="queryChanged()"
+               ng-model="queryAdvancedToggle"
+               type="checkbox"/>
+        Advanced
+      </label>
     </div>
-  </div>
-
-  <div ng-show="queryAdvancedToggle"
-       class="col-lg-offset-3 queryAdvanced">
-      <div class="row">
-        <label class="col-lg-6">Timeout (msecs):</label>
-        <input ng-model="timeout" id="timeout"
-               class="form-control col-lg-8"/>
-      </div>
-      <div class="row">
-        <label class="col-lg-6">Consistency Level:</label>
-        <input ng-model="consistencyLevel" id="consistencyLevel"
-               class="form-control col-lg-8"/>
-      </div>
-      <div class="row">
-        <label class="col-lg-6">Consistency Vectors:</label>
-        <input ng-model="consistencyVectors" id="consistencyVectors"
-               class="form-control col-lg-8"/>
-      </div>
   </div>
 </form>
+
+<div ng-show="queryAdvancedToggle">
+  <div class="queryAdvanced row clearfix">
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>Timeout (msecs):</label>
+      <input ng-model="timeout" id="timeout"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8">
+      <label">Consistency Level:</label>
+      <input ng-model="consistencyLevel" id="consistencyLevel"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>Consistency Vectors:</label>
+      <input ng-model="consistencyVectors" id="consistencyVectors"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>JSON for query request:</label>
+      <pre>{{jsonQuery}}</pre>
+    </div>
+  </div>
+</div>
 
 <div ng-show="results && !results.total_hits"
      class="queryNoResults">
@@ -55,10 +69,11 @@
 
 <div ng-show="results && results.hits && results.hits.length > 0"
      ng-include
-     src="'/static/partials/index/query-results.html'">
+     src="'/static/partials/index/query-results.html'"
+     class="clearfix">
 </div>
 
-<div ng-show="results && results.results">
+<div ng-show="results && results.results" class="clearfix">
   <ul>
     <li ng-repeat="result in results.results">
       <div class="well">

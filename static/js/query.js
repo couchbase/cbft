@@ -35,6 +35,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.timeout = 0;
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
+    $scope.jsonQuery = "";
 
     $http.get("/api/managerMeta").
     success(function(data) {
@@ -57,6 +58,34 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         }
     });
 
+    function createQueryRequest() {
+        var req = prepQueryRequest($scope) || {};
+        var v = null;
+
+        try {
+            v = JSON.parse($scope.consistencyVectors || "null");
+        } finally {
+        }
+
+        req.ctl = {
+            "consistency": {
+                "level": $scope.consistencyLevel,
+                "vectors": v,
+            },
+            "timeout": parseInt($scope.timeout) || 0
+        };
+
+        return req;
+    }
+
+    $scope.queryChanged = function() {
+        try {
+            var j = JSON.stringify(createQueryRequest(), null, 2);
+            $scope.jsonQuery = j;
+        } finally {
+        }
+    };
+
     $scope.runQuery = function() {
         if (!$scope.query) {
             $scope.errorMessage = "please enter a query";
@@ -71,15 +100,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         $scope.results = null;
         $scope.numPages = 0;
 
-        var req = prepQueryRequest($scope);
-
-        req.ctl = {
-            "consistency": {
-                "level": $scope.consistencyLevel,
-                "vectors": JSON.parse($scope.consistencyVectors || "null"),
-            },
-            "timeout": parseInt($scope.timeout) || 0
-        };
+        var req = createQueryRequest();
 
         $http.post('/api/index/' + $scope.indexName + '/query', req).
         success(function(data) {
