@@ -223,7 +223,7 @@ can use the curl tool to check how many documents are indexed...
 Here's an example of using curl to query the ```myFirstIndex```...
 
     curl -XPOST --header Content-Type:text/json \
-         -d '{"query":{"size":10,"query":{"query":"your-search-term"}}}' \
+         -d '{"size":10,"query":{"query":"your search string"}}' \
          http://localhost:8095/api/index/myFirstIndex/query
 
 ## Where to go next
