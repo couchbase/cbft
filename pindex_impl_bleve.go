@@ -944,11 +944,28 @@ func BleveMetaExtra(m map[string]interface{}) {
 // ---------------------------------------------------------
 
 func BlevePIndexQuerySamples() []Documentation {
-	sampleQuery := bleve.NewQueryStringQuery("a sample query")
-
 	return []Documentation{
 		Documentation{
-			Text: "An example POST body:",
+			Text: "A simple bleve query POST body:",
+			JSON: &struct {
+				*QueryCtlParams
+				*bleve.SearchRequest
+			}{
+				nil,
+				&bleve.SearchRequest{
+					From:  0,
+					Size:  10,
+					Query: bleve.NewQueryStringQuery("a sample query"),
+				},
+			},
+		},
+		Documentation{
+			Text: `An example POST body using from/size for results paging,
+using ctl for a timeout and for "at_plus" consistency level.
+On consistency, the index must have incorporated at least mutation
+sequence-number 123 for partition (vbucket) 0 and mutation
+sequence-number 234 for partition (vbucket) 1 (where vbucket 1
+should have a vbucketUUID of a0b1c2):`,
 			JSON: &struct {
 				*QueryCtlParams
 				*bleve.SearchRequest
@@ -959,7 +976,7 @@ func BlevePIndexQuerySamples() []Documentation {
 						Consistency: &ConsistencyParams{
 							Level: "at_plus",
 							Vectors: map[string]ConsistencyVector{
-								"yourIndexName": ConsistencyVector{
+								"customerIndex": ConsistencyVector{
 									"0":        123,
 									"1/a0b1c2": 234,
 								},
@@ -968,10 +985,10 @@ func BlevePIndexQuerySamples() []Documentation {
 					},
 				},
 				&bleve.SearchRequest{
-					From:      0,
+					From:      20,
 					Size:      10,
 					Fields:    []string{"*"},
-					Query:     sampleQuery,
+					Query:     bleve.NewQueryStringQuery("alice smith"),
 					Highlight: bleve.NewHighlight(),
 					Explain:   true,
 				},

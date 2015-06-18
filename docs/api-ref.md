@@ -390,7 +390,26 @@ The request's POST body depends on the index type:
 
 For index type ```bleve```:
 
-An example POST body:
+A simple bleve query POST body:
+
+    {
+      "query": {
+        "query": "a sample query",
+        "boost": 1
+      },
+      "size": 10,
+      "from": 0,
+      "highlight": null,
+      "fields": null,
+      "facets": null,
+      "explain": false
+    }
+An example POST body using from/size for results paging,
+using ctl for a timeout and for "at_plus" consistency level.
+On consistency, the index must have incorporated at least mutation
+sequence-number 123 for partition (vbucket) 0 and mutation
+sequence-number 234 for partition (vbucket) 1 (where vbucket 1
+should have a vbucketUUID of a0b1c2):
 
     {
       "ctl": {
@@ -398,7 +417,7 @@ An example POST body:
         "consistency": {
           "level": "at_plus",
           "vectors": {
-            "yourIndexName": {
+            "customerIndex": {
               "0": 123,
               "1/a0b1c2": 234
             }
@@ -406,11 +425,11 @@ An example POST body:
         }
       },
       "query": {
-        "query": "a sample query",
+        "query": "alice smith",
         "boost": 1
       },
       "size": 10,
-      "from": 0,
+      "from": 20,
       "highlight": {
         "style": null,
         "fields": null
