@@ -32,8 +32,19 @@
     <input ng-model="jsonDetails" type="checkbox">
       Show index definition JSON
     </input>
-    <pre ng-show="jsonDetails"
-         nag-prism source="{{indexDefStr}}" class="language-javascript"></pre>
+    <div ng-show="jsonDetails">
+      <input ng-model="curlDetails" type="checkbox">
+        Show curl command to recreate this index definition
+      </input>
+
+      <pre ng-show="curlDetails">curl -XPUT -H "Content-Type: application/json" \
+ http://{{hostPort}}/api/index/{{indexName}} \
+ -d '{{indexDefStr}}'</pre>
+
+      <pre ng-show="!curlDetails"
+           nag-prism source="{{indexDefStr}}"
+           class="language-javascript"></pre>
+    </div>
   </dd>
 </dl>
 

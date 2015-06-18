@@ -163,6 +163,9 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	sourceType := req.FormValue("sourceType")
 	if sourceType == "" {
+		sourceType = indexDef.SourceType
+	}
+	if sourceType == "" {
 		showError(w, req, "rest_create_index: sourceType is required", 400)
 		return
 	}

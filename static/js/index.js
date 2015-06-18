@@ -56,7 +56,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.refreshIndexNames();
 }
 
-function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
+function IndexCtrl($scope, $http, $route, $routeParams, $location, $log, $sce) {
 
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
@@ -81,6 +81,11 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
         $scope.tab = "summary";
     }
     $scope.tabPath = '/static/partials/index/tab-' + $scope.tab + '.html';
+
+    $scope.hostPort = $location.host();
+    if ($location.port()) {
+        $scope.hostPort = $scope.hostPort + ":" + $location.port();
+    }
 
     $scope.meta = null;
     $http.get('/api/managerMeta').
@@ -112,6 +117,9 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
 
             $http.get('/api/index/' + $scope.indexName).
             success(function(data) {
+                $scope.indexDef = data.indexDef
+                $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
+
                 try {
                     if (typeof(data.indexDef.params) == "string") {
                         data.indexDef.params = JSON.parse(data.indexDef.params);
@@ -126,8 +134,6 @@ function IndexCtrl($scope, $http, $route, $routeParams, $log, $sce) {
                 } catch (e) {
                 }
 
-                $scope.indexDef = data.indexDef
-                $scope.indexDefStr = JSON.stringify(data.indexDef, undefined, 2);
                 $scope.indexParamsStr = JSON.stringify(data.indexDef.params, undefined, 2);
                 $scope.planPIndexesStr = JSON.stringify(data.planPIndexes, undefined, 2);
                 $scope.planPIndexes = data.planPIndexes;
