@@ -879,34 +879,34 @@ func BlevePIndexImplInitRouter(r *mux.Router, phase string) {
 			listIndexesHandler).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
-		getIndexHandler.IndexNameLookup = pindexNameLookup
+		getIndexHandler.IndexNameLookup = PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
-		docCountHandler.IndexNameLookup = pindexNameLookup
+		docCountHandler.IndexNameLookup = PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
 
 		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = pindexNameLookup
+		searchHandler.IndexNameLookup = PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/query",
 			searchHandler).Methods("POST")
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
-		docGetHandler.IndexNameLookup = pindexNameLookup
-		docGetHandler.DocIDLookup = docIDLookup
+		docGetHandler.IndexNameLookup = PIndexNameLookup
+		docGetHandler.DocIDLookup = DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = pindexNameLookup
-		debugDocHandler.DocIDLookup = docIDLookup
+		debugDocHandler.IndexNameLookup = PIndexNameLookup
+		debugDocHandler.DocIDLookup = DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-		listFieldsHandler.IndexNameLookup = pindexNameLookup
+		listFieldsHandler.IndexNameLookup = PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
 	}

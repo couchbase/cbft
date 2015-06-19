@@ -25,15 +25,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// DiagHandler represents a part of the DiagGetHandler response.
-// Different modules can provide their parts of a DiagGetHandler
-// response via their own DiagHandler's.
-type DiagHandler struct {
-	Name        string
-	Handler     http.Handler
-	HandlerFunc http.HandlerFunc
-}
-
 // DiagGetHandler is a REST handler that retrieves diagnostic
 // information for a node.
 type DiagGetHandler struct {

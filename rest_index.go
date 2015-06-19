@@ -18,15 +18,15 @@ import (
 	"strings"
 )
 
-func docIDLookup(req *http.Request) string {
+func DocIDLookup(req *http.Request) string {
 	return muxVariableLookup(req, "docID")
 }
 
-func indexNameLookup(req *http.Request) string {
+func IndexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "indexName")
 }
 
-func pindexNameLookup(req *http.Request) string {
+func PIndexNameLookup(req *http.Request) string {
 	return muxVariableLookup(req, "pindexName")
 }
 
@@ -76,7 +76,7 @@ func (h *GetIndexHandler) RESTOpts(opts map[string]string) {
 }
 
 func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := indexNameLookup(req)
+	indexName := IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -148,7 +148,7 @@ func (h *CountHandler) RESTOpts(opts map[string]string) {
 }
 
 func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := indexNameLookup(req)
+	indexName := IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -220,7 +220,7 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 }
 
 func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := indexNameLookup(req)
+	indexName := IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -295,7 +295,7 @@ func (h *IndexControlHandler) RESTOpts(opts map[string]string) {
 }
 
 func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := indexNameLookup(req)
+	indexName := IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -369,7 +369,7 @@ func NewGetPIndexHandler(mgr *Manager) *GetPIndexHandler {
 }
 
 func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := pindexNameLookup(req)
+	pindexName := PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return
@@ -404,7 +404,7 @@ func NewCountPIndexHandler(mgr *Manager) *CountPIndexHandler {
 }
 
 func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := pindexNameLookup(req)
+	pindexName := PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return
@@ -469,7 +469,7 @@ func NewQueryPIndexHandler(mgr *Manager) *QueryPIndexHandler {
 }
 
 func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := pindexNameLookup(req)
+	pindexName := PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return

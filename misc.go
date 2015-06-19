@@ -27,6 +27,14 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
+// DiagHandler allows modules to provide their own additions in
+// response to "diag" or diagnostic information requests.
+type DiagHandler struct {
+	Name        string
+	Handler     http.Handler
+	HandlerFunc http.HandlerFunc
+}
+
 // Documentation is used for auto-generated documentation.
 type Documentation struct {
 	Text string      // Optional documentation text (markdown).
