@@ -10,12 +10,14 @@
 package cbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -57,6 +59,13 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
+		{"/debug/pprof/goroutine?debug=2", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				var b bytes.Buffer
+				debug := 2
+				pprof.Lookup("goroutine").WriteTo(&b, debug)
+				mustEncode(w, b.String())
+			}},
 	}
 
 	for _, t := range PIndexImplTypes {
