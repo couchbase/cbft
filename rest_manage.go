@@ -59,12 +59,21 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		{"/api/runtime/stats", nil, restGetRuntimeStats},
 		{"/api/runtime/statsMem", nil, restGetRuntimeStatsMem},
 		{"/api/stats", NewStatsHandler(h.mgr), nil},
+		{"/debug/pprof/block?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "block", 2)
+			}},
 		{"/debug/pprof/goroutine?debug=2", nil,
 			func(w http.ResponseWriter, r *http.Request) {
-				var b bytes.Buffer
-				debug := 2
-				pprof.Lookup("goroutine").WriteTo(&b, debug)
-				mustEncode(w, b.String())
+				DiagGetPProf(w, "goroutine", 2)
+			}},
+		{"/debug/pprof/heap?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "heap", 1)
+			}},
+		{"/debug/pprof/threadcreate?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "threadcreate", 1)
 			}},
 	}
 
@@ -140,6 +149,12 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Write(jsonCloseBrace)
+}
+
+func DiagGetPProf(w http.ResponseWriter, profile string, debug int) {
+	var b bytes.Buffer
+	pprof.Lookup(profile).WriteTo(&b, debug)
+	mustEncode(w, b.String())
 }
 
 // ---------------------------------------------------
