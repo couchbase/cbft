@@ -28,6 +28,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/couchbaselabs/cbft"
+	"github.com/couchbaselabs/cbgt"
 
 	cbftCmd "github.com/couchbaselabs/cbft/cmd/cbft"
 )
@@ -77,14 +78,14 @@ func main() {
 	dataDir, _ := ioutil.TempDir("./tmp", "data")
 	defer os.RemoveAll(dataDir)
 
-	cfg := cbft.NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	tags := []string(nil)
 	container := ""
 	weight := 1
 	extras := ""
 	bindHttp := "0.0.0.0:8095"
 
-	mgr := cbft.NewManager(cbft.VERSION, cfg, cbft.NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		tags, container, weight, extras, bindHttp,
 		dataDir, "http://localhost:8091", nil)
 
@@ -99,9 +100,10 @@ func main() {
 
 	mgr.Start("wanted")
 
-	err := mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
+	err := mgr.CreateIndex(
+		sourceType, sourceName, sourceUUID, sourceParams,
 		indexType, indexName, indexParams,
-		cbft.PlanParams{}, prevIndexUUID)
+		cbgt.PlanParams{}, prevIndexUUID)
 	if err != nil {
 		log.Fatalf("could not create myFirstIndex, err: %v", err)
 	}
@@ -109,10 +111,11 @@ func main() {
 	staticDir := ""
 	staticETag := ""
 
-	mr, _ := cbft.NewMsgRing(ioutil.Discard, 1)
+	mr, _ := cbgt.NewMsgRing(ioutil.Discard, 1)
 
-	router, meta, err := cbft.NewManagerRESTRouter(cbftCmd.VERSION, mgr,
-		staticDir, staticETag, mr)
+	router, meta, err :=
+		cbft.NewManagerRESTRouter(cbftCmd.VERSION, mgr,
+			staticDir, staticETag, mr)
 	if err != nil {
 		log.Panic(err)
 	}

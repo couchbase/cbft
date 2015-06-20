@@ -21,6 +21,8 @@ import (
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
 	"github.com/blevesearch/bleve/index/store"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 var httpPost = http.Post // Overridable for unit-testability.
@@ -38,7 +40,7 @@ var indexClientUnimplementedErr = errors.New("unimplemented")
 type IndexClient struct {
 	QueryURL    string
 	CountURL    string
-	Consistency *ConsistencyParams
+	Consistency *cbgt.ConsistencyParams
 }
 
 func (r *IndexClient) Index(id string, data interface{}) error {
@@ -97,14 +99,14 @@ func (r *IndexClient) Search(req *bleve.SearchRequest) (
 		return nil, fmt.Errorf("remote: no QueryURL provided")
 	}
 
-	queryCtlParams := &QueryCtlParams{
-		Ctl: QueryCtl{
+	queryCtlParams := &cbgt.QueryCtlParams{
+		Ctl: cbgt.QueryCtl{
 			Consistency: r.Consistency,
 		},
 	}
 
 	buf, err := json.Marshal(struct {
-		*QueryCtlParams
+		*cbgt.QueryCtlParams
 		*bleve.SearchRequest
 	}{
 		queryCtlParams,
@@ -193,7 +195,8 @@ func (r *IndexClient) Count() (uint64, error) {
 }
 
 func (r *IndexClient) Query(buf []byte) ([]byte, error) {
-	resp, err := httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
+	resp, err :=
+		httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
 	}

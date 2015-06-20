@@ -42,7 +42,6 @@ gen-docs: cmd/cbft_docs/main.go
 
 test:
 	go test -v -tags "debug kagome $(CBFT_TAGS)" .
-	go test -v -tags "debug kagome $(CBFT_TAGS)" ./cmd
 	go test -v -tags "debug kagome $(CBFT_TAGS)" ./cmd/cbft
 
 test-full:

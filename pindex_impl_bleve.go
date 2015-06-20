@@ -36,6 +36,7 @@ import (
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
+	"github.com/couchbaselabs/cbgt"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
@@ -64,7 +65,7 @@ type BleveDest struct {
 	bindex     bleve.Index
 	partitions map[string]*BleveDestPartition
 
-	stats PIndexStoreStats
+	stats cbgt.PIndexStoreStats
 }
 
 // Used to track state for a single partition.
@@ -85,7 +86,7 @@ type BleveDestPartition struct {
 	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
-	cwrQueue CwrQueue
+	cwrQueue cbgt.CwrQueue
 }
 
 func NewBleveDest(path string, bindex bleve.Index,
@@ -95,7 +96,7 @@ func NewBleveDest(path string, bindex bleve.Index,
 		restart:    restart,
 		bindex:     bindex,
 		partitions: make(map[string]*BleveDestPartition),
-		stats: PIndexStoreStats{
+		stats: cbgt.PIndexStoreStats{
 			TimerBatchStore: metrics.NewTimer(),
 			Errors:          list.New(),
 		},
@@ -109,7 +110,7 @@ const bleveQueryHelp = `<a href="https://github.com/blevesearch/bleve/wiki/Query
      </a>`
 
 func init() {
-	RegisterPIndexImplType("bleve", &PIndexImplType{
+	cbgt.RegisterPIndexImplType("bleve", &cbgt.PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
 
 		New:   NewBlevePIndexImpl,
@@ -123,7 +124,7 @@ func init() {
 		QuerySamples: BlevePIndexQuerySamples,
 		QueryHelp:    bleveQueryHelp,
 		InitRouter:   BlevePIndexImplInitRouter,
-		DiagHandlers: []DiagHandler{
+		DiagHandlers: []cbgt.DiagHandler{
 			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		},
 		MetaExtra: BleveMetaExtra,
@@ -139,7 +140,7 @@ func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
-	restart func()) (PIndexImpl, Dest, error) {
+	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	bleveParams := NewBleveParams()
 	if len(indexParams) > 0 {
 		err := json.Unmarshal([]byte(indexParams), bleveParams)
@@ -185,13 +186,13 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		return nil, nil, err
 	}
 
-	return bindex, &DestForwarder{
+	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDest(path, bindex, restart),
 	}, nil
 }
 
 func OpenBlevePIndexImpl(indexType, path string,
-	restart func()) (PIndexImpl, Dest, error) {
+	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	buf, err := ioutil.ReadFile(path +
 		string(os.PathSeparator) + "PINDEX_BLEVE_META")
 	if err != nil {
@@ -211,14 +212,14 @@ func OpenBlevePIndexImpl(indexType, path string,
 		return nil, nil, err
 	}
 
-	return bindex, &DestForwarder{
+	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDest(path, bindex, restart),
 	}, nil
 }
 
 // ---------------------------------------------------------------
 
-func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
+func CountBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
 	if err != nil {
@@ -229,11 +230,11 @@ func CountBlevePIndexImpl(mgr *Manager, indexName, indexUUID string) (
 	return alias.DocCount()
 }
 
-func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
+func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	queryCtlParams := QueryCtlParams{
-		Ctl: QueryCtl{
-			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+	queryCtlParams := cbgt.QueryCtlParams{
+		Ctl: cbgt.QueryCtl{
+			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
 
@@ -256,7 +257,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 		return err
 	}
 
-	cancelCh := TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
+	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
 
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh)
@@ -280,7 +281,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 	case <-doneCh:
 		if searchResult != nil {
-			mustEncode(res, searchResult)
+			cbgt.MustEncode(res, searchResult)
 		}
 	}
 
@@ -289,7 +290,7 @@ func QueryBlevePIndexImpl(mgr *Manager, indexName, indexUUID string,
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Dest(partition string) (Dest, error) {
+func (t *BleveDest) Dest(partition string) (cbgt.Dest, error) {
 	t.m.Lock()
 	d, err := t.getPartitionUnlocked(partition)
 	t.m.Unlock()
@@ -311,7 +312,7 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 			partitionOpaque: []byte("o:" + partition),
 			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           t.bindex.NewBatch(),
-			cwrQueue:        CwrQueue{},
+			cwrQueue:        cbgt.CwrQueue{},
 		}
 		heap.Init(&bdp.cwrQueue)
 
@@ -410,7 +411,7 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 			consistencyLevel)
 	}
 
-	cwr := &ConsistencyWaitReq{
+	cwr := &cbgt.ConsistencyWaitReq{
 		PartitionUUID:    partitionUUID,
 		ConsistencyLevel: consistencyLevel,
 		ConsistencySeq:   consistencySeq,
@@ -443,7 +444,7 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 	t.m.Unlock()
 
-	return ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
+	return cbgt.ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
 			bdp.m.Lock()
 			seqMaxBatch := bdp.seqMaxBatch
@@ -454,17 +455,17 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Count(pindex *PIndex, cancelCh <-chan bool) (uint64, error) {
+func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (uint64, error) {
 	return t.bindex.DocCount()
 }
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
+func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	cancelCh <-chan bool) error {
-	queryCtlParams := QueryCtlParams{
-		Ctl: QueryCtl{
-			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+	queryCtlParams := cbgt.QueryCtlParams{
+		Ctl: cbgt.QueryCtl{
+			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
 
@@ -482,7 +483,7 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
 
-	err = ConsistencyWaitPIndex(pindex, t,
+	err = cbgt.ConsistencyWaitPIndex(pindex, t,
 		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
 		return err
@@ -498,7 +499,7 @@ func (t *BleveDest) Query(pindex *PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	mustEncode(res, searchResponse)
+	cbgt.MustEncode(res, searchResponse)
 
 	return nil
 }
@@ -531,7 +532,7 @@ func (t *BleveDest) AddError(op, partition string,
 	buf, err := json.Marshal(&e)
 	if err == nil {
 		t.m.Lock()
-		for t.stats.Errors.Len() >= PINDEX_STORE_MAX_ERRORS {
+		for t.stats.Errors.Len() >= cbgt.PINDEX_STORE_MAX_ERRORS {
 			t.stats.Errors.Remove(t.stats.Errors.Front())
 		}
 		t.stats.Errors.PushBack(string(buf))
@@ -544,6 +545,8 @@ func (t *BleveDest) AddError(op, partition string,
 type JSONStatsWriter interface {
 	WriteJSON(w io.Writer)
 }
+
+var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var c uint64
@@ -571,10 +574,10 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	if err == nil {
 		w.Write([]byte(`,"basic":{"DocCount":`))
 		w.Write([]byte(strconv.FormatUint(c, 10)))
-		w.Write(jsonCloseBrace)
+		w.Write(cbgt.JsonCloseBrace)
 	}
 
-	w.Write(jsonCloseBrace)
+	w.Write(cbgt.JsonCloseBrace)
 
 	return nil
 }
@@ -588,7 +591,7 @@ func (t *BleveDestPartition) Close() error {
 func (t *BleveDestPartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte,
 	cas uint64,
-	extrasType DestExtrasType, extras []byte) error {
+	extrasType cbgt.DestExtrasType, extras []byte) error {
 	k := string(key)
 
 	var v interface{}
@@ -619,7 +622,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 func (t *BleveDestPartition) DataDelete(partition string,
 	key []byte, seq uint64,
 	cas uint64,
-	extrasType DestExtrasType, extras []byte) error {
+	extrasType cbgt.DestExtrasType, extras []byte) error {
 	t.m.Lock()
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
@@ -657,7 +660,7 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 			return nil, 0, err
 		}
 		t.lastOpaque = append([]byte(nil), value...) // Note: copies value.
-		t.lastUUID = parseOpaqueToUUID(value)
+		t.lastUUID = cbgt.ParseOpaqueToUUID(value)
 	}
 
 	if t.seqMax <= 0 {
@@ -690,7 +693,7 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 	t.m.Lock()
 
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
-	t.lastUUID = parseOpaqueToUUID(value)
+	t.lastUUID = cbgt.ParseOpaqueToUUID(value)
 
 	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
 
@@ -712,13 +715,13 @@ func (t *BleveDestPartition) ConsistencyWait(
 		consistencyLevel, consistencySeq, cancelCh)
 }
 
-func (t *BleveDestPartition) Count(pindex *PIndex,
+func (t *BleveDestPartition) Count(pindex *cbgt.PIndex,
 	cancelCh <-chan bool) (
 	uint64, error) {
 	return t.bdest.Count(pindex, cancelCh)
 }
 
-func (t *BleveDestPartition) Query(pindex *PIndex,
+func (t *BleveDestPartition) Query(pindex *cbgt.PIndex,
 	req []byte, res io.Writer,
 	cancelCh <-chan bool) error {
 	return t.bdest.Query(pindex, req, res, cancelCh)
@@ -747,7 +750,7 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 }
 
 func (t *BleveDestPartition) applyBatchUnlocked() error {
-	err := Timer(func() error {
+	err := cbgt.Timer(func() error {
 		return t.bindex.Batch(t.batch)
 	}, t.bdest.stats.TimerBatchStore)
 	if err != nil {
@@ -758,7 +761,7 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 
 	for t.cwrQueue.Len() > 0 &&
 		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
-		cwr := heap.Pop(&t.cwrQueue).(*ConsistencyWaitReq)
+		cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
 		if cwr != nil && cwr.DoneCh != nil {
 			close(cwr.DoneCh)
 		}
@@ -805,12 +808,12 @@ func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
 // TODO: If this returns an error, perhaps the caller somewhere up the
 // chain should close the cancelCh to help stop any other inflight
 // activities.
-func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
-	ensureCanRead bool, consistencyParams *ConsistencyParams,
+func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
+	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool) (bleve.IndexAlias, error) {
-	planPIndexNodeFilter := PlanPIndexNodeOk
+	planPIndexNodeFilter := cbgt.PlanPIndexNodeOk
 	if ensureCanRead {
-		planPIndexNodeFilter = PlanPIndexNodeCanRead
+		planPIndexNodeFilter = cbgt.PlanPIndexNodeCanRead
 	}
 
 	localPIndexes, remotePlanPIndexes, err :=
@@ -835,9 +838,9 @@ func bleveIndexAlias(mgr *Manager, indexName, indexUUID string,
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 
-	err = ConsistencyWaitGroup(indexName, consistencyParams,
+	err = cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
-		func(localPIndex *PIndex) error {
+		func(localPIndex *cbgt.PIndex) error {
 			bindex, ok := localPIndex.Impl.(bleve.Index)
 			if !ok || bindex == nil ||
 				!strings.HasPrefix(localPIndex.IndexType, "bleve") {
@@ -879,34 +882,34 @@ func BlevePIndexImplInitRouter(r *mux.Router, phase string) {
 			listIndexesHandler).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
-		getIndexHandler.IndexNameLookup = PIndexNameLookup
+		getIndexHandler.IndexNameLookup = cbgt.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
-		docCountHandler.IndexNameLookup = PIndexNameLookup
+		docCountHandler.IndexNameLookup = cbgt.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
 
 		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = PIndexNameLookup
+		searchHandler.IndexNameLookup = cbgt.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/query",
 			searchHandler).Methods("POST")
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
-		docGetHandler.IndexNameLookup = PIndexNameLookup
-		docGetHandler.DocIDLookup = DocIDLookup
+		docGetHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		docGetHandler.DocIDLookup = cbgt.DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = PIndexNameLookup
-		debugDocHandler.DocIDLookup = DocIDLookup
+		debugDocHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		debugDocHandler.DocIDLookup = cbgt.DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-		listFieldsHandler.IndexNameLookup = PIndexNameLookup
+		listFieldsHandler.IndexNameLookup = cbgt.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
 	}
@@ -943,12 +946,12 @@ func BleveMetaExtra(m map[string]interface{}) {
 
 // ---------------------------------------------------------
 
-func BlevePIndexQuerySamples() []Documentation {
-	return []Documentation{
-		Documentation{
+func BlevePIndexQuerySamples() []cbgt.Documentation {
+	return []cbgt.Documentation{
+		cbgt.Documentation{
 			Text: "A simple bleve query POST body:",
 			JSON: &struct {
-				*QueryCtlParams
+				*cbgt.QueryCtlParams
 				*bleve.SearchRequest
 			}{
 				nil,
@@ -959,7 +962,7 @@ func BlevePIndexQuerySamples() []Documentation {
 				},
 			},
 		},
-		Documentation{
+		cbgt.Documentation{
 			Text: `An example POST body using from/size for results paging,
 using ctl for a timeout and for "at_plus" consistency level.
 On consistency, the index must have incorporated at least mutation
@@ -967,16 +970,16 @@ sequence-number 123 for partition (vbucket) 0 and mutation
 sequence-number 234 for partition (vbucket) 1 (where vbucket 1
 should have a vbucketUUID of a0b1c2):`,
 			JSON: &struct {
-				*QueryCtlParams
+				*cbgt.QueryCtlParams
 				*bleve.SearchRequest
 			}{
-				&QueryCtlParams{
-					Ctl: QueryCtl{
-						Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
-						Consistency: &ConsistencyParams{
+				&cbgt.QueryCtlParams{
+					Ctl: cbgt.QueryCtl{
+						Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
+						Consistency: &cbgt.ConsistencyParams{
 							Level: "at_plus",
-							Vectors: map[string]ConsistencyVector{
-								"customerIndex": ConsistencyVector{
+							Vectors: map[string]cbgt.ConsistencyVector{
+								"customerIndex": cbgt.ConsistencyVector{
 									"0":        123,
 									"1/a0b1c2": 234,
 								},

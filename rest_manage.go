@@ -23,23 +23,26 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 // DiagGetHandler is a REST handler that retrieves diagnostic
 // information for a node.
 type DiagGetHandler struct {
 	versionMain string
-	mgr         *Manager
-	mr          *MsgRing
+	mgr         *cbgt.Manager
+	mr          *cbgt.MsgRing
 }
 
 func NewDiagGetHandler(versionMain string,
-	mgr *Manager, mr *MsgRing) *DiagGetHandler {
+	mgr *cbgt.Manager, mr *cbgt.MsgRing) *DiagGetHandler {
 	return &DiagGetHandler{versionMain: versionMain, mgr: mgr, mr: mr}
 }
 
-func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	handlers := []DiagHandler{
+func (h *DiagGetHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	handlers := []cbgt.DiagHandler{
 		{"/api/cfg", NewCfgGetHandler(h.mgr), nil},
 		{"/api/index", NewListIndexHandler(h.mgr), nil},
 		{"/api/log", NewLogGetHandler(h.mgr, h.mr), nil},
@@ -68,16 +71,16 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}},
 	}
 
-	for _, t := range PIndexImplTypes {
+	for _, t := range cbgt.PIndexImplTypes {
 		for _, h := range t.DiagHandlers {
 			handlers = append(handlers, h)
 		}
 	}
 
-	w.Write(jsonOpenBrace)
+	w.Write(cbgt.JsonOpenBrace)
 	for i, handler := range handlers {
 		if i > 0 {
-			w.Write(jsonComma)
+			w.Write(cbgt.JsonComma)
 		}
 		w.Write([]byte(fmt.Sprintf(`"%s":`, handler.Name)))
 		if handler.Handler != nil {
@@ -110,7 +113,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		buf, err := json.Marshal(m)
 		if err == nil {
 			if !first {
-				w.Write(jsonComma)
+				w.Write(cbgt.JsonComma)
 			}
 			w.Write(buf)
 			first = false
@@ -119,7 +122,7 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Write([]byte(`,"dataDir":[`))
-	filepath.Walk(h.mgr.dataDir, visit)
+	filepath.Walk(h.mgr.DataDir(), visit)
 	w.Write([]byte(`]`))
 
 	entries, err := AssetDir("static/dist")
@@ -139,13 +142,13 @@ func (h *DiagGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	w.Write(jsonCloseBrace)
+	w.Write(cbgt.JsonCloseBrace)
 }
 
 func DiagGetPProf(w http.ResponseWriter, profile string, debug int) {
 	var b bytes.Buffer
 	pprof.Lookup(profile).WriteTo(&b, debug)
-	mustEncode(w, b.String())
+	cbgt.MustEncode(w, b.String())
 }
 
 // ---------------------------------------------------
@@ -153,10 +156,10 @@ func DiagGetPProf(w http.ResponseWriter, profile string, debug int) {
 // StatsHandler is a REST handler that provides stats/metrics for a
 // node.
 type StatsHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewStatsHandler(mgr *Manager) *StatsHandler {
+func NewStatsHandler(mgr *cbgt.Manager) *StatsHandler {
 	return &StatsHandler{mgr: mgr}
 }
 
@@ -166,7 +169,8 @@ var statsManagerPrefix = []byte(",\"manager\":")
 var statsNamePrefix = []byte("\"")
 var statsNameSuffix = []byte("\":")
 
-func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *StatsHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	indexName := mux.Vars(req)["indexName"]
 
 	feeds, pindexes := h.mgr.CurrentMaps()
@@ -182,14 +186,14 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	sort.Strings(pindexNames)
 
-	w.Write(jsonOpenBrace)
+	w.Write(cbgt.JsonOpenBrace)
 
 	first := true
 	w.Write(statsFeedsPrefix)
 	for _, feedName := range feedNames {
 		if indexName == "" || indexName == feeds[feedName].IndexName() {
 			if !first {
-				w.Write(jsonComma)
+				w.Write(cbgt.JsonComma)
 			}
 			first = false
 			w.Write(statsNamePrefix)
@@ -198,14 +202,14 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			feeds[feedName].Stats(w)
 		}
 	}
-	w.Write(jsonCloseBraceComma)
+	w.Write(cbgt.JsonCloseBraceComma)
 
 	first = true
 	w.Write(statsPIndexesPrefix)
 	for _, pindexName := range pindexNames {
 		if indexName == "" || indexName == pindexes[pindexName].IndexName {
 			if !first {
-				w.Write(jsonComma)
+				w.Write(cbgt.JsonComma)
 			}
 			first = false
 			w.Write(statsNamePrefix)
@@ -214,21 +218,21 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			pindexes[pindexName].Dest.Stats(w)
 		}
 	}
-	w.Write(jsonCloseBrace)
+	w.Write(cbgt.JsonCloseBrace)
 
 	if indexName == "" {
 		w.Write(statsManagerPrefix)
-		var mgrStats ManagerStats
-		h.mgr.stats.AtomicCopyTo(&mgrStats)
+		var mgrStats cbgt.ManagerStats
+		h.mgr.StatsCopyTo(&mgrStats)
 		mgrStatsJSON, err := json.Marshal(&mgrStats)
 		if err == nil && len(mgrStatsJSON) > 0 {
 			w.Write(mgrStatsJSON)
 		} else {
-			w.Write(jsonNULL)
+			w.Write(cbgt.JsonNULL)
 		}
 	}
 
-	w.Write(jsonCloseBrace)
+	w.Write(cbgt.JsonCloseBrace)
 }
 
 // ---------------------------------------------------
@@ -236,16 +240,17 @@ func (h *StatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // ManagerKickHandler is a REST handler that processes a request to
 // kick a manager.
 type ManagerKickHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewManagerKickHandler(mgr *Manager) *ManagerKickHandler {
+func NewManagerKickHandler(mgr *cbgt.Manager) *ManagerKickHandler {
 	return &ManagerKickHandler{mgr: mgr}
 }
 
-func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *ManagerKickHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	h.mgr.Kick(req.FormValue("msg"))
-	mustEncode(w, struct {
+	cbgt.MustEncode(w, struct {
 		Status string `json:"status"`
 	}{Status: "ok"})
 }
@@ -255,38 +260,39 @@ func (h *ManagerKickHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 // CfgGetHandler is a REST handler that retrieves the contents of the
 // Cfg system.
 type CfgGetHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewCfgGetHandler(mgr *Manager) *CfgGetHandler {
+func NewCfgGetHandler(mgr *cbgt.Manager) *CfgGetHandler {
 	return &CfgGetHandler{mgr: mgr}
 }
 
-func (h *CfgGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *CfgGetHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	// TODO: Might need to scrub auth passwords from this output.
 	cfg := h.mgr.Cfg()
 	indexDefs, indexDefsCAS, indexDefsErr :=
-		CfgGetIndexDefs(cfg)
+		cbgt.CfgGetIndexDefs(cfg)
 	nodeDefsWanted, nodeDefsWantedCAS, nodeDefsWantedErr :=
-		CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+		cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	nodeDefsKnown, nodeDefsKnownCAS, nodeDefsKnownErr :=
-		CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+		cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	planPIndexes, planPIndexesCAS, planPIndexesErr :=
-		CfgGetPlanPIndexes(cfg)
-	mustEncode(w, struct {
-		Status            string        `json:"status"`
-		IndexDefs         *IndexDefs    `json:"indexDefs"`
-		IndexDefsCAS      uint64        `json:"indexDefsCAS"`
-		IndexDefsErr      error         `json:"indexDefsErr"`
-		NodeDefsWanted    *NodeDefs     `json:"nodeDefsWanted"`
-		NodeDefsWantedCAS uint64        `json:"nodeDefsWantedCAS"`
-		NodeDefsWantedErr error         `json:"nodeDefsWantedErr"`
-		NodeDefsKnown     *NodeDefs     `json:"nodeDefsKnown"`
-		NodeDefsKnownCAS  uint64        `json:"nodeDefsKnownCAS"`
-		NodeDefsKnownErr  error         `json:"nodeDefsKnownErr"`
-		PlanPIndexes      *PlanPIndexes `json:"planPIndexes"`
-		PlanPIndexesCAS   uint64        `json:"planPIndexesCAS"`
-		PlanPIndexesErr   error         `json:"planPIndexesErr"`
+		cbgt.CfgGetPlanPIndexes(cfg)
+	cbgt.MustEncode(w, struct {
+		Status            string             `json:"status"`
+		IndexDefs         *cbgt.IndexDefs    `json:"indexDefs"`
+		IndexDefsCAS      uint64             `json:"indexDefsCAS"`
+		IndexDefsErr      error              `json:"indexDefsErr"`
+		NodeDefsWanted    *cbgt.NodeDefs     `json:"nodeDefsWanted"`
+		NodeDefsWantedCAS uint64             `json:"nodeDefsWantedCAS"`
+		NodeDefsWantedErr error              `json:"nodeDefsWantedErr"`
+		NodeDefsKnown     *cbgt.NodeDefs     `json:"nodeDefsKnown"`
+		NodeDefsKnownCAS  uint64             `json:"nodeDefsKnownCAS"`
+		NodeDefsKnownErr  error              `json:"nodeDefsKnownErr"`
+		PlanPIndexes      *cbgt.PlanPIndexes `json:"planPIndexes"`
+		PlanPIndexesCAS   uint64             `json:"planPIndexesCAS"`
+		PlanPIndexesErr   error              `json:"planPIndexesErr"`
 	}{
 		Status:            "ok",
 		IndexDefs:         indexDefs,
@@ -310,18 +316,19 @@ func (h *CfgGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // the manager/node to refresh its cached snapshot of the Cfg system
 // contents.
 type CfgRefreshHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewCfgRefreshHandler(mgr *Manager) *CfgRefreshHandler {
+func NewCfgRefreshHandler(mgr *cbgt.Manager) *CfgRefreshHandler {
 	return &CfgRefreshHandler{mgr: mgr}
 }
 
-func (h *CfgRefreshHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *CfgRefreshHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	h.mgr.Cfg().Refresh()
 	h.mgr.GetIndexDefs(true)
 	h.mgr.GetPlanPIndexes(true)
-	mustEncode(w, struct {
+	cbgt.MustEncode(w, struct {
 		Status string `json:"status"`
 	}{Status: "ok"})
 }

@@ -16,15 +16,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 // DeleteIndexHandler is a REST handler that processes an index
 // deletion request.
 type DeleteIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewDeleteIndexHandler(mgr *Manager) *DeleteIndexHandler {
+func NewDeleteIndexHandler(mgr *cbgt.Manager) *DeleteIndexHandler {
 	return &DeleteIndexHandler{mgr: mgr}
 }
 
@@ -33,7 +35,8 @@ func (h *DeleteIndexHandler) RESTOpts(opts map[string]string) {
 		"The name of the index definition to be deleted."
 }
 
-func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *DeleteIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
 		showError(w, req, "rest_delete_index: index name is required", 400)
@@ -47,7 +50,9 @@ func (h *DeleteIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	mustEncode(w, struct {
+	cbgt.MustEncode(w, struct {
 		Status string `json:"status"`
-	}{Status: "ok"})
+	}{
+		Status: "ok",
+	})
 }

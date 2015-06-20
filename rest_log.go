@@ -14,6 +14,8 @@ package cbft
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 // TODO: Need to give the entire cbft codebase a scrub of its log
@@ -21,21 +23,23 @@ import (
 
 // LogGetHandler is a REST handler that retrieves recent log messages.
 type LogGetHandler struct {
-	mgr *Manager
-	mr  *MsgRing
+	mgr *cbgt.Manager
+	mr  *cbgt.MsgRing
 }
 
-func NewLogGetHandler(mgr *Manager, mr *MsgRing) *LogGetHandler {
+func NewLogGetHandler(
+	mgr *cbgt.Manager, mr *cbgt.MsgRing) *LogGetHandler {
 	return &LogGetHandler{mgr: mgr, mr: mr}
 }
 
-func (h *LogGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *LogGetHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(`{"messages":[`))
 	for i, message := range h.mr.Messages() {
 		buf, err := json.Marshal(string(message))
 		if err == nil {
 			if i > 0 {
-				w.Write(jsonComma)
+				w.Write(cbgt.JsonComma)
 			}
 			w.Write(buf)
 		}
@@ -43,17 +47,17 @@ func (h *LogGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(`],"events":[`))
 	if h.mgr != nil {
 		first := true
-		h.mgr.m.Lock()
-		p := h.mgr.events.Front()
+		h.mgr.Lock()
+		p := h.mgr.Events().Front()
 		for p != nil {
 			if !first {
-				w.Write(jsonComma)
+				w.Write(cbgt.JsonComma)
 			}
 			first = false
 			w.Write(p.Value.([]byte))
 			p = p.Next()
 		}
-		h.mgr.m.Unlock()
+		h.mgr.Unlock()
 	}
 	w.Write([]byte(`]}`))
 }

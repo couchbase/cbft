@@ -15,21 +15,21 @@ import (
 	"os"
 	"testing"
 
-	"github.com/couchbaselabs/cbft"
+	"github.com/couchbaselabs/cbgt"
 )
 
 func TestMainStart(t *testing.T) {
-	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
+	mr, err := cbgt.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	router, err := MainStart(nil, cbft.NewUUID(), nil, "", 1, ":1000",
+	router, err := MainStart(nil, cbgt.NewUUID(), nil, "", 1, ":1000",
 		"bad data dir", "./static", "etag", "", "", mr)
 	if router != nil || err == nil {
 		t.Errorf("expected empty server string to fail mainStart()")
 	}
 
-	router, err = MainStart(nil, cbft.NewUUID(), nil, "", 1, ":1000",
+	router, err = MainStart(nil, cbgt.NewUUID(), nil, "", 1, ":1000",
 		"bad data dir", "./static", "etag", "bad server", "", mr)
 	if router != nil || err == nil {
 		t.Errorf("expected bad server string to fail mainStart()")

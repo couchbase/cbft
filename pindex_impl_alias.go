@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	"github.com/blevesearch/bleve"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 var maxAliasTargets = 50000
@@ -25,7 +27,7 @@ var maxAliasTargets = 50000
 func init() {
 	// Register alias with empty instantiation functions,
 	// so that "alias" will show up in valid index types.
-	RegisterPIndexImplType("alias", &PIndexImplType{
+	cbgt.RegisterPIndexImplType("alias", &cbgt.PIndexImplType{
 		Validate: ValidateAlias,
 		Count:    CountAlias,
 		Query:    QueryAlias,
@@ -60,22 +62,24 @@ func ValidateAlias(indexType, indexName, indexParams string) error {
 	return json.Unmarshal([]byte(indexParams), &params)
 }
 
-func CountAlias(mgr *Manager, indexName, indexUUID string) (uint64, error) {
+func CountAlias(mgr *cbgt.Manager,
+	indexName, indexUUID string) (uint64, error) {
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, false, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
-			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
+			" indexName: %s, indexUUID: %s, err: %v",
+			indexName, indexUUID, err)
 	}
 
 	return alias.DocCount()
 }
 
-func QueryAlias(mgr *Manager, indexName, indexUUID string,
+func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-	queryCtlParams := QueryCtlParams{
-		Ctl: QueryCtl{
-			Timeout: QUERY_CTL_DEFAULT_TIMEOUT_MS,
+	queryCtlParams := cbgt.QueryCtlParams{
+		Ctl: cbgt.QueryCtl{
+			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
 
@@ -98,7 +102,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 		return err
 	}
 
-	cancelCh := TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
+	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, true,
@@ -112,7 +116,7 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 		return err
 	}
 
-	mustEncode(res, searchResponse)
+	cbgt.MustEncode(res, searchResponse)
 
 	return nil
 }
@@ -120,14 +124,14 @@ func QueryAlias(mgr *Manager, indexName, indexUUID string,
 // The indexName/indexUUID is for a user-defined index alias.
 //
 // TODO: One day support user-defined aliases for non-bleve indexes.
-func bleveIndexAliasForUserIndexAlias(mgr *Manager,
+func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 	indexName, indexUUID string, ensureCanRead bool,
-	consistencyParams *ConsistencyParams,
+	consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool) (
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 
-	indexDefs, _, err := CfgGetIndexDefs(mgr.cfg)
+	indexDefs, _, err := cbgt.CfgGetIndexDefs(mgr.Cfg())
 	if err != nil {
 		return nil, fmt.Errorf("alias: could not get indexDefs,"+
 			" indexName: %s, err: %v", indexName, err)
@@ -167,7 +171,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *Manager,
 		for targetName, targetSpec := range params.Targets {
 			if num > maxAliasTargets {
 				return fmt.Errorf("alias: too many alias targets,"+
-					" perhaps there's a cycle, aliasName: %s, indexName: %s",
+					" perhaps there's a cycle,"+
+					" aliasName: %s, indexName: %s",
 					aliasName, indexName)
 			}
 			targetDef := indexDefs.IndexDefs[targetName]

@@ -11,16 +11,18 @@ package cbft
 
 import (
 	"net/http"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 // ManagerMetaHandler is a REST handler that returns metadata about a
 // manager/node.
 type ManagerMetaHandler struct {
-	mgr  *Manager
+	mgr  *cbgt.Manager
 	meta map[string]RESTMeta
 }
 
-func NewManagerMetaHandler(mgr *Manager,
+func NewManagerMetaHandler(mgr *cbgt.Manager,
 	meta map[string]RESTMeta) *ManagerMetaHandler {
 	return &ManagerMetaHandler{mgr: mgr, meta: meta}
 }
@@ -49,16 +51,17 @@ type MetaDescIndex struct {
 	QueryHelp    string      `json:"queryHelp"`
 }
 
-func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *ManagerMetaHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	startSamples := map[string]interface{}{
-		"planParams": &PlanParams{
+		"planParams": &cbgt.PlanParams{
 			MaxPartitionsPerPIndex: 20,
 		},
 	}
 
 	// Key is sourceType, value is description.
 	sourceTypes := map[string]*MetaDescSource{}
-	for sourceType, f := range FeedTypes {
+	for sourceType, f := range cbgt.FeedTypes {
 		if f.Public {
 			sourceTypes[sourceType] = &MetaDescSource{
 				Description:     f.Description,
@@ -70,7 +73,7 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	// Key is indexType, value is description.
 	indexTypes := map[string]*MetaDescIndex{}
-	for indexType, t := range PIndexImplTypes {
+	for indexType, t := range cbgt.PIndexImplTypes {
 		mdi := &MetaDescIndex{
 			MetaDesc: MetaDesc{
 				Description: t.Description,
@@ -92,16 +95,16 @@ func (h *ManagerMetaHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		"status":       "ok",
 		"startSamples": startSamples,
 		"sourceTypes":  sourceTypes,
-		"indexNameRE":  INDEX_NAME_REGEXP,
+		"indexNameRE":  cbgt.INDEX_NAME_REGEXP,
 		"indexTypes":   indexTypes,
 		"refREST":      h.meta,
 	}
 
-	for _, t := range PIndexImplTypes {
+	for _, t := range cbgt.PIndexImplTypes {
 		if t.MetaExtra != nil {
 			t.MetaExtra(r)
 		}
 	}
 
-	mustEncode(w, r)
+	cbgt.MustEncode(w, r)
 }

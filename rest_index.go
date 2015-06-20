@@ -16,32 +16,21 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/couchbaselabs/cbgt"
 )
-
-func DocIDLookup(req *http.Request) string {
-	return muxVariableLookup(req, "docID")
-}
-
-func IndexNameLookup(req *http.Request) string {
-	return muxVariableLookup(req, "indexName")
-}
-
-func PIndexNameLookup(req *http.Request) string {
-	return muxVariableLookup(req, "pindexName")
-}
-
-// ------------------------------------------------------------------
 
 // ListIndexHandler is a REST handler for list indexes.
 type ListIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewListIndexHandler(mgr *Manager) *ListIndexHandler {
+func NewListIndexHandler(mgr *cbgt.Manager) *ListIndexHandler {
 	return &ListIndexHandler{mgr: mgr}
 }
 
-func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *ListIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	indexDefs, _, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		showError(w, req, "could not retrieve index defs", 500)
@@ -49,13 +38,13 @@ func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	rv := struct {
-		Status    string     `json:"status"`
-		IndexDefs *IndexDefs `json:"indexDefs"`
+		Status    string          `json:"status"`
+		IndexDefs *cbgt.IndexDefs `json:"indexDefs"`
 	}{
 		Status:    "ok",
 		IndexDefs: indexDefs,
 	}
-	mustEncode(w, rv)
+	cbgt.MustEncode(w, rv)
 }
 
 // ---------------------------------------------------
@@ -63,20 +52,22 @@ func (h *ListIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // GetIndexHandler is a REST handler for retrieving an index
 // definition.
 type GetIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewGetIndexHandler(mgr *Manager) *GetIndexHandler {
+func NewGetIndexHandler(mgr *cbgt.Manager) *GetIndexHandler {
 	return &GetIndexHandler{mgr: mgr}
 }
 
 func (h *GetIndexHandler) RESTOpts(opts map[string]string) {
-	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the index definition to be retrieved."
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the index definition to be retrieved."
 }
 
-func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := IndexNameLookup(req)
+func (h *GetIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	indexName := cbgt.IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -100,14 +91,16 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	planPIndexes, planPIndexesByName, err := h.mgr.GetPlanPIndexes(false)
+	planPIndexes, planPIndexesByName, err :=
+		h.mgr.GetPlanPIndexes(false)
 	if err != nil {
 		showError(w, req,
-			fmt.Sprintf("rest_index: GetPlanPIndexes, err: %v", err), 400)
+			fmt.Sprintf("rest_index: GetPlanPIndexes, err: %v",
+				err), 400)
 		return
 	}
 
-	planPIndexesForIndex := []*PlanPIndex(nil)
+	planPIndexesForIndex := []*cbgt.PlanPIndex(nil)
 	if planPIndexesByName != nil {
 		planPIndexesForIndex = planPIndexesByName[indexName]
 	}
@@ -117,11 +110,11 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		planPIndexesWarnings = planPIndexes.Warnings[indexName]
 	}
 
-	mustEncode(w, struct {
-		Status       string        `json:"status"`
-		IndexDef     *IndexDef     `json:"indexDef"`
-		PlanPIndexes []*PlanPIndex `json:"planPIndexes"`
-		Warnings     []string      `json:"warnings"`
+	cbgt.MustEncode(w, struct {
+		Status       string             `json:"status"`
+		IndexDef     *cbgt.IndexDef     `json:"indexDef"`
+		PlanPIndexes []*cbgt.PlanPIndex `json:"planPIndexes"`
+		Warnings     []string           `json:"warnings"`
 	}{
 		Status:       "ok",
 		IndexDef:     indexDef,
@@ -135,20 +128,22 @@ func (h *GetIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // CountHandler is a REST handler for counting documents/entries in an
 // index.
 type CountHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewCountHandler(mgr *Manager) *CountHandler {
+func NewCountHandler(mgr *cbgt.Manager) *CountHandler {
 	return &CountHandler{mgr: mgr}
 }
 
 func (h *CountHandler) RESTOpts(opts map[string]string) {
-	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the index whose count is to be retrieved."
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the index whose count is to be retrieved."
 }
 
-func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := IndexNameLookup(req)
+func (h *CountHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	indexName := cbgt.IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -156,17 +151,21 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexUUID := req.FormValue("indexUUID")
 
-	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
+	pindexImplType, err :=
+		cbgt.PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
 	if err != nil || pindexImplType.Count == nil {
 		showError(w, req, fmt.Sprintf("rest_index: Count,"+
-			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
+			" no pindexImplType, indexName: %s, err: %v",
+			indexName, err), 400)
 		return
 	}
 
-	count, err := pindexImplType.Count(h.mgr, indexName, indexUUID)
+	count, err :=
+		pindexImplType.Count(h.mgr, indexName, indexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: Count,"+
-			" indexName: %s, err: %v", indexName, err), 500)
+			" indexName: %s, err: %v",
+			indexName, err), 500)
 		return
 	}
 
@@ -177,23 +176,23 @@ func (h *CountHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Status: "ok",
 		Count:  count,
 	}
-	mustEncode(w, rv)
+	cbgt.MustEncode(w, rv)
 }
 
 // ---------------------------------------------------
 
 // QueryHandler is a REST handler for querying an index.
 type QueryHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewQueryHandler(mgr *Manager) *QueryHandler {
+func NewQueryHandler(mgr *cbgt.Manager) *QueryHandler {
 	return &QueryHandler{mgr: mgr}
 }
 
 func (h *QueryHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
-	for indexType, t := range PIndexImplTypes {
+	for indexType, t := range cbgt.PIndexImplTypes {
 		if t.QuerySamples != nil {
 			s := "For index type ```" + indexType + "```:\n\n"
 
@@ -204,7 +203,8 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 
 				if sample.JSON != nil {
 					s = s + "    " +
-						IndentJSON(sample.JSON, "    ", "  ") + "\n"
+						cbgt.IndentJSON(sample.JSON, "    ", "  ") +
+						"\n"
 				}
 			}
 
@@ -213,14 +213,17 @@ func (h *QueryHandler) RESTOpts(opts map[string]string) {
 	}
 	sort.Strings(indexTypes)
 
-	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the index to be queried."
-	opts[""] = "The request's POST body depends on the index type:\n\n" +
-		strings.Join(indexTypes, "\n")
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the index to be queried."
+	opts[""] =
+		"The request's POST body depends on the index type:\n\n" +
+			strings.Join(indexTypes, "\n")
 }
 
-func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := IndexNameLookup(req)
+func (h *QueryHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	indexName := cbgt.IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -231,20 +234,23 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: Query,"+
-			" could not read request body, indexName: %s", indexName), 400)
+			" could not read request body, indexName: %s",
+			indexName), 400)
 		return
 	}
 
-	pindexImplType, err := PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
+	pindexImplType, err :=
+		cbgt.PIndexImplTypeForIndex(h.mgr.Cfg(), indexName)
 	if err != nil || pindexImplType.Query == nil {
 		showError(w, req, fmt.Sprintf("rest_index: Query,"+
-			" no pindexImplType, indexName: %s, err: %v", indexName, err), 400)
+			" no pindexImplType, indexName: %s, err: %v",
+			indexName, err), 400)
 		return
 	}
 
 	err = pindexImplType.Query(h.mgr, indexName, indexUUID, requestBody, w)
 	if err != nil {
-		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+		if errCW, ok := err.(*cbgt.ErrorConsistencyWait); ok {
 			rv := struct {
 				Status       string              `json:"status"`
 				Message      string              `json:"message"`
@@ -275,12 +281,12 @@ func (h *QueryHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // IndexControlHandler is a REST handler for processing admin control
 // requests on an index.
 type IndexControlHandler struct {
-	mgr        *Manager
+	mgr        *cbgt.Manager
 	control    string
 	allowedOps map[string]bool
 }
 
-func NewIndexControlHandler(mgr *Manager, control string,
+func NewIndexControlHandler(mgr *cbgt.Manager, control string,
 	allowedOps map[string]bool) *IndexControlHandler {
 	return &IndexControlHandler{
 		mgr:        mgr,
@@ -290,12 +296,14 @@ func NewIndexControlHandler(mgr *Manager, control string,
 }
 
 func (h *IndexControlHandler) RESTOpts(opts map[string]string) {
-	opts["param: indexName"] = "required, string, URL path parameter\n\n" +
-		"The name of the index whose control values will be modified."
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the index whose control values will be modified."
 }
 
-func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	indexName := IndexNameLookup(req)
+func (h *IndexControlHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	indexName := cbgt.IndexNameLookup(req)
 	if indexName == "" {
 		showError(w, req, "index name is required", 400)
 		return
@@ -303,7 +311,7 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 
 	indexUUID := req.FormValue("indexUUID")
 
-	op := muxVariableLookup(req, "op")
+	op := cbgt.MuxVariableLookup(req, "op")
 	if !h.allowedOps[op] {
 		showError(w, req, fmt.Sprintf("rest_index: IndexControl,"+
 			" error: unsupported op: %s", op), 400)
@@ -320,7 +328,8 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	}
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: IndexControl,"+
-			" control: %s, could not op: %s, err: %v", h.control, op, err), 400)
+			" control: %s, could not op: %s, err: %v",
+			h.control, op, err), 400)
 		return
 	}
 
@@ -329,31 +338,32 @@ func (h *IndexControlHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	}{
 		Status: "ok",
 	}
-	mustEncode(w, rv)
+	cbgt.MustEncode(w, rv)
 }
 
 // ------------------------------------------------------------------
 
 // ListPIndexHandler is a REST handler for listing pindexes.
 type ListPIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewListPIndexHandler(mgr *Manager) *ListPIndexHandler {
+func NewListPIndexHandler(mgr *cbgt.Manager) *ListPIndexHandler {
 	return &ListPIndexHandler{mgr: mgr}
 }
 
-func (h *ListPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *ListPIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	_, pindexes := h.mgr.CurrentMaps()
 
 	rv := struct {
-		Status   string             `json:"status"`
-		PIndexes map[string]*PIndex `json:"pindexes"`
+		Status   string                  `json:"status"`
+		PIndexes map[string]*cbgt.PIndex `json:"pindexes"`
 	}{
 		Status:   "ok",
 		PIndexes: pindexes,
 	}
-	mustEncode(w, rv)
+	cbgt.MustEncode(w, rv)
 }
 
 // ---------------------------------------------------
@@ -361,15 +371,16 @@ func (h *ListPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 // GetPIndexHandler is a REST handler for retrieving information on a
 // pindex.
 type GetPIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewGetPIndexHandler(mgr *Manager) *GetPIndexHandler {
+func NewGetPIndexHandler(mgr *cbgt.Manager) *GetPIndexHandler {
 	return &GetPIndexHandler{mgr: mgr}
 }
 
-func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := PIndexNameLookup(req)
+func (h *GetPIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	pindexName := cbgt.PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return
@@ -382,9 +393,9 @@ func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	mustEncode(w, struct {
-		Status string  `json:"status"`
-		PIndex *PIndex `json:"pindex"`
+	cbgt.MustEncode(w, struct {
+		Status string       `json:"status"`
+		PIndex *cbgt.PIndex `json:"pindex"`
 	}{
 		Status: "ok",
 		PIndex: pindex,
@@ -396,15 +407,16 @@ func (h *GetPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // CountPIndexHandler is a REST handler for counting the
 // documents/entries in a pindex.
 type CountPIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewCountPIndexHandler(mgr *Manager) *CountPIndexHandler {
+func NewCountPIndexHandler(mgr *cbgt.Manager) *CountPIndexHandler {
 	return &CountPIndexHandler{mgr: mgr}
 }
 
-func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := PIndexNameLookup(req)
+func (h *CountPIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	pindexName := cbgt.PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return
@@ -443,7 +455,8 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	count, err := pindex.Dest.Count(pindex, cancelCh)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: CountPIndex,"+
-			" pindexName: %s, req: %#v, err: %v", pindexName, req, err), 400)
+			" pindexName: %s, req: %#v, err: %v",
+			pindexName, req, err), 400)
 		return
 	}
 
@@ -454,22 +467,23 @@ func (h *CountPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		Status: "ok",
 		Count:  count,
 	}
-	mustEncode(w, rv)
+	cbgt.MustEncode(w, rv)
 }
 
 // ---------------------------------------------------
 
 // QueryPIndexHandler is a REST handler for querying a pindex.
 type QueryPIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewQueryPIndexHandler(mgr *Manager) *QueryPIndexHandler {
+func NewQueryPIndexHandler(mgr *cbgt.Manager) *QueryPIndexHandler {
 	return &QueryPIndexHandler{mgr: mgr}
 }
 
-func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	pindexName := PIndexNameLookup(req)
+func (h *QueryPIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	pindexName := cbgt.PIndexNameLookup(req)
 	if pindexName == "" {
 		showError(w, req, "rest_index: pindex name is required", 400)
 		return
@@ -498,7 +512,8 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_index: QueryPIndex,"+
-			" could not read request body, pindexName: %s", pindexName), 400)
+			" could not read request body, pindexName: %s",
+			pindexName), 400)
 		return
 	}
 
@@ -514,7 +529,7 @@ func (h *QueryPIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	err = pindex.Dest.Query(pindex, requestBody, w, cancelCh)
 	if err != nil {
-		if errCW, ok := err.(*ErrorConsistencyWait); ok {
+		if errCW, ok := err.(*cbgt.ErrorConsistencyWait); ok {
 			rv := struct {
 				Status       string              `json:"status"`
 				Message      string              `json:"message"`

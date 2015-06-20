@@ -25,23 +25,49 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+
+	"github.com/couchbaselabs/cbgt"
 )
+
+// Implements ManagerEventHandlers interface.
+type TestMEH struct {
+	lastPIndex *cbgt.PIndex
+	lastCall   string
+	ch         chan bool
+}
+
+func (meh *TestMEH) OnRegisterPIndex(pindex *cbgt.PIndex) {
+	meh.lastPIndex = pindex
+	meh.lastCall = "OnRegisterPIndex"
+	if meh.ch != nil {
+		meh.ch <- true
+	}
+}
+
+func (meh *TestMEH) OnUnregisterPIndex(pindex *cbgt.PIndex) {
+	meh.lastPIndex = pindex
+	meh.lastCall = "OnUnregisterPIndex"
+	if meh.ch != nil {
+		meh.ch <- true
+	}
+}
 
 func TestNewManagerRESTRouter(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	ring, err := NewMsgRing(nil, 1)
+	ring, err := cbgt.NewMsgRing(nil, 1)
 
-	cfg := NewCfgMem()
-	mgr := NewManager(VERSION, cfg, NewUUID(), nil, "", 1, "", ":1000",
+	cfg := cbgt.NewCfgMem()
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(), nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil)
 	r, meta, err := NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
 	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
 
-	mgr = NewManager(VERSION, cfg, NewUUID(), []string{"queryer", "anotherTag"},
+	mgr = cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		[]string{"queryer", "anotherTag"},
 		"", 1, "", ":1000", emptyDir, "some-datasource", nil)
 	r, meta, err = NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
 	if r == nil || meta == nil || err != nil {
@@ -116,14 +142,14 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
@@ -194,19 +220,19 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	mgr.addEvent([]byte(`"fizz"`))
-	mgr.addEvent([]byte(`"buzz"`))
+	mgr.AddEvent([]byte(`"fizz"`))
+	mgr.AddEvent([]byte(`"buzz"`))
 
 	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
@@ -415,14 +441,14 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string)
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "shelf/rack/row", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
 	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
@@ -757,14 +783,14 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
 	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
@@ -773,7 +799,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 
 	var doneCh chan *httptest.ResponseRecorder
 
-	var feed *PrimaryFeed
+	var feed *cbgt.PrimaryFeed
 
 	tests := []*RESTHandlerTest{
 		{
@@ -815,7 +841,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed, ok = f.(*PrimaryFeed)
+					feed, ok = f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -849,7 +875,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(1)
 				val := []byte(`{"foo":"bar","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -872,7 +898,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(2)
 				val := []byte(`{"foo":"bing","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -895,7 +921,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(3)
 				val := []byte(`{"foo":"baz","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1021,7 +1047,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex get",
 			Method: "NOOP",
 			After: func() {
-				var pindex *PIndex
+				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
@@ -1053,7 +1079,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query on mismatched pindex UUID",
 			Method: "NOOP",
 			After: func() {
-				var pindex *PIndex
+				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
@@ -1089,7 +1115,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query with clipped requestBody",
 			Method: "NOOP",
 			After: func() {
-				var pindex *PIndex
+				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
@@ -1123,7 +1149,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query",
 			Method: "NOOP",
 			After: func() {
-				var pindex *PIndex
+				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
@@ -1249,7 +1275,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				seq := uint64(11)
 				val := []byte(`{"foo":"boof","yow":"wXw"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1472,14 +1498,14 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
 	router, _, err := NewManagerRESTRouter("v0", mgr, "static", "", mr)
 	if err != nil || router == nil {
@@ -1488,7 +1514,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 
 	var doneCh chan *httptest.ResponseRecorder
 
-	var feed *PrimaryFeed
+	var feed *cbgt.PrimaryFeed
 
 	tests := []*RESTHandlerTest{
 		{
@@ -1515,7 +1541,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed, ok = f.(*PrimaryFeed)
+					feed, ok = f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -1549,7 +1575,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(1)
 				val := []byte(`{"foo":"bar","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1572,7 +1598,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(2)
 				val := []byte(`{"foo":"bing","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1595,7 +1621,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				seq := uint64(3)
 				val := []byte(`{"foo":"baz","yow":"wow"}`)
 				err = feed.DataUpdate(partition, key, seq, val,
-					0, DEST_EXTRAS_TYPE_NIL, nil)
+					0, cbgt.DEST_EXTRAS_TYPE_NIL, nil)
 				if err != nil {
 					t.Errorf("expected no err on data-udpate")
 				}
@@ -1701,7 +1727,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 }
 
 func TestCreateIndexTwoNodes(t *testing.T) {
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
 	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
@@ -1710,9 +1736,9 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 	meh0 := &TestMEH{}
 	meh1 := &TestMEH{}
-	mgr0 := NewManager(VERSION, cfg, NewUUID(),
+	mgr0 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource", meh0)
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 
 	mgr0.Start("wanted")
@@ -1720,8 +1746,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mgr0.Kick("test-start-kick")
 	mgr1.Kick("test-start-kick")
 
-	mr0, _ := NewMsgRing(os.Stderr, 1000)
-	mr1, _ := NewMsgRing(os.Stderr, 1000)
+	mr0, _ := cbgt.NewMsgRing(os.Stderr, 1000)
+	mr1, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
 	router0, _, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
 	if err != nil || router0 == nil {
@@ -1732,7 +1758,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 		t.Errorf("no mux router")
 	}
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -1740,7 +1766,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -1755,8 +1781,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mgr0.Kick("test-start-kick-again")
 	mgr1.Kick("test-start-kick-again")
 
-	var feed0 *PrimaryFeed
-	var feed1 *PrimaryFeed
+	var feed0 *cbgt.PrimaryFeed
+	var feed1 *cbgt.PrimaryFeed
 
 	httpGetPrev := httpGet
 	defer func() { httpGet = httpGetPrev }()
@@ -1831,7 +1857,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed0, ok = f.(*PrimaryFeed)
+					feed0, ok = f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -1851,7 +1877,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed1, ok = f.(*PrimaryFeed)
+					feed1, ok = f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -1862,7 +1888,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					}
 				}
 
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if len(indexDefs.IndexDefs) != 1 {
 					t.Errorf("expected 1 indexDef")
 				}
@@ -1983,24 +2009,25 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 }
 
 func testCreateIndex1Node(t *testing.T, planParams []string,
-	expNumPIndexes, expNumFeeds int) (Cfg, *Manager, *mux.Router) {
-	cfg := NewCfgMem()
+	expNumPIndexes, expNumFeeds int) (
+	cbgt.Cfg, *cbgt.Manager, *mux.Router) {
+	cfg := cbgt.NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir0)
 
 	meh0 := &TestMEH{}
-	mgr0 := NewManager(VERSION, cfg, NewUUID(),
+	mgr0 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource", meh0)
 	mgr0.Start("wanted")
 	mgr0.Kick("test-start-kick")
-	mr0, _ := NewMsgRing(os.Stderr, 1000)
+	mr0, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	router0, _, err := NewManagerRESTRouter("v0", mgr0, "static", "", mr0)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2008,7 +2035,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 		t.Errorf("expected 1 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2018,7 +2045,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 
 	mgr0.Kick("test-start-kick-again")
 
-	var feed0 *PrimaryFeed
+	var feed0 *cbgt.PrimaryFeed
 
 	httpGetPrev := httpGet
 	defer func() { httpGet = httpGetPrev }()
@@ -2094,7 +2121,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 				}
 				for _, f := range feeds {
 					var ok bool
-					feed0, ok = f.(*PrimaryFeed)
+					feed0, ok = f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -2105,7 +2132,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 					}
 				}
 
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if len(indexDefs.IndexDefs) != 1 {
 					t.Errorf("expected 1 indexDef")
 				}
@@ -2151,7 +2178,7 @@ func TestCreateIndexAddNode(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2160,12 +2187,12 @@ func TestCreateIndexAddNode(t *testing.T) {
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2173,7 +2200,7 @@ func TestCreateIndexAddNode(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2189,17 +2216,19 @@ func TestCreateIndexAddNode(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
 	if casPrev >= casCurr {
-		t.Errorf("expected diff casPrev: %d, casCurr: %d", casPrev, casCurr)
+		t.Errorf("expected diff casPrev: %d, casCurr: %d",
+			casPrev, casCurr)
 	}
-	if SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+	if cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
-		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+		t.Errorf("expected diff plans,"+
+			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 }
@@ -2232,7 +2261,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2241,12 +2270,12 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2254,7 +2283,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2270,14 +2299,14 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
 	if casPrev != casCurr {
 		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
 	}
-	if !SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
@@ -2315,7 +2344,7 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2324,12 +2353,12 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2337,7 +2366,7 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2353,14 +2382,14 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
 	if casPrev != casCurr {
 		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
 	}
-	if !SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
@@ -2385,14 +2414,14 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	indexDefs, indexDefsCas, err := CfgGetIndexDefs(cfg)
+	indexDefs, indexDefsCas, err := cbgt.CfgGetIndexDefs(cfg)
 	indexDefs.IndexDefs["myIdx"].PlanParams.PlanFrozen = true
-	_, err = CfgSetIndexDefs(cfg, indexDefs, indexDefsCas)
+	_, err = cbgt.CfgSetIndexDefs(cfg, indexDefs, indexDefsCas)
 	if err != nil {
 		t.Errorf("expected CfgSetIndexDefs for plan freeze to work")
 	}
 
-	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2401,12 +2430,13 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		nil, "", 1, "", "localhost:2000", emptyDir1,
+		"some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2414,7 +2444,7 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2430,14 +2460,15 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
 	if casPrev != casCurr {
-		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
+		t.Errorf("expected same casPrev: %d, casCurr: %d",
+			casPrev, casCurr)
 	}
-	if !SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
@@ -2463,7 +2494,7 @@ func TestNodePlanParams(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	planPIndexesPrev, casPrev, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2472,12 +2503,13 @@ func TestNodePlanParams(t *testing.T) {
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
-	mgr1 := NewManager(VERSION, cfg, NewUUID(),
-		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
+	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		nil, "", 1, "", "localhost:2000", emptyDir1,
+		"some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
-	nd, _, err := CfgGetNodeDefs(cfg, NODE_DEFS_KNOWN)
+	nd, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_KNOWN)
 	if err != nil {
 		t.Errorf("expected node defs known")
 	}
@@ -2485,7 +2517,7 @@ func TestNodePlanParams(t *testing.T) {
 		t.Errorf("expected 2 node defs unknown")
 	}
 
-	nd, _, err = CfgGetNodeDefs(cfg, NODE_DEFS_WANTED)
+	nd, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 	if err != nil {
 		t.Errorf("expected node defs wanted")
 	}
@@ -2501,17 +2533,19 @@ func TestNodePlanParams(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, casCurr, err := CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
 	if casPrev >= casCurr {
-		t.Errorf("expected diff casPrev: %d, casCurr: %d", casPrev, casCurr)
+		t.Errorf("expected diff casPrev: %d, casCurr: %d",
+			casPrev, casCurr)
 	}
-	if SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
+	if cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
-		t.Errorf("expected diff plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+		t.Errorf("expected diff plans,"+
+			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 
@@ -2520,7 +2554,8 @@ func TestNodePlanParams(t *testing.T) {
 		for nodeUUID, planPIndexNode := range pindex.Nodes {
 			n++
 			if planPIndexNode.CanRead || planPIndexNode.CanWrite {
-				t.Errorf("expected not readable, not writable, nodeUUID: %s", nodeUUID)
+				t.Errorf("expected not readable, not writable,"+
+					" nodeUUID: %s", nodeUUID)
 			}
 		}
 	}
@@ -2533,14 +2568,14 @@ func TestHandlersForIndexControl(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
@@ -2599,7 +2634,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 		},
 		{
 			Before: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
 					t.Errorf("expected nil plan params before accessing index control")
 				}
@@ -2615,7 +2650,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`unsupported`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
 					t.Errorf("expected nil plan params after rejected index control")
 				}
@@ -2632,7 +2667,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
 					t.Errorf("expected non-nil plan params")
 				}
@@ -2655,7 +2690,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
 					t.Errorf("expected non-nil plan params")
 				}
@@ -2698,7 +2733,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
 					t.Errorf("expected non-nil plan params")
 				}
@@ -2721,7 +2756,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
 					t.Errorf("expected non-nil plan params")
 				}
@@ -2741,7 +2776,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if !indexDefs.IndexDefs["idx0"].PlanParams.PlanFrozen {
 					t.Errorf("expected frozen")
 				}
@@ -2758,7 +2793,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 				`ok`: true,
 			},
 			After: func() {
-				indexDefs, _, _ := CfgGetIndexDefs(cfg)
+				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.PlanFrozen {
 					t.Errorf("expected thawed")
 				}
@@ -2773,14 +2808,14 @@ func TestMultiFeedStats(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
@@ -2843,14 +2878,14 @@ func TestIndexDefWithJSON(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	cfg := NewCfgMem()
+	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
-	mgr := NewManager(VERSION, cfg, NewUUID(),
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
-	mr, _ := NewMsgRing(os.Stderr, 1000)
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 

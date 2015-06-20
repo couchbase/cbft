@@ -20,21 +20,23 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+
+	"github.com/couchbaselabs/cbgt"
 )
 
 // CreateIndexHandler is a REST handler that processes an index
 // creation request.
 type CreateIndexHandler struct {
-	mgr *Manager
+	mgr *cbgt.Manager
 }
 
-func NewCreateIndexHandler(mgr *Manager) *CreateIndexHandler {
+func NewCreateIndexHandler(mgr *cbgt.Manager) *CreateIndexHandler {
 	return &CreateIndexHandler{mgr: mgr}
 }
 
 func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	indexTypes := []string(nil)
-	for indexType, t := range PIndexImplTypes {
+	for indexType, t := range cbgt.PIndexImplTypes {
 		indexTypes = append(indexTypes,
 			"```"+indexType+"```: "+
 				strings.Split(t.Description, " - ")[1])
@@ -44,12 +46,12 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	indexParams := []string(nil)
 	for _, indexDesc := range indexTypes {
 		indexType := strings.Split(indexDesc, "```")[1]
-		t := PIndexImplTypes[indexType]
+		t := cbgt.PIndexImplTypes[indexType]
 		if t.StartSample != nil {
 			indexParams = append(indexParams,
 				"For indexType ```"+indexType+"```"+
 					", an example indexParams JSON:\n\n    "+
-					IndentJSON(t.StartSample, "    ", "  "))
+					cbgt.IndentJSON(t.StartSample, "    ", "  "))
 		} else {
 			indexParams = append(indexParams,
 				"For indexType ```"+indexType+"```"+
@@ -58,7 +60,7 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	}
 
 	sourceTypes := []string(nil)
-	for sourceType, t := range FeedTypes {
+	for sourceType, t := range cbgt.FeedTypes {
 		if t.Public {
 			sourceTypes = append(sourceTypes,
 				"```"+sourceType+"```: "+
@@ -70,12 +72,12 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 	sourceParams := []string(nil)
 	for _, sourceDesc := range sourceTypes {
 		sourceType := strings.Split(sourceDesc, "```")[1]
-		t := FeedTypes[sourceType]
+		t := cbgt.FeedTypes[sourceType]
 		if t.StartSample != nil {
 			sourceParams = append(sourceParams,
 				"For sourceType ```"+sourceType+"```"+
 					", an example sourceParams JSON:\n\n    "+
-					IndentJSON(t.StartSample, "    ", "  "))
+					cbgt.IndentJSON(t.StartSample, "    ", "  "))
 		} else {
 			sourceParams = append(sourceParams,
 				"For sourceType ```"+sourceType+"```"+
@@ -87,7 +89,7 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 		"required, string, URL path parameter\n\n" +
 			"The name of the to-be-created/updated index definition,\n" +
 			"validated with the regular expression of ```" +
-			INDEX_NAME_REGEXP + "```."
+			cbgt.INDEX_NAME_REGEXP + "```."
 	opts["param: indexType"] =
 		"required, string, form parameter\n\n" +
 			"Supported indexType's:\n\n* " +
@@ -120,7 +122,8 @@ func (h *CreateIndexHandler) RESTOpts(opts map[string]string) {
 		`HTTP 200 with body JSON of {"status": "ok"}` // TODO: Revisit 200 code.
 }
 
-func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *CreateIndexHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
 	// TODO: Need more input validation (check source UUID's, etc).
 	indexName := mux.Vars(req)["indexName"]
 	if indexName == "" {
@@ -136,7 +139,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var indexDef IndexDef
+	var indexDef cbgt.IndexDef
 	if len(requestBody) > 0 {
 		err := json.Unmarshal(requestBody, &indexDef)
 		if err != nil {
@@ -192,7 +195,7 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		sourceParams = indexDef.SourceParams
 	}
 
-	planParams := &PlanParams{}
+	planParams := &cbgt.PlanParams{}
 	planParamsStr := req.FormValue("planParams")
 	if planParamsStr != "" {
 		err := json.Unmarshal([]byte(planParamsStr), planParams)
@@ -208,8 +211,10 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	prevIndexUUID := req.FormValue("prevIndexUUID") // Defaults to "".
 
-	err = h.mgr.CreateIndex(sourceType, sourceName, sourceUUID, sourceParams,
-		indexType, indexName, string(indexParams), *planParams, prevIndexUUID)
+	err = h.mgr.CreateIndex(sourceType, sourceName,
+		sourceUUID, sourceParams,
+		indexType, indexName, string(indexParams),
+		*planParams, prevIndexUUID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("rest_create_index:"+
 			" error creating index: %s, err: %v",
@@ -217,7 +222,8 @@ func (h *CreateIndexHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	mustEncode(w, struct { // TODO: Should return created vs 200 HTTP code?
+	cbgt.MustEncode(w, struct {
+		// TODO: Should return created vs 200 HTTP code?
 		Status string `json:"status"`
 	}{Status: "ok"})
 }

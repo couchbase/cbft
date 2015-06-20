@@ -35,7 +35,8 @@ import (
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbaselabs/cbft"
-	"github.com/couchbaselabs/cbft/cmd"
+	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbaselabs/cbgt/cmd"
 )
 
 var VERSION = "v0.2.0"
@@ -52,7 +53,7 @@ func main() {
 
 	if flags.Version {
 		fmt.Printf("%s main: %s, data: %s\n", path.Base(os.Args[0]),
-			VERSION, cbft.VERSION)
+			VERSION, cbgt.VERSION)
 		os.Exit(0)
 	}
 
@@ -60,14 +61,14 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	mr, err := cbft.NewMsgRing(os.Stderr, 1000)
+	mr, err := cbgt.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
 		log.Fatalf("main: could not create MsgRing, err: %v", err)
 	}
 	log.SetOutput(mr)
 
 	log.Printf("main: %s started (%s/%s)",
-		os.Args[0], VERSION, cbft.VERSION)
+		os.Args[0], VERSION, cbgt.VERSION)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -186,9 +187,9 @@ func MainWelcome(flagAliases map[string][]string) {
 	}
 }
 
-func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
+func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, bindHttp, dataDir, staticDir, staticETag, server string,
-	register string, mr *cbft.MsgRing) (
+	register string, mr *cbgt.MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -208,15 +209,16 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 					server)
 			}
 
-			return nil, fmt.Errorf("error: could not connect to server (%q),"+
-				" err: %v\n"+
+			return nil, fmt.Errorf("error: could not connect"+
+				" to server (%q), err: %v\n"+
 				"  Please check that your -server parameter (%q)\n"+
 				"  is correct and the couchbase server is available.",
 				server, err, server)
 		}
 	}
 
-	mgr := cbft.NewManager(cbft.VERSION, cfg, uuid, tags, container, weight,
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg,
+		uuid, tags, container, weight,
 		"", bindHttp, dataDir, server, &MainHandlers{})
 	err := mgr.Start(register)
 	if err != nil {
@@ -231,14 +233,14 @@ func MainStart(cfg cbft.Cfg, uuid string, tags []string, container string,
 
 type MainHandlers struct{}
 
-func (meh *MainHandlers) OnRegisterPIndex(pindex *cbft.PIndex) {
+func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
 		bleveHttp.RegisterIndexName(pindex.Name, bindex)
 	}
 }
 
-func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbft.PIndex) {
+func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 	bleveHttp.UnregisterIndexByName(pindex.Name)
 }
 
