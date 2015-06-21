@@ -20,6 +20,7 @@ import (
 	"github.com/blevesearch/bleve"
 
 	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbaselabs/cbgt/rest"
 )
 
 var maxAliasTargets = 50000
@@ -116,7 +117,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
-	cbgt.MustEncode(res, searchResponse)
+	rest.MustEncode(res, searchResponse)
 
 	return nil
 }

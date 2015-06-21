@@ -10,39 +10,22 @@
 package cbft
 
 import (
-	"flag"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"os/user"
-	"runtime"
+	"path/filepath"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 
-	log "github.com/couchbase/clog"
 	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbaselabs/cbgt/rest"
 )
-
-var startTime = time.Now()
-
-// RESTMeta represents the metadata of a REST API endpoint and is used
-// for auto-generated REST API documentation.
-type RESTMeta struct {
-	Path   string
-	Method string
-	Opts   map[string]string
-}
-
-// RESTOpts interface may be optionally implemented by REST API
-// handlers to provide even more information for auto-generated REST
-// API documentation.
-type RESTOpts interface {
-	RESTOpts(map[string]string)
-}
 
 // NewManagerRESTRouter creates a mux.Router initialized with the REST
 // API and web UI routes.  See also InitStaticFileRouter and
@@ -50,7 +33,7 @@ type RESTOpts interface {
 // initialization.
 func NewManagerRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
-	*mux.Router, map[string]RESTMeta, error) {
+	*mux.Router, map[string]rest.RESTMeta, error) {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
@@ -73,432 +56,160 @@ func NewManagerRESTRouter(versionMain string, mgr *cbgt.Manager,
 func InitManagerRESTRouter(r *mux.Router, versionMain string,
 	mgr *cbgt.Manager, staticDir, staticETag string,
 	mr *cbgt.MsgRing) (
-	*mux.Router, map[string]RESTMeta, error) {
-	PIndexTypesInitRouter(r, "manager.before")
-
-	methodOrds := map[string]string{
-		"GET":    "0",
-		"POST":   "1",
-		"PUT":    "2",
-		"DELETE": "3",
+	*mux.Router, map[string]rest.RESTMeta, error) {
+	r, meta, err := rest.InitManagerRESTRouter(r, versionMain,
+		mgr, staticDir, staticETag, mr)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	meta := map[string]RESTMeta{}
 	handle := func(path string, method string, h http.Handler,
 		opts map[string]string) {
-		if a, ok := h.(RESTOpts); ok {
+		if a, ok := h.(rest.RESTOpts); ok {
 			a.RESTOpts(opts)
 		}
-		meta[path+" "+methodOrds[method]+method] =
-			RESTMeta{path, method, opts}
+		meta[path+" "+rest.RESTMethodOrds[method]+method] =
+			rest.RESTMeta{path, method, opts}
 		r.Handle(path, h).Methods(method)
 	}
-	handleFunc := func(path string, method string, h http.HandlerFunc,
-		opts map[string]string) {
-		meta[path+" "+methodOrds[method]+method] =
-			RESTMeta{path, method, opts}
-		r.HandleFunc(path, h).Methods(method)
-	}
-
-	handle("/api/index", "GET", NewListIndexHandler(mgr),
-		map[string]string{
-			"_category":          "Indexing|Index definition",
-			"_about":             `Returns all index definitions as JSON.`,
-			"version introduced": "0.0.1",
-		})
-	handle("/api/index/{indexName}", "PUT", NewCreateIndexHandler(mgr),
-		map[string]string{
-			"_category":          "Indexing|Index definition",
-			"_about":             `Creates/updates an index definition.`,
-			"version introduced": "0.0.1",
-		})
-	handle("/api/index/{indexName}", "DELETE", NewDeleteIndexHandler(mgr),
-		map[string]string{
-			"_category":          "Indexing|Index definition",
-			"_about":             `Deletes an index definition.`,
-			"version introduced": "0.0.1",
-		})
-	handle("/api/index/{indexName}", "GET", NewGetIndexHandler(mgr),
-		map[string]string{
-			"_category":          "Indexing|Index definition",
-			"_about":             `Returns the definition of an index as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	if mgr == nil || mgr.TagsMap() == nil || mgr.TagsMap()["queryer"] {
-		handle("/api/index/{indexName}/count", "GET",
-			NewCountHandler(mgr),
-			map[string]string{
-				"_category":          "Indexing|Index querying",
-				"_about":             `Returns the count of indexed documents.`,
-				"version introduced": "0.0.1",
-			})
-		handle("/api/index/{indexName}/query", "POST",
-			NewQueryHandler(mgr),
-			map[string]string{
-				"_category":          "Indexing|Index querying",
-				"_about":             `Queries an index.`,
-				"version introduced": "0.2.0",
-			})
-	}
-
-	handle("/api/index/{indexName}/planFreezeControl/{op}", "POST",
-		NewIndexControlHandler(mgr, "planFreeze", map[string]bool{
-			"freeze":   true,
-			"unfreeze": true,
-		}),
-		map[string]string{
-			"_category": "Indexing|Index management",
-			"_about":    `Freeze the assignment of index partitions to nodes.`,
-			"param: op": "required, string, URL path parameter\n\n" +
-				`Allowed values for op are "freeze" or "unfreeze".`,
-			"version introduced": "0.0.1",
-		})
-	handle("/api/index/{indexName}/ingestControl/{op}", "POST",
-		NewIndexControlHandler(mgr, "write", map[string]bool{
-			"pause":  true,
-			"resume": true,
-		}),
-		map[string]string{
-			"_category": "Indexing|Index management",
-			"_about": `Pause index updates and maintenance (no more
-                          ingesting document mutations).`,
-			"param: op": "required, string, URL path parameter\n\n" +
-				`Allowed values for op are "pause" or "resume".`,
-			"version introduced": "0.0.1",
-		})
-	handle("/api/index/{indexName}/queryControl/{op}", "POST",
-		NewIndexControlHandler(mgr, "read", map[string]bool{
-			"allow":    true,
-			"disallow": true,
-		}),
-		map[string]string{
-			"_category": "Indexing|Index management",
-			"_about":    `Disallow queries on an index.`,
-			"param: op": "required, string, URL path parameter\n\n" +
-				`Allowed values for op are "allow" or "disallow".`,
-			"version introduced": "0.0.1",
-		})
-
-	if mgr == nil || mgr.TagsMap() == nil || mgr.TagsMap()["pindex"] {
-		handle("/api/pindex", "GET",
-			NewListPIndexHandler(mgr),
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.1",
-			})
-		handle("/api/pindex/{pindexName}", "GET",
-			NewGetPIndexHandler(mgr),
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition definition",
-				"version introduced": "0.0.1",
-			})
-		handle("/api/pindex/{pindexName}/count", "GET",
-			NewCountPIndexHandler(mgr),
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.0.1",
-			})
-		handle("/api/pindex/{pindexName}/query", "POST",
-			NewQueryPIndexHandler(mgr),
-			map[string]string{
-				"_category":          "x/Advanced|x/Index partition querying",
-				"version introduced": "0.2.0",
-			})
-	}
-
-	handle("/api/cfg", "GET", NewCfgGetHandler(mgr),
-		map[string]string{
-			"_category": "Node|Node configuration",
-			"_about": `Returns the node's current view
-                       of the cluster's configuration as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handle("/api/cfgRefresh", "POST", NewCfgRefreshHandler(mgr),
-		map[string]string{
-			"_category": "Node|Node configuration",
-			"_about": `Requests the node to refresh its configuration
-                       from the configuration provider.`,
-			"version introduced": "0.0.1",
-		})
 
 	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr),
 		map[string]string{
 			"_category": "Node|Node diagnostics",
 			"_about": `Returns full set of diagnostic information
-                       from the node in one shot as JSON.  That is, the
-                       /api/diag response will be the union of the responses
-                       from the other REST API diagnostic and monitoring
-                       endpoints from the node, and is intended to make
-                       production support easier.`,
+                        from the node in one shot as JSON.  That is, the
+                        /api/diag response will be the union of the responses
+                        from the other REST API diagnostic and monitoring
+                        endpoints from the node, and is intended to make
+                        production support easier.`,
 			"version introduced": "0.0.1",
 		})
-
-	handle("/api/log", "GET", NewLogGetHandler(mgr, mr),
-		map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Returns recent log messages
-                       and key events for the node as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handle("/api/managerKick", "POST", NewManagerKickHandler(mgr),
-		map[string]string{
-			"_category": "Node|Node configuration",
-			"_about": `Forces the node to replan resource assignments
-                       (by running the planner, if enabled) and to update
-                       its runtime state to reflect the latest plan
-                       (by running the janitor, if enabled).`,
-			"version introduced": "0.0.1",
-		})
-
-	handle("/api/managerMeta", "GET", NewManagerMetaHandler(mgr, meta),
-		map[string]string{
-			"_category": "Node|Node configuration",
-			"_about": `Returns information on the node's capabilities,
-                       including available indexing and storage options as JSON,
-                       and is intended to help management tools and web UI's
-                       to be more dynamically metadata driven.`,
-			"version introduced": "0.0.1",
-		})
-
-	handle("/api/runtime", "GET",
-		NewRuntimeGetHandler(versionMain, mgr),
-		map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Returns information on the node's software,
-                       such as version strings and slow-changing
-                       runtime settings as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/args", "GET",
-		restGetRuntimeArgs, map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Returns information on the node's command-line,
-                       parameters, environment variables and
-                       O/S process values as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/gc", "POST",
-		restPostRuntimeGC, map[string]string{
-			"_category":          "Node|Node management",
-			"_about":             `Requests the node to perform a GC.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/profile/cpu", "POST",
-		restProfileCPU, map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Requests the node to capture local
-                       cpu usage profiling information.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/profile/memory", "POST",
-		restProfileMemory, map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Requests the node to capture lcoal
-                       memory usage profiling information.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/stats", "GET",
-		restGetRuntimeStats, map[string]string{
-			"_category": "Node|Node monitoring",
-			"_about": `Returns information on the node's
-                       low-level runtime stats as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handleFunc("/api/runtime/statsMem", "GET",
-		restGetRuntimeStatsMem, map[string]string{
-			"_category": "Node|Node monitoring",
-			"_about": `Returns information on the node's
-                       low-level GC and memory related runtime stats as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	handle("/api/stats", "GET", NewStatsHandler(mgr),
-		map[string]string{
-			"_category": "Indexing|Index monitoring",
-			"_about": `Returns indexing and data related metrics,
-                       timings and counters from the node as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	// TODO: If we ever implement cluster-wide index stats, we should
-	// have it under /api/index/{indexName}/stats GET endpoint.
-	//
-	handle("/api/stats/index/{indexName}", "GET", NewStatsHandler(mgr),
-		map[string]string{
-			"_category": "Indexing|Index monitoring",
-			"_about": `Returns metrics, timings and counters
-                       for a single index from the node as JSON.`,
-			"version introduced": "0.0.1",
-		})
-
-	PIndexTypesInitRouter(r, "manager.after")
 
 	return r, meta, nil
 }
 
-// PIndexTypesInitRouter initializes a mux.Router with the REST API
-// routes provided by registered pindex types.
-func PIndexTypesInitRouter(r *mux.Router, phase string) {
-	for _, t := range cbgt.PIndexImplTypes {
-		if t.InitRouter != nil {
-			t.InitRouter(r, phase)
-		}
-	}
-}
+// ------------------------------------------------------
 
-// --------------------------------------------------------
-
-// RuntimeGetHandler is a REST handler for runtime GET endpoint.
-type RuntimeGetHandler struct {
+// DiagGetHandler is a REST handler that retrieves diagnostic
+// information for a node.
+type DiagGetHandler struct {
 	versionMain string
 	mgr         *cbgt.Manager
+	mr          *cbgt.MsgRing
 }
 
-func NewRuntimeGetHandler(
-	versionMain string, mgr *cbgt.Manager) *RuntimeGetHandler {
-	return &RuntimeGetHandler{versionMain: versionMain, mgr: mgr}
+func NewDiagGetHandler(versionMain string,
+	mgr *cbgt.Manager, mr *cbgt.MsgRing) *DiagGetHandler {
+	return &DiagGetHandler{versionMain: versionMain, mgr: mgr, mr: mr}
 }
 
-func (h *RuntimeGetHandler) ServeHTTP(
-	w http.ResponseWriter, r *http.Request) {
-	cbgt.MustEncode(w, map[string]interface{}{
-		"versionMain": h.versionMain,
-		"versionData": h.mgr.Version(),
-		"arch":        runtime.GOARCH,
-		"os":          runtime.GOOS,
-		"numCPU":      runtime.NumCPU(),
-		"go": map[string]interface{}{
-			"GOMAXPROCS": runtime.GOMAXPROCS(0),
-			"GOROOT":     runtime.GOROOT(),
-			"version":    runtime.Version(),
-			"compiler":   runtime.Compiler,
-		},
-	})
-}
+func (h *DiagGetHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	handlers := []cbgt.DiagHandler{
+		{"/api/cfg", rest.NewCfgGetHandler(h.mgr), nil},
+		{"/api/index", rest.NewListIndexHandler(h.mgr), nil},
+		{"/api/log", rest.NewLogGetHandler(h.mgr, h.mr), nil},
+		{"/api/managerMeta", rest.NewManagerMetaHandler(h.mgr, nil), nil},
+		{"/api/pindex", rest.NewListPIndexHandler(h.mgr), nil},
+		{"/api/runtime", rest.NewRuntimeGetHandler(h.versionMain, h.mgr), nil},
+		{"/api/runtime/args", nil, rest.RESTGetRuntimeArgs},
+		{"/api/runtime/stats", nil, rest.RESTGetRuntimeStats},
+		{"/api/runtime/statsMem", nil, rest.RESTGetRuntimeStatsMem},
+		{"/api/stats", rest.NewStatsHandler(h.mgr), nil},
+		{"/debug/pprof/block?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "block", 2)
+			}},
+		{"/debug/pprof/goroutine?debug=2", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "goroutine", 2)
+			}},
+		{"/debug/pprof/heap?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "heap", 1)
+			}},
+		{"/debug/pprof/threadcreate?debug=1", nil,
+			func(w http.ResponseWriter, r *http.Request) {
+				DiagGetPProf(w, "threadcreate", 1)
+			}},
+	}
 
-func restGetRuntimeArgs(w http.ResponseWriter, r *http.Request) {
-	flags := map[string]interface{}{}
-	flag.VisitAll(func(f *flag.Flag) {
-		flags[f.Name] = f.Value
-	})
-
-	env := []string(nil)
-	for _, e := range os.Environ() {
-		if !strings.Contains(e, "PASSWORD") &&
-			!strings.Contains(e, "PSWD") &&
-			!strings.Contains(e, "AUTH") {
-			env = append(env, e)
+	for _, t := range cbgt.PIndexImplTypes {
+		for _, h := range t.DiagHandlers {
+			handlers = append(handlers, h)
 		}
 	}
 
-	groups, groupsErr := os.Getgroups()
-	hostname, hostnameErr := os.Hostname()
-	user, userErr := user.Current()
-	wd, wdErr := os.Getwd()
-
-	cbgt.MustEncode(w, map[string]interface{}{
-		"args":  os.Args,
-		"env":   env,
-		"flags": flags,
-		"process": map[string]interface{}{
-			"euid":        os.Geteuid(),
-			"gid":         os.Getgid(),
-			"groups":      groups,
-			"groupsErr":   cbgt.ErrorToString(groupsErr),
-			"hostname":    hostname,
-			"hostnameErr": cbgt.ErrorToString(hostnameErr),
-			"pageSize":    os.Getpagesize(),
-			"pid":         os.Getpid(),
-			"ppid":        os.Getppid(),
-			"user":        user,
-			"userErr":     cbgt.ErrorToString(userErr),
-			"wd":          wd,
-			"wdErr":       cbgt.ErrorToString(wdErr),
-		},
-	})
-}
-
-func restPostRuntimeGC(w http.ResponseWriter, r *http.Request) {
-	runtime.GC()
-}
-
-// To start a cpu profiling...
-//    curl -X POST http://127.0.0.1:9090/api/runtime/profile/cpu -d secs=5
-// To analyze a profiling...
-//    go tool pprof ./cbft run-cpu.pprof
-func restProfileCPU(w http.ResponseWriter, r *http.Request) {
-	secs, err := strconv.Atoi(r.FormValue("secs"))
-	if err != nil || secs <= 0 {
-		http.Error(w, "incorrect or missing secs parameter", 400)
-		return
+	w.Write(cbgt.JsonOpenBrace)
+	for i, handler := range handlers {
+		if i > 0 {
+			w.Write(cbgt.JsonComma)
+		}
+		w.Write([]byte(fmt.Sprintf(`"%s":`, handler.Name)))
+		if handler.Handler != nil {
+			handler.Handler.ServeHTTP(w, req)
+		}
+		if handler.HandlerFunc != nil {
+			handler.HandlerFunc.ServeHTTP(w, req)
+		}
 	}
-	fname := "./run-cpu.pprof"
-	os.Remove(fname)
-	f, err := os.Create(fname)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("profileCPU:"+
-			" couldn't create file: %s, err: %v",
-			fname, err), 500)
-		return
+
+	var first = true
+	var visit func(path string, f os.FileInfo, err error) error
+	visit = func(path string, f os.FileInfo, err error) error {
+		m := map[string]interface{}{
+			"Path":    path,
+			"Name":    f.Name(),
+			"Size":    f.Size(),
+			"Mode":    f.Mode(),
+			"ModTime": f.ModTime().Format(time.RFC3339Nano),
+			"IsDir":   f.IsDir(),
+		}
+		if strings.HasPrefix(f.Name(), "PINDEX_") || // Matches PINDEX_xxx_META.
+			strings.HasSuffix(f.Name(), "_META") || // Matches PINDEX_META.
+			strings.HasSuffix(f.Name(), ".json") { // Matches index_meta.json.
+			b, err := ioutil.ReadFile(path)
+			if err == nil {
+				m["Contents"] = string(b)
+			}
+		}
+		buf, err := json.Marshal(m)
+		if err == nil {
+			if !first {
+				w.Write(cbgt.JsonComma)
+			}
+			w.Write(buf)
+			first = false
+		}
+		return nil
 	}
-	log.Printf("profileCPU: start, file: %s", fname)
-	err = pprof.StartCPUProfile(f)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("profileCPU:"+
-			" couldn't start CPU profile, file: %s, err: %v",
-			fname, err), 500)
-		return
+
+	w.Write([]byte(`,"dataDir":[`))
+	filepath.Walk(h.mgr.DataDir(), visit)
+	w.Write([]byte(`]`))
+
+	entries, err := AssetDir("static/dist")
+	if err == nil {
+		for _, name := range entries {
+			// Ex: "static/dist/manifest.txt".
+			a, err := Asset("static/dist/" + name)
+			if err == nil {
+				j, err := json.Marshal(strings.TrimSpace(string(a)))
+				if err == nil {
+					w.Write([]byte(`,"`))
+					w.Write([]byte("/static/dist/" + name))
+					w.Write([]byte(`":`))
+					w.Write(j)
+				}
+			}
+		}
 	}
-	go func() {
-		time.Sleep(time.Duration(secs) * time.Second)
-		pprof.StopCPUProfile()
-		f.Close()
-		log.Printf("profileCPU: end, file: %s", fname)
-	}()
-	w.WriteHeader(204)
+
+	w.Write(cbgt.JsonCloseBrace)
 }
 
-// To grab a memory profiling...
-//    curl -X POST http://127.0.0.1:9090/api/runtime/profile/memory
-// To analyze a profiling...
-//    go tool pprof ./cbft run-memory.pprof
-func restProfileMemory(w http.ResponseWriter, r *http.Request) {
-	fname := "./run-memory.pprof"
-	os.Remove(fname)
-	f, err := os.Create(fname)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("profileMemory:"+
-			" couldn't create file: %v, err: %v",
-			fname, err), 500)
-		return
-	}
-	defer f.Close()
-	pprof.WriteHeapProfile(f)
-}
-
-func restGetRuntimeStatsMem(w http.ResponseWriter, r *http.Request) {
-	memStats := &runtime.MemStats{}
-	runtime.ReadMemStats(memStats)
-	cbgt.MustEncode(w, memStats)
-}
-
-func restGetRuntimeStats(w http.ResponseWriter, r *http.Request) {
-	cbgt.MustEncode(w, map[string]interface{}{
-		"currTime":  time.Now(),
-		"startTime": startTime,
-		"go": map[string]interface{}{
-			"numGoroutine":   runtime.NumGoroutine(),
-			"numCgoCall":     runtime.NumCgoCall(),
-			"memProfileRate": runtime.MemProfileRate,
-		},
-	})
+func DiagGetPProf(w http.ResponseWriter, profile string, debug int) {
+	var b bytes.Buffer
+	pprof.Lookup(profile).WriteTo(&b, debug)
+	rest.MustEncode(w, b.String())
 }

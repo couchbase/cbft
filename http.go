@@ -18,6 +18,8 @@ import (
 	"github.com/gorilla/mux"
 
 	log "github.com/couchbase/clog"
+
+	"github.com/couchbaselabs/cbgt/rest"
 )
 
 // AssetFS returns the assetfs.AssetFS "filesystem" that holds static
@@ -32,7 +34,7 @@ func AssetFS() *assetfs.AssetFS {
 // InitStaticFileRouter adds static HTTP resource routes to a router.
 func InitStaticFileRouter(r *mux.Router, staticDir, staticETag string,
 	pages []string) *mux.Router {
-	PIndexTypesInitRouter(r, "static.before")
+	rest.PIndexTypesInitRouter(r, "static.before")
 
 	var s http.FileSystem
 	if staticDir != "" {
@@ -60,7 +62,7 @@ func InitStaticFileRouter(r *mux.Router, staticDir, staticETag string,
 	r.Handle("/index.html", http.RedirectHandler("/static/index.html", 302))
 	r.Handle("/", http.RedirectHandler("/static/index.html", 302))
 
-	PIndexTypesInitRouter(r, "static.after")
+	rest.PIndexTypesInitRouter(r, "static.after")
 
 	return r
 }

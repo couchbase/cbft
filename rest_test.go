@@ -59,7 +59,8 @@ func TestNewManagerRESTRouter(t *testing.T) {
 	ring, err := cbgt.NewMsgRing(nil, 1)
 
 	cfg := cbgt.NewCfgMem()
-	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(), nil, "", 1, "", ":1000",
+	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil)
 	r, meta, err := NewManagerRESTRouter("v0", mgr, emptyDir, "", ring)
 	if r == nil || meta == nil || err != nil {
@@ -89,7 +90,8 @@ type RESTHandlerTest struct {
 	After  func()
 }
 
-func (test *RESTHandlerTest) check(t *testing.T, record *httptest.ResponseRecorder) {
+func (test *RESTHandlerTest) check(t *testing.T,
+	record *httptest.ResponseRecorder) {
 	desc := test.Desc
 	if desc == "" {
 		desc = test.Path + " " + test.Method
@@ -116,7 +118,8 @@ func (test *RESTHandlerTest) check(t *testing.T, record *httptest.ResponseRecord
 	}
 }
 
-func testRESTHandlers(t *testing.T, tests []*RESTHandlerTest, router *mux.Router) {
+func testRESTHandlers(t *testing.T,
+	tests []*RESTHandlerTest, router *mux.Router) {
 	for _, test := range tests {
 		if test.Before != nil {
 			test.Before()
@@ -437,14 +440,16 @@ func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
 	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve")
 }
 
-func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T, indexType string) {
+func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
+	indexType string) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
 	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
-		nil, "shelf/rack/row", 1, "", ":1000", emptyDir, "some-datasource", meh)
+		nil, "shelf/rack/row", 1, "", ":1000",
+		emptyDir, "some-datasource", meh)
 	mgr.Start("wanted")
 	mgr.Kick("test-start-kick")
 
@@ -837,7 +842,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
 				}
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
 					var ok bool
@@ -903,7 +909,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 					t.Errorf("expected no err on data-udpate")
 				}
 			},
-			Desc: "count idx0 should be 0 when got 2nd update (another doc created)" +
+			Desc: "count idx0 should be 0" +
+				" when got 2nd update (another doc created)" +
 				" but snapshot not ended",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
@@ -1050,7 +1057,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, p := range pindexes {
 					pindex = p
@@ -1082,7 +1090,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, p := range pindexes {
 					pindex = p
@@ -1093,7 +1102,9 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				body := []byte(`{"size":10,"query":{"query":"wow"}}`)
 				req := &http.Request{
 					Method: "POST",
-					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
+					URL: &url.URL{
+						Path: "/api/pindex/" + pindex.Name + "/query",
+					},
 					Form: url.Values{
 						"pindexUUID": []string{"not the right pindex UUID"},
 					},
@@ -1102,7 +1113,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
 				test := &RESTHandlerTest{
-					Desc:   "direct pindex query on mismatched pindex UUID check",
+					Desc:   "direct pindex query on mismatched pindex UUID",
 					Status: 400,
 					ResponseMatch: map[string]bool{
 						`wrong pindexUUID`: true,
@@ -1118,7 +1129,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, p := range pindexes {
 					pindex = p
@@ -1129,14 +1141,16 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				body := []byte(`{"size":10,"query":{"query":"wow"`)
 				req := &http.Request{
 					Method: "POST",
-					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
-					Form:   url.Values{},
-					Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+					URL: &url.URL{
+						Path: "/api/pindex/" + pindex.Name + "/query",
+					},
+					Form: url.Values{},
+					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
 				}
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
 				test := &RESTHandlerTest{
-					Desc:   "direct pindex query with clipped requestBody check",
+					Desc:   "direct pindex query with clipped requestBody",
 					Status: 400,
 					ResponseMatch: map[string]bool{
 						`unexpected end of JSON input`: true,
@@ -1152,7 +1166,8 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, p := range pindexes {
 					pindex = p
@@ -1163,9 +1178,11 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				body := []byte(`{"size":10,"query":{"query":"wow"}}`)
 				req := &http.Request{
 					Method: "POST",
-					URL:    &url.URL{Path: "/api/pindex/" + pindex.Name + "/query"},
-					Form:   url.Values(nil),
-					Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+					URL: &url.URL{
+						Path: "/api/pindex/" + pindex.Name + "/query",
+					},
+					Form: url.Values(nil),
+					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
 				}
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
@@ -1220,7 +1237,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "query with bogus consistency params vectors bad partitionUUID",
+			Desc:   "query with bogus consistency vectors bad partitionUUID",
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
@@ -1231,7 +1248,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "query with empty string consistency level (same as stale=ok)",
+			Desc:   "query with empty consistency level (same as stale=ok)",
 			Path:   "/api/index/idx0/query",
 			Method: "POST",
 			Params: nil,
@@ -1263,7 +1280,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				runtime.Gosched()
 				select {
 				case <-doneCh:
-					t.Errorf("expected query to block waiting for more mutations")
+					t.Errorf("expected block waiting for more mutations")
 				default:
 				}
 			},
@@ -1294,7 +1311,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				runtime.Gosched()
 				select {
 				case <-doneCh:
-					t.Errorf("expected query still blocked with snapshot still open")
+					t.Errorf("expected  still blocked with snapshot open")
 				default:
 				}
 			},
@@ -1485,7 +1502,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 					t.Errorf("expected to be 0 feed, got feeds: %+v", feeds)
 				}
 				if len(pindexes) != 0 {
-					t.Errorf("expected to be 0 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected 0 pindex, got pindexes: %+v", pindexes)
 				}
 			},
 		},
@@ -1518,7 +1535,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 
 	tests := []*RESTHandlerTest{
 		{
-			Desc:   "create an index with dest feed with 1 partition for rollback",
+			Desc:   "create dest feed with 1 partition for rollback",
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
@@ -1537,7 +1554,8 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
 				}
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected to be 1 pindex,"+
+						" got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
 					var ok bool
@@ -1558,7 +1576,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					t.Errorf("expected no err on snapshot-start")
 				}
 			},
-			Desc:   "count idx0 should be 0 when snapshot just started, pre-rollback",
+			Desc:   "count idx0 0 when snapshot just started, pre-rollback",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
 			Params: nil,
@@ -1603,7 +1621,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					t.Errorf("expected no err on data-udpate")
 				}
 			},
-			Desc: "count idx0 should be 0 when got 2nd update (another doc created)" +
+			Desc: "count idx0 0 when got 2nd update (another doc created)" +
 				" but snapshot not ended, pre-rollback",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
@@ -1626,8 +1644,8 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					t.Errorf("expected no err on data-udpate")
 				}
 			},
-			Desc: "count idx0 should be 0 when got 3rd update" +
-				" (mutation, so only 2 keys) but snapshot not ended, pre-rollback",
+			Desc: "count idx0 0 when got 3rd update, pre-rollback" +
+				" (mutation, so only 2 keys) but snapshot not ended",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
 			Params: nil,
@@ -1647,7 +1665,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					t.Errorf("expected no err on snapshot-start")
 				}
 			},
-			Desc:   "count idx0 should be 2 when 1st snapshot ended, pre-rollback",
+			Desc:   "count idx0 2 when 1st snapshot ended, pre-rollback",
 			Path:   "/api/index/idx0/count",
 			Method: "GET",
 			Params: nil,
@@ -1658,7 +1676,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "query with consistency params in the future, pre-rollback",
+			Desc:   "query with consistency params in future, pre-rollback",
 			Method: "NOOP",
 			Before: func() {
 				doneCh = make(chan *httptest.ResponseRecorder)
@@ -1679,7 +1697,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				runtime.Gosched()
 				select {
 				case <-doneCh:
-					t.Errorf("expected query to block waiting for more mutations")
+					t.Errorf("expected block waiting for more mutations")
 				default:
 				}
 			},
@@ -1824,7 +1842,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 	tests := []*RESTHandlerTest{
 		{
-			Desc:   "create an index with dest feed with 2 partitions, 2 nodes",
+			Desc:   "create index with dest feed 2 partitions, 2 nodes",
 			Path:   "/api/index/myIdx",
 			Method: "PUT",
 			Params: url.Values{
@@ -1850,10 +1868,10 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 				feeds, pindexes := mgr0.CurrentMaps()
 				if len(feeds) != 1 {
-					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+					t.Errorf("expected 1 feed, got feeds: %+v", feeds)
 				}
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected 1 pindex, got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
 					var ok bool
@@ -1870,10 +1888,10 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 				feeds, pindexes = mgr1.CurrentMaps()
 				if len(feeds) != 1 {
-					t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
+					t.Errorf("expected 1 feed, got feeds: %+v", feeds)
 				}
 				if len(pindexes) != 1 {
-					t.Errorf("expected to be 1 pindex, got pindexes: %+v", pindexes)
+					t.Errorf("expected 1 pindex, got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
 					var ok bool
@@ -1983,7 +2001,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			},
 		},
 		{
-			Desc:   "count myAlias should be 0, 2 nodes, with consistency params",
+			Desc:   "count myAlias 0, 2 nodes, with consistency params",
 			Path:   "/api/index/myAlias/count",
 			Method: "GET",
 			Body:   []byte(`{"consistency":{"level":"at_plus","vectors":{"myAlias":{"0":0},"myIdx":{"0":0}}}}`),
@@ -2087,7 +2105,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 
 	tests := []*RESTHandlerTest{
 		{
-			Desc:   "create an index with dest feed with 1 partitions, 1 nodes",
+			Desc:   "create index with dest feedm 1 partitions, 1 nodes",
 			Path:   "/api/index/myIdx",
 			Method: "PUT",
 			Params: url.Values{
@@ -2188,7 +2206,8 @@ func TestCreateIndexAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
-		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000",
+		emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2271,7 +2290,8 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 
 	meh1 := &TestMEH{}
 	mgr1 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
-		nil, "", 1, "", "localhost:2000", emptyDir1, "some-datasource", meh1)
+		nil, "", 1, "", "localhost:2000",
+		emptyDir1, "some-datasource", meh1)
 	mgr1.Start("wanted")
 	mgr1.Kick("test-start-kick")
 
@@ -2309,7 +2329,8 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
-		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+		t.Errorf("expected same plans,"+
+			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 
@@ -2318,7 +2339,8 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 		for nodeUUID, planPIndexNode := range pindex.Nodes {
 			n++
 			if !planPIndexNode.CanRead || !planPIndexNode.CanWrite {
-				t.Errorf("expected readable, writable, nodeUUID: %s", nodeUUID)
+				t.Errorf("expected readable, writable,"+
+					" nodeUUID: %s", nodeUUID)
 			}
 		}
 	}
@@ -2392,7 +2414,8 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
 		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
-		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
+		t.Errorf("expected same plans,"+
+			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 }
@@ -2636,7 +2659,8 @@ func TestHandlersForIndexControl(t *testing.T) {
 			Before: func() {
 				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
-					t.Errorf("expected nil plan params before accessing index control")
+					t.Errorf("expected nil plan params" +
+						" before accessing index control")
 				}
 			},
 			Desc:   "ingestControl real index, bad op",
@@ -2652,7 +2676,8 @@ func TestHandlersForIndexControl(t *testing.T) {
 			After: func() {
 				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
-					t.Errorf("expected nil plan params after rejected index control")
+					t.Errorf("expected nil plan params" +
+						" after rejected index control")
 				}
 			},
 		},

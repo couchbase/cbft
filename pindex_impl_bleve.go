@@ -36,7 +36,9 @@ import (
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
+
 	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbaselabs/cbgt/rest"
 )
 
 const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
@@ -281,7 +283,7 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	case <-doneCh:
 		if searchResult != nil {
-			cbgt.MustEncode(res, searchResult)
+			rest.MustEncode(res, searchResult)
 		}
 	}
 
@@ -499,7 +501,7 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	cbgt.MustEncode(res, searchResponse)
+	rest.MustEncode(res, searchResponse)
 
 	return nil
 }
@@ -882,34 +884,34 @@ func BlevePIndexImplInitRouter(r *mux.Router, phase string) {
 			listIndexesHandler).Methods("GET")
 
 		getIndexHandler := bleveHttp.NewGetIndexHandler()
-		getIndexHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		getIndexHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 
 		docCountHandler := bleveHttp.NewDocCountHandler("")
-		docCountHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		docCountHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
 
 		searchHandler := bleveHttp.NewSearchHandler("")
-		searchHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		searchHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/query",
 			searchHandler).Methods("POST")
 
 		docGetHandler := bleveHttp.NewDocGetHandler("")
-		docGetHandler.IndexNameLookup = cbgt.PIndexNameLookup
-		docGetHandler.DocIDLookup = cbgt.DocIDLookup
+		docGetHandler.IndexNameLookup = rest.PIndexNameLookup
+		docGetHandler.DocIDLookup = rest.DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 
 		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = cbgt.PIndexNameLookup
-		debugDocHandler.DocIDLookup = cbgt.DocIDLookup
+		debugDocHandler.IndexNameLookup = rest.PIndexNameLookup
+		debugDocHandler.DocIDLookup = rest.DocIDLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 
 		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
-		listFieldsHandler.IndexNameLookup = cbgt.PIndexNameLookup
+		listFieldsHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle("/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")
 	}
