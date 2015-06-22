@@ -37,7 +37,7 @@ func NewManagerRESTRouter(versionMain string, mgr *cbgt.Manager,
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
-	r = InitStaticFileRouter(r,
+	r = rest.InitStaticFileRouter(r,
 		staticDir, staticETag, []string{
 			"/indexes",
 			"/nodes",
@@ -188,11 +188,11 @@ func (h *DiagGetHandler) ServeHTTP(
 	filepath.Walk(h.mgr.DataDir(), visit)
 	w.Write([]byte(`]`))
 
-	entries, err := AssetDir("static/dist")
+	entries, err := rest.AssetDir("static/dist")
 	if err == nil {
 		for _, name := range entries {
 			// Ex: "static/dist/manifest.txt".
-			a, err := Asset("static/dist/" + name)
+			a, err := rest.Asset("static/dist/" + name)
 			if err == nil {
 				j, err := json.Marshal(strings.TrimSpace(string(a)))
 				if err == nil {

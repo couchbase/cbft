@@ -16,7 +16,7 @@ default: build
 clean:
 	rm -f ./cbft ./cbft_docs
 
-build: gen-bindata
+build:
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
 build-static:
@@ -30,10 +30,6 @@ build-leveldb:
 
 build-full:
 	$(MAKE) build CBFT_TAGS="full"
-
-gen-bindata:
-	go-bindata-assetfs -pkg=cbft ./static/...
-	go fmt bindata_assetfs.go
 
 gen-docs: cmd/cbft_docs/main.go
 	go build -o ./cbft_docs ./cmd/cbft_docs
