@@ -87,9 +87,3 @@ func RewriteURL(to string, h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
-
-func showError(w http.ResponseWriter, r *http.Request,
-	msg string, code int) {
-	log.Printf("http: error code: %d, msg: %s", code, msg)
-	http.Error(w, msg, code)
-}
