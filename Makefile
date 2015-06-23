@@ -32,7 +32,7 @@ build-full:
 	$(MAKE) build CBFT_TAGS="full"
 
 gen-bindata:
-	go-bindata-assetfs -pkg=cbft ./static/... ./staticx/...
+	go-bindata-assetfs -pkg=cbft ./staticx/...
 	go fmt bindata_assetfs.go
 
 gen-docs: cmd/cbft_docs/main.go
@@ -58,15 +58,15 @@ dist: test dist-meta dist-build
 
 dist-meta:
 	mkdir -p ./dist/out
-	mkdir -p ./static/dist
+	mkdir -p ./staticx/dist
 	rm -rf ./dist/out/*
-	rm -rf ./static/dist/*
-	echo $(version) > ./static/dist/version.txt
-	cp ./static/dist/version.txt ./dist/out
-	./dist/go-manifest > ./static/dist/manifest.txt
-	cp ./static/dist/manifest.txt ./dist/out
-	cp ./LICENSE.txt ./static/dist/LICENSE.txt
-	cp ./static/dist/LICENSE.txt ./dist/out
+	rm -rf ./staticx/dist/*
+	echo $(version) > ./staticx/dist/version.txt
+	cp ./staticx/dist/version.txt ./dist/out
+	./dist/go-manifest > ./staticx/dist/manifest.txt
+	cp ./staticx/dist/manifest.txt ./dist/out
+	cp ./LICENSE.txt ./staticx/dist/LICENSE.txt
+	cp ./staticx/dist/LICENSE.txt ./dist/out
 	cp ./LICENSE-thirdparty.txt ./dist/out
 	cp ./CHANGES.md ./dist/out
 
@@ -83,7 +83,7 @@ dist-build:
 
 dist-clean: clean
 	rm -rf ./dist/out/*
-	rm -rf ./static/dist/*
+	rm -rf ./staticx/dist/*
 	git checkout bindata_assetfs.go
 
 # The release target prerequisites...
