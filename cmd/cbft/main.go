@@ -226,7 +226,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	router, _, err :=
-		cbft.NewManagerRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
+		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
 
 	return router, err
 }

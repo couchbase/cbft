@@ -1,0 +1,55 @@
+<ol ng-if="indexNames.length"
+    class="breadcrumb">
+  <li><span class="glyphicon glyphicon-book"></li>
+  <li><a href="#">Indexes</a></li>
+</ol>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<table ng-if="indexNames.length"
+       class="table table-striped">
+	<tr>
+		<th width="99%">Name</th>
+		<th></th>
+	</tr>
+	<tr ng-repeat="indexName in indexNames">
+		<td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+		<td style="white-space: nowrap;">
+			<button ng-click="editIndex(indexName)"
+			         type="button" class="btn btn-default btn-sm">
+				<span class="glyphicon glyphicon-edit"></span> edit
+			</button>
+			<button ng-click="cloneIndex(indexName)"
+			         type="button" class="btn btn-default btn-sm">
+				<span class="glyphicon glyphicon-plus-sign"></span> clone
+			</button>
+			<button ng-click="deleteIndex(indexName)"
+			         type="button" class="btn btn-default btn-sm">
+				<span class="glyphicon glyphicon-trash"></span>
+			</button>
+		</td>
+	</tr>
+</table>
+
+<div ng-if="!indexNames.length"
+     class="indexWelcome">
+  <h1>Welcome to cbft</h1>
+  <div>cbft is a full-text server for couchbase data.</div>
+  <div>Please define your first index with the New Index button.</div>
+</div>
+
+<div class="input-group">
+  <a href="/indexes/_new">
+    <button  class="btn btn-primary" type="submit">
+      <i class="glyphicon glyphicon-plus"></i> New Index
+    </button>
+  </a>
+</div>
+
+<style>
+.indexWelcome h1, .indexWelcome div {
+  margin-bottom: 20px;
+}
+</style>

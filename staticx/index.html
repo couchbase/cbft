@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+
+  <!-- Bootstrap -->
+  <link href="/static/css/prism.css" rel="stylesheet"/>
+
+  <link href="/static/css/app.css" rel="stylesheet"/>
+  <link href="/static/css/bootstrap.css" rel="stylesheet"/>
+  <link href="/static/css/dashboard.css" rel="stylesheet"/>
+  <link href="/static/css/rickshaw.min.css" rel="stylesheet"/>
+  <link href="/static/lib/angular-treeview/angular.treeview.css" rel="stylesheet"/>
+
+  <link rel="shortcut icon" href="/static/favicon.ico"/>
+</head>
+<body>
+  <div class="container">
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="overide-brand" href="/">
+            <img class="logo" src="/static/img/cb.png"/>
+          </a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li><a href="/indexes/">Indexes</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/nodes/">Nodes</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/monitor/">Monitor</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/manage/">Manage</a></li>
+        </ul>
+        <ul class="nav navbar-nav">
+          <li><a href="/logs/">Logs</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown"
+               href="#" role="button" aria-expanded="false">
+               Help <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="http://labs.couchbase.com/cbft/">
+                     Getting started</a>
+              </li>
+              <li><a href="http://labs.couchbase.com/cbft/dev-guide/overview">
+                     Developer's guide</a>
+              </li>
+              <li><a href="http://labs.couchbase.com/cbft/admin-guide/overview">
+                     Administrator's guide</a>
+              </li>
+              <li class="divider"></li>
+              <li><a href="http://forums.couchbase.com/">
+                     Couchbase community forums</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-10 col-sm-offset-1 main">
+        <div ng-view></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/lib/jquery/jquery-2.1.1.js"></script>
+  <script src="/static/lib/jquery/jquery-ui.min.js"></script>
+  <script src="/static/lib/d3.v3.js"></script>
+  <script src="/static/lib/rickshaw.min.js"></script>
+  <script src="/static/lib/humanize.min.js"></script>
+  <script src="/static/lib/bootstrap/bootstrap.js"></script>
+  <script src="/static/lib/angular/angular.js"></script>
+  <script src="/static/lib/angular-route/angular-route.js"></script>
+  <script src="/static/lib/angular-treeview/angular.treeview.min.js"></script>
+  <script src="/static/lib/angular/sortable.js"></script>
+  <script src="/static/lib/bootstrap/ui-bootstrap-tpls-0.11.0.min.js"></script>
+  <script src="/static/lib/angular/modal.js"></script>
+  <script src="/static/lib/prism.js"></script>
+  <script src="/static/lib/jsonpointer.js"></script>
+  <script src="/static/js/expvar.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/services.js"></script>
+  <script src="/static/js/controllers.js"></script>
+  <script src="/static/js/filters.js"></script>
+  <script src="/static/js/directives.js"></script>
+  <script src="/static/js/index.js"></script>
+  <script src="/static/js/node.js"></script>
+  <script src="/static/js/monitor.js"></script>
+  <script src="/static/js/manage.js"></script>
+  <script src="/static/js/logs.js"></script>
+  <script src="/static/js/query.js"></script>
+  <script src="/static/js/debug.js"></script>
+  <script src="/static/js/b64.js"></script>
+
+  <script src="/static/js/mapping/mapping.js"></script>
+  <script src="/static/js/mapping/analysis.js"></script>
+  <script src="/static/js/mapping/analysis-analyzer.js"></script>
+  <script src="/static/js/mapping/analysis-wordlist.js"></script>
+  <script src="/static/js/mapping/analysis-charfilter.js"></script>
+  <script src="/static/js/mapping/analysis-tokenizer.js"></script>
+  <script src="/static/js/mapping/analysis-tokenfilter.js"></script>
+</body>
+</html>

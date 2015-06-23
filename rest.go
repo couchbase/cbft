@@ -27,65 +27,15 @@ import (
 	"github.com/couchbaselabs/cbgt/rest"
 )
 
-// NewManagerRESTRouter creates a mux.Router initialized with the REST
-// API and web UI routes.  See also InitStaticFileRouter and
-// InitManagerRESTRouter if you need finer control of the router
-// initialization.
-func NewManagerRESTRouter(versionMain string, mgr *cbgt.Manager,
+// NewRESTRouter creates a mux.Router initialized with the REST
+// API and web UI routes.  See also InitStaticRouter if you need finer
+// control of the router initialization.
+func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
-	r := mux.NewRouter()
-	r.StrictSlash(true)
-
-	r = rest.InitStaticFileRouter(r,
-		staticDir, staticETag, []string{
-			"/indexes",
-			"/nodes",
-			"/monitor",
-			"/manage",
-			"/logs",
-			"/debug",
-		})
-
-	return InitManagerRESTRouter(r, versionMain, mgr,
-		staticDir, staticETag, mr)
-}
-
-// InitManagerRESTRouter initializes a mux.Router with REST API
-// routes.
-func InitManagerRESTRouter(r *mux.Router, versionMain string,
-	mgr *cbgt.Manager, staticDir, staticETag string,
-	mr *cbgt.MsgRing) (
-	*mux.Router, map[string]rest.RESTMeta, error) {
-	r, meta, err := rest.InitManagerRESTRouter(r, versionMain,
-		mgr, staticDir, staticETag, mr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	handle := func(path string, method string, h http.Handler,
-		opts map[string]string) {
-		if a, ok := h.(rest.RESTOpts); ok {
-			a.RESTOpts(opts)
-		}
-		meta[path+" "+rest.RESTMethodOrds[method]+method] =
-			rest.RESTMeta{path, method, opts}
-		r.Handle(path, h).Methods(method)
-	}
-
-	handle("/api/diag", "GET", NewDiagGetHandler(versionMain, mgr, mr),
-		map[string]string{
-			"_category": "Node|Node diagnostics",
-			"_about": `Returns full set of diagnostic information
-                        from the node in one shot as JSON.  That is, the
-                        /api/diag response will be the union of the responses
-                        from the other REST API diagnostic and monitoring
-                        endpoints from the node, and is intended to make
-                        production support easier.`,
-			"version introduced": "0.0.1",
-		})
-
-	return r, meta, nil
+	return rest.InitRESTRouter(InitStaticRouter(),
+		versionMain, mgr, staticDir, staticETag, mr,
+		myAssetDir, myAsset)
 }
 
 // ------------------------------------------------------
