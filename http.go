@@ -16,6 +16,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/couchbaselabs/cbgt"
 	"github.com/couchbaselabs/cbgt/rest"
 )
 
@@ -49,25 +50,30 @@ func InitStaticRouter() *mux.Router {
 }
 
 func myAssetDir(name string) ([]string, error) {
-	var rv []string
 	a, err := AssetDir(name)
-	if err != nil {
-		rv = append(rv, a...)
+	if err == nil {
+		return a, err
 	}
 
-	a, err = rest.AssetDir(name)
-	if err != nil {
-		rv = append(rv, a...)
-	}
-
-	return rv, err
+	return rest.AssetDir(name)
 }
 
 func myAsset(name string) ([]byte, error) {
 	b, err := Asset(name)
-	if err != nil {
-		b, err = rest.Asset(name)
+	if err == nil {
+		return b, err
 	}
 
-	return b, err
+	return rest.Asset(name)
+}
+
+// NewRESTRouter creates a mux.Router initialized with the REST
+// API and web UI routes.  See also InitStaticRouter if you need finer
+// control of the router initialization.
+func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
+	staticDir, staticETag string, mr *cbgt.MsgRing) (
+	*mux.Router, map[string]rest.RESTMeta, error) {
+	return rest.InitRESTRouter(InitStaticRouter(),
+		versionMain, mgr, staticDir, staticETag, mr,
+		myAssetDir, myAsset)
 }
