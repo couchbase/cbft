@@ -20,7 +20,7 @@ import (
 	"github.com/couchbaselabs/cbgt/rest"
 )
 
-func InitStaticRouter() *mux.Router {
+func InitStaticRouter(staticDir, staticETag string) *mux.Router {
 	hfsStaticX := http.FileServer(assetFS())
 
 	router := mux.NewRouter()
@@ -34,7 +34,7 @@ func InitStaticRouter() *mux.Router {
 		http.RedirectHandler("/staticx/partials/index/list.html", 302))
 
 	router = rest.InitStaticRouter(router,
-		"(no static)", "", []string{
+		staticDir, staticETag, []string{
 			"/indexes",
 			"/nodes",
 			"/monitor",
@@ -73,7 +73,7 @@ func myAsset(name string) ([]byte, error) {
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
-	return rest.InitRESTRouter(InitStaticRouter(),
+	return rest.InitRESTRouter(InitStaticRouter(staticDir, staticETag),
 		versionMain, mgr, staticDir, staticETag, mr,
 		myAssetDir, myAsset)
 }
