@@ -279,7 +279,7 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	select {
 	case <-cancelCh:
-		err = fmt.Errorf("pindex_impl_bleve: query timeout")
+		err = fmt.Errorf("pindex_bleve: query timeout")
 
 	case <-doneCh:
 		if searchResult != nil {
