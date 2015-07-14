@@ -198,7 +198,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if server != "." {
 		_, err := couchbase.Connect(server)
 		if err != nil {
-			if !strings.HasPrefix(server, "http://") ||
+			if !strings.HasPrefix(server, "http://") &&
 				!strings.HasPrefix(server, "https://") {
 				return nil, fmt.Errorf("error: not a URL, server: %q\n"+
 					"  Please check that your -server parameter"+
