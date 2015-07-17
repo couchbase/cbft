@@ -212,7 +212,8 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return nil, fmt.Errorf("error: could not connect"+
 				" to server (%q), err: %v\n"+
 				"  Please check that your -server parameter (%q)\n"+
-				"  is correct and the couchbase server is available.",
+				"  is correct, the couchbase server is accessible,\n"+
+				"  and auth is correct (e.g., http://USER:PSWD@HOST:PORT)",
 				server, err, server)
 		}
 	}
