@@ -105,6 +105,14 @@ datasource nodes are down.
 
 # IPAC - IP Address Changes
 
+IP address discovery is "late bound", when couchbase server nodes initially joins to a cluster.  A "cluster of one", in particular, only has an erlang node address of "ns_1@127.0.0.1".
+
+# BUCKETD - Bucket Deletion Cascades to Full-Text Indexes
+
+If a bucket is deleted, any full-text indexes based on that bucket should be also automatically deleted.
+
+There whould be user visible UI warnings on these "cascading deletes" of cbft indexes.
+
 # RIO - Rebalance Nodes In/Out
 
 # RP - Rebalance progress estimates/indicator
