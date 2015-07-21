@@ -13,8 +13,8 @@ References to related documents:
 
 * cbgt design - https://github.com/couchbaselabs/cbgt/blob/master/IDEAS.md
 * ns-server documents, especially "rebalance flow"...
-** https://github.com/couchbase/ns_server/blob/master/doc
-** https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt
+  * https://github.com/couchbase/ns_server/blob/master/doc
+  * https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt
 
 -------------------------------------------------
 Requirements
