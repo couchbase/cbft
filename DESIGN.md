@@ -42,7 +42,7 @@ Server) nodes are added and removed in a clean rebalance.
 Full-text queries should be consistent even as cbgt nodes are added
 and removed in a clean takeover fashion.
 
-## GT-OC1 - Support optional looser "best effort" options
+## GT-OC1 - Support optional looser "best effort" options.
 
 The options might be along a spectrum from stale=ok to totally
 consistent.  The "best effort" option should probably have lower
@@ -81,7 +81,7 @@ will not be able to make indexing progress.  Those cbgt instances
 should try to automatically reconnect and resume indexing from where
 they left off.
 
-## GT-E1 - The user should be able to see error conditions
+## GT-E1 - The user should be able to see error conditions.
 
 For example yellow or red coloring on node down and other error
 conditions.
@@ -103,13 +103,13 @@ datasource nodes are down.
 
 ## GT-PI1 - Ability to pause/resume indexing.
 
-## IPAC - IP Address Changes
+## IPAC - IP Address Changes.
 
 IP address discovery is "late bound", when couchbase server nodes
 initially joins to a cluster.  A "cluster of one", in particular, only
 has an erlang node address of "ns_1@127.0.0.1".
 
-## BUCKETD - Bucket Deletion Cascades to Full-Text Indexes
+## BUCKETD - Bucket Deletion Cascades to Full-Text Indexes.
 
 If a bucket is deleted, any full-text indexes based on that bucket
 should be also automatically deleted.
@@ -117,60 +117,60 @@ should be also automatically deleted.
 There whould be user visible UI warnings on these "cascading deletes"
 of cbft indexes.
 
-## RIO - Rebalance Nodes In/Out
+## RIO - Rebalance Nodes In/Out.
 
-## RP - Rebalance progress estimates/indicator
+## RP - Rebalance progress estimates/indicator.
 
-## RS - Swap Rebalance
+## RS - Swap Rebalance.
 
-## FOH - Hard Failover
+## FOH - Hard Failover.
 
-## FOG - Graceful Failover
+## FOG - Graceful Failover.
 
 Reject any new requests and wait for any inflight requests to finish
 before failover.
 
-## AB - Add Back Rebalance
+## AB - Add Back Rebalance.
 
-## DNR - Delta Node Recovery
+## DNR - Delta Node Recovery.
 
-## RP1 - Rebalance Phase 1 - VBucket Replication Phase
-## RP2 - Rebalance Phase 2 - View Indexing Phase
-## RP2 - Rebalance Phase 3 - VBucket Takeover Phase
+## RP1 - Rebalance Phase 1 - VBucket Replication Phase.
+## RP2 - Rebalance Phase 2 - View Indexing Phase.
+## RP2 - Rebalance Phase 3 - VBucket Takeover Phase.
 
-## RSTOP - Ability to Stop Rebalance
+## RSTOP - Ability to Stop Rebalance.
 
 ## MDS-RI - Multidimensional Scaling - ability to rebalance Full-Text
-   indexes indpendent of other services
+   indexes indpendent of other services.
 
 ## RRU-EE - Rebalance Resource Utilization More Efficient With
-   Enterprise Edition
+   Enterprise Edition.
 
-## CIUR - Consistent Indexes Under Rebalance
+## CIUR - Consistent Indexes Under Rebalance.
 
 This is the equivalent of "consistent view indexes under rebalance".
 
-## QUERYR - Querying Replicas
+## QUERYR - Querying Replicas.
 
-## QUERYLB - Querying Load Balancing
+## QUERYLB - Querying Load Balancing.
 
-## QUERYLB-EE - Query Load Balancing To Replicas With Enterprise Edition
+## QUERYLB-EE - Query Load Balancing To Replicas With Enterprise Edition.
 
-## ODS - Out of Disk Space
+## ODS - Out of Disk Space.
 
 Out of disk space conditions are handled gracefully (not segfaulting).
 
-## ODSR - Out of Disk Space Repaired
+## ODSR - Out of Disk Space Repaired.
 
 After an administrator fixes the disk space issue (adds more disks;
 frees more space) then the full-text system should be able to
 automatically continue successfully.
 
-## KP - Killed Processes (linux OOM, etc)
+## KP - Killed Processes (linux OOM, etc).
 
-## RSN - Return of the Shunned Node
+## RSN - Return of the Shunned Node.
 
-## DLC - Disk Level Copy/Restore of Node
+## DLC - Disk Level Copy/Restore of Node.
 
 This is the scenario when a user "clones" a node via disk/storage
 level maneuvers, such as incorrect usage of EBS snapshot or tar'ing up
@@ -178,64 +178,64 @@ a whole dataDir.
 
 The issue is that old cbft.uuid files might still (incorrectly) be copied.
 
-## UI - Full-Text tab in Couchbase's web admin UI
+## UI - Full-Text tab in Couchbase's web admin UI.
 
-## STATS - Stats Integration into Couchbase's web admin UI
+## STATS - Stats Integration into Couchbase's web admin UI.
 
-## AUTHI - Auth integration with Couchbase for indexing
+## AUTHI - Auth integration with Couchbase for indexing.
 
 cbft should be able to access any bucket for full-text indexing.
 
-## AUTHM - Auth integration with Couchbase for admin/management
+## AUTHM - Auth integration with Couchbase for admin/management.
 
 cbft's administration should be protected.
 
-## AUTHQ - Auth integration with Couchbase for queries
+## AUTHQ - Auth integration with Couchbase for queries.
 
 cbft's queryability should be protected.
 
-## TLS - TLS/SSL support
+## TLS - TLS/SSL support.
 
-## HC - Health Checks
+## HC - Health Checks.
 
-## TOOLBR - Tools - Backup/Restore
+## QUOTAM - Memory Quota per node.
 
-## TOOLCI - Tools - cbcollectinfo
+## QUOTAD - Disk Quota per node.
 
-## TOOLM - Tools - mortimer
-
-## TOOLN - Tools - nutshell
-
-## UPGRADE - Future readiness for upgrades
-
-## QUOTAM - Memory Quota per node
-
-## QUOTAD - Disk Quota per node
-
-## BFLIMIT - Limit Backfills
+## BFLIMIT - Limit Backfills.
 
 ns_single_vbucket_mover has a policy feature that limits the number of
 backfills to "1 backfill during rebalance in or out of any node" (see
 rebalance-flow.txt)
 
-## RCOMPACT - Index Compactions Controlled Under Rebalance
+## RCOMPACT - Index Compactions Controlled Under Rebalance.
 
 During rebalance, ns_server pauses view index compactions until a
 configurable number of vbucket moves have occurred for efficiency (see
 rebalance-flow.txt)
 
-## RPMOVE - Partition Moves Controlled Under Rebalance
+## RPMOVE - Partition Moves Controlled Under Rebalance.
 
 During rebalance, ns_server limits outgoing moves to a single vbucket
 per node for efficiency (see rebalance-flow.txt).  Same should be the
 case for PIndex reassignments.
 
-## RSPREAD - Rebalance Resource Spreading
+## RSPREAD - Rebalance Resource Spreading.
 
 ns_server prioritizes VBuckets moves that equalize the spread of
 active VBuckets across nodes and also tries to keep indexers busy
 across all nodes.  PIndex moves should have some equivalent
 optimization.
+
+## TOOLBR - Tools - Backup/Restore.
+
+## TOOLCI - Tools - cbcollectinfo.
+
+## TOOLM - Tools - mortimer.
+
+## TOOLN - Tools - nutshell.
+
+## UPGRADE - Future readiness for upgrades.
 
 -------------------------------------------------
 # Random notes / TODO's
@@ -261,9 +261,9 @@ node lifecycle
 -- moving to unwanted
 - unknown
 
-           unwanted wanted
-unknown    ok         N/A
-known      ok         ok
+               unwanted wanted
+    unknown    ok         N/A
+    known      ok         ok
 
 index lifecycle
 
