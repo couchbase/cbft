@@ -354,33 +354,30 @@ look for the return of the shunned node.
 add cmd-line tools/params for outside systems (like ns-server) to
 add/remove nodes?
 
-From rebalance-flow.txt on concurrency...
+From rebalance-flow.txt, Aaron's diagram on concurrency...
 
-%%           VBucket Move Scheduling
-%% Time
-%%
-%%   |   /------------\
-%%   |   | Backfill 0 |                       Backfills cannot happen
-%%   |   \------------/                       concurrently.
-%%   |         |             /------------\
-%%   |   +------------+      | Backfill 1 |
-%%   |   | Index File |      \------------/
-%%   |   |     0      |            |
-%%   |   |            |      +------------+   However, indexing _can_ happen
-%%   |   |            |      | Index File |   concurrently with backfills and
-%%   |   |            |      |     1      |   other indexing.
-%%   |   |            |      |            |
-%%   |   +------------+      |            |
-%%   |         |             |            |
-%%   |         |             +------------+
-%%   |         |                   |
-%%   |         \---------+---------/
-%%   |                   |
-%%   |   /--------------------------------\   Compaction for a set of vbucket moves
-%%   |   |  Compact both source and dest. |   cannot happen concurrently with other
-%%   v   \--------------------------------/   vbucket moves.
-%%
-%%
+              VBucket Move Scheduling
+    Time
+      |   /------------\
+      |   | Backfill 0 |                       Backfills cannot happen
+      |   \------------/                       concurrently.
+      |         |             /------------\
+      |   +------------+      | Backfill 1 |
+      |   | Index File |      \------------/
+      |   |     0      |            |
+      |   |            |      +------------+   However, indexing _can_ happen
+      |   |            |      | Index File |   concurrently with backfills and
+      |   |            |      |     1      |   other indexing.
+      |   |            |      |            |
+      |   +------------+      |            |
+      |         |             |            |
+      |         |             +------------+
+      |         |                   |
+      |         \---------+---------/
+      |                   |
+      |   /--------------------------------\   Compaction for a set of vbucket moves
+      |   |  Compact both source and dest. |   cannot happen concurrently with other
+      v   \--------------------------------/   vbucket moves.
 
 Policy ideas...
 
