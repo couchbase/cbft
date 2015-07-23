@@ -23,10 +23,10 @@ References to related documents:
 document), so these requirements are based on anticipated PRD
 requirements.)
 
-## GT-CS1 - Consistent queries during stable topology.
+Requirements with the "GT-" prefix originally come from the cbgt
+IDEAS.md design document.
 
-(Requirements with the "GT-" prefix originally come from the cbgt
-IDEAS.md design document.)
+## GT-CS1 - Consistent queries during stable topology.
 
 Clients should be able to ask, "I want query results where the
 full-text-indexes have incorporated at least up to this set of
@@ -103,11 +103,14 @@ datasource nodes are down.
 
 ## GT-PI1 - Ability to pause/resume indexing.
 
-## IPAC - IP Address Changes.
+## IPADDR - IP Address Changes.
 
 IP address discovery is "late bound", when couchbase server nodes
 initially joins to a cluster.  A "cluster of one", in particular, only
 has an erlang node address of "ns_1@127.0.0.1".
+
+ns-server also has feature where node names might also be manually
+assigned.
 
 ## BUCKETD - Bucket Deletion Cascades to Full-Text Indexes.
 
@@ -117,13 +120,27 @@ should be also automatically deleted.
 There whould be user visible UI warnings on these "cascading deletes"
 of cbft indexes.
 
+(Perhaps ns-server invokes a synchronous cmd to unregister / delete
+cbft indexes?)
+
+(What about cascade delete (or listing) of index aliases that
+(transitively) point to an index (or to a bucket datasource)?)
+
+## BUCKETR - Bucket Deletion & Recreation with the same name.
+
+## BUCKETF - Bucket Flush.
+
 ## RIO - Rebalance Nodes In/Out.
+
+(Need ability / REST API to quiesce or cool down a cbft process?)
 
 ## RP - Rebalance progress estimates/indicator.
 
 ## RS - Swap Rebalance.
 
 ## FOH - Hard Failover.
+
+Even failover in the midst of cbft rebalance ("put the pencils down").
 
 ## FOG - Graceful Failover.
 
@@ -152,9 +169,15 @@ This is the equivalent of "consistent view indexes under rebalance".
 
 ## QUERYR - Querying Replicas.
 
-## QUERYLB - Querying Load Balancing.
+## QUERYLB - Query Load Balancing Amongst Replicas.
 
-## QUERYLB-EE - Query Load Balancing To Replicas With Enterprise Edition.
+## QUERYLB-EE - Query Load Balancing Amongst Replicas, But Only With
+   Enterprise Edition.
+
+Perhaps EE needs to be more featureful than simple round-robin or
+random load-balancing, but targets the most up-to-date replica.
+
+Or the least-busy replica.
 
 ## ODS - Out of Disk Space.
 
@@ -194,6 +217,10 @@ cbft's administration should be protected.
 
 cbft's queryability should be protected.
 
+## AUTHPW - Auth credentials/pswd can change (or is reset).
+
+Does this affect cbauth module?
+
 ## TLS - TLS/SSL support.
 
 ## HC - Health Checks.
@@ -214,11 +241,15 @@ During rebalance, ns_server pauses view index compactions until a
 configurable number of vbucket moves have occurred for efficiency (see
 rebalance-flow.txt)
 
+This might prevent huge disk space blowup on rebalance (MB-6799?).
+
 ## RPMOVE - Partition Moves Controlled Under Rebalance.
 
 During rebalance, ns_server limits outgoing moves to a single vbucket
 per node for efficiency (see rebalance-flow.txt).  Same should be the
 case for PIndex reassignments.
+
+See "rebalanceMovesBeforeCompaction".
 
 ## RSPREAD - Rebalance Resource Spreading.
 
@@ -226,6 +257,17 @@ ns_server prioritizes VBuckets moves that equalize the spread of
 active VBuckets across nodes and also tries to keep indexers busy
 across all nodes.  PIndex moves should have some equivalent
 optimization.
+
+## COMPACTF - Ability for force compaction right now.
+
+## COMPACTO - Ability to compact files offline (while server is down?)
+
+Might be useful to recover from out-of-disk space scenarios.
+
+## COMPACTP - Ability to pause/resume automated compactions (not
+   explicitly forced).
+
+## COMPACTC - Ability to configure/reconfigure automated compaction policy.
 
 ## TOOLBR - Tools - Backup/Restore.
 
@@ -237,16 +279,45 @@ optimization.
 
 ## UPGRADE - Future readiness for upgrades.
 
+## UTEST - Unit Testable.
+
+## QTEST - QE Testable / Instrumentable.
+
+## REQTRACE - Ability to trace a request down through the layers.
+
+## REQPILL - Ability to send a fake request "pill" down through the layers.
+
+## REQTIME - Ability to track "where is the time going" on a
+   per-request, individual request basis.
+
+## REQTHRT - Request Throttling
+
+ns-server REST & CAPI support a "restRequestLimit" configuration.
+
+## DCPNAME - DCP stream naming or prefix
+
+Allow for DCP stream prefix to allow for easier diagnosability &
+correlation (e.g., these DCP streams in KV-engine come from cbft due
+to these indexes from these nodes).
+
+## TIMEREW - Handle NTP backward time jumps gracefully
+
 -------------------------------------------------
 # Random notes / TODO's
 
 ip address changes on node joining
-- node goes from 'ns_1@127.0.0.1'
+- node goes from 'ns_1@127.0.0.1' (or 0.0.0.0?)
     to ns_1@REAL_IP_ADDR
 ip address rename
 
 bind-addr needs a REAL_IP_ADDR
 from the very start to be clusterable?
+
+all nodes tart of on node with "wrong" bindHTTP addr (like 127.0.0.1
+or 0.0.0.0), so ideas:
+- fix reliance on bindHTTP
+- allow true node UUID, with "outside" mapping of UUID to contactable http address
+- add command to rename a node's bindHTTP
 
 best effort queries
 - vs return error
@@ -270,3 +341,67 @@ index lifecycle
 A vbucket in a view index has a "pending", "active", "cleanup" states,
 that are especially used during rebalance orchestration.  Perhaps
 PIndexes need equivalent states?
+
+idea: never run planner in cbftint?  But allow ns-server to invoke
+planner on as-needed basis whenever ns-server needs (during a master
+orchestrator / DML change event).  Then EE edition could allow a more
+advanced planner.
+
+add cmd-line param where ns-server can force a default node UUID, for
+better cross-correlation/debuggability of log events.  And, we can
+look for the return of the shunned node.
+
+add cmd-line tools/params for outside systems (like ns-server) to
+add/remove nodes?
+
+From rebalance-flow.txt on concurrency...
+
+%%           VBucket Move Scheduling
+%% Time
+%%
+%%   |   /------------\
+%%   |   | Backfill 0 |                       Backfills cannot happen
+%%   |   \------------/                       concurrently.
+%%   |         |             /------------\
+%%   |   +------------+      | Backfill 1 |
+%%   |   | Index File |      \------------/
+%%   |   |     0      |            |
+%%   |   |            |      +------------+   However, indexing _can_ happen
+%%   |   |            |      | Index File |   concurrently with backfills and
+%%   |   |            |      |     1      |   other indexing.
+%%   |   |            |      |            |
+%%   |   +------------+      |            |
+%%   |         |             |            |
+%%   |         |             +------------+
+%%   |         |                   |
+%%   |         \---------+---------/
+%%   |                   |
+%%   |   /--------------------------------\   Compaction for a set of vbucket moves
+%%   |   |  Compact both source and dest. |   cannot happen concurrently with other
+%%   v   \--------------------------------/   vbucket moves.
+%%
+%%
+
+Policy ideas...
+
+- Do node adds first, before removes?
+  Favor more capacity earlier.
+
+- Move all KV vbuckets before moving any cbft pindexes?
+
+- Favor FT index builds on new nodes, before FT index builds on
+  remaining nodes?  (Favors utilizing empty disks earlier.)
+
+- Favor FT index builds with priority 0 pindexes first.
+
+Two different kinds of rebalance...
+
+- KV vbucket rebalancing
+- cbft pindex rebalancing
+
+Current, easiest cbft pindex rebalance implementation...
+- easy, but bad behavior (CE edition--?)
+- cbft process started on new node, joins the cfg...
+- then instant (re-)planner & janitor-fication...
+- means apparently full-text index downtime and DDoS via tons of
+  concurrent DCP backfills.
