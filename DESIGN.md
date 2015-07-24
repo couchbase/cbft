@@ -6,6 +6,12 @@ This design document focuses on integrating cbft with Couchbase Server
 and focuses especially on integrating with couchbase's features like
 Rebalance, Failover, etc.
 
+Contents
+
+* Links
+* Design
+* Requirements Review
+
 -------------------------------------------------
 # Links
 
@@ -17,11 +23,80 @@ References to related documents:
   * https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt (rebalance-flow.txt)
 
 -------------------------------------------------
-# Requirements
+# Design
 
-(NOTE: We're currently missing a formal PRD (product requirements
-document), so these requirements are based on anticipated PRD
-requirements.)
+In this design section, we describe the planned steps of how ns-server
+will spawn cbft nodes and orchestrate them with KV nodes
+(memcached/ep-engine) during scenarios of increasing complexity.
+
+## Single CB Node Starts
+
+In a single node CB cluster (a "cluster of one"), the simplest case is
+when the user hasn't enabled the cbft ("Full-text") node service type
+for the CB node.  In this case, we expect ns-server/babysitter to not
+spawn any cbft process.
+
+If a Full-text service type is enabled for the single CB node, we also
+expect the ns-server/babysitter to spawn a cbft node roughly something
+like...
+
+    CBAUTH=<some-auth-secret-from-ns-server> \
+    ./bin/cbft \
+      -cfg=metakv \
+      -tags=feed,janitor,pindex,queryer \
+      -dataDir=/mnt/cb-data/data/@cbft \
+      -server=127.0.0.1:8091 \
+      -bindHttp=0.0.0.0:9110
+
+Roughly, those parameters mean...
+
+### CBAUTH
+
+This cbauth related environment variable(s) allows ns-server to pass
+secret credentials to cbft so that cbft can use the cbauth/metakv
+golang libraries in order to...
+
+* allow cbft to use metakv as distributed configuration store, as a
+  place where cbft can store metadata for index definitions, node
+  membership, and more.
+
+* allow cbft to access any CB bucket (whether password protected or
+  not) as a data-source (and create DCP streams to those buckets).
+
+* allow cbft to authorize and protect its REST API, where cbft can
+  provide auth checks for queries, index definition API's and its
+  stats/monitoring API's.
+
+### -cfg=metakv
+
+This tells cbft to use metakv as the Cfg storage provider.
+
+### -tags=feed,janitor,pindex,queryer
+
+This tells cbft to run only some cbft-related services.  Of note, the
+planner is explicitly _not_ listed, as this design proposal leverages
+ns-server's master orchestrator to more directly control invocations
+of the planner (see below).  This will be a more reliable approach as
+opposed to cbft's normal behavior of having all cbft nodes "race each
+other" in order to run their own competing planners.
+
+This explicit tags approach also leaves room for a future, potential
+ability to have certain nodes only run cbft's queryer, for even more
+advanced dimensions of multidimensional scaling.
+
+Note that we do not currently support changing the tags list for a
+node.  In particular, changing the "feed,janitor,pindex" tags would
+have rebalance-like implications of needing pindex movement.
+
+-------------------------------------------------
+# Requirements Review
+
+NOTE: We're currently missing a formal product requirements
+document (PRD), so these requirements are based on anticipated PRD
+requirements.
+
+In this section, we cover the list of requirements and describe how
+the design meets the requirements.
 
 Requirements with the "GT-" prefix originally come from the cbgt
 IDEAS.md design document.
