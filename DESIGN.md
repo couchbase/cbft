@@ -276,6 +276,15 @@ rebalancing occurs.
 Assumption: this design assumes that once an IP address is rewritten
 and finalized, the IP address no longer changes for a node.
 
+An alternative design: instead of using the "bindHttp" type of
+approach, we could have each cbft node have a unique, generated node
+UUID.  In addition, a separate mapping that allows clients (and the
+queryer) to translate from node UUID's to actual IP addresses would
+need to be managed, but that translation map can be more easilly,
+dynamically changed.  This alternative design requires more cbft
+changes and its extra level of indirection optimizes for an uncommon
+case (IP address changing) so this alternative design is less favored.
+
 ## Multiple cbft nodes
 
 After IP addresses are rewritten and finalized, more nodes can be
@@ -295,15 +304,15 @@ design now supports homogeneous topologies:
 * cb-02 - cbft enabled
 * cb-03 - cbft enabled
 
-And the design also support "multi-dimensional scaling" (MDS)
-topologies:
+And the design also support heterogeneous "multi-dimensional scaling"
+(MDS) topologies:
 
 * cb-00 - cbft enabled
 * cb-01 - cbft disabled
 * cb-02 - cbft disabled
 * cb-03 - cbft enabled
 
-## It works, but it's inefficient and lacks availability
+## It works, it's simple, but it's inefficient and lacks availability
 
 Although we now support multiple cbft nodes in the cluster at this
 point in the design, this simple approach is very resource intensive
@@ -322,19 +331,39 @@ lack of data (assuming the PIndexes are slow to build on the new
 nodes).
 
 Let's address these issues one at a time, where we propose to fit into
-the state-changes and workflow of ns-server's rebalance design.
+the state-changes and workflow of ns-server's rebalance design.  In
+particular, during rebalance here are some advanced ns-server
+maneuvers (see ns-server's rebalance-flow.txt document)...
+
+* ns-server can limit the number of concurrent KV backfills per node
+  (usually to 1 KV backfill per node).
+* ns-server disables compactions during some sub-phases of the
+  rebalance moves to increase throughput.
+* ns-server disables indexing during some sub-phases of the rebalance
+  moves to increase throughput and to implement "consistent view
+  queries under rebalance".
+* ns-server prioritizes VBucket moves to try to keep number of active
+  VBuckets "level" throughout nodes in the cluster.
 
 ## Increasing availability of PIndexes
 
-TBD
+TBD / design sketch - basically, cbftint will need to delete old
+pindexes only after new pindexes are built up on the new nodes.  An
+advanced MGP (Managed, Global Planner) could provide this
+orchestration.
 
-## Efficiency of PIndex reassignments
+## Limit backfills
 
-TBD
+TBD / design sketch - each new pindex being built up on a new node
+means KV backfills.  Need to throttle the number of concurrent "new
+pindex builds".  An advanced MGP (Managed, Global Planner) could
+provide this throttling.
 
 ## Controlled compactions of PIndexes
 
-TBD
+TBD / design sketch - cbft will need REST API's to disable/enable
+compactions (or temporarily change compaction timeouts).  Again, this
+is likely an area for the MGP to orchestrate.
 
 -------------------------------------------------
 # Requirements Review
@@ -351,28 +380,28 @@ IDEAS.md design document.
 
 ## GT-CS1 - Consistent queries during stable topology.
 
-Clients should be able to ask, "I want query results where the
-full-text-indexes have incorporated at least up to this set of
-{vbucket to seq-num} pairings."
+Clients should be able query for results where the indexes have
+incorporated at least up to a given set of {vbucket to seq-num}
+pairings.
 
 ## GT-CR1 - Consistent queries under datasource rebalance.
 
-Full-text queries should be consistent even as data source (Couchbase
-Server) nodes are added and removed in a clean rebalance.
+Queries should be consistent even as data source KV nodes are added
+and removed in a clean rebalance.
 
 ## GT-CR2 - Consistent queries under cbgt topology change.
 
-Full-text queries should be consistent even as cbgt nodes are added
-and removed in a clean takeover fashion.
+Queries should be consistent even as full-text nodes are added and
+removed in a clean takeover fashion.
 
 ## GT-OC1 - Support optional looser "best effort" options.
 
 The options might be along a spectrum from stale=ok to totally
 consistent.  The "best effort" option should probably have lower
-latency than a totally consistent CR1 query.
+latency than a totally consistent GT-CR1 query.
 
 For example, perhaps the client may want to just ask for consistency
-around just one vbucket-seqnum.
+around just a subset of vbucket-seqnum's.
 
 ## GT-IA1 - Index aliases.
 
@@ -392,17 +421,13 @@ single bucket, such as the "comments-fti" index and the
 
 ## GT-MQ2 - Multi-index query across multiple buckets.
 
-This is the ability to query multiple indexes across multiple buckets
-in a single query, such as "find any docs from the customer, employee,
-vendor buckets who have an address or comment about 'dallas'".
+Example: "find any docs from the customer, employee, vendor buckets
+who have an address or comment about 'dallas'".
 
-## GT-NI1 - Resilient to datasource node down scenarios.
+## GT-NI1 - Resilient to data source KV node down scenarios.
 
-If a data source (couchbase cluster server node) goes down, then the
-subset of a cbgt cluster that was indexing data from the down node
-will not be able to make indexing progress.  Those cbgt instances
-should try to automatically reconnect and resume indexing from where
-they left off.
+cbft instances should try to automatically reconnect to a recovered KV
+data source node and resume indexing from where they left off.
 
 ## GT-E1 - The user should be able to see error conditions.
 
@@ -419,10 +444,10 @@ In ES, note the frustrating bouncing between yellow, green, red;
 ns-server example, not enough CPU & timeouts leads to status
 bounce-iness.
 
-## GT-NQ1 - Querying still possible if datasource node goes down.
+## GT-NQ1 - Querying still possible if data source node goes down.
 
 Querying of a cbgt cluster should be able to continue even if some
-datasource nodes are down.
+data source KV nodes are down.
 
 ## GT-PI1 - Ability to pause/resume indexing.
 
@@ -463,7 +488,9 @@ cbft indexes?)
 
 ## FOH - Hard Failover.
 
-Even failover in the midst of cbft rebalance ("put the pencils down").
+Besides hard failover in normal operations, consider the possibility
+of a hard failover in the midst of a rebalance or any other
+non-steady-state scenario.
 
 ## FOG - Graceful Failover.
 
@@ -474,11 +501,15 @@ before failover.
 
 ## DNR - Delta Node Recovery.
 
+This involves leveraging cbft's old index files.
+
 ## RP1 - Rebalance Phase 1 - VBucket Replication Phase.
 ## RP2 - Rebalance Phase 2 - View Indexing Phase.
 ## RP2 - Rebalance Phase 3 - VBucket Takeover Phase.
 
 ## RSTOP - Ability to Stop Rebalance.
+
+A.k.a, "put the pencils down".
 
 ## MDS-RI - Multidimensional Scaling - ability to rebalance Full-Text
    indexes indpendent of other services.
@@ -488,7 +519,8 @@ before failover.
 
 ## CIUR - Consistent Indexes Under Rebalance.
 
-This is the equivalent of "consistent view indexes under rebalance".
+This is the equivalent of "consistent view index queries under
+rebalance".
 
 ## QUERYR - Querying Replicas.
 
@@ -509,7 +541,7 @@ Out of disk space conditions are handled gracefully (not segfaulting).
 ## ODSR - Out of Disk Space Repaired.
 
 After an administrator fixes the disk space issue (adds more disks;
-frees more space) then the full-text system should be able to
+frees more space) then full-text indexing should be able to
 automatically continue successfully.
 
 ## KP - Killed Processes (linux OOM, etc).
@@ -519,7 +551,7 @@ automatically continue successfully.
 ## DLC - Disk Level Copy/Restore of Node.
 
 This is the scenario when a user "clones" a node via disk/storage
-level maneuvers, such as incorrect usage of EBS snapshot or tar'ing up
+level maneuvers, such as usage of EBS snapshot features or tar'ing up
 a whole dataDir.
 
 The issue is that old cbft.uuid files might still (incorrectly) be copied.
@@ -574,7 +606,7 @@ case for PIndex reassignments.
 
 See "rebalanceMovesBeforeCompaction".
 
-## RSPREAD - Rebalance Resource Spreading.
+## RSPREAD - Rebalance Active VBucket Spreading.
 
 ns_server prioritizes VBuckets moves that equalize the spread of
 active VBuckets across nodes and also tries to keep indexers busy
@@ -599,6 +631,8 @@ Might be useful to recover from out-of-disk space scenarios.
 ## TOOLM - Tools - mortimer.
 
 ## TOOLN - Tools - nutshell.
+
+## TOOLDUMP - Tools - couch_dbdump like tools.
 
 ## UPGRADE - Future readiness for upgrades.
 
@@ -626,7 +660,7 @@ to these indexes from these nodes).
 ## TIMEREW - Handle NTP backward time jumps gracefully
 
 -------------------------------------------------
-# Random notes / TODO's
+# Random notes / TODO's / section for raw ideas
 
 ip address changes on node joining
 - node goes from 'ns_1@127.0.0.1' (or 0.0.0.0?)
@@ -636,10 +670,12 @@ ip address rename
 bind-addr needs a REAL_IP_ADDR
 from the very start to be clusterable?
 
-all nodes tart of on node with "wrong" bindHTTP addr (like 127.0.0.1
-or 0.0.0.0), so ideas:
+all nodes start with the node having a "wrong" bindHTTP addr (like
+127.0.0.1 or 0.0.0.0), so ideas:
+
 - fix reliance on bindHTTP
-- allow true node UUID, with "outside" mapping of UUID to contactable http address
+- allow true node UUID, with "outside" mapping of UUID to contactable
+  http address
 - add command to rename a node's bindHTTP
 
 best effort queries
