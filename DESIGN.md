@@ -2,45 +2,82 @@ cbft + couchbase Integration Design Document
 
 Status: DRAFT
 
-This design document focuses on integrating cbft with Couchbase Server
-and focuses especially on integrating with couchbase's features like
-Rebalance, Failover, etc.
-
-Contents
-
-* Links
-* Design
-* Requirements Review
+This design document focuses on the integration of cbft into Couchbase
+Server, with emphasis on clustering related features (rebalance,
+failover, etc.).
 
 -------------------------------------------------
 # Links
 
-References to related documents:
+Related documents:
 
-* cbgt design - https://github.com/couchbaselabs/cbgt/blob/master/IDEAS.md (GT)
-* ns-server documents, especially "rebalance flow"...
+* cbgt design documents
+  * https://github.com/couchbaselabs/cbgt/blob/master/IDEAS.md (GT)
+* ns-server design documents
   * https://github.com/couchbase/ns_server/blob/master/doc
   * https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt (rebalance-flow.txt)
 
 -------------------------------------------------
-# Design
+# cbft Design Recap
 
-In this design section, we describe the planned steps of how ns-server
-will spawn cbft nodes and orchestrate them with KV nodes
-(memcached/ep-engine) during scenarios of increasing complexity.
+For those who haven't read about or have forgotten about the design of
+cbft (couchbase full-text server), here are some main concepts.
 
-## Single CB Node Starts
+* Multiple cbft nodes can be operated as cluster when they share the
+  same configuration (or Cfg) backend database.  For the cbftint
+  project, we plan to use ns-server's metakv configuration system as
+  the Cfg backend.
 
-In a single node CB cluster (a "cluster of one"), the simplest case is
-when the user hasn't enabled the cbft ("Full-text") node service type
-for the CB node.  In this case, we expect ns-server/babysitter to not
-spawn any cbft process.
+* An index in cbft is split or partitioned into multiple index
+  partitions (or PIndexes).  This partitioning happens at index
+  creation or definition time and does not change over the life of the
+  index.
 
-If a Full-text service type is enabled for the single CB node, we also
-expect the ns-server/babysitter to spawn a cbft node roughly something
-like...
+* As the cbft cluster topology changes, however, the assignment of
+  which cbft nodes are responsible for which (copies of) PIndexes can
+  change.  e.g., when there are zero PIndex replicas configured, and
+  cbft node 004 is added to a cluster, responsibility for "PIndex
+  af977b" is reassigned by cbft's "planner" subsystem from cbft node
+  003 to cbft node 004.
 
-    CBAUTH=<some-auth-secret-from-ns-server> \
+* With regards to PIndex partitioning, a PIndex is configured (at
+  index definition time) with a data-source that has one or more
+  source partitions (VBuckets).  For example, the beer-sample bucket
+  has 1024 VBuckets.  So, we could say something like...
+  * "PIndex af977b" is assigned to cover VBuckets 0 through 199;
+  * "PIndex 34fe22" is assigned to cover VBuckets 200 through 399;
+  * and so on up to VBucket 1023.
+
+* A PIndex can be replicated, where each PIndex instance or replica
+  will be independently built up from from direct DCP streams from KV
+  engines.  That is, cbft uses star topology for PIndex replication
+  instead of chain topology.  So, when there is 1 replica configured
+  for an index (so, 2 copies), we could say something like "PIndex
+  af977b has been assigned to cbft nodes 003 and 004".  When cbft node
+  004 is removed from the cluster, then the instances of "PIndex
+  af977b was reassigned to cbft nodes 003 and 002".
+
+-------------------------------------------------
+# cbftint Design
+
+In this design section, we'll describe the planned steps of how
+ns-server will spawn cbft nodes and orchestrate those cbft nodes along
+with KV (memcached/ep-engine) nodes.  And, we'll describe scenarios of
+increasing complexity in methodical, step-by-step fashion.
+
+## Single CB Node, With Full-Text Service Disabled
+
+In a single node CB cluster, or a so-called "cluster of one", the
+simplest case is when the user hasn't enabled the cbft (or full-text)
+node service type for the CB node.  In this simple situation, we
+expect ns-server's babysitter to not spawn any cbft process.
+
+## Single CB Node, With Full-Text Service Enabled
+
+If the full-text node service type is enabled, we expect ns-server's
+babysitter to spawn a cbft process, roughly something like...
+
+    CBAUTH=<some-secret-from-ns-server> \
     ./bin/cbft \
       -cfg=metakv \
       -tags=feed,janitor,pindex,queryer \
@@ -48,45 +85,90 @@ like...
       -server=127.0.0.1:8091 \
       -bindHttp=0.0.0.0:9110
 
-Roughly, those parameters mean...
+Roughly, those cbft process parameters mean...
 
-### CBAUTH
+### CBAUTH=<some-secret-from-ns-server>
 
 This cbauth related environment variable(s) allows ns-server to pass
 secret credentials to cbft so that cbft can use the cbauth/metakv
 golang libraries in order to...
 
-* allow cbft to use metakv as distributed configuration store, as a
-  place where cbft can store metadata for index definitions, node
-  membership, and more.
+* allow cbft to use metakv as distributed configuration (Cfg) store,
+  such as for storing metadata like index definitions, node
+  membership, etc.
 
-* allow cbft to access any CB bucket (whether password protected or
-  not) as a data-source (and create DCP streams to those buckets).
+* allow cbft to access any couchbase bucket as a data-source (even if
+  password protected); that is, cbft will be able to retrieve cluster
+  VBucket maps and create DCP streams for any bucket.
 
 * allow cbft to authorize and protect its REST API, where cbft can
-  provide auth checks for queries, index definition API's and its
-  stats/monitoring API's.
+  provide auth checks for incoming queries, index definition API
+  requests, and stats/monitoring API requests.
 
 ### -cfg=metakv
 
-This tells cbft to use metakv as the Cfg storage provider.
+This command-line paramater tells cbft to use metakv as the Cfg
+storage provider.
 
 ### -tags=feed,janitor,pindex,queryer
 
 This tells cbft to run only some cbft-related services.  Of note, the
-planner is explicitly _not_ listed, as this design proposal leverages
-ns-server's master orchestrator to more directly control invocations
-of the planner (see below).  This will be a more reliable approach as
-opposed to cbft's normal behavior of having all cbft nodes "race each
-other" in order to run their own competing planners.
+'planner' is explicitly _not_ listed here, as this design proposal
+leverages ns-server's master orchestrator to more directly control
+invocations of cbft's planner.  Using ns-server's "master global
+singleton" will be a more reliable approach as opposed to using cbft's
+normal behavior of having all cbft nodes concurrent race each other in
+order to run their own competing planners.
 
-This explicit tags approach also leaves room for a future, potential
+Explicitly listing tags also leaves room for a future, potential
 ability to have certain nodes only run cbft's queryer, for even more
-advanced dimensions of multidimensional scaling.
+advanced dimensions of multidimensional scaling (query-only nodes).
 
 Note that we do not currently support changing the tags list for a
 node.  In particular, changing the "feed,janitor,pindex" tags would
 have rebalance-like implications of needing pindex movement.
+
+### -dataDir=/mnt/cb-data/data/@cbft
+
+This is the data directory where cbft can save metadata and index
+data.
+
+Of note, the dataDir is not planned to be dynamically changable at
+runtime.  If ns-server restarts cbft with a brand new, different
+dataDir, the cbft node will behave (as expected) like a brand new node
+and rebuild indexes from scratch.  Also, if ns-server instead
+carefully arranges to stop cbft, move/copy the dataDir contents to a
+new location, and restart cbft pointed at the new dataDir, cbft will
+resume as expected (assuming there was no file data corruption).
+
+### -server=127.0.0.1:8091
+
+This is default couchbase server that cbft will use for its
+data-source (container of buckets).
+
+### -bindHttp=0.0.0.0:9110
+
+This is the ADDR:PORT that cbft will listen for cbft's REST API.  It
+must be unique in the cluster.  (NOTE: We'll soon talk about changing
+IP addresses below.)
+
+## cbft process registers into the Cfg
+
+At this point, as part of cbft starts up, cbft will save its node definition
+(there's just a single node so far) into the Cfg (metakv) system.
+
+## cbft is ready for index DDL
+
+At this point, full-text indexes can be defined using cbft's REST API.
+The cbft node will save index definition into its Cfg (metakv) system.
+
+
+
+When an index is defined, nd cbft will create DCP streams to the single KV node.
+
+upgrades
+
+
 
 -------------------------------------------------
 # Requirements Review
