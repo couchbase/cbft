@@ -31,7 +31,9 @@ For those needing a quick recap of cbft's main design concepts...
 
 * An index in cbft is split or partitioned into multiple index
   partitions, known as PIndexes.  A PIndex has a 1-to-1 relationship
-  with a bleve full-text index.
+  with a bleve full-text index.  To process query requests, a query
+  needs to be scatter-gather'ed across the multiple PIndexes of an
+  index.
 
 * This partitioning of indexes into PIndexes happens at index creation
   time (i.e., index definition time).  To keep things simple for now,
