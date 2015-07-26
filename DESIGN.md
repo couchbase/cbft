@@ -12,6 +12,8 @@ related features such as rebalance, failover, etc.
 Related documents:
 
 * cbgt design documents
+  * The cbgt library provides generic infrastructure to manage
+    distributed, replicated, clustered indexes.
   * https://github.com/couchbaselabs/cbgt/blob/master/IDEAS.md (GT)
 * ns-server design documents
   * https://github.com/couchbase/ns_server/blob/master/doc
@@ -20,9 +22,7 @@ Related documents:
 -------------------------------------------------
 # cbft Design Recap
 
-For those who haven't read about or have forgotten about the design of
-cbft (couchbase full-text server) from the IDEAS.md (GT) writeup, here
-are some main concepts.
+For those needing a quick recap of cbft's main design concepts...
 
 * Multiple cbft nodes can be operated together as a cluster when they
   share the same configuration (or Cfg) backend database.  For the
