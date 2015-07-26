@@ -3,8 +3,8 @@ cbft + couchbase Integration Design Document
 Status: DRAFT
 
 This design document focuses on the integration of cbft into Couchbase
-Server; a.k.a. "cbftint".  Extra emphasis in this document is given to
-the design of clustering related features (rebalance, failover, etc.).
+Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
+related features such as rebalance, failover, etc.
 
 -------------------------------------------------
 # Links
@@ -21,7 +21,8 @@ Related documents:
 # cbft Design Recap
 
 For those who haven't read about or have forgotten about the design of
-cbft (couchbase full-text server), here are some main concepts.
+cbft (couchbase full-text server) from the IDEAS.md (GT) writeup, here
+are some main concepts.
 
 * Multiple cbft nodes can be operated together as a cluster when they
   share the same configuration (or Cfg) backend database.  For the
@@ -29,26 +30,27 @@ cbft (couchbase full-text server), here are some main concepts.
   system as the Cfg backend.
 
 * An index in cbft is split or partitioned into multiple index
-  partitions (or PIndexes).  A PIndex has a 1-to-1 relationship with a
-  bleve full-text index.
+  partitions, known as PIndexes.  A PIndex has a 1-to-1 relationship
+  with a bleve full-text index.
 
-* This index partitioning int PIndexes happens at index creation time
-  (index definition time).  To keep things simple, we assume the
-  number of partitions in the early versions of cbft will not change
-  over the life of an index.
+* This partitioning of indexes into PIndexes happens at index creation
+  time (i.e., index definition time).  To keep things simple for now,
+  we assume that the number of PIndexes that are allocated per index
+  does not change over the life of an index (although that might be a
+  future feature).
 
 * As the cbft cluster topology changes, however, the assignment of
   which cbft nodes are responsible for which PIndexes can change.
-  e.g., cbft node 000 is responsibile for "PIndex af977b".  When a
-  second cbft node 001 joins the cbft cluster, the "planner" subsystem
-  in cbft might reassign that PIndex from cbft node 000 to cbft node
-  001.
+  e.g., cbft node 00 is responsibile for "PIndex af977b".  When a
+  second cbft node 01 joins the cbft cluster, the "planner" subsystem
+  in cbft might reassign PIndex af977b from cbft node 00 to cbft node
+  01.
 
 * With regards to PIndex partitioning, a PIndex is configured (at
-  index definition time) with a data-source (like a couchbase bucket).
-  That data-source will have one or more source partitions (VBuckets).
-  For example, the beer-sample bucket has 1024 VBuckets.  So, we could
-  say something like...
+  index definition time) with a source of data (like a couchbase
+  bucket).  That data source will have one or more source partitions
+  (VBuckets).  For example, the beer-sample bucket has 1024 VBuckets.
+  So, we could say something like...
   * "PIndex af977b" is assigned to cover VBuckets 0 through 199;
   * "PIndex 34fe22" is assigned to cover VBuckets 200 through 399;
   * and so on with more PIndexes up to VBucket 1023.
@@ -124,16 +126,19 @@ storage provider.
 The tags parameter tells cbft to run only some subset of internal cbft
 related services.  Of note, the 'planner' is explicitly _not_ listed
 here, as this design proposal will leverage ns-server's master
-orchestrator to more directly control invocations of cbft's planner.
+facilities (ns-server's ability to dynamically determine a single
+master node in a cluster) to more directly control invocations of
+cbft's planner.
 
-Using ns-server's "master global singleton" will be a more reliable
-approach than with using cbft's normal behavior of having all cbft
-nodes concurrent race each other in order to run their own competing
-planners.
+Using ns-server's master facilities will be a more reliable approach
+than using cbft's basic behavior of having all cbft nodes concurrently
+race each other in order to run their own competing planners.
 
 Note that we do not currently support changing the tags list for a
 node.  In particular, changing the "feed,janitor,pindex" tags would
-have complex rebalance-like implications of needing pindex movement.
+have complex rebalance-like implications of needing pindex movement;
+instead, users can rebalance-out a node and rebalance it back in with
+a different set of node services.
 
 ### -dataDir=/mnt/cb-data/data/@cbft
 
@@ -177,19 +182,21 @@ The cbft node will save any created index definitions into its Cfg
 
 The Cfg system has a data-changes subscription feature, so programs
 can be notified when data in the distributed Cfg changes.  We'll use
-this feature and introduce a new, separate, standalone planner program
-which will be used as a cluster-wide singleton.  ns-server's global,
-master node ("the president") will spawn, re-spawn and stop this new
-Managed, Global Planner (MGP) process.
+this feature and introduce a new, separate, standalone planner-like
+program which will be used as a cluster-wide singleton.  ns-server's
+master facilities will spawn, re-spawn and stop a single instance of
+this new Managed, Global Planner (MGP) process (just a single instance
+throughout the entire cluster).
 
 The MGP is roughly equivalent to...
 
     cbft -tags=planner ...
 
-There's a possibilility ns-server's global master node might actually
-not be the only master, as there might be potential races between
-concurrent masters.  That's ok, as cbft's planner will use CAS-like
-semantics in the Cfg to determine winnders.
+There's a possibilility ns-server's master facilities might actually
+have more than one master running with potential races between
+concurrent masters.  That's suboptimal but ok, as cbft's planner (and
+MGP) will use CAS-like features in the Cfg to determine Cfg update
+race winners.
 
 Of note, an Enterprise Edition of cbftint might ship with a more
 advanced planner program, such as a planner than moves PIndexes with
@@ -634,7 +641,9 @@ Might be useful to recover from out-of-disk space scenarios.
 
 ## TOOLDUMP - Tools - couch_dbdump like tools.
 
-## UPGRADE - Future readiness for upgrades.
+## UPGRADESW - Handles upgrades of sherlock-to-watson.
+
+## UPGRADE - Future readiness for watson-to-future upgrades.
 
 ## UTEST - Unit Testable.
 
@@ -658,6 +667,10 @@ correlation (e.g., these DCP streams in KV-engine come from cbft due
 to these indexes from these nodes).
 
 ## TIMEREW - Handle NTP backward time jumps gracefully
+
+## RZA - Handle Rack/Zone Awareness & Server Groups
+
+## CBM - Works with cbmirror
 
 -------------------------------------------------
 # Random notes / TODO's / section for raw ideas
@@ -700,11 +713,6 @@ index lifecycle
 A vbucket in a view index has a "pending", "active", "cleanup" states,
 that are especially used during rebalance orchestration.  Perhaps
 PIndexes need equivalent states?
-
-idea: never run planner in cbftint?  But allow ns-server to invoke
-planner on as-needed basis whenever ns-server needs (during a master
-orchestrator / DML change event).  Then EE edition could allow a more
-advanced planner.
 
 add cmd-line param where ns-server can force a default node UUID, for
 better cross-correlation/debuggability of log events.  And, we can
@@ -762,5 +770,8 @@ Current, easiest cbft pindex rebalance implementation...
 - means apparently full-text index downtime and DDoS via tons of
   concurrent DCP backfills.
 
-don't forget about upgrades
-
+state machine:
+- running
+- warming
+- cooling
+- stoppable/stopped
