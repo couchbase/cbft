@@ -214,7 +214,8 @@ which will be used as a cluster-wide singleton.  ns-server's master
 facilities will spawn, re-spawn and stop a single, cluster-wide
 instance of this new Managed, Global Planner (MGP) process.
 
-A simple version of the MGP is roughly equivalent to...
+A simple version of the MGP is roughly equivalent to this existing
+cbft cmd-line option...
 
     cbft -tags=planner ...
 
@@ -357,7 +358,7 @@ dynamically changed.  This alternative design requires more cbft
 changes and its extra level of indirection optimizes for an uncommon
 case (IP address changing) so this alternative design isn't favored.
 
-## Adding more cbft nodes
+## Adding more than one cbft nodes
 
 Since IP addresses are now being rewritten and finalized, more
 couchbase nodes can now be added into the cluster with the cbft
@@ -386,9 +387,30 @@ And the design also support heterogeneous "multi-dimensional scaling"
 * cb-02 - cbft disabled
 * cb-03 - cbft enabled
 
-## Removing a cbft node
+## Rebalance out a cbft node
 
-TODO.
+When a couchbase node is removed from the cluster, if the node is
+running cbft service type, here are the proposed steps:
+
+* ns-server shuts down the cbft process on the to-be-removed node
+* ns-server invokes a (to be written) cmd-line program that unregisters
+  a cbft node from the Cfg (UNREG_CBFT_NODE).
+
+This UNREG_CBFT_NODE cmd-line program (final name is TBD), when run on
+the to-be-removed node, roughly looks like the following existing cbft
+cmd-line option...
+
+    ./cbft -register=unknown ...
+
+Additional straightforward development will be needed to create an
+UNREG_CBFT_NODE program than can be run on any node in the cluster, to
+allow ns-server to unregister any cbft node from the cbft cluster.
+
+The above steps and invocation of UNREG_CBFT_NODE can happen at the
+end of ns-server's rebalance-out steps for a node, which is an
+approach that favors keeping cbft mostly stable during rebalance.
+That means hitting "Stop Rebalance" leaves cbft mostly as-is on a
+node-by-node basis.
 
 ## It works, it's simple, but it's inefficient and lacks availability
 
