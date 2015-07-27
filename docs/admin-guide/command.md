@@ -27,6 +27,11 @@ That will print out usage/help output...
                  configuration provider manages a configuration
                  for a single, unclustered cbft node in a local
                  file that's stored in the dataDir;
+          * metakv
+               - manages a cbft cluster configuration in couchbase metakv store
+                 environment variable CBAUTH_REVRPC_URL need to be set
+                 for metakv. for example:
+                 'export CBAUTH_REVRPC_URL=http://user:password@localhost:9000/cbft';
           default is 'simple'.
       -container PATH
           optional slash separated path of logical parent containers
