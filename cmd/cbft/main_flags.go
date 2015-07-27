@@ -93,11 +93,11 @@ func initFlags(flags *Flags) map[string][]string {
 			"\n       configuration provider manages a configuration"+
 			"\n       for a single, unclustered cbft node in a local"+
 			"\n       file that's stored in the dataDir;"+
-            "\n* metakv"+
-			"\n     - manages a cbft cluster configuration in couchbase metakv store"+
-			"\n       environment variable CBAUTH_REVRPC_URL need to be set"+
-			"\n       for metakv. for example:"+
-            "\n       'export CBAUTH_REVRPC_URL=http://user:password@localhost:9000/cbft';"+
+			"\n* metakv"+
+			"\n     - manages a cbft cluster configuration in couchbase metakv store;"+
+			"\n       environment variable CBAUTH_REVRPC_URL needs to be set"+
+			"\n       for metakv; for example:"+
+			"\n       'export CBAUTH_REVRPC_URL=http://user:password@localhost:9000/cbft';"+
 			"\ndefault is 'simple'.")
 	s(&flags.Container,
 		[]string{"container"}, "PATH", "",
