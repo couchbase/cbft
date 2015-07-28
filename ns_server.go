@@ -225,8 +225,52 @@ func NewNsStatusHandler(mgr *cbgt.Manager, server string) (*NsStatusHandler, err
 	}, nil
 }
 
+func HostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes, nodeDefs *cbgt.NodeDefs) []string {
+	// find the node UUIDs related to this index
+	nodes := make(map[string]struct{})
+	for _, planPIndex := range planPIndexes.PlanPIndexes {
+		if planPIndex.IndexName == name {
+			for planPIndexNodeUUID := range planPIndex.Nodes {
+				nodes[planPIndexNodeUUID] = struct{}{}
+			}
+		}
+	}
+	nodeExtras := make(map[string]string)
+	// look for all these nodes in the nodes wanted
+	for _, nodeDef := range nodeDefs.NodeDefs {
+		_, ok := nodes[nodeDef.UUID]
+		if ok {
+			nodeExtras[nodeDef.UUID] = nodeDef.Extras
+		}
+	}
+
+	// build slide of node extras
+	nodeStrings := make(sort.StringSlice, 0, len(nodeExtras))
+	for _, nodeExtra := range nodeExtras {
+		nodeStrings = append(nodeStrings, nodeExtra)
+	}
+
+	// sort slice for stability
+	sort.Sort(nodeStrings)
+
+	return nodeStrings
+}
+
 func (h *NsStatusHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
+
+	cfg := h.mgr.Cfg()
+	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(cfg)
+	if err != nil {
+		rest.ShowError(w, req, "could not retrieve plan pIndexes", 500)
+		return
+	}
+
+	nodesDefs, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
+	if err != nil {
+		rest.ShowError(w, req, "could not retrieve node defs (wanted)", 500)
+		return
+	}
 
 	_, indexDefsMap, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
@@ -262,7 +306,7 @@ func (h *NsStatusHandler) ServeHTTP(
 		}{
 			Bucket: indexDef.SourceName,
 			Name:   indexDefName,
-			Hosts:  []string{h.serverURL.Host},
+			Hosts:  HostsForIndex(indexDefName, planPIndexes, nodesDefs),
 			// FIXME hard-coded
 			Completion: 100,
 			Status:     "Ready",
