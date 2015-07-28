@@ -11,6 +11,8 @@ related features such as rebalance, failover, etc.
 
 Related documents:
 
+* cbft technical user documentation for cbft Developer Preview
+  * http://labs.couchbase.com/cbft/
 * cbgt design documents
   * The cbgt library provides generic infrastructure to manage
     distributed, replicated, clustered indexes.
@@ -127,7 +129,7 @@ golang libraries in order to...
 
 ### -cfg=metakv
 
-This command-line paramater tells cbft to use metakv as the Cfg
+This command-line parameter tells cbft to use metakv as the Cfg
 storage provider.
 
 ### -tags=feed,janitor,pindex,queryer
@@ -143,19 +145,20 @@ Using ns-server's master facilities will be a more reliable approach
 than using cbft's basic behavior of having all cbft nodes concurrently
 race each other in order to run their own competing planners; it will
 also be more less wasteful than having competing planners throw away
-work when they lose any concurrency CAS race.
+work when they lose any concurrent re-planning race.
 
 Note that we do not currently support dynamically changing the tags
-list for a node.  In particular, changing the "feed,janitor,pindex"
-tags may have complex rebalance-like implications of needing pindex
-movement; instead, users can rebalance-out a node and rebalance it
-back in with a different set of node services.
+list for a cbft node.  In particular, changing the "pindex" tag (even
+with a cbft process restart) will have complex rebalance-like
+implications of needing PIndex movement; instead, users can
+rebalance-out a node and rebalance it back in with a different set of
+node services.
 
 Related: this design doesn't support the scenario of adding unmanaged,
 standalone cbft instances to a cbft cluster that's ns-server managed
-(such as by downloading cbft manually, trying to join it to a cbftint
-cluster).  That is, each cbft instance in this design must be
-ns-server managed.
+(such as by downloading cbft manually, and manually trying to join it
+to a cbftint cluster via direct Cfg access).  That is, each cbft
+instance in this design must be ns-server managed.
 
 ### -dataDir=/mnt/cb-data/data/@cbft
 
@@ -163,11 +166,14 @@ This is the data directory where cbft can store index and
 node-specific data and metadata.
 
 Of note, the dataDir is not planned to be dynamically changable at
-runtime.  If ns-server restarts cbft with a brand new, empty,
-different dataDir, the cbft node will behave like a brand new
-additional cbft node (since it has a different cbft.uuid file), but
-the old node (with the old cbft.uuid file) will still exist may be
-unaccessible.
+runtime.  That is, if ns-server mistakenly restarts cbft with a brand
+new, empty, different dataDir, the cbft node will try to join the cbft
+cluster like a brand new additional cbft node (since it has a
+different cbft.uuid file), but the old cbft node (with the same
+bindHttp but old cbft.uuid file) will still be registered and prevent
+the restarted cbft node from joining.  To repair this undesirable
+situation, the old node (with the old cbft.uuid) must be unregistered
+from the Cfg.
 
 On the other hand, if a future version of ns-server instead carefully
 arranges to stop cbft, move/copy/symlink the dataDir contents to a new
@@ -177,15 +183,15 @@ will resume with the same cluster membership identity as expected
 
 ### -server=127.0.0.1:8091
 
-This is ADDR:PORT of the REST API of couchbase server that cbft will
-use by default for its data-source (i.e., the default container of
-buckets).
+This is ADDR:PORT of the REST API of the couchbase server that cbft
+will use by default for its data-source (i.e., the default container
+of buckets).
 
 ### -bindHttp=0.0.0.0:9110
 
-This is the ADDR:PORT that cbft will listen for cbft's REST API.  The
-bindHttp ADDR:PORT must be unique in the cluster.  (NOTE: We'll talk
-about changing IP addresses in a later section.)
+This is the ADDR:PORT that cbft will listen to in order to provide the
+cbft REST API.  The bindHttp ADDR:PORT must be unique in the cluster.
+(NOTE: We'll talk about changing IP addresses in a later section.)
 
 ## cbft process registers into the Cfg
 
@@ -205,39 +211,39 @@ The cbft node will save any created index definitions into its Cfg
 Other clients of the Cfg system, then, can now discover the index
 definitions of the cbft clsuter.
 
-## A Managed, Global Planner
+## A Managed, Central Planner (MCP)
 
 The Cfg system has a subscription feature, so Cfg clients can be
 notified when data in the distributed Cfg changes.  We'll use this
 feature and introduce a new, separate, standalone planner-like program
 which will be used as a cluster-wide singleton.  ns-server's master
 facilities will spawn, re-spawn and stop a single, cluster-wide
-instance of this new Managed, Global Planner (MGP) process.
+instance of this new Managed, Central Planner (MCP) process.
 
-A simple version of the MGP is roughly equivalent to this existing
+A simple version of the MCP is roughly equivalent to this existing
 cbft cmd-line option...
 
     cbft -tags=planner ...
 
-There's a possibilility ns-server's master facilities might actually
-have more than one master running with potential races between
-concurrent masters.  That's suboptimal but ok or survivable, as cbft's
-planner (and MGP) will use CAS-like features in the Cfg to determine
-Cfg update race winners.
+There's a possibility that ns-server's master facilities might
+actually have more than one master running with potential races
+between concurrent masters.  That's suboptimal but survivable, as
+cbft's planner (and MCP) will use CAS-like features in the Cfg to
+determine Cfg update race winners.
 
 Of note, an Enterprise Edition of cbftint might ship with a more
-advanced MGP program, such as a planner than moves PIndexes with
+advanced MCP program, such as a planner than moves PIndexes with
 more efficient orchestration.
 
-## MGP updates the plan (UP0)
+## MCP updates the plan (UP0)
 
-The MGP is awoken due to a Cfg change (from the IC0 step from above)
-and splits the index definition into one or more PIndexes.  The MGP
-then assigns the PIndexes to nodes (there's only one node so far, so
-this is easy; in any case, the planner already is able to assign
-PIndexes to multiple nodes).
+The MCP is awoken due to a Cfg change (from the IC0 step from above)
+and splits the index definition into one or more PIndexes.  The MCP
+then assigns the PIndexes to cbft nodes (there's only one cbft node so
+far, so this is easy; in any case, the planner already is able to
+assign PIndexes to multiple nodes).
 
-The MGP then stores this updated plan into the Cfg.
+The MCP then stores this updated plan into the Cfg.
 
 A plan then has two major parts:
 * a splitting of logical index definitions into PIndexes;
@@ -284,13 +290,14 @@ Most of this functionality is due to cbft's usage of the cbdatasource
 library: https://github.com/couchbase/go-couchbase/tree/master/cbdatasource
 
 The cbdatasource library has exponential backoff retry logic when
-either an ns-server streaming connection or a DCP streaming connection
-fails, and cbdatasource needs to reconnect.
-
-cbdatasource also handles when VBuckets are moving/rebalancing.
-
-Documentation on cbdatasource's timeout/backoff options here:
+either a ns-server vbucket map streaming connection or a DCP streaming
+connection fails.  This backoff/retry logic is used when cbdatasource
+needs to reconnect.  Documentation on cbdatasource's timeout/backoff
+options here:
 http://godoc.org/github.com/couchbase/go-couchbase/cbdatasource#BucketDataSourceOptions
+
+cbdatasource also handles when VBuckets are moving/rebalancing,
+including handling NOT_MY_VBUCKET messages.
 
 In our example, we start with our first node...
 
@@ -329,14 +336,14 @@ A simple proposal is when ns-server discovers it must change the IP
 address of a node (such as when cb-01 is added to the "cluster" of
 cb-00), then ns-server must run some additional (proposed) work...
 
-* ns-server stops cbft's MGP (Managed, Global Planner).
+* ns-server stops cbft's MCP (Managed, Central Planner).
 * ns-server stops cbft.
 * ns-server invokes a (proposed) synchronous cmd-line tool/program (to
   be specified) that atomically rewrites the bindHttp ADDR:PORT's
   in the Cfg (e.g., from 0.0.0.0:9110 to cb-00:9110).
 * ns-server restarts cbft with the new -bindHttp ADDR:PORT
   (cb-00:9110).
-* ns-server restarts cbft's MGP.
+* ns-server restarts cbft's MCP.
 
 The above work should happen before any actual node joining or
 rebalancing occurs.
@@ -358,14 +365,14 @@ dynamically changed.  This alternative design requires more cbft
 changes and its extra level of indirection optimizes for an uncommon
 case (IP address changing) so this alternative design isn't favored.
 
-## Adding more than one cbft nodes
+## Adding more than one cbft node
 
 Since IP addresses are now being rewritten and finalized, more
 couchbase nodes can now be added into the cluster with the cbft
 service type enabled.  As each cbft process is started on the new
 nodes, it registers itself into the Cfg (metakv) system.  Whenever the
-cbft node cluster topology information changes, the MGP will notice
-(since the MGP is subscribing to Cfg changes), and the MGP will
+cbft node cluster topology information changes, the MCP will notice
+(since the MCP is subscribing to Cfg changes), and the MCP will
 re-plan any assignments of PIndexes to the newly added cbft nodes.
 The janitors running on the existing and new cbft nodes will see that
 the plan has changed and stop-&-start PIndexes as needed,
@@ -392,9 +399,14 @@ And the design also support heterogeneous "multi-dimensional scaling"
 When a couchbase node is removed from the cluster, if the node is
 running cbft service type, here are the proposed steps:
 
-* ns-server shuts down the cbft process on the to-be-removed node
-* ns-server invokes a (to be written) cmd-line program that unregisters
-  a cbft node from the Cfg (UNREG_CBFT_NODE).
+* (RO-10) ns-server invokes a (to be written) cmd-line program that
+  unregisters a cbft node from the Cfg (UNREG_CBFT_NODE).
+
+* (RO-20) ns-server shuts down the cbft process on the to-be-removed
+  node
+
+* (RO-30) ns-server deletes or cleans out the dataDir subdirectory
+  tree of cbft.
 
 This UNREG_CBFT_NODE cmd-line program (final name is TBD), when run on
 the to-be-removed node, roughly looks like the following existing cbft
@@ -405,12 +417,43 @@ cmd-line option...
 Additional straightforward development will be needed to create an
 UNREG_CBFT_NODE program than can be run on any node in the cluster, to
 allow ns-server to unregister any cbft node from the cbft cluster.
+Especially, we want ns-server to be able to run UNREG_CBFT_NODE on its
+master ns-server node.
 
 The above steps and invocation of UNREG_CBFT_NODE can happen at the
 end of ns-server's rebalance-out steps for a node, which is an
 approach that favors keeping cbft mostly stable during rebalance.
 That means hitting "Stop Rebalance" leaves cbft mostly as-is on a
 node-by-node basis.
+
+## Hard failover
+
+The proposal to handle hard failover is ns-server's master facilities
+(which might have recently moved due to the imminent failover) should
+invoke the UNREG_CBFT_NODE program (step RO-10) and run the MCP (if
+not already running).
+
+## Graceful failover and Cooling Down
+
+Graceful failover is feature that concerns the KV engine, since the KV
+engine has the primary data that must be gracefully kept safe.  As a
+first step, then, we might do nothing to support graceful failover.
+
+As an advanced step, though, a proposal to handle graceful failover is
+that it will be similar to hard failover, but additionally,
+ns-server's master facilities (which might have recently moved due to
+the imminent failover) should invoke REST API's on the
+to-be-failovered cbft node to pause cbft's index ingest and pause
+cbft's query-ability on the to-be-failovered cbft node.  See the
+management REST API's of cbft:
+http://labs.couchbase.com/cbft/api-ref/#index-management
+
+Of note: those API's need to be improved to allow ns-server to limit
+the scope of index pausing and query pausing to just a particular node.
+
+Note that we don't expect to support cancellation of graceful
+failover, but if that's needed, ns-server can invoke cbft's REST API
+to resume index ingest and querying.
 
 ## It works, it's simple, but it's inefficient and lacks availability
 
@@ -449,21 +492,21 @@ maneuvers (see ns-server's rebalance-flow.txt document)...
 
 TBD / design sketch - basically, cbftint will need to delete old
 pindexes only after new pindexes are built up on the new nodes.  An
-advanced MGP (Managed, Global Planner) could provide this
+advanced MCP (Managed, Central Planner) could provide this
 orchestration.
 
 ## Limit backfills
 
 TBD / design sketch - each new pindex being built up on a new node
 means KV backfills.  Need to throttle the number of concurrent "new
-pindex builds".  An advanced MGP (Managed, Global Planner) could
+pindex builds".  An advanced MCP (Managed, Central Planner) could
 provide this throttling.
 
 ## Controlled compactions of PIndexes
 
 TBD / design sketch - cbft will need REST API's to disable/enable
 compactions (or temporarily change compaction timeouts).  Again, this
-is likely an area for the MGP to orchestrate.
+is likely an area for the MCP to orchestrate.
 
 -------------------------------------------------
 # Requirements Review
