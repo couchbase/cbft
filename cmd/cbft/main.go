@@ -135,7 +135,7 @@ func main() {
 	expvars.Set("indexes", bleveHttp.IndexStats())
 
 	router, err := MainStart(cfg, uuid, tagsArr,
-		flags.Container, flags.Weight,
+		flags.Container, flags.Weight, flags.Extra,
 		flags.BindHttp, flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr)
@@ -188,7 +188,7 @@ func MainWelcome(flagAliases map[string][]string) {
 }
 
 func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
-	weight int, bindHttp, dataDir, staticDir, staticETag, server string,
+	weight int, extras, bindHttp, dataDir, staticDir, staticETag, server string,
 	register string, mr *cbgt.MsgRing) (
 	*mux.Router, error) {
 	if server == "" {
@@ -220,7 +220,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	mgr := cbgt.NewManager(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
-		"", bindHttp, dataDir, server, &MainHandlers{})
+		extras, bindHttp, dataDir, server, &MainHandlers{})
 	err := mgr.Start(register)
 	if err != nil {
 		return nil, err
