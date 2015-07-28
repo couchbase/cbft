@@ -67,9 +67,9 @@ For those needing a quick recap of cbft's main design concepts...
   PIndex replication instead of chain topology.  So, we could say
   something like...
   * PIndex af977b, which is assigned by the planner to cover VBuckets
-    0 through 199, is assigned to cbft nodes 001 and 004.
-  * When cbft node 004 is removed from the cbft cluster, then PIndex
-    af977b is reassigned by the planner to cbft nodes 001 and 002.
+    0 through 199, is assigned to cbft nodes 01 and 04.
+  * When cbft node 04 is removed from the cbft cluster, then PIndex
+    af977b is reassigned by the planner to cbft nodes 01 and 02.
 
 -------------------------------------------------
 # cbftint Design
@@ -237,11 +237,11 @@ more efficient orchestration.
 
 ## MCP updates the plan (UP0)
 
-The MCP is awoken due to a Cfg change (from the IC0 step from above)
-and splits the index definition into one or more PIndexes.  The MCP
-then assigns the PIndexes to cbft nodes (there's only one cbft node so
-far, so this is easy; in any case, the planner already is able to
-assign PIndexes to multiple nodes).
+The MCP is awoken due to its subscription to Cfg changes (from the IC0
+step from above) and splits the index definition into one or more
+PIndexes.  The MCP then assigns the PIndexes to cbft nodes (there's
+only one cbft node so far, so this is easy; in any case, the planner
+already is able to assign PIndexes to multiple nodes).
 
 The MCP then stores this updated plan into the Cfg.
 
@@ -249,13 +249,15 @@ A plan then has two major parts:
 * a splitting of logical index definitions into PIndexes;
 * and, an assignment of PIndexes to cbft nodes.
 
-## Individual cbft janitors see the plan was changed and try to
-   "cleanup the mess" to match the latest plan.
+## cbft Janitors Wake Up To Clean Up The Mess
 
 Individual cbft janitors on the cbft nodes (there's just one so far in
-this simple case) are awoken due to the Cfg change (previous step UP0)
-and create or shutdown any process-local PIndex instances as
-appropriate.
+this simple case) are awoken due to the Cfg change subscriptions
+(previous step UP0) and create or shutdown any process-local PIndex
+instances as appropriate.
+
+That is, a cbft janitor will try to make cbft process-local changes on
+the cbft node to reflect the latest plan.
 
 ## A PIndex instance creates DCP feeds
 
@@ -271,8 +273,7 @@ information to the cbft (perhaps as a cmd-line parameter or
 environment variable) that helps cbft construct useful DCP stream
 names, perhaps via prefixing.
 
-## A KV engine fails, restarts, VBuckets are
-   moved/rebalanced/failovered, the VBucket cluster map changes, etc.
+## Simple Rebalances, Failovers, Restarts.
 
 At this point, assuming our first cbft process isn't moving (the first
 ns-server always stays in the couchbase cluster), and assuming our
@@ -290,7 +291,7 @@ Most of this functionality is due to cbft's usage of the cbdatasource
 library: https://github.com/couchbase/go-couchbase/tree/master/cbdatasource
 
 The cbdatasource library has exponential backoff retry logic when
-either a ns-server vbucket map streaming connection or a DCP streaming
+either a ns-server vbucket-map streaming connection or a DCP streaming
 connection fails.  This backoff/retry logic is used when cbdatasource
 needs to reconnect.  Documentation on cbdatasource's timeout/backoff
 options here:
@@ -298,6 +299,9 @@ http://godoc.org/github.com/couchbase/go-couchbase/cbdatasource#BucketDataSource
 
 cbdatasource also handles when VBuckets are moving/rebalancing,
 including handling NOT_MY_VBUCKET messages.
+
+cbdatasource also handles when the cbft node restarts, and is able to
+restart DCP streams from where it last left off.
 
 In our example, we start with our first node...
 
@@ -318,6 +322,8 @@ around the place.  The simplification here is that cbft doesn't look
 much different from any other "external" application that happens to
 be using DCP.
 
+## Handling IP address changes
+
 One issue: as soon as the second node was added (cb-01), the IP
 address of cb-00 might change (if not already explicitly specified on
 cb-00's initialization web UI/REST screens).  This is because
@@ -325,15 +331,13 @@ ns-server has a feature that supports late-bound IP-address discovery,
 where IP-addresses can be assigned once the 2nd node appears in a
 couchbase cluster.
 
-## Handling IP address changes
-
 At this point, the metadata stored in the Cfg includes the -bindHttp
-ADDR:PORT command-line parameter value.  cbft uses that bindHttp
-ADDR:PORT to as both a unique node identifier and also to implement
+ADDR:PORT cmd-line parameter value.  cbft uses that bindHttp ADDR:PORT
+to as both a unique node identifier and also to implement
 scatter/gather queries.
 
-A simple proposal is when ns-server discovers it must change the IP
-address of a node (such as when cb-01 is added to the "cluster" of
+A simple proposal is that when ns-server discovers it must change the
+IP address of a node (such as when cb-01 is added to the "cluster" of
 cb-00), then ns-server must run some additional (proposed) work...
 
 * ns-server stops cbft's MCP (Managed, Central Planner).
@@ -426,52 +430,55 @@ approach that favors keeping cbft mostly stable during rebalance.
 That means hitting "Stop Rebalance" leaves cbft mostly as-is on a
 node-by-node basis.
 
-## Hard failover
+## Hard Failover
 
 The proposal to handle hard failover is ns-server's master facilities
 (which might have recently moved due to the imminent failover) should
-invoke the UNREG_CBFT_NODE program (step RO-10) and run the MCP (if
-not already running).
+invoke the UNREG_CBFT_NODE program (same as from step RO-10 above) and
+run the MCP (if not already running).
 
-## Graceful failover and Cooling Down
+## Graceful Failover and Cooling Down
 
 Graceful failover is feature that concerns the KV engine, since the KV
-engine has the primary data that must be gracefully kept safe.  As a
-first step, then, we might do nothing to support graceful failover.
+engine has the primary KV data that must be gracefully kept safe.  As
+a first step, then, we might do nothing to support graceful failover.
 
 As an advanced step, though, a proposal to handle graceful failover is
 that it will be similar to hard failover, but additionally,
 ns-server's master facilities (which might have recently moved due to
 the imminent failover) should invoke REST API's on the
-to-be-failovered cbft node to pause cbft's index ingest and pause
-cbft's query-ability on the to-be-failovered cbft node.  See the
-management REST API's of cbft:
+to-be-failovered cbft node to pause cbft's index ingest and to pause
+cbft's query-ability on the to-be-failovered cbft node.
+
+See the current management REST API's of cbft here:
 http://labs.couchbase.com/cbft/api-ref/#index-management
 
-Of note: those API's need to be improved to allow ns-server to limit
-the scope of index pausing and query pausing to just a particular node.
+Of note: those cbft REST API's need to be improved to allow ns-server
+to limit the scope of index pausing and query pausing to just a
+particular node.
 
 Note that we don't expect to support cancellation of graceful
 failover, but if that's needed, ns-server can invoke cbft's REST API
 to resume index ingest and querying.
 
-## It works, it's simple, but it's inefficient and lacks availability
+## Addressing Rebalance Inefficiency And Unavailability
 
 Although we now support multiple cbft nodes in the cluster at this
 point in the design, this simple approach is very resource intensive
 and has availability gaps.
 
-For example, in the "homogeneous topology", if we started out with
-cb-00 and added nodes cb-01, cb-02 & cb-03 into the cluster at the
-same time, then eventually all the janitors on those three new nodes
-will awake at the same times and all start DCP streams at the same
-time, leading to a huge load on the system (lots of KV backfills).
+For example, in the homogeneous topology (all nodes will be running
+cbft), if we started out with cb-00 and added nodes cb-01, cb-02 &
+cb-03 into the cluster at the same time, then eventually all the cbft
+janitors on those three new nodes will awake at nearly the same time
+and all start their DCP streams at the same time, leading to a huge
+load on the system due to lots of KV backfills.
 
 At the same time, the cbft janitor on cb-00 will awaken and stop
 3/4th's of its PIndexes (the ones that have been reassigned to the new
-nodes of cb-01/cb-02/cb-03).  So, any queries at this time will see
+cbft nodes on cb-01/02/03).  So, any queries at this time will see
 lack of data (assuming the PIndexes are slow to build on the new
-nodes).
+cbft nodes).
 
 Let's address these issues one at a time, where we propose to fit into
 the state-changes and workflow of ns-server's rebalance design.  In
@@ -654,11 +661,9 @@ This involves leveraging cbft's old index files.
 
 A.k.a, "put the pencils down".
 
-## MDS-RI - Multidimensional Scaling - ability to rebalance Full-Text
-   indexes indpendent of other services.
+## MDS-FT - Multidimensional Scaling For Full Text
 
-## RRU-EE - Rebalance Resource Utilization More Efficient With
-   Enterprise Edition.
+Ability to rebalance cbft resources indpendent of other services.
 
 ## CIUR - Consistent Indexes Under Rebalance.
 
@@ -667,10 +672,9 @@ rebalance".
 
 ## QUERYR - Querying Replicas.
 
-## QUERYLB - Query Load Balancing Amongst Replicas.
+## QUERYLB - Query Load Balancing To Replicas.
 
-## QUERYLB-EE - Query Load Balancing Amongst Replicas, But Only With
-   Enterprise Edition.
+## QUERYLB-EE - Query Load Balancing To Replicas, Enterprise Edition
 
 Perhaps EE needs to be more featureful than simple round-robin or
 random load-balancing, but targets the most up-to-date replica.
@@ -758,14 +762,13 @@ optimization.
 
 ## COMPACTF - Ability for force compaction right now.
 
-## COMPACTO - Ability to compact files offline (while server is down?)
+## COMPACTO - Ability to compact files offline (while service down).
 
 Might be useful to recover from out-of-disk space scenarios.
 
-## COMPACTP - Ability to pause/resume automated compactions (not
-   explicitly forced).
+## COMPACTP - Ability to pause/resume automated compactions.
 
-## COMPACTC - Ability to configure/reconfigure automated compaction policy.
+## COMPACTC - Ability to reconfigure automated compaction policy.
 
 ## TOOLBR - Tools - Backup/Restore.
 
@@ -789,8 +792,9 @@ Might be useful to recover from out-of-disk space scenarios.
 
 ## REQPILL - Ability to send a fake request "pill" down through the layers.
 
-## REQTIME - Ability to track "where is the time going" on a
-   per-request, individual request basis.
+## REQTIME - Ability to track "where is the time going".
+
+This should ideally be on a per-request, individual request basis.
 
 ## REQTHRT - Request Throttling
 
