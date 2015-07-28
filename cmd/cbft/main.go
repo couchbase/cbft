@@ -229,6 +229,14 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router, _, err :=
 		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
 
+	// register handlers needed by ns_server
+	router.Handle("/api/nsstats", cbft.NewNsStatsHandler(mgr))
+	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
+	if err != nil {
+		return nil, err
+	}
+	router.Handle("/api/nsstatus", nsStatusHandler)
+
 	return router, err
 }
 
