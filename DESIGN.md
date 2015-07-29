@@ -204,7 +204,7 @@ section.)
 
 ### -extra=extra-JSON-from-ns-server
 
-The is additional JSON information that ns-server needs to associate
+This is additional JSON information that ns-server wishes to associate
 with this cbft process.  For example...
 
     {
@@ -213,9 +213,15 @@ with this cbft process.  For example...
 
 In particular, ns-server will want to repeatedly poll the cbft process
 for its latest stats metrics and counters.  The REST response expected
-by ns-server includes ns-server's outer REST address, and the extras
-JSON is a way for ns-server to pass down its outer REST address and
-other (future) information.
+by ns-server includes ns-server's REST address (for proper stats
+aggregation), and the extras JSON command-line parameter is a way for
+ns-server to pass down its REST address and other (future) information
+down to cbft.
+
+Underneath the hood: the cbgt library treats this extras JSON as an
+opaque string that's just stored as opaque metadata and passed along.
+Only the stats REST handling logic in cbft to support ns-server
+integration uses it.
 
 ## cbft process registers into the Cfg
 
@@ -518,7 +524,7 @@ cbft nodes in the cluster at this point in the design, this simple
 design approach is actually expected to be quite resource intensive
 (lots of KV backfills) and has availability issues.
 
-### Backfill Inefficiency
+### Backfill Overload
 
 For example, if we started out with just a single node cb-00 and then
 added nodes cb-01, cb-02 & cb-03 into the cluster at the same time,
@@ -543,14 +549,16 @@ So, any queries at this time will see lack of hits or results
 Ideally, we would like there to be little or no impact to cbft queries
 and index availability during a rebalance.
 
-## Addressing Backfill Inefficiency And Index Unavailability
+## Addressing Backfill Overload And Index Unavailability
 
 Let's address these issues one at a time, where we propose to fit into
-the state changes and workflow of ns-server's rebalance design.  In
-particular, during rebalance ns-server provides some advanced
-concurrency scheduling maneuvers to increase efficiency, availability
-and safety (see ns-server's rebalance-flow.txt document for more
-details)...
+the state changes and workflow of ns-server's rebalance design.
+
+### ns-server's Rebalance Workflow
+
+During rebalance, ns-server provides some advanced concurrency
+scheduling maneuvers to increase efficiency, availability and safety
+(see ns-server's rebalance-flow.txt document for more details)...
 
 * ns-server can limit the number of concurrent KV backfills per node
   (usually to 1 KV backfill per node).
@@ -587,21 +595,21 @@ rebalance-flow.txt) on a single couchbase node, circa 2.2.x...
       |  | Compact both src & dest.   |  moves cannot happen concurrently
       v  \----------------------------/  with another set of vbucket moves.
 
-## Increasing availability of PIndexes
+### Increasing availability of PIndexes
 
 TBD / design sketch - basically, cbftint will need to delete old
 PIndexes only after new PIndexes are built up on the new nodes.  An
 advanced MCP (Managed, Central Planner) could provide this
 orchestration.
 
-## Limit backfills
+### Limit backfills
 
 TBD / design sketch - each new pindex being built up on a new node
 means KV backfills.  Need to throttle the number of concurrent "new
 pindex builds".  An advanced MCP (Managed, Central Planner) could
 provide this throttling.
 
-## Controlled compactions of PIndexes
+### Controlled compactions of PIndexes
 
 TBD / design sketch - cbft will need REST API's to disable/enable
 compactions (or temporarily change compaction timeouts).  Again, this
