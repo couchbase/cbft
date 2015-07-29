@@ -595,19 +595,54 @@ rebalance-flow.txt) on a single couchbase node, circa 2.2.x...
       |  | Compact both src & dest.   |  moves cannot happen concurrently
       v  \----------------------------/  with another set of vbucket moves.
 
-### Increasing availability of PIndexes
+### Limit Concurrent cbft Backfills
 
-TBD / design sketch - basically, cbftint will need to delete old
-PIndexes only after new PIndexes are built up on the new nodes.  An
-advanced MCP (Managed, Central Planner) could provide this
-orchestration.
+Each new PIndex building built up on a new node means KV backfills (a
+backfill for each VBucket that's covered by the PIndex).  Need to
+throttle the number of concurrent "new pindex builds".  An advanced
+MCP (Managed, Central Planner) could provide this throttling.
 
-### Limit backfills
+### Increasing Availability of PIndexes
 
-TBD / design sketch - each new pindex being built up on a new node
-means KV backfills.  Need to throttle the number of concurrent "new
-pindex builds".  An advanced MCP (Managed, Central Planner) could
-provide this throttling.
+The proposed design is that the MCP should only unassign old PIndexes
+only after new PIndexes are built up on the new nodes.  The MCP can do
+this by computing a new plan, but only saving it off to the side
+somewhere in the Cfg, similar to how ns-server computes a fast-forward
+VBucket map.
+
+The MGP can then choose subset of the fast-forward plan to publish in
+steps to the plan Cfg that janitors are subscribing to.  In other
+words, the MCP is roughly using the Cfg as a persistent, distributed
+message blackboard, where the MCP performs recurring, episodic writes
+to the plan in the Cfg to move the distributed cbft janitors closer
+and closer to the final, fast-forward plan.
+
+In pseudocode, the MCP roughly does the following...
+
+  while cfg.get("plan") != fastForwardPlan:
+     result = block until external orchestrator (i.e. ns-server)
+       allows us to do another episode of work;
+     if result == cancellation:
+       break
+
+     currPlan := cfg.get("plan")
+
+     pindexesToAdd, pindexesToRemove :=
+        calcSubsetOfFastForwardPlanToWorkOnNext(currPlan, fastForwardPlan)
+
+     nextPlan := currPlan.incorporate(pindexesToAdd)
+     cfg.set("plan", nextPlan)
+
+     wait until cancelled or until
+       all janitors have implemented the pindexesToAdd;
+
+     nextPlan := nextPlan.incorporate(pindexesToRemove)
+     cfg.set("plan", nextPlan)
+
+     wait until cancelled or until
+       all janitors have implemented the pindexesToRemove;
+
+     ask all nodes to delete old pindex files;
 
 ### Controlled compactions of PIndexes
 
