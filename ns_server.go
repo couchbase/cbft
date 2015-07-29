@@ -59,11 +59,19 @@ func (n NSIndexStats) MarshalJSON() ([]byte, error) {
 }
 
 var statkeys = []string{
-	"num_pindexes", "doc_count",
+	// manual
+	"num_pindexes",
+
+	// pindex
+	"doc_count",
 	"timer_batch_execute_count", "timer_batch_merge_count", "timer_batch_store_count",
 	"timer_iterator_next_count", "timer_iterator_seek_count", "timer_iterator_seek_first_count",
 	"timer_reader_get_count", "timer_reader_iterator_count", "timer_writer_delete_count",
 	"timer_writer_get_count", "timer_writer_iterator_count", "timer_writer_set_count",
+
+	// feed
+	"timer_opaque_set_count", "timer_rollback_count", "timer_data_update_count",
+	"timer_data_delete_count", "timer_snapshot_start_count", "timer_opaque_get_count",
 }
 
 // NewIndexStat ensures that all index stats
@@ -91,9 +99,11 @@ func (h *NsStatsHandler) ServeHTTP(
 		nsIndexStats[indexDef.SourceName+":"+indexDefName] = NewIndexStat()
 	}
 
-	_, pindexes := h.mgr.CurrentMaps()
+	feeds, pindexes := h.mgr.CurrentMaps()
 
+	sourceName := ""
 	for _, pindex := range pindexes {
+		sourceName = pindex.SourceName
 		lindexName := pindex.SourceName + ":" + pindex.IndexName
 		nsIndexStat, ok := nsIndexStats[lindexName]
 		if ok {
@@ -118,6 +128,20 @@ func (h *NsStatsHandler) ServeHTTP(
 		}
 	}
 
+	for _, feed := range feeds {
+		lindexName := sourceName + ":" + feed.IndexName()
+		nsIndexStat, ok := nsIndexStats[lindexName]
+		if ok {
+			err := addFeedStats(feed, nsIndexStat)
+
+			// automatically process all the feed stats
+			if err != nil {
+				rest.ShowError(w, req, fmt.Sprintf("error processing Feed stats: %v", err), 500)
+				return
+			}
+		}
+	}
+
 	// FIXME hard-coded top-level stats
 	nsIndexStats[""] = make(map[string]interface{})
 	nsIndexStats[""]["num_connections"] = 0
@@ -126,12 +150,26 @@ func (h *NsStatsHandler) ServeHTTP(
 	rest.MustEncode(w, nsIndexStats)
 }
 
+func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
+	buffer := new(bytes.Buffer)
+	err := feed.Stats(buffer)
+	if err != nil {
+		return err
+	}
+	return massageStats(buffer, nsIndexStat)
+}
+
 func addPindexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) error {
 	buffer := new(bytes.Buffer)
 	err := pindex.Dest.Stats(buffer)
 	if err != nil {
 		return err
 	}
+	return massageStats(buffer, nsIndexStat)
+}
+
+func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) error {
+
 	statsBytes := buffer.Bytes()
 	pointers, err := jsonpointer.ListPointers(statsBytes)
 	if err != nil {
