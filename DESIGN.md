@@ -356,6 +356,28 @@ around the place.  The simplification here is that cbft doesn't look
 much different from any other "external" application that happens to
 be using DCP.
 
+### A swap rebalance edge case from tech support
+
+One scenario raised by technical support engineering (James Mauss) is
+when you have a cluster with nodes A, B, C, D, with service types
+enabled like...
+
+           A B C D
+    KV   : y y y
+    cbft :       y
+
+That is, node D is a cbft-only node.
+
+Then, there's a swap rebalance of nodes A, B, C for nodes E, F, G,
+leaving node D in the cluster...
+
+           D E F G
+    KV   :   y y y
+    cbft : y
+
+This case should work because cbft only contacts its local ns-server
+on 127.0.0.1 to get the cluster map.
+
 ## Handling IP address changes
 
 One issue: as soon as the second node cb-01 was added, the IP address
@@ -666,17 +688,20 @@ In pseudocode, the MCP roughly does the following, running concurrent
 worker activity across nodes...
 
   M := 1 // Max number of PIndex builds per cluster.
+  N := 1 // Max concurrent inbound PIndex builds per node.
 
   for node in nodes {
-    go nodeWorker(node)
+    for i := 0; i < N; i++ {
+      go nodeWorker(node)
+    }
   }
 
   for i := 0; i < M; i++ {
-    // Tokens available to throttle concurrency, and # of
-    // outstanding tokens might be changed dynamically.  Also, can be used
-    // to synchronize with optional, external orchestrator
-    // (i.e., ns-server wants cbft to do N moves before
-    // forcing a compaction).
+    // Tokens available to throttle concurrency.  The # of outstanding
+    // tokens might be changed dynamically and can also be used
+    // to synchronize with any optional, external orchestrator
+    // (i.e., ns-server wants cbft to do X number of moves with
+    // M concurrency before forcing a compaction).
     nodeWorkerTokensSupplyCh <- i
   }
 
@@ -705,13 +730,18 @@ worker activity across nodes...
     }
   }
 
+### calculateNextPIndexToAssignToNode
+
+TODO: A next design issue is the design sketch of the
+"calculateNextPIndexToAssignToNode" function.
+
 ### Controlled compactions of PIndexes
 
 cbft will need to provide REST API's to disable/enable compactions (or
-temporarily change compaction timeouts?).  Again, this is likely an
-area for the MCP to orchestrate.
+temporarily change compaction timeouts?) to enable outside
+orchestration (i.e., from ns-server).
 
-These compaction timeouts should likely be ephemeral (a process
+These compaction timeouts should likely be ephemeral (a cbft process
 restart means compaction configurations come back to normal,
 non-rebalance defaults).
 
@@ -724,6 +754,9 @@ requirements.
 
 In this section, we cover the list of requirements and describe how
 the design meets the requirements.
+
+(NOTE / TODO: at this point this list is just a grab bag of things
+we've heard of that we know we must address.)
 
 Requirements with the "GT-" prefix originally come from the cbgt
 IDEAS.md design document.
@@ -1090,3 +1123,23 @@ state machine:
 - warming
 - cooling
 - stoppable/stopped
+
+More feedback from James Mauss:
+
+* rebalance with node ports are blocked (aws security zone).
+  * i.e., cbft can't talk to KV port 11210
+* want valid error msgs in all these cases
+* fill up disk space and repair/recover
+  * e.g., to test, create a big file (like via dd)
+  * have a valid error msg
+  * then heal by deleting the big file
+* handle temporarily running out of file handles
+  * and, decent error msg
+* hostname doesn't resolve
+  * i.e., orchestrator can see new node but not the other way
+    at botht eh ns-server and memcached level
+* windows: something has a file lock on your file
+  * that something is antivirus, or whatever opens file in readonly
+  * ask patrick varley, who has tool to do that
+* compaction getting stuck and/or not actually compacting or
+  compacting fast enough
