@@ -517,58 +517,61 @@ Note that we don't expect to support cancellation of graceful
 failover, but if that's needed, ns-server can invoke cbft's REST API
 to resume index ingest and querying.
 
-## Gaps In The Simple Design So Far
+## Major Gaps In The Simple Design So Far
 
 Although we now support adding, removing and failover'ing multiple
 cbft nodes in the cluster at this point in the design, this simple
 design approach is actually expected to be quite resource intensive
-(lots of KV backfills) and has availability issues.
+(lots of backfills) and has availability issues.
 
 ### Backfill Overload
 
 For example, if we started out with just a single node cb-00 and then
 added nodes cb-01, cb-02 & cb-03 into the cluster at the same time,
-then eventually all the cbft janitors on those three newly added nodes
-will awake at nearly the same time and all start their DCP streams at
-nearly the same time.  This would lead to a huge, undesirable load on
-the KV system due to lots of concurrent KV backfills across all
-vbuckets.
+then the cbft janitors on the three newly added nodes will awake at
+nearly the same time and all start their DCP streams at nearly the
+same time.  This would lead to a huge, undesirable load on the KV
+system due to lots of concurrent KV backfills across all vbuckets.
 
 Ideally, we would like there to be throttling of concurrent KV
-backfills to avoid killing the system.
+backfills to avoid overloading the system.
 
 ### Index Unavailability
 
-Following on the same example scenario, at the same time, the cbft
-janitor on cb-00 will awaken and stop 3/4th's of its PIndexes (the
-ones that have been reassigned to the new cbft nodes on cb-01/02/03).
+Continuing with the same example scenario, at the nearly same time,
+the cbft janitor on cb-00 will awaken and stop 3/4th's of its PIndexes
+(the ones that have been reassigned to the new cbft nodes on
+cb-01/02/03).
 
-So, any queries at this time will see lack of hits or results
-(assuming the PIndexes are slow to build on the new cbft nodes).
+So, any new queries at this time will see a significat lack of search
+hits (assuming the PIndexes are slow to build on the new cbft nodes).
 
 Ideally, we would like there to be little or no impact to cbft queries
 and index availability during a rebalance.
 
 ## Addressing Backfill Overload And Index Unavailability
 
-Let's address these issues one at a time, where we propose to fit into
-the state changes and workflow of ns-server's rebalance design.
+To address these major gaps, we propose to fit into ns-server's
+rebalance flow and orchestration.
 
-### ns-server's Rebalance Workflow
+### ns-server's Rebalance Flow
 
 During rebalance, ns-server provides some advanced concurrency
-scheduling maneuvers to increase efficiency, availability and safety
-(see ns-server's rebalance-flow.txt document for more details)...
+scheduling maneuvers to increase efficiency, availability and safety.
+We recap those maneuvers here, but please see ns-server's
+rebalance-flow.txt document for more details.
 
-* ns-server can limit the number of concurrent KV backfills per node
-  (usually to 1 KV backfill per node).
-* ns-server disables compactions during some sub-phases of the
-  rebalance moves to increase throughput.
-* ns-server disables indexing during some sub-phases of the rebalance
-  moves to increase throughput and to implement "consistent view
-  queries under rebalance".
+* ns-server rebalances only one bucket at a time.
 * ns-server prioritizes VBucket moves to try to keep number of active
-  VBuckets "level" throughout nodes in the cluster.
+  VBuckets "level" throughout KV nodes in the cluster.
+* ns-server also limits concurrent KV backfills to 1 per node.
+* ns-server disables compactions during VBucket moves and view
+  indexing, to increase efficiency/throughput at the cost of using
+  more storage space.
+* after 64 VBucket moves, ns-server kicks off a phase of compactions
+  across the cluster.
+* ns-server disables indexing during some sub-phases of the rebalance
+  moves to implement "consistent view queries under rebalance".
 
 Pictorially, here is a diagram on concurrency during rebalance (from
 rebalance-flow.txt) on a single couchbase node, circa 2.2.x...
@@ -595,35 +598,62 @@ rebalance-flow.txt) on a single couchbase node, circa 2.2.x...
       |  | Compact both src & dest.   |  moves cannot happen concurrently
       v  \----------------------------/  with another set of vbucket moves.
 
-### Limit Concurrent cbft Backfills
+### Limiting Concurrent cbft Backfills
 
-Each new PIndex building built up on a new node means KV backfills (a
-backfill for each VBucket that's covered by the PIndex).  Need to
-throttle the number of concurrent "new pindex builds".  An advanced
-MCP (Managed, Central Planner) could provide this throttling.
+When a PIndex is assigned to a cbft node, that cbft node will start
+DCP streams to the KV nodes based on the VBucket's covered by the
+PIndex.  Those DCP streams mean backfills.
+
+MCP can provide throttling by limiting the number of concurrent PIndex
+reassigments.  A simple policy for MCP would be that MCP ensures that
+a cbft node only concurrently builds up a max of N new PIndexes, where
+N could have a default of 1.
+
+From the KV engine's point of view, that simple policy could still
+mean more than 1 backfill at a time, though, so if tighter throttling
+is needed, then perhaps MCP can additionally limit the concurrent
+PIndex reassignments to a max of M per cluster.  M configured to be 1
+would have the most throttling, but perhaps inefficiently leave some
+KV nodes underutilized during rebalancing, where the currently
+"moving" PIndex doesn't have any VBuckets from some KV nodes.
+
+A super advanced MCP might try to dynamically tune the M and N
+concurrency parameters to maximize throughput, such as by examining
+the VBuckets for each PIndex and cross-correlating those VBuckets to
+their current KV nodes.
 
 ### Increasing Availability of PIndexes
 
-The proposed design is that the MCP should only unassign old PIndexes
-only after new PIndexes are built up on the new nodes.  The MCP can do
-this by computing a new plan, but only saving it off to the side
-somewhere in the Cfg, similar to how ns-server computes a fast-forward
-VBucket map.
+The proposed design is that the MCP should only unassign or remove an
+old PIndex instance from a cbft node only after some new PIndex
+instance has been built up on some other cbft node.
 
-The MGP can then choose subset of the fast-forward plan to publish in
-steps to the plan Cfg that janitors are subscribing to.  In other
-words, the MCP is roughly using the Cfg as a persistent, distributed
-message blackboard, where the MCP performs recurring, episodic writes
-to the plan in the Cfg to move the distributed cbft janitors closer
-and closer to the final, fast-forward plan.
+The MCP can do this by computing a new plan but not publishing it yet
+to all the janitors.  Instead, MCP saves the new, final plan off to
+the side somewhere in the Cfg, similar to how ns-server computes a
+fast-forward VBucket map.
+
+If MCP dies and restarts, or even gets restarted on a different
+couchbase node (i.e., ns-server master moved), then MCP should be able
+to pick up where it left off since it had saved its fast-forward-plan
+to the distributed Cfg.
+
+The MGP can then repeated choose some subset of the fast-forward-plan
+to publish in throttled steps to the janitor-visible plan in the Cfg,
+so that subscribing janitors will make progress.  In other words, the
+MCP is roughly using the Cfg as a persistent, distributed message
+blackboard, where the MCP performs recurring, episodic writes to the
+janitor-visible plan in the Cfg to move the distributed cbft janitors
+closer and closer to the final, fast-forward plan.
 
 In pseudocode, the MCP roughly does the following...
 
-  while cfg.get("plan") != fastForwardPlan:
-     result = block until external orchestrator (i.e. ns-server)
-       allows us to do another episode of work;
-     if result == cancellation:
-       break
+  while cfg.get("plan") is not equal to the fastForwardPlan:
+     block until an optional,
+       external orchestrator (i.e. ns-server)
+       allows us to do another round of work,
+       or if the external orchestrator says "cancel", then
+       break;
 
      currPlan := cfg.get("plan")
 
@@ -631,24 +661,29 @@ In pseudocode, the MCP roughly does the following...
         calcSubsetOfFastForwardPlanToWorkOnNext(currPlan, fastForwardPlan)
 
      nextPlan := currPlan.incorporate(pindexesToAdd)
-     cfg.set("plan", nextPlan)
+     cfg.set("plan", nextPlan) // Publish to janitors!
 
      wait until cancelled or until
        all janitors have implemented the pindexesToAdd;
 
      nextPlan := nextPlan.incorporate(pindexesToRemove)
-     cfg.set("plan", nextPlan)
+     cfg.set("plan", nextPlan) // Publish to janitors!
 
      wait until cancelled or until
        all janitors have implemented the pindexesToRemove;
 
-     ask all nodes to delete old pindex files;
+     ask all nodes to delete old pindex files
+       (i.e., from pindexesToRemove);
 
 ### Controlled compactions of PIndexes
 
-TBD / design sketch - cbft will need REST API's to disable/enable
-compactions (or temporarily change compaction timeouts).  Again, this
-is likely an area for the MCP to orchestrate.
+cbft will need to provide REST API's to disable/enable compactions (or
+temporarily change compaction timeouts?).  Again, this is likely an
+area for the MCP to orchestrate.
+
+These compaction timeouts should likely be ephemeral (a process
+restart means compaction configurations come back to normal,
+non-rebalance defaults).
 
 -------------------------------------------------
 # Requirements Review
