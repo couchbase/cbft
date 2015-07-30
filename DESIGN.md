@@ -35,9 +35,10 @@ For those needing a quick recap of cbft's main design concepts...
 
 * An index in cbft is split or partitioned into multiple index
   partitions, known as PIndexes.  Roughly speaking, a PIndex has a
-  1-to-1 relationship with a bleve full-text index.  To process query
-  requests, a query needs to be scatter-gather'ed across the multiple
-  PIndexes of an index.
+  1-to-1 relationship with a bleve full-text index (although cbgt can
+  support additional types of indexes).  To process query requests, a
+  query needs to be scatter-gather'ed across the multiple PIndexes of
+  an index.
 
 * This partitioning of indexes into PIndexes happens at index creation
   time (i.e., index definition time).  To keep things simple for now,
@@ -484,14 +485,28 @@ cbft needs to provide a REST API (perhaps, as part of stats monitoring
 REST responses) that allows ns-server to detect this situation of "not
 enough cbft nodes" and display it in ns-server's UI appropriately.
 
+Of note, cbft should be able to report the difference between...
+
+* not enough nodes to meet replication constraints.
+* not enough PIndex replicas have been assigned to meet replication
+  constraints (i.e., there was a failover where there are still enough
+  nodes remaining in the cluster to meet replication constraints, but
+  there hasn't yet been a rebalance).
+
 ## Hard Failover
 
 The proposal to handle hard failover is that ns-server's master node
 should invoke the UNREG_CBFT_NODE program (same as from step RO-10
-above) and run the MCP (if not already running).
+above).
 
-This will cause MCP to re-plan and reassign PIndexes to any remaining
-cbft nodes.
+The UNREG_CBFT_NODE must remove the following from the Cfg:
+* remove the node from the nodes-wanted and nodes-known sections.
+* remove the node from the planned PIndexes.
+
+Importantly, during a hard failover, the MCP should _not_ be invoked
+to re-plan and reassign PIndexes to remaining cbft nodes in order to
+meet replication constraints.  Instead, that reassignment of PIndexes
+should happen when the user later starts a rebalance.
 
 ## Graceful Failover and Cooling Down
 
@@ -503,8 +518,9 @@ graceful failover.
 As an advanced step, though, a proposal to handle graceful failover
 would be similar to handling hard failover, but additionally,
 ns-server's master node should invoke REST API's on the
-to-be-failovered cbft node to pause cbft's index ingest and to pause
-cbft's query-ability on the to-be-failovered cbft node.
+to-be-failovered cbft node at the start of the graceful failover in
+order to pause cbft's index ingest and to pause cbft's query-ability
+on the to-be-failovered cbft node.
 
 See the current management REST API's of cbft here:
 http://labs.couchbase.com/cbft/api-ref/#index-management
@@ -601,13 +617,13 @@ rebalance-flow.txt) on a single couchbase node, circa 2.2.x...
 ### Limiting Concurrent cbft Backfills
 
 When a PIndex is assigned to a cbft node, that cbft node will start
-DCP streams to the KV nodes based on the VBucket's covered by the
-PIndex.  Those DCP streams mean backfills.
+DCP streams on the data source KV nodes based on the VBucket's covered
+by the PIndex.  Those DCP streams mean backfills on the KV nodes.
 
-MCP can provide throttling by limiting the number of concurrent PIndex
-reassigments.  A simple policy for MCP would be that MCP ensures that
-a cbft node only concurrently builds up a max of N new PIndexes, where
-N could have a default of 1.
+MCP can provide KV backfill throttling by limiting the number of
+concurrent PIndex reassigments.  A simple policy for MCP would be that
+MCP ensures that a cbft node only concurrently builds up a max of N
+new PIndexes, where N could have a default of 1.
 
 From the KV engine's point of view, that simple policy could still
 mean more than 1 backfill at a time, though, so if tighter throttling
@@ -646,34 +662,48 @@ blackboard, where the MCP performs recurring, episodic writes to the
 janitor-visible plan in the Cfg to move the distributed cbft janitors
 closer and closer to the final, fast-forward plan.
 
-In pseudocode, the MCP roughly does the following...
+In pseudocode, the MCP roughly does the following, running concurrent
+worker activity across nodes...
 
-  while cfg.get("plan") is not equal to the fastForwardPlan:
-     block until an optional,
-       external orchestrator (i.e. ns-server)
-       allows us to do another round of work,
-       or if the external orchestrator says "cancel", then
-       break;
+  M := 1 // Max number of PIndex builds per cluster.
 
-     currPlan := cfg.get("plan")
+  for node in nodes {
+    go nodeWorker(node)
+  }
 
-     pindexesToAdd, pindexesToRemove :=
-        calcSubsetOfFastForwardPlanToWorkOnNext(currPlan, fastForwardPlan)
+  for i := 0; i < M; i++ {
+    // Tokens available to throttle concurrency, and # of
+    // outstanding tokens might be changed dynamically.  Also, can be used
+    // to synchronize with optional, external orchestrator
+    // (i.e., ns-server wants cbft to do N moves before
+    // forcing a compaction).
+    nodeWorkerTokensSupplyCh <- i
+  }
 
-     nextPlan := currPlan.incorporate(pindexesToAdd)
-     cfg.set("plan", nextPlan) // Publish to janitors!
+  func nodeWorker(node) {
+    while true {
+      nodeWorkerToken, ok := <-nodeWorkerTokensSupplyCh
+      if !ok then break // Perhaps done or was cancelled (by ns-server?).
 
-     wait until cancelled or until
-       all janitors have implemented the pindexesToAdd;
+      pindexToReassign, oldNode, ok :=
+        calculateNextPIndexToAssignToNode(node)
+      if !ok then break // No more incoming PIndexes for this node.
 
-     nextPlan := nextPlan.incorporate(pindexesToRemove)
-     cfg.set("plan", nextPlan) // Publish to janitors!
+      assignNodeToPIndex(pindexToReassign, node) // Updates janitor-visible plan.
 
-     wait until cancelled or until
-       all janitors have implemented the pindexesToRemove;
+      wasCancelled := waitForPIndexReadyOnNode(pindexToReassign, node)
+      if wasCancelled then break
 
-     ask all nodes to delete old pindex files
-       (i.e., from pindexesToRemove);
+      if oldNode != nil {
+        unassignNodeToPIndex(pindexToReassign, oldNode) // Updates janitor-visible plan.
+
+        wasCancelled := waitForPIndexRemovedFromNode(pindexToReassign, oldNode)
+        if wasCancelled then break
+      }
+
+      nodeWorkerTokensReleaseCh <- nodeWorkerToken
+    }
+  }
 
 ### Controlled compactions of PIndexes
 
