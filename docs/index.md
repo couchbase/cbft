@@ -36,6 +36,11 @@ As a developer preview, some disclaimers and limitations...
 * partial index rollbacks are not yet supported by cbft developer
   preview.
 
+* cbft does not handle the bucket FLUSH command properly yet.  If you
+  get into a stuck cbft index due to a bucket FLUSH operation, your
+  best recourse is to delete and recreate your index.
+  https://github.com/couchbaselabs/cbft/issues/28
+
 # Getting started
 
 ## Prerequisites
