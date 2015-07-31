@@ -687,53 +687,55 @@ closer and closer to the final, fast-forward plan.
 In pseudocode, the MCP roughly does the following, running concurrent
 worker activity across nodes...
 
-  M := 1 // Max number of PIndex builds per cluster.
-  N := 1 // Max concurrent inbound PIndex builds per node.
+    M := 1 // Max number of PIndex builds per cluster.
+    N := 1 // Max concurrent inbound PIndex builds per node.
 
-  for node in nodes {
-    for i := 0; i < N; i++ {
-      go nodeWorker(node)
-    }
-  }
-
-  for i := 0; i < M; i++ {
-    // Tokens available to throttle concurrency.  The # of outstanding
-    // tokens might be changed dynamically and can also be used
-    // to synchronize with any optional, external orchestrator
-    // (i.e., ns-server wants cbft to do X number of moves with
-    // M concurrency before forcing a compaction).
-    nodeWorkerTokensSupplyCh <- i
-  }
-
-  func nodeWorker(node) {
-    while true {
-      nodeWorkerToken, ok := <-nodeWorkerTokensSupplyCh
-      if !ok then break // Perhaps done or was cancelled (by ns-server?).
-
-      pindexToReassign, oldNode, ok :=
-        calculateNextPIndexToAssignToNode(node)
-      if !ok then break // No more incoming PIndexes for this node.
-
-      assignNodeToPIndex(pindexToReassign, node) // Updates janitor-visible plan.
-
-      wasCancelled := waitForPIndexReadyOnNode(pindexToReassign, node)
-      if wasCancelled then break
-
-      if oldNode != nil {
-        unassignNodeToPIndex(pindexToReassign, oldNode) // Updates janitor-visible plan.
-
-        wasCancelled := waitForPIndexRemovedFromNode(pindexToReassign, oldNode)
-        if wasCancelled then break
+    for node in nodes {
+      for i := 0; i < N; i++ {
+        go nodeWorker(node)
       }
-
-      nodeWorkerTokensReleaseCh <- nodeWorkerToken
     }
-  }
+
+    for i := 0; i < M; i++ {
+      // Tokens available to throttle concurrency.  The # of outstanding
+      // tokens might be changed dynamically and can also be used
+      // to synchronize with any optional, external orchestrator
+      // (i.e., ns-server wants cbft to do X number of moves with
+      // M concurrency before forcing a compaction).
+      nodeWorkerTokensSupplyCh <- i
+    }
+
+    func nodeWorker(node) {
+      while true {
+        nodeWorkerToken, ok := <-nodeWorkerTokensSupplyCh
+        if !ok then break // Perhaps done or was cancelled (by ns-server?).
+
+        pindexToReassign, oldNode, ok :=
+          calculateNextPIndexToAssignToNode(node)
+        if !ok then break // No more incoming PIndexes for this node.
+
+        assignNodeToPIndex(pindexToReassign, node) // Updates janitor-visible plan.
+
+        wasCancelled := waitForPIndexReadyOnNode(pindexToReassign, node)
+        if wasCancelled then break
+
+        if oldNode != nil {
+          unassignNodeToPIndex(pindexToReassign, oldNode) // Updates janitor-visible plan.
+
+          wasCancelled := waitForPIndexRemovedFromNode(pindexToReassign, oldNode)
+          if wasCancelled then break
+        }
+
+        nodeWorkerTokensReleaseCh <- nodeWorkerToken
+      }
+    }
 
 ### calculateNextPIndexToAssignToNode
 
 TODO: A next design issue is the design sketch of the
-"calculateNextPIndexToAssignToNode" function.
+"calculateNextPIndexToAssignToNode" function, which will likely be a
+reusable part of the blance library:
+https://github.com/couchbaselabs/blance
 
 ### Controlled compactions of PIndexes
 
