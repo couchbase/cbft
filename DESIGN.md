@@ -1,6 +1,6 @@
 cbft + couchbase Integration Design Document
 
-Status: DRAFT
+Status: DRAFT-01
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -170,6 +170,11 @@ is, each cbft instance in this design must be ns-server managed.
 
 This is the data directory where cbft can store its node-specific
 index data and metadata.
+
+(DDRM) The ns-server must clear the dataDir directory tree before
+starting the cbft process, especially the dataDir/cbft.uuid file.
+(See later for how the proposed design will handle delta node
+recovery).
 
 Of note, the dataDir is not planned to be dynamically changable at
 runtime.  That is, if ns-server mistakenly restarts cbft with a brand
@@ -496,6 +501,14 @@ approach that favors keeping cbft mostly stable during rebalance.
 That means hitting "Stop Rebalance" would leave cbft mostly as-is on a
 node-by-node basis.
 
+## Swap Rebalance of cbft nodes
+
+The blance library used by cbgt for partition map computation is meant
+to handle swap rebalance just as a natural edge case.  In other words,
+this design depends on blance to get swap rebalance right, with no
+extra special code or case'ing needed to handle swap rebalance
+scenarios.
+
 ## Unable to meet replica counts
 
 Of note, removing a cbft node (and, not having enough cbft nodes in
@@ -524,11 +537,12 @@ above).
 The UNREG_CBFT_NODE must remove the following from the Cfg:
 * remove the node from the nodes-wanted and nodes-known sections.
 * remove the node from the planned PIndexes.
+* promote any replica PIndexes, if any, to active or primary position.
 
 Importantly, during a hard failover, the MCP should _not_ be invoked
-to re-plan and reassign PIndexes to remaining cbft nodes in order to
-meet replication constraints.  Instead, that reassignment of PIndexes
-should happen when the user later starts a rebalance.
+to re-plan and assign PIndexes to remaining cbft nodes in order to
+meet replication constraints.  Instead, creating new replica PIndexes
+to remaining nodes should wait until user later starts a rebalance.
 
 ## Graceful Failover and Cooling Down
 
@@ -748,6 +762,40 @@ orchestration (i.e., from ns-server).
 These compaction timeouts should likely be ephemeral (a cbft process
 restart means compaction configurations come back to normal,
 non-rebalance defaults).
+
+## Delta Node Recovery
+
+Delta node recovery allows a node that's added back to the cluster to
+reuse existing data and index files, if any, for a speedier cluster
+recovery.
+
+If the ns-server determines that an added-back node is meant to be
+delta-node-recovered, then ns-server should not clean out the dataDir
+directory tree before starting the cbft process on the added-back node
+(see step DDRM above), but ns-server should only delete the
+dataDir/cbft.uuid file.  That is, any PIndex files and subdirectories
+in the dataDir should remain untouched, as the cbft process might be
+able to reuse them instead of having to rebuild PIndexes from scratch.
+
+MCP doesn't have any memory of the previous cluster configuration, and
+of which PIndexes were assigned to which previous (recovered) cbft
+nodes and in what states (i.e., master vs. replica).  Without this
+memory, MCP won't be able to handle delta node recovery very well, and
+could likely reassign an inefficient set of PIndexes to the recovered
+node.  The design proposal to address this issue is that in a
+delta-node-recovery situation, ns-server will invoke an extra
+tool/program (to be spec'ed; DNRFTS) that will list into the Cfg any
+PIndexes that are found on the recovered cbft node.  This will give
+the MCP the information it needs to plan a recovery more efficiently
+(i.e., increase the chance that MCP will reuse the PIndexes that
+already exist on the recovered cbft node).
+
+Of note, we should take care that there might be a race here to
+consider, where the janitor on the recovered cbft process wakes up,
+discovers a whole bunch of old, seemingly unnecessary PIndex
+subdirectories and starts removing them, before the MCP has a chance
+to update the plans and assign those PIndexes to the recovered node.
+The DNRFTS step proposed above needs to address this potential race.
 
 -------------------------------------------------
 # Requirements Review
