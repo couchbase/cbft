@@ -714,13 +714,15 @@ worker activity across nodes...
           calculateNextPIndexToAssignToNode(node)
         if !ok then break // No more incoming PIndexes for this node.
 
-        assignNodeToPIndex(pindexToReassign, node) // Updates janitor-visible plan.
+        // Updates janitor-visible plan.
+        assignNodeToPIndex(pindexToReassign, node)
 
         wasCancelled := waitForPIndexReadyOnNode(pindexToReassign, node)
         if wasCancelled then break
 
         if oldNode != nil {
-          unassignNodeToPIndex(pindexToReassign, oldNode) // Updates janitor-visible plan.
+          // Updates janitor-visible plan.
+          unassignNodeToPIndex(pindexToReassign, oldNode)
 
           wasCancelled := waitForPIndexRemovedFromNode(pindexToReassign, oldNode)
           if wasCancelled then break
