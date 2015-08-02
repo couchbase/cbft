@@ -603,10 +603,25 @@ and index availability during a rebalance.
 
 ## Addressing Backfill Overload And Index Unavailability
 
-To address these major gaps, we propose to fit into ns-server's
-rebalance flow and orchestration.
+To address these major gaps, we have a fork in the road of design paths:
+
+# A. We could attempt to fit into ns-server's rebalance flow and
+  orchestration; that is, interleave some KV VBucket moves and
+  view/GSI re-indexing with PIndex moves, taking care fit into
+  ns-server's throttling phases.
+
+# B. Instead of interleaving, ns-server could move all KV VBuckets and
+  view/GSI indexes first, and then hand off full PIndex rebalancing
+  control to the MCP.
+
+Pathway B is easier to implement, so we'll use that pathway, while
+still trying to design the MCP with external pausability/resumability
+to allow us to potentially grow to a future pathway A implementation.
 
 ### ns-server's Rebalance Flow
+
+Still, let's recap ns-server's rebalance flow, so we understand the
+benefits it provides.
 
 During rebalance, ns-server provides some advanced concurrency
 scheduling maneuvers to increase efficiency, availability and safety.
