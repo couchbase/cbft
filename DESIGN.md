@@ -6,6 +6,13 @@ This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
 related features such as rebalance, failover, etc.
 
+Brief summary: cbft will by babysat by ns-server; cbft will store is
+configuration metadata into ns-server's metakv system; and, after the
+end of the existing rebalancing of KV VBuckets and view/GSI builds,
+ns-server will enter an additional, user-cancellable rebalancing phase
+for cbft-related index partitions by invoking a new cmd-line program
+called MCP (cbft's Managed Central Planner).
+
 -------------------------------------------------
 # Links
 
@@ -112,7 +119,10 @@ like...
       -bindHttp=0.0.0.0:9110 \
       -extra="{\"ns_server_rest\":\"127.0.0.1:8091\"}"
 
-A brief description of those cbft process parameters:
+## Command-line parameters
+
+Next, we briefly describe the cbft command-line parameters that
+ns-server uses:
 
 ### CBAUTH=some-secret
 
@@ -171,9 +181,9 @@ is, each cbft instance in this design must be ns-server managed.
 This is the data directory where cbft can store its node-specific
 index data and metadata.
 
-(DDRM) The ns-server must clear the dataDir directory tree before
-starting the cbft process, especially the dataDir/cbft.uuid file.
-(See later for how the proposed design will handle delta node
+(DDIR-RM) By default, ns-server must clear the dataDir directory tree
+before starting the cbft process, especially the dataDir/cbft.uuid
+file.  (But not always; see later (DNR) regarding delta node
 recovery).
 
 Of note, the dataDir is not planned to be dynamically changable at
@@ -238,6 +248,7 @@ the Cfg (metakv) system.
 That way, other clients of the Cfg system can discover the cbft nodes
 in the cbft cluster.
 
+----
 ## cbft is ready for index DDL and an index is created (IC0)
 
 At this point, full-text indexes can be defined using cbft's REST API.
@@ -247,6 +258,7 @@ The cbft node will save any created index definitions into its Cfg
 Other clients of the Cfg system, then, can now discover the index
 definitions of the cbft clsuter.
 
+----
 ## A Managed, Central Planner (MCP)
 
 The Cfg system has a subscription feature, so Cfg clients can be
@@ -569,6 +581,7 @@ Note that we don't expect to support cancellation of graceful
 failover, but if that's needed, ns-server can invoke cbft's REST API
 to resume index ingest and querying.
 
+----
 ## Major Gaps In The Simple Design So Far
 
 Although we now support adding, removing and failover'ing multiple
@@ -620,8 +633,8 @@ to allow us to potentially grow to a future pathway A implementation.
 
 ### ns-server's Rebalance Flow
 
-Still, let's recap ns-server's rebalance flow, so we understand the
-benefits it provides.
+Let's recap ns-server's rebalance flow, so we understand the benefits
+it provides.
 
 During rebalance, ns-server provides some advanced concurrency
 scheduling maneuvers to increase efficiency, availability and safety.
@@ -673,7 +686,7 @@ by the PIndex.  Those DCP streams mean backfills on the KV nodes.
 
 MCP can provide KV backfill throttling by limiting the number of
 concurrent PIndex reassigments.  A simple policy for MCP would be that
-MCP ensures that a cbft node only concurrently builds up a max of N
+MCP can ensure that a cbft node only concurrently builds up a max of N
 new PIndexes, where N could have a default of 1.
 
 From the KV engine's point of view, that simple policy could still
@@ -684,7 +697,7 @@ would have the most throttling, but perhaps inefficiently leave some
 KV nodes underutilized during rebalancing, where the currently
 "moving" PIndex doesn't have any VBuckets from some KV nodes.
 
-A super advanced MCP might try to dynamically tune the M and N
+An even more advanced MCP might try to dynamically tune the M and N
 concurrency parameters to maximize throughput, such as by examining
 the VBuckets for each PIndex and cross-correlating those VBuckets to
 their current KV nodes.
@@ -701,17 +714,20 @@ the side somewhere in the Cfg, similar to how ns-server computes a
 fast-forward VBucket map.
 
 If MCP dies and restarts, or even gets restarted on a different
-couchbase node (i.e., ns-server master moved), then MCP should be able
-to pick up where it left off since it had saved its fast-forward-plan
-to the distributed Cfg.
+couchbase node (i.e., ns-server master moved), then MCP should
+theoretically be able to pick up where it left off since it had saved
+its fast-forward-plan to the distributed Cfg.  Practically, though, if
+the MCP died or was restarted, the ns-server should stop the rebalance
+with an error message.
 
-The MGP can then repeated choose some subset of the fast-forward-plan
-to publish in throttled steps to the janitor-visible plan in the Cfg,
-so that subscribing janitors will make progress.  In other words, the
-MCP is roughly using the Cfg as a persistent, distributed message
-blackboard, where the MCP performs recurring, episodic writes to the
-janitor-visible plan in the Cfg to move the distributed cbft janitors
-closer and closer to the final, fast-forward plan.
+The MGP can then repeatedly choose some subset of the
+fast-forward-plan to publish in throttled steps to the janitors (via
+Cfg updates), so that subscribing janitors will make progress.  In
+other words, the MCP is roughly using the Cfg as a persistent,
+distributed message blackboard, where the MCP performs recurring,
+episodic writes to the janitor-visible plan in the Cfg to move the
+distributed cbft janitors closer and closer to the final, fast-forward
+plan.
 
 In pseudocode, the MCP roughly does the following, running concurrent
 worker activity across nodes...
@@ -778,7 +794,7 @@ These compaction timeouts should likely be ephemeral (a cbft process
 restart means compaction configurations come back to normal,
 non-rebalance defaults).
 
-## Delta Node Recovery
+## Delta Node Recovery (DNR)
 
 Delta node recovery allows a node that's added back to the cluster to
 reuse existing data and index files, if any, for a speedier cluster
@@ -787,7 +803,7 @@ recovery.
 If the ns-server determines that an added-back node is meant to be
 delta-node-recovered, then ns-server should not clean out the dataDir
 directory tree before starting the cbft process on the added-back node
-(see step DDRM above), but ns-server should only delete the
+(see step DDIR-RM above), but ns-server should only delete the
 dataDir/cbft.uuid file.  That is, any PIndex files and subdirectories
 in the dataDir should remain untouched, as the cbft process might be
 able to reuse them instead of having to rebuild PIndexes from scratch.
