@@ -620,12 +620,11 @@ and index availability during a rebalance.
 
 To address these major gaps, we have a fork in the road of design paths:
 
-# A. We could attempt to fit into ns-server's rebalance flow and
+* A. We could attempt to fit into ns-server's rebalance flow and
   orchestration; that is, interleave some KV VBucket moves and
   view/GSI re-indexing with PIndex moves, taking care fit into
   ns-server's throttling phases.
-
-# B. Instead of interleaving, ns-server could move all KV VBuckets and
+* B. Instead of interleaving, ns-server could move all KV VBuckets and
   view/GSI indexes first, and then hand off full PIndex rebalancing
   control to the MCP.
 
