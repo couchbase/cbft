@@ -778,12 +778,35 @@ worker activity across nodes...
       }
     }
 
-### calculateNextPIndexToAssignToNode
+### Ordering PIndex Reassignments
 
-TODO: A next design issue is the design sketch of the
+A next design issue is the design sketch of the
 "calculateNextPIndexToAssignToNode" function, which will likely be a
 reusable part of the blance library:
 https://github.com/couchbaselabs/blance
+
+At this point, choosing which reassignments to perform next should be
+a sorting problem, albeit complicated by the issue that it's
+heuristically driven (not proven optimal).  For example:
+
+* First, favor easy promotions (e.g., a secondary replica graduating
+  to 0'th replica) so that queries have coverage across all PIndexes.
+
+* Next, favor reassignments that utilize capacity on newly added cbft
+  nodes.
+
+* Next, favor reassignments that help get PIndexes off of nodes that
+  are leaving.
+
+* Lastly, favor reassignments that move PIndexes amongst existing cbft
+  nodes.
+
+TODO: Other factors to consider in the heuristics:
+
+* some nodes might be slower, less powerful and more impacted than
+  others.
+
+* some PIndexes might be way behind compared to others.
 
 ### Controlled Compactions of PIndexes
 
