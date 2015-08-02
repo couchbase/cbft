@@ -239,6 +239,18 @@ opaque string that's just stored as opaque metadata and passed along.
 Only the stats REST handling logic in cbft to support ns-server
 integration uses it.
 
+### Other Parameters
+
+cbft supports other command-line parameters to allow for rack/zone
+awareness (generic, multi-level containment can be specified), and
+node weighting (not yet supported by ns-server), but these don't have
+any difficult design issues.
+
+A future issue would be if ns-server wants to dynamically change these
+extra parameters (e.g., admin allocates more RAM or CPU to a node and
+suddenly the machine is more powerful).  In this case, a restart of
+the cbft process with the right parameters should suffice.
+
 ## cbft Node Registers Into The Cfg
 
 At this point, as the cbft process starts up, the cbft process will
@@ -791,17 +803,25 @@ heuristically driven (not proven optimal).  For example:
 
 * First, favor easy promotions (e.g., a secondary replica graduating
   to 0'th replica) so that queries have coverage across all PIndexes.
+  This is the equivalent of a VBucket changing state from replica to
+  master.
 
 * Next, favor reassignments that utilize capacity on newly added cbft
-  nodes.
+  nodes, as new resources may be able to help with existing, overtaxed
+  nodes.  (Or, maybe not: just starting off more KV backfills may push
+  existing nodes running at the limit over the edge.)
 
 * Next, favor reassignments that help get PIndexes off of nodes that
-  are leaving.
+  are leaving.  The idea is to allow ns-server to remove nodes (which
+  may need servicing) sooner.
 
-* Lastly, favor reassignments that move PIndexes amongst existing cbft
-  nodes.
+* Lastly, favor reassignments that move PIndexes amongst remaining
+  cbft nodes than are neither joining nor leaving the cluster.  (MCP
+  may need to shuffle PIndexes to achieve better balance or meet
+  replication constraints.)
 
-TODO: Other factors to consider in the heuristics:
+Other, more advanced factors to consider in the heuristics, which may
+be taken care of in future releases.
 
 * some nodes might be slower, less powerful and more impacted than
   others.
