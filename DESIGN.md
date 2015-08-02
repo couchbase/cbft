@@ -119,7 +119,7 @@ like...
       -bindHttp=0.0.0.0:9110 \
       -extra="{\"ns_server_rest\":\"127.0.0.1:8091\"}"
 
-## Command-line parameters
+## Command-line Parameters
 
 Next, we briefly describe the cbft command-line parameters that
 ns-server uses:
@@ -239,17 +239,17 @@ opaque string that's just stored as opaque metadata and passed along.
 Only the stats REST handling logic in cbft to support ns-server
 integration uses it.
 
-## cbft process registers into the Cfg
+## cbft Node Registers Into The Cfg
 
 At this point, as the cbft process starts up, the cbft process will
 add its node definition (there's just a single cbft node so far) into
-the Cfg (metakv) system.
+the Cfg (metakv) system as a wanted cbft node.
 
 That way, other clients of the Cfg system can discover the cbft nodes
 in the cbft cluster.
 
 ----
-## cbft is ready for index DDL and an index is created (IC0)
+## cbft Is Ready For Index Creations (INDEX-DDL)
 
 At this point, full-text indexes can be defined using cbft's REST API.
 The cbft node will save any created index definitions into its Cfg
@@ -285,13 +285,14 @@ Of note, an Enterprise Edition of cbftint might ship with a more
 advanced MCP program, such as a planner than moves PIndexes with
 more efficient orchestration.
 
-## MCP updates the plan (UP0)
+## MCP Updates The Plan (UP0)
 
-The MCP is awoken due to its subscription to Cfg changes (from the IC0
-step from above) and splits the index definitions into one or more
-PIndexes.  The MCP then assigns the PIndexes to cbft nodes (there's
-only one cbft node so far, so this is easy; in any case, the planner
-already is able to assign PIndexes across multiple cbft nodes).
+The MCP is awoken due to its subscription to Cfg changes (from the
+INDEX-DDL step from above) and splits the index definitions into one
+or more PIndexes.  The MCP then assigns the PIndexes to cbft nodes
+(there's only one cbft node so far, so this is easy; in any case, the
+planner already is able to assign PIndexes across multiple cbft
+nodes).
 
 The MCP then stores this updated plan into the Cfg.
 
@@ -310,10 +311,11 @@ That is, a cbft janitor will try to make process-local runtime changes
 on its cbft node to reflect the latest plan, including starting and
 stopping any PIndexes on the local cbft node.
 
-## A PIndex instance creates DCP feeds
+## DCP Streams Are Started
 
-A PIndex instance creates DCP feeds, using the cluster map from the
-ns-server, creating connections to the appropriate KV-engines.
+A PIndex includes enough information for the cbft system to start DCP
+feeds or streams, using the cluster map from the ns-server, where cbft
+can create DCP connections to the appropriate KV-engines.
 
 Since the plan includes the assignment of source partitions (or
 VBuckets) to every PIndex, the DCP streams that are created will have
@@ -324,7 +326,7 @@ information to the cbft (perhaps as a command-line parameter (-extra)
 or environment variable) that helps cbft construct useful DCP stream
 names.
 
-## Simple Rebalances, Failovers, Restarts.
+## Simple Rebalances, Failovers, Restarts
 
 At this point, assuming our first cbft process isn't moving (i.e., the
 first ns-server always stays in the couchbase cluster), and assuming
@@ -373,7 +375,7 @@ around the place.  The simplification here is that cbft doesn't look
 much different from any other "external" application that happens to
 be using DCP.
 
-### A swap rebalance edge case from tech support
+### A Swap Rebalance Case From Tech Support
 
 One scenario raised by technical support engineering (James Mauss) is
 when you have a cluster with nodes A, B, C, D, with service types
@@ -395,7 +397,7 @@ leaving node D in the cluster...
 This case should work because cbft only contacts its local ns-server
 on 127.0.0.1 to get the cluster map.
 
-## Handling IP address changes
+## Handling IP Address Changes
 
 One issue: as soon as the second node cb-01 was added, the IP address
 of cb-00 might change (if not already explicitly specified to
@@ -448,7 +450,7 @@ design idea, however, requires more cbft changes and its extra level
 of indirection optimizes for an uncommon case (IP address changing) so
 this alternative design isn't as favored.
 
-## Adding more than one cbft node
+## Adding More Than One cbft Node
 
 Since IP addresses are now being rewritten and finalized, more
 couchbase nodes can now be added into the cluster with the cbft
@@ -479,7 +481,7 @@ And the design also support heterogeneous "multi-dimensional scaling"
 * cb-02 - cbft disabled
 * cb-03 - cbft enabled
 
-## Rebalance out a cbft node
+## Rebalance Out A cbft Node
 
 When a couchbase node is removed from the cluster, if the couchbase
 node has the cbft service type enabled, here are the proposed steps to
@@ -513,7 +515,7 @@ approach that favors keeping cbft mostly stable during rebalance.
 That means hitting "Stop Rebalance" would leave cbft mostly as-is on a
 node-by-node basis.
 
-## Swap Rebalance of cbft nodes
+## Swap Rebalance Of cbft Nodes
 
 The blance library used by cbgt for partition map computation is meant
 to handle swap rebalance just as a natural edge case.  In other words,
@@ -521,7 +523,7 @@ this design depends on blance to get swap rebalance right, with no
 extra special code or case'ing needed to handle swap rebalance
 scenarios.
 
-## Unable to meet replica counts
+## Unable To Meet Replica Counts
 
 Of note, removing a cbft node (and, not having enough cbft nodes in
 the first place) can mean that the MGP is not able to meet replication
@@ -784,7 +786,7 @@ TODO: A next design issue is the design sketch of the
 reusable part of the blance library:
 https://github.com/couchbaselabs/blance
 
-### Controlled compactions of PIndexes
+### Controlled Compactions of PIndexes
 
 cbft will need to provide REST API's to disable/enable compactions (or
 temporarily change compaction timeouts?) to enable outside
@@ -827,6 +829,24 @@ discovers a whole bunch of old, seemingly unnecessary PIndex
 subdirectories and starts removing them, before the MCP has a chance
 to update the plans and assign those PIndexes to the recovered node.
 The DNRFTS step proposed above needs to address this potential race.
+
+## Bucket Deletion
+
+If a bucket is deleted, any full-text indexes based on that bucket
+should be, by default, automatically deleted.
+
+The proposal is ns-server invoke a synchronous command-line tool or
+program that can list and/or delete the cbft indexes that have a data
+source from a given bucket.
+
+The listing operation allows ns-server to potentially display UI
+warnings to the user who's about to perform a bucket deletion.
+
+This command-line tool would also allow administrators to perform the
+same listing and "cascading delete" operation manually.
+
+TODO: What about cascade delete (or listing) of index aliases that
+(transitively) point to an index (or to a bucket datasource)?
 
 -------------------------------------------------
 # Requirements Review
@@ -931,11 +951,10 @@ assigned.
 If a bucket is deleted, any full-text indexes based on that bucket
 should be also automatically deleted.
 
-There whould be user visible UI warnings on these "cascading deletes"
+There should be user visible UI warnings on these "cascading deletes"
 of cbft indexes.
 
-(Perhaps ns-server invokes a synchronous command to unregister / delete
-cbft indexes?)
+## BUCKETDA - Bucket Deletion & Index Aliases
 
 (What about cascade delete (or listing) of index aliases that
 (transitively) point to an index (or to a bucket datasource)?)
