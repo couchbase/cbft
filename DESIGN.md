@@ -790,16 +790,16 @@ worker activity across nodes...
       }
     }
 
+The actual reassignment orchestration algorithm will be implemented as
+a reusable, generic feature of the blance library.  See:
+http://godoc.org/github.com/couchbaselabs/blance#OrchestrateMoves
+
 ### Ordering PIndex Reassignments
 
-A next design issue is the design sketch of the
-"calculateNextPIndexToAssignToNode" function, which will likely be a
-reusable part of the blance library:
-https://github.com/couchbaselabs/blance
-
-At this point, choosing which reassignments to perform next should be
-a sorting problem, albeit complicated by the issue that it's
-heuristically driven (not proven optimal).  For example:
+Regarding the handwave "calculateNextPIndexToAssignToNode" function,
+choosing which reassignments to perform next should be a sorting
+problem, albeit complicated by the issue that it's heuristically
+driven (not provably optimal).  For example:
 
 * First, favor easy promotions (e.g., a secondary replica graduating
   to 0'th replica) so that queries have coverage across all PIndexes.
@@ -811,22 +811,26 @@ heuristically driven (not proven optimal).  For example:
   nodes.  (Or, maybe not: just starting off more KV backfills may push
   existing nodes running at the limit over the edge.)
 
-* Next, favor reassignments that help get PIndexes off of nodes that
-  are leaving.  The idea is to allow ns-server to remove nodes (which
-  may need servicing) sooner.
+* Next, favor reassignments that help get PIndexes off of cbft nodes
+  that are leaving the cluster.  The idea is to allow ns-server to
+  remove couchbase nodes (which may need servicing) sooner.
 
-* Lastly, favor reassignments that move PIndexes amongst remaining
-  cbft nodes than are neither joining nor leaving the cluster.  (MCP
+* Lastly, favor reassignments that move PIndexes amongst cbft nodes
+  than are neither joining nor leaving the cluster.  In this case, MCP
   may need to shuffle PIndexes to achieve better balance or meet
-  replication constraints.)
+  replication constraints.
 
 Other, more advanced factors to consider in the heuristics, which may
-be taken care of in future releases.
+be addressed in future releases, but would just be additions to the
+ordering/sorting algorithm.
 
-* some nodes might be slower, less powerful and more impacted than
-  others.
+* some cbft nodes might be slower, less powerful and more impacted
+  than others.
 
 * some PIndexes might be way behind compared to others.
+
+* some data source KV engines might more under pressure than others
+  and less able to handle yet another a DCP backfill.
 
 ### Controlled Compactions of PIndexes
 
