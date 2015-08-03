@@ -1,6 +1,6 @@
 cbft + couchbase Integration Design Document
 
-Status: DRAFT-02
+Status: DRAFT-03
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -34,6 +34,18 @@ Related documents:
 * ns-server's design documents
   * https://github.com/couchbase/ns_server/blob/master/doc
   * https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt (rebalance-flow.txt)
+  * https://docs.google.com/document/d/1VfCGOpALrqlEv8PR7KkMdnM038AOip2BmhUaoFwGZfM/edit (TCMP - "Topology changes management protocol for services with self-managed topology")
+
+Of note, ns-server team's "TCMP" document seems to be an as-yet
+unimplemented design proposal (circa 2015/07).  The cbft changes and
+additions proposed here in this "cbftint" design document are meant to
+be amenable to the operations proposed with the TCMP, where a JSON-RPC
+"adapter layer" might be introduced on top of cbft.
+
+If the TCMP plan isn't implementable in time for Watson, then we'll
+need a plan B, which may likely be just adding more direct ns-server
+code changes to integrate cbft (similar to the existing, submitted
+code changes that have ns-server spawn cbft and aggregate cbft stats).
 
 -------------------------------------------------
 # cbft Design Recap
