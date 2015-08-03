@@ -6,12 +6,17 @@ This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
 related features such as rebalance, failover, etc.
 
-Brief summary: cbft will by babysat by ns-server; cbft will store is
-configuration metadata into ns-server's metakv system; and, after the
-end of the existing rebalancing of KV VBuckets and view/GSI builds,
-ns-server will enter an additional, user-cancellable rebalancing phase
-for cbft-related index partitions by invoking a new cmd-line program
-called MCP (cbft's Managed Central Planner).
+Brief summary:
+
+* ns-server will spawn and babysit cbft.
+
+* cbft will store is configuration metadata into ns-server's metakv
+  system.
+
+* During rebalance, ns-server will perform its normal, existing
+  rebalancing of VBuckets and view/gsi indexes, and then ns-server
+  will finally request cbft to perform rebalancing of cbft's index
+  partitions.
 
 -------------------------------------------------
 # Links
@@ -43,9 +48,11 @@ For those needing a quick recap of cbft's main design concepts...
 * An index in cbft is split or partitioned into multiple index
   partitions, known as PIndexes.  Roughly speaking, a PIndex has a
   1-to-1 relationship with a bleve full-text index (although cbgt can
-  support additional types of indexes).  To process query requests, a
-  query needs to be scatter-gather'ed across the multiple PIndexes of
-  an index.
+  support additional types of indexes).
+
+* To process a query request, cbft will distribute or scatter the
+  request to the multiple PIndexes and gather responses before
+  sending a final, merged result to the client.
 
 * This partitioning of indexes into PIndexes happens at index creation
   time (i.e., index definition time).  To keep things simple for now,
