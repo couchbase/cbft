@@ -75,7 +75,7 @@ For those needing a quick recap of cbft's main design concepts...
 * As the cbft cluster topology changes, however, the assignment of
   which cbft nodes are responsible for which PIndexes can change, due
   to reassignments from a cbft subsystem called the planner.  e.g.,
-  cbft node 00 is responsibile for "PIndex af977b".  When a second
+  cbft node 00 is responsible for "PIndex af977b".  When a second
   cbft node 01 joins the cbft cluster, the planner reassigns PIndex
   af977b from cbft node 00 to cbft node 01.
 
