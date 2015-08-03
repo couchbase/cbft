@@ -10,7 +10,7 @@ Brief summary:
 
 * ns-server will spawn and babysit cbft.
 
-* cbft will store is configuration metadata into ns-server's metakv
+* cbft will store its configuration metadata into ns-server's metakv
   system.
 
 * During rebalance, ns-server will perform its normal, existing
