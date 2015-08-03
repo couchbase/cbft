@@ -806,14 +806,19 @@ driven (not provably optimal).  For example:
   This is the equivalent of a VBucket changing state from replica to
   master.
 
+* Next, favor assignments of PIndexes that have no replicas assigned
+  anywhere, where we want to get to one replica as soon as possible.
+  Once we have that first replica for a PIndex, though, we should
+  favor other kinds of moves over making more replicas of that PIndex.
+
 * Next, favor reassignments that utilize capacity on newly added cbft
   nodes, as new resources may be able to help with existing, overtaxed
-  nodes.  (Or, maybe not: just starting off more KV backfills may push
-  existing nodes running at the limit over the edge.)
+  nodes.  But be aware: starting off more KV backfills may push
+  existing nodes running at the limit over the edge.
 
-* Next, favor reassignments that help get PIndexes off of cbft nodes
-  that are leaving the cluster.  The idea is to allow ns-server to
-  remove couchbase nodes (which may need servicing) sooner.
+* Next, favor reassignments that help get PIndexes off of nodes that
+  are leaving the cluster.  The idea is to allow ns-server to remove
+  couchbase nodes (which may need servicing) sooner.
 
 * Lastly, favor reassignments that move PIndexes amongst cbft nodes
   than are neither joining nor leaving the cluster.  In this case, MCP
@@ -1126,7 +1131,7 @@ rebalance-flow.txt)
 
 This might prevent huge disk space blowup on rebalance (MB-6799?).
 
-## RPMOVE - Partition Moves Controlled Under Rebalance.
+## RPMOVE - PIndex Moves Controlled Under Rebalance.
 
 During rebalance, ns_server limits outgoing moves to a single vbucket
 per node for efficiency (see rebalance-flow.txt).  Same should be the
