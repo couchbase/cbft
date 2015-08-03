@@ -1,6 +1,6 @@
 cbft + couchbase Integration Design Document
 
-Status: DRAFT-01
+Status: DRAFT-02
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -109,7 +109,8 @@ cbft processes.
 NOTE: We don't expect the user to be able to dynammically change the
 enabled service types for an existing, already initialized couchbase
 node.  Instead, to change the service types for a node, the user must
-rebalance the node out and in again.
+rebalance the node out and in again, and/or reinstall their single
+node.
 
 ## Single CB Node, With Full-Text Service Enabled
 
@@ -128,8 +129,8 @@ like...
 
 ## Command-line Parameters
 
-Next, we briefly describe the cbft command-line parameters that
-ns-server uses:
+Next, we briefly describe the command-line arguments that ns-server
+provides to cbft:
 
 ### CBAUTH=some-secret
 
@@ -214,9 +215,9 @@ contents.
 
 ### -server=127.0.0.1:8091
 
-This is ADDR:PORT of the REST API of the couchbase ns-server that cbft
-will use by default for its data source (i.e., the default container
-of buckets).
+This is the ADDR:PORT of the REST API of the couchbase ns-server that
+cbft will use by default for its data source (i.e., the default
+container of buckets).
 
 ### -bindHttp=0.0.0.0:9110
 
@@ -379,10 +380,10 @@ In our example, we start with our first node...
 
 * cb-00 - cbft enabled
 
-Then, when we add/remove/failover/delta-node-recover any other node,
-as long as those other nodes have cbft disabled and cb-00 stays in the
-cluster, then everything "should just work" at this point in the
-story:
+Then, when we add more nodes, as long as those other nodes have cbft
+disabled and cb-00 stays in the cluster, then everything "should just
+work" at this point in the story, even if there are more rebalances,
+failovers, delta-node-recoveries, etc:
 
 * cb-00 - cbft enabled
 * cb-01 - cbft disabled
@@ -427,7 +428,7 @@ appears in a couchbase cluster.
 
 At this point, the cbft node membership metadata stored in the Cfg by
 cbft includes the -bindHttp ADDR:PORT value from the command line.
-cbft uses that bindHttp ADDR:PORT to as both a unique cbft node
+cbft uses that bindHttp ADDR:PORT as both a unique cbft node
 identifier and also when a cbft node wants to talk to other cbft nodes
 (such as during scatter/gather index queries).
 
@@ -463,7 +464,7 @@ instead have a globally unique, generated node UUID that isn't
 overloaded with networking information.  In addition, there would need
 to be a separate mapping that allows clients (and cbft's queryer) to
 translate from logical cbft node UUID's to actual IP addresses.  That
-translation map or level of indirectional can then be more easily,
+translation map or level of indirection can then be more easily,
 dynamically changed to handle IP address changes.  This alternative
 design idea, however, requires more cbft changes and its extra level
 of indirection optimizes for an uncommon case (IP address changing) so
@@ -545,7 +546,7 @@ scenarios.
 ## Unable To Meet Replica Counts
 
 Of note, removing a cbft node (and, not having enough cbft nodes in
-the first place) can mean that the MGP is not able to meet replication
+the first place) can mean that the MCP is not able to meet replication
 requirements for its PIndexes.  i.e., user asks for replica count of
 2, but there's only 1 cbft node in the cbft cluster.
 
@@ -575,7 +576,8 @@ The UNREG_CBFT_NODE must remove the following from the Cfg:
 Importantly, during a hard failover, the MCP should _not_ be invoked
 to re-plan and assign PIndexes to remaining cbft nodes in order to
 meet replication constraints.  Instead, creating new replica PIndexes
-to remaining nodes should wait until user later starts a rebalance.
+on remaining nodes should happen only later when the user starts a
+rebalance operation.
 
 ## Graceful Failover and Cooling Down
 
@@ -617,7 +619,7 @@ added nodes cb-01, cb-02 & cb-03 into the cluster at the same time,
 then the cbft janitors on the three newly added nodes will awake at
 nearly the same time and all start their DCP streams at nearly the
 same time.  This would lead to a huge, undesirable load on the KV
-system due to lots of concurrent KV backfills across all vbuckets.
+system due to lots of concurrent KV backfills across all VBuckets.
 
 Ideally, we would like there to be throttling of concurrent KV
 backfills to avoid overloading the system.
@@ -629,7 +631,7 @@ the cbft janitor on cb-00 will awaken and stop 3/4th's of its PIndexes
 (the ones that have been reassigned to the new cbft nodes on
 cb-01/02/03).
 
-So, any new queries at this time will see a significat lack of search
+So, any new queries at this time will see a significant lack of search
 hits (assuming the PIndexes are slow to build on the new cbft nodes).
 
 Ideally, we would like there to be little or no impact to cbft queries
@@ -714,13 +716,16 @@ mean more than 1 backfill at a time, though, so if tighter throttling
 is needed, then perhaps MCP can additionally limit the concurrent
 PIndex reassignments to a max of M per cluster.  M configured to be 1
 would have the most throttling, but perhaps inefficiently leave some
-KV nodes underutilized during rebalancing, where the currently
+KV nodes underutilized during rebalancing, when the currently
 "moving" PIndex doesn't have any VBuckets from some KV nodes.
 
 An even more advanced MCP might try to dynamically tune the M and N
 concurrency parameters to maximize throughput, such as by examining
 the VBuckets for each PIndex and cross-correlating those VBuckets to
 their current KV nodes.
+
+By the way, if MCP dies, then ns-server should stop the rebalance with
+an error message.
 
 ### Increasing Availability of PIndexes
 
@@ -729,18 +734,10 @@ old PIndex instance from a cbft node only after some new PIndex
 instance has been built up on some other cbft node.
 
 The MCP can do this by computing a new plan but not publishing it yet
-to all the janitors.  Instead, MCP saves the new, final plan off to
-the side somewhere in the Cfg, similar to how ns-server computes a
-fast-forward VBucket map.
+to all the janitors. Instead, MCP roughly treats the new plan similar
+to how ns-server computes a fast-forward VBucket map.
 
-If MCP dies and restarts, or even gets restarted on a different
-couchbase node (i.e., ns-server master moved), then MCP should
-theoretically be able to pick up where it left off since it had saved
-its fast-forward-plan to the distributed Cfg.  Practically, though, if
-the MCP died or was restarted, the ns-server should stop the rebalance
-with an error message.
-
-The MGP can then repeatedly choose some subset of the
+The MCP can then repeatedly choose some subset of the
 fast-forward-plan to publish in throttled steps to the janitors (via
 Cfg updates), so that subscribing janitors will make progress.  In
 other words, the MCP is roughly using the Cfg as a persistent,
@@ -809,23 +806,28 @@ problem, albeit complicated by the issue that it's heuristically
 driven (not provably optimal).  For example:
 
 * First, favor easy promotions (e.g., a secondary replica graduating
-  to 0'th replica) so that queries have coverage across all PIndexes.
-  This is the equivalent of a VBucket changing state from replica to
-  master.
+  to 0'th replica) so that queries can have more coverage across all
+  PIndexes.  This is the equivalent of a VBucket changing state from
+  replica to master.
 
 * Next, favor assignments of PIndexes that have no replicas assigned
-  anywhere, where we want to get to one replica as soon as possible.
-  Once we have that first replica for a PIndex, though, we should
-  favor other kinds of moves over making more replicas of that PIndex.
+  anywhere, where we want to get to that first PIndex instance or
+  replica as soon as possible.  Once we have that first replica for a
+  PIndex, though, we should consider favoring other kinds of moves
+  over building even more replicas of that PIndex.
 
 * Next, favor reassignments that utilize capacity on newly added cbft
-  nodes, as new resources may be able to help with existing, overtaxed
+  nodes, as the new nodes may be able to help with existing, overtaxed
   nodes.  But be aware: starting off more KV backfills may push
   existing nodes running at the limit over the edge.
 
 * Next, favor reassignments that help get PIndexes off of nodes that
   are leaving the cluster.  The idea is to allow ns-server to remove
   couchbase nodes (which may need servicing) sooner.
+
+* Next, favor reassignments when PIndexes are over=replicated.  For
+  example, there might be too many replicas remaining on new/existing
+  nodes.
 
 * Lastly, favor reassignments that move PIndexes amongst cbft nodes
   than are neither joining nor leaving the cluster.  In this case, MCP
