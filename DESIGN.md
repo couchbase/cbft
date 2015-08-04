@@ -37,10 +37,12 @@ Related documents:
   * https://docs.google.com/document/d/1VfCGOpALrqlEv8PR7KkMdnM038AOip2BmhUaoFwGZfM/edit (TCMP - "Topology changes management protocol for services with self-managed topology")
 
 Of note, ns-server team's "TCMP" document seems to be an as-yet
-unimplemented design proposal (circa 2015/07).  The cbft changes and
-additions proposed here in this "cbftint" design document are meant to
-be amenable to the operations proposed with the TCMP, where a JSON-RPC
-"adapter layer" might be introduced on top of cbft.
+unimplemented and defunct design proposal (circa 2015/07).  The cbft
+changes and additions proposed here in this "cbftint" design document
+are meant to be amenable to the operations proposed with the TCMP,
+where a JSON-RPC "adapter layer" might be introduced on top of cbft.
+The latest alternative to TCMP may be ns-server's revrpc protocol;
+see: https://github.com/couchbase/cbauth
 
 If the TCMP plan isn't implementable in time for Watson, then we'll
 need a plan B, which may likely be just adding more direct ns-server
