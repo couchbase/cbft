@@ -1,6 +1,6 @@
 cbft + couchbase Integration Design Document
 
-Status: DRAFT-03
+Status: DRAFT-04
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -99,7 +99,9 @@ For those needing a quick recap of cbft's main design concepts...
   * When cbft node 04 is removed from the cbft cluster, then PIndex
     af977b is reassigned by the planner to cbft nodes 01 and 02.
 
-For more information, please see cbgt's design document (GT).
+For more information, please see cbgt's design document (GT), as most
+of the clustering and partitioning logic comes from the generic cbgt
+library.
 
 -------------------------------------------------
 # cbftint Design
@@ -188,7 +190,7 @@ list for a cbft node.  In particular, changing the "pindex" tag (even
 with a cbft process restart) will have complex rebalance-like
 implications of needing PIndex movement; instead, users can
 rebalance-out a node and rebalance it back in with a different set of
-node services.
+service types.
 
 Related: this design also doesn't support the scenario of adding
 unmanaged, standalone cbft instances to a cbft cluster that's
@@ -202,9 +204,9 @@ This is the data directory where cbft can store its node-specific
 index data and metadata.
 
 (DDIR-RM) By default, ns-server must clear the dataDir directory tree
-before starting the cbft process, especially the dataDir/cbft.uuid
-file.  (But not always; see later (DNR) regarding delta node
-recovery).
+on a brand new couchbase node before starting the cbft process,
+especially the dataDir/cbft.uuid file.  (But not always; see later
+(DNR) regarding delta node recovery).
 
 Of note, the dataDir is not planned to be dynamically changable at
 runtime.  That is, if ns-server mistakenly restarts cbft with a brand
@@ -248,16 +250,17 @@ with this cbft process.  For example...
     }
 
 In particular, ns-server will want to repeatedly poll the cbft process
-for its latest stats metrics and counters.  The REST response expected
-by ns-server includes ns-server's REST address (for proper stats
-aggregation), and the extras JSON command-line parameter is a way for
-ns-server to pass down its REST address and other (future) information
-down to cbft.
+for cbft's latest stats metrics and counters.  The REST response
+expected by ns-server includes ns-server's REST address (for proper
+stats aggregation), and the extras JSON command-line parameter is a
+way for ns-server to pass down its REST address and other (future)
+information down to cbft.
 
-Underneath the hood: the cbgt library treats this extras JSON as an
-opaque string that's just stored as opaque metadata and passed along.
-Only the stats REST handling logic in cbft to support ns-server
-integration uses it.
+Underneath the hood: the cbgt library treats this extra per-node JSON
+as an opaque string that's just stored as opaque metadata and passed
+along.  Then, in this design, only the REST stats handling code in
+cbft that supports ns-server integration parses and uses this opaque
+extra info.
 
 ### Other Parameters
 
@@ -268,17 +271,26 @@ any difficult design issues.
 
 A future issue would be if ns-server wants to dynamically change these
 extra parameters (e.g., admin allocates more RAM or CPU to a node and
-suddenly the machine is more powerful).  In this case, a restart of
-the cbft process with the right parameters should suffice.
+suddenly the machine is more powerful, or the rack/zone for the node
+is changed).  Right now, the design does not support this case, but in
+the fturue, it'd be fruitful to examine whether a restart of the cbft
+process with the modified parameters should suffice, although with
+possible rebalance-like implications.  For now, the user should
+rebalance the node out and back in with changed parameters.
 
 ## cbft Node Registers Into The Cfg
 
 At this point, as the cbft process starts up, the cbft process will
-add its node definition (there's just a single cbft node so far) into
-the Cfg (metakv) system as a wanted cbft node.
+add its cbft node definition (there's just a single cbft node so far)
+into the Cfg (metakv) system as a known and wanted cbft node.
 
 That way, other clients of the Cfg system can discover the cbft nodes
 in the cbft cluster.
+
+In particular, clients/SDK's might be relying on the information
+published in the Cfg to discover the cbft cluster topology (i.e.,
+where are all the PIndexes), perhaps intermediated by a (to be
+specified) server-side REST implementation.
 
 ----
 ## cbft Is Ready For Index Creations (INDEX-DDL)
@@ -376,7 +388,7 @@ Most of this functionality is due to cbft's usage of the cbdatasource
 library: https://github.com/couchbase/go-couchbase/tree/master/cbdatasource
 
 The cbdatasource library has exponential backoff-retry logic when
-either a streaming connection to ns-server (for vbucket maps) or a DCP
+either a REST connection to ns-server (for VBucket maps) or a DCP
 streaming connection fails.  Documentation on cbdatasource's
 backoff/retry options (such as timeouts) are here:
 http://godoc.org/github.com/couchbase/go-couchbase/cbdatasource#BucketDataSourceOptions
@@ -431,6 +443,8 @@ on 127.0.0.1 to get the cluster map.
 
 ## Handling IP Address Changes
 
+(IPADDR)
+
 One issue: as soon as the second node cb-01 was added, the IP address
 of cb-00 might change (if not already explicitly specified to
 ns-server during cb-00's initialization web UI/REST screens).  This is
@@ -480,7 +494,10 @@ translation map or level of indirection can then be more easily,
 dynamically changed to handle IP address changes.  This alternative
 design idea, however, requires more cbft changes and its extra level
 of indirection optimizes for an uncommon case (IP address changing) so
-this alternative design isn't as favored.
+this alternative design isn't as favored.  One potential
+consideration, though, is ns-server's proposed TCMP design relies on
+using actual UUID's per node, which will need reexamination if TCMP
+comes to fruition.
 
 ## Adding More Than One cbft Node
 
@@ -557,10 +574,10 @@ scenarios.
 
 ## Unable To Meet Replica Counts
 
-Of note, removing a cbft node (and, not having enough cbft nodes in
-the first place) can mean that the MCP is not able to meet replication
-requirements for its PIndexes.  i.e., user asks for replica count of
-2, but there's only 1 cbft node in the cbft cluster.
+Removing a cbft node (and, not having enough cbft nodes in the first
+place) can mean that the MCP is not able to meet replication
+requirements for its PIndexes.  i.e., user asks for replica count of 2
+for an index, but there's only 1 cbft node in the cbft cluster.
 
 cbft needs to provide a REST API (perhaps, as part of stats monitoring
 REST responses) that allows ns-server to detect this situation of "not
@@ -568,11 +585,11 @@ enough cbft nodes" and display it in ns-server's UI appropriately.
 
 Of note, cbft should be able to report the difference between...
 
-* not enough nodes to meet replication constraints.
+* not enough cbft nodes to meet index replication constraints.
 * not enough PIndex replicas have been assigned to meet replication
   constraints (i.e., there was a failover where there are still enough
-  nodes remaining in the cluster to meet replication constraints, but
-  there hasn't yet been a rebalance).
+  cbft nodes remaining in the cluster to meet replication constraints,
+  but there hasn't yet been a rebalance).
 
 ## Hard Failover
 
@@ -590,6 +607,10 @@ to re-plan and assign PIndexes to remaining cbft nodes in order to
 meet replication constraints.  Instead, creating new replica PIndexes
 on remaining nodes should happen only later when the user starts a
 rebalance operation.
+
+The ns-server needs a to-be-specified way, then, of telling MCP to not
+to re-plan, where the MCP should instead treat the existing
+post-failover plan as acceptable.
 
 ## Graceful Failover and Cooling Down
 
@@ -616,6 +637,11 @@ Note that we don't expect to support cancellation of graceful
 failover, but if that's needed, ns-server can invoke cbft's REST API
 to resume index ingest and querying.
 
+Finally, we might consider having cbft keep its dataDir PIndex
+subdirectories intact and untouched instead of deleting them.  The
+dataDir/cbft.uuid file, however, should be deleted during a graceful
+failover.
+
 ----
 ## Major Gaps In The Simple Design So Far
 
@@ -631,7 +657,7 @@ added nodes cb-01, cb-02 & cb-03 into the cluster at the same time,
 then the cbft janitors on the three newly added nodes will awake at
 nearly the same time and all start their DCP streams at nearly the
 same time.  This would lead to a huge, undesirable load on the KV
-system due to lots of concurrent KV backfills across all VBuckets.
+system due to lots of concurrent KV backfills across many VBuckets.
 
 Ideally, we would like there to be throttling of concurrent KV
 backfills to avoid overloading the system.
@@ -658,7 +684,7 @@ To address these major gaps, we have a fork in the road of design paths:
   view/GSI re-indexing with PIndex moves, taking care fit into
   ns-server's throttling phases.
 * B. Instead of interleaving, ns-server could move all KV VBuckets and
-  view/GSI indexes first, and then hand off full PIndex rebalancing
+  view/GSI indexes first, and then hand-off full PIndex rebalancing
   control to the MCP.
 
 Pathway B is easier to implement, so we'll use that pathway, while
@@ -676,15 +702,16 @@ We recap those maneuvers here, but please see ns-server's
 rebalance-flow.txt document for more details.
 
 * ns-server rebalances only one bucket at a time.
-* ns-server prioritizes VBucket moves to try to keep number of active
-  VBuckets "level" throughout KV nodes in the cluster.
+* ns-server prioritizes VBucket moves to try to keep the number of
+  active VBuckets "level" throughout KV nodes in the cluster.
 * ns-server also limits concurrent KV backfills to 1 per node.
 * ns-server disables compactions during VBucket moves and view
   indexing, to increase efficiency/throughput at the cost of using
   more storage space.
-* after 64 VBucket moves, ns-server kicks off a phase of compactions
-  across the cluster.
-* ns-server disables indexing during some sub-phases of the rebalance
+* after 64 VBucket moves (by default, this is actually configurable in
+  ns-server), ns-server kicks off a phase of compactions across the
+  cluster.
+* ns-server pauses indexing during some sub-phases of the rebalance
   moves to implement "consistent view queries under rebalance".
 
 Pictorially, here is a diagram on concurrency during rebalance (from
@@ -837,9 +864,9 @@ driven (not provably optimal).  For example:
   are leaving the cluster.  The idea is to allow ns-server to remove
   couchbase nodes (which may need servicing) sooner.
 
-* Next, favor reassignments when PIndexes are over=replicated.  For
-  example, there might be too many replicas remaining on new/existing
-  nodes.
+* Next, favor removals of PIndexes that are over-replicated.  For
+  example, there might be too many replicas of a PIndex remaining on
+  new/existing nodes.
 
 * Lastly, favor reassignments that move PIndexes amongst cbft nodes
   than are neither joining nor leaving the cluster.  In this case, MCP
@@ -855,8 +882,12 @@ ordering/sorting algorithm.
 
 * some PIndexes might be way behind compared to others.
 
+* some PIndexes might be much larger than others.
+
 * some data source KV engines might more under pressure than others
   and less able to handle yet another a DCP backfill.
+
+* TODO: consider how about some randomness?
 
 ### Controlled Compactions of PIndexes
 
@@ -904,11 +935,13 @@ The DNRFTS step proposed above needs to address this potential race.
 
 ## Bucket Deletion
 
+(BUCKETD)
+
 If a bucket is deleted, any full-text indexes based on that bucket
 should be, by default, automatically deleted.
 
 The proposal is ns-server invoke a synchronous command-line tool or
-program that can list and/or delete the cbft indexes that have a data
+REST API that can list and/or delete the cbft indexes that have a data
 source from a given bucket.
 
 The listing operation allows ns-server to potentially display UI
@@ -942,15 +975,24 @@ Clients should be able query for results where the indexes have
 incorporated at least up to a given set of {vbucket to seq-num}
 pairings.
 
+This is covered by cbft's optional "at_plus" consistency vectors
+during queries.
+
 ## GT-CR1 - Consistent queries under datasource rebalance.
 
 Queries should be consistent even as data source KV nodes are added
 and removed in a clean rebalance.
 
+This is covered by cbft's optional "at_plus" consistency vectors
+during queries.
+
 ## GT-CR2 - Consistent queries under cbgt topology change.
 
 Queries should be consistent even as full-text nodes are added and
 removed in a clean takeover fashion.
+
+This is covered by cbft's optional "at_plus" consistency vectors
+during queries.
 
 ## GT-OC1 - Support optional looser "best effort" options.
 
@@ -960,6 +1002,10 @@ latency than a totally consistent GT-CR1 query.
 
 For example, perhaps the client may want to just ask for consistency
 around just a subset of vbucket-seqnum's.
+
+This can be supported in cbft, but requires new feature development,
+including needing additional, optional flags/parameters in cbft's REST
+query API's.
 
 ## GT-IA1 - Index aliases.
 
@@ -971,21 +1017,29 @@ search limited to only the most recent quarter index of
 'last-quarter-sales' alias to the the newest 'sales-2014Q4' index
 without any client-side application changes.
 
+This is be supported in cbft / bleve via their index aliases feature.
+
 ## GT-MQ1 - Multi-index query for a single bucket.
 
 This is the ability to query multiple indexes in one request for a
 single bucket, such as the "comments-fti" index and the
 "description-fti" index.
 
+This is supported in cbft / bleve via index aliases.
+
 ## GT-MQ2 - Multi-index query across multiple buckets.
 
 Example: "find any docs from the customer, employee, vendor buckets
 who have an address or comment about 'dallas'".
 
+This is supported in cbft / bleve via index aliases.
+
 ## GT-NI1 - Resilient to data source KV node down scenarios.
 
 cbft instances should try to automatically reconnect to a recovered KV
 data source node and resume indexing from where they left off.
+
+This is supported by the cbdatasource library.
 
 ## GT-E1 - The user should be able to see error conditions.
 
@@ -1002,14 +1056,22 @@ In ES, note the frustrating bouncing between yellow, green, red;
 ns-server example, not enough CPU & timeouts leads to status
 bounce-iness.
 
+This is a general requirement where error conditions and health must
+be exposed (any changes to-be-spec'ed) via cbft's REST API.
+
 ## GT-NQ1 - Querying still possible if data source node goes down.
 
 Querying of a cbgt cluster should be able to continue even if some
 data source KV nodes are down.
 
+This is supported as cbft's processes are separate from the KV
+processes and can proceed independently.
+
 ## GT-PI1 - Ability to pause/resume indexing.
 
-## IPADDR - IP Address Changes.
+This is supported via cbft's index management REST API.
+
+## R-IPADDR - IP Address Changes.
 
 IP address discovery is "late bound", when couchbase server nodes
 initially joins to a cluster.  A "cluster of one", in particular, only
@@ -1018,7 +1080,9 @@ has an erlang node address of "ns_1@127.0.0.1".
 ns-server also has feature where node names might also be manually
 assigned.
 
-## BUCKETD - Bucket Deletion Cascades to Full-Text Indexes.
+Please see the IPADDR design proposal above.
+
+## R-BUCKETD - Bucket Deletion Cascades to Full-Text Indexes.
 
 If a bucket is deleted, any full-text indexes based on that bucket
 should be also automatically deleted.
@@ -1026,60 +1090,100 @@ should be also automatically deleted.
 There should be user visible UI warnings on these "cascading deletes"
 of cbft indexes.
 
+Please see the BUCKETD design proposal above.
+
 ## BUCKETDA - Bucket Deletion & Index Aliases
 
 (What about cascade delete (or listing) of index aliases that
 (transitively) point to an index (or to a bucket datasource)?)
 
+TODO.
+
 ## BUCKETR - Bucket Deletion & Recreation with the same name.
+
+This is supported as cbft relies on bucket names and bucket UUID's to
+uniquely identify a bucket to handle this case.
 
 ## BUCKETF - Bucket Flush.
 
+TODO.
+
+This will likely need (to-be-spec'ed) improvements to the cbdatasource
+library and API.
+
 ## RIO - Rebalance Nodes In/Out.
 
-(Need ability / REST API to quiesce or cool down a cbft process?)
+Please see the rebalance related design proposal above.
 
 ## RP - Rebalance progress estimates/indicator.
 
+The design proposal is that MCP's REST API will need to support
+progress estimates.
+
 ## RS - Swap Rebalance.
+
+Please see the swap rebalance related design proposal above, which
+relies on the blance library.
 
 ## FOH - Hard Failover.
 
-Besides hard failover in normal operations, consider the possibility
-of a hard failover in the midst of a rebalance or any other
-non-steady-state scenario.
+Please see the hard failover design proposal above.
 
 ## FOG - Graceful Failover.
 
-Reject any new requests and wait for any inflight requests to finish
-before failover.
+Graceful failover means rejecting any new requests and wait for any
+inflight requests to finish before failover.
 
-## AB - Add Back Rebalance.
+Please see the hard failover design proposal above.
+
+## AB - Add Back Rebalance
+
+Please see the rebalance design proposal above.
 
 ## DNR - Delta Node Recovery.
 
 This involves leveraging cbft's old index files.
 
-## RP1 - Rebalance Phase 1 - VBucket Replication Phase.
-## RP2 - Rebalance Phase 2 - View Indexing Phase.
-## RP2 - Rebalance Phase 3 - VBucket Takeover Phase.
+Please see the delta node recovery design proposal above.
+
+## RP1 - NS-SERVER's Rebalance Phase 1 - VBucket Replication Phase.
+## RP2 - NS-SERVER's Rebalance Phase 2 - View Indexing Phase.
+## RP2 - NS-SERVER's Rebalance Phase 3 - VBucket Takeover Phase.
+
+Please see the rebalance design proposal above, where we propose to
+not integrate into ns-server's rebalance cycles, but instead have a
+brand new phase at the end of ns-server's existing rebalance work.
 
 ## RSTOP - Ability to Stop Rebalance.
 
 A.k.a, "put the pencils down".
 
+MCP will need a REST API to support this.
+
 ## MDS-FT - Multidimensional Scaling For Full Text
 
 Ability to rebalance cbft resources indpendent of other services.
+
+Please see the "MDS" related design proposal above.
 
 ## CIUR - Consistent Indexes Under Rebalance.
 
 This is the equivalent of "consistent view index queries under
 rebalance".
 
+We propose not to support this feature by default, but instead will
+rely on the application to provide an optional "at-plus" consistency
+vector during cbft queries.
+
 ## QUERYR - Querying Replicas.
 
+This is not yet implemented in cbft, and needs more requirements
+gathering.
+
 ## QUERYLB - Query Load Balancing To Replicas.
+
+This is not yet implemented in cbft, and needs more requirements
+gathering.
 
 ## QUERYLB-EE - Query Load Balancing To Replicas, Enterprise Edition
 
@@ -1088,9 +1192,14 @@ random load-balancing, but targets the most up-to-date replica.
 
 Or the least-busy replica.
 
+This is not yet implemented in cbft, and needs more requirements
+gathering.
+
 ## ODS - Out of Disk Space.
 
 Out of disk space conditions are handled gracefully (not segfaulting).
+
+This should become a unit test to ensure right behavior in cbft.
 
 ## ODSR - Out of Disk Space Repaired.
 
@@ -1098,9 +1207,15 @@ After an administrator fixes the disk space issue (adds more disks;
 frees more space) then full-text indexing should be able to
 automatically continue successfully.
 
+This should become a unit test to ensure right behavior in cbft.
+
 ## KP - Killed Processes (linux OOM, etc).
 
 ## RSN - Return of the Shunned Node.
+
+The design relies on ns-server to properly a return of a shunned node,
+and barring that relies on ns-sever to manage the deletion of
+dataDir/cbft.uuid files appropriately, as a backstop.
 
 ## DLC - Disk Level Copy/Restore of Node.
 
@@ -1110,33 +1225,64 @@ a whole dataDir.
 
 The issue is that old cbft.uuid files might still (incorrectly) be copied.
 
+We propose not to handle this case in cbftint Watson timeframe.
+
 ## UI - Full-Text tab in Couchbase's web admin UI.
 
+The design proposal, in a handwave, is to handle this via a REST/HTTP
+proxy in ns-server, which will forward REST/HTTP traffic for
+(to-be-specified) URL path prefixes to cbft, in order to overcome
+same-origin issues.
+
+More handwave also is used to ellide the challenges of
+javascript/HTML/CSS angularjs/cells integration (namespace collisions,
+etc).
+
 ## STATS - Stats Integration into Couchbase's web admin UI.
+
+We propose that ns-server poll cbft for stats using a REST API.
+(Marty has demo of the ns-server doing this.)
 
 ## AUTHI - Auth integration with Couchbase for indexing.
 
 cbft should be able to access any bucket for full-text indexing.
 
+The design will rely on cbauth for this.
+
 ## AUTHM - Auth integration with Couchbase for admin/management.
 
 cbft's administration should be protected.
+
+The design will rely on cbauth for this.
 
 ## AUTHQ - Auth integration with Couchbase for queries.
 
 cbft's queryability should be protected.
 
+The design will rely on cbauth for this.
+
 ## AUTHPW - Auth credentials/pswd can change (or is reset).
 
-Does this affect cbauth module?
+The design will rely on cbauth for this, where any admin password
+changes should have no affect on cbft and its usage of cbauth/metakv.
 
 ## TLS - TLS/SSL support.
 
+TODO.
+
 ## HC - Health Checks.
+
+The design proposal is that ns-server will piggyback health checks on
+cbft on its regular polling of REST stats metrics from cbft.
 
 ## QUOTAM - Memory Quota per node.
 
+TODO.  Need to examine GSI's and cbq's approaches to memory quotas
+(for golang processes) and see if we can copy their approaches.
+
 ## QUOTAD - Disk Quota per node.
+
+We propose to not to attempt disk quotas for cbft for Watson.
 
 ## BFLIMIT - Limit Backfills.
 
@@ -1144,13 +1290,19 @@ ns_single_vbucket_mover has a policy feature that limits the number of
 backfills to "1 backfill during rebalance in or out of any node" (see
 rebalance-flow.txt)
 
+Please see the above design proposal on limiting concurrenty PIndex
+moves per cbft node.
+
 ## RCOMPACT - Index Compactions Controlled Under Rebalance.
 
 During rebalance, ns_server pauses view index compactions until a
 configurable number of vbucket moves have occurred for efficiency (see
-rebalance-flow.txt)
+rebalance-flow.txt).
 
 This might prevent huge disk space blowup on rebalance (MB-6799?).
+
+TODO.  MCP may have to have similar index compaction pause/resume
+logic as ns-server?
 
 ## RPMOVE - PIndex Moves Controlled Under Rebalance.
 
@@ -1158,7 +1310,8 @@ During rebalance, ns_server limits outgoing moves to a single vbucket
 per node for efficiency (see rebalance-flow.txt).  Same should be the
 case for PIndex reassignments.
 
-See "rebalanceMovesBeforeCompaction".
+Please see the above design proposal on limiting concurrenty PIndex
+moves per cbft node.
 
 ## RSPREAD - Rebalance Active VBucket Spreading.
 
@@ -1167,45 +1320,95 @@ active VBuckets across nodes and also tries to keep indexers busy
 across all nodes.  PIndex moves should have some equivalent
 optimization.
 
+Please see the above design proposal on prioritizing PIndex moves,
+which is not an exact equivalent to what ns-server is doing with
+VBuckets, but somewhat related.
+
 ## COMPACTF - Ability for force compaction right now.
+
+We propose that cbft introduce an additional REST API to control
+compactions.
 
 ## COMPACTO - Ability to compact files offline (while service down).
 
 Might be useful to recover from out-of-disk space scenarios.
 
+We propose not to handle this requirement in Watson timeframe.
+
 ## COMPACTP - Ability to pause/resume automated compactions.
+
+We propose that cbft introduce an additional REST API to control
+automated compactions.
 
 ## COMPACTC - Ability to reconfigure automated compaction policy.
 
+We propose that cbft introduce an additional REST API to control
+automated compaction configuration.
+
 ## TOOLBR - Tools - Backup/Restore.
+
+We propose that backup/restore only backup and restore cbft (logical)
+index definitions, but not the actual index dataDir files or physcial
+indexing data.
 
 ## TOOLCI - Tools - cbcollectinfo.
 
+We propose that cbcollectinfo be improved to gather cbft's REST
+/api/diag JSON output, which contains a lot of cbft diagnostic
+information.
+
 ## TOOLM - Tools - mortimer.
+
+The mortimer tool will need to be improved, if not during Watson, then
+soon after, to include cbft-related stats.
 
 ## TOOLN - Tools - nutshell.
 
+The nutshell tool will need to be improved, if not during Watson, then
+soon after, to include cbft-related stats.
+
 ## TOOLDUMP - Tools - couch_dbdump like tools.
+
+TODO.  To be specified.
 
 ## UPGRADESW - Handles upgrades of sherlock-to-watson.
 
+We plan to rely on ns-server to handle sherlock-to-watson upgrades,
+such as by ns-server not allowing cbft to used until all nodes are
+running Watson.
+
 ## UPGRADE - Future readiness for watson-to-future upgrades.
+
+TODO.  To be specified.  cbft already includes some PIndex metadata
+that may be helpful for future upgrades, but a design review is needed
+to consider whether it's enough.
 
 ## UTEST - Unit Testable.
 
 ## QTEST - QE Testable / Instrumentable.
 
+TODO.  To be specified.
+
 ## REQTRACE - Ability to trace a request down through the layers.
 
+TODO.
+
 ## REQPILL - Ability to send a fake request "pill" down through the layers.
+
+TODO.
 
 ## REQTIME - Ability to track "where is the time going".
 
 This should ideally be on a per-request, individual request basis.
 
+TODO.
+
 ## REQTHRT - Request Throttling
 
 ns-server REST & CAPI support a "restRequestLimit" configuration.
+
+TODO.  Needs more research on what ns-server is doing with
+restRequestLimit.
 
 ## DCPNAME - DCP stream naming or prefix
 
@@ -1213,96 +1416,38 @@ Allow for DCP stream prefix to allow for easier diagnosability &
 correlation (e.g., these DCP streams in KV-engine come from cbft due
 to these indexes from these nodes).
 
+TODO.
+
 ## TIMEREW - Handle NTP backward time jumps gracefully
+
+cbft doesn't rely directly on time.  However, underlying dependencies
+(maybe metakv? CAS generation in KV) might be sensitive to backward
+time jumps (needs research).
 
 ## RZA - Handle Rack/Zone Awareness & Server Groups
 
+Please see above for rack/zone awareness proposal.
+
 ## CBM - Works with cbmirror
 
+This should considered just "nice to have", but may be useful as a
+pathway to more unit/integration testing.
+
 -------------------------------------------------
-# Random notes / TODO's / section for raw ideas
-
-ip address changes on node joining
-- node goes from 'ns_1@127.0.0.1' (or 0.0.0.0?)
-    to ns_1@REAL_IP_ADDR
-ip address rename
-
-bind-addr needs a REAL_IP_ADDR
-from the very start to be clusterable?
-
-all nodes start with the node having a "wrong" bindHTTP addr (like
-127.0.0.1 or 0.0.0.0), so ideas:
-
-- fix reliance on bindHTTP
-- allow true node UUID, with "outside" mapping of UUID to contactable
-  http address
-- add command to rename a node's bindHTTP
+# Random notes / TODO's / section for miscellaneous ideas
 
 best effort queries
 - vs return error
 - keep old index entries even if index definition changes
 - vs rebuild everything
 
-node lifecycle
-- known
-- wanted
--- moving to wanted
-- unwanted
--- moving to unwanted
-- unknown
+Add command-line param where ns-server can force a default node UUID,
+for better cross-correlation/debuggability of log events?
 
-               unwanted wanted
-    unknown    ok         N/A
-    known      ok         ok
-
-index lifecycle
-
-A vbucket in a view index has a "pending", "active", "cleanup" states,
-that are especially used during rebalance orchestration.  Perhaps
-PIndexes need equivalent states?
-
-add command-line param where ns-server can force a default node UUID,
-for better cross-correlation/debuggability of log events.  And, we can
-look for the return of the shunned node.
-
-add command-line tools/params for outside systems (like ns-server) to
-add/remove nodes?
-
-Policy ideas...
-
-- Do node adds first, before removes?
-  Favor more capacity earlier.
-
-- Move all KV vbuckets before moving any cbft pindexes?
-
-- Favor FT index builds on new nodes, before FT index builds on
-  remaining nodes?  (Favors utilizing empty disks earlier.)
-
-- Favor FT index builds with priority 0 pindexes first.
-
-Two different kinds of rebalance...
-
-- KV vbucket rebalancing
-- cbft pindex rebalancing
-
-Current, easiest cbft pindex rebalance implementation...
-- easy, but bad behavior (CE edition--?)
-- cbft process started on new node, joins the cfg...
-- then instant (re-)planner & janitor-fication...
-- means apparently full-text index downtime and DDoS via tons of
-  concurrent DCP backfills.
-
-state machine:
-- running
-- warming
-- cooling
-- stoppable/stopped
-
-More feedback from James Mauss:
+More feedback from James Mauss (and, testing ideas?):
 
 * rebalance with node ports are blocked (aws security zone).
   * i.e., cbft can't talk to KV port 11210
-* want valid error msgs in all these cases
 * fill up disk space and repair/recover
   * e.g., to test, create a big file (like via dd)
   * have a valid error msg
@@ -1317,3 +1462,4 @@ More feedback from James Mauss:
   * ask patrick varley, who has tool to do that
 * compaction getting stuck and/or not actually compacting or
   compacting fast enough
+* want valid error msgs in all these cases
