@@ -1506,6 +1506,23 @@ Please see above for rack/zone awareness proposal.
 This should considered just "nice to have", but may be useful as a
 pathway to more unit/integration testing.
 
+## CORRUPT - Corrupted Files
+
+Ability to gracefully respond to and report errors due to file
+corruptions.
+
+There are several different kinds of files to address:
+* metadata files:
+** dataDir/cbft.uuid file.
+** PIndex metadata files.
+* PIndex index files (e.g., bleve's files).
+
+This requires the ability for cbft to propagate errors due to file
+errors.  And, requires cbft to be able to support the forced removal
+of PIndex instances even if critical files are corrupted or have
+disappeared.  And, have cbft be able to be removed and/or restarted
+even if its critical files are corrupted or have disappeared.
+
 -------------------------------------------------
 # Random notes / TODO's / section for miscellaneous ideas
 
