@@ -529,6 +529,13 @@ consideration, though, is ns-server's proposed TCMP design relies on
 using actual UUID's per node, which will need reexamination if TCMP
 comes to fruition.
 
+UPDATE: Talked with Aliaksey A., and he's a strong proponent that we
+use the UUID based approach.  He has several battle stories to tell
+where the morale is that the ns-server team wished that node UUID's
+had been used from day one: wrong version of nodes reappearing with
+same non-UUID identifiers; failures during of IP-address rewrites;
+jankiness of the address rewrites codepaths; etc).
+
 ## Adding More Than One cbft Node
 
 At this point in the design, now that IP addresses are being rewritten
