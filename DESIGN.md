@@ -101,6 +101,23 @@ For those needing a quick recap of cbft's main design concepts...
   * When cbft node 04 is removed from the cbft cluster, then PIndex
     af977b is reassigned by the planner to cbft nodes 01 and 02.
 
+Pictorially:
+
+    index "beer-sample-fts"                          cbft nodes:
+      |                                              A  B  C
+      |                                              -----------
+      |--- PIndex ac923 (covers VBuckets 0-499)      y  y
+      |
+      |--- PIndex bdf11 (covers VBUckets 500-999)       y  y
+      |
+      |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
+
+Above we can see that index "beer-sample-fts" was partitioned into 3
+PIndexes, where PIndex ac923 covers the data from VBuckets 0 through
+499.  Also, replication has been enabled with replica count of 1, so
+the planner has assigned PIndex ac923 to live on multiple cbft nodes:
+A and B.
+
 For more information, please see cbgt's design document (GT), as most
 of the clustering and partitioning logic comes from the generic cbgt
 library.
