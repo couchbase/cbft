@@ -1,6 +1,6 @@
-cbft + couchbase Integration Design Document
+cbft + couchbase Integration Design Document (cbftint)
 
-Status: DRAFT-04
+Status: DRAFT-05
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -13,10 +13,9 @@ Brief summary:
 * cbft will store its configuration metadata into ns-server's metakv
   system.
 
-* During rebalance, ns-server will perform its normal, existing
-  rebalancing of VBuckets and view/gsi indexes, and then ns-server
-  will finally request cbft to perform rebalancing of cbft's index
-  partitions.
+* For rebalancing, ns-server will perform its existing rebalancing
+  work, but as a last, additional step, ns-server will request cbft to
+  perform rebalancing of cbft's index partitions.
 
 -------------------------------------------------
 # Links
@@ -37,17 +36,9 @@ Related documents:
   * https://docs.google.com/document/d/1VfCGOpALrqlEv8PR7KkMdnM038AOip2BmhUaoFwGZfM/edit (TCMP - "Topology changes management protocol for services with self-managed topology")
 
 Of note, ns-server team's "TCMP" document seems to be an as-yet
-unimplemented and defunct design proposal (circa 2015/07).  The cbft
-changes and additions proposed here in this "cbftint" design document
-are meant to be amenable to the operations proposed with the TCMP,
-where a JSON-RPC "adapter layer" might be introduced on top of cbft.
-The latest alternative to TCMP may be ns-server's revrpc protocol;
-see: https://github.com/couchbase/cbauth
-
-If the TCMP plan isn't implementable in time for Watson, then we'll
-need a plan B, which may likely be just adding more direct ns-server
-code changes to integrate cbft (similar to the existing, submitted
-code changes that have ns-server spawn cbft and aggregate cbft stats).
+unimplemented and "defunct" design proposal (circa 2015/07).  Our
+proposed approach is instead to add more direct ns-server code changes
+that integrate calls to cbft.
 
 -------------------------------------------------
 # cbft Design Recap
@@ -60,48 +51,50 @@ For those needing a quick recap of cbft's main design concepts...
   system as the Cfg backend.
 
 * An index in cbft is split or partitioned into multiple index
-  partitions, known as PIndexes.  Roughly speaking, a PIndex has a
-  1-to-1 relationship with a bleve full-text index (although cbgt can
-  support additional types of indexes).
+  partitions, known as PIndexes.
+
+* Roughly speaking, a PIndex has a 1-to-1 relationship with a bleve
+  full-text index (although cbgt was designed to support different
+  types of indexes).
 
 * To process a query request, cbft will distribute or scatter the
-  request to the multiple PIndexes and gather responses before
-  sending a final, merged result to the client.
+  request to the multiple PIndexes and gather responses before sending
+  a final, merged result back to the client.
 
 * This partitioning of indexes into PIndexes happens at index creation
   time (i.e., index definition time).  To keep things simple for now,
-  we assume that the number of PIndexes that are allocated per index
-  doesn't change over the life of an index (although that might be a
-  future feature).
+  we assume for now that there's no repartitioning or
+  splitting/merging of PIndexes (although we've left room where that
+  can become a future feature).
 
 * As the cbft cluster topology changes, however, the assignment of
   which cbft nodes are responsible for which PIndexes can change, due
-  to reassignments from a cbft subsystem called the planner.  e.g.,
-  cbft node 00 is responsible for "PIndex af977b".  When a second
-  cbft node 01 joins the cbft cluster, the planner reassigns PIndex
-  af977b from cbft node 00 to cbft node 01.
+  to reassignments from a cbft subsystem called the planner.
 
 * At index definition time, a PIndex is also configured with a source
   of data (like a couchbase bucket).  That data source will have one
   or more data source partitions (i.e., VBuckets).  For example, the
   beer-sample bucket has 1024 VBuckets.  So, we could say something
   like...
-  * "PIndex af977b" is assigned to cover VBuckets 0 through 199;
-  * "PIndex 34fe22" is assigned to cover VBuckets 200 through 399;
-  * and so on with more PIndexes to cover up to VBucket 1023.
+
+    "PIndex af977b" is assigned to cover VBuckets 0 through 199;
+    "PIndex 34fe22" is assigned to cover VBuckets 200 through 399;
+    and so on with more PIndexes to cover up to VBucket 1023.
 
 * An index can also be configured to be replicated.  In that case, the
-  planner merely assigns a PIndex to more than one cbft node.  Each
-  PIndex replica or instance will be independently built up from from
-  direct DCP streams from KV engines.  That is, cbft uses star
+  planner merely assigns a PIndex to more than one cbft node.
+
+* Each PIndex replica or instance will be independently built up from
+  from direct DCP streams from KV engines.  That is, cbft uses star
   topology for PIndex replication instead of chain topology.  So, we
   could say something like...
-  * PIndex af977b, which is assigned by the planner to cover VBuckets
-    0 through 199, is assigned to cbft nodes 01 and 04.
-  * When cbft node 04 is removed from the cbft cluster, then PIndex
-    af977b is reassigned by the planner to cbft nodes 01 and 02.
 
-Pictorially:
+    PIndex 543aa, which is assigned by the planner to cover VBuckets
+      1000 through 1023, is assigned to cbft nodes A and C.
+    When cbft node C is removed from the cbft cluster, then PIndex
+      543aa is reassigned by the planner to cbft nodes A and B.
+
+A diagram:
 
     index "beer-sample-fts"                          cbft nodes:
       |                                              A  B  C
@@ -112,32 +105,32 @@ Pictorially:
       |
       |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
 
-Above we can see that index "beer-sample-fts" was partitioned into 3
-PIndexes, where PIndex ac923 covers the data from VBuckets 0 through
-499.  Also, replication has been enabled with replica count of 1, so
-the planner has assigned PIndex ac923 to live on multiple cbft nodes:
-A and B.
+Above we can see that the cbft index "beer-sample-fts" was partitioned
+into 3 PIndexes, where PIndex ac923 covers the data from VBuckets 0
+through 499.  Also, replication has been enabled with replica count of
+1, so cbft's planner has assigned PIndex ac923 to exist on multiple
+cbft nodes: A and B.
 
 For more information, please see cbgt's design document (GT), as most
-of the clustering and partitioning logic comes from the generic cbgt
-library.
+of the clustering and partitioning logic comes from the generic,
+reusable cbgt library.
 
 -------------------------------------------------
 # cbftint Design
 
-In this section, we'll describe the planned steps of how ns-server
-will spawn cbft nodes and orchestrate those cbft nodes along with KV
-(memcached/ep-engine) nodes.  And, we'll describe scenarios of
-increasing complexity and how we plan to handle them in methodical,
-step-by-step fashion.
+In this section, we'll describe the proposal of how ns-server will
+spawn cbft nodes and orchestrate those cbft nodes along with KV nodes
+(memcached/ep-engine).  And, we'll describe scenarios of increasing,
+step-by-step complexity and how they'll be handled.
 
 ## Single CB Node, With Full-Text Service Disabled
 
 In a single node couchbase cluster, or a so-called "cluster of one",
 the simplest case is when the user hasn't enabled the cbft (or
-full-text) service type.  In this simple situation, we expect
-ns-server's babysitter on that single couchbase node to not spawn any
-cbft processes.
+full-text) service type.
+
+In this simple situation, we expect ns-server's babysitter to not
+spawn any cbft processes.
 
 NOTE: We don't expect the user to be able to dynammically change the
 enabled service types for an existing, already initialized couchbase
@@ -204,7 +197,7 @@ race each other in order to run their own competing planners; it will
 also be less wasteful than having competing planners throw away work
 when they lose any concurrent re-planning races.
 
-Note that we do not currently support dynamically changing the tags
+NOTE: we do not currently support dynamically changing the "-tags"
 list for a cbft node.  In particular, changing the "pindex" tag (even
 with a cbft process restart) will have complex rebalance-like
 implications of needing PIndex movement; instead, users can
@@ -222,12 +215,14 @@ is, each cbft instance in this design must be ns-server managed.
 This is the data directory where cbft can store its node-specific
 index data and metadata.
 
-(DDIR-RM) By default, ns-server must clear the dataDir directory tree
+(DDIR-RM)
+
+By default, ns-server must clear the dataDir directory tree
 on a brand new couchbase node before starting the cbft process,
 especially the dataDir/cbft.uuid file.  (But not always; see later
-(DNR) regarding delta node recovery).
+regarding delta node recovery (DNR)).
 
-Of note, the dataDir is not planned to be dynamically changable at
+NOTE: the dataDir is not planned to be dynamically changable at
 runtime.  That is, if ns-server mistakenly restarts cbft with a brand
 new, empty, different dataDir, the restarted cbft node will try to
 join the cbft cluster like a brand new additional cbft node (since it
@@ -273,7 +268,7 @@ for cbft's latest stats metrics and counters.  The REST response
 expected by ns-server includes ns-server's REST address (for proper
 stats aggregation), and the extras JSON command-line parameter is a
 way for ns-server to pass down its REST address and other (future)
-information down to cbft.
+information to cbft.
 
 Underneath the hood: the cbgt library treats this extra per-node JSON
 as an opaque string that's just stored as opaque metadata and passed
@@ -288,14 +283,14 @@ awareness (generic, multi-level containment can be specified), and
 node weighting (not yet supported by ns-server), but these don't have
 any difficult design issues.
 
-A future issue would be if ns-server wants to dynamically change these
-extra parameters (e.g., admin allocates more RAM or CPU to a node and
-suddenly the machine is more powerful, or the rack/zone for the node
-is changed).  Right now, the design does not support this case, but in
-the fturue, it'd be fruitful to examine whether a restart of the cbft
-process with the modified parameters should suffice, although with
-possible rebalance-like implications.  For now, the user should
-rebalance the node out and back in with changed parameters.
+NOTE: a future issue would be if ns-server wants to dynamically change
+these extra parameters (e.g., admin allocates more RAM or CPU to a
+node and suddenly the machine is more powerful, or the rack/zone for
+the node is changed).  Right now, the design does not support this
+case, but in the fturue, it'd be fruitful to examine whether a restart
+of the cbft process with the modified parameters should suffice,
+although with possible rebalance-like implications.  For now, the user
+should rebalance the node out and back in with changed parameters.
 
 ## cbft Node Registers Into The Cfg
 
@@ -308,8 +303,8 @@ in the cbft cluster.
 
 In particular, clients/SDK's might be relying on the information
 published in the Cfg to discover the cbft cluster topology (i.e.,
-where are all the PIndexes), perhaps intermediated by a (to be
-specified) server-side REST implementation.
+where are all the PIndexes), and this will perhaps be intermediated by
+a (to be specified) server-side REST implementation.
 
 ----
 ## cbft Is Ready For Index Creations (INDEX-DDL)
@@ -327,16 +322,24 @@ definitions of the cbft clsuter.
 The Cfg system has a subscription feature, so Cfg clients can be
 notified when data in the distributed Cfg changes.
 
-We'll use this feature and introduce a new, separate, standalone
-planner-like program, called the "Managed, Central Planner" (MCP),
-which will be used as a cluster-wide singleton.  ns-server's master
-facilities will spawn, re-spawn and stop a single, cluster-wide
-instance of this new MCP process.
+We'll use this Cfg subscription feature and introduce a new, separate,
+standalone planner-like program, called the "Managed, Central Planner"
+(MCP) which will be used as a cluster-wide singleton that subscribes
+to Cfg changes.
 
-A simple version of the MCP is roughly equivalent to this existing
-cbft command-line option...
+We propose that ns-server's master facilities will spawn and babysit
+this single, cluster-wide instance of this new MCP process.
+
+## An Approximate, Placeholder MCP
+
+A simple, initial version of the MCP is roughly equivalent to this
+existing cbft command-line option...
 
     cbft -tags=planner ...
+
+That is, basically, a cbft that only runs the planner.
+
+### Racing MCP's
 
 There's a possibility that ns-server's master facilities might have
 more than one master running with potential races between concurrent
@@ -344,30 +347,33 @@ masters.  That's suboptimal but survivable, as cbft's planner (and
 MCP) will use CAS-like features in the Cfg to determine Cfg update
 race winners.
 
-Of note, an Enterprise Edition of cbftint might ship with a more
-advanced MCP program, such as a planner than moves PIndexes with
-more efficient orchestration.
-
 ## MCP Updates The Plan (UP0)
 
 The MCP is awoken due to its subscription to Cfg changes (from the
 INDEX-DDL step from above) and splits the index definitions into one
-or more PIndexes.  The MCP then assigns the PIndexes to cbft nodes
-(there's only one cbft node so far, so this is easy; in any case, the
-planner already is able to assign PIndexes across multiple cbft
-nodes).
+or more PIndexes.
 
-The MCP then stores this updated plan into the Cfg.
+The MCP then assigns the PIndexes to cbft nodes (there's only one cbft
+node so far, so this is easy; in any case, cbft's planner already is
+able to assign PIndexes across multiple cbft nodes in a balanced way.
+See the reusable, generic "blance" library for more details:
+https://github.com/couchbaselabs/blance)
 
-A plan then has two major parts:
+The MCP then stores this updated cbft plan into the Cfg.
+
+## What Is A cbft Plan?
+
+A cbft plan then has two major parts:
 * a splitting of logical index definitions into PIndexes;
 * and, an assignment of PIndexes to cbft nodes.
 
 ## cbft Janitors Wake Up To Clean Up The Mess
 
 Individual cbft janitors on the cbft nodes (there's just one cbft node
-so far in this simple case) are awoken due to the Cfg change
-subscriptions (from previous step UP0) and create or shutdown any
+so far in this simple case) are subscribing to Cfg changes and will
+next wake up (due to the previous step UP0).
+
+When a cbft janitor wakes up, it will create or shutdown any
 process-local PIndex instances as appropriate.
 
 That is, a cbft janitor will try to make process-local runtime changes
@@ -377,8 +383,8 @@ stopping any PIndexes on the local cbft node.
 ## DCP Streams Are Started
 
 A PIndex includes enough information for the cbft system to start DCP
-feeds or streams, using the cluster map from the ns-server, where cbft
-can create DCP connections to the appropriate KV-engines.
+feeds or streams, using the VBucket cluster map from the ns-server in
+order to start DCP connections to the appropriate KV-engines.
 
 Since the plan includes the assignment of source partitions (or
 VBuckets) to every PIndex, the DCP streams that are created will have
@@ -399,8 +405,8 @@ automatically by cbft.  These include...
 
 * KV engine restarts
 * ns-server restarts
-* lost connection to KV engine
-* lost connection to ns-server
+* wobbly, lost connection to KV engine
+* wobbly, lost connection to ns-server
 * rebalance, failover, VBucket cluster map changes
 
 Most of this functionality is due to cbft's usage of the cbdatasource
@@ -408,8 +414,10 @@ library: https://github.com/couchbase/go-couchbase/tree/master/cbdatasource
 
 The cbdatasource library has exponential backoff-retry logic when
 either a REST connection to ns-server (for VBucket maps) or a DCP
-streaming connection fails.  Documentation on cbdatasource's
-backoff/retry options (such as timeouts) are here:
+streaming connection fails.
+
+Documentation on cbdatasource's backoff/retry options (such as
+timeouts) are here:
 http://godoc.org/github.com/couchbase/go-couchbase/cbdatasource#BucketDataSourceOptions
 
 cbdatasource also handles when VBuckets are moving or rebalancing,
@@ -419,24 +427,27 @@ cbdatasource also handles when the cbft node restarts, and is able to
 reconnect DCP streams from where the previous DCP stream last left
 off.
 
+### A Worked Example
+
 In our example, we start with our first node...
 
-* cb-00 - cbft enabled
+    cb-00 - cbft enabled
 
 Then, when we add more nodes, as long as those other nodes have cbft
 disabled and cb-00 stays in the cluster, then everything "should just
 work" at this point in the story, even if there are more rebalances,
 failovers, delta-node-recoveries, etc:
 
-* cb-00 - cbft enabled
-* cb-01 - cbft disabled
-* cb-02 - cbft disabled
+    cb-00 - cbft enabled
+    cb-01 - cbft disabled
+    cb-02 - cbft disabled
 
 We're still essentially running just a cbft "cluster" of a single cbft
-node, even though there are multiple KV nodes with VBuckets moving all
-around the place.  The simplification here is that cbft doesn't look
-much different from any other "external" application that happens to
-be using DCP.
+node, even though there are multiple KV nodes with their VBuckets
+moving all around the place.
+
+The simplification here is that cbft doesn't look much different from
+any other "external" application that happens to be using DCP.
 
 ### A Swap Rebalance Case From Tech Support
 
@@ -520,34 +531,37 @@ comes to fruition.
 
 ## Adding More Than One cbft Node
 
-Since IP addresses are now being rewritten and finalized, more
-couchbase nodes can now be added into the cluster with the cbft
-service type enabled.  As each cbft process is started on the new
-nodes, the cbft process registers itself into the Cfg (metakv) system.
+At this point in the design, now that IP addresses are being rewritten
+and handled correctly, more couchbase nodes can now be added into the
+cluster with the cbft service type enabled.
+
+As each new cbft process is started on new nodes, those cbft processes
+register themselves into the Cfg (metakv) system as known and wanted
+cbft nodes.
 
 Whenever the cbft cluster membership information changes, the MCP will
 notice (since the MCP is subscribing to Cfg changes), and the MCP will
 re-plan any assignments of PIndexes to the newly added cbft nodes.
 
-The cbft janitors running on the existing and new cbft nodes will see
-that the plan has changed and stop-&-start PIndexes as needed,
+The cbft janitors running on the existing and new cbft nodes will then
+see that the plan has changed and stop-&-start PIndexes as needed,
 automatically stopping/starting any related DCP feeds as necessary.
 
 This means adding more than one cbft node is now supported; for
 example, the design now supports simple, homogeneous topologies:
 
-* cb-00 - cbft enabled
-* cb-01 - cbft enabled
-* cb-02 - cbft enabled
-* cb-03 - cbft enabled
+    cb-00 - cbft enabled
+    cb-01 - cbft enabled
+    cb-02 - cbft enabled
+    cb-03 - cbft enabled
 
 And the design also support heterogeneous "multi-dimensional scaling"
 (MDS) topologies:
 
-* cb-00 - cbft enabled
-* cb-01 - cbft disabled
-* cb-02 - cbft disabled
-* cb-03 - cbft enabled
+    cb-00 - cbft enabled
+    cb-01 - cbft disabled
+    cb-02 - cbft disabled
+    cb-03 - cbft enabled
 
 ## Rebalance Out A cbft Node
 
@@ -556,7 +570,7 @@ node has the cbft service type enabled, here are the proposed steps to
 handle rebalancing out a cbft node:
 
 * (RO-10) ns-server invokes a (to be written) command-line program
-  that unregisters a cbft node from the Cfg (UNREG_CBFT_NODE).
+  (UNREG_CBFT_NODE) that unregisters a cbft node from the Cfg.
 
 * (RO-20) ns-server shuts down the cbft process on the to-be-removed
   couchbase node.
@@ -564,6 +578,8 @@ handle rebalancing out a cbft node:
 * (RO-30) ns-server deletes or cleans out the dataDir subdirectory
   tree that was being used by cbft, especially the dataDir/cbft.uuid
   file.
+
+## UNREG_CBFT_NODE
 
 This UNREG_CBFT_NODE command-line program (final name is TBD), when
 run on the to-be-removed node, roughly looks like the following
@@ -580,23 +596,27 @@ run UNREG_CBFT_NODE on its master ns-server node.
 The above steps and invocation of UNREG_CBFT_NODE can happen at the
 end of ns-server's rebalance-out steps for a node, which is an
 approach that favors keeping cbft mostly stable during rebalance.
-That means hitting "Stop Rebalance" would leave cbft mostly as-is on a
-node-by-node basis.
+
+That means hitting "Stop Rebalance" would leave cbft's indexes mostly
+as-is on a node-by-node basis.
 
 ## Swap Rebalance Of cbft Nodes
 
-The blance library used by cbgt for partition map computation is meant
-to handle swap rebalance just as a natural edge case.  In other words,
-this design depends on blance to get swap rebalance right, with no
-extra special code or case'ing needed to handle swap rebalance
-scenarios.
+The blance library used by cbgt to calcualte balanced partition maps
+was designed to handle swap rebalance as just an edge case that's
+handled "for free".
+
+In other words, this design depends on blance to get swap rebalance
+right, with no extra special codepaths needed.
 
 ## Unable To Meet Replica Counts
 
 Removing a cbft node (and, not having enough cbft nodes in the first
 place) can mean that the MCP is not able to meet replication
-requirements for its PIndexes.  i.e., user asks for replica count of 2
-for an index, but there's only 1 cbft node in the cbft cluster.
+requirements for its PIndexes.
+
+For example, the user asks for replica count of 2 for an index, but
+there's only 1 cbft node in the cbft cluster.
 
 cbft needs to provide a REST API (perhaps, as part of stats monitoring
 REST responses) that allows ns-server to detect this situation of "not
@@ -797,71 +817,27 @@ to how ns-server computes a fast-forward VBucket map.
 
 The MCP can then repeatedly choose some subset of the
 fast-forward-plan to publish in throttled steps to the janitors (via
-Cfg updates), so that subscribing janitors will make progress.  In
-other words, the MCP is roughly using the Cfg as a persistent,
-distributed message blackboard, where the MCP performs recurring,
-episodic writes to the janitor-visible plan in the Cfg to move the
-distributed cbft janitors closer and closer to the final, fast-forward
-plan.
+Cfg updates), so that subscribing janitors will make throttled
+progress.
 
-In pseudocode, the MCP roughly does the following, running concurrent
-worker activity across nodes...
+In other words, we propose that the MCP will roughly use the Cfg as a
+persistent, distributed message blackboard, where the MCP performs
+recurring, episodic writes to the janitor-visible plan in the Cfg to
+move the distributed cbft janitors closer and closer to the final,
+fast-forward plan.
 
-    M := 1 // Max number of PIndex builds per cluster.
-    N := 1 // Max concurrent inbound PIndex builds per node.
+The core throttling, reassignment orchestration algorithm will be
+implemented as a reusable, generic feature of the blance library.
+See: http://godoc.org/github.com/couchbaselabs/blance#OrchestrateMoves
 
-    for node in nodes {
-      for i := 0; i < N; i++ {
-        go nodeWorker(node)
-      }
-    }
+### Heuristics To Ordering PIndex Reassignments
 
-    for i := 0; i < M; i++ {
-      // Tokens available to throttle concurrency.  The # of outstanding
-      // tokens might be changed dynamically and can also be used
-      // to synchronize with any optional, external orchestrator
-      // (i.e., ns-server wants cbft to do X number of moves with
-      // M concurrency before forcing a compaction).
-      nodeWorkerTokensSupplyCh <- i
-    }
+In the orchestration algorithm, choosing which reassignments to
+perform next is expected to be similar to a sorting problem, albeit
+complicated by the issue that it's heuristically driven (not provably
+optimal).
 
-    func nodeWorker(node) {
-      while true {
-        nodeWorkerToken, ok := <-nodeWorkerTokensSupplyCh
-        if !ok then break // Perhaps done or was cancelled (by ns-server?).
-
-        pindexToReassign, oldNode, ok :=
-          calculateNextPIndexToAssignToNode(node)
-        if !ok then break // No more incoming PIndexes for this node.
-
-        // Updates janitor-visible plan.
-        assignNodeToPIndex(pindexToReassign, node)
-
-        wasCancelled := waitForPIndexReadyOnNode(pindexToReassign, node)
-        if wasCancelled then break
-
-        if oldNode != nil {
-          // Updates janitor-visible plan.
-          unassignNodeToPIndex(pindexToReassign, oldNode)
-
-          wasCancelled := waitForPIndexRemovedFromNode(pindexToReassign, oldNode)
-          if wasCancelled then break
-        }
-
-        nodeWorkerTokensReleaseCh <- nodeWorkerToken
-      }
-    }
-
-The actual reassignment orchestration algorithm will be implemented as
-a reusable, generic feature of the blance library.  See:
-http://godoc.org/github.com/couchbaselabs/blance#OrchestrateMoves
-
-### Ordering PIndex Reassignments
-
-Regarding the handwave "calculateNextPIndexToAssignToNode" function,
-choosing which reassignments to perform next should be a sorting
-problem, albeit complicated by the issue that it's heuristically
-driven (not provably optimal).  For example:
+For example, here might be some heuristics to consider:
 
 * First, favor easy promotions (e.g., a secondary replica graduating
   to 0'th replica) so that queries can have more coverage across all
@@ -907,6 +883,84 @@ ordering/sorting algorithm.
   and less able to handle yet another a DCP backfill.
 
 * TODO: consider how about some randomness?
+
+### Some Example PIndex Moves
+
+For example, imagine we have five PIndexes (00 through 04), and four
+nodes: a, b, c and d.  We might have to have the following "before"
+rebalance and "after" rebalance states, along with these moves to get
+from the before state to the after state...
+
+                              notes
+
+    [PIndex 00]
+            master|replica
+            ------|--------
+    before:  a    |
+             a +b |           00.1 - add b as master
+            -a  b |           00.2 - del a
+    after:      b |
+
+
+    [PIndex 01]
+            master|replica
+            ------|--------
+    before:  a    | b  c
+             a +b |-b  c      01.1 - promote b from replica to master
+            -a  b |    c      01.2 - del a
+                b |    c +d   01.3 - add d as replica
+    after:      b |    c  d
+
+
+    [PIndex 02]
+            master|replica
+            ------|--------
+    before:  a    |    b
+             a +b |   -b      02.1 - promote b from replica to master
+            -a  b |+a         02.2 - demote a from master to replica
+    after:      b | a
+
+
+    [PIndex 03]
+            master|replica
+            ------|--------
+    before:  a    |    b
+             a +c |    b
+            -a  c |+a  b
+                c | a -b
+    after:      c | a
+
+
+    [PIndex 04]
+            master|replica
+            ------|--------
+    before:  a    | b
+             a +c | b
+            -a  c | b
+                c | b +d
+                c |-b  d
+    after:      c |    d
+
+The lines in between the "before" and "after" lines are the proposed
+moves that need to be made, along with comments/notes (like "01.1")
+that describe each move.
+
+The algorithm to compute the moves to get from "before" to "after" is
+pretty short:
+
+    for state in [master, replica]:
+      handle demotions of superiorTo(state) to state;
+      handle promotions of inferiorTo(state) to state;
+      handle clean additions of state;
+      handle clean removals of state;
+
+Additionally, you can look at the above PIndex move tables in another
+way... for example, by just focusing on the "a" columns, you can just
+focus in on all the moves related to node a.
+
+However, some moves for node "a" have dependencies.  For example, for
+PIndex 00, you can't do move 00.2 until move 00.1 ("add b as master")
+regarding node b is done first.
 
 ### Controlled Compactions of PIndexes
 
