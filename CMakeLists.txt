@@ -36,5 +36,5 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbaselabs/cbft/cmd/cbft
   ${_forestdb_dep}
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
-  GOTAGS "forestdb"
+  GOTAGS "forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbft)
