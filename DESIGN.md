@@ -53,9 +53,9 @@ For those needing a quick recap of cbft's main design concepts...
 * An index in cbft is split or partitioned into multiple index
   partitions, known as PIndexes.
 
-* Roughly speaking, a PIndex has a 1-to-1 relationship with a bleve
-  full-text index (although cbgt was designed to support different
-  types of indexes).
+* Roughly speaking, a PIndex on a cbft node has a 1-to-1 relationship
+  with a bleve full-text index (although cbgt was designed to support
+  different types of indexes).
 
 * To process a query request, cbft will distribute or scatter the
   request to the multiple PIndexes and gather responses before sending
