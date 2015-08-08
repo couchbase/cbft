@@ -96,6 +96,7 @@ For those needing a quick recap of cbft's main design concepts...
       543aa is reassigned by the planner to cbft nodes A and B.
 
 A diagram:
+
                                                      cbft nodes:
     Cfg -----------------------------------------------+--+--+
       \                                                |  |  |
