@@ -416,7 +416,10 @@ automatically by cbft.  These include...
 * ns-server restarts
 * wobbly, lost connection to KV engine
 * wobbly, lost connection to ns-server
-* rebalance, failover, VBucket cluster map changes
+* rebalance
+* failover
+* add-back's & delta node recovery
+* VBucket cluster map changes
 
 Most of this functionality is due to cbft's usage of the cbdatasource
 library: https://github.com/couchbase/go-couchbase/tree/master/cbdatasource
