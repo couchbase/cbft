@@ -97,14 +97,18 @@ For those needing a quick recap of cbft's main design concepts...
 
 A diagram:
 
-    index "beer-sample-fts"                          cbft nodes:
-      | (maxPartitionsPerPIndex == 500)              A  B  C
-      |                                              -----------
-      |--- PIndex ac923 (covers VBuckets 0-499)      y  y
-      |
-      |--- PIndex bdf11 (covers VBUckets 500-999)       y  y
-      |
-      |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
+                                                     cbft nodes:
+    Cfg -----------------------------------------------+--+--+
+      \                                                |  |  |
+       \                                               |  |  |
+       index "beer-sample-fts"                         |  |  |
+        | (maxPartitionsPerPIndex == 500)              A  B  C
+        |                                             ---------
+        |--- PIndex ac923 (covers VBuckets 0-499)      y  y
+        |
+        |--- PIndex bdf11 (covers VBUckets 500-999)       y  y
+        |
+        |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
 
 Above we can see that the cbft index "beer-sample-fts" was partitioned
 into 3 PIndexes, where PIndex ac923 covers the data from VBuckets 0
