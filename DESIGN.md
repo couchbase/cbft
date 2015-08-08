@@ -482,7 +482,9 @@ leaving node D in the cluster...
     cbft : y
 
 This case should work because cbft only contacts its local ns-server
-on 127.0.0.1 to get the cluster map.
+on 127.0.0.1 to get the cluster map.  Even if ns-server's master node
+changed, that is, we're depending on cbft's local ns-server to have
+the correct, eventually-propagated information.
 
 ## Handling IP Address Changes
 
