@@ -96,7 +96,6 @@ For those needing a quick recap of cbft's main design concepts...
       543aa is reassigned by the planner to cbft nodes A and B.
 
 A diagram:
-
                                                      cbft nodes:
     Cfg -----------------------------------------------+--+--+
       \                                                |  |  |
@@ -110,11 +109,15 @@ A diagram:
         |
         |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
 
-Above we can see that the cbft index "beer-sample-fts" was partitioned
-into 3 PIndexes, where PIndex ac923 covers the data from VBuckets 0
-through 499.  Also, replication has been enabled with replica count of
-1, so cbft's planner has assigned PIndex ac923 to exist on multiple
-cbft nodes: A and B.
+Above we can see the information stored in the Cfg.  First off, there
+are 3 cbft nodes.  Then, a cbft index "beer-sample-fts" was defined,
+which was then partitioned by the cbft planner into 3 PIndexes (due to
+the user-defined maxPartitionsPerPIndex parameter).  PIndex ac923, for
+example, covers the data from VBuckets 0 through 499.  Also,
+replication has been enabled, so cbft's planner has assigned PIndex
+ac923 to exist on multiple cbft nodes: A and B.  The cbft janitor
+running on node A can read the Cfg and see that PIndexes ac923 and
+543aa must be created and maintained on node A.
 
 For more information, please see cbgt's design document (GT), as most
 of the clustering and partitioning logic comes from the generic,
