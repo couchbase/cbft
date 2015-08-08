@@ -105,7 +105,7 @@ A diagram:
         |                                             ---------
         |--- PIndex ac923 (covers VBuckets 0-499)      y  y
         |
-        |--- PIndex bdf11 (covers VBUckets 500-999)       y  y
+        |--- PIndex bdf11 (covers VBuckets 500-999)       y  y
         |
         |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
 
