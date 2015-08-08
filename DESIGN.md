@@ -74,11 +74,12 @@ For those needing a quick recap of cbft's main design concepts...
 * At index definition time, a PIndex is also configured with a source
   of data (like a couchbase bucket).  That data source will have one
   or more data source partitions (i.e., VBuckets).  For example, the
-  beer-sample bucket has 1024 VBuckets.  So, we could say something
-  like...
+  beer-sample bucket has 1024 VBuckets.  There's an assignment of
+  VBuckets to PIndexes, controlled via a maxPartitionsPerPIndex
+  configuration parameter.  So, we could say something like...
 
-    "PIndex af977b" is assigned to cover VBuckets 0 through 199;
-    "PIndex 34fe22" is assigned to cover VBuckets 200 through 399;
+    "PIndex ac923" is assigned to cover VBuckets 0 through 499;
+    "PIndex bdf11" is assigned to cover VBuckets 500 through 999;
     and so on with more PIndexes to cover up to VBucket 1023.
 
 * An index can also be configured to be replicated.  In that case, the
@@ -97,7 +98,7 @@ For those needing a quick recap of cbft's main design concepts...
 A diagram:
 
     index "beer-sample-fts"                          cbft nodes:
-      |                                              A  B  C
+      | (maxPartitionsPerPIndex == 500)              A  B  C
       |                                              -----------
       |--- PIndex ac923 (covers VBuckets 0-499)      y  y
       |
