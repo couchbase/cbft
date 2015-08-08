@@ -414,6 +414,7 @@ automatically by cbft.  These include...
 
 * KV engine restarts
 * ns-server restarts
+* babysitter restarts
 * wobbly, lost connection to KV engine
 * wobbly, lost connection to ns-server
 * rebalance
