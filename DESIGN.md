@@ -624,7 +624,7 @@ as-is on a node-by-node basis.
 
 ## Swap Rebalance Of cbft Nodes
 
-The blance library used by cbgt to calcualte balanced partition maps
+The blance library used by cbgt to calculate balanced partition maps
 was designed to handle swap rebalance as just an edge case that's
 handled "for free".
 
