@@ -105,11 +105,11 @@ A diagram:
        index "beer-sample-fts"                         |  |  |
         | (maxPartitionsPerPIndex == 500)              A  B  C
         |                                             ---------
-        |--- PIndex ac923 (covers VBuckets 0-499)      y  y
+        |--- PIndex ac923 (covers VBuckets 0-499)      1  2
         |
-        |--- PIndex bdf11 (covers VBuckets 500-999)       y  y
+        |--- PIndex bdf11 (covers VBuckets 500-999)       1  2
         |
-        |--- PIndex 543aa (covers VBuckets 1000-1023)  y     y
+        |--- PIndex 543aa (covers VBuckets 1000-1023)  2     1
 
 Above we can see the information stored in the Cfg.  First off, there
 are 3 cbft nodes.  Then, a cbft index "beer-sample-fts" was defined,
