@@ -1362,7 +1362,20 @@ changes should have no affect on cbft and its usage of cbauth/metakv.
 
 ## TLS - TLS/SSL support.
 
-TODO.
+In an SSL situation, cbft may need to go through a local SSL proxy
+(provided by n-sserver) in order contact other nodes (such as for
+queries).
+
+TODO.  The SSL support may be on a per-index basis, or perhaps on a
+per-cluster basis.  More research needed.
+
+### SSL Enabling/Disabling
+
+One feature to consider is the ability for the user to dynamically
+enable/disable SSL.
+
+TODO.  The proposed design is that ns-server restart cbft with the
+correct bindHTTP or SSL related parameters on any changes.
 
 ## HC - Health Checks.
 
