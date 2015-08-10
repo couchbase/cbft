@@ -1,6 +1,6 @@
 cbft + couchbase Integration Design Document (cbftint)
 
-Status: DRAFT-05
+Status: DRAFT-06
 
 This design document focuses on the integration of cbft into Couchbase
 Server; a.k.a. "cbftint".  Extra emphasis is given to clustering
@@ -13,9 +13,10 @@ Brief summary:
 * cbft will store its configuration metadata into ns-server's metakv
   system.
 
-* For rebalancing, ns-server will perform its existing rebalancing
-  work, but as a last, additional step, ns-server will request cbft to
-  perform rebalancing of cbft's index partitions.
+* For rebalancing, ns-server will finish all its existing rebalancing
+  work (VBucket and view/GSI rebalancing), and then request a new cbft
+  subsystem called Master, Central Planner (MCP) to perform
+  rebalancing of cbft's index partitions.
 
 -------------------------------------------------
 # Links
@@ -490,6 +491,26 @@ the correct, eventually-propagated information.
 
 (IPADDR)
 
+UPDATE: Discussed IP address changes with Aliaksey A., and he's a
+strong proponent that we redesign cbft/cbgt to use UUID's for node
+identifiers.  He has several battle stories to tell where the morale
+is that the ns-server team wished that node UUID's had been used from
+day one: wrong version of nodes reappearing with same non-UUID
+identifiers; failures during of IP-address rewrites; jankiness of the
+address rewrites codepaths; etc).  See:
+https://github.com/couchbaselabs/cbgt/issues/25
+
+The UUID based design: each cbft node should have a globally unique,
+generated node UUID that isn't overloaded with networking information
+like the bindHttp parameter.  In addition, there would need to be a
+separate mapping that allows clients (and cbft's queryer) to translate
+from logical cbft node UUID's to actual IP addresses.  That
+translation map or level of indirection can then be more easily,
+dynamically changed to handle IP address changes.
+
+The old IPADDR design proposal (based on bindHttp rewrites) is still
+kept here for now...
+
 One issue: as soon as the second node cb-01 was added, the IP address
 of cb-00 might change (if not already explicitly specified to
 ns-server during cb-00's initialization web UI/REST screens).  This is
@@ -528,28 +549,6 @@ and cb-01 are able to use the same Cfg (metakv) system.
 Assumption: this design assumes that once an IP address is rewritten
 and finalized, the IP address no longer changes again for a couchbase
 node.
-
-As an alternative (possible but rejected) design: instead of using the
-proposed "bindHttp" approach above, we could have each cbft node
-instead have a globally unique, generated node UUID that isn't
-overloaded with networking information.  In addition, there would need
-to be a separate mapping that allows clients (and cbft's queryer) to
-translate from logical cbft node UUID's to actual IP addresses.  That
-translation map or level of indirection can then be more easily,
-dynamically changed to handle IP address changes.  This alternative
-design idea, however, requires more cbft changes and its extra level
-of indirection optimizes for an uncommon case (IP address changing) so
-this alternative design isn't as favored.  One potential
-consideration, though, is ns-server's proposed TCMP design relies on
-using actual UUID's per node, which will need reexamination if TCMP
-comes to fruition.
-
-UPDATE: Talked with Aliaksey A., and he's a strong proponent that we
-use the UUID based approach.  He has several battle stories to tell
-where the morale is that the ns-server team wished that node UUID's
-had been used from day one: wrong version of nodes reappearing with
-same non-UUID identifiers; failures during of IP-address rewrites;
-jankiness of the address rewrites codepaths; etc).
 
 ## Adding More Than One cbft Node
 
