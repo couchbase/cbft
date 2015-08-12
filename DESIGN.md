@@ -491,26 +491,6 @@ the correct, eventually-propagated information.
 
 (IPADDR)
 
-UPDATE: Discussed IP address changes with Aliaksey A., and he's a
-strong proponent that we redesign cbft/cbgt to use UUID's for node
-identifiers.  He has several battle stories to tell where the morale
-is that the ns-server team wished that node UUID's had been used from
-day one: wrong version of nodes reappearing with same non-UUID
-identifiers; failures during of IP-address rewrites; jankiness of the
-address rewrites codepaths; etc).  See:
-https://github.com/couchbaselabs/cbgt/issues/25
-
-The UUID based design: each cbft node should have a globally unique,
-generated node UUID that isn't overloaded with networking information
-like the bindHttp parameter.  In addition, there would need to be a
-separate mapping that allows clients (and cbft's queryer) to translate
-from logical cbft node UUID's to actual IP addresses.  That
-translation map or level of indirection can then be more easily,
-dynamically changed to handle IP address changes.
-
-The old IPADDR design proposal (based on bindHttp rewrites) is still
-kept here for now...
-
 One issue: as soon as the second node cb-01 was added, the IP address
 of cb-00 might change (if not already explicitly specified to
 ns-server during cb-00's initialization web UI/REST screens).  This is
@@ -518,37 +498,18 @@ because ns-server has a feature that supports late-bound IP-address
 discovery, where IP-addresses can be (re-)assigned once a 2nd node
 appears in a couchbase cluster.
 
-At this point, the cbft node membership metadata stored in the Cfg by
-cbft includes the -bindHttp ADDR:PORT value from the command line.
-cbft uses that bindHttp ADDR:PORT as both a unique cbft node
-identifier and also when a cbft node wants to talk to other cbft nodes
-(such as during scatter/gather index queries).
-
-A simple proposal is that when ns-server discovers it must change the
-IP address of a couchbase node (such as when cb-01 is added to the
-"cluster" of cb-00), then ns-server must run some additional
-(proposed) work...
-
-* ns-server stops cbft's MCP (Managed, Central Planner) on the master
-  ns-server node.
-* ns-server stops cbft.
-* ns-server invokes a (proposed, to be specified) synchronous
-  command-line tool/program that atomically rewrites the bindHttp
-  ADDR:PORT's in the Cfg (e.g., from 0.0.0.0:9110 to cb-00:9110).
-* ns-server restarts cbft with the new -bindHttp ADDR:PORT
-  (i.e., -bindHttp=cb-00:9110).
-* ns-server restarts cbft's MCP.
-
-The above work should happen before any actual node joining or
+To handle an IP address change, we propose that ns-server restart cbft
+with the appropriate -bindHttp command-line parameter.  Ideally, this
+restart should happen ideally before any actual node joining or
 rebalancing occurs.
 
-On cb-01, the cbft process should not have been started by ns-server
-until after node joining has completed to the point where both cb-00
-and cb-01 are able to use the same Cfg (metakv) system.
+Without a restart of cbft that uses the correct -bindHttp parameter,
+where cbft continues to use its old 0.0.0.0:PORT -bindHttp values,
+distributed queries of clustered cbft nodes will not work correctly.
 
-Assumption: this design assumes that once an IP address is rewritten
-and finalized, the IP address no longer changes again for a couchbase
-node.
+Underneath the hood, cbft tracks in the Cfg the mapping of cbft node
+UUID's to -bindHTTP host:port network addresses.  This change of
+bindHttp will not cause a replanning of the PIndex layout plans.
 
 ## Adding More Than One cbft Node
 
@@ -583,6 +544,11 @@ And the design also support heterogeneous "multi-dimensional scaling"
     cb-01 - cbft disabled
     cb-02 - cbft disabled
     cb-03 - cbft enabled
+
+Related: one edge case to consider for testing would be trying to add
+and rebalance a couchbase node X to an existing couchbase cluster,
+when that node X isn't a clean, newly-installed node, but instead
+already has a FTS index on it.
 
 ## Rebalance Out A cbft Node
 
