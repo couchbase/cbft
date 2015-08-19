@@ -457,7 +457,8 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (uint64, error) {
+func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
+	uint64, error) {
 	return t.bindex.DocCount()
 }
 
@@ -556,6 +557,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	w.Write(prefixPIndexStoreStats)
 
 	t.m.Lock()
+
 	t.stats.WriteJSON(w)
 
 	if t.bindex != nil {
