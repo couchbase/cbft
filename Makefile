@@ -48,7 +48,7 @@ test-full:
 	$(MAKE) test CBFT_TAGS="full"
 
 coverage:
-	go test -coverprofile=coverage.out -covermode=count
+	go test -tags "debug kagome $(CBFT_TAGS)" -coverprofile=coverage.out -covermode=count
 	go tool cover -html=coverage.out
 
 # -------------------------------------------------------------------
