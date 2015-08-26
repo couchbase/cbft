@@ -36,7 +36,7 @@ gen-bindata:
 	go fmt bindata_assetfs.go
 
 gen-docs: cmd/cbft_docs/main.go
-	go build -o ./cbft_docs ./cmd/cbft_docs
+	go build $(goflags) -o ./cbft_docs ./cmd/cbft_docs
 	./cbft_docs > docs/api-ref.md
 	./dist/gen-command-docs > docs/admin-guide/command.md
 

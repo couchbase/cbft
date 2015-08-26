@@ -20,7 +20,7 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "3.1.0",
+        "implVersion": "4.0.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
@@ -329,9 +329,8 @@ Sample response:
         "TotSaveNodeDef": 2,
         "TotSaveNodeDefGetErr": 0,
         "TotSaveNodeDefOk": 2,
-        "TotSaveNodeDefSetErr": 0,
-        "TotSaveNodeDefUUIDErr": 0,
-        "TotSaveNodeDefUUIDTakenErr": 0
+        "TotSaveNodeDefSame": 0,
+        "TotSaveNodeDefSetErr": 0
       },
       "pindexes": {
         "myFirstIndex_6cc599ab7a85bf3b_0": null
@@ -463,7 +462,7 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "3.1.0",
+        "implVersion": "4.0.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
@@ -488,13 +487,13 @@ Sample response:
       "indexDefsCAS": 3,
       "indexDefsErr": null,
       "nodeDefsKnown": {
-        "implVersion": "3.1.0",
+        "implVersion": "4.0.0",
         "nodeDefs": {
-          "0.0.0.0:8095": {
+          "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8095",
-            "implVersion": "3.1.0",
+            "implVersion": "4.0.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -505,13 +504,13 @@ Sample response:
       "nodeDefsKnownCAS": 1,
       "nodeDefsKnownErr": null,
       "nodeDefsWanted": {
-        "implVersion": "3.1.0",
+        "implVersion": "4.0.0",
         "nodeDefs": {
-          "0.0.0.0:8095": {
+          "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8095",
-            "implVersion": "3.1.0",
+            "implVersion": "4.0.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -522,7 +521,7 @@ Sample response:
       "nodeDefsWantedCAS": 2,
       "nodeDefsWantedErr": null,
       "planPIndexes": {
-        "implVersion": "3.1.0",
+        "implVersion": "4.0.0",
         "planPIndexes": {
           "myFirstIndex_6cc599ab7a85bf3b_0": {
             "indexName": "myFirstIndex",
@@ -641,7 +640,7 @@ Sample response:
       },
       "numCPU": 8,
       "os": "darwin",
-      "versionData": "3.1.0",
+      "versionData": "4.0.0",
       "versionMain": "v0.2.0"
     }
 

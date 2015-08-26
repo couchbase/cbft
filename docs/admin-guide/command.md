@@ -40,6 +40,8 @@ That will print out usage/help output...
           optional directory path where local index data and
           local config files will be stored for this node;
           default is 'data'.
+      -e, -extra extra info
+          extra info you want stored with this node
       -h, -H, -?, -help 
           print this usage message and exit.
       -register STATE
