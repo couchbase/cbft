@@ -581,6 +581,26 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		w.Write(cbgt.JsonCloseBrace)
 	}
 
+	w.Write([]byte(`,"partitions":{`))
+	first := true
+	t.m.Lock()
+	for partition, bdp := range t.partitions {
+		if first {
+			w.Write([]byte(`"`))
+		} else {
+			w.Write([]byte(`,"`))
+		}
+		w.Write([]byte(partition))
+		w.Write([]byte(`":{"seq":`))
+		w.Write([]byte(strconv.FormatUint(bdp.seqMax, 10)))
+		w.Write([]byte(`,"uuid":"`))
+		w.Write([]byte(bdp.lastUUID))
+		w.Write([]byte(`"}`))
+		first = false
+	}
+	t.m.Unlock()
+	w.Write(cbgt.JsonCloseBrace)
+
 	w.Write(cbgt.JsonCloseBrace)
 
 	return nil
