@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"strings"
@@ -103,6 +104,20 @@ func main() {
 			return
 		}
 	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("main: os.Getwd, err: %#v", err)
+		return
+	}
+	log.Printf("main: curr dir: %q", wd)
+
+	dataDirAbs, err := filepath.Abs(flags.DataDir)
+	if err != nil {
+		log.Fatalf("main: filepath.Abs, err: %#v", err)
+		return
+	}
+	log.Printf("main: data dir: %q", dataDirAbs)
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
