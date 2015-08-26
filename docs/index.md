@@ -28,7 +28,7 @@ As a developer preview, some disclaimers and limitations...
 
 * cbft has not been performance optimized.
 
-* cbft's API are still subject to large, potentially
+* cbft's API's are still subject to large, potentially
   backwards-incompatible changes.
 
 * cbft's file storage backends are still subject to change.
