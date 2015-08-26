@@ -211,7 +211,7 @@ your input!</p>
 <p>cbft has not been performance optimized.</p>
 </li>
 <li>
-<p>cbft's API are still subject to large, potentially
+<p>cbft's API's are still subject to large, potentially
   backwards-incompatible changes.</p>
 </li>
 <li>
@@ -220,6 +220,12 @@ your input!</p>
 <li>
 <p>partial index rollbacks are not yet supported by cbft developer
   preview.</p>
+</li>
+<li>
+<p>cbft does not handle the bucket FLUSH command properly yet.  If you
+  get into a stuck cbft index due to a bucket FLUSH operation, your
+  best recourse is to delete and recreate your index.
+  https://github.com/couchbaselabs/cbft/issues/28</p>
 </li>
 </ul>
 <h1 id="getting-started">Getting started</h1>

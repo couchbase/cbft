@@ -187,6 +187,11 @@ Flags:
              configuration provider manages a configuration
              for a single, unclustered cbft node in a local
              file that's stored in the dataDir;
+      * metakv
+           - manages a cbft cluster configuration in couchbase metakv store;
+             environment variable CBAUTH_REVRPC_URL needs to be set
+             for metakv; for example:
+             'export CBAUTH_REVRPC_URL=http://user:password@localhost:9000/cbft';
       default is 'simple'.
   -container PATH
       optional slash separated path of logical parent containers
@@ -195,6 +200,8 @@ Flags:
       optional directory path where local index data and
       local config files will be stored for this node;
       default is 'data'.
+  -e, -extra extra info
+      extra info you want stored with this node
   -h, -H, -?, -help 
       print this usage message and exit.
   -register STATE
