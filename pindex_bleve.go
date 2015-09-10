@@ -171,8 +171,9 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		kvStoreName = "metrics"
 	}
 
-	bindex, err :=
-		bleve.NewUsing(path, &bleveParams.Mapping, kvStoreName, kvConfig)
+	bindex, err := bleve.NewUsing(path, &bleveParams.Mapping,
+		bleve.Config.DefaultIndexType,
+		kvStoreName, kvConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
 			" kvStoreName: %s, kvConfig: %#v, err: %s",
