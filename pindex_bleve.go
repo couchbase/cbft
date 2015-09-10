@@ -41,8 +41,6 @@ import (
 	"github.com/couchbaselabs/cbgt/rest"
 )
 
-const BLEVE_DEST_INITIAL_BUF_SIZE_BYTES = 40 * 1024 // 40K.
-
 type BleveParams struct {
 	Mapping bleve.IndexMapping     `json:"mapping"`
 	Store   map[string]interface{} `json:"store"`
@@ -82,7 +80,6 @@ type BleveDestPartition struct {
 	seqMaxBuf   []byte       // For binary encoded seqMax uint64.
 	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
 	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
-	buf         []byte       // Batch points to slices of buf, which we reuse.
 	batch       *bleve.Batch // Batch applied when we hit seqSnapEnd.
 
 	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
@@ -795,29 +792,7 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 	// some public Reset() kind of method on bleve.Batch?
 	t.batch = t.bindex.NewBatch()
 
-	if t.buf != nil {
-		t.buf = t.buf[0:0] // Reset t.buf via re-slice.
-	}
-
-	// NOTE: Leave t.seqSnapEnd unchanged in case we're applying the
-	// batch because t.buf got too big.
-
 	return nil
-}
-
-// Appends b to end of t.buf, and returns that suffix slice of t.buf
-// that has the appended copy of the input b.
-func (t *BleveDestPartition) appendToBufUnlocked(b []byte) []byte {
-	if len(b) <= 0 {
-		return b
-	}
-	if t.buf == nil {
-		// TODO: Parameterize initial buf capacity.
-		t.buf = make([]byte, 0, BLEVE_DEST_INITIAL_BUF_SIZE_BYTES)
-	}
-	t.buf = append(t.buf, b...)
-
-	return t.buf[len(t.buf)-len(b):]
 }
 
 // ---------------------------------------------------------
