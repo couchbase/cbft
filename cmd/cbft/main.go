@@ -183,12 +183,7 @@ func main() {
 }
 
 func MainWelcome(flagAliases map[string][]string) {
-	flag.VisitAll(func(f *flag.Flag) {
-		if flagAliases[f.Name] != nil {
-			log.Printf("  -%s=%q\n", f.Name, f.Value)
-		}
-	})
-	log.Printf("  GOMAXPROCS=%d", runtime.GOMAXPROCS(-1))
+	cmd.LogFlags(flagAliases)
 
 	log.Printf("main: registered bleve stores")
 	types, instances := bleveRegistry.KVStoreTypesAndInstances()
