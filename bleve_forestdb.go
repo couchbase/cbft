@@ -15,5 +15,5 @@
 package cbft
 
 import (
-	_ "github.com/blevesearch/bleve/index/store/forestdb"
+	_ "github.com/blevesearch/blevex/forestdb"
 )
