@@ -173,6 +173,8 @@ For sourceType ```couchbase```, an example sourceParams JSON:
     {
       "authUser": "",
       "authPassword": "",
+      "authSaslUser": "",
+      "authSaslPassword": "",
       "clusterManagerBackoffFactor": 0,
       "clusterManagerSleepInitMS": 0,
       "clusterManagerSleepMaxMS": 20000,
