@@ -31,6 +31,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
+	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveHttpMapping "github.com/blevesearch/bleve/http/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
