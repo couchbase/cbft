@@ -69,7 +69,6 @@ dist-meta:
 	cp ./staticx/dist/LICENSE.txt ./dist/out
 	cp ./LICENSE-thirdparty.txt ./dist/out
 	cp ./CHANGES.md ./dist/out
-	awk '{split($$1, a, "/"); printf "  <project revision=\"%s\" path=\"%s\" name=\"%s\"/>\n", $$2, $$1, a[length(a)];}' ./dist/out/manifest.txt > ./dist/out/manifest.projects
 
 dist-build:
 	$(MAKE) build        GOOS=darwin  GOARCH=amd64       CBFT_OUT=./dist/out/cbft.macos.amd64
@@ -86,6 +85,9 @@ dist-clean: clean
 	rm -rf ./dist/out/*
 	rm -rf ./staticx/dist/*
 	git checkout bindata_assetfs.go
+
+manifest.projects: dist-meta
+	awk '{split($$1, a, "/"); printf "  <project revision=\"%s\" path=\"%s\" name=\"%s\"/>\n", $$2, $$1, a[length(a)];}' ./dist/out/manifest.txt > ./dist/out/manifest.projects
 
 # The release target prerequisites...
 #
