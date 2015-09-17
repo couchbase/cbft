@@ -928,7 +928,7 @@ func BleveMetaExtra(m map[string]interface{}) {
 	t, i = bleveRegistry.DateTimeParserTypesAndInstances()
 	br["DateTimeParser"] = map[string][]string{"types": t, "instances": i}
 	t, i = bleveRegistry.FragmentFormatterTypesAndInstances()
-	br["FragmentFormatte"] = map[string][]string{"types": t, "instances": i}
+	br["FragmentFormatter"] = map[string][]string{"types": t, "instances": i}
 	t, i = bleveRegistry.FragmenterTypesAndInstances()
 	br["Fragmenter"] = map[string][]string{"types": t, "instances": i}
 	t, i = bleveRegistry.HighlighterTypesAndInstances()
