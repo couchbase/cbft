@@ -77,7 +77,7 @@ func staticx_dist_license_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/LICENSE.txt", size: 11357, mode: os.FileMode(420), modTime: time.Unix(1442523738, 0)}
+	info := bindata_file_info{name: "staticx/dist/LICENSE.txt", size: 11357, mode: os.FileMode(420), modTime: time.Unix(1442530162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -97,7 +97,7 @@ func staticx_dist_manifest_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/manifest.txt", size: 7791, mode: os.FileMode(420), modTime: time.Unix(1442523738, 0)}
+	info := bindata_file_info{name: "staticx/dist/manifest.txt", size: 7791, mode: os.FileMode(420), modTime: time.Unix(1442530162, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -117,7 +117,7 @@ func staticx_dist_version_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/version.txt", size: 20, mode: os.FileMode(420), modTime: time.Unix(1442523693, 0)}
+	info := bindata_file_info{name: "staticx/dist/version.txt", size: 20, mode: os.FileMode(420), modTime: time.Unix(1442530116, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

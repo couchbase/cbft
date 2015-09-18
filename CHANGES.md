@@ -1,3 +1,33 @@
+# v0.3.0 (2015/09/18)
+
+- bleve: changes for blevex/leveldb
+- bleve: updated to new bleve.NewUsing() indexType API
+- build: Makefile dist-build avoids 386 targets due to cross-build issues
+- build: remove dist-meta manifest.projects gen due to awk dependency
+- build: importing bleve/config package for more bleve features
+- build: added tags to make coverage
+- build: default to forestdb kvstore for Couchbase Server builds
+- build: add forestdb build tag to Couchbase Server builds
+- build: first CMakeLists.txt attempt for couchbase integration
+- build: add list of thirdparty js/css components
+- docs: fix example for new REST query API JSON
+- docs: update docs with authSaslUser/Password REST params
+- general: major refactoring into separate, reusable cbgt library
+- general: use cbgt.LogFlags helper func
+- general: issue 173: log current directory and abs(dataDir) during startup
+- general: add support for specifying node extras from command-line
+- general: merge pull request #159 from nimishzynga/changes
+- general: adding metakv for cfg
+- general: issue:154 added auth hint/help to connection err msg
+- general: merge pull request #153 from nimishzynga/changes
+- REST-API: typo in bleve registry REST metadata for FragmentFormatter
+- REST-API: added partitions uuid's/seq's to /api/stats
+- REST-API: add feed stats
+- REST-API: add handlers for requests made by ns_server
+- REST-API: diag has more /debug/pprof capture
+- REST-API: diag includes /debug/pprof/goroutine?debug=2 output
+- web-UI: optional checkbox shows curl cmd for index recreation
+
 # v0.2.0 (2015/06/18)
 
 The 0.2.0 release has an incompatible REST API change for query
