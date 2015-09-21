@@ -43,5 +43,7 @@ RUN make --directory=/go/src/github.com/couchbaselabs/cbft \
     build \
     dist-clean
 
+RUN rm -rf /go/pkg/*
+
 # Reaching here, we've exercised relevant build/dist steps,
 # leaving a clean, ready-to-use image state.
