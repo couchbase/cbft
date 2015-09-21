@@ -1,3 +1,8 @@
+# v0.3.1 (2015/09/21)
+
+- build: dockerfile cleans up go/pkg dir for no ICU dependencies
+- general: added -uuid cmd-line flag
+
 # v0.3.0 (2015/09/18)
 
 - bleve: changes for blevex/leveldb

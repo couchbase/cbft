@@ -41,7 +41,7 @@ import (
 
 var cmdName = "cbft"
 
-var VERSION = "v0.3.0"
+var VERSION = "v0.3.1"
 
 var expvars = expvar.NewMap("stats")
 

@@ -77,7 +77,7 @@ func staticx_dist_license_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/LICENSE.txt", size: 11357, mode: os.FileMode(420), modTime: time.Unix(1442530162, 0)}
+	info := bindata_file_info{name: "staticx/dist/LICENSE.txt", size: 11357, mode: os.FileMode(420), modTime: time.Unix(1442623466, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -97,12 +97,12 @@ func staticx_dist_manifest_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/manifest.txt", size: 7791, mode: os.FileMode(420), modTime: time.Unix(1442530162, 0)}
+	info := bindata_file_info{name: "staticx/dist/manifest.txt", size: 7791, mode: os.FileMode(420), modTime: time.Unix(1442623466, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _staticx_dist_version_txt = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x2a\x33\xd0\x33\xd2\x33\xd0\x35\x34\x34\xd5\x4d\xb7\x30\xb7\x30\x4e\x36\xb1\xe4\x02\x04\x00\x00\xff\xff\x16\x8d\xc8\x06\x14\x00\x00\x00")
+var _staticx_dist_version_txt = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x2a\x33\xd0\x33\xd6\x33\xd0\x35\xd0\x4d\x37\x4c\x36\xb0\x4c\xb5\x4c\xe1\x02\x04\x00\x00\xff\xff\x5b\x79\x3d\xc3\x12\x00\x00\x00")
 
 func staticx_dist_version_txt_bytes() ([]byte, error) {
 	return bindata_read(
@@ -117,7 +117,7 @@ func staticx_dist_version_txt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/dist/version.txt", size: 20, mode: os.FileMode(420), modTime: time.Unix(1442530116, 0)}
+	info := bindata_file_info{name: "staticx/dist/version.txt", size: 18, mode: os.FileMode(420), modTime: time.Unix(1442623421, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
