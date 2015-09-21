@@ -104,6 +104,7 @@ manifest.projects: dist-meta
 #
 # To release a new version...
 #
+#   git describe    # Find the current version.
 #   git grep v0.0.1 # Look for old version strings.
 #   git grep v0.0   # Look for old version strings.
 #   # Edit/update files, especially cmd/cbft/main.go and mkdocs.yml...
