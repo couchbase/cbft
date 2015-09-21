@@ -33,6 +33,7 @@ type Flags struct {
 	StaticDir  string
 	StaticETag string
 	Tags       string
+	UUID       string
 	Version    bool
 	Weight     int
 	Extra      string
@@ -152,6 +153,11 @@ func initFlags(flags *Flags) map[string][]string {
 			"\n* planner - node can replan cluster-wide resource allocations;"+
 			"\n* queryer - node can execute queries;"+
 			"\ndefault is (\"\") which means all roles are enabled.")
+	s(&flags.UUID,
+		[]string{"uuid"}, "UUID", "",
+		"optional uuid for this node; by default, a previous uuid file"+
+			"\nis read from the dataDir, or a new uuid is auto-generated"+
+			"\nand saved into the dataDir.")
 	b(&flags.Version,
 		[]string{"version", "v"}, "", false,
 		"print version string and exit.")

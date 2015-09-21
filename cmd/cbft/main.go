@@ -15,6 +15,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
@@ -37,6 +38,8 @@ import (
 	"github.com/couchbaselabs/cbgt"
 	"github.com/couchbaselabs/cbgt/cmd"
 )
+
+var cmdName = "cbft"
 
 var VERSION = "v0.3.0"
 
@@ -119,7 +122,7 @@ func main() {
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
-	cfg, err := cmd.MainCfg("cbft", flags.CfgConnect,
+	cfg, err := cmd.MainCfg(cmdName, flags.CfgConnect,
 		flags.BindHttp, flags.Register, flags.DataDir)
 	if err != nil {
 		if err == cmd.ErrorBindHttp {
@@ -134,10 +137,27 @@ func main() {
 		return
 	}
 
-	uuid, err := cmd.MainUUID("cbft", flags.DataDir)
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("%v", err))
-		return
+	uuid := flags.UUID
+	if uuid != "" {
+		uuidPath :=
+			flags.DataDir + string(os.PathSeparator) + cmdName + ".uuid"
+
+		err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
+		if err != nil {
+			log.Fatalf("main: could not write uuidPath: %s\n"+
+				"  Please check that your -data/-dataDir parameter (%q)\n"+
+				"  is to a writable directory where %s can persist data.",
+				uuidPath, flags.DataDir, cmdName)
+			return
+		}
+	}
+
+	if uuid == "" {
+		uuid, err = cmd.MainUUID(cmdName, flags.DataDir)
+		if err != nil {
+			log.Fatalf(fmt.Sprintf("%v", err))
+			return
+		}
 	}
 
 	var tagsArr []string
