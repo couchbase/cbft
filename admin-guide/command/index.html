@@ -239,6 +239,10 @@ Flags:
       * planner - node can replan cluster-wide resource allocations;
       * queryer - node can execute queries;
       default is ("") which means all roles are enabled.
+  -uuid UUID
+      optional uuid for this node; by default, a previous uuid file
+      is read from the dataDir, or a new uuid is auto-generated
+      and saved into the dataDir.
   -v, -version 
       print version string and exit.
   -weight INTEGER
