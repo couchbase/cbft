@@ -28,6 +28,7 @@ type Flags struct {
 	Container  string
 	DataDir    string
 	Help       bool
+	Options    string
 	Register   string
 	Server     string
 	StaticDir  string
@@ -113,6 +114,9 @@ func initFlags(flags *Flags) map[string][]string {
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit.")
+	s(&flags.Options,
+		[]string{"options"}, "KEY=VALUE,...", "",
+		"optional comma-separated key=value pairs for advanced configurations.")
 	s(&flags.Register,
 		[]string{"register"}, "STATE", "wanted",
 		"optional flag to register this node in the cluster as:"+

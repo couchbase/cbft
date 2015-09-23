@@ -171,7 +171,7 @@ func main() {
 		flags.Container, flags.Weight, flags.Extra,
 		flags.BindHttp, flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
-		flags.Server, flags.Register, mr)
+		flags.Server, flags.Register, mr, flags.Options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func MainWelcome(flagAliases map[string][]string) {
 
 func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, extras, bindHttp, dataDir, staticDir, staticETag, server string,
-	register string, mr *cbgt.MsgRing) (
+	register string, mr *cbgt.MsgRing, optionKVs string) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -246,9 +246,19 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	mgr := cbgt.NewManager(cbgt.VERSION, cfg,
+	options := map[string]string{}
+	if optionKVs != "" {
+		for _, kv := range strings.Split(optionKVs, ",") {
+			a := strings.Split(kv, "=")
+			if len(a) >= 2 {
+				options[a[0]] = a[1]
+			}
+		}
+	}
+
+	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
-		extras, bindHttp, dataDir, server, &MainHandlers{})
+		extras, bindHttp, dataDir, server, &MainHandlers{}, options)
 	err := mgr.Start(register)
 	if err != nil {
 		return nil, err
