@@ -173,6 +173,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	bindex, err := bleve.NewUsing(path, &bleveParams.Mapping,
+		// TODO: Make index type configurable: upside_down vs firestorm.
 		bleve.Config.DefaultIndexType,
 		kvStoreName, kvConfig)
 	if err != nil {
