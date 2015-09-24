@@ -172,10 +172,13 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		kvStoreName = "metrics"
 	}
 
+	bleveIndexType, ok := bleveParams.Store["indexType"].(string)
+	if !ok || bleveIndexType == "" {
+		bleveIndexType = bleve.Config.DefaultIndexType
+	}
+
 	bindex, err := bleve.NewUsing(path, &bleveParams.Mapping,
-		// TODO: Make index type configurable: upside_down vs firestorm.
-		bleve.Config.DefaultIndexType,
-		kvStoreName, kvConfig)
+		bleveIndexType, kvStoreName, kvConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
 			" kvStoreName: %s, kvConfig: %#v, err: %s",
