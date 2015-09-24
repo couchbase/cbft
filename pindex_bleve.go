@@ -105,7 +105,7 @@ func NewBleveDest(path string, bindex bleve.Index,
 
 // ---------------------------------------------------------
 
-const bleveQueryHelp = `<a href="https://github.com/blevesearch/bleve/wiki/Query%20String%20Query">
+const bleveQueryHelp = `<a href="http://www.blevesearch.com/docs/Query-String-Query/">
        bleve query syntax help
      </a>`
 
