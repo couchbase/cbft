@@ -76,18 +76,6 @@ For example, for mac OS...
 
     wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
-Note: some platforms support both ```cbft-full``` and ```cbft```
-builds.
-
-- The ```cbft-full``` builds are currently compiled with some
-  platform-specific advanced features (text stemmers, etc).
-
-- The ```cbft``` basic builds are exactly the same across all
-  platforms, for deployment consistency.
-
-For the purposes of these getting started steps, let's just download
-```cbft``` basic builds.
-
 After downloading, then next uncompress what you downloaded...
 
     tar -xzf cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
