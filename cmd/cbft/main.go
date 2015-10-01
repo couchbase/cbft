@@ -34,9 +34,9 @@ import (
 
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
-	"github.com/couchbaselabs/cbft"
-	"github.com/couchbaselabs/cbgt"
-	"github.com/couchbaselabs/cbgt/cmd"
+	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/cmd"
 )
 
 var cmdName = "cbft"

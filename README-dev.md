@@ -2,8 +2,8 @@
 
 ## Dev environment setup
 
-    go get -u github.com/couchbaselabs/cbft/...
-    cd $GOPATH/src/github.com/couchbaselabs/cbft
+    go get -u github.com/couchbase/cbft/...
+    cd $GOPATH/src/github.com/couchbase/cbft
     make prereqs
 
 ## Building cbft
@@ -22,7 +22,7 @@ To get local coverage reports with heatmaps...
 
 To get more coverage reports that include dependencies like the bleve library...
 
-    go test -coverpkg github.com/couchbaselabs/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index \
+    go test -coverpkg github.com/couchbase/cbft,github.com/blevesearch/bleve,github.com/blevesearch/bleve/index \
         -coverprofile=coverage.out \
         -covermode=count && \
     go tool cover -html=coverage.out

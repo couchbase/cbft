@@ -97,7 +97,7 @@ That will print out usage/help output...
         ./cbft -cfg=couchbase:http://cfg-bucket@CB_HOST:8091 \
                -server=http://CB_HOST:8091
     
-    See also: http://github.com/couchbaselabs/cbft
+    See also: http://github.com/couchbase/cbft
     
 ---
 

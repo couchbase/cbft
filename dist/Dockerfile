@@ -34,9 +34,9 @@ RUN git clone git://github.com/couchbase/forestdb /tmp/forestdb && \
 # - forestdb
 # - leveldb
 
-RUN go get -u -v -tags "debug kagome libstemmer" github.com/couchbaselabs/cbft/...
+RUN go get -u -v -tags "debug kagome libstemmer" github.com/couchbase/cbft/...
 
-RUN make --directory=/go/src/github.com/couchbaselabs/cbft \
+RUN make --directory=/go/src/github.com/couchbase/cbft \
     prereqs-dist \
     test \
     coverage \

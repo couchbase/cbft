@@ -39,7 +39,7 @@ As a developer preview, some disclaimers and limitations...
 * cbft does not handle the bucket FLUSH command properly yet.  If you
   get into a stuck cbft index due to a bucket FLUSH operation, your
   best recourse is to delete and recreate your index.
-  https://github.com/couchbaselabs/cbft/issues/28
+  https://github.com/couchbase/cbft/issues/28
 
 # Getting started
 
@@ -64,9 +64,9 @@ of sample JSON documents.
 ## Getting cbft
 
 Download a pre-built cbft from the
-[releases](https://github.com/couchbaselabs/cbft/releases) page...
+[releases](https://github.com/couchbase/cbft/releases) page...
 
-* [https://github.com/couchbaselabs/cbft/releases](https://github.com/couchbaselabs/cbft/releases)
+* [https://github.com/couchbase/cbft/releases](https://github.com/couchbase/cbft/releases)
 
 You can use your favorite web browser to download.
 
@@ -74,7 +74,7 @@ Or, you can use ```wget``` or equivalent command-line tool.
 
 For example, for mac OS...
 
-    wget https://github.com/couchbaselabs/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
+    wget https://github.com/couchbase/cbft/releases/download/v{X.Y.Z}/cbft-v{X.Y.Z-AAA}.macos.amd64.tar.gz
 
 After downloading, then next uncompress what you downloaded...
 
@@ -247,7 +247,7 @@ talk about the cbft with like-minded folks, please have a look at the
 
 To report bugs or feature requests, please use the cbft issue tracker
 currently hosted at
-[github](https://github.com/couchbaselabs/cbft/issues).
+[github](https://github.com/couchbase/cbft/issues).
 
 ---
 

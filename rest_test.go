@@ -26,7 +26,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbase/cbgt"
 )
 
 // Implements ManagerEventHandlers interface.

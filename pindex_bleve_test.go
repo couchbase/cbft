@@ -20,7 +20,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 
-	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbase/cbgt"
 )
 
 func TestManagerRestart(t *testing.T) {

@@ -27,10 +27,10 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/couchbaselabs/cbft"
-	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt"
 
-	cbftCmd "github.com/couchbaselabs/cbft/cmd/cbft"
+	cbftCmd "github.com/couchbase/cbft/cmd/cbft"
 )
 
 func categoryParse(categoryFull string) (string, string, string, string) {

@@ -15,7 +15,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/couchbaselabs/cbgt"
+	"github.com/couchbase/cbgt"
 )
 
 func TestMainStart(t *testing.T) {

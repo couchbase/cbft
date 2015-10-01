@@ -30,7 +30,7 @@ Related documents:
     distributed, replicated, clustered indexes.
   * cbft uses the cbgt library by registering a bleve full-text
     implementation as a plug-in into cbgt.
-  * https://github.com/couchbaselabs/cbgt/blob/master/IDEAS.md (GT)
+  * https://github.com/couchbase/cbgt/blob/master/IDEAS.md (GT)
 * ns-server's design documents
   * https://github.com/couchbase/ns_server/blob/master/doc
   * https://github.com/couchbase/ns_server/blob/master/doc/rebalance-flow.txt (rebalance-flow.txt)
@@ -367,7 +367,7 @@ The MCP then assigns the PIndexes to cbft nodes (there's only one cbft
 node so far, so this is easy; in any case, cbft's planner already is
 able to assign PIndexes across multiple cbft nodes in a balanced way.
 See the reusable, generic "blance" library for more details:
-https://github.com/couchbaselabs/blance)
+https://github.com/couchbase/blance)
 
 The MCP then stores this updated cbft plan into the Cfg.
 
@@ -815,7 +815,7 @@ fast-forward plan.
 
 The core throttling, reassignment orchestration algorithm will be
 implemented as a reusable, generic feature of the blance library.
-See: http://godoc.org/github.com/couchbaselabs/blance#OrchestrateMoves
+See: http://godoc.org/github.com/couchbase/blance#OrchestrateMoves
 
 ### Heuristics To Ordering PIndex Reassignments
 

@@ -31,7 +31,7 @@ IF (DEFINED FORESTDB_TARGET)
   SET (_forestdb_dep DEPENDS ${FORESTDB_TARGET})
 ENDIF (DEFINED FORESTDB_TARGET)
 
-GoInstall (TARGET cbft PACKAGE github.com/couchbaselabs/cbft/cmd/cbft
+GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   ${_forestdb_dep}
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"

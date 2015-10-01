@@ -212,7 +212,7 @@ func initFlags(flags *Flags) map[string][]string {
 		fmt.Fprintf(os.Stderr, "\nExamples:")
 		fmt.Fprintf(os.Stderr, examples)
 		fmt.Fprintf(os.Stderr, "\nSee also:"+
-			" http://github.com/couchbaselabs/cbft\n\n")
+			" http://github.com/couchbase/cbft\n\n")
 	}
 
 	return flagAliases

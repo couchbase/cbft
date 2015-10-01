@@ -19,8 +19,8 @@ import (
 
 	"github.com/blevesearch/bleve"
 
-	"github.com/couchbaselabs/cbgt"
-	"github.com/couchbaselabs/cbgt/rest"
+	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 )
 
 var maxAliasTargets = 50000

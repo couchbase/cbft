@@ -94,10 +94,10 @@ manifest.projects: dist-meta
 #
 # See: ./dist/Dockerfile
 #
-# - Access tokens to be able to publish releases on couchbaselabs/cbft...
+# - Access tokens to be able to publish releases on couchbase/cbft...
 #
 #   export GITHUB_TOKEN=/* a github access token */
-#   export GITHUB_USER=couchbaselabs
+#   export GITHUB_USER=couchbase
 #
 # See: https://help.github.com/articles/creating-an-access-token-for-command-line-use
 #
@@ -138,7 +138,7 @@ release-build:
 		-v $(pwd)/tmp/dist-out:/tmp/dist-out \
 		-v $(pwd)/tmp/dist-site:/tmp/dist-site \
 		$(CBFT_DOCKER) \
-		make -C /go/src/github.com/couchbaselabs/cbft \
+		make -C /go/src/github.com/couchbase/cbft \
 			CBFT_CHECKOUT=$(CBFT_CHECKOUT) \
 			release-build-helper dist-clean
 	(cd ./tmp/dist-out; for f in *.exe; do \
