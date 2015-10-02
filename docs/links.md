@@ -10,7 +10,7 @@ cbft bugs and issues are tracked at [http://github.com/couchbase/cbft/issues](ht
 
 ## Source code
 
-cbft's project source code is hosted at [http://github.com/couchbasee/cbft](http://github.com/couchbase/cbft).
+cbft's project source code is hosted at [http://github.com/couchbase/cbft](http://github.com/couchbase/cbft).
 
 ## License
 
