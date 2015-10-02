@@ -577,7 +577,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			ResponseMatch: map[string]bool{
 				`{"status":"ok","indexDefs":{"uuid":`: true,
 				`"indexDefs":{"idx0":{"type":"bleve`:  true,
-				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null,"nodePlanParams":null,"planFrozen":false}}}`: true,
+				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null,"nodePlanParams":null,"pindexWeights":null,"planFrozen":false}}}`: true,
 			},
 		},
 		{
