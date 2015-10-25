@@ -128,6 +128,9 @@ func init() {
 			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		},
 		MetaExtra: BleveMetaExtra,
+		UI: map[string]string{
+			"controllerInitName": "blevePIndexInitController",
+		},
 	})
 }
 
