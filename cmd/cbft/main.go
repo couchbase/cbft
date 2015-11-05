@@ -120,10 +120,15 @@ func main() {
 	}
 	log.Printf("main: data dir: %q", dataDirAbs)
 
+	// User may supply a comma-separated list of HOST:PORT values for
+	// http addresss/port listening, but only the first entry is used
+	// for cbgt node and Cfg registration.
+	bindHttps := strings.Split(flags.BindHttp, ",")
+
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfg(cmdName, flags.CfgConnect,
-		flags.BindHttp, flags.Register, flags.DataDir)
+		bindHttps[0], flags.Register, flags.DataDir)
 	if err != nil {
 		if err == cmd.ErrorBindHttp {
 			log.Fatalf("%v", err)
@@ -169,7 +174,7 @@ func main() {
 
 	router, err := MainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extra,
-		flags.BindHttp, flags.DataDir,
+		bindHttps[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr, flags.Options)
 	if err != nil {
@@ -183,22 +188,30 @@ func main() {
 
 	http.Handle("/", router)
 
-	log.Printf("main: listening on: %s", flags.BindHttp)
-	u := flags.BindHttp
-	if u[0] == ':' {
-		u = "localhost" + u
+	for i := len(bindHttps) - 1; i >= 1; i-- {
+		go MainServeHttp(bindHttps[i])
 	}
-	if strings.HasPrefix(u, "0.0.0.0:") {
-		u = "localhost" + u[len("0.0.0.0"):]
+
+	MainServeHttp(bindHttps[0])
+}
+
+func MainServeHttp(bindHttp string) {
+	if bindHttp[0] == ':' {
+		bindHttp = "localhost" + bindHttp
 	}
+	if strings.HasPrefix(bindHttp, "0.0.0.0:") {
+		bindHttp = "localhost" + bindHttp[len("0.0.0.0"):]
+	}
+
 	log.Printf("------------------------------------------------------------")
-	log.Printf("web UI / REST API is available: http://%s", u)
+	log.Printf("web UI / REST API is available: http://%s", bindHttp)
 	log.Printf("------------------------------------------------------------")
-	err = http.ListenAndServe(flags.BindHttp, nil)
+
+	err := http.ListenAndServe(bindHttp, nil) // Blocks.
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
 			"  Please check that your -bindHttp parameter (%q)\n"+
-			"  is correct and available.", err, flags.BindHttp)
+			"  is correct and available.", err, bindHttp)
 	}
 }
 

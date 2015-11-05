@@ -82,7 +82,9 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"bindHttp", "b"}, "ADDR:PORT", "0.0.0.0:8095",
 		"local address:port where this node will listen and"+
 			"\nserve HTTP/REST API requests and the web-based"+
-			"\nadmin UI; default is '0.0.0.0:8095'.")
+			"\nadmin UI; default is '0.0.0.0:8095';"+
+			"\nmultiple ADDR:PORT's can be specified, separated by commas,"+
+			"\nwhere the first ADDR:PORT is used for node cfg registration.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg", "c"}, "CFG_CONNECT", "simple",
 		"connection string to a configuration provider/server"+
