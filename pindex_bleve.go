@@ -31,9 +31,9 @@ import (
 	"github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
+	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
-	bleveHttpMapping "github.com/blevesearch/bleve/http/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
@@ -130,6 +130,7 @@ func init() {
 		MetaExtra: BleveMetaExtra,
 		UI: map[string]string{
 			"controllerInitName": "blevePIndexInitController",
+			"controllerDoneName": "blevePIndexDoneController",
 		},
 	})
 }
@@ -868,17 +869,12 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 
 func BlevePIndexImplInitRouter(r *mux.Router, phase string) {
 	if phase == "static.before" {
-		// Handlers from bleve/http/mapping need earlier precedence.
-		bleveHttpMappingStatic := http.FileServer(bleveHttpMapping.AssetFS())
+		staticBleveMapping := http.FileServer(bleveMappingUI.AssetFS())
 
-		r.PathPrefix("/static/partials/analysis").Handler(
-			http.StripPrefix("/static/", bleveHttpMappingStatic))
-		r.PathPrefix("/static/partials/mapping").Handler(
-			http.StripPrefix("/static/", bleveHttpMappingStatic))
-		r.PathPrefix("/static/js/mapping").Handler(
-			http.StripPrefix("/static/", bleveHttpMappingStatic))
+		r.PathPrefix("/static-bleve-mapping/").Handler(
+			http.StripPrefix("/static-bleve-mapping/", staticBleveMapping))
 
-		bleveHttpMapping.RegisterHandlers(r, "/api")
+		bleveMappingUI.RegisterHandlers(r, "/api")
 	}
 
 	if phase == "manager.after" {

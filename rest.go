@@ -27,7 +27,7 @@ func InitStaticRouter(staticDir, staticETag string) *mux.Router {
 	router.StrictSlash(true)
 
 	router.Handle("/",
-		http.RedirectHandler("/staticx/index.html", 302))
+		http.RedirectHandler("/index.html", 302))
 	router.Handle("/index.html",
 		http.RedirectHandler("/staticx/index.html", 302))
 	router.Handle("/static/partials/index/list.html",

@@ -32,11 +32,11 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
-	log "github.com/couchbase/clog"
-	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/cmd"
+	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase"
 )
 
 var cmdName = "cbft"

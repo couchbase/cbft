@@ -1,0 +1,131 @@
+.bleveModal .modal-body .form-group {
+  padding-bottom: 10px;
+}
+
+.indexMapping .angular-ui-tree-handle {
+    background: #f8faff;
+    border: 1px solid #dae2ea;
+    color: #7c9eb2;
+    padding: 10px 10px;
+}
+
+.indexMapping .angular-ui-tree-handle:hover {
+    color: #438eb9;
+    background: #f4f6f7;
+    border-color: #dce2e8;
+}
+
+.indexMapping .angular-ui-tree-placeholder {
+    background: #f0f9ff;
+    border: 2px dashed #bed2db;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.indexMapping .indexCancelCreate {
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+.indexMapping .section .sectionHeader {
+  margin-top: 10px;
+}
+
+.indexMapping .section .sectionBody {
+  margin-top: 15px;
+  margin-bottom: 30px;
+}
+
+.indexMapping .mapping .btn {
+  margin-right: 10px;
+}
+
+.indexMapping .mapping .btn-trash {
+  margin-right: 25px;
+}
+
+.indexMapping .mapping .btn-trash:hover {
+  color: #fff;
+  background-color: #d9534f;
+  border-color: #d43f3a;
+}
+
+.indexMapping .mapping label {
+  font-weight: normal;
+  margin-left: 10px;
+}
+
+.indexMapping .mapping .attrs {
+  font-weight: normal;
+  font-size: 9pt;
+}
+
+.indexMapping .mapping .mappingHandle .attrControls {
+  visibility: hidden;
+}
+
+.indexMapping .mapping .mappingHandle:hover .attrControls,
+.indexMapping .mapping.editing .mappingHandle .attrControls {
+  visibility: inherit;
+}
+
+.indexMapping .mapping .field .fieldHandle .attrControls {
+  visibility: hidden;
+}
+
+.indexMapping .mapping .field .fieldHandle:hover .attrControls,
+.indexMapping .mapping .field.editing .fieldHandle .attrControls {
+  visibility: inherit;
+}
+
+.indexMapping .mapping .mappingHandle .editArea {
+  padding-left: 30px;
+}
+
+.indexMapping .mapping .field label > span {
+  display: inline-block;
+  text-align: right;
+  min-width: 8em;
+}
+
+.indexMapping .mapping .field label:first-child input[type=checkbox] {
+  margin-left: 9em;
+}
+
+.indexMapping .mapping.editing > *, .field.editing > * {
+  background: #f4f6f7;
+}
+
+.indexMapping .mapping input[type=text] {
+  width: 20em;
+}
+
+.indexMapping .mapping .popupContainer {
+  position: relative;
+  display: block;
+  top: 0px;
+  left: 0px;
+  overflow: visible;
+}
+
+.indexMapping .mapping .popup {
+  position: absolute;
+  display: block;
+  top: 1.5em;
+  right: -2em;
+  border: 1px solid #666;
+  background: white;
+  padding: 5px 10px 5px 10px;
+  font-weight: normal;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.indexMapping .viewOnly .editable {
+  visibility: hidden !important;
+}
+
+.indexMapping .viewOnly button {
+  visibility: hidden !important;
+}
