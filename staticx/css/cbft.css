@@ -133,3 +133,11 @@
 .indexMapping .propertiesSection {
   padding-left: 30px;
 }
+
+.indexMapping .editAreaField .editAreaFieldCheckboxes label {
+  display: block;
+}
+
+.indexMapping .editAreaField .editAreaFieldCheckboxes label input[type=checkbox] {
+  margin-left: 9em;
+}
