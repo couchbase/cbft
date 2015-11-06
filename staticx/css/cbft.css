@@ -129,3 +129,7 @@
 .indexMapping .viewOnly button {
   visibility: hidden !important;
 }
+
+.indexMapping .propertiesSection {
+  padding-left: 30px;
+}
