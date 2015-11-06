@@ -1,0 +1,48 @@
+<h1 class="page-header">Debug</h1>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<form class="form-horizontal" role="form">
+  <div class="form-group">
+    <label for="inputPIndexName" class="col-sm-2 control-label">
+      PIndex Name
+    </label>
+    <div class="col-sm-8">
+      <input ng-model="pindexName" type="text" class="form-control"
+             id="inputPIndexName" placeholder="(bleve pindex name)">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputDoc" class="col-sm-2 control-label">
+      Doc ID
+    </label>
+    <div class="col-sm-8">
+      <input ng-model="docId" type="text" class="form-control"
+             id="inputDoc" placeholder="(doc id)">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button type="submit" class="btn btn-primary"
+              ng-click="debugDoc()">Debug Doc</button>
+      <button type="submit" class="btn btn-primary"
+              ng-click="getFields()">Get Fields</button>
+    </div>
+  </div>
+</form>
+
+<div ng-show="fieldsResults">
+  <h3>Fields</h3>
+  <pre>{{fieldsResults}}</pre>
+</div>
+
+<div ng-show="docResults">
+  <h3>Doc</h3>
+  <pre>{{docResults}}</pre>
+</div>
+
+<div ng-show="docDebugResults" ng-include
+     src="'/staticx/partials/debug-rows.html'"/>
+

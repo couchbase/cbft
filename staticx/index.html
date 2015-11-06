@@ -97,7 +97,6 @@
   <script src="/static/js/manage.js"></script>
   <script src="/static/js/logs.js"></script>
   <script src="/static/js/query.js"></script>
-  <script src="/static/js/debug.js"></script>
   <script src="/static/js/b64.js"></script>
 
   <script src="/static/js/filters.js"></script>
@@ -113,6 +112,8 @@
   <script src="/static-bleve-mapping/js/mapping/analysis-charfilter.js"></script>
   <script src="/static-bleve-mapping/js/mapping/analysis-tokenizer.js"></script>
   <script src="/static-bleve-mapping/js/mapping/analysis-tokenfilter.js"></script>
+
+  <script src="/staticx/js/debug.js"></script>
 
   <script src="/static/js/app.js"></script>
   <script src="/static/js/controllers.js"></script>
@@ -183,5 +184,13 @@ angular.module('cbgtApp').
     controller('BleveTokenizerModalCtrl', BleveTokenizerModalCtrl).
     controller('BleveTokenFilterModalCtrl', BleveTokenFilterModalCtrl).
     controller('BleveWordListModalCtrl', BleveWordListModalCtrl);
+
+angular.module('cbgtApp').
+    config(['$routeProvider',
+        function($routeProvider) {
+            $routeProvider.when('/debug/',
+                {templateUrl: '/staticx/partials/debug.html',
+                 controller: 'DebugCtrl'});
+        }]);
 </script>
 </html>
