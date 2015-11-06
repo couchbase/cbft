@@ -142,6 +142,10 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+    if (initKind == "view") {
+        $scope.viewOnly = true;
+    }
+
     $scope.indexTemplates = $scope.indexTemplates || {};
     $scope.indexTemplates["bleve"] =
         "/static-bleve-mapping/partials/mapping/index-mapping.html";
