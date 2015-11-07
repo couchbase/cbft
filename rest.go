@@ -20,31 +20,37 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-func InitStaticRouter(staticDir, staticETag string) *mux.Router {
+func InitStaticRouter(staticDir, staticETag string,
+	mgr *cbgt.Manager) *mux.Router {
+	prefix := ""
+	if mgr != nil {
+		prefix = mgr.Options()["urlPrefix"]
+	}
+
 	hfsStaticX := http.FileServer(assetFS())
 
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
-	router.Handle("/",
-		http.RedirectHandler("/index.html", 302))
-	router.Handle("/index.html",
-		http.RedirectHandler("/staticx/index.html", 302))
-	router.Handle("/static/partials/index/list.html",
-		http.RedirectHandler("/staticx/partials/index/list.html", 302))
+	router.Handle(prefix+"/",
+		http.RedirectHandler(prefix+"/index.html", 302))
+	router.Handle(prefix+"/index.html",
+		http.RedirectHandler(prefix+"/staticx/index.html", 302))
+	router.Handle(prefix+"/static/partials/index/list.html",
+		http.RedirectHandler(prefix+"/staticx/partials/index/list.html", 302))
 
-	router = rest.InitStaticRouter(router,
+	router = rest.InitStaticRouterEx(router,
 		staticDir, staticETag, []string{
-			"/indexes",
-			"/nodes",
-			"/monitor",
-			"/manage",
-			"/logs",
-			"/debug",
-		}, http.RedirectHandler("/staticx/index.html", 302))
+			prefix + "/indexes",
+			prefix + "/nodes",
+			prefix + "/monitor",
+			prefix + "/manage",
+			prefix + "/logs",
+			prefix + "/debug",
+		}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
 
-	router.PathPrefix("/staticx/").Handler(
-		http.StripPrefix("/staticx/", hfsStaticX))
+	router.PathPrefix(prefix + "/staticx/").Handler(
+		http.StripPrefix(prefix+"/staticx/", hfsStaticX))
 
 	return router
 }
@@ -73,7 +79,8 @@ func myAsset(name string) ([]byte, error) {
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
-	return rest.InitRESTRouter(InitStaticRouter(staticDir, staticETag),
+	return rest.InitRESTRouter(
+		InitStaticRouter(staticDir, staticETag, mgr),
 		versionMain, mgr, staticDir, staticETag, mr,
 		myAssetDir, myAsset)
 }

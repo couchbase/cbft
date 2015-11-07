@@ -281,15 +281,20 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
 
 	// register handlers needed by ns_server
-	router.Handle("/api/nsstats", cbft.NewNsStatsHandler(mgr))
+	prefix := mgr.Options()["urlPrefix"]
+
+	router.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
+
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
 		return nil, err
 	}
-	router.Handle("/api/nsstatus", nsStatusHandler)
+	router.Handle(prefix+"/api/nsstatus", nsStatusHandler)
 
 	return router, err
 }
+
+// -------------------------------------------------------
 
 type MainHandlers struct{}
 
