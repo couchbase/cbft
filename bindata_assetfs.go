@@ -77,7 +77,7 @@ func staticx_css_cbft_css() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/css/cbft.css", size: 2796, mode: os.FileMode(420), modTime: time.Unix(1446871705, 0)}
+	info := bindata_file_info{name: "staticx/css/cbft.css", size: 2796, mode: os.FileMode(420), modTime: time.Unix(1446874443, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -97,7 +97,7 @@ func staticx_index_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/index.html", size: 6972, mode: os.FileMode(420), modTime: time.Unix(1446871705, 0)}
+	info := bindata_file_info{name: "staticx/index.html", size: 6972, mode: os.FileMode(420), modTime: time.Unix(1446874443, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -117,7 +117,7 @@ func staticx_js_debug_js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/js/debug.js", size: 2160, mode: os.FileMode(420), modTime: time.Unix(1446871705, 0)}
+	info := bindata_file_info{name: "staticx/js/debug.js", size: 2160, mode: os.FileMode(420), modTime: time.Unix(1446874443, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -137,7 +137,7 @@ func staticx_partials_debug_rows_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/partials/debug-rows.html", size: 525, mode: os.FileMode(420), modTime: time.Unix(1446871705, 0)}
+	info := bindata_file_info{name: "staticx/partials/debug-rows.html", size: 525, mode: os.FileMode(420), modTime: time.Unix(1446874443, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -157,7 +157,7 @@ func staticx_partials_debug_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/partials/debug.html", size: 1336, mode: os.FileMode(420), modTime: time.Unix(1446871705, 0)}
+	info := bindata_file_info{name: "staticx/partials/debug.html", size: 1336, mode: os.FileMode(420), modTime: time.Unix(1446874443, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
