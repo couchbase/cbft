@@ -8,39 +8,94 @@
   {{errorMessage}}
 </div>
 
-<table ng-if="indexNames.length"
-       class="table table-striped">
-	<tr>
-		<th width="99%">Name</th>
-		<th></th>
-	</tr>
-	<tr ng-repeat="indexName in indexNames">
-		<td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
-		<td style="white-space: nowrap;">
-			<button ng-click="editIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-edit"></span> edit
-			</button>
-			<button ng-click="cloneIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-plus-sign"></span> clone
-			</button>
-			<button ng-click="deleteIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-trash"></span>
-			</button>
-		</td>
-	</tr>
-</table>
+<div ng-if="indexNames.length">
+ <div class="listIndexes">
+  <h2>Indexes</h2>
+  <table class="table table-striped">
+    <tr>
+        <th width="99%">Index Name</th>
+        <th></th>
+    </tr>
+    <tr ng-repeat="(indexName, indexDef) in indexDefs"
+        ng-if="indexDef.type != 'alias'">
+        <td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+        <td style="white-space: nowrap;">
+            <button ng-click="editIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-edit"></span> edit
+            </button>
+            <button ng-click="cloneIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-plus-sign"></span> clone
+            </button>
+            <button ng-click="deleteIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-trash"></span>
+            </button>
+        </td>
+    </tr>
+  </table>
 
-<div ng-if="!indexNames.length"
-     ng-include="'/static/partials/index/start.html'">
+  <div class="input-group">
+    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase">
+      <button class="btn btn-primary" type="submit">
+        <i class="glyphicon glyphicon-plus"></i> New Index
+      </button>
+    </a>
+  </div>
+ </div>
+
+ <div class="listIndexAliases">
+  <h2>Index Aliases</h2>
+  <table class="table table-striped">
+    <tr>
+        <th width="99%">Index Alias Name</th>
+        <th></th>
+    </tr>
+    <tr ng-repeat="(indexName, indexDef) in indexDefs"
+        ng-if="indexDef.type == 'alias'">
+        <td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+        <td style="white-space: nowrap;">
+            <button ng-click="editIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-edit"></span> edit
+            </button>
+            <button ng-click="cloneIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-plus-sign"></span> clone
+            </button>
+            <button ng-click="deleteIndex(indexName)"
+                    type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-trash"></span>
+            </button>
+        </td>
+    </tr>
+  </table>
+
+  <div class="input-group">
+    <a href="/indexes/_new?indexType=alias&sourceType=nil">
+      <button class="btn btn-primary" type="submit">
+        <i class="glyphicon glyphicon-plus"></i> New Index Alias
+      </button>
+    </a>
+  </div>
+ </div>
 </div>
 
-<div class="input-group">
-  <a href="/indexes/_new">
-    <button  class="btn btn-primary" type="submit">
-      <i class="glyphicon glyphicon-plus"></i> New Index
-    </button>
-  </a>
+<div ng-if="!indexNames.length">
+  <div ng-include="'/static/partials/index/start.html'"/>
+
+  <div class="input-group">
+    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase">
+      <button class="btn btn-primary" type="submit">
+        <i class="glyphicon glyphicon-plus"></i> New Index
+      </button>
+    </a>
+  </div>
 </div>
+
+<style>
+.listIndexes, .listIndexAliases {
+  padding-bottom: 30px;
+}
+</style>
