@@ -1,16 +1,19 @@
-<ol ng-if="indexNames.length"
-    class="breadcrumb">
-  <li><span class="glyphicon glyphicon-book"></li>
-  <li><a href="#">Indexes</a></li>
-</ol>
-
 <div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
   {{errorMessage}}
 </div>
 
 <div ng-if="indexNames.length">
  <div class="listIndexes">
-  <h2>Indexes</h2>
+  <div class="row">
+    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase"
+       class="pull-right">
+      <button class="btn btn-default btn-sm pull-right" type="submit">
+        <i class="glyphicon glyphicon-plus"></i> New Index
+      </button>
+    </a>
+    <span class="navbar-text">Full Text Indexes</span>
+  </div>
+
   <table class="table table-striped">
     <tr>
         <th nowrap>Index Name</th>
@@ -43,18 +46,19 @@
         </td>
     </tr>
   </table>
-
-  <div class="input-group">
-    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase">
-      <button class="btn btn-primary" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Index
-      </button>
-    </a>
-  </div>
  </div>
 
  <div class="listIndexAliases">
-  <h2>Index Aliases</h2>
+  <div class="row">
+    <a href="/indexes/_new?indexType=alias&sourceType=nil"
+       class="pull-right">
+      <button class="btn btn-default btn-sm pull-right" type="submit">
+        <i class="glyphicon glyphicon-plus"></i> New Index Alias
+      </button>
+    </a>
+    <span class="navbar-text">Indexes Aliases</span>
+  </div>
+
   <table class="table table-striped">
     <tr>
         <th nowrap>Index Alias Name</th>
@@ -87,14 +91,6 @@
         </td>
     </tr>
   </table>
-
-  <div class="input-group">
-    <a href="/indexes/_new?indexType=alias&sourceType=nil">
-      <button class="btn btn-primary" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Index Alias
-      </button>
-    </a>
-  </div>
  </div>
 </div>
 
@@ -112,8 +108,13 @@
 
 <style>
 .listIndexes, .listIndexAliases {
-  padding-bottom: 30px;
+  padding-bottom: 40px;
 }
+
+.listIndexes table, .listIndexAliases table {
+  border: 1px solid #ddd;
+}
+
 
 .listIndexes table tr td, .listIndexesAliases table tr td,
 .listIndexes table tr th, .listIndexesAliases table tr th {
