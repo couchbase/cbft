@@ -167,18 +167,21 @@ angular.module('cbgtApp').
   $routeProvider.when('/indexes/_new',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
                        controller: 'IndexNewCtrl'});
-  $routeProvider.when('/indexes/:indexName',
-                      {templateUrl: '/staticx/partials/index/ft/index.html',
-                       controller: 'IndexCtrl'});
   $routeProvider.when('/indexes/:indexName/_edit',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
                        controller: 'IndexNewCtrl'});
   $routeProvider.when('/indexes/:indexName/_clone',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
                        controller: 'IndexNewCtrl'});
-  $routeProvider.when('/indexes/:indexName/:tabName',
-                      {templateUrl: '/staticx/partials/index/ft/index.html',
-                       controller: 'IndexCtrl'});
 }]);
 </script>
+
+<style>
+.formGroupIndexType {
+  display: none;
+}
+.formGroupSourceType {
+  display: none;
+}
+</style>
 </html>
