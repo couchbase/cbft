@@ -2,9 +2,16 @@
 
 <ol class="breadcrumb">
   <li><span class="glyphicon glyphicon-book"></li>
-  <li><a href="/indexes">Indexes</a></li>
+  <li>
+    <a href="/indexes">
+      Indexes
+    </a>
+  </li>
   <li ng-show="isEdit">{{newIndexName}}</li>
-  <li ng-show="!isEdit">New Index</li>
+  <li ng-show="!isEdit">
+    New Index
+    <span ng-if="newIndexType && newIndexType == 'alias'">Alias</span>
+  </li>
 </ol>
 
 <div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
@@ -14,14 +21,18 @@
 <form class="form form-horizontal" role="form">
   <div class="form-group formGroupIndexName">
     <label for="inputIndexName"
-           class="col-sm-2 control-label">Index Name</label>
+           class="col-sm-2 control-label">
+      Index
+      <span ng-if="newIndexType && newIndexType == 'alias'">Alias</span>
+      Name
+    </label>
     <div class="col-sm-10"
          ng-class="{'has-error': errorFields.indexName}">
       <div ng-show="isEdit"
            class="indexName">{{newIndexName}}</div>
       <input ng-show="!isEdit" ng-model="newIndexName"
              type="text" class="form-control"
-             id="inputIndexName" placeholder="please enter an index-name"/>
+             id="inputIndexName" placeholder="please enter a name"/>
     </div>
   </div>
   <div class="form-group formGroupIndexType">
@@ -100,22 +111,23 @@
              placeholder="(optional bucket-uuid)"/>
     </div>
   </div>
-  <div class="form-group formGroupPlanParms">
+  <div class="form-group formGroupPlanParms"
+       ng-show="newIndexType && newIndexType != 'alias' && advanced">
     <label for="inputPlanParams"
-           ng-show="advanced"
            class="col-sm-2 control-label">Plan Params</label>
-    <div class="col-sm-8">
-      <textarea ng-show="advanced"
-                ng-model="newPlanParams" rows="{{paramNumLines['planParams']}}"
+    <div class="col-sm-10">
+      <textarea ng-model="newPlanParams" rows="{{paramNumLines['planParams']}}"
                 class="form-control" id="inputPlanParams"></textarea>
     </div>
   </div>
   <div class="form-group newIndexSubmit">
     <div class="col-sm-offset-2 col-sm-10">
-      <input ng-model="advanced" type="checkbox" class="advanced">
-        Show advanced settings
-      </input>
-      <br/>
+      <div ng-show="newIndexType && newIndexType != 'alias'">
+        <input ng-model="advanced" type="checkbox" class="advanced">
+          Show advanced settings
+        </input>
+        <br/>
+      </div>
       <a href="/indexes/">
         <button class="btn btn-cancel">Cancel</button>
       </a>
@@ -127,6 +139,7 @@
         <span ng-show="isEdit">
           Update Index
         </span>
+        <span ng-if="newIndexType && newIndexType == 'alias'">Alias</span>
       </button>
     </div>
   </div>
