@@ -13,13 +13,21 @@
   <h2>Indexes</h2>
   <table class="table table-striped">
     <tr>
-        <th width="99%">Index Name</th>
-        <th></th>
+        <th nowrap>Index Name</th>
+        <th nowrap width="99%">Bucket</th>
+        <th nowrap></th>
     </tr>
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
         ng-if="indexDef.type != 'alias'">
-        <td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
-        <td style="white-space: nowrap;">
+        <td nowrap><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+        <td nowrap>
+          <span ng-if="indexDef.sourceType != 'couchbase'">
+            {{indexDef.sourceType}}
+            &nbsp;/&nbsp;
+          </span>
+          {{indexDef.sourceName}}
+        </td>
+        <td nowrap>
             <button ng-click="editIndex(indexName)"
                     type="button" class="btn btn-default btn-sm">
                 <span class="glyphicon glyphicon-edit"></span> edit
@@ -49,13 +57,21 @@
   <h2>Index Aliases</h2>
   <table class="table table-striped">
     <tr>
-        <th width="99%">Index Alias Name</th>
-        <th></th>
+        <th nowrap>Index Alias Name</th>
+        <th nowrap width="99%">Target Indexes</th>
+        <th nowrap></th>
     </tr>
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
         ng-if="indexDef.type == 'alias'">
-        <td><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
-        <td style="white-space: nowrap;">
+        <td nowrap><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
+        <td>
+          <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
+            <a href="/indexes/{{targetName}}">
+              {{targetName}}
+            </a><span ng-show="!$last">, </span>
+          </span>
+        </td>
+        <td nowrap>
             <button ng-click="editIndex(indexName)"
                     type="button" class="btn btn-default btn-sm">
                 <span class="glyphicon glyphicon-edit"></span> edit
@@ -97,5 +113,10 @@
 <style>
 .listIndexes, .listIndexAliases {
   padding-bottom: 30px;
+}
+
+.listIndexes table tr td, .listIndexesAliases table tr td,
+.listIndexes table tr th, .listIndexesAliases table tr th {
+  white-space: nowrap;
 }
 </style>
