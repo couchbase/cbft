@@ -20,17 +20,6 @@
 </head>
 <body ng-app="cbgtApp">
   <div class="container">
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-      <div class="container">
-        <ul class="nav navbar-nav">
-          <li><a href="/indexes/">Indexes</a></li>
-        </ul>
-        <ul class="nav navbar-nav">
-          <li><a href="/nodes/">Nodes</a></li>
-        </ul>
-      </div>
-    </div>
-
     <div class="row">
       <div class="col-sm-10 col-sm-offset-1 main">
         <div ng-view></div>
@@ -180,6 +169,7 @@ angular.module('cbgtApp').
 .formGroupIndexType {
   display: none;
 }
+
 .formGroupSourceType {
   display: none;
 }
