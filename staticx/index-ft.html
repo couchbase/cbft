@@ -144,8 +144,87 @@ angular.module('cbgtApp').
                 {templateUrl: '/staticx/partials/debug.html',
                  controller: 'DebugCtrl'});
         }]);
+</script>
 
-// ---------------------------------------------------------------------
+<!-- --------------------------------------------------------------------- -->
+
+<script>
+angular.module('cbgtApp').
+    controller('IndexNewCtrlFT', IndexNewCtrlFT);
+
+function IndexNewCtrlFT($scope, $http, $route, $routeParams,
+    $location, $log, $sce, $uibModal) {
+    $scope.indexDefs = null;
+
+    $http.get('/api/index').
+    success(function(data) {
+        var indexDefs = $scope.indexDefs =
+            data && data.indexDefs && data.indexDefs.indexDefs;
+
+        var origIndexDef = indexDefs && indexDefs[$routeParams.indexName];
+
+        var isAlias =
+            ($routeParams.indexType == 'alias') ||
+            (origIndexDef && origIndexDef.type == 'alias');
+        if (isAlias) {
+            // The aliasTargets will be the union of currently available
+            // indexes (and aliases) and the existing targets of the alias.
+            // Note that existing targets may have been deleted, but we
+            // we will still offer them as options.
+            $scope.aliasTargets = [];
+            for (var indexName in indexDefs) {
+                $scope.aliasTargets.push(indexName);
+            }
+
+            $scope.selectedTargetIndexes = [];
+            if (origIndexDef) {
+                var origTargets = (JSON.parse(origIndexDef.params) || {}).targets;
+                for (var origTarget in origTargets) {
+                    if (!indexDefs[origTarget]) {
+                        $scope.aliasTargets.push(origTarget);
+                    }
+
+                    $scope.selectedTargetIndexes.push(origTarget);
+                }
+            }
+
+            $scope.putIndexAlias =
+                function(newIndexName,
+                         newIndexType, newIndexParams,
+                         newSourceType, newSourceName,
+                         newSourceUUID, newSourceParams,
+                         newPlanParams, prevIndexUUID,
+                         selectedTargetIndexes) {
+                    var aliasTargets = {};
+
+                    for (var i = 0; i < selectedTargetIndexes.length; i++) {
+                        var selectedTargetIndex = selectedTargetIndexes[i];
+
+                        aliasTargets[selectedTargetIndex] = {};
+
+                        var targetIndexDef = $scope.indexDefs[selectedTargetIndex];
+                        if (targetIndexDef) {
+                            aliasTargets[selectedTargetIndex].indexUUID =
+                                targetIndexDef.uuid;
+                        }
+                    }
+
+                    newIndexParams["alias"] = {
+                        "targets": JSON.stringify(aliasTargets)
+                    };
+
+                    $scope.putIndex(newIndexName,
+                                    newIndexType, newIndexParams,
+                                    newSourceType, newSourceName,
+                                    newSourceUUID, newSourceParams,
+                                    newPlanParams, prevIndexUUID);
+                };
+        }
+
+        IndexNewCtrl($scope, $http, $route, $routeParams,
+                     $location, $log, $sce, $uibModal);
+    });
+}
 
 angular.module('cbgtApp').
  config(['$routeProvider', '$locationProvider',
@@ -155,13 +234,13 @@ angular.module('cbgtApp').
                        controller: 'IndexesCtrl'});
   $routeProvider.when('/indexes/_new',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
-                       controller: 'IndexNewCtrl'});
+                       controller: 'IndexNewCtrlFT'});
   $routeProvider.when('/indexes/:indexName/_edit',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
-                       controller: 'IndexNewCtrl'});
+                       controller: 'IndexNewCtrlFT'});
   $routeProvider.when('/indexes/:indexName/_clone',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
-                       controller: 'IndexNewCtrl'});
+                       controller: 'IndexNewCtrlFT'});
 }]);
 </script>
 

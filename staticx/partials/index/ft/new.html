@@ -78,7 +78,7 @@
                 ng-show="newSourceType == sourceType"></textarea>
     </div>
   </div>
-  <div class="form-group formGroupSourceType"
+  <div class="form-group formGroupSourceUUID"
        ng-show="newSourceType && newSourceType != 'nil' && advanced">
     <label for="inputSourceUUID"
            class="col-sm-2 control-label">Source UUID</label>
@@ -97,7 +97,7 @@
       </div>
     </div>
   </div>
-  <div ng-show="newIndexType && newIndexType != 'blackhole' && (!indexTemplates || !indexTemplates[newIndexType])"
+  <div ng-show="newIndexType && newIndexType != 'blackhole' && newIndexType != 'alias' && (!indexTemplates || !indexTemplates[newIndexType])"
        ng-repeat="(indexType, p) in newIndexParams">
     <div class="form-group formGroupIndexParams"
          ng-repeat="(k, v) in p"
@@ -111,7 +111,20 @@
       </div>
     </div>
   </div>
-  <div class="form-group formGroupPlanParms"
+  <div class="form-group formGroupTargetIndexes"
+       ng-show="newIndexType && newIndexType == 'alias' && aliasTargets">
+    <label for="inputTargetIndexes"
+           class="col-sm-2 control-label">Target Indexes</label>
+    <div class="col-sm-10">
+      <select id="inputTargetIndexes"
+              multiple="true"
+              class="form-control"
+              ng-model="selectedTargetIndexes"
+              ng-options="indexName for indexName in aliasTargets">
+      </select>
+    </div>
+  </div>
+  <div class="form-group formGroupPlanParams"
        ng-show="newIndexType && newIndexType != 'alias' && advanced">
     <label for="inputPlanParams"
            class="col-sm-2 control-label">Plan Params</label>
@@ -131,7 +144,8 @@
       <a href="/indexes/">
         <button class="btn btn-cancel">Cancel</button>
       </a>
-      <button ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+      <button ng-if="newIndexType && newIndexType != 'alias'"
+              ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
               type="submit" class="btn btn-default">
         <span ng-show="!isEdit">
           Create Index
@@ -139,7 +153,16 @@
         <span ng-show="isEdit">
           Update Index
         </span>
-        <span ng-if="newIndexType && newIndexType == 'alias'">Alias</span>
+      </button>
+      <button ng-if="newIndexType && newIndexType == 'alias'"
+              ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
+              type="submit" class="btn btn-default">
+        <span ng-show="!isEdit">
+          Create Index Alias
+        </span>
+        <span ng-show="isEdit">
+          Update Index Alias
+        </span>
       </button>
     </div>
   </div>
