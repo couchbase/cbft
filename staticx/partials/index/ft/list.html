@@ -2,13 +2,13 @@
   {{errorMessage}}
 </div>
 
-<div ng-if="indexNames.length">
+<div>
  <div class="listIndexes">
   <div class="row">
     <a href="/indexes/_new?indexType=bleve&sourceType=couchbase"
        class="pull-right">
       <button class="btn btn-default btn-sm pull-right" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Index
+        <i class="glyphicon glyphicon-plus"></i> New Full Text Index
       </button>
     </a>
     <span class="navbar-text">Full Text Indexes</span>
@@ -16,7 +16,7 @@
 
   <table class="table table-striped">
     <tr>
-        <th nowrap>Index Name</th>
+        <th nowrap>Full Text Index Name</th>
         <th nowrap width="99%">Bucket</th>
         <th nowrap></th>
     </tr>
@@ -53,16 +53,16 @@
     <a href="/indexes/_new?indexType=alias&sourceType=nil"
        class="pull-right">
       <button class="btn btn-default btn-sm pull-right" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Index Alias
+        <i class="glyphicon glyphicon-plus"></i> New Full Text Index Alias
       </button>
     </a>
-    <span class="navbar-text">Indexes Aliases</span>
+    <span class="navbar-text">Full Text Index Aliases</span>
   </div>
 
   <table class="table table-striped">
     <tr>
-        <th nowrap>Index Alias Name</th>
-        <th nowrap width="99%">Target Indexes</th>
+        <th nowrap>Full Text Index Alias Name</th>
+        <th nowrap width="99%">Target Full Text Indexes</th>
         <th nowrap></th>
     </tr>
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
@@ -91,18 +91,6 @@
     </tr>
   </table>
  </div>
-</div>
-
-<div ng-if="!indexNames.length">
-  <div ng-include="'/static/partials/index/start.html'"/>
-
-  <div class="input-group">
-    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase">
-      <button class="btn btn-primary" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Index
-      </button>
-    </a>
-  </div>
 </div>
 
 <style>
