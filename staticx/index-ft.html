@@ -101,7 +101,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     }
 
     $scope.indexTemplates = $scope.indexTemplates || {};
-    $scope.indexTemplates["bleve"] =
+    $scope.indexTemplates["fulltext-index"] =
         "/static-bleve-mapping/partials/mapping/index-mapping.html";
 
     var mapping = bleveNewIndexMapping();
@@ -164,8 +164,8 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
         var origIndexDef = indexDefs && indexDefs[$routeParams.indexName];
 
         var isAlias =
-            ($routeParams.indexType == 'alias') ||
-            (origIndexDef && origIndexDef.type == 'alias');
+            ($routeParams.indexType == 'fulltext-alias') ||
+            (origIndexDef && origIndexDef.type == 'fulltext-alias');
         if (isAlias) {
             // The aliasTargets will be the union of currently available
             // indexes (and aliases) and the existing targets of the alias.
@@ -209,7 +209,7 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
                         }
                     }
 
-                    newIndexParams["alias"] = {
+                    newIndexParams["fulltext-alias"] = {
                         "targets": JSON.stringify(aliasTargets)
                     };
 
@@ -253,7 +253,7 @@ angular.module('cbgtApp').
   display: none;
 }
 
-.indexViewer.bleve .indexMapping .section .angular-ui-tree-handle {
+.indexViewer.fulltext-index .indexMapping .section .angular-ui-tree-handle {
   cursor: auto;
 }
 </style>

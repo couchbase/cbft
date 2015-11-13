@@ -149,7 +149,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     }
 
     $scope.indexTemplates = $scope.indexTemplates || {};
-    $scope.indexTemplates["bleve"] =
+    $scope.indexTemplates["fulltext-index"] =
         "/static-bleve-mapping/partials/mapping/index-mapping.html";
 
     var mapping = bleveNewIndexMapping();

@@ -35,18 +35,18 @@ func TestManagerRestart(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", cbgt.PlanParams{},
+		"fulltext-index", "foo", "", cbgt.PlanParams{},
 		"bad-prevIndexUUID"); err == nil {
 		t.Errorf("expected CreateIndex() err" +
 			" on attempted create-with-prevIndexUUID")
 	}
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", cbgt.PlanParams{},
+		"fulltext-index", "foo", "", cbgt.PlanParams{},
 		""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", cbgt.PlanParams{},
+		"fulltext-index", "foo", "", cbgt.PlanParams{},
 		"bad-prevIndexUUID"); err == nil {
 		t.Errorf("expected CreateIndex() err on update" +
 			" with wrong prevIndexUUID")
@@ -101,7 +101,7 @@ func testPartitioning(t *testing.T,
 
 	if err := mgr.CreateIndex("primary",
 		"sourceName", "sourceUUID", sourceParams,
-		"bleve", "foo", "", planParams, ""); err != nil {
+		"fulltext-index", "foo", "", planParams, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work")
 	}
 
@@ -386,7 +386,7 @@ func TestManagerIndexControl(t *testing.T) {
 	}
 	sourceParams := ""
 	if err := m.CreateIndex("primary", "default", "123", sourceParams,
-		"bleve", "foo", "", cbgt.PlanParams{}, ""); err != nil {
+		"fulltext-index", "foo", "", cbgt.PlanParams{}, ""); err != nil {
 		t.Errorf("expected CreateIndex() to work, err: %v", err)
 	}
 	m.Kick("test0")
@@ -551,7 +551,7 @@ func TestNewPIndexEmptyBleveJSON(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	pindex, err := cbgt.NewPIndex(nil, "fake", "uuid",
-		"bleve", "indexName", "indexUUID", "{}",
+		"fulltext-index", "indexName", "indexUUID", "{}",
 		"sourceType", "sourceName", "sourceUUID",
 		"sourceParams", "sourcePartitions",
 		cbgt.PIndexPath(emptyDir, "fake"))
@@ -565,7 +565,7 @@ func TestNewPIndexBleveBadMapping(t *testing.T) {
 	defer os.RemoveAll(emptyDir)
 
 	pindex, err := cbgt.NewPIndex(nil, "fake", "uuid",
-		"bleve", "indexName", "indexUUID", "} hey this isn't json :-(",
+		"fulltext-index", "indexName", "indexUUID", "} hey this isn't json :-(",
 		"sourceType", "sourceName", "sourceUUID",
 		"sourceParams", "sourcePartitions",
 		cbgt.PIndexPath(emptyDir, "fake"))

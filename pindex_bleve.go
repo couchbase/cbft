@@ -106,11 +106,11 @@ func NewBleveDest(path string, bindex bleve.Index,
 // ---------------------------------------------------------
 
 const bleveQueryHelp = `<a href="http://www.blevesearch.com/docs/Query-String-Query/">
-       bleve query syntax help
+       full text query syntax help
      </a>`
 
 func init() {
-	cbgt.RegisterPIndexImplType("bleve", &cbgt.PIndexImplType{
+	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
 		Validate: ValidateBlevePIndexImpl,
 
 		New:   NewBlevePIndexImpl,
@@ -118,8 +118,8 @@ func init() {
 		Count: CountBlevePIndexImpl,
 		Query: QueryBlevePIndexImpl,
 
-		Description: "general/full-text (bleve)" +
-			" - a full-text index powered by the bleve engine",
+		Description: "general/fulltext-index " +
+			" - a full text index powered by the bleve engine",
 		StartSample:  NewBleveParams(),
 		QuerySamples: BlevePIndexQuerySamples,
 		QueryHelp:    bleveQueryHelp,
@@ -853,7 +853,7 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		func(localPIndex *cbgt.PIndex) error {
 			bindex, ok := localPIndex.Impl.(bleve.Index)
 			if !ok || bindex == nil ||
-				!strings.HasPrefix(localPIndex.IndexType, "bleve") {
+				!strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
 				return fmt.Errorf("bleve: wrong type, localPIndex: %#v",
 					localPIndex)
 			}

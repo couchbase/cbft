@@ -27,14 +27,15 @@ var maxAliasTargets = 50000
 
 func init() {
 	// Register alias with empty instantiation functions,
-	// so that "alias" will show up in valid index types.
-	cbgt.RegisterPIndexImplType("alias", &cbgt.PIndexImplType{
+	// so that "fulltext-alias" will show up in valid index types.
+	cbgt.RegisterPIndexImplType("fulltext-alias", &cbgt.PIndexImplType{
 		Validate: ValidateAlias,
 		Count:    CountAlias,
 		Query:    QueryAlias,
-		Description: "advanced/alias" +
-			" - an alias provides a naming level of indirection" +
-			" to one or more actual, target indexes",
+		Description: "advanced/fulltext-alias" +
+			" - a full text index alias provides" +
+			" a naming level of indirection" +
+			" to one or more actual, target full text indexes",
 		StartSample: &AliasParams{
 			Targets: map[string]*AliasParamsTarget{
 				"yourIndexName": &AliasParamsTarget{},
@@ -149,8 +150,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 				" aliasName: %s, indexName: %s",
 				aliasName, indexName)
 		}
-		if aliasDef.Type != "alias" {
-			return fmt.Errorf("alias: not alias type: %s,"+
+		if aliasDef.Type != "fulltext-alias" {
+			return fmt.Errorf("alias: not fulltext-alias type: %s,"+
 				" aliasName: %s, indexName: %s",
 				aliasDef.Type, aliasName, indexName)
 		}
@@ -193,12 +194,12 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 			}
 
 			// TODO: Convert to registered callbacks instead of if-else-if.
-			if targetDef.Type == "alias" {
+			if targetDef.Type == "fulltext-alias" {
 				err = fillAlias(targetName, targetSpec.IndexUUID)
 				if err != nil {
 					return err
 				}
-			} else if strings.HasPrefix(targetDef.Type, "bleve") {
+			} else if strings.HasPrefix(targetDef.Type, "fulltext-index") {
 				subAlias, err := bleveIndexAlias(mgr, targetName,
 					targetSpec.IndexUUID, ensureCanRead,
 					consistencyParams, cancelCh)

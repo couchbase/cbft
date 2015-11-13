@@ -362,7 +362,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Path:   "/api/index/index-on-a-bad-server",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType": []string{"bleve"},
+				"indexType": []string{"fulltext-index"},
 			},
 			Body:   nil,
 			Status: 400,
@@ -375,7 +375,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Path:   "/api/index/index-on-a-bad-server",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":  []string{"bleve"},
+				"indexType":  []string{"fulltext-index"},
 				"sourceType": []string{"couchbase"},
 			},
 			Body:   nil,
@@ -437,7 +437,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 }
 
 func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
-	testHandlersForOneBleveTypeIndexWithNILFeed(t, "bleve")
+	testHandlersForOneBleveTypeIndexWithNILFeed(t, "fulltext-index")
 }
 
 func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
@@ -575,8 +575,8 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok","indexDefs":{"uuid":`: true,
-				`"indexDefs":{"idx0":{"type":"bleve`:  true,
+				`{"status":"ok","indexDefs":{"uuid":`:          true,
+				`"indexDefs":{"idx0":{"type":"fulltext-index"`: true,
 				`"params":"","sourceType":"nil","sourceName":"","sourceUUID":"","sourceParams":"","planParams":{"maxPartitionsPerPIndex":0,"numReplicas":0,"hierarchyRules":null,"nodePlanParams":null,"pindexWeights":null,"planFrozen":false}}}`: true,
 			},
 		},
@@ -633,7 +633,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`"status":"ok","indexDef":{"type":"bleve`: true,
+				`"status":"ok","indexDef":{"type":"fulltext-index"`: true,
 			},
 		},
 		{
@@ -812,7 +812,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{"-}totally n0t json{-"},
 			},
@@ -827,7 +827,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
 			},
@@ -1360,7 +1360,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aa0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":   []string{"alias"},
+				"indexType":   []string{"fulltext-alias"},
 				"indexParams": []string{`}--<not json>--{`},
 				"sourceType":  []string{"nil"},
 			},
@@ -1375,7 +1375,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aa0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":   []string{"alias"},
+				"indexType":   []string{"fulltext-alias"},
 				"indexParams": []string{`{"targets":{"idx0":{}}}`},
 				"sourceType":  []string{"nil"},
 			},
@@ -1451,7 +1451,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Path:   "/api/index/aaBadTarget",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":   []string{"alias"},
+				"indexType":   []string{"fulltext-alias"},
 				"indexParams": []string{`{"targets":{"idxNotReal":{}}}`},
 				"sourceType":  []string{"nil"},
 			},
@@ -1539,7 +1539,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
 			},
@@ -1846,7 +1846,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Path:   "/api/index/myIdx",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":2}`},
 				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
@@ -1955,7 +1955,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Path:   "/api/index/yourIdx",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":8}`},
 				"planParams":   []string{`{"maxPartitionsPerPIndex":1}`},
@@ -1971,7 +1971,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Path:   "/api/index/myAlias",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":   []string{"alias"},
+				"indexType":   []string{"fulltext-alias"},
 				"indexParams": []string{`{"targets":{"myIdx":{},"yourIdx":{}}}`},
 				"sourceType":  []string{"nil"},
 			},
@@ -2109,7 +2109,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 			Path:   "/api/index/myIdx",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":2}`},
 				"planParams":   planParams,
@@ -2635,7 +2635,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":  []string{"bleve"},
+				"indexType":  []string{"fulltext-index"},
 				"sourceType": []string{"nil"},
 			},
 			Body:   nil,
@@ -2855,7 +2855,7 @@ func TestMultiFeedStats(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":10}`},
 			},
@@ -2870,7 +2870,7 @@ func TestMultiFeedStats(t *testing.T) {
 			Path:   "/api/index/idx1",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":10}`},
 			},
@@ -2925,7 +2925,7 @@ func TestIndexDefWithJSON(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":10}`},
 			},
@@ -2940,11 +2940,11 @@ func TestIndexDefWithJSON(t *testing.T) {
 			Path:   "/api/index/idx0",
 			Method: "PUT",
 			Params: url.Values{
-				"indexType":    []string{"bleve"},
+				"indexType":    []string{"fulltext-index"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":10}`},
 			},
-			Body: []byte(`{ "indexType": "bleve",
+			Body: []byte(`{ "indexType": "fulltext-index",
                             "indexParams": "{}",
                             "sourceType": "primary",
                             "sourceUUID": "beefbeef",

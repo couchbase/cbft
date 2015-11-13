@@ -5,7 +5,7 @@
 <div>
  <div class="listIndexes">
   <div class="row">
-    <a href="/indexes/_new?indexType=bleve&sourceType=couchbase"
+    <a href="/indexes/_new?indexType=fulltext-index&sourceType=couchbase"
        class="pull-right">
       <button class="btn btn-default btn-sm pull-right" type="submit">
         <i class="glyphicon glyphicon-plus"></i> New Full Text Index
@@ -21,7 +21,7 @@
         <th nowrap></th>
     </tr>
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
-        ng-if="indexDef.type != 'alias'">
+        ng-if="indexDef.type != 'fulltext-alias'">
         <td nowrap><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
         <td nowrap>
           <span ng-if="indexDef.sourceType != 'couchbase'">
@@ -50,7 +50,7 @@
 
  <div class="listIndexAliases">
   <div class="row">
-    <a href="/indexes/_new?indexType=alias&sourceType=nil"
+    <a href="/indexes/_new?indexType=fulltext-alias&sourceType=nil"
        class="pull-right">
       <button class="btn btn-default btn-sm pull-right" type="submit">
         <i class="glyphicon glyphicon-plus"></i> New Full Text Index Alias
@@ -66,7 +66,7 @@
         <th nowrap></th>
     </tr>
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
-        ng-if="indexDef.type == 'alias'">
+        ng-if="indexDef.type == 'fulltext-alias'">
         <td nowrap><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
         <td>
           <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
