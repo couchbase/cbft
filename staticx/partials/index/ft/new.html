@@ -65,29 +65,6 @@
              placeholder="bucket-name"/>
     </div>
   </div>
-  <div class="form-group formGroupSourceParams"
-       ng-show="newSourceType && newSourceType != 'nil' && advanced">
-    <label for="inputSourceParams"
-           class="col-sm-2 control-label">Source Params</label>
-    <div class="col-sm-10"
-         ng-repeat="(sourceType, p) in newSourceParams"
-         ng-class="{'has-error': errorFields.sourceParams[sourceType]}">
-      <textarea ng-model="newSourceParams[sourceType]"
-                rows="{{paramNumLines[sourceType]}}"
-                class="form-control"
-                ng-show="newSourceType == sourceType"></textarea>
-    </div>
-  </div>
-  <div class="form-group formGroupSourceUUID"
-       ng-show="newSourceType && newSourceType != 'nil' && advanced">
-    <label for="inputSourceUUID"
-           class="col-sm-2 control-label">Source UUID</label>
-    <div class="col-sm-10">
-      <input ng-model="newSourceUUID"
-             type="text" class="form-control" id="inputSourceUUID"
-             placeholder="(optional bucket-uuid)"/>
-    </div>
-  </div>
   <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]"
        class="form-group formGroupIndexTypeTemplate">
     <label class="col-sm-2 control-label"></label>
@@ -122,6 +99,29 @@
               ng-model="selectedTargetIndexes"
               ng-options="indexName for indexName in aliasTargets">
       </select>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceParams"
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+    <label for="inputSourceParams"
+           class="col-sm-2 control-label">Source Params</label>
+    <div class="col-sm-10"
+         ng-repeat="(sourceType, p) in newSourceParams"
+         ng-class="{'has-error': errorFields.sourceParams[sourceType]}">
+      <textarea ng-model="newSourceParams[sourceType]"
+                rows="{{paramNumLines[sourceType]}}"
+                class="form-control"
+                ng-show="newSourceType == sourceType"></textarea>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceUUID"
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+    <label for="inputSourceUUID"
+           class="col-sm-2 control-label">Source UUID</label>
+    <div class="col-sm-10">
+      <input ng-model="newSourceUUID"
+             type="text" class="form-control" id="inputSourceUUID"
+             placeholder="(optional bucket-uuid)"/>
     </div>
   </div>
   <div class="form-group formGroupPlanParams"
