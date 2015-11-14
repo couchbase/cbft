@@ -2,6 +2,33 @@
   {{errorMessage}}
 </div>
 
+<div class="searchBar row">
+  <div class="col-sm-6">
+    <select ng-disabled="!indexNames"
+            ng-model="searchBarIndex"
+            ng-options="t for t in indexNames"
+            class="form-control">
+      <option value="">-- index to search --</option>
+    </select>
+  </div>
+  <div class="col-sm-6">
+   <div class="input-group">
+    <input ng-disabled="!indexNames || !searchBarIndex"
+           ng-model="searchBarInput"
+           type="text"
+           class="form-control"
+           placeholder="search for..."/>
+    <div class="input-group-btn">
+      <button class="btn btn-primary" type="submit"
+              ng-disabled="!indexNames || !searchBarIndex"
+              ng-click="searchBarRun(searchBarIndex, searchBarInput)">
+        <i class="glyphicon glyphicon-search"></i>
+      </button>
+    </div>
+   </div>
+  </div>
+</div>
+
 <div>
  <div class="listIndexes">
   <div class="row">
@@ -94,14 +121,19 @@
 </div>
 
 <style>
-.listIndexes, .listIndexAliases {
-  padding-bottom: 40px;
+.searchBar, .listIndexes {
+  padding-bottom: 30px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 40px;
+}
+
+.listIndexes > .row, .listIndexAliases > .row {
+  margin-right: 10px;
 }
 
 .listIndexes table, .listIndexAliases table {
   border: 1px solid #ddd;
 }
-
 
 .listIndexes table tr td, .listIndexesAliases table tr td,
 .listIndexes table tr th, .listIndexesAliases table tr th {

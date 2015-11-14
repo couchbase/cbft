@@ -150,7 +150,20 @@ angular.module('cbgtApp').
 
 <script>
 angular.module('cbgtApp').
+    controller('IndexesCtrlFT', IndexesCtrlFT).
     controller('IndexNewCtrlFT', IndexNewCtrlFT);
+
+// ----------------------------------------------
+
+function IndexesCtrlFT($scope, $http, $routeParams,
+                       $log, $sce, $location) {
+    $scope.searchBarRun = function(indexName, q) {
+        $location.path("/indexes/" + indexName + "/query").search("q", q);
+    }
+
+    return IndexesCtrl($scope, $http, $routeParams,
+                       $log, $sce, $location);
+}
 
 function IndexNewCtrlFT($scope, $http, $route, $routeParams,
     $location, $log, $sce, $uibModal) {
@@ -231,7 +244,7 @@ angular.module('cbgtApp').
  function($routeProvider, $locationProvider) {
   $routeProvider.when('/indexes/',
                       {templateUrl: '/staticx/partials/index/ft/list.html',
-                       controller: 'IndexesCtrl'});
+                       controller: 'IndexesCtrlFT'});
   $routeProvider.when('/indexes/_new',
                       {templateUrl: '/staticx/partials/index/ft/new.html',
                        controller: 'IndexNewCtrlFT'});
