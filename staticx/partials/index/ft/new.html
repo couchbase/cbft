@@ -101,6 +101,16 @@
       </select>
     </div>
   </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <div ng-show="newIndexType && newIndexType != 'fulltext-alias'">
+        <input ng-model="advanced" type="checkbox" class="advanced">
+          Show advanced settings
+        </input>
+        <br/>
+      </div>
+    </div>
+  </div>
   <div class="form-group formGroupSourceParams"
        ng-show="newSourceType && newSourceType != 'nil' && advanced">
     <label for="inputSourceParams"
@@ -135,12 +145,6 @@
   </div>
   <div class="form-group newIndexSubmit">
     <div class="col-sm-offset-2 col-sm-10">
-      <div ng-show="newIndexType && newIndexType != 'fulltext-alias'">
-        <input ng-model="advanced" type="checkbox" class="advanced">
-          Show advanced settings
-        </input>
-        <br/>
-      </div>
       <a href="/indexes/">
         <button class="btn btn-cancel">Cancel</button>
       </a>
@@ -182,9 +186,6 @@ form .form-group select {
 }
 form .form-group label.indexParam {
   text-transform: capitalize;
-}
-form input.advanced {
-  margin-bottom: 30px;
 }
 form .newIndexSubmit {
   margin-top: 20px;
