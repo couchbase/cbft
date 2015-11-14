@@ -8,7 +8,7 @@
             ng-model="searchBarIndex"
             ng-options="t for t in indexNames"
             class="form-control">
-      <option value="">-- index to search --</option>
+      <option value="">-- choose full text index or alias --</option>
     </select>
   </div>
   <div class="col-sm-6">
@@ -43,7 +43,7 @@
 
   <table class="table table-striped">
     <tr>
-        <th nowrap>Full Text Index Name</th>
+        <th nowrap>Name</th>
         <th nowrap width="99%">Bucket</th>
         <th nowrap></th>
     </tr>
@@ -80,15 +80,15 @@
     <a href="/indexes/_new?indexType=fulltext-alias&sourceType=nil"
        class="pull-right">
       <button class="btn btn-default btn-sm pull-right" type="submit">
-        <i class="glyphicon glyphicon-plus"></i> New Full Text Index Alias
+        <i class="glyphicon glyphicon-plus"></i> New Full Text Alias
       </button>
     </a>
-    <span class="navbar-text">Full Text Index Aliases</span>
+    <span class="navbar-text">Full Text Aliases</span>
   </div>
 
   <table class="table table-striped">
     <tr>
-        <th nowrap>Full Text Index Alias Name</th>
+        <th nowrap>Name</th>
         <th nowrap width="99%">Target Full Text Indexes</th>
         <th nowrap></th>
     </tr>
