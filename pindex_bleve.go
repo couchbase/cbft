@@ -34,6 +34,7 @@ import (
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	bleveStore "github.com/blevesearch/bleve/index/store"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
@@ -553,7 +554,7 @@ func (t *BleveDest) AddError(op, partition string,
 // ---------------------------------------------------------
 
 type JSONStatsWriter interface {
-	WriteJSON(w io.Writer)
+	WriteJSON(w io.Writer) error
 }
 
 var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
@@ -561,54 +562,106 @@ var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var c uint64
 
-	w.Write(prefixPIndexStoreStats)
+	_, err = w.Write(prefixPIndexStoreStats)
+	if err != nil {
+		return
+	}
 
 	t.m.Lock()
+	defer t.m.Unlock()
 
 	t.stats.WriteJSON(w)
 
 	if t.bindex != nil {
-		_, kvs, err := t.bindex.Advanced()
+		var kvs bleveStore.KVStore
+		_, kvs, err = t.bindex.Advanced()
 		if err == nil && kvs != nil {
 			m, ok := kvs.(JSONStatsWriter)
 			if ok {
-				w.Write([]byte(`,"bleveKVStoreStats":`))
-				m.WriteJSON(w)
+				_, err = w.Write([]byte(`,"bleveKVStoreStats":`))
+				if err != nil {
+					return
+				}
+				err = m.WriteJSON(w)
+				if err != nil {
+					return
+				}
 			}
 		}
 
 		c, err = t.bindex.DocCount()
+		if err != nil {
+			return
+		}
 	}
-
-	t.m.Unlock()
 
 	if err == nil {
-		w.Write([]byte(`,"basic":{"DocCount":`))
-		w.Write([]byte(strconv.FormatUint(c, 10)))
-		w.Write(cbgt.JsonCloseBrace)
+		_, err = w.Write([]byte(`,"basic":{"DocCount":`))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(strconv.FormatUint(c, 10)))
+		if err != nil {
+			return
+		}
+		_, err = w.Write(cbgt.JsonCloseBrace)
+		if err != nil {
+			return
+		}
 	}
 
-	w.Write([]byte(`,"partitions":{`))
+	_, err = w.Write([]byte(`,"partitions":{`))
+	if err != nil {
+		return
+	}
 	first := true
-	t.m.Lock()
 	for partition, bdp := range t.partitions {
 		if first {
-			w.Write([]byte(`"`))
+			_, err = w.Write([]byte(`"`))
+			if err != nil {
+				return
+			}
 		} else {
-			w.Write([]byte(`,"`))
+			_, err = w.Write([]byte(`,"`))
+			if err != nil {
+				return
+			}
 		}
-		w.Write([]byte(partition))
-		w.Write([]byte(`":{"seq":`))
-		w.Write([]byte(strconv.FormatUint(bdp.seqMax, 10)))
-		w.Write([]byte(`,"uuid":"`))
-		w.Write([]byte(bdp.lastUUID))
-		w.Write([]byte(`"}`))
+		_, err = w.Write([]byte(partition))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(`":{"seq":`))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(strconv.FormatUint(bdp.seqMax, 10)))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(`,"uuid":"`))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(bdp.lastUUID))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(`"}`))
+		if err != nil {
+			return
+		}
 		first = false
 	}
-	t.m.Unlock()
-	w.Write(cbgt.JsonCloseBrace)
+	_, err = w.Write(cbgt.JsonCloseBrace)
+	if err != nil {
+		return
+	}
 
-	w.Write(cbgt.JsonCloseBrace)
+	_, err = w.Write(cbgt.JsonCloseBrace)
+	if err != nil {
+		return
+	}
 
 	return nil
 }
