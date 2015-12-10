@@ -467,7 +467,15 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 	uint64, error) {
-	return t.bindex.DocCount()
+	t.m.Lock()
+	bindex := t.bindex
+	t.m.Unlock()
+
+	if bindex == nil {
+		return 0, fmt.Errorf("bleve: Count, bindex already closed")
+	}
+
+	return bindex.DocCount()
 }
 
 // ---------------------------------------------------------
@@ -505,7 +513,15 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 		return err
 	}
 
-	searchResponse, err := t.bindex.Search(searchRequest)
+	t.m.Lock()
+	bindex := t.bindex
+	t.m.Unlock()
+
+	if bindex == nil {
+		return fmt.Errorf("bleve: Query, bindex already closed")
+	}
+
+	searchResponse, err := bindex.Search(searchRequest)
 	if err != nil {
 		return err
 	}

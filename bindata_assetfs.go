@@ -77,7 +77,7 @@ func staticx_css_cbft_css() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/css/cbft.css", size: 2796, mode: os.FileMode(420), modTime: time.Unix(1447700960, 0)}
+	info := bindata_file_info{name: "staticx/css/cbft.css", size: 2796, mode: os.FileMode(420), modTime: time.Unix(1447786779, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
