@@ -38,9 +38,18 @@ var indexClientUnimplementedErr = errors.New("unimplemented")
 //
 // TODO: Implement propagating auth info in IndexClient.
 type IndexClient struct {
+	name        string
 	QueryURL    string
 	CountURL    string
 	Consistency *cbgt.ConsistencyParams
+}
+
+func (r *IndexClient) Name() string {
+	return r.name
+}
+
+func (r *IndexClient) SetName(name string) {
+	r.name = name
 }
 
 func (r *IndexClient) Index(id string, data interface{}) error {
