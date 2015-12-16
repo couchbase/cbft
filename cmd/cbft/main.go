@@ -170,8 +170,6 @@ func main() {
 		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
-	expvars.Set("indexes", bleveHttp.IndexStats())
-
 	router, err := MainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extra,
 		bindHttps[0], flags.DataDir,
