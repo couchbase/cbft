@@ -1,0 +1,115 @@
+<div class="indexContainer">
+
+<div ng-show="errorMessage" class="error ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<div class="query_bar">
+  <div class="query_bar_index">
+    <select ng-disabled="!indexNames"
+            ng-model="searchBarIndexName"
+            ng-options="t for t in indexNames">
+      <option value="">-- choose full text index or alias --</option>
+    </select>
+  </div>
+  <div class="query_bar_input">
+    <input ng-disabled="!indexNames || !searchBarIndexName"
+           ng-model="searchBarInput"
+           type="text"
+           placeholder="search for..."/>
+    <a ui-sref="app.admin.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
+       ng-disabled="!indexNames || !searchBarIndexName">
+      <button type="submit"
+              ng-disabled="!indexNames || !searchBarIndexName">
+        Search
+      </button>
+    </a>
+  </div>
+</div>
+
+<div class="indexes_list">
+  <div class="indexes_header">
+    <h2>Full Text Indexes</h2>
+    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})">
+      <button type="submit">
+        New Full Text Index
+      </button>
+    </a>
+  </div>
+
+  <table>
+    <tr>
+      <th class="name">Name</th>
+      <th class="details">Bucket</th>
+      <th class="controls"></th>
+    </tr>
+    <tr ng-repeat="(indexName, indexDef) in indexDefs"
+        ng-if="indexDef.type != 'fulltext-alias'">
+      <td>
+        <a ui-sref="app.admin.fts_view({indexName: indexName})">{{indexName}}</a>
+      </td>
+      <td>
+        <span ng-if="indexDef.sourceType != 'couchbase'">
+          {{indexDef.sourceType}}
+          &nbsp;/&nbsp;
+        </span>
+        {{indexDef.sourceName}}
+      </td>
+      <td class="controls">
+        <a ui-sref="app.admin.fts_edit({indexName: indexName})">
+          <button>edit</button>
+        </a>
+        <a ui-sref="app.admin.fts_clone({indexName: indexName})">
+          <button>clone</button>
+        </a>
+        <a ng-click="deleteIndex(indexName)">
+          <button>delete</button>
+        </a>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="indexes_list">
+  <div class="indexes_header">
+    <h2>Full Text Aliases</h2>
+    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})">
+      <button type="submit">
+        New Full Text Alias
+      </button>
+    </a>
+  </div>
+
+  <table>
+    <tr>
+      <th class="name">Name</th>
+      <th class="details">Target Full Text Indexes</th>
+      <th class="controls"></th>
+    </tr>
+    <tr ng-repeat="(indexName, indexDef) in indexDefs"
+        ng-if="indexDef.type == 'fulltext-alias'">
+      <td>
+        <a ui-sref="app.admin.fts_view({indexName: indexName})">{{indexName}}</a>
+      </td>
+      <td>
+        <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
+          <a ui-sref="app.admin.fts_view({indexName: targetName})">
+            {{targetName}}</a><span ng-show="!$last">, </span>
+        </span>
+      </td>
+      <td class="controls">
+        <a ui-sref="app.admin.fts_edit({indexName: indexName})">
+          <button>edit</button>
+        </a>
+        <a ui-sref="app.admin.fts_clone({indexName: indexName})">
+          <button>clone</button>
+        </a>
+        <a ng-click="deleteIndex(indexName)">
+          <button>delete</button>
+        </a>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</div>

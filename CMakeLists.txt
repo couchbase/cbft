@@ -64,3 +64,24 @@ GoInstall (TARGET cbft-bleve-query PACKAGE github.com/blevesearch/bleve/utils/bl
   LDFLAGS "${_ldflags}"
   GOTAGS "forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbft-bleve-query)
+
+# Generate pluggable-ui-fts.json file.
+SET (BIN_PREFIX "${CMAKE_INSTALL_PREFIX}/lib")
+configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.json)
+
+# Copy pluggable-ui-fts.json to install/etc/couchbase directory.
+install (FILES "${PROJECT_BINARY_DIR}/pluggable-ui-fts.json"
+  DESTINATION etc/couchbase)
+
+# Copy everything else to install/lib/fts directory.
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ns_server_static/fts"
+  DESTINATION lib)
+
+# Generate pluggable-ui-fts.json file for cluster_run.
+SET (BIN_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/ns_server_static")
+configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.cluster_run.json)
+
+# To run using the ./cluster_run tool:
+#   cd [your dev directory where you ran 'repo sync' for couchbase server]
+#   cd ns_server
+#   ./cluster_run --pluggable-config="../build/goproj/src/github.com/couchbase/cbft/pluggable-ui-fts.cluster_run.json"
