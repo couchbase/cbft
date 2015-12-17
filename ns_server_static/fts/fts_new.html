@@ -50,12 +50,12 @@
   </div>
   <div class="form_group form_group_sourceName"
        ng-show="newSourceType && newSourceType != 'nil'">
-    <label for="inputSourceName">Bucket Name</label>
+    <label for="inputSourceName">Bucket</label>
     <div class="form_control">
-      <input ng-model="newSourceName"
-             type="text"
-             id="inputSourceName"
-             placeholder="bucket-name"/>
+      <select ng-model="newSourceName"
+              ng-options="t for t in bucketNames">
+        <option value="">-- choose bucket --</option>
+      </select>
     </div>
   </div>
   <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]"

@@ -78,23 +78,57 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
 }
 
 function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
-                           $location, $log, $sce, $uibModal) {
-    var $routeParams = $stateParams;
-
-    var $locationRewrite = {
-        host: $location.host,
-        path: function(p) {
-            if (!p) {
-                return $location.path();
-            }
-            return $location.path(p.replace(/^\/indexes\//, "/fts_view/"))
+                           $location, $log, $sce, $uibModal,
+                           $q, mnBucketsService) {
+    mnBucketsService.getBucketsByType(true).then(function(buckets) {
+        $scope.buckets = buckets;
+        $scope.bucketNames = [];
+        for (var i = 0; i < buckets.length; i++) {
+            $scope.bucketNames.push(buckets[i].name);
         }
-    }
 
-    return IndexNewCtrlFT($scope,
-                          prefixedHttp($http, '/' + ftsPrefix),
-                          $route, $routeParams,
-                          $locationRewrite, $log, $sce, $uibModal);
+        var $routeParams = $stateParams;
+
+        var $locationRewrite = {
+            host: $location.host,
+            path: function(p) {
+                if (!p) {
+                    return $location.path();
+                }
+                return $location.path(p.replace(/^\/indexes\//, "/fts_view/"))
+            }
+        }
+
+        IndexNewCtrlFT($scope,
+                       prefixedHttp($http, '/' + ftsPrefix),
+                       $route, $routeParams,
+                       $locationRewrite, $log, $sce, $uibModal,
+                       finishIndexNewCtrlFTInit)
+
+        function finishIndexNewCtrlFTInit() {
+            var putIndexOrig = $scope.putIndex;
+
+            $scope.putIndex = function(newIndexName,
+                                       newIndexType, newIndexParams,
+                                       newSourceType, newSourceName,
+                                       newSourceUUID, newSourceParams,
+                                       newPlanParams, prevIndexUUID) {
+                if (!newSourceUUID) {
+                    for (var i = 0; i < buckets.length; i++) {
+                        if (newSourceName == buckets[i].name) {
+                            newSourceUUID = buckets[i].uuid;
+                        }
+                    }
+                }
+
+                return putIndexOrig(newIndexName,
+                                    newIndexType, newIndexParams,
+                                    newSourceType, newSourceName,
+                                    newSourceUUID, newSourceParams,
+                                    newPlanParams, prevIndexUUID);
+            };
+        }
+    });
 }
 
 function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location) {
@@ -233,7 +267,7 @@ function BleveWordListModalCtrl_NS($scope, $uibModalInstance,
 // ----------------------------------------------
 
 function IndexNewCtrlFT($scope, $http, $route, $routeParams,
-    $location, $log, $sce, $uibModal) {
+                        $location, $log, $sce, $uibModal, andThen) {
     $scope.indexDefs = null;
 
     $http.get('/api/index').
@@ -303,6 +337,10 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
 
         IndexNewCtrl($scope, $http, $route, $routeParams,
                      $location, $log, $sce, $uibModal);
+
+        if (andThen) {
+            andThen();
+        }
     });
 }
 
