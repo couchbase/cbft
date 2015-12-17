@@ -81,12 +81,12 @@
 
 .indexContainer .glyphicon-remove:before,
 .bleveModal .glyphicon-remove:before {
-  content: "X";
+  content: "cancel";
 }
 
 .indexContainer .glyphicon-trash:before,
 .bleveModal .glyphicon-trash:before {
-  content: "delete";
+  content: "X";
 }
 
 .indexContainer .glyphicon-chevron-right:before,
@@ -254,6 +254,10 @@
   visibility: inherit;
 }
 
+.indexContainer .mapping .mappingHandle .attrControls .glyphicon-trash:before {
+  content: "delete";
+}
+
 .indexContainer .mapping .field .fieldHandle .attrControls {
   visibility: hidden;
 }
@@ -261,6 +265,10 @@
 .indexContainer .mapping .field .fieldHandle:hover .attrControls,
 .indexContainer .mapping .field.editing .fieldHandle .attrControls {
   visibility: inherit;
+}
+
+.indexContainer .mapping .fieldHandle .attrControls .glyphicon-trash:before {
+  content: "delete";
 }
 
 .indexContainer .mapping .mappingHandle .editArea {
