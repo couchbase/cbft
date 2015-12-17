@@ -300,6 +300,7 @@ func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
 		bleveHttp.RegisterIndexName(pindex.Name, bindex)
+		bindex.SetName(pindex.Name)
 	}
 }
 
