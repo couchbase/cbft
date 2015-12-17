@@ -122,7 +122,8 @@ func (h *NsStatsHandler) ServeHTTP(
 			// automatically process all the pindex dest stats
 			err := addPindexStats(pindex, nsIndexStat)
 			if err != nil {
-				rest.ShowError(w, req, fmt.Sprintf("error processing PIndex stats: %v", err), 500)
+				rest.ShowError(w, req,
+					fmt.Sprintf("error processing PIndex stats: %v", err), 500)
 				return
 			}
 		}
@@ -132,11 +133,11 @@ func (h *NsStatsHandler) ServeHTTP(
 		lindexName := sourceName + ":" + feed.IndexName()
 		nsIndexStat, ok := nsIndexStats[lindexName]
 		if ok {
-			err := addFeedStats(feed, nsIndexStat)
-
 			// automatically process all the feed stats
+			err := addFeedStats(feed, nsIndexStat)
 			if err != nil {
-				rest.ShowError(w, req, fmt.Sprintf("error processing Feed stats: %v", err), 500)
+				rest.ShowError(w, req,
+					fmt.Sprintf("error processing Feed stats: %v", err), 500)
 				return
 			}
 		}
@@ -169,7 +170,6 @@ func addPindexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) err
 }
 
 func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) error {
-
 	statsBytes := buffer.Bytes()
 	pointers, err := jsonpointer.ListPointers(statsBytes)
 	if err != nil {
@@ -263,26 +263,42 @@ func NewNsStatusHandler(mgr *cbgt.Manager, server string) (*NsStatusHandler, err
 	}, nil
 }
 
-func HostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes, nodeDefs *cbgt.NodeDefs) []string {
+func NsHostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes,
+	nodeDefs *cbgt.NodeDefs) []string {
+	v := struct{}{}
+
 	// find the node UUIDs related to this index
 	nodes := make(map[string]struct{})
 	for _, planPIndex := range planPIndexes.PlanPIndexes {
 		if planPIndex.IndexName == name {
 			for planPIndexNodeUUID := range planPIndex.Nodes {
-				nodes[planPIndexNodeUUID] = struct{}{}
+				nodes[planPIndexNodeUUID] = v
 			}
 		}
 	}
-	nodeExtras := make(map[string]string)
+
 	// look for all these nodes in the nodes wanted
+	nodeExtras := make(map[string]string)
 	for _, nodeDef := range nodeDefs.NodeDefs {
 		_, ok := nodes[nodeDef.UUID]
 		if ok {
-			nodeExtras[nodeDef.UUID] = nodeDef.Extras
+			var e struct {
+				NsHostPort string `json:"nsHostPort"`
+			}
+
+			err := json.Unmarshal([]byte(nodeDef.Extras), &e)
+			if err != nil {
+				// Early versions of ns_server integration had a
+				// simple, non-JSON "host:port" format for
+				// nodeDef.Extras, so fall back to that.
+				e.NsHostPort = nodeDef.Extras
+			}
+
+			nodeExtras[nodeDef.UUID] = e.NsHostPort
 		}
 	}
 
-	// build slide of node extras
+	// build slice of node extras
 	nodeStrings := make(sort.StringSlice, 0, len(nodeExtras))
 	for _, nodeExtra := range nodeExtras {
 		nodeStrings = append(nodeStrings, nodeExtra)
@@ -344,18 +360,17 @@ func (h *NsStatusHandler) ServeHTTP(
 		}{
 			Bucket: indexDef.SourceName,
 			Name:   indexDefName,
-			Hosts:  HostsForIndex(indexDefName, planPIndexes, nodesDefs),
+			Hosts:  NsHostsForIndex(indexDefName, planPIndexes, nodesDefs),
 			// FIXME hard-coded
 			Completion: 100,
 			Status:     "Ready",
 		})
-
 	}
+
 	w.Write([]byte("],"))
 	w.Write(statsNamePrefix)
 	w.Write([]byte("code"))
 	w.Write(statsNameSuffix)
 	w.Write([]byte("\"success\""))
 	w.Write(cbgt.JsonCloseBrace)
-
 }
