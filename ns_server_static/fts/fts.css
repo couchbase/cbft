@@ -104,6 +104,11 @@
   content: "▶";
 }
 
+.indexContainer .glyphicon-file:before,
+.bleveModal .glyphicon-file:before {
+  content: "#";
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,
@@ -198,6 +203,26 @@
   padding-bottom: 10px;
 }
 
+.bleveModal .modal-footer {
+  text-align: right;
+}
+
+.bleveModal .modal-footer .btn {
+  height: 31px;
+  margin-top: 20px;
+  border: 0;
+  line-height: 1;
+  background: url("/images/devider_line_1.gif") repeat-x scroll 0 -1px #DFE0E0;
+  padding: 10px;
+  clear: both;
+}
+
+.bleveModal .modal-footer .btn-primary {
+  text-align: center;
+  width: 121px;
+  background: url(/images/button_blue.gif) 0 0 no-repeat;
+}
+
 .bleveModal button {
   padding: 3px 5px 3px 5px;
 }
@@ -245,6 +270,17 @@
   font-size: 9pt;
 }
 
+.indexContainer .mapping .mappingHandle {
+  border-top: 1px solid white;
+  padding: 4px 0 4px 4px;
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.indexContainer .mapping .mappingHandle::after {
+  clear: both;
+}
+
 .indexContainer .mapping .mappingHandle .attrControls {
   visibility: hidden;
 }
@@ -265,6 +301,13 @@
 .indexContainer .mapping .field .fieldHandle:hover .attrControls,
 .indexContainer .mapping .field.editing .fieldHandle .attrControls {
   visibility: inherit;
+}
+
+.indexContainer .mapping .fieldHandle {
+  border-top: 1px solid white;
+  padding: 4px 0 4px 4px;
+  background-color: #eee;
+  cursor: pointer;
 }
 
 .indexContainer .mapping .fieldHandle .attrControls .glyphicon-trash:before {
@@ -291,6 +334,10 @@
 
 .indexContainer .mapping input[type=text] {
   width: 14em;
+}
+
+.indexContainer .typeMappingsSection ol {
+  margin-left: 20px;
 }
 
 /* -------------------------------------------------- */
@@ -324,7 +371,7 @@
 /* -------------------------------------------------- */
 
 .indexContainer .viewOnly .editable {
-  visibility: hidden !important;
+  display: none;
 }
 
 .indexContainer .viewOnly button {
@@ -380,4 +427,11 @@
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .index-summary pre {
+  margin: 12px 0 0 40px;
+  overflow: auto;
 }
