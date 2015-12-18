@@ -14,32 +14,32 @@ var ftsPrefix = 'fts';
             .state('app.admin.fts_list', {
                 url: '/fts_list',
                 controller: 'IndexesCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_list.html'
+                templateUrl: '/_p/ui/fts/fts_list.html'
             })
             .state('app.admin.fts_view', {
                 url: '/fts_view/:indexName?tabName',
                 controller: 'IndexCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_view.html'
+                templateUrl: '/_p/ui/fts/fts_view.html'
             })
             .state('app.admin.fts_new', {
                 url: '/fts_new/?indexType&sourceType',
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_new.html'
+                templateUrl: '/_p/ui/fts/fts_new.html'
             })
             .state('app.admin.fts_edit', {
                 url: '/fts_edit/:indexName/_edit',
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_new.html'
+                templateUrl: '/_p/ui/fts/fts_new.html'
             })
             .state('app.admin.fts_clone', {
                 url: '/fts_clone/:indexName/_clone',
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_new.html'
+                templateUrl: '/_p/ui/fts/fts_new.html'
             })
             .state('app.admin.fts_search', {
                 url: '/fts_search/:indexName/_search?query',
                 controller: 'IndexSearchCtrlFT_NS',
-                templateUrl: '/fts/ui/fts_search.html'
+                templateUrl: '/_p/ui/fts/fts_search.html'
             });
 
         mnPluggableUiRegistryProvider.registerConfig({
@@ -64,7 +64,7 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
                           $log, $sce, $location) {
     var $routeParams = $stateParams;
     return IndexesCtrl($scope,
-                       prefixedHttp($http, '/' + ftsPrefix),
+                       prefixedHttp($http, '/_p/' + ftsPrefix),
                        $routeParams, $log, $sce, $location);
 }
 
@@ -72,7 +72,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
     return IndexCtrl($scope,
-                     prefixedHttp($http, '/' + ftsPrefix),
+                     prefixedHttp($http, '/_p/' + ftsPrefix),
                      $route, $routeParams,
                      $location, $log, $sce, $uibModal);
 }
@@ -100,7 +100,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
         }
 
         IndexNewCtrlFT($scope,
-                       prefixedHttp($http, '/' + ftsPrefix),
+                       prefixedHttp($http, '/_p/' + ftsPrefix),
                        $route, $routeParams,
                        $locationRewrite, $log, $sce, $uibModal,
                        finishIndexNewCtrlFTInit)
@@ -146,10 +146,10 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
         $location.search("p", $scope.page);
     }
 
-    $scope.static_base = "/fts";
+    $scope.static_base = "/_p/ui/fts";
 
     return QueryCtrl($scope,
-                     prefixedHttp($http, '/' + ftsPrefix),
+                     prefixedHttp($http, '/_p/' + ftsPrefix),
                      $routeParams, $log, $sce, $location);
 }
 
@@ -184,7 +184,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         $scope.viewOnly = true;
     }
 
-    $scope.static_prefix = "/fts/static-bleve-mapping";
+    $scope.static_prefix = "/_p/ui/fts/static-bleve-mapping";
 
     $scope.indexTemplates = $scope.indexTemplates || {};
     $scope.indexTemplates["fulltext-index"] =
@@ -233,28 +233,28 @@ angular.module(ftsAppName).
 function BleveAnalyzerModalCtrl_NS($scope, $uibModalInstance, $http,
                                    name, value, mapping, static_prefix) {
     return BleveAnalyzerModalCtrl($scope, $uibModalInstance,
-                                  prefixedHttp($http, '/' + ftsPrefix),
+                                  prefixedHttp($http, '/_p/' + ftsPrefix),
                                   name, value, mapping, static_prefix);
 }
 
 function BleveCharFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                      name, value, mapping, static_prefix) {
     return BleveCharFilterModalCtrl($scope, $uibModalInstance,
-                                    prefixedHttp($http, '/' + ftsPrefix),
+                                    prefixedHttp($http, '/_p/' + ftsPrefix),
                                     name, value, mapping, static_prefix);
 }
 
 function BleveTokenFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                       name, value, mapping, static_prefix) {
     return BleveTokenFilterModalCtrl($scope, $uibModalInstance,
-                                     prefixedHttp($http, '/' + ftsPrefix),
+                                     prefixedHttp($http, '/_p/' + ftsPrefix),
                                      name, value, mapping, static_prefix);
 }
 
 function BleveTokenizerModalCtrl_NS($scope, $uibModalInstance, $http,
                                     name, value, mapping, static_prefix) {
     return BleveTokenizerModalCtrl($scope, $uibModalInstance,
-                                   prefixedHttp($http, '/' + ftsPrefix),
+                                   prefixedHttp($http, '/_p/' + ftsPrefix),
                                    name, value, mapping, static_prefix);
 }
 
