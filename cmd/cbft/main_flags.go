@@ -37,7 +37,7 @@ type Flags struct {
 	UUID       string
 	Version    bool
 	Weight     int
-	Extra      string
+	Extras     string
 }
 
 var flags Flags
@@ -171,9 +171,9 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"weight"}, "INTEGER", 1,
 		"optional weight of this node, where a more capable"+
 			"\nnode should have higher weight; default is 1.")
-	s(&flags.Extra,
-		[]string{"extra", "e"}, "extra info", "",
-		"extra info you want stored with this node")
+	s(&flags.Extras,
+		[]string{"extras", "extra", "e"}, "EXTRAS", "",
+		"extra information you want stored with this node")
 
 	flag.Usage = func() {
 		if !flags.Help {

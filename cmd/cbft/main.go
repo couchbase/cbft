@@ -171,7 +171,7 @@ func main() {
 	}
 
 	router, err := MainStart(cfg, uuid, tagsArr,
-		flags.Container, flags.Weight, flags.Extra,
+		flags.Container, flags.Weight, flags.Extras,
 		bindHttps[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr, flags.Options)
