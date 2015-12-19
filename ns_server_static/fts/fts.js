@@ -347,22 +347,28 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
 // ----------------------------------------------
 
 function prefixedHttp($http, prefix) {
-    var needDecorate = {"get": true, "put": true, "post": true, "delete": true};
+    var needDecorate = {
+        "get": true, "put": true, "post": true, "delete": true
+    };
 
     var rv = {}
     for (var k in $http) {
         rv[k] = $http[k];
         if (needDecorate[k]) {
-            decorate(k)
+            decorate(k);
         }
     }
     return rv;
 
     function decorate(k) {
         var orig = rv[k];
-        rv[k] = function() {
-            arguments[0] = prefix + arguments[0];
-            return orig.apply($http, arguments);
+
+        rv[k] = function(path, data, config) {
+            if (data && typeof(data) == "object") {
+                data = JSON.stringify(data);
+            }
+
+            return orig.call($http, prefix + path, data, config);
         }
     }
 }
