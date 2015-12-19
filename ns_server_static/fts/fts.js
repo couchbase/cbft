@@ -8,7 +8,7 @@ var ftsPrefix = 'fts';
 
   angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute"])
+            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider) {
       $stateProvider
             .state('app.admin.fts_list', {
