@@ -257,7 +257,10 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	options := map[string]string{}
+	options := map[string]string{
+		"managerLoadDataDir": "async",
+	}
+
 	if optionKVs != "" {
 		for _, kv := range strings.Split(optionKVs, ",") {
 			a := strings.Split(kv, "=")
