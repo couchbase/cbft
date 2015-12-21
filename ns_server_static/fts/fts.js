@@ -136,6 +136,12 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
 
     $scope.indexName = $stateParams.indexName;
 
+    $scope.static_base = "/_p/ui/fts";
+
+    QueryCtrl($scope,
+              prefixedHttp($http, '/_p/' + ftsPrefix, true),
+              $routeParams, $log, $sce, $location);
+
     $scope.query = $routeParams.query || "";
     $scope.page = $routeParams.page || "";
 
@@ -145,12 +151,6 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
     if (!$location.search().page) {
         $location.search("p", $scope.page);
     }
-
-    $scope.static_base = "/_p/ui/fts";
-
-    return QueryCtrl($scope,
-                     prefixedHttp($http, '/_p/' + ftsPrefix),
-                     $routeParams, $log, $sce, $location);
 }
 
 // -------------------------------------------------------
@@ -346,7 +346,7 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
 
 // ----------------------------------------------
 
-function prefixedHttp($http, prefix) {
+function prefixedHttp($http, prefix, dataNoJSONify) {
     var needDecorate = {
         "get": true, "put": true, "post": true, "delete": true
     };
@@ -364,9 +364,9 @@ function prefixedHttp($http, prefix) {
         var orig = rv[k];
 
         rv[k] = function(path, data, config) {
-            if (data && typeof(data) == "object") {
-                data = JSON.stringify(data);
-            }
+            config = config || {};
+            config.mnHttp = config.mnHttp || {};
+            config.mnHttp.isNotForm = true;
 
             return orig.call($http, prefix + path, data, config);
         }
