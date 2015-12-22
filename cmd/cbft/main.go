@@ -270,6 +270,18 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	optionsEnv := os.Getenv("CBFT_ENV_OPTIONS")
+	if optionsEnv != "" {
+		log.Printf("CBFT_ENV_OPTIONS")
+		for _, kv := range strings.Split(optionsEnv, ",") {
+			a := strings.Split(kv, "=")
+			if len(a) >= 2 {
+				log.Printf("  %s", a[0])
+				options[a[0]] = a[1]
+			}
+		}
+	}
+
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
 		extras, bindHttp, dataDir, server, &MainHandlers{}, options)
