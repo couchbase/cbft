@@ -234,29 +234,6 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
-	if server != "." {
-		_, err := couchbase.Connect(server)
-		if err != nil {
-			if !strings.HasPrefix(server, "http://") &&
-				!strings.HasPrefix(server, "https://") {
-				return nil, fmt.Errorf("error: not a URL, server: %q\n"+
-					"  Please check that your -server parameter"+
-					" is a valid URL\n"+
-					"  (http://HOST:PORT),"+
-					" such as \"http://localhost:8091\",\n"+
-					"  to a couchbase server",
-					server)
-			}
-
-			return nil, fmt.Errorf("error: could not connect"+
-				" to server (%q), err: %v\n"+
-				"  Please check that your -server parameter (%q)\n"+
-				"  is correct, the couchbase server is accessible,\n"+
-				"  and auth is correct (e.g., http://USER:PSWD@HOST:PORT)",
-				server, err, server)
-		}
-	}
-
 	options := map[string]string{
 		"managerLoadDataDir": "async",
 	}
@@ -279,6 +256,29 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 				log.Printf("  %s", a[0])
 				options[a[0]] = a[1]
 			}
+		}
+	}
+
+	if server != "." && options["startCheckServer"] != "skip" {
+		_, err := couchbase.Connect(server)
+		if err != nil {
+			if !strings.HasPrefix(server, "http://") &&
+				!strings.HasPrefix(server, "https://") {
+				return nil, fmt.Errorf("error: not a URL, server: %q\n"+
+					"  Please check that your -server parameter"+
+					" is a valid URL\n"+
+					"  (http://HOST:PORT),"+
+					" such as \"http://localhost:8091\",\n"+
+					"  to a couchbase server",
+					server)
+			}
+
+			return nil, fmt.Errorf("error: could not connect"+
+				" to server (%q), err: %v\n"+
+				"  Please check that your -server parameter (%q)\n"+
+				"  is correct, the couchbase server is accessible,\n"+
+				"  and auth is correct (e.g., http://USER:PSWD@HOST:PORT)",
+				server, err, server)
 		}
 	}
 
