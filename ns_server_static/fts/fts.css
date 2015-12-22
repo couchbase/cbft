@@ -9,8 +9,9 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .form_group,
 .indexContainer .form-group,
-.indexContainer .form_group {
+.bleveModal .form-group {
   padding: .4rem 0;
   display: flex;
   min-height: 1.5rem;
@@ -20,12 +21,17 @@
   flex-wrap: no-wrap;
 }
 
+.indexContainer .form_group label,
 .indexContainer .form-group label,
-.indexContainer .form_group label {
-  min-width: 15em;
+.bleveModal .form-group label {
   padding-right: 1em;
   font-weight: bold;
   text-align: right;
+}
+
+.indexContainer .form_group label,
+.indexContainer .form-group label {
+  min-width: 15em;
 }
 
 .indexContainer .form_group .form_control {
@@ -34,6 +40,14 @@
 
 .indexContainer .form_group .form_control textarea {
   width: 100%;
+}
+
+.bleveModal .form-group label {
+  min-width: 12em;
+}
+
+.bleveModal .form-group select {
+  width: 15em;
 }
 
 /* -------------------------------------------------- */
