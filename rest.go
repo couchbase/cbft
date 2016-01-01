@@ -79,8 +79,11 @@ func myAsset(name string) ([]byte, error) {
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
-	return rest.InitRESTRouter(
+	var options = map[string]interface{}{
+		"auth": SetHandler,
+	}
+	return rest.InitRESTRouterEx(
 		InitStaticRouter(staticDir, staticETag, mgr),
 		versionMain, mgr, staticDir, staticETag, mr,
-		myAssetDir, myAsset)
+		myAssetDir, myAsset, options)
 }

@@ -77,14 +77,16 @@ func TestNewRESTRouter(t *testing.T) {
 }
 
 type RESTHandlerTest struct {
-	Desc          string
-	Path          string
-	Method        string
-	Params        url.Values
-	Body          []byte
-	Status        int
-	ResponseBody  []byte
-	ResponseMatch map[string]bool
+	Desc           string
+	Path           string
+	Method         string
+	Params         url.Values
+	Body           []byte
+	Status         int
+	ResponseBody   []byte
+	ResponseMatch  map[string]bool
+	Header         map[string]string
+	ResponseHeader map[string]string
 
 	Before func()
 	After  func()
@@ -108,6 +110,12 @@ func (test *RESTHandlerTest) check(t *testing.T,
 				desc, test.ResponseBody, got)
 		}
 	}
+	for key, val := range test.ResponseHeader {
+		v := record.Header().Get(key)
+		if v != val {
+			t.Errorf("%s: response header expected %s got %s", desc, val, v)
+		}
+	}
 	for pattern, shouldMatch := range test.ResponseMatch {
 		didMatch := bytes.Contains(got, []byte(pattern))
 		if didMatch != shouldMatch {
@@ -129,7 +137,11 @@ func testRESTHandlers(t *testing.T,
 				Method: test.Method,
 				URL:    &url.URL{Path: test.Path},
 				Form:   test.Params,
+				Header: make(http.Header),
 				Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
+			}
+			for key, val := range test.Header {
+				req.Header.Set(key, val)
 			}
 			record := httptest.NewRecorder()
 			router.ServeHTTP(record, req)
@@ -2954,6 +2966,65 @@ func TestIndexDefWithJSON(t *testing.T) {
 			ResponseMatch: map[string]bool{
 				`{"status":"ok"}`: true,
 			},
+		},
+		{
+			Desc:   "create index with primary feed",
+			Path:   "/api/index/idx00",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"fulltext-index"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body: []byte(`{ "indexType": "fulltext-index",
+                            "indexParams": "{}",
+                            "sourceType": "primary",
+                            "sourceUUID": "beefbeef",
+                            "sourceParams": "{\"numPartitions\":10}"
+                          }`),
+			ResponseHeader: map[string]string{"Content-type": "application/json;version=1.0.0"},
+			Status:         http.StatusOK,
+			ResponseMatch: map[string]bool{
+				`{"status":"ok"}`: true,
+			},
+		},
+		{
+			Desc:   "create index with primary feed1",
+			Path:   "/api/index/idx01",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"fulltext-index"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body: []byte(`{ "indexType": "fulltext-index",
+                            "indexParams": "{}",
+                            "sourceType": "primary",
+                            "sourceUUID": "beefbeef",
+                            "sourceParams": "{\"numPartitions\":10}"
+                          }`),
+			Header:       map[string]string{"Accept": "version=3.0.0"},
+			ResponseBody: []byte(`["application/json;version=1.0.0","application/json;version=0.0.0"]`),
+			Status:       406,
+		},
+		{
+			Desc:   "create index with primary feed1",
+			Path:   "/api/index/idx02",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":    []string{"fulltext-index"},
+				"sourceType":   []string{"primary"},
+				"sourceParams": []string{`{"numPartitions":10}`},
+			},
+			Body: []byte(`{ "indexType": "fulltext-index",
+                            "indexParams": "{}",
+                            "sourceType": "primary",
+                            "sourceUUID": "beefbeef",
+                            "sourceParams": "{\"numPartitions\":10}"
+                          }`),
+			ResponseHeader: map[string]string{"Content-type": "application/json;version=1.0.0"},
+			Header:         map[string]string{"Accept": "version=1.0.0"},
+			Status:         http.StatusOK,
 		},
 	}
 
