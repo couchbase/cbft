@@ -38,6 +38,7 @@ type Flags struct {
 	Version    bool
 	Weight     int
 	Extras     string
+	AuthType   string
 }
 
 var flags Flags
@@ -174,7 +175,9 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.Extras,
 		[]string{"extras", "extra", "e"}, "EXTRAS", "",
 		"extra information you want stored with this node")
-
+	s(&flags.AuthType,
+		[]string{"auth"}, "AUTH", "",
+		"authentication method for cbft requests")
 	flag.Usage = func() {
 		if !flags.Help {
 			return

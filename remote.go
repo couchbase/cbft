@@ -72,7 +72,12 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
 		return 0, fmt.Errorf("remote: no CountURL provided")
 	}
-	resp, err := httpGet(r.CountURL)
+	u, err := UrlWithAuth(r.CountURL)
+	if err != nil {
+		return 0, fmt.Errorf("remote: Error in parsing count url"+
+			" docCountURL: %s", r.CountURL)
+	}
+	resp, err := httpGet(u)
 	if err != nil {
 		return 0, err
 	}
@@ -204,8 +209,13 @@ func (r *IndexClient) Count() (uint64, error) {
 }
 
 func (r *IndexClient) Query(buf []byte) ([]byte, error) {
+	u, err := UrlWithAuth(r.QueryURL)
+	if err != nil {
+		return nil, fmt.Errorf("remote: Error in parsing query url"+
+			" queryURL: %s", r.QueryURL)
+	}
 	resp, err :=
-		httpPost(r.QueryURL, "application/json", bytes.NewBuffer(buf))
+		httpPost(u, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
 	}

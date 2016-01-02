@@ -14,14 +14,23 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/couchbase/cbgt"
 	"net/http"
+	"net/url"
 	"strings"
+
+	"github.com/couchbase/cbauth"
+	"github.com/couchbase/cbgt"
 )
 
 const API_MAX_VERSION = "1.0.0"
 const API_MIN_VERSION = "0.0.0"
 const VersionTag = "version="
+
+var authType = ""
+
+func SetAuthType(auth string) {
+	authType = auth
+}
 
 func SetHandler(h http.Handler) http.Handler {
 	return &CbftHandler{H: h}
@@ -34,6 +43,9 @@ type CbftHandler struct {
 func (c *CbftHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	if err := checkAPIVersion(w, req); err != nil {
+		return
+	}
+	if !checkAuth(w, req) {
 		return
 	}
 	if c.H != nil {
@@ -51,7 +63,6 @@ func HandleVersion(h string) (string, error) {
 	}
 	found := false
 	for _, val := range strings.Split(h, ",") {
-		fmt.Println("version is", val)
 		versionIndex := strings.Index(val, VersionTag)
 		if versionIndex == -1 {
 			continue
@@ -87,4 +98,45 @@ func checkAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
 	}
 	w.Header().Set("Content-type", "application/json;version="+version)
 	return
+}
+
+func checkAuth(w http.ResponseWriter, req *http.Request) (admin bool) {
+	switch {
+	case authType == "cbauth":
+		creds, err := cbauth.AuthWebCreds(req)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("auth err: %v ", err), 403)
+			return
+		}
+		admin, err = creds.IsAdmin()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("auth err: %v ", err), 403)
+			return
+		}
+		if !admin {
+			cbauth.SendUnauthorized(w)
+			return
+		}
+		return
+	case authType == "":
+		return true
+	}
+	return true
+}
+
+func UrlWithAuth(urlStr string) (string, error) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return "", err
+	}
+
+	if authType == "cbauth" {
+		adminUser, adminPasswd, err := cbauth.GetHTTPServiceAuth(u.Host)
+		if err != nil {
+			return "", err
+		}
+
+		u.User = url.UserPassword(adminUser, adminPasswd)
+	}
+	return u.String(), nil
 }
