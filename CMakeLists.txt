@@ -1,4 +1,5 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
+
 PROJECT (cbft)
 
 # This project is intended to be built as part of a Couchbase Server build,
@@ -75,7 +76,7 @@ GoInstall (TARGET cbgt-ctl PACKAGE github.com/couchbase/cbgt/cmd/cbgt-ctl
   INSTALL_PATH bin OUTPUT cbgt-ctl)
 
 # Generate pluggable-ui-fts.json file.
-SET (BIN_PREFIX "${CMAKE_INSTALL_PREFIX}/lib")
+SET (DOC_ROOT_PREFIX "")
 configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.json)
 
 # Copy pluggable-ui-fts.json to install/etc/couchbase directory.

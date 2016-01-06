@@ -2,5 +2,5 @@
   "service": "fts",
   "proxy-strategy": "local",
   "rest-api-prefix": "fts",
-  "doc-root": "@BIN_PREFIX@/fts"
+  "doc-root": "@DOC_ROOT_PREFIX@fts"
 }
