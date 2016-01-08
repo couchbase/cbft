@@ -44,7 +44,7 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbft)
 
 GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/blevesearch/bleve/utils/bleve_dump
@@ -53,7 +53,7 @@ GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/blevesearch/bleve/utils/ble
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbft-bleve-dump)
 
 GoInstall (TARGET cbft-bleve-query PACKAGE github.com/blevesearch/bleve/utils/bleve_query
@@ -62,7 +62,7 @@ GoInstall (TARGET cbft-bleve-query PACKAGE github.com/blevesearch/bleve/utils/bl
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbft-bleve-query)
 
 GoInstall (TARGET cbgt-ctl PACKAGE github.com/couchbase/cbgt/cmd/cbgt-ctl
@@ -71,7 +71,7 @@ GoInstall (TARGET cbgt-ctl PACKAGE github.com/couchbase/cbgt/cmd/cbgt-ctl
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb forestdb_default_kvstore"
   INSTALL_PATH bin OUTPUT cbgt-ctl)
 
 # Generate pluggable-ui-fts.json file.
