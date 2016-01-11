@@ -2004,6 +2004,21 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			},
 		},
 		{
+			Desc:   "create an alias without target",
+			Path:   "/api/index/emptyAlias",
+			Method: "PUT",
+			Params: url.Values{
+				"indexType":   []string{"fulltext-alias"},
+				"indexParams": []string{`{"targets":{}}`},
+				"sourceType":  []string{"nil"},
+			},
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`number of index targets are zero`: true,
+			},
+		},
+		{
 			Desc:   "count myAlias should be 0, 2 nodes",
 			Path:   "/api/index/myAlias/count",
 			Method: "GET",

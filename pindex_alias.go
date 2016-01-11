@@ -61,7 +61,14 @@ type AliasParamsTarget struct {
 
 func ValidateAlias(indexType, indexName, indexParams string) error {
 	params := AliasParams{}
-	return json.Unmarshal([]byte(indexParams), &params)
+	err := json.Unmarshal([]byte(indexParams), &params)
+	if err == nil {
+		if len(params.Targets) == 0 {
+			return fmt.Errorf("alias: ValidateAlias" +
+				" number of index targets is zero")
+		}
+	}
+	return err
 }
 
 func CountAlias(mgr *cbgt.Manager,
