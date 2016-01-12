@@ -68,6 +68,7 @@ func main() {
 		log.Fatalf("main: could not create MsgRing, err: %v", err)
 	}
 	log.SetOutput(mr)
+	log.SetLoggerCallback(LoggerFunc)
 
 	log.Printf("main: %s started (%s/%s)",
 		os.Args[0], VERSION, cbgt.VERSION)
@@ -108,8 +109,7 @@ func main() {
 		}
 	}
 
-    cbft.SetAuthType(flags.AuthType)
-
+	cbft.SetAuthType(flags.AuthType)
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("main: os.Getwd, err: %#v", err)
@@ -245,6 +245,15 @@ func MainServeHttp(bindHttp string, anyHostPorts map[string]bool) {
 			"  Please check that your -bindHttp parameter (%q)\n"+
 			"  is correct and available.", err, bindHttp)
 	}
+}
+
+func LoggerFunc(level, format string, args ...interface{}) string {
+	ts := time.Now().Format("2006-01-02T15:04:05.999-07:00")
+	prefix := ts + " [" + level + "] "
+	if format != "" {
+		return prefix + fmt.Sprintf(format, args...)
+	}
+	return prefix + fmt.Sprint(args...)
 }
 
 func MainWelcome(flagAliases map[string][]string) {
