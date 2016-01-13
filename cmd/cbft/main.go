@@ -76,6 +76,8 @@ func main() {
 
 	go cmd.DumpOnSignalForPlatform()
 
+	bleve.StoreDynamic = false
+
 	MainWelcome(flagAliases)
 
 	s, err := os.Stat(flags.DataDir)
