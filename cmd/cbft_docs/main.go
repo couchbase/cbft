@@ -29,9 +29,9 @@ import (
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
-
-	cbftCmd "github.com/couchbase/cbft/cmd/cbft"
 )
+
+var VERSION = "v0.3.1" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.
 
 func categoryParse(categoryFull string) (string, string, string, string) {
 	ma := strings.Split(categoryFull, "|")
@@ -114,8 +114,7 @@ func main() {
 	mr, _ := cbgt.NewMsgRing(ioutil.Discard, 1)
 
 	router, meta, err :=
-		cbft.NewRESTRouter(cbftCmd.VERSION, mgr,
-			staticDir, staticETag, mr)
+		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
 	if err != nil {
 		log.Panic(err)
 	}
