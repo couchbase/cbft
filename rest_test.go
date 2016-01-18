@@ -2015,7 +2015,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`number of index targets are zero`: true,
+				`number of index targets is zero`: true,
 			},
 		},
 		{
