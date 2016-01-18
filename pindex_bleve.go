@@ -888,6 +888,28 @@ func (t *BleveDestPartition) applyBatchUnlocked() error {
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool) (bleve.IndexAlias, error) {
+	alias := bleve.NewIndexAlias()
+
+	err := bleveIndexTargets(mgr, indexName, indexUUID, ensureCanRead,
+		consistencyParams, cancelCh, alias)
+	if err != nil {
+		return nil, err
+	}
+
+	return alias, nil
+}
+
+// BleveIndexCollector interface is a subset of the bleve.IndexAlias
+// interface, with just the Add() method, allowing alternative
+// implementations that need to collect "backend" bleve indexes based
+// on a user defined index.
+type BleveIndexCollector interface {
+	Add(i ...bleve.Index)
+}
+
+func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
+	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
+	cancelCh <-chan bool, collector BleveIndexCollector) error {
 	planPIndexNodeFilter := cbgt.PlanPIndexNodeOk
 	if ensureCanRead {
 		planPIndexNodeFilter = cbgt.PlanPIndexNodeCanRead
@@ -897,17 +919,15 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		mgr.CoveringPIndexes(indexName, indexUUID, planPIndexNodeFilter,
 			"queries")
 	if err != nil {
-		return nil, fmt.Errorf("bleve: bleveIndexAlias, err: %v", err)
+		return fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
-
-	alias := bleve.NewIndexAlias()
 
 	prefix := mgr.Options()["urlPrefix"]
 
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		alias.Add(&IndexClient{
+		collector.Add(&IndexClient{
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
@@ -918,7 +938,7 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 
-	err = cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
+	return cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
 		func(localPIndex *cbgt.PIndex) error {
 			bindex, ok := localPIndex.Impl.(bleve.Index)
@@ -927,14 +947,9 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 				return fmt.Errorf("bleve: wrong type, localPIndex: %#v",
 					localPIndex)
 			}
-			alias.Add(bindex)
+			collector.Add(bindex)
 			return nil
 		})
-	if err != nil {
-		return nil, err
-	}
-
-	return alias, nil
 }
 
 // ---------------------------------------------------------
