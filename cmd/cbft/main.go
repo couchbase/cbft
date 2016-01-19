@@ -199,9 +199,6 @@ func MainServeHttp(bindHttp string) {
 	if bindHttp[0] == ':' {
 		bindHttp = "localhost" + bindHttp
 	}
-	if strings.HasPrefix(bindHttp, "0.0.0.0:") {
-		bindHttp = "localhost" + bindHttp[len("0.0.0.0"):]
-	}
 
 	log.Printf("------------------------------------------------------------")
 	log.Printf("web UI / REST API is available: http://%s", bindHttp)
