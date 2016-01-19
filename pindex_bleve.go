@@ -167,14 +167,26 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		kvConfig[k] = v
 	}
 
-	// Always use the "metrics" wrapper KVStore if it's available and
-	// also not already configured.
-	_, exists := kvConfig["kvStoreName_actual"]
-	if !exists &&
-		kvStoreName != "metrics" &&
-		bleveRegistry.KVStoreConstructorByName("metrics") != nil {
-		kvConfig["kvStoreName_actual"] = kvStoreName
-		kvStoreName = "metrics"
+	// Use the "metrics" wrapper KVStore if it's allowed, available
+	// and also not already configured.
+	kvStoreMetricsAllow := true
+
+	ksmv, exists := kvConfig["kvStoreMetricsAllow"]
+	if exists {
+		v, ok := ksmv.(bool)
+		if ok {
+			kvStoreMetricsAllow = v
+		}
+	}
+
+	if kvStoreMetricsAllow {
+		_, exists := kvConfig["kvStoreName_actual"]
+		if !exists &&
+			kvStoreName != "metrics" &&
+			bleveRegistry.KVStoreConstructorByName("metrics") != nil {
+			kvConfig["kvStoreName_actual"] = kvStoreName
+			kvStoreName = "metrics"
+		}
 	}
 
 	bleveIndexType, ok := bleveParams.Store["indexType"].(string)
