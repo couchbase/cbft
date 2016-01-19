@@ -258,6 +258,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	err := InitOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
 	if server != "." && options["startCheckServer"] != "skip" {
 		_, err := couchbase.Connect(server)
 		if err != nil {
@@ -284,7 +289,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
 		extras, bindHttp, dataDir, server, &MainHandlers{}, options)
-	err := mgr.Start(register)
+	err = mgr.Start(register)
 	if err != nil {
 		return nil, err
 	}
