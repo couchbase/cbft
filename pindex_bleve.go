@@ -279,6 +279,20 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
+	v, exists := mgr.Options()["bleveMaxResultWindow"]
+	if exists {
+		bleveMaxResultWindow, err := strconv.Atoi(v)
+		if err != nil {
+			return err
+		}
+
+		if searchRequest.From + searchRequest.Size > bleveMaxResultWindow {
+			return fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
+				" from: %d, size: %d, bleveMaxResultWindow: %d",
+				searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
+		}
+	}
+
 	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
 
 	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
