@@ -202,6 +202,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             analyzerNames: null,
             dateTypeParserNames: null,
             byteArrayConverterNames: null,
+            defaultFieldStore: false
         });
 
     $scope.bleveIndexMapping = function() {
