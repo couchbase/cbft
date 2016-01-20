@@ -188,21 +188,54 @@ func main() {
 
 	http.Handle("/", router)
 
-	for i := len(bindHttps) - 1; i >= 1; i-- {
-		go MainServeHttp(bindHttps[i])
+	anyHostPorts := map[string]bool{}
+
+	// Bind to 0.0.0.0's first.
+	for _, bindHttp := range bindHttps {
+		if strings.HasPrefix(bindHttp, "0.0.0.0:") {
+			go MainServeHttp(bindHttp, nil)
+
+			anyHostPorts[bindHttp] = true
+		}
 	}
 
-	MainServeHttp(bindHttps[0])
+	for i := len(bindHttps) - 1; i >= 1; i-- {
+		go MainServeHttp(bindHttps[i], anyHostPorts)
+	}
+
+	MainServeHttp(bindHttps[0], anyHostPorts)
+
+	<-(make(chan struct{})) // Block forever.
 }
 
-func MainServeHttp(bindHttp string) {
+func MainServeHttp(bindHttp string, anyHostPorts map[string]bool) {
 	if bindHttp[0] == ':' {
 		bindHttp = "localhost" + bindHttp
 	}
 
-	log.Printf("------------------------------------------------------------")
+	bar := "------------------------------------------------------------"
+
+	if anyHostPorts != nil {
+		// If we've already bound to 0.0.0.0 on the same port, then
+		// skip this hostPort.
+		hostPort := strings.Split(bindHttp, ":")
+		if len(hostPort) >= 2 {
+			anyHostPort := "0.0.0.0:" + hostPort[1]
+			if anyHostPorts[anyHostPort] {
+				if anyHostPort != bindHttp {
+					log.Printf(bar)
+					log.Printf("web UI / REST API is available"+
+						" (via 0.0.0.0): http://%s", bindHttp)
+					log.Printf(bar)
+				}
+				return
+			}
+		}
+	}
+
+	log.Printf(bar)
 	log.Printf("web UI / REST API is available: http://%s", bindHttp)
-	log.Printf("------------------------------------------------------------")
+	log.Printf(bar)
 
 	err := http.ListenAndServe(bindHttp, nil) // Blocks.
 	if err != nil {
