@@ -286,7 +286,7 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 			return err
 		}
 
-		if searchRequest.From + searchRequest.Size > bleveMaxResultWindow {
+		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
 			return fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
 				" from: %d, size: %d, bleveMaxResultWindow: %d",
 				searchRequest.From, searchRequest.Size, bleveMaxResultWindow)

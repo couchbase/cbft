@@ -31,7 +31,7 @@ func InitOptions(options map[string]string) error {
 	numConfig := 0
 
 	configInt := func(optionName string, cb func(uint64)) {
-		v, exists := options["forestdb" + optionName]
+		v, exists := options["forestdb"+optionName]
 		if exists {
 			i, err := strconv.ParseUint(v, 10, 64)
 			if err != nil {
@@ -44,7 +44,7 @@ func InitOptions(options map[string]string) error {
 	}
 
 	configBool := func(optionName string, cb func(bool)) {
-		v, exists := options["forestdb" + optionName]
+		v, exists := options["forestdb"+optionName]
 		if exists {
 			b, err := strconv.ParseBool(v)
 			if err != nil {
