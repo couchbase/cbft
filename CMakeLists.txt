@@ -95,3 +95,12 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static"
 
 install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com/blevesearch/bleve-mapping-ui/static-bleve-mapping"
   DESTINATION lib/fts)
+
+# Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
+SET (DOC_ROOT_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../install/lib/")
+configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.cluster_run.json)
+
+# To run using the ./cluster_run tool:
+#   cd [your dev directory where you ran 'repo sync' for couchbase server]
+#   cd ns_server
+#   ./cluster_run --pluggable-config="../build/goproj/src/github.com/couchbase/cbft/pluggable-ui-fts.cluster_run.json"
