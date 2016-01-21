@@ -47,16 +47,17 @@
   </div>
 </div>
 
-<div class="indexes_list">
-  <div class="indexes_header">
-    <h2>Full Text Indexes</h2>
-    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})">
-      <button type="submit">
+<div class="indexes_list shadow_box">
+  <div class="indexes_header header_2">
+    <h4>Full Text Indexes</h4>
+    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+       class="btn_1">
+      <span>
         New Full Text Index
-      </button>
+      </span>
     </a>
   </div>
-
+  <div class="indexes_body">
   <table>
     <tr>
       <th class="name">Name</th>
@@ -88,18 +89,20 @@
       </td>
     </tr>
   </table>
+  </div>
 </div>
 
-<div class="indexes_list">
-  <div class="indexes_header">
-    <h2>Full Text Aliases</h2>
-    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})">
-      <button type="submit">
+<div class="indexes_list shadow_box">
+  <div class="indexes_header header_2">
+    <h4>Full Text Aliases</h4>
+    <a ui-sref="app.admin.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
+       class="btn_1">
+      <span>
         New Full Text Alias
-      </button>
+      </span>
     </a>
   </div>
-
+  <div class="indexes_body">
   <table>
     <tr>
       <th class="name">Name</th>
@@ -130,6 +133,7 @@
       </td>
     </tr>
   </table>
+  </div>
 </div>
 
 </div>

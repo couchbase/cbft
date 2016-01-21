@@ -4,7 +4,8 @@
 
 <h2 ng-show="isEdit">{{newIndexName}}</h2>
 <h2 ng-show="!isEdit">
-    New Index
+    New Full Text
+    <span ng-if="newIndexType && newIndexType == 'fulltext-index'">Index</span>
     <span ng-if="newIndexType && newIndexType == 'fulltext-alias'">Alias</span>
 </h2>
 

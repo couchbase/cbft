@@ -138,6 +138,7 @@
 /* -------------------------------------------------- */
 
 .indexContainer .query_bar {
+  margin-bottom: 20px;
   padding: .4rem 0;
   display: flex;
   min-height: 1.5rem;
@@ -158,11 +159,11 @@
 /* -------------------------------------------------- */
 
 .indexContainer .indexes_list {
-  padding-bottom: 30px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
 }
 
 .indexContainer .indexes_list .indexes_header {
-  padding: .4rem 0;
   display: flex;
   min-height: 1.5rem;
   -webkit-box-align: center;
@@ -172,6 +173,10 @@
   justify-content: space-between;
 }
 
+.indexContainer .indexes_body {
+  padding: 10px 10px 10px 15px;
+}
+
 .indexContainer table {
   width: 100%;
   text-align: left;
@@ -179,7 +184,7 @@
 }
 
 .indexContainer table tr {
-  border: 1px solid #bbb;
+  margin: .5rem 2rem .5rem 2rem;
 }
 
 .indexContainer table tr th {
