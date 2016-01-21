@@ -147,7 +147,6 @@
 /* -------------------------------------------------- */
 
 .indexContainer .query_bar {
-  margin-bottom: 20px;
   padding: .4rem 0;
   display: flex;
   min-height: 1.5rem;
@@ -157,18 +156,64 @@
   flex-wrap: no-wrap;
 }
 
-.indexContainer .query_bar .query_bar_input {
-  padding-left: 10px;
+.indexContainer .query_bar .query_bar_index {
+  margin-right: 5px;
+}
+
+.indexContainer .query_bar .query_bar_input input {
+  min-width: 15em;
 }
 
 .indexContainer .query_bar .query_bar_input button {
   padding: 3px 10px 3px 10px;
 }
 
+.indexContainer .query_advanced {
+  padding-top: 5px;
+}
+
+.indexContainer .query_advanced .form_group_jsonQuery {
+  display: block;
+  margin-left: 10px;
+  background-color: #eee;
+  padding: 5px 5px 5px 5px;
+}
+
+.indexContainer .query_advanced .form_group_jsonQuery pre{
+  padding: 5px 10px 5px 10px;
+}
+
+.indexContainer .query_results_area {
+  padding-top: 20px;
+}
+
+.indexContainer .query_results_area .resultsTop {
+  font-size: 10pt;
+  margin-bottom: 10px;
+}
+
+.indexContainer .query_results_area .pull-right {
+  float: right;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li {
+  margin: 3px 5px 5px 5px;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li .well {
+  margin-left: 10px;
+}
+
+.indexContainer .query_results_area .resultsContainer ul.pagination li {
+  display: inline-block;
+  margin: 5px 5px 5px 5px;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .indexes_list {
-  margin-bottom: 30px;
+  margin-top: 20px;
+  margin-bottom: 20px;
   padding-bottom: 20px;
 }
 

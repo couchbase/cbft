@@ -24,6 +24,10 @@
   {{errorMessage}}
 </div>
 
+<h2>
+  Full Text Search: {{indexName}}
+</h2>
+
 <div class="query_bar">
   <div class="query_bar_input">
     <input ng-model="query"
@@ -34,6 +38,9 @@
             ng-click="runQuery(query)">
       Search
     </button>
+  </div>
+
+  <div class="query_bar_advanced">
     <label>
       <input ng-model="query_advanced_toggle"
              ng-change="queryChanged()"
@@ -41,11 +48,11 @@
       Advanced
     </label>
   </div>
+</div>
 
-  <div class="query_bar_help">
-    <div ng-if="queryHelp && queryHelp.length"
-         ng-bind-html="queryHelpSafe">
-    </div>
+<div class="query_bar_help">
+  <div ng-if="queryHelp && queryHelp.length"
+       ng-bind-html="queryHelpSafe">
   </div>
 </div>
 
@@ -83,6 +90,8 @@
   </div>
 </div>
 
+<div class="query_results_area">
+
 <div ng-show="results && !results.total_hits"
      class="query_no_results">
   <h5>no results for your query</h5>
@@ -94,15 +103,6 @@
      ng-show="results && results.hits && results.hits.length > 0">
 </div>
 
-<div class="query_results"
-     ng-show="results && results.results">
-  <ul>
-    <li ng-repeat="result in results.results">
-      <div class="query_result">
-        {{result}}
-      </div>
-    </li>
-  </ul>
 </div>
 
 </div>
