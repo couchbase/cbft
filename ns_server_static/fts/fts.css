@@ -64,6 +64,11 @@
   min-width: 20em;
 }
 
+.indexContainer .indexMapping .error {
+  color: red;
+  font-weight: bold;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,
