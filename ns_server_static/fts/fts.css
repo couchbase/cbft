@@ -60,6 +60,10 @@
   display: none;
 }
 
+.indexContainer .indexMapping .form_group_targetIndexes select {
+  min-width: 20em;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,
