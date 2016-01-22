@@ -113,6 +113,30 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                                        newSourceType, newSourceName,
                                        newSourceUUID, newSourceParams,
                                        newPlanParams, prevIndexUUID) {
+                $scope.errorFields = {};
+                $scope.errorMessage = null;
+                $scope.errorMessageFull = null;
+
+                var errs = [];
+
+                if (!newIndexName) {
+                    $scope.errorFields["indexName"] = true;
+                    errs.push("index name is required");
+                } else if ($scope.meta &&
+                           $scope.meta.indexNameRE &&
+                           !newIndexName.match($scope.meta.indexNameRE)) {
+                    $scope.errorFields["indexName"] = true;
+                    errs.push("index name '" + newIndexName + "'" +
+                              " must start with an alphabetic character, and" +
+                              " must only use alphanumeric or '-' or '_' characters");
+                }
+
+                if (errs.length > 0) {
+                    $scope.errorMessage =
+                        (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
+                    return
+                }
+
                 if (!newSourceUUID) {
                     for (var i = 0; i < buckets.length; i++) {
                         if (newSourceName == buckets[i].name) {
