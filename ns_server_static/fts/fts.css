@@ -12,7 +12,7 @@
 .indexContainer .form_group,
 .indexContainer .form-group,
 .bleveModal .form-group {
-  padding: .4rem 0;
+  padding: .4rem 0 0 0;
   display: flex;
   min-height: 1.5rem;
   -webkit-box-align: left;
@@ -48,6 +48,12 @@
 
 .bleveModal .form-group select {
   width: 15em;
+}
+
+.bleveModal .form-group ul.list-group {
+  min-width: 15em;
+  border: 1px solid #999;
+  padding: 2px 3px 2px 3px;
 }
 
 /* -------------------------------------------------- */
@@ -168,6 +174,10 @@
   padding: 3px 10px 3px 10px;
 }
 
+.indexContainer .query_bar .query_bar_advanced {
+  margin-left: 5px;
+}
+
 .indexContainer .query_advanced {
   padding-top: 5px;
 }
@@ -198,10 +208,17 @@
 
 .indexContainer .query_results_area .resultsContainer ol li {
   margin: 3px 5px 5px 5px;
+  padding: 3px 0 3px 0;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li .badge {
+  display: none;
 }
 
 .indexContainer .query_results_area .resultsContainer ol li .well {
-  margin-left: 10px;
+  margin: 5px 10px 5px 10px;
+  background-color: #eee;
+  padding: 5px 10px 5px 10px;
 }
 
 .indexContainer .query_results_area .resultsContainer ul.pagination li {
@@ -270,10 +287,6 @@
 .bleveModal .modal-body {
   padding: 20px 20px 20px 20px;
   font-size: 12px;
-}
-
-.bleveModal .modal-body .form-group {
-  padding-bottom: 10px;
 }
 
 .bleveModal .modal-footer {
