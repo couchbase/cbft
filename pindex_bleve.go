@@ -658,6 +658,11 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	}
 	first := true
 	for partition, bdp := range t.partitions {
+		bdp.m.Lock()
+		bdpSeqMax := bdp.seqMax
+		bdpLastUUID := bdp.lastUUID
+		bdp.m.Unlock()
+
 		if first {
 			_, err = w.Write([]byte(`"`))
 			if err != nil {
@@ -677,7 +682,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		if err != nil {
 			return
 		}
-		_, err = w.Write([]byte(strconv.FormatUint(bdp.seqMax, 10)))
+		_, err = w.Write([]byte(strconv.FormatUint(bdpSeqMax, 10)))
 		if err != nil {
 			return
 		}
@@ -685,7 +690,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		if err != nil {
 			return
 		}
-		_, err = w.Write([]byte(bdp.lastUUID))
+		_, err = w.Write([]byte(bdpLastUUID))
 		if err != nil {
 			return
 		}
