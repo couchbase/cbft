@@ -107,7 +107,6 @@ func (h *NsStatsHandler) ServeHTTP(
 		lindexName := pindex.SourceName + ":" + pindex.IndexName
 		nsIndexStat, ok := nsIndexStats[lindexName]
 		if ok {
-
 			// manually track a statistic representing
 			// the number of pindex in the index
 			oldValue, ok := nsIndexStat["num_pindexes"]
@@ -120,7 +119,7 @@ func (h *NsStatsHandler) ServeHTTP(
 			}
 
 			// automatically process all the pindex dest stats
-			err := addPindexStats(pindex, nsIndexStat)
+			err := addPIndexStats(pindex, nsIndexStat)
 			if err != nil {
 				rest.ShowError(w, req,
 					fmt.Sprintf("error processing PIndex stats: %v", err), 500)
@@ -160,7 +159,7 @@ func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
 	return massageStats(buffer, nsIndexStat)
 }
 
-func addPindexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) error {
+func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) error {
 	buffer := new(bytes.Buffer)
 	err := pindex.Dest.Stats(buffer)
 	if err != nil {
@@ -175,6 +174,7 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 	if err != nil {
 		return err
 	}
+
 	countPointers := make([]string, 0)
 	for _, pointer := range pointers {
 		if strings.HasSuffix(pointer, "/count") ||
@@ -204,6 +204,7 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -257,6 +258,7 @@ func NewNsStatusHandler(mgr *cbgt.Manager, server string) (*NsStatusHandler, err
 	if err != nil {
 		return nil, err
 	}
+
 	return &NsStatusHandler{
 		mgr:       mgr,
 		serverURL: serverURL,
