@@ -881,7 +881,23 @@ func (t *BleveDestPartition) updateSeq_LOCKED(seq uint64) error {
 
 func (t *BleveDestPartition) applyBatch_LOCKED() error {
 	err := cbgt.Timer(func() error {
-		return t.bindex.Batch(t.batch)
+		// At this point, there should be no other concurrent batch
+		// activity on this BleveDestPartition (BDP) by design, since
+		// a BDP represents a single vbucket.  Since we don't want to
+		// block stats gathering or readers trying to read
+		// seqMax/seqMaxBatch/lastUUID, we unlock before entering the
+		// (perhaps time consuming) t.bindex.Batch() operation.  By
+		// clearing the t.batch to nil, we can also detect concurrent
+		// mutations that break this design assumption by seeing any
+		// crashes that try to access a nil t.batch.
+		batch := t.batch
+		t.batch = nil
+
+		t.m.Unlock()
+		err := t.bindex.Batch(batch)
+		t.m.Lock()
+
+		return err
 	}, t.bdest.stats.TimerBatchStore)
 	if err != nil {
 		return err
