@@ -328,12 +328,12 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 
 func (t *BleveDest) Dest(partition string) (cbgt.Dest, error) {
 	t.m.Lock()
-	d, err := t.getPartitionUnlocked(partition)
+	d, err := t.getPartition_LOCKED(partition)
 	t.m.Unlock()
 	return d, err
 }
 
-func (t *BleveDest) getPartitionUnlocked(partition string) (
+func (t *BleveDest) getPartition_LOCKED(partition string) (
 	*BleveDestPartition, error) {
 	if t.bindex == nil {
 		return nil, fmt.Errorf("bleve: BleveDest already closed")
@@ -362,12 +362,12 @@ func (t *BleveDest) getPartitionUnlocked(partition string) (
 
 func (t *BleveDest) Close() error {
 	t.m.Lock()
-	err := t.closeUnlocked()
+	err := t.close_LOCKED()
 	t.m.Unlock()
 	return err
 }
 
-func (t *BleveDest) closeUnlocked() error {
+func (t *BleveDest) close_LOCKED() error {
 	if t.bindex == nil {
 		return nil // Already closed.
 	}
@@ -380,7 +380,7 @@ func (t *BleveDest) closeUnlocked() error {
 
 	go func() {
 		// Cancel/error any consistency wait requests.
-		err := fmt.Errorf("bleve: closeUnlocked")
+		err := fmt.Errorf("bleve: close_LOCKED")
 
 		for _, bdp := range partitions {
 			bdp.m.Lock()
@@ -420,7 +420,7 @@ func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
 	// For now, always rollback to zero, in which we close the pindex,
 	// erase files and have the janitor rebuild from scratch.
 
-	err := t.closeUnlocked()
+	err := t.close_LOCKED()
 	if err != nil {
 		return fmt.Errorf("bleve: can't close during rollback,"+
 			" err: %v", err)
@@ -457,7 +457,7 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 	t.m.Lock()
 
-	bdp, err := t.getPartitionUnlocked(partition)
+	bdp, err := t.getPartition_LOCKED(partition)
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -736,7 +736,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	if errv == nil {
 		erri = t.batch.Index(k, v)
 	}
-	err := t.updateSeqUnlocked(seq)
+	err := t.updateSeq_LOCKED(seq)
 
 	t.m.Unlock()
 
@@ -757,7 +757,7 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	t.m.Lock()
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
-	err := t.updateSeqUnlocked(seq)
+	err := t.updateSeq_LOCKED(seq)
 
 	t.m.Unlock()
 	return err
@@ -767,7 +767,7 @@ func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 
-	err := t.applyBatchUnlocked()
+	err := t.applyBatch_LOCKED()
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -864,7 +864,7 @@ func (t *BleveDestPartition) Stats(w io.Writer) error {
 
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
+func (t *BleveDestPartition) updateSeq_LOCKED(seq uint64) error {
 	if t.seqMax < seq {
 		t.seqMax = seq
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
@@ -876,10 +876,10 @@ func (t *BleveDestPartition) updateSeqUnlocked(seq uint64) error {
 		return nil
 	}
 
-	return t.applyBatchUnlocked()
+	return t.applyBatch_LOCKED()
 }
 
-func (t *BleveDestPartition) applyBatchUnlocked() error {
+func (t *BleveDestPartition) applyBatch_LOCKED() error {
 	err := cbgt.Timer(func() error {
 		return t.bindex.Batch(t.batch)
 	}, t.bdest.stats.TimerBatchStore)
