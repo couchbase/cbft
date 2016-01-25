@@ -37,6 +37,7 @@ import (
 	"github.com/couchbase/cbgt/cmd"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
+	"github.com/couchbase/go-couchbase/cbdatasource"
 )
 
 var cmdName = "cbft"
@@ -333,9 +334,12 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	meh := &MainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
-		extras, bindHttp, dataDir, server, &MainHandlers{}, options)
+		extras, bindHttp, dataDir, server, meh, options)
+	meh.mgr = mgr
+
 	err = mgr.Start(register)
 	if err != nil {
 		return nil, err
@@ -360,7 +364,9 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 // -------------------------------------------------------
 
-type MainHandlers struct{}
+type MainHandlers struct {
+	mgr *cbgt.Manager
+}
 
 func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
@@ -372,4 +378,23 @@ func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 
 func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 	bleveHttp.UnregisterIndexByName(pindex.Name)
+}
+
+func (meh *MainHandlers) OnFeedError(srcType string, r cbgt.Feed,
+	err error) {
+	if _, ok := err.(*cbdatasource.AllServerURLsConnectBucketError); ok {
+		switch srcType {
+		case "couchbase":
+			dcpFeed, ok := r.(*cbgt.DCPFeed)
+			if ok && dcpFeed.VerifyBucketNotExists() {
+				bucketName, bucketUUID := dcpFeed.GetBucketDetails()
+				log.Printf("main: deleting indexes for sourcetype %s"+
+					" sourcename %s", srcType, bucketName)
+				meh.mgr.DeleteAllIndexFromSource(srcType, bucketName,
+					bucketUUID)
+			}
+		default:
+			log.Printf("main: invalid srctype: %s", srcType)
+		}
+	}
 }
