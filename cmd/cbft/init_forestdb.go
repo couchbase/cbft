@@ -25,6 +25,16 @@ func InitOptions(options map[string]string) error {
 		return nil
 	}
 
+	fmq, exists := options["ftsMemoryQuota"]
+	if exists {
+		_, existsFBCS := options["forestdbBufferCacheSize"]
+		if !existsFBCS {
+			options["forestdbBufferCacheSize"] = fmq
+		}
+	}
+
+	// ------------------------------------------------------
+
 	var outerErr error
 
 	config := forestdb.DefaultConfig()
