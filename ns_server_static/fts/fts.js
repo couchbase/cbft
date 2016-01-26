@@ -71,10 +71,48 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
 function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
-    return IndexCtrl($scope,
-                     prefixedHttp($http, '/_p/' + ftsPrefix),
-                     $route, $routeParams,
-                     $location, $log, $sce, $uibModal);
+
+    var http = prefixedHttp($http, '/_p/' + ftsPrefix)
+
+    $scope.progress = "";
+    $scope.sourceDocCount = "";
+
+    $scope.loadDocCount = function() {
+        $scope.loadIndexDocCount();
+        $scope.loadSourceDocCount();
+    }
+
+    $scope.loadSourceDocCount = function() {
+        $scope.sourceDocCount = "..."
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
+        http.get('/api/stats/sourceStats/' + $scope.indexName).
+        success(function(data) {
+                $scope.sourceDocCount = data.docCount;
+                updateProgressPct();
+            }).
+        error(function(data, code) {
+                $scope.sourceDocCount = "error"
+                updateProgressPct();
+            });
+    }
+
+    function updateProgressPct() {
+        $scope.progressPct = "";
+        var i = parseInt($scope.indexDocCount);
+        var s = parseInt($scope.sourceDocCount);
+        if (i >= 0 && s > 0) {
+            $scope.progressPct = Math.round(((1.0 * i) / s) * 10000) / 100.0;
+        }
+    }
+
+    IndexCtrl($scope, http, $route, $routeParams,
+              $location, $log, $sce, $uibModal);
+
+    if ($scope.tab === "summary") {
+        $scope.loadDocCount();
+    }
 }
 
 function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,

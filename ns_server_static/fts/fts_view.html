@@ -34,8 +34,11 @@
   <div ng-show="indexCanCount">
     Document Count:
     <span ng-bind="indexDocCount"></span>
+    <span ng-if="progressPct">
+     ({{progressPct}}%)
+    </span>
 
-    <button ng-click="loadIndexDocCount()"
+    <button ng-click="loadDocCount()"
             class="btn btn-default btn-xs">
       <span class="glyphicon glyphicon-refresh"></span>
       Refresh
