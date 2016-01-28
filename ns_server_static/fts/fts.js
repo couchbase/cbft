@@ -200,12 +200,8 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
 
     $scope.static_base = "/_p/ui/fts";
 
-    QueryCtrl($scope,
-              prefixedHttp($http, '/_p/' + ftsPrefix, true),
-              $routeParams, $log, $sce, $location);
-
     $scope.query = $routeParams.query || "";
-    $scope.page = $routeParams.page || "";
+    $scope.page = $routeParams.page || 1;
 
     if (!$location.search().q) {
         $location.search("q", $scope.query);
@@ -213,6 +209,10 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
     if (!$location.search().page) {
         $location.search("p", $scope.page);
     }
+
+    QueryCtrl($scope,
+              prefixedHttp($http, '/_p/' + ftsPrefix, true),
+              $routeParams, $log, $sce, $location);
 }
 
 // -------------------------------------------------------
