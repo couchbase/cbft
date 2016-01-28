@@ -24,7 +24,7 @@
   {{errorMessage}}
 </div>
 
-<div class="query_bar">
+<div class="query_bar" ng-show="indexNamesReady">
   <div class="query_bar_index">
     <select ng-disabled="!indexNames"
             ng-model="searchBarIndexName"
@@ -47,7 +47,7 @@
   </div>
 </div>
 
-<div class="indexes_list shadow_box">
+<div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Indexes</h4>
     <a ui-sref="app.admin.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
@@ -92,7 +92,7 @@
   </div>
 </div>
 
-<div class="indexes_list shadow_box">
+<div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Aliases</h4>
     <a ui-sref="app.admin.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
