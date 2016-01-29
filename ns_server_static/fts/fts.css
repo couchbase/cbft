@@ -58,6 +58,10 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .indexMapping {
+  margin-bottom: 10px;
+}
+
 .indexContainer .indexMapping .form_group.form_group_indexType {
   display: none;
 }
@@ -184,6 +188,7 @@
 
 .indexContainer .query_advanced .form_group_jsonQuery {
   display: block;
+  margin-top: 10px;
   margin-left: 10px;
   background-color: #eee;
   padding: 5px 5px 5px 5px;
@@ -527,4 +532,9 @@
 .indexContainer .index-summary pre {
   margin: 12px 0 0 40px;
   overflow: auto;
+}
+
+.indexContainer .index-summary input[type=checkbox] {
+  margin-left: 10px;
+  margin-bottom: 5px;
 }
