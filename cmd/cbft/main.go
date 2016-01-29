@@ -78,6 +78,7 @@ func main() {
 	go cmd.DumpOnSignalForPlatform()
 
 	bleve.StoreDynamic = false
+	bleve.MappingJSONStrict = true
 
 	MainWelcome(flagAliases)
 
