@@ -226,6 +226,13 @@
   margin: 5px 5px 5px 5px;
 }
 
+.indexContainer .query_results_area .resultsContainer ul.pagination li span {
+  background-color: #ddd;
+  padding-right: 4px;
+  padding-left: 4px;
+  color: #333;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .indexes_list {
