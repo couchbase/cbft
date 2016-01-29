@@ -26,7 +26,7 @@
 
 <div class="query_bar" ng-show="indexNamesReady">
   <div class="query_bar_index">
-    <select ng-disabled="!indexNames"
+    <select ng-disabled="!indexNames || indexNames.length <= 0"
             ng-model="searchBarIndexName"
             ng-options="t for t in indexNames">
       <option value="">-- choose full text index or alias --</option>
