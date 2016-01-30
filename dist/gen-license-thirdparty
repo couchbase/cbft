@@ -23,12 +23,12 @@ print "javascript/css components:"
 
 components = {}
 
-for f in os.listdir("./static/lib"):
+for f in os.listdir("../cbgt/rest/static/lib"):
     f = string.replace(string.replace(f, ".js", ""), ".min", "")
     if not f in components:
         components[f] = True
 
-for f in os.listdir("./static/css"):
+for f in os.listdir("../cbgt/rest/static/css"):
     f = string.replace(string.replace(f, ".css", ""), ".min", "")
     if not f in components and not f in ["app", "dashboard"]:
         if string.find(f, ".map") < 0:
