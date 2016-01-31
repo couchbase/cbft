@@ -137,18 +137,29 @@ func init() {
 }
 
 func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
-	bleveParams := NewBleveParams()
-	if len(indexParams) > 0 {
-		return json.Unmarshal([]byte(indexParams), bleveParams)
+	if len(indexParams) <= 0 {
+		return nil
 	}
-	return nil
+
+	b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, NewBleveParams())
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
 	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	bleveParams := NewBleveParams()
+
 	if len(indexParams) > 0 {
-		err := json.Unmarshal([]byte(indexParams), bleveParams)
+		buf, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
+		if err != nil {
+			return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
+		}
+
+		err = json.Unmarshal(buf, bleveParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("bleve: parse params, err: %v", err)
 		}
@@ -221,7 +232,13 @@ func OpenBlevePIndexImpl(indexType, path string,
 		return nil, nil, err
 	}
 
+	buf, err = bleveMappingUI.CleanseJSON(buf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
+	}
+
 	bleveParams := NewBleveParams()
+
 	err = json.Unmarshal(buf, bleveParams)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
