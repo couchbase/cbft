@@ -355,7 +355,7 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
 
             $scope.selectedTargetIndexes = [];
             if (origIndexDef) {
-                var origTargets = (JSON.parse(origIndexDef.params) || {}).targets;
+                var origTargets = (origIndexDef.params || {}).targets;
                 for (var origTarget in origTargets) {
                     if (!indexDefs[origTarget]) {
                         $scope.aliasTargets.push(origTarget);
