@@ -334,6 +334,7 @@ func (h *NsStatusHandler) ServeHTTP(
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Write(cbgt.JsonOpenBrace)
 	w.Write(statsNamePrefix)
 	w.Write([]byte("status"))
