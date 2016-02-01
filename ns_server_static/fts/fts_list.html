@@ -3,13 +3,13 @@
   <ul class="second-level-nav">
     <li>
       <a
-        ui-sref="app.admin.indexes.views.list"
-        ng-class="{selected: ('app.admin.indexes.views' | includedByState)}">Views</a>
+        ui-sref="app.admin.indexes.gsi"
+        ui-sref-active="selected">Global Secondary Index</a>
     </li>
     <li>
       <a
-        ui-sref="app.admin.indexes.gsi"
-        ui-sref-active="selected">Global Secondary Index</a>
+        ui-sref="app.admin.indexes.views.list"
+        ng-class="{selected: ('app.admin.indexes.views' | includedByState)}">Views</a>
     </li>
     <li ng-repeat="config in indexesCtl.pluggableUiConfigs | filter:{plugIn: 'indexesTab'}"
         class="line">
