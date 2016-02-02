@@ -23,7 +23,7 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-var maxAliasTargets = 50000
+var maxAliasTargets = 100
 
 func init() {
 	// Register alias with empty instantiation functions,
