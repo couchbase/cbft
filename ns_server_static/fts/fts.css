@@ -7,6 +7,11 @@
   padding: 3px 10px 3px 10px;
 }
 
+.indexContainer .error {
+  color: red;
+  font-weight: bold;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .form_group,
@@ -72,11 +77,6 @@
 
 .indexContainer .indexMapping .form_group_targetIndexes select {
   min-width: 20em;
-}
-
-.indexContainer .indexMapping .error {
-  color: red;
-  font-weight: bold;
 }
 
 /* -------------------------------------------------- */
