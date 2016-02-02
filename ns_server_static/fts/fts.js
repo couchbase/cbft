@@ -228,7 +228,7 @@ function bleveNewIndexMapping() {
             "enabled": true,
             "dynamic": true
         },
-        "type_field": "_type",
+        "type_field": "type",
         "default_type": "_default",
         "default_analyzer": "standard",
         "default_datetime_parser": "dateTimeOptional",

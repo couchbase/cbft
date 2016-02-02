@@ -49,12 +49,16 @@ type BleveParams struct {
 }
 
 func NewBleveParams() *BleveParams {
-	return &BleveParams{
+	rv := &BleveParams{
 		Mapping: *bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
 			"kvStoreName": bleve.Config.DefaultKVStore,
 		},
 	}
+
+	rv.Mapping.TypeField = "type"
+
+	return rv
 }
 
 type BleveDest struct {
