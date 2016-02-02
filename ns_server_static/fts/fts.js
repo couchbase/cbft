@@ -89,13 +89,15 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
 
         http.get('/api/stats/sourceStats/' + $scope.indexName).
         success(function(data) {
+            if (data) {
                 $scope.sourceDocCount = data.docCount;
                 updateProgressPct();
-            }).
+            }
+        }).
         error(function(data, code) {
-                $scope.sourceDocCount = "error"
-                updateProgressPct();
-            });
+            $scope.sourceDocCount = "error"
+            updateProgressPct();
+        });
     }
 
     function updateProgressPct() {
