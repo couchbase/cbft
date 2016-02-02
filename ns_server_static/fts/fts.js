@@ -382,12 +382,6 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
                         var selectedTargetIndex = selectedTargetIndexes[i];
 
                         aliasTargets[selectedTargetIndex] = {};
-
-                        var targetIndexDef = $scope.indexDefs[selectedTargetIndex];
-                        if (targetIndexDef) {
-                            aliasTargets[selectedTargetIndex].indexUUID =
-                                targetIndexDef.uuid;
-                        }
                     }
 
                     newIndexParams["fulltext-alias"] = {
