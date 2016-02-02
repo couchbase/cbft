@@ -113,6 +113,8 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
     if ($scope.tab === "summary") {
         $scope.loadDocCount();
     }
+
+    ftsServiceHostPort($scope, $http, $location);
 }
 
 function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
@@ -213,6 +215,8 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
     QueryCtrl($scope,
               prefixedHttp($http, '/_p/' + ftsPrefix, true),
               $routeParams, $log, $sce, $location);
+
+    ftsServiceHostPort($scope, $http, $location);
 }
 
 // -------------------------------------------------------
@@ -440,4 +444,20 @@ function errorMessage(errorMessageFull, code) {
     console.log("errorMessageFull", errorMessageFull, code);
     var a = (errorMessageFull || (code + "")).split("err: ");
     return a[a.length - 1];
+}
+
+// -------------------------------------------------------
+
+function ftsServiceHostPort($scope, $http, $location) {
+    $scope.hostPort = $location.host() + ":FTS_PORT";
+
+    $http.get("/pools/default/nodeServices").then(function(resp) {
+        var nodes = resp.data.nodesExt;
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].services && nodes[i].services.fts) {
+                $scope.hostPort = $location.host() + ":" + nodes[i].services.fts;
+                return;
+            }
+        }
+    });
 }
