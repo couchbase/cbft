@@ -160,7 +160,7 @@ func staticx_index_ft_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/index-ft.html", size: 9922, mode: os.FileMode(420), modTime: time.Unix(1454392304, 0)}
+	info := bindata_file_info{name: "staticx/index-ft.html", size: 9922, mode: os.FileMode(420), modTime: time.Unix(1454438110, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -180,7 +180,7 @@ func staticx_index_html() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindata_file_info{name: "staticx/index.html", size: 6980, mode: os.FileMode(420), modTime: time.Unix(1454392269, 0)}
+	info := bindata_file_info{name: "staticx/index.html", size: 6980, mode: os.FileMode(420), modTime: time.Unix(1454438110, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
