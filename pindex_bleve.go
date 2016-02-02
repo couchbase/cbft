@@ -681,6 +681,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	for partition, bdp := range t.partitions {
 		bdp.m.Lock()
 		bdpSeqMax := bdp.seqMax
+		bdpSeqMaxBatch := bdp.seqMaxBatch
 		bdpLastUUID := bdp.lastUUID
 		bdp.m.Unlock()
 
@@ -700,6 +701,14 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 			return
 		}
 		_, err = w.Write([]byte(`":{"seq":`))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(strconv.FormatUint(bdpSeqMaxBatch, 10)))
+		if err != nil {
+			return
+		}
+		_, err = w.Write([]byte(`,"seqReceived":`))
 		if err != nil {
 			return
 		}
@@ -833,6 +842,10 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 		}
 		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
+
+		if t.seqMaxBatch <= 0 {
+			t.seqMaxBatch = t.seqMax
+		}
 	}
 
 	lastOpaque, seqMax := t.lastOpaque, t.seqMax
