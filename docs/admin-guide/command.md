@@ -11,10 +11,14 @@ That will print out usage/help output...
     Usage: cbft [flags]
     
     Flags:
+      -auth AUTH
+          authentication method for cbft requests
       -b, -bindHttp ADDR:PORT
           local address:port where this node will listen and
           serve HTTP/REST API requests and the web-based
-          admin UI; default is '0.0.0.0:8095'.
+          admin UI; default is '0.0.0.0:8095';
+          multiple ADDR:PORT's can be specified, separated by commas,
+          where the first ADDR:PORT is used for node cfg registration.
       -c, -cfg, -cfgConnect CFG_CONNECT
           connection string to a configuration provider/server
           for clustering multiple cbft nodes:
@@ -40,10 +44,12 @@ That will print out usage/help output...
           optional directory path where local index data and
           local config files will be stored for this node;
           default is 'data'.
-      -e, -extra extra info
-          extra info you want stored with this node
+      -e, -extra, -extras EXTRAS
+          extra information you want stored with this node
       -h, -H, -?, -help 
           print this usage message and exit.
+      -options KEY=VALUE,...
+          optional comma-separated key=value pairs for advanced configurations.
       -register STATE
           optional flag to register this node in the cluster as:
           * wanted      - make node wanted in the cluster,

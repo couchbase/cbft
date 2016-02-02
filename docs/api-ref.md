@@ -20,20 +20,21 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "4.0.0",
+        "implVersion": "4.1.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
-            "params": "",
+            "params": null,
             "planParams": {
               "hierarchyRules": null,
               "maxPartitionsPerPIndex": 0,
               "nodePlanParams": null,
               "numReplicas": 0,
+              "pindexWeights": null,
               "planFrozen": false
             },
             "sourceName": "",
-            "sourceParams": "",
+            "sourceParams": null,
             "sourceType": "nil",
             "sourceUUID": "",
             "type": "blackhole",
@@ -62,16 +63,17 @@ Sample response:
     {
       "indexDef": {
         "name": "myFirstIndex",
-        "params": "",
+        "params": null,
         "planParams": {
           "hierarchyRules": null,
           "maxPartitionsPerPIndex": 0,
           "nodePlanParams": null,
           "numReplicas": 0,
+          "pindexWeights": null,
           "planFrozen": false
         },
         "sourceName": "",
-        "sourceParams": "",
+        "sourceParams": null,
         "sourceType": "nil",
         "sourceUUID": "",
         "type": "blackhole",
@@ -80,7 +82,7 @@ Sample response:
       "planPIndexes": [
         {
           "indexName": "myFirstIndex",
-          "indexParams": "",
+          "indexParams": null,
           "indexType": "blackhole",
           "indexUUID": "6cc599ab7a85bf3b",
           "name": "myFirstIndex_6cc599ab7a85bf3b_0",
@@ -92,7 +94,7 @@ Sample response:
             }
           },
           "sourceName": "",
-          "sourceParams": "",
+          "sourceParams": null,
           "sourcePartitions": "",
           "sourceType": "nil",
           "sourceUUID": "",
@@ -114,9 +116,11 @@ Creates/updates an index definition.
 The name of the to-be-created/updated index definition,
 validated with the regular expression of ```^[A-Za-z][0-9A-Za-z_\-]*$```.
 
-**param: indexParams**: optional (depends on the value of the indexType), string (JSON), form parameter
+**param: indexParams**: optional (depends on the value of the indexType), JSON object, form parameter
 
-For indexType ```alias```, an example indexParams JSON:
+For indexType ```blackhole```, the indexParams can be null.
+
+For indexType ```fulltext-alias```, an example indexParams JSON:
 
     {
       "targets": {
@@ -126,9 +130,7 @@ For indexType ```alias```, an example indexParams JSON:
       }
     }
 
-For indexType ```blackhole```, the indexParams can be null.
-
-For indexType ```bleve```, an example indexParams JSON:
+For indexType ```fulltext-index```, an example indexParams JSON:
 
     {
       "mapping": {
@@ -137,7 +139,7 @@ For indexType ```bleve```, an example indexParams JSON:
           "dynamic": true,
           "default_analyzer": ""
         },
-        "type_field": "_type",
+        "type_field": "type",
         "default_type": "_default",
         "default_analyzer": "standard",
         "default_datetime_parser": "dateTimeOptional",
@@ -154,19 +156,19 @@ For indexType ```bleve```, an example indexParams JSON:
 
 Supported indexType's:
 
-* ```alias```: an alias provides a naming level of indirection to one or more actual, target indexes
 * ```blackhole```: a blackhole index ignores all data and is not queryable; used for testing
-* ```bleve```: a full-text index powered by the bleve engine
+* ```fulltext-alias```: a full text index alias provides a naming level of indirection to one or more actual, target full text indexes
+* ```fulltext-index```: a full text index powered by the bleve engine
 
-**param: planParams**: optional, string (JSON), form parameter
+**param: planParams**: optional, JSON object, form parameter
 
-**param: prevIndexUUID**: optional, string, form parameter
+**param: prevIndexUUID / indexUUID**: optional, string, form parameter
 
 Intended for clients that want to check that they are not overwriting the index definition updates of concurrent clients.
 
 **param: sourceName**: optional, string, form parameter
 
-**param: sourceParams**: optional (depends on the value of the sourceType), string (JSON), form parameter
+**param: sourceParams**: optional (depends on the value of the sourceType), JSON object, form parameter
 
 For sourceType ```couchbase```, an example sourceParams JSON:
 
@@ -177,10 +179,10 @@ For sourceType ```couchbase```, an example sourceParams JSON:
       "authSaslPassword": "",
       "clusterManagerBackoffFactor": 0,
       "clusterManagerSleepInitMS": 0,
-      "clusterManagerSleepMaxMS": 20000,
+      "clusterManagerSleepMaxMS": 2000,
       "dataManagerBackoffFactor": 0,
       "dataManagerSleepInitMS": 0,
-      "dataManagerSleepMaxMS": 20000,
+      "dataManagerSleepMaxMS": 2000,
       "feedBufferSizeBytes": 0,
       "feedBufferAckThreshold": 0
     }
@@ -313,9 +315,15 @@ Sample response:
         "TotJanitorKickErr": 0,
         "TotJanitorKickOk": 2,
         "TotJanitorKickStart": 2,
+        "TotJanitorLoadDataDir": 0,
         "TotJanitorNOOP": 0,
         "TotJanitorNOOPOk": 0,
+        "TotJanitorOpDone": 2,
+        "TotJanitorOpErr": 0,
+        "TotJanitorOpRes": 2,
+        "TotJanitorOpStart": 2,
         "TotJanitorRemovePIndex": 0,
+        "TotJanitorStop": 0,
         "TotJanitorSubscriptionEvent": 0,
         "TotJanitorUnknownErr": 0,
         "TotKick": 0,
@@ -326,11 +334,18 @@ Sample response:
         "TotPlannerKickStart": 2,
         "TotPlannerNOOP": 0,
         "TotPlannerNOOPOk": 0,
+        "TotPlannerOpDone": 2,
+        "TotPlannerOpErr": 0,
+        "TotPlannerOpRes": 2,
+        "TotPlannerOpStart": 2,
+        "TotPlannerStop": 0,
         "TotPlannerSubscriptionEvent": 0,
         "TotPlannerUnknownErr": 0,
         "TotSaveNodeDef": 2,
         "TotSaveNodeDefGetErr": 0,
+        "TotSaveNodeDefNil": 0,
         "TotSaveNodeDefOk": 2,
+        "TotSaveNodeDefRetry": 0,
         "TotSaveNodeDefSame": 0,
         "TotSaveNodeDefSetErr": 0
       },
@@ -358,6 +373,44 @@ Sample response:
         "myFirstIndex_6cc599ab7a85bf3b_0": null
       }
     }
+
+---
+
+GET `/api/stats/sourcePartitionSeqs/{indexName}`
+
+Returns data source partiton seqs
+                       for an index as JSON.
+
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose partition seqs should be retrieved.
+
+**version introduced**: 4.2.0
+
+Sample response:
+
+    null
+
+---
+
+GET `/api/stats/sourceStats/{indexName}`
+
+Returns data source specific stats
+                       for an index as JSON.
+
+**param: indexName**: required, string, URL path parameter
+
+The name of the index whose partition seqs should be retrieved.
+
+**param: statsKind**: optional, string
+
+Optional source-specific string for kind of stats wanted.
+
+**version introduced**: 4.2.0
+
+Sample response:
+
+    null
 
 ---
 
@@ -389,7 +442,7 @@ The name of the index to be queried.
 
 The request's POST body depends on the index type:
 
-For index type ```bleve```:
+For index type ```fulltext-index```:
 
 A simple bleve query POST body:
 
@@ -464,20 +517,21 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "4.0.0",
+        "implVersion": "4.1.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
-            "params": "",
+            "params": null,
             "planParams": {
               "hierarchyRules": null,
               "maxPartitionsPerPIndex": 0,
               "nodePlanParams": null,
               "numReplicas": 0,
+              "pindexWeights": null,
               "planFrozen": false
             },
             "sourceName": "",
-            "sourceParams": "",
+            "sourceParams": null,
             "sourceType": "nil",
             "sourceUUID": "",
             "type": "blackhole",
@@ -489,13 +543,13 @@ Sample response:
       "indexDefsCAS": 3,
       "indexDefsErr": null,
       "nodeDefsKnown": {
-        "implVersion": "4.0.0",
+        "implVersion": "4.1.0",
         "nodeDefs": {
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8095",
-            "implVersion": "4.0.0",
+            "implVersion": "4.1.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -506,13 +560,13 @@ Sample response:
       "nodeDefsKnownCAS": 1,
       "nodeDefsKnownErr": null,
       "nodeDefsWanted": {
-        "implVersion": "4.0.0",
+        "implVersion": "4.1.0",
         "nodeDefs": {
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8095",
-            "implVersion": "4.0.0",
+            "implVersion": "4.1.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -523,11 +577,11 @@ Sample response:
       "nodeDefsWantedCAS": 2,
       "nodeDefsWantedErr": null,
       "planPIndexes": {
-        "implVersion": "4.0.0",
+        "implVersion": "4.1.0",
         "planPIndexes": {
           "myFirstIndex_6cc599ab7a85bf3b_0": {
             "indexName": "myFirstIndex",
-            "indexParams": "",
+            "indexParams": null,
             "indexType": "blackhole",
             "indexUUID": "6cc599ab7a85bf3b",
             "name": "myFirstIndex_6cc599ab7a85bf3b_0",
@@ -539,7 +593,7 @@ Sample response:
               }
             },
             "sourceName": "",
-            "sourceParams": "",
+            "sourceParams": null,
             "sourcePartitions": "",
             "sourceType": "nil",
             "sourceUUID": "",
@@ -564,6 +618,33 @@ Requests the node to refresh its configuration
                        from the configuration provider.
 
 **version introduced**: 0.0.1
+
+---
+
+GET `/api/manager`
+
+Returns runtime config information about this node.
+
+**version introduced**: 0.4.0
+
+Sample response:
+
+    {
+      "mgr": {
+        "bindHttp": "0.0.0.0:8095",
+        "container": "",
+        "dataDir": "tmp/data261623975",
+        "extras": "",
+        "options": {},
+        "server": "http://localhost:8091",
+        "startTime": "2016-02-02T10:24:59.5111207-08:00",
+        "tags": null,
+        "uuid": "78fc2ffac2fd9401",
+        "version": "4.1.0",
+        "weight": 1
+      },
+      "status": "ok"
+    }
 
 ---
 
@@ -635,15 +716,15 @@ Sample response:
     {
       "arch": "amd64",
       "go": {
-        "GOMAXPROCS": 1,
+        "GOMAXPROCS": 8,
         "GOROOT": "/usr/local/go",
         "compiler": "gc",
-        "version": "go1.4"
+        "version": "go1.5.2"
       },
       "numCPU": 8,
       "os": "darwin",
-      "versionData": "4.0.0",
-      "versionMain": "v0.3.1"
+      "versionData": "4.1.0",
+      "versionMain": "v0.3.1-114-g364d629"
     }
 
 ---
