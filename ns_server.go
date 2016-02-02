@@ -64,10 +64,14 @@ var statkeys = []string{
 
 	// pindex
 	"doc_count",
-	"timer_batch_execute_count", "timer_batch_merge_count", "timer_batch_store_count",
-	"timer_iterator_next_count", "timer_iterator_seek_count", "timer_iterator_seek_first_count",
-	"timer_reader_get_count", "timer_reader_iterator_count", "timer_writer_delete_count",
-	"timer_writer_get_count", "timer_writer_iterator_count", "timer_writer_set_count",
+	"timer_batch_store_count",
+
+	// kv store
+	"timer_batch_merge_count",
+	"timer_iterator_next_count", "timer_iterator_seek_count",
+	"timer_reader_get_count", "timer_reader_multi_get_count",
+	"timer_reader_prefix_iterator_count", "timer_reader_range_iterator_count",
+	"timer_writer_execute_batch_count",
 
 	// feed
 	"timer_opaque_set_count", "timer_rollback_count", "timer_data_update_count",
