@@ -176,8 +176,9 @@ func initFlags(flags *Flags) map[string][]string {
 		[]string{"extras", "extra", "e"}, "EXTRAS", "",
 		"extra information you want stored with this node")
 	s(&flags.AuthType,
-		[]string{"auth"}, "AUTH", "",
-		"authentication method for cbft requests")
+		[]string{"authType", "auth"}, "AUTH_TYPE", "",
+		"authentication type for cbft requests")
+
 	flag.Usage = func() {
 		if !flags.Help {
 			return

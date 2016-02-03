@@ -80,10 +80,33 @@ func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
 	var options = map[string]interface{}{
-		"auth": SetHandler,
+		"auth": WrapAuthVersionHandler,
 	}
 	return rest.InitRESTRouterEx(
 		InitStaticRouter(staticDir, staticETag, mgr),
 		versionMain, mgr, staticDir, staticETag, mr,
 		myAssetDir, myAsset, options)
+}
+
+// --------------------------------------------------
+
+func WrapAuthVersionHandler(h http.Handler) http.Handler {
+	return &AuthVersionHandler{H: h}
+}
+
+type AuthVersionHandler struct {
+	H http.Handler
+}
+
+func (c *AuthVersionHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	if err := CheckAPIVersion(w, req); err != nil {
+		return
+	}
+	if !CheckAPIAuth(w, req) {
+		return
+	}
+	if c.H != nil {
+		c.H.ServeHTTP(w, req)
+	}
 }
