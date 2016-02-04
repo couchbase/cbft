@@ -39,6 +39,14 @@ IF (APPLE)
   SET (_ldflags "-extldflags '-Wl,-rpath,@executable_path/../lib'")
 ENDIF ()
 
+IF (WIN32)
+  INCLUDE (PlatformIntrospection)
+  _DETERMINE_ARCH (_arch)
+  IF (NOT _arch STREQUAL x86)
+    SET (_ldflags "-linkmode internal")
+  ENDIF ()
+ENDIF ()
+
 GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   ${_forestdb_dep}
