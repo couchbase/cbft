@@ -179,7 +179,8 @@ func main() {
 		flags.Container, flags.Weight, flags.Extras,
 		bindHttps[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
-		flags.Server, flags.Register, mr, flags.Options)
+		flags.Server, flags.Register, mr, flags.Options,
+		flags.AuthType)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -272,7 +273,7 @@ func MainWelcome(flagAliases map[string][]string) {
 
 func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, extras, bindHttp, dataDir, staticDir, staticETag, server string,
-	register string, mr *cbgt.MsgRing, optionKVs string) (
+	register string, mr *cbgt.MsgRing, optionKVs string, authType string) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
@@ -280,6 +281,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	options := map[string]string{
 		"managerLoadDataDir": "async",
+		"authType":           authType,
 	}
 
 	if optionKVs != "" {
