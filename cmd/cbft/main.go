@@ -31,6 +31,7 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
+	bleveSearchers "github.com/blevesearch/bleve/search/searchers"
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
@@ -80,6 +81,7 @@ func main() {
 
 	bleve.StoreDynamic = false
 	bleve.MappingJSONStrict = true
+	bleveSearchers.DisjunctionMaxClauseCount = 1024
 
 	MainWelcome(flagAliases)
 
