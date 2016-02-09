@@ -79,9 +79,14 @@ func myAsset(name string) ([]byte, error) {
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
-	var options = map[string]interface{}{
-		"auth": WrapAuthVersionHandler,
+	wrapAuthVersionHandler := func(h http.Handler) http.Handler {
+		return &AuthVersionHandler{mgr: mgr, H: h}
 	}
+
+	var options = map[string]interface{}{
+		"auth": wrapAuthVersionHandler,
+	}
+
 	return rest.InitRESTRouterEx(
 		InitStaticRouter(staticDir, staticETag, mgr),
 		versionMain, mgr, staticDir, staticETag, mr,
@@ -90,12 +95,9 @@ func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 
 // --------------------------------------------------
 
-func WrapAuthVersionHandler(h http.Handler) http.Handler {
-	return &AuthVersionHandler{H: h}
-}
-
 type AuthVersionHandler struct {
-	H http.Handler
+	mgr *cbgt.Manager
+	H   http.Handler
 }
 
 func (c *AuthVersionHandler) ServeHTTP(
@@ -103,9 +105,19 @@ func (c *AuthVersionHandler) ServeHTTP(
 	if err := CheckAPIVersion(w, req); err != nil {
 		return
 	}
-	if !CheckAPIAuth(w, req) {
+
+	path := ""
+	if c.H != nil {
+		hwrm, ok := c.H.(*rest.HandlerWithRESTMeta)
+		if ok && hwrm.RESTMeta != nil {
+			path = hwrm.RESTMeta.Opts["_path"]
+		}
+	}
+
+	if !CheckAPIAuth(c.mgr, w, req, path) {
 		return
 	}
+
 	if c.H != nil {
 		c.H.ServeHTTP(w, req)
 	}
