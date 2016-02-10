@@ -1,23 +1,3 @@
-<div id="js_indexes" class="indexes"
-     ng-controller="mnIndexesController as indexesCtl">
-  <ul class="second-level-nav">
-    <li>
-      <a
-        ui-sref="app.admin.indexes.gsi"
-        ui-sref-active="selected">Global Indexes</a>
-    </li>
-    <li>
-      <a
-        ui-sref="app.admin.indexes.views.list"
-        ng-class="{selected: ('app.admin.indexes.views' | includedByState)}">Views</a>
-    </li>
-    <li ng-repeat="config in indexesCtl.pluggableUiConfigs | filter:{plugIn: 'indexesTab'}"
-        class="line">
-      <a ui-sref="{{ config.state }}" ui-sref-active="selected">{{ config.name }}</a>
-    </li>
-  </ul>
-</div>
-
 <div class="indexContainer">
 <div class="indexMapping">
 <div ng-if="meta">

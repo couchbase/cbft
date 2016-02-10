@@ -11,32 +11,32 @@ var ftsPrefix = 'fts';
             ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider) {
       $stateProvider
-            .state('app.admin.fts_list', {
+            .state('app.admin.indexes.fts_list', {
                 url: '/fts_list',
                 controller: 'IndexesCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_list.html'
             })
-            .state('app.admin.fts_view', {
+            .state('app.admin.indexes.fts_view', {
                 url: '/fts_view/:indexName?tabName',
                 controller: 'IndexCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_view.html'
             })
-            .state('app.admin.fts_new', {
+            .state('app.admin.indexes.fts_new', {
                 url: '/fts_new/?indexType&sourceType',
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_new.html'
             })
-            .state('app.admin.fts_edit', {
+            .state('app.admin.indexes.fts_edit', {
                 url: '/fts_edit/:indexName/_edit',
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_new.html'
             })
-            .state('app.admin.fts_clone', {
+            .state('app.admin.indexes.fts_clone', {
                 url: '/fts_clone/:indexName/_clone',
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_new.html'
             })
-            .state('app.admin.fts_search', {
+            .state('app.admin.indexes.fts_search', {
                 url: '/fts_search/:indexName/_search?query',
                 controller: 'IndexSearchCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/fts_search.html'
@@ -44,7 +44,7 @@ var ftsPrefix = 'fts';
 
         mnPluggableUiRegistryProvider.registerConfig({
             name: 'Full Text',
-            state: 'app.admin.fts_list',
+            state: 'app.admin.indexes.fts_list',
             plugIn: 'indexesTab'
         });
     });
