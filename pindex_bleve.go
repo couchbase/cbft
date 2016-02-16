@@ -147,10 +147,18 @@ func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
 
 	b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 	if err != nil {
-		return err
+		return fmt.Errorf("bleve: validate CleanseJSON,"+
+			" err: %v", err)
 	}
 
-	return json.Unmarshal(b, NewBleveParams())
+	bp := NewBleveParams()
+
+	err = json.Unmarshal(b, bp)
+	if err != nil {
+		return fmt.Errorf("bleve: validate params, err: %v", err)
+	}
+
+	return nil
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
