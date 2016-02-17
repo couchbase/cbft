@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,9 +37,12 @@ import (
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/cmd"
+	"github.com/couchbase/cbgt/ctl"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/go-couchbase/cbdatasource"
+
+	"github.com/couchbase/cbauth/service_api"
 )
 
 var cmdName = "cbft"
@@ -361,6 +365,65 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 	router.Handle(prefix+"/api/nsstatus", nsStatusHandler)
+
+	// ------------------------------------------------
+
+	tagsMap := mgr.TagsMap()
+	if tagsMap != nil && tagsMap["service_api"] {
+		dryRun := false
+		dryRunV := mgr.Options()["service_api.dryRun"]
+		if dryRunV != "" {
+			dryRun, err = strconv.ParseBool(dryRunV)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		waitForMemberNodes := 30 // In seconds.
+		waitForMemberNodesV := mgr.Options()["service_api.waitForMemberNodes"]
+		if waitForMemberNodesV != "" {
+			waitForMemberNodes, err = strconv.Atoi(waitForMemberNodesV)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		verbose := 0
+		verboseV := mgr.Options()["service_api.verbose"]
+		if verboseV != "" {
+			verbose, err = strconv.Atoi(verboseV)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		log.Printf("main: service_api ctl starting,"+
+			" dryRun: %v, waitForMemberNodes: %d, verbose: %d",
+			dryRun, waitForMemberNodes, verbose)
+
+		c, err := ctl.StartCtl(cfg, server, ctl.CtlOptions{
+			DryRun:             dryRun,
+			Verbose:            verbose,
+			FavorMinNodes:      false,
+			WaitForMemberNodes: waitForMemberNodes,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
+		}
+
+		nodeInfo := &service_api.NodeInfo{
+			NodeId: service_api.NodeId(uuid),
+		}
+
+		ctlMgr := ctl.NewCtlMgr(nodeInfo, c)
+		if ctlMgr != nil {
+			log.Printf("main: service_api registering")
+
+			service_api.RegisterServiceManager(ctlMgr, nil)
+		}
+	}
+
+	// ------------------------------------------------
 
 	return router, err
 }
