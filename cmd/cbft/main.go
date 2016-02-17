@@ -417,9 +417,17 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 		ctlMgr := ctl.NewCtlMgr(nodeInfo, c)
 		if ctlMgr != nil {
-			log.Printf("main: service_api registering")
+			go func() {
+				log.Printf("main: service_api registering...")
 
-			service_api.RegisterServiceManager(ctlMgr, nil)
+				err := service_api.RegisterServiceManager(ctlMgr, nil)
+				if err != nil {
+					log.Printf("main: service_api register err: %v", err)
+					return
+				}
+
+				log.Printf("main: service_api registering... done")
+			}()
 		}
 	}
 
