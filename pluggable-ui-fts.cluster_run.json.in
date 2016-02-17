@@ -1,0 +1,11 @@
+{
+  "service": "fts",
+  "proxy-strategy": "local",
+  "rest-api-prefix": "fts",
+  "doc-root": [
+    "@GOPROJ_PREFIX@/cbft/ns_server_static/fts",
+    "@GOPROJ_PREFIX@/cbft/staticx",
+    "@GOPROJ_PREFIX@/cbgt/rest",
+    "@GODEPS_PREFIX@/blevesearch/bleve-mapping-ui"
+  ]
+}

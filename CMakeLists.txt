@@ -105,10 +105,7 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github
   DESTINATION lib/fts)
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
-SET (DOC_ROOT_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../install/lib/")
-configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.cluster_run.json)
-
-# To run using the ./cluster_run tool:
-#   cd [your dev directory where you ran 'repo sync' for couchbase server]
-#   cd ns_server
-#   ./cluster_run --pluggable-config="../build/goproj/src/github.com/couchbase/cbft/pluggable-ui-fts.cluster_run.json"
+SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
+SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
+configure_file (pluggable-ui-fts.cluster_run.json.in
+                ${PROJECT_BINARY_DIR}/../../../../../cluster_run_ui_plugins/pluggable-ui-fts.cluster_run.json)
