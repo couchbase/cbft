@@ -51,6 +51,10 @@ var VERSION = "v0.3.1"
 
 var expvars = expvar.NewMap("stats")
 
+func init() {
+	cbgt.DCPFeedPrefix = "fts:"
+}
+
 func main() {
 	flag.Parse()
 
