@@ -865,6 +865,11 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 	t.m.Lock()
 
+	if t.batch == nil {
+		t.m.Unlock()
+		return fmt.Errorf("bleve: OpaqueSet nil batch")
+	}
+
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
 	t.lastUUID = cbgt.ParseOpaqueToUUID(value)
 
