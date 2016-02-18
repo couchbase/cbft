@@ -53,6 +53,7 @@ var expvars = expvar.NewMap("stats")
 
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
+	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
 }
 
 func main() {
