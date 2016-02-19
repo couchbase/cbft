@@ -14,7 +14,6 @@ package cbft
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/couchbase/cbauth"
@@ -87,21 +86,11 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 }
 
 func UrlWithAuth(authType, urlStr string) (string, error) {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return "", err
-	}
-
 	if authType == "cbauth" {
-		adminUser, adminPasswd, err := cbauth.GetHTTPServiceAuth(u.Host)
-		if err != nil {
-			return "", err
-		}
-
-		u.User = url.UserPassword(adminUser, adminPasswd)
+		return cbgt.CBAuthURL(urlStr)
 	}
 
-	return u.String(), nil
+	return urlStr, nil
 }
 
 // --------------------------------------------------------
