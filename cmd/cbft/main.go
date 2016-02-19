@@ -42,7 +42,7 @@ import (
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/go-couchbase/cbdatasource"
 
-	"github.com/couchbase/cbauth/service_api"
+	"github.com/couchbase/cbauth/service"
 )
 
 var cmdName = "cbft"
@@ -352,9 +352,9 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// ------------------------------------------------
 
 	tagsMap := mgr.TagsMap()
-	if tagsMap != nil && tagsMap["service_api"] {
+	if tagsMap != nil && tagsMap["cbauth_service"] {
 		dryRun := false
-		dryRunV := mgr.Options()["service_api.dryRun"]
+		dryRunV := mgr.Options()["cbauth_service.dryRun"]
 		if dryRunV != "" {
 			dryRun, err = strconv.ParseBool(dryRunV)
 			if err != nil {
@@ -363,7 +363,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		waitForMemberNodes := 30 // In seconds.
-		waitForMemberNodesV := mgr.Options()["service_api.waitForMemberNodes"]
+		waitForMemberNodesV := mgr.Options()["cbauth_service.waitForMemberNodes"]
 		if waitForMemberNodesV != "" {
 			waitForMemberNodes, err = strconv.Atoi(waitForMemberNodesV)
 			if err != nil {
@@ -372,7 +372,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		verbose := 0
-		verboseV := mgr.Options()["service_api.verbose"]
+		verboseV := mgr.Options()["cbauth_service.verbose"]
 		if verboseV != "" {
 			verbose, err = strconv.Atoi(verboseV)
 			if err != nil {
@@ -380,7 +380,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			}
 		}
 
-		log.Printf("main: service_api ctl starting,"+
+		log.Printf("main: cbauth_service ctl starting,"+
 			" dryRun: %v, waitForMemberNodes: %d, verbose: %d",
 			dryRun, waitForMemberNodes, verbose)
 
@@ -394,8 +394,8 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
 		}
 
-		nodeInfo := &service_api.NodeInfo{
-			NodeId: service_api.NodeId(uuid),
+		nodeInfo := &service.NodeInfo{
+			NodeID: service.NodeID(uuid),
 		}
 
 		err = cfg.Refresh()
@@ -406,15 +406,15 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		ctlMgr := ctl.NewCtlMgr(nodeInfo, c)
 		if ctlMgr != nil {
 			go func() {
-				log.Printf("main: service_api registering...")
+				log.Printf("main: cbauth_service registering...")
 
-				err := service_api.RegisterServiceManager(ctlMgr, nil)
+				err := service.RegisterManager(ctlMgr, nil)
 				if err != nil {
-					log.Printf("main: service_api register err: %v", err)
+					log.Printf("main: cbauth_service register err: %v", err)
 					return
 				}
 
-				log.Printf("main: service_api registering... done")
+				log.Printf("main: cbauth_service registering... done")
 			}()
 		}
 	}
