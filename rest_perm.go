@@ -20,34 +20,37 @@ GET /api/index
 cluster.bucket.fts!read
 
 GET /api/index/{indexName}
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 
 PUT /api/index/{indexName}
-cluster.bucket[<bucket_name>].fts!write
+cluster.bucket[<sourceName>].fts!write
+
+CREATE /api/index/{indexName}
+cluster.bucket.fts!write
 
 DELETE /api/index/{indexName}
-cluster.bucket[<bucket_name>].fts!write
+cluster.bucket[<sourceName>].fts!write
 
 POST /api/index/{indexName}/ingestControl/{op}
-cluster.bucket[<bucket_name>].fts!manage
+cluster.bucket[<sourceName>].fts!manage
 
 POST /api/index/{indexName}/planFreezeControl/{op}
-cluster.bucket[<bucket_name>].fts!manage
+cluster.bucket[<sourceName>].fts!manage
 
 POST /api/index/{indexName}/queryControl/{op}
-cluster.bucket[<bucket_name>].fts!manage
+cluster.bucket[<sourceName>].fts!manage
 
 GET /api/stats
 cluster.bucket.stats!read
 
 GET /api/stats/index/{indexName}
-cluster.bucket[<bucket_name>].stats!read
+cluster.bucket[<sourceName>].stats!read
 
 GET /api/index/{indexName}/count
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 
 POST /api/index/{indexName}/query
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 
 GET /api/cfg
 cluster.settings!read
@@ -92,11 +95,11 @@ GET /api/pindex
 cluster.bucket.fts!read
 
 GET /api/pindex/{pindexName}
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 
 GET /api/pindex/{pindexName}/count
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 
 POST /api/pindex/{pindexName}/query
-cluster.bucket[<bucket_name>].fts!read
+cluster.bucket[<sourceName>].fts!read
 `

@@ -22,6 +22,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+// Map of "method:path" => "perm".  For example, "GET:/api/index" =>
+// "cluster.bucket.fts!read".
 var restPermsMap = map[string]string{}
 
 func init() {
@@ -31,7 +33,10 @@ func init() {
 		// Example rp: "GET /api/index\ncluster.bucket...!read".
 		rpa := strings.Split(rp, "\n")
 		ra := strings.Split(rpa[0], " ")
-		restPermsMap[ra[1]] = rpa[1]
+		method := ra[0]
+		path := ra[1]
+		perm := rpa[1]
+		restPermsMap[method+":"+path] = perm
 	}
 }
 
@@ -59,63 +64,11 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 		return false
 	}
 
-	perm := restPermsMap[path]
-	if perm == "" {
-		perm = restPermDefault
-	}
-
-	// TODO: Handle full-text-alias auth check better by calling
-	// IsAllowed on all of the target buckets of the alias.
-
-	if strings.Index(perm, "<bucket_name>") >= 0 {
-		indexName := rest.IndexNameLookup(req)
-		if indexName != "" {
-			_, indexDefsByName, err := mgr.GetIndexDefs(false)
-			if err != nil {
-				rest.ShowError(w, req, "rest_auth:"+
-					" could not retrieve index defs", 500)
-				return false
-			}
-
-			indexDef, exists := indexDefsByName[indexName]
-			if !exists || indexDef == nil {
-				rest.ShowError(w, req, "rest_auth:"+
-					" index not found", 400)
-				return false
-			}
-
-			if indexDef.SourceType == "couchbase" {
-				perm = strings.Replace(perm,
-					"<bucket_name>", indexDef.SourceName, -1)
-			} else {
-				perm = strings.Replace(perm,
-					"[<bucket_name>]", "", -1)
-			}
-		} else {
-			pindexName := rest.PIndexNameLookup(req)
-			if pindexName != "" {
-				pindex := mgr.GetPIndex(pindexName)
-				if pindex == nil {
-					rest.ShowError(w, req,
-						fmt.Sprintf("rest_auth: GetPIndex,"+
-							" no pindex, pindexName: %s", pindexName), 400)
-					return false
-				}
-
-				if pindex.SourceType == "couchbase" {
-					perm = strings.Replace(perm,
-						"<bucket_name>", pindex.SourceName, -1)
-				} else {
-					perm = strings.Replace(perm,
-						"[<bucket_name>]", "", -1)
-				}
-			} else {
-				http.Error(w,
-					fmt.Sprintf("rest_auth: missing indexName/pindexName,"+
-						" err: %v ", err), 403)
-				return false
-			}
-		}
+	perm, err := preparePerm(mgr, req, req.Method, path)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("rest_auth: preparePerm,"+
+			" err: %v ", err), 403)
+		return false
 	}
 
 	allowed, err = creds.IsAllowed(perm)
@@ -149,4 +102,59 @@ func UrlWithAuth(authType, urlStr string) (string, error) {
 	}
 
 	return u.String(), nil
+}
+
+// --------------------------------------------------------
+
+func preparePerm(mgr *cbgt.Manager, req *http.Request,
+	method, path string) (string, error) {
+	perm := restPermsMap[method+":"+path]
+	if perm == "" {
+		perm = restPermDefault
+	}
+
+	// TODO: Handle full-text-alias auth check better by calling
+	// IsAllowed on all of the target buckets of the alias.
+
+	if strings.Index(perm, "<sourceName>") >= 0 {
+		indexName := rest.IndexNameLookup(req)
+		if indexName != "" {
+			_, indexDefsByName, err := mgr.GetIndexDefs(false)
+			if err != nil {
+				return "", err
+			}
+
+			indexDef, exists := indexDefsByName[indexName]
+			if !exists || indexDef == nil {
+				if method == "PUT" {
+					// Special case where PUT can mean CREATE, which
+					// we assume when there's no indexDef.
+					return preparePerm(mgr, req, "CREATE", path)
+				}
+
+				return "", fmt.Errorf("index not found")
+			}
+
+			perm = strings.Replace(perm, "<sourceName>",
+				indexDef.SourceName, -1)
+		} else {
+			pindexName := rest.PIndexNameLookup(req)
+			if pindexName != "" {
+				pindex := mgr.GetPIndex(pindexName)
+				if pindex == nil {
+					return "", fmt.Errorf("no pindex,"+
+						" pindexName: %s", pindexName)
+				}
+
+				perm = strings.Replace(perm, "<sourceName>",
+					pindex.SourceName, -1)
+			} else {
+				return "", fmt.Errorf("missing indexName/pindexName")
+			}
+		}
+	}
+
+	perm = strings.Replace(perm, "[]", "", -1)
+
+	return perm, nil
 }
