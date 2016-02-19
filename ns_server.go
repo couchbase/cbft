@@ -271,6 +271,10 @@ func NewNsStatusHandler(mgr *cbgt.Manager, server string) (*NsStatusHandler, err
 
 func NsHostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes,
 	nodeDefs *cbgt.NodeDefs) []string {
+	if planPIndexes == nil {
+		return nil
+	}
+
 	v := struct{}{}
 
 	// find the node UUIDs related to this index
