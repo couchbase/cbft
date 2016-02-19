@@ -292,31 +292,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
-	options := map[string]string{
-		"managerLoadDataDir": "async",
-		"authType":           authType,
-	}
-
-	if optionKVs != "" {
-		for _, kv := range strings.Split(optionKVs, ",") {
-			a := strings.Split(kv, "=")
-			if len(a) >= 2 {
-				options[a[0]] = a[1]
-			}
-		}
-	}
-
-	optionsEnv := os.Getenv("CBFT_ENV_OPTIONS")
-	if optionsEnv != "" {
-		log.Printf("CBFT_ENV_OPTIONS")
-		for _, kv := range strings.Split(optionsEnv, ",") {
-			a := strings.Split(kv, "=")
-			if len(a) >= 2 {
-				log.Printf("  %s", a[0])
-				options[a[0]] = a[1]
-			}
-		}
-	}
+	options := cmd.ParseOptions(optionKVs, "CBFT_ENV_OPTIONS",
+		map[string]string{
+			"managerLoadDataDir": "async",
+			"authType":           authType,
+		})
 
 	err := InitOptions(options)
 	if err != nil {
@@ -406,7 +386,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			" dryRun: %v, waitForMemberNodes: %d, verbose: %d",
 			dryRun, waitForMemberNodes, verbose)
 
-		c, err := ctl.StartCtl(cfg, server, ctl.CtlOptions{
+		c, err := ctl.StartCtl(cfg, server, mgr.Options(), ctl.CtlOptions{
 			DryRun:             dryRun,
 			Verbose:            verbose,
 			FavorMinNodes:      false,
