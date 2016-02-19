@@ -1022,6 +1022,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 		collector.Add(&IndexClient{
+			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",

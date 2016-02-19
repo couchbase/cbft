@@ -38,6 +38,7 @@ var indexClientUnimplementedErr = errors.New("unimplemented")
 //
 // TODO: Implement propagating auth info in IndexClient.
 type IndexClient struct {
+	mgr         *cbgt.Manager
 	name        string
 	QueryURL    string
 	CountURL    string
@@ -72,7 +73,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	if r.CountURL == "" {
 		return 0, fmt.Errorf("remote: no CountURL provided")
 	}
-	u, err := UrlWithAuth(r.CountURL)
+	u, err := UrlWithAuth(r.AuthType(), r.CountURL)
 	if err != nil {
 		return 0, fmt.Errorf("remote: Error in parsing count url"+
 			" docCountURL: %s", r.CountURL)
@@ -209,7 +210,7 @@ func (r *IndexClient) Count() (uint64, error) {
 }
 
 func (r *IndexClient) Query(buf []byte) ([]byte, error) {
-	u, err := UrlWithAuth(r.QueryURL)
+	u, err := UrlWithAuth(r.AuthType(), r.QueryURL)
 	if err != nil {
 		return nil, fmt.Errorf("remote: Error in parsing query url"+
 			" queryURL: %s", r.QueryURL)
@@ -236,4 +237,13 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 
 func (r *IndexClient) Advanced() (index.Index, store.KVStore, error) {
 	return nil, nil, indexClientUnimplementedErr
+}
+
+// -----------------------------------------------------
+
+func (r *IndexClient) AuthType() string {
+	if r.mgr != nil {
+		return r.mgr.Options()["authType"]
+	}
+	return ""
 }

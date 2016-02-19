@@ -122,8 +122,6 @@ func main() {
 		}
 	}
 
-	cbft.SetAuthType(flags.AuthType)
-
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("main: os.Getwd, err: %#v", err)

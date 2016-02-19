@@ -22,14 +22,6 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-var authType = ""
-
-func SetAuthType(authType string) {
-	authType = authType
-}
-
-// --------------------------------------------------------
-
 var restPermsMap = map[string]string{}
 
 func init() {
@@ -47,6 +39,11 @@ func init() {
 
 func CheckAPIAuth(mgr *cbgt.Manager,
 	w http.ResponseWriter, req *http.Request, path string) (allowed bool) {
+	authType := ""
+	if mgr != nil && mgr.Options() != nil {
+		authType = mgr.Options()["authType"]
+	}
+
 	if authType == "" {
 		return true
 	}
@@ -136,7 +133,7 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 	return true
 }
 
-func UrlWithAuth(urlStr string) (string, error) {
+func UrlWithAuth(authType, urlStr string) (string, error) {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return "", err
