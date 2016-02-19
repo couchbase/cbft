@@ -398,6 +398,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			NodeId: service_api.NodeId(uuid),
 		}
 
+		err = cfg.Refresh()
+		if err != nil {
+			return nil, err
+		}
+
 		ctlMgr := ctl.NewCtlMgr(nodeInfo, c)
 		if ctlMgr != nil {
 			go func() {
