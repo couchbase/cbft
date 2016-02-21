@@ -138,6 +138,10 @@ func InitOptions(options map[string]string) error {
 		config.SetMultiKVInstances(b)
 	})
 
+	configBool("TraceLog", func(b bool) {
+		forestdb.Log = forestdb.NewLeveledLog(forestdb.LogTrace)
+	})
+
 	if outerErr != nil {
 		return outerErr
 	}
