@@ -94,7 +94,7 @@ func (h *NsStatsHandler) ServeHTTP(
 
 	_, indexDefsMap, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
-		rest.ShowError(w, req, "could not retrieve index defs", 500)
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve index defs: %v", err), 500)
 		return
 	}
 
@@ -326,7 +326,7 @@ func (h *NsStatusHandler) ServeHTTP(
 	cfg := h.mgr.Cfg()
 	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
-		rest.ShowError(w, req, "could not retrieve plan pIndexes", 500)
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve plan pIndexes: %v", err), 500)
 		return
 	}
 
