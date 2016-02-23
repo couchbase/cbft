@@ -49,6 +49,8 @@ var cmdName = "cbft"
 
 var VERSION = "v0.3.1"
 
+var DefaultCtlVerbose = 3
+
 var expvars = expvar.NewMap("stats")
 
 func init() {
@@ -371,7 +373,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			}
 		}
 
-		verbose := 0
+		verbose := DefaultCtlVerbose
 		verboseV := mgr.Options()["cbauth_service.verbose"]
 		if verboseV != "" {
 			verbose, err = strconv.Atoi(verboseV)

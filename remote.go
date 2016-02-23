@@ -75,8 +75,9 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	}
 	u, err := UrlWithAuth(r.AuthType(), r.CountURL)
 	if err != nil {
-		return 0, fmt.Errorf("remote: Error in parsing count url"+
-			" docCountURL: %s", r.CountURL)
+		return 0, fmt.Errorf("remote: auth for count,"+
+			" docCountURL: %s, authType: %s, err: %v",
+			r.CountURL, r.AuthType(), err)
 	}
 	resp, err := httpGet(u)
 	if err != nil {
@@ -90,7 +91,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return 0, fmt.Errorf("remote: count error reading resp.Body,"+
-			" docCountURL: %s, resp: %#v", r.CountURL, resp)
+			" docCountURL: %s, resp: %#v, err: %v", r.CountURL, resp, err)
 	}
 	rv := struct {
 		Status string `json:"status"`
@@ -99,7 +100,8 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	err = json.Unmarshal(respBuf, &rv)
 	if err != nil {
 		return 0, fmt.Errorf("remote: count error parsing respBuf: %s,"+
-			" docCountURL: %s, resp: %#v", respBuf, r.CountURL, resp)
+			" docCountURL: %s, resp: %#v, err: %v",
+			respBuf, r.CountURL, resp, err)
 	}
 	return rv.Count, nil
 }
@@ -140,7 +142,7 @@ func (r *IndexClient) Search(req *bleve.SearchRequest) (
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("remote: search error parsing respBuf: %s,"+
-			" queryURL: %s", respBuf, r.QueryURL)
+			" queryURL: %s, err: %v", respBuf, r.QueryURL, err)
 	}
 	return rv, nil
 }
@@ -212,8 +214,9 @@ func (r *IndexClient) Count() (uint64, error) {
 func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	u, err := UrlWithAuth(r.AuthType(), r.QueryURL)
 	if err != nil {
-		return nil, fmt.Errorf("remote: Error in parsing query url"+
-			" queryURL: %s", r.QueryURL)
+		return nil, fmt.Errorf("remote: auth for query,"+
+			" queryURL: %s, authType: %s, err: %v",
+			r.QueryURL, r.AuthType(), err)
 	}
 	resp, err :=
 		httpPost(u, "application/json", bytes.NewBuffer(buf))
@@ -223,14 +226,14 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("remote: query got status code: %d,"+
-			" queryURL: %s, buf: %s, resp: %#v",
-			resp.StatusCode, r.QueryURL, buf, resp)
+			" queryURL: %s, buf: %s, resp: %#v, err: %v",
+			resp.StatusCode, r.QueryURL, buf, resp, err)
 	}
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("remote: query error reading resp.Body,"+
-			" queryURL: %s, buf: %s, resp: %#v",
-			r.QueryURL, buf, resp)
+			" queryURL: %s, buf: %s, resp: %#v, err: %v",
+			r.QueryURL, buf, resp, err)
 	}
 	return respBuf, err
 }
