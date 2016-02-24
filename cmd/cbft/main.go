@@ -138,28 +138,6 @@ func main() {
 	}
 	log.Printf("main: data dir: %q", dataDirAbs)
 
-	// User may supply a comma-separated list of HOST:PORT values for
-	// http addresss/port listening, but only the first entry is used
-	// for cbgt node and Cfg registration.
-	bindHttps := strings.Split(flags.BindHttp, ",")
-
-	// If cfg is down, we error, leaving it to some user-supplied
-	// outside watchdog to backoff and restart/retry.
-	cfg, err := cmd.MainCfg(cmdName, flags.CfgConnect,
-		bindHttps[0], flags.Register, flags.DataDir)
-	if err != nil {
-		if err == cmd.ErrorBindHttp {
-			log.Fatalf("%v", err)
-			return
-		}
-		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
-			"  Please check that your -cfg/-cfgConnect parameter (%q)\n"+
-			"  is correct and/or that your configuration provider\n"+
-			"  is available.",
-			flags.CfgConnect, err, flags.CfgConnect)
-		return
-	}
-
 	uuid := flags.UUID
 	if uuid != "" {
 		uuidPath :=
@@ -183,6 +161,34 @@ func main() {
 		}
 	}
 
+	options := cmd.ParseOptions(flags.Options, "CBFT_ENV_OPTIONS",
+		map[string]string{
+			"managerLoadDataDir": "async",
+			"authType":           flags.AuthType,
+		})
+
+	// User may supply a comma-separated list of HOST:PORT values for
+	// http addresss/port listening, but only the first entry is used
+	// for cbgt node and Cfg registration.
+	bindHttps := strings.Split(flags.BindHttp, ",")
+
+	// If cfg is down, we error, leaving it to some user-supplied
+	// outside watchdog to backoff and restart/retry.
+	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
+		bindHttps[0], flags.Register, flags.DataDir, uuid, options)
+	if err != nil {
+		if err == cmd.ErrorBindHttp {
+			log.Fatalf("%v", err)
+			return
+		}
+		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
+			"  Please check that your -cfg/-cfgConnect parameter (%q)\n"+
+			"  is correct and/or that your configuration provider\n"+
+			"  is available.",
+			flags.CfgConnect, err, flags.CfgConnect)
+		return
+	}
+
 	var tagsArr []string
 	if flags.Tags != "" {
 		tagsArr = strings.Split(flags.Tags, ",")
@@ -192,8 +198,7 @@ func main() {
 		flags.Container, flags.Weight, flags.Extras,
 		bindHttps[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
-		flags.Server, flags.Register, mr, flags.Options,
-		flags.AuthType)
+		flags.Server, flags.Register, mr, options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -286,17 +291,11 @@ func MainWelcome(flagAliases map[string][]string) {
 
 func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, extras, bindHttp, dataDir, staticDir, staticETag, server string,
-	register string, mr *cbgt.MsgRing, optionKVs string, authType string) (
+	register string, mr *cbgt.MsgRing, options map[string]string) (
 	*mux.Router, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
-
-	options := cmd.ParseOptions(optionKVs, "CBFT_ENV_OPTIONS",
-		map[string]string{
-			"managerLoadDataDir": "async",
-			"authType":           authType,
-		})
 
 	err := InitOptions(options)
 	if err != nil {
