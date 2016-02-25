@@ -66,7 +66,7 @@ func TestNewRESTRouter(t *testing.T) {
 	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", ":1000",
 		emptyDir, "some-datasource", nil)
-	r, meta, err := NewRESTRouter("v0", mgr, emptyDir, "", ring)
+	r, meta, err := NewRESTRouter("v0", mgr, emptyDir, "", ring, nil)
 	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
@@ -74,7 +74,7 @@ func TestNewRESTRouter(t *testing.T) {
 	mgr = cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		[]string{"queryer", "anotherTag"},
 		"", 1, "", ":1000", emptyDir, "some-datasource", nil)
-	r, meta, err = NewRESTRouter("v0", mgr, emptyDir, "", ring)
+	r, meta, err = NewRESTRouter("v0", mgr, emptyDir, "", ring, nil)
 	if r == nil || meta == nil || err != nil {
 		t.Errorf("expected no errors")
 	}
@@ -172,7 +172,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -253,7 +253,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 	mgr.AddEvent([]byte(`"fizz"`))
 	mgr.AddEvent([]byte(`"buzz"`))
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -471,7 +471,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 
 	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -824,7 +824,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 
 	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -1551,7 +1551,7 @@ func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 
 	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -1794,11 +1794,11 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mr0, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 	mr1, _ := cbgt.NewMsgRing(os.Stderr, 1000)
 
-	router0, _, err := NewRESTRouter("v0", mgr0, "static", "", mr0)
+	router0, _, err := NewRESTRouter("v0", mgr0, "static", "", mr0, nil)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
-	router1, _, err := NewRESTRouter("v0", mgr1, "static", "", mr1)
+	router1, _, err := NewRESTRouter("v0", mgr1, "static", "", mr1, nil)
 	if err != nil || router1 == nil {
 		t.Errorf("no mux router")
 	}
@@ -2082,7 +2082,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	mgr0.Start("wanted")
 	mgr0.Kick("test-start-kick")
 	mr0, _ := cbgt.NewMsgRing(os.Stderr, 1000)
-	router0, _, err := NewRESTRouter("v0", mgr0, "static", "", mr0)
+	router0, _, err := NewRESTRouter("v0", mgr0, "static", "", mr0, nil)
 	if err != nil || router0 == nil {
 		t.Errorf("no mux router")
 	}
@@ -2644,7 +2644,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -2886,7 +2886,7 @@ func TestMultiFeedStats(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
@@ -2956,7 +2956,7 @@ func TestIndexDefWithJSON(t *testing.T) {
 	mr.Write([]byte("hello"))
 	mr.Write([]byte("world"))
 
-	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr)
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}

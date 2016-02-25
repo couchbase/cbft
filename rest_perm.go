@@ -24,21 +24,27 @@ cluster.bucket[<sourceName>].fts!read
 
 PUT /api/index/{indexName}
 cluster.bucket[<sourceName>].fts!write
+24577
 
 CREATE /api/index/{indexName}
 cluster.bucket.fts!write
+24577
 
 DELETE /api/index/{indexName}
 cluster.bucket[<sourceName>].fts!write
+24576
 
 POST /api/index/{indexName}/ingestControl/{op}
 cluster.bucket[<sourceName>].fts!manage
+24579
 
 POST /api/index/{indexName}/planFreezeControl/{op}
 cluster.bucket[<sourceName>].fts!manage
+24579
 
 POST /api/index/{indexName}/queryControl/{op}
 cluster.bucket[<sourceName>].fts!manage
+24579
 
 GET /api/stats
 cluster.bucket.stats!read
@@ -57,9 +63,11 @@ cluster.settings!read
 
 POST /api/cfgRefresh
 cluster.settings!write
+24580
 
 POST /api/managerKick
 cluster.settings!write
+24581
 
 GET /api/managerMeta
 cluster.settings!read
@@ -78,12 +86,15 @@ cluster.settings!read
 
 POST /api/runtime/profile/cpu
 cluster.settings!write
+24583
 
 POST /api/runtime/profile/memory
 cluster.settings!write
+24584
 
 POST /api/runtime/gc
 cluster.settings!write
+24582
 
 GET /api/runtime/stats
 cluster.stats!read

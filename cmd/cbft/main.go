@@ -40,6 +40,7 @@ import (
 	"github.com/couchbase/cbgt/ctl"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
+	"github.com/couchbase/goutils/go-cbaudit"
 
 	"github.com/couchbase/cbauth/service"
 )
@@ -346,8 +347,13 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
+	var adtSvc *audit.AuditSvc
+	if options["cbaudit"] == "true" {
+		adtSvc, _ = audit.NewAuditSvc(server)
+	}
 	router, _, err :=
-		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
+		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr,
+			adtSvc)
 
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]

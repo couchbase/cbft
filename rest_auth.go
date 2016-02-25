@@ -14,6 +14,7 @@ package cbft
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/couchbase/cbauth"
@@ -24,6 +25,7 @@ import (
 // Map of "method:path" => "perm".  For example, "GET:/api/index" =>
 // "cluster.bucket.fts!read".
 var restPermsMap = map[string]string{}
+var restAuditMap = map[string]uint32{}
 
 func init() {
 	// Initialze restPermsMap from restPerms.
@@ -36,6 +38,10 @@ func init() {
 		path := ra[1]
 		perm := rpa[1]
 		restPermsMap[method+":"+path] = perm
+		if len(rpa) > 2 {
+			eventId, _ := strconv.ParseUint(rpa[2], 0, 32)
+			restAuditMap[method+":"+path] = uint32(eventId)
+		}
 	}
 }
 

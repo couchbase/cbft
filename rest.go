@@ -18,6 +18,7 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	"github.com/couchbase/goutils/go-cbaudit"
 )
 
 const RESTIndexQueryPath = "/api/index/{indexName}/query"
@@ -84,10 +85,11 @@ func myAsset(name string) ([]byte, error) {
 // API and web UI routes.  See also InitStaticRouter if you need finer
 // control of the router initialization.
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
-	staticDir, staticETag string, mr *cbgt.MsgRing) (
+	staticDir, staticETag string, mr *cbgt.MsgRing,
+	adtSvc *audit.AuditSvc) (
 	*mux.Router, map[string]rest.RESTMeta, error) {
 	wrapAuthVersionHandler := func(h http.Handler) http.Handler {
-		return &AuthVersionHandler{mgr: mgr, H: h}
+		return &AuthVersionHandler{mgr: mgr, H: h, adtSvc: adtSvc}
 	}
 
 	var options = map[string]interface{}{
@@ -104,8 +106,9 @@ func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 // --------------------------------------------------
 
 type AuthVersionHandler struct {
-	mgr *cbgt.Manager
-	H   http.Handler
+	mgr    *cbgt.Manager
+	H      http.Handler
+	adtSvc *audit.AuditSvc
 }
 
 func (c *AuthVersionHandler) ServeHTTP(
@@ -122,11 +125,24 @@ func (c *AuthVersionHandler) ServeHTTP(
 		}
 	}
 
+	c.doAudit(req, path)
+
 	if !CheckAPIAuth(c.mgr, w, req, path) {
 		return
 	}
-
 	if c.H != nil {
 		c.H.ServeHTTP(w, req)
 	}
+}
+
+func (c *AuthVersionHandler) doAudit(req *http.Request, path string) {
+	if c.adtSvc == nil {
+		return
+	}
+	eventId, ok := restAuditMap[req.Method+":"+path]
+	if ok {
+		d := GetAuditEventData(eventId, req)
+		go c.adtSvc.Write(eventId, d)
+	}
+	return
 }
