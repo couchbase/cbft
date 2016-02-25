@@ -40,7 +40,6 @@ import (
 	"github.com/couchbase/cbgt/ctl"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
-	"github.com/couchbase/go-couchbase/cbdatasource"
 
 	"github.com/couchbase/cbauth/service"
 )
@@ -443,21 +442,34 @@ func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 	bleveHttp.UnregisterIndexByName(pindex.Name)
 }
 
-func (meh *MainHandlers) OnFeedError(srcType string, r cbgt.Feed,
-	err error) {
-	if _, ok := err.(*cbdatasource.AllServerURLsConnectBucketError); ok {
-		switch srcType {
-		case "couchbase":
-			dcpFeed, ok := r.(*cbgt.DCPFeed)
-			if ok && dcpFeed.VerifyBucketNotExists() {
-				bucketName, bucketUUID := dcpFeed.GetBucketDetails()
-				log.Printf("main: deleting indexes for sourcetype %s"+
-					" sourcename %s", srcType, bucketName)
-				meh.mgr.DeleteAllIndexFromSource(srcType, bucketName,
-					bucketUUID)
-			}
-		default:
-			log.Printf("main: invalid srctype: %s", srcType)
-		}
+func (meh *MainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
+	log.Printf("main: meh.OnFeedError, srcType: %s, err: %v", srcType, err)
+
+	if _, ok := err.(*couchbase.BucketNotFoundError); !ok ||
+		srcType != "couchbase" || r == nil {
+		return
 	}
+
+	dcpFeed, ok := r.(*cbgt.DCPFeed)
+	if !ok {
+		return
+	}
+
+	gone, err := dcpFeed.VerifyBucketNotExists()
+	log.Printf("main: meh.OnFeedError, VerifyBucketNotExists,"+
+		" srcType: %s, gone: %t, err: %v", srcType, gone, err)
+	if !gone {
+		return
+	}
+
+	bucketName, bucketUUID := dcpFeed.GetBucketDetails()
+	if bucketName == "" {
+		return
+	}
+
+	log.Printf("main: meh.OnFeedError, DeleteAllIndexFromSource,"+
+		" srcType: %s, bucketName: %s, bucketUUID: %s",
+		srcType, bucketName, bucketUUID)
+
+	meh.mgr.DeleteAllIndexFromSource(srcType, bucketName, bucketUUID)
 }
