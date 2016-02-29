@@ -43,6 +43,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
+
 type BleveParams struct {
 	Mapping bleve.IndexMapping     `json:"mapping"`
 	Store   map[string]interface{} `json:"store"`
@@ -190,11 +192,31 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		kvConfig[k] = v
 	}
 
+	// Use the "moss" wrapper KVStore if it's allowed, available
+	// and also not already configured.
+	kvStoreMossAllow := true
+	ksmv, exists := kvConfig["kvStoreMossAllow"]
+	if exists {
+		v, ok := ksmv.(bool)
+		if ok {
+			kvStoreMossAllow = v
+		}
+	}
+
+	if kvStoreMossAllow && BlevePIndexAllowMoss {
+		_, exists := kvConfig["mossLowerLevelStoreName"]
+		if !exists &&
+			kvStoreName != "moss" &&
+			bleveRegistry.KVStoreConstructorByName("moss") != nil {
+			kvConfig["mossLowerLevelStoreName"] = kvStoreName
+			kvStoreName = "moss"
+		}
+	}
+
 	// Use the "metrics" wrapper KVStore if it's allowed, available
 	// and also not already configured.
 	kvStoreMetricsAllow := true
-
-	ksmv, exists := kvConfig["kvStoreMetricsAllow"]
+	ksmv, exists = kvConfig["kvStoreMetricsAllow"]
 	if exists {
 		v, ok := ksmv.(bool)
 		if ok {

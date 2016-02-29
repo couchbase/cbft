@@ -55,6 +55,7 @@ var expvars = expvar.NewMap("stats")
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
+	cbft.BlevePIndexAllowMoss = true
 }
 
 func main() {
@@ -155,7 +156,7 @@ func main() {
 	if uuid == "" {
 		uuid, err = cmd.MainUUID(cmdName, flags.DataDir)
 		if err != nil {
-			log.Fatalf(fmt.Sprintf("%v", err))
+			log.Fatalf("%v", err)
 			return
 		}
 	}
@@ -165,6 +166,16 @@ func main() {
 			"managerLoadDataDir": "async",
 			"authType":           flags.AuthType,
 		})
+
+	if bpamv, exists := options["blevePIndexAllowMoss"]; exists {
+		bpam, err := strconv.ParseBool(bpamv)
+		if err != nil {
+			log.Fatalf("main: option blevePIndexAllowMoss, err: %v", err)
+			return
+		}
+
+		cbft.BlevePIndexAllowMoss = bpam
+	}
 
 	// User may supply a comma-separated list of HOST:PORT values for
 	// http addresss/port listening, but only the first entry is used
