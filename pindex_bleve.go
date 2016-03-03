@@ -949,6 +949,10 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) error {
 }
 
 func (t *BleveDestPartition) applyBatchLOCKED() error {
+	if t.bindex == nil {
+		return fmt.Errorf("bleve: applyBatch bindex already closed")
+	}
+
 	err := cbgt.Timer(func() error {
 		// At this point, there should be no other concurrent batch
 		// activity on this BleveDestPartition (BDP) by design, since
