@@ -17,6 +17,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
@@ -108,6 +110,11 @@ func (r *IndexClient) DocCount() (uint64, error) {
 
 func (r *IndexClient) Search(req *bleve.SearchRequest) (
 	*bleve.SearchResult, error) {
+	return r.SearchInContext(context.Background(), req)
+}
+
+func (r *IndexClient) SearchInContext(ctx context.Context,
+	req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 	if req == nil {
 		return nil, fmt.Errorf("remote: no req provided")
 	}
