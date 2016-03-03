@@ -792,6 +792,11 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 
 	t.m.Lock()
 
+	if t.batch == nil {
+		t.m.Unlock()
+		return fmt.Errorf("bleve: DataUpdate nil batch")
+	}
+
 	errv = json.Unmarshal(val, &v)
 	if errv == nil {
 		erri = t.batch.Index(k, v)
@@ -815,6 +820,11 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	cas uint64,
 	extrasType cbgt.DestExtrasType, extras []byte) error {
 	t.m.Lock()
+
+	if t.batch == nil {
+		t.m.Unlock()
+		return fmt.Errorf("bleve: DataDelete nil batch")
+	}
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
 	err := t.updateSeqLOCKED(seq)
@@ -949,20 +959,24 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) error {
 }
 
 func (t *BleveDestPartition) applyBatchLOCKED() error {
+	if t.batch == nil {
+		return fmt.Errorf("bleve: applyBatch batch nil")
+	}
+
 	if t.bindex == nil {
 		return fmt.Errorf("bleve: applyBatch bindex already closed")
 	}
 
 	err := cbgt.Timer(func() error {
 		// At this point, there should be no other concurrent batch
-		// activity on this BleveDestPartition (BDP) by design, since
-		// a BDP represents a single vbucket.  Since we don't want to
-		// block stats gathering or readers trying to read
+		// activity on this BleveDestPartition (BDP), since a BDP
+		// represents a single vbucket.  Since we don't want to block
+		// stats gathering or readers trying to read
 		// seqMax/seqMaxBatch/lastUUID, we unlock before entering the
 		// (perhaps time consuming) t.bindex.Batch() operation.  By
 		// clearing the t.batch to nil, we can also detect concurrent
-		// mutations that break this design assumption by seeing any
-		// crashes that try to access a nil t.batch.
+		// mutations due to errors returned from other methods when
+		// they see a nil t.batch.
 		batch := t.batch
 		t.batch = nil
 
