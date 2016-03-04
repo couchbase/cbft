@@ -20,6 +20,13 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+const RESTIndexQueryPath = "/api/index/{indexName}/query"
+
+// MapRESTPathStats is keyed by path spec strings.
+var MapRESTPathStats = map[string]*rest.RESTPathStats{
+	RESTIndexQueryPath: &rest.RESTPathStats{},
+}
+
 func InitStaticRouter(staticDir, staticETag string,
 	mgr *cbgt.Manager) *mux.Router {
 	prefix := ""
@@ -84,7 +91,8 @@ func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	}
 
 	var options = map[string]interface{}{
-		"auth": wrapAuthVersionHandler,
+		"auth":             wrapAuthVersionHandler,
+		"mapRESTPathStats": MapRESTPathStats,
 	}
 
 	return rest.InitRESTRouterEx(

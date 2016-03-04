@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"unicode"
 
 	"github.com/couchbase/cbgt"
@@ -85,25 +86,31 @@ var statkeys = []string{
 	"timer_snapshot_start_count",
 	"timer_opaque_get_count",
 
+	// --------------------------------------------
 	// stats from "FTS Stats" spec, see:
 	// https://docs.google.com/spreadsheets/d/1w8P68gLBIs0VUN4egUuUH6U_92_5xi9azfvH8pPw21s/edit#gid=104567684
+
 	"num_mutations_to_index",
-	"num_docs_indexed",
 	"num_docs_indexed",
 	"total_bytes_indexed",
 	"num_recs_to_persist",
+
 	"num_bytes_used_disk",
-	"num_pindexes_actual",
+	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
+
+	"num_pindexes_actual", // per-index stat.
 	"num_pindexes_target",
+
 	"total_compactions",
-	"num_bytes_used_ram",
-	"total_gc",
-	"pct_cpu_gc",
-	"total_queries",
-	"avg_queries_latency",
-	"total_queries_slow",
+
+	// "total_gc" -- PROCESS-LEVEL stat.
+	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
+
+	"total_queries",       // per-index stat.
+	"avg_queries_latency", // per-index stat
+	"total_queries_slow",  // per-index stat.
 	"total_queries_timeout",
-	"total_queries_error",
+	"total_queries_error", // per-index stat.
 	"total_bytes_query_results",
 	"total_term_searchers",
 }
@@ -119,21 +126,39 @@ func NewIndexStat() map[string]interface{} {
 	return rv
 }
 
-func (h *NsStatsHandler) ServeHTTP(
-	w http.ResponseWriter, req *http.Request) {
-
+func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	_, indexDefsMap, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("could not retrieve index defs: %v", err), 500)
 		return
 	}
 
-	indexNameToSourceName := map[string]string{}
 	nsIndexStats := make(NSIndexStats, len(indexDefsMap))
 
-	for indexDefName, indexDef := range indexDefsMap {
-		indexNameToSourceName[indexDefName] = indexDef.SourceName
-		nsIndexStats[indexDef.SourceName+":"+indexDefName] = NewIndexStat()
+	indexNameToSourceName := map[string]string{}
+
+	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
+
+	for indexName, indexDef := range indexDefsMap {
+		nsIndexStat := NewIndexStat()
+		nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
+
+		indexNameToSourceName[indexName] = indexDef.SourceName
+
+		focusStats := indexQueryPathStats.FocusStats(indexName)
+		if focusStats != nil {
+			totalQueries := atomic.LoadUint64(&focusStats.TotRequest)
+			nsIndexStat["total_queries"] = totalQueries
+			if totalQueries > 0 {
+				nsIndexStat["avg_queries_latency"] =
+					float64((atomic.LoadUint64(&focusStats.TotRequestTimeNS) /
+						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
+			}
+			nsIndexStat["total_queries_slow"] =
+				atomic.LoadUint64(&focusStats.TotRequestSlow)
+			nsIndexStat["total_queries_error"] =
+				atomic.LoadUint64(&focusStats.TotRequestErr)
+		}
 	}
 
 	feeds, pindexes := h.mgr.CurrentMaps()
