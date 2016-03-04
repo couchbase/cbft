@@ -133,9 +133,26 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(h.mgr.Cfg())
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve plan pIndexes: %v", err), 500)
+		return
+	}
+
+	nodeUUID := h.mgr.UUID()
+
 	nsIndexStats := make(NSIndexStats, len(indexDefsMap))
 
 	indexNameToSourceName := map[string]string{}
+
+	indexNameToPlanPIndexes := map[string][]*cbgt.PlanPIndex{}
+	for _, planPIndex := range planPIndexes.PlanPIndexes {
+		// Only focus on the planPIndex entries for this node.
+		if planPIndex.Nodes[nodeUUID] != nil {
+			indexNameToPlanPIndexes[planPIndex.IndexName] =
+				append(indexNameToPlanPIndexes[planPIndex.IndexName], planPIndex)
+		}
+	}
 
 	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
 
@@ -160,6 +177,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				atomic.LoadUint64(&focusStats.TotRequestErr)
 			nsIndexStat["total_bytes_query_results"] =
 				atomic.LoadUint64(&focusStats.TotResponseBytes)
+			nsIndexStat["num_pindexes_target"] =
+				uint64(len(indexNameToPlanPIndexes[indexName]))
 		}
 	}
 
