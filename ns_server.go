@@ -91,7 +91,7 @@ var statkeys = []string{
 	// https://docs.google.com/spreadsheets/d/1w8P68gLBIs0VUN4egUuUH6U_92_5xi9azfvH8pPw21s/edit#gid=104567684
 
 	"num_mutations_to_index",
-	"num_docs_indexed",
+	// "doc_count", // per-index stat (same as before, see above).
 	"total_bytes_indexed",
 	"num_recs_to_persist",
 
@@ -99,17 +99,17 @@ var statkeys = []string{
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
 	"num_pindexes_actual", // per-index stat.
-	"num_pindexes_target",
+	"num_pindexes_target", // per-index stat.
 
 	"total_compactions",
 
 	// "total_gc" -- PROCESS-LEVEL stat.
 	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
 
-	"total_queries",       // per-index stat.
-	"avg_queries_latency", // per-index stat
-	"total_queries_slow",  // per-index stat.
-	"total_queries_timeout",
+	"total_queries",             // per-index stat.
+	"avg_queries_latency",       // per-index stat.
+	"total_queries_slow",        // per-index stat.
+	"total_queries_timeout",     // per-index stat.
 	"total_queries_error",       // per-index stat.
 	"total_bytes_query_results", // per-index stat.
 	"total_term_searchers",
@@ -173,6 +173,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 			nsIndexStat["total_queries_slow"] =
 				atomic.LoadUint64(&focusStats.TotRequestSlow)
+			nsIndexStat["total_queries_timeout"] =
+				atomic.LoadUint64(&focusStats.TotRequestTimeout)
 			nsIndexStat["total_queries_error"] =
 				atomic.LoadUint64(&focusStats.TotRequestErr)
 			nsIndexStat["total_bytes_query_results"] =
