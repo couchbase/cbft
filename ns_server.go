@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"runtime"
 	"sort"
 	"strings"
 	"unicode"
@@ -68,14 +69,43 @@ var statkeys = []string{
 
 	// kv store
 	"timer_batch_merge_count",
-	"timer_iterator_next_count", "timer_iterator_seek_count",
-	"timer_reader_get_count", "timer_reader_multi_get_count",
-	"timer_reader_prefix_iterator_count", "timer_reader_range_iterator_count",
+	"timer_iterator_next_count",
+	"timer_iterator_seek_count",
+	"timer_reader_get_count",
+	"timer_reader_multi_get_count",
+	"timer_reader_prefix_iterator_count",
+	"timer_reader_range_iterator_count",
 	"timer_writer_execute_batch_count",
 
 	// feed
-	"timer_opaque_set_count", "timer_rollback_count", "timer_data_update_count",
-	"timer_data_delete_count", "timer_snapshot_start_count", "timer_opaque_get_count",
+	"timer_opaque_set_count",
+	"timer_rollback_count",
+	"timer_data_update_count",
+	"timer_data_delete_count",
+	"timer_snapshot_start_count",
+	"timer_opaque_get_count",
+
+	// stats from "FTS Stats" spec, see:
+	// https://docs.google.com/spreadsheets/d/1w8P68gLBIs0VUN4egUuUH6U_92_5xi9azfvH8pPw21s/edit#gid=104567684
+	"num_mutations_to_index",
+	"num_docs_indexed",
+	"num_docs_indexed",
+	"total_bytes_indexed",
+	"num_recs_to_persist",
+	"num_bytes_used_disk",
+	"num_pindexes_actual",
+	"num_pindexes_target",
+	"total_compactions",
+	"num_bytes_used_ram",
+	"total_gc",
+	"pct_cpu_gc",
+	"total_queries",
+	"avg_queries_latency",
+	"total_queries_slow",
+	"total_queries_timeout",
+	"total_queries_error",
+	"total_bytes_query_results",
+	"total_term_searchers",
 }
 
 // NewIndexStat ensures that all index stats
@@ -98,26 +128,30 @@ func (h *NsStatsHandler) ServeHTTP(
 		return
 	}
 
+	indexNameToSourceName := map[string]string{}
 	nsIndexStats := make(NSIndexStats, len(indexDefsMap))
+
 	for indexDefName, indexDef := range indexDefsMap {
+		indexNameToSourceName[indexDefName] = indexDef.SourceName
 		nsIndexStats[indexDef.SourceName+":"+indexDefName] = NewIndexStat()
 	}
 
 	feeds, pindexes := h.mgr.CurrentMaps()
 
-	sourceName := ""
 	for _, pindex := range pindexes {
-		sourceName = pindex.SourceName
-		lindexName := pindex.SourceName + ":" + pindex.IndexName
-		nsIndexStat, ok := nsIndexStats[lindexName]
+		nsIndexName := pindex.SourceName + ":" + pindex.IndexName
+		nsIndexStat, ok := nsIndexStats[nsIndexName]
 		if ok {
-			// manually track a statistic representing
-			// the number of pindex in the index
-			oldValue, ok := nsIndexStat["num_pindexes"]
+			// manually track num pindexes
+			oldValue, ok := nsIndexStat["num_pindexes_actual"]
 			if ok {
 				switch oldValue := oldValue.(type) {
 				case float64:
 					oldValue += float64(1)
+
+					nsIndexStat["num_pindexes_actual"] = oldValue
+
+					// TODO: Former name was num_pindexes, need to remove one day.
 					nsIndexStat["num_pindexes"] = oldValue
 				}
 			}
@@ -133,8 +167,9 @@ func (h *NsStatsHandler) ServeHTTP(
 	}
 
 	for _, feed := range feeds {
-		lindexName := sourceName + ":" + feed.IndexName()
-		nsIndexStat, ok := nsIndexStats[lindexName]
+		sourceName := indexNameToSourceName[feed.IndexName()]
+		nsIndexName := sourceName + ":" + feed.IndexName()
+		nsIndexStat, ok := nsIndexStats[nsIndexName]
 		if ok {
 			// automatically process all the feed stats
 			err := addFeedStats(feed, nsIndexStat)
@@ -147,9 +182,18 @@ func (h *NsStatsHandler) ServeHTTP(
 	}
 
 	// FIXME hard-coded top-level stats
-	nsIndexStats[""] = make(map[string]interface{})
-	nsIndexStats[""]["num_connections"] = 0
-	nsIndexStats[""]["needs_restart"] = false
+	topLevelStats := map[string]interface{}{}
+	topLevelStats["num_connections"] = 0
+	topLevelStats["needs_restart"] = false
+
+	memStats := &runtime.MemStats{}
+	runtime.ReadMemStats(memStats)
+
+	topLevelStats["num_bytes_used_ram"] = memStats.Alloc
+	topLevelStats["total_gc"] = memStats.NumGC
+	topLevelStats["pct_cpu_gc"] = memStats.GCCPUFraction
+
+	nsIndexStats[""] = topLevelStats
 
 	rest.MustEncode(w, nsIndexStats)
 }
