@@ -775,6 +775,31 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 // ---------------------------------------------------------
 
+// Implements the PartitionSeqProvider interface.
+func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
+	rv := map[string]cbgt.UUIDSeq{}
+
+	t.m.Lock()
+
+	for partition, bdp := range t.partitions {
+		bdp.m.Lock()
+		bdpSeqMaxBatch := bdp.seqMaxBatch
+		bdpLastUUID := bdp.lastUUID
+		bdp.m.Unlock()
+
+		rv[partition] = cbgt.UUIDSeq{
+			UUID: bdpLastUUID,
+			Seq:  bdpSeqMaxBatch,
+		}
+	}
+
+	t.m.Unlock()
+
+	return rv, nil
+}
+
+// ---------------------------------------------------------
+
 func (t *BleveDestPartition) Close() error {
 	return t.bdest.Close()
 }

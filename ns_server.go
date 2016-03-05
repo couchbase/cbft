@@ -28,6 +28,13 @@ import (
 	"github.com/dustin/go-jsonpointer"
 )
 
+// PartitionSeqsProvider represents source object that can provide
+// partition seqs, such as some pindex or dest implementations.
+type PartitionSeqsProvider interface {
+	// Returned map is keyed by partition id.
+	PartitionSeqs() (map[string]cbgt.UUIDSeq, error)
+}
+
 var statsNamePrefix = []byte("\"")
 var statsNameSuffix = []byte("\":")
 
@@ -156,6 +163,12 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
 
+	// Keyed by indexName, sub-key is source partition id.
+	indexNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
+
+	// Keyed by indexName, sub-key is source partition id.
+	indexNameToDestPartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
+
 	for indexName, indexDef := range indexDefsMap {
 		nsIndexStat := NewIndexStat()
 		nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
@@ -182,6 +195,22 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			nsIndexStat["num_pindexes_target"] =
 				uint64(len(indexNameToPlanPIndexes[indexName]))
 		}
+
+		feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
+		if !exists || feedType == nil || feedType.PartitionSeqs == nil {
+			continue
+		}
+
+		partitionSeqs, err := feedType.PartitionSeqs(
+			indexDef.SourceType, indexDef.SourceName, indexDef.SourceUUID,
+			indexDef.SourceParams, h.mgr.Server(), h.mgr.Options())
+		if err != nil {
+			rest.ShowError(w, req,
+				fmt.Sprintf("could not retrieve partition seqs: %v", err), 500)
+			return
+		}
+
+		indexNameToSourcePartitionSeqs[indexName] = partitionSeqs
 	}
 
 	feeds, pindexes := h.mgr.CurrentMaps()
@@ -211,6 +240,33 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					fmt.Sprintf("error processing PIndex stats: %v", err), 500)
 				return
 			}
+
+			dest := pindex.Dest
+			if dest != nil {
+				destForwarder, ok := dest.(*cbgt.DestForwarder)
+				if !ok {
+					continue
+				}
+
+				partitionSeqsProvider, ok :=
+					destForwarder.DestProvider.(PartitionSeqsProvider)
+				if !ok {
+					continue
+				}
+
+				partitionSeqs, err := partitionSeqsProvider.PartitionSeqs()
+				if err == nil {
+					m := indexNameToDestPartitionSeqs[pindex.IndexName]
+					if m == nil {
+						m = map[string]cbgt.UUIDSeq{}
+						indexNameToDestPartitionSeqs[pindex.IndexName] = m
+					}
+
+					for partitionId, uuidSeq := range partitionSeqs {
+						m[partitionId] = uuidSeq
+					}
+				}
+			}
 		}
 	}
 
@@ -226,6 +282,34 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					fmt.Sprintf("error processing Feed stats: %v", err), 500)
 				return
 			}
+		}
+	}
+
+	for indexName, indexDef := range indexDefsMap {
+		nsIndexStat, ok := nsIndexStats[indexDef.SourceName+":"+indexName]
+		if ok {
+			src := indexNameToSourcePartitionSeqs[indexName]
+			if src == nil {
+				continue
+			}
+
+			dst := indexNameToDestPartitionSeqs[indexName]
+			if dst == nil {
+				continue
+			}
+
+			var totSeq uint64
+			var curSeq uint64
+
+			for partitionId, dstUUIDSeq := range dst {
+				srcUUIDSeq, exists := src[partitionId]
+				if exists {
+					totSeq += srcUUIDSeq.Seq
+					curSeq += dstUUIDSeq.Seq
+				}
+			}
+
+			nsIndexStat["num_mutations_to_index"] = totSeq - curSeq
 		}
 	}
 
