@@ -76,14 +76,14 @@ var statkeys = []string{
 	"timer_batch_store_count",
 
 	// kv store
-	"timer_batch_merge_count",
-	"timer_iterator_next_count",
-	"timer_iterator_seek_count",
-	"timer_reader_get_count",
-	"timer_reader_multi_get_count",
-	"timer_reader_prefix_iterator_count",
-	"timer_reader_range_iterator_count",
-	"timer_writer_execute_batch_count",
+	"batch_merge_count",
+	"iterator_next_count",
+	"iterator_seek_count",
+	"reader_get_count",
+	"reader_multi_get_count",
+	"reader_prefix_iterator_count",
+	"reader_range_iterator_count",
+	"writer_execute_batch_count",
 
 	// feed
 	"timer_opaque_set_count",
@@ -358,7 +358,8 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 	countPointers := make([]string, 0)
 	for _, pointer := range pointers {
 		if strings.HasSuffix(pointer, "/count") ||
-			strings.HasSuffix(pointer, "/DocCount") {
+			strings.HasSuffix(pointer, "/DocCount") ||
+			matchAnyFixedSuffixes(pointer) {
 			countPointers = append(countPointers, pointer)
 		}
 	}
@@ -388,12 +389,31 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 	return nil
 }
 
+var fixedSuffixToStatNameMapping = map[string]string{
+	"compacts":               "total_compactions",
+	"term_searchers_started": "total_term_searchers",
+	"estimated_space_used":   "num_bytes_used_disk",
+	"CurDirtyOps":            "num_recs_to_persist",
+}
+
+func matchAnyFixedSuffixes(pointer string) bool {
+	for k := range fixedSuffixToStatNameMapping {
+		if strings.HasSuffix(pointer, "/"+k) {
+			return true
+		}
+	}
+	return false
+}
+
 func convertStatName(key string) string {
 	lastSlash := strings.LastIndex(key, "/")
 	if lastSlash < 0 {
 		return "unknown"
 	}
 	statSuffix := key[lastSlash+1:]
+	if fixedStatName, ok := fixedSuffixToStatNameMapping[statSuffix]; ok {
+		return fixedStatName
+	}
 	statNameStart := strings.LastIndex(key[:lastSlash], "/")
 	if statNameStart < 0 {
 		return "unknown"

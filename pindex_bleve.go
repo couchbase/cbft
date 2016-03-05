@@ -34,7 +34,6 @@ import (
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
-	bleveStore "github.com/blevesearch/bleve/index/store"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
@@ -666,20 +665,19 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	t.stats.WriteJSON(w)
 
 	if t.bindex != nil {
-		var kvs bleveStore.KVStore
-		_, kvs, err = t.bindex.Advanced()
-		if err == nil && kvs != nil {
-			m, ok := kvs.(JSONStatsWriter)
-			if ok {
-				_, err = w.Write([]byte(`,"bleveKVStoreStats":`))
-				if err != nil {
-					return
-				}
-				err = m.WriteJSON(w)
-				if err != nil {
-					return
-				}
-			}
+		_, err = w.Write([]byte(`,"bleveIndexStats":`))
+		if err != nil {
+			return
+		}
+		idxStats := t.bindex.Stats()
+		var idxStatsJSON []byte
+		idxStatsJSON, err = json.Marshal(idxStats)
+		if err != nil {
+			return
+		}
+		_, err = w.Write(idxStatsJSON)
+		if err != nil {
+			return
 		}
 
 		c, err = t.bindex.DocCount()
