@@ -390,10 +390,11 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 }
 
 var fixedSuffixToStatNameMapping = map[string]string{
-	"compacts":               "total_compactions",
-	"term_searchers_started": "total_term_searchers",
-	"estimated_space_used":   "num_bytes_used_disk",
-	"CurDirtyOps":            "num_recs_to_persist",
+	"compacts":                     "total_compactions",
+	"term_searchers_started":       "total_term_searchers",
+	"estimated_space_used":         "num_bytes_used_disk",
+	"CurDirtyOps":                  "num_recs_to_persist",
+	"num_plain_text_bytes_indexed": "total_bytes_indexed",
 }
 
 func matchAnyFixedSuffixes(pointer string) bool {
