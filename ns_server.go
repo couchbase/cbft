@@ -153,11 +153,13 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	indexNameToSourceName := map[string]string{}
 
 	indexNameToPlanPIndexes := map[string][]*cbgt.PlanPIndex{}
-	for _, planPIndex := range planPIndexes.PlanPIndexes {
-		// Only focus on the planPIndex entries for this node.
-		if planPIndex.Nodes[nodeUUID] != nil {
-			indexNameToPlanPIndexes[planPIndex.IndexName] =
-				append(indexNameToPlanPIndexes[planPIndex.IndexName], planPIndex)
+	if planPIndexes != nil {
+		for _, planPIndex := range planPIndexes.PlanPIndexes {
+			// Only focus on the planPIndex entries for this node.
+			if planPIndex.Nodes[nodeUUID] != nil {
+				indexNameToPlanPIndexes[planPIndex.IndexName] =
+					append(indexNameToPlanPIndexes[planPIndex.IndexName], planPIndex)
+			}
 		}
 	}
 
