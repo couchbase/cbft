@@ -771,6 +771,25 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	return nil
 }
 
+func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
+	var c uint64
+
+	rv = make(map[string]interface{})
+
+	if t.bindex != nil {
+
+		rv["bleveIndexStats"] = t.bindex.StatsMap()
+
+		c, err = t.bindex.DocCount()
+		if err != nil {
+			return
+		}
+		rv["DocCount"] = c
+	}
+
+	return
+}
+
 // ---------------------------------------------------------
 
 // Implements the PartitionSeqProvider interface.

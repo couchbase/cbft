@@ -200,6 +200,10 @@ func (r *IndexClient) Stats() *bleve.IndexStat {
 	return nil
 }
 
+func (r *IndexClient) StatsMap() map[string]interface{} {
+	return nil
+}
+
 func (r *IndexClient) GetInternal(key []byte) ([]byte, error) {
 	return nil, indexClientUnimplementedErr
 }

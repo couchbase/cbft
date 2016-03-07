@@ -25,6 +25,7 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	"github.com/couchbase/moss"
 	"github.com/dustin/go-jsonpointer"
 )
 
@@ -103,6 +104,7 @@ var statkeys = []string{
 	"num_recs_to_persist",
 
 	"num_bytes_used_disk",
+	"num_bytes_live_data", // not in spec
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
 	"num_pindexes_actual", // per-index stat.
@@ -342,12 +344,121 @@ func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
 }
 
 func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) error {
-	buffer := new(bytes.Buffer)
-	err := pindex.Dest.Stats(buffer)
-	if err != nil {
-		return err
+	if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
+		if bp, ok := destForwarder.DestProvider.(*BleveDest); ok {
+			bpsm, err := bp.StatsMap()
+			if err != nil {
+				return err
+			}
+			return extractStats(bpsm, nsIndexStat)
+		}
 	}
-	return massageStats(buffer, nsIndexStat)
+	return nil
+}
+
+func updateStat(name string, val float64, nsIndexStat map[string]interface{}) {
+	oldValue, ok := nsIndexStat[name]
+	if ok {
+		switch oldValue := oldValue.(type) {
+		case float64:
+			oldValue += val
+			nsIndexStat[name] = oldValue
+		}
+	}
+}
+
+func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
+	v := jsonpointer.Get(bpsm, "/DocCount")
+	if v, ok := v.(uint64); ok {
+		updateStat("doc_count", float64(v), nsIndexStat)
+	}
+	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
+	if v, ok := v.(uint64); ok {
+		updateStat("total_term_searchers", float64(v), nsIndexStat)
+	}
+	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
+	if v, ok := v.(uint64); ok {
+		updateStat("total_bytes_indexed", float64(v), nsIndexStat)
+	}
+
+	// see if metrics are enabled, they would always be at the top-level
+	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
+	if metrics, ok := v.(map[string]interface{}); ok {
+		extractMetricsStats(metrics, nsIndexStat)
+		// if we found metrics, look for moss one level deeper
+		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/moss")
+		if mossStats, ok := v.(*moss.CollectionStats); ok {
+			extractMossStats(mossStats, nsIndexStat)
+			// if we found moss, look for kv one level deeper
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
+			}
+		}
+	} else {
+		// maybe no metrics, look for moss at this level
+		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/moss")
+		if mossStats, ok := v.(*moss.CollectionStats); ok {
+			extractMossStats(mossStats, nsIndexStat)
+			// if we found moss, look for kv one level deeper
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
+			}
+		} else {
+			// maybe no metrics or moss, look for kv here
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
+			}
+		}
+
+	}
+	return nil
+}
+
+var metricStats = map[string]string{
+	"/batch_merge/count":            "batch_merge_count",
+	"/iterator_next/count":          "iterator_next_count",
+	"/iterator_seek/count":          "iterator_seek_count",
+	"/reader_get/count":             "reader_get_count",
+	"/reader_multi_get/count":       "reader_multi_get_count",
+	"/reader_prefix_iterator/count": "reader_prefix_iterator_count",
+	"/reader_range_iterator/count":  "reader_range_iterator_count",
+	"/writer_execute_batch/count":   "writer_execute_batch_count",
+}
+
+func extractMetricsStats(metrics, nsIndexStat map[string]interface{}) error {
+	for path, statname := range metricStats {
+		v := jsonpointer.Get(metrics, path)
+		if v, ok := v.(int64); ok {
+			updateStat(statname, float64(v), nsIndexStat)
+		}
+	}
+	return nil
+}
+
+func extractMossStats(mossStats *moss.CollectionStats, nsIndexStat map[string]interface{}) error {
+	updateStat("num_recs_to_persist", float64(mossStats.CurDirtyOps), nsIndexStat)
+	return nil
+}
+
+var kvStats = map[string]string{
+	"/file_size":  "num_bytes_used_disk", // actual bytes used on disk
+	"/space_used": "num_bytes_live_data", // bytes used by live data
+	"/compacts":   "total_compactions",
+}
+
+func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
+	for path, statname := range kvStats {
+		v := jsonpointer.Get(kvs, path)
+		if vint, ok := v.(int); ok {
+			updateStat(statname, float64(vint), nsIndexStat)
+		} else if vuint64, ok := v.(uint64); ok {
+			updateStat(statname, float64(vuint64), nsIndexStat)
+		}
+	}
+	return nil
 }
 
 func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) error {
