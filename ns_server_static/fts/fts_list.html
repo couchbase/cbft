@@ -13,17 +13,19 @@
     </select>
   </div>
   <div class="query_bar_input">
-    <input ng-disabled="!indexNames || !searchBarIndexName"
-           ng-model="searchBarInput"
-           type="text"
-           placeholder="search for..."/>
-    <a ui-sref="app.admin.indexes.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
-       ng-disabled="!indexNames || !searchBarIndexName">
-      <button type="submit"
-              ng-disabled="!indexNames || !searchBarIndexName">
-        Search
-      </button>
-    </a>
+    <form>
+        <input ng-disabled="!indexNames || !searchBarIndexName"
+               ng-model="searchBarInput"
+               type="text"
+               placeholder="search for..."/>
+        <a ui-sref="app.admin.indexes.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
+           ng-disabled="!indexNames || !searchBarIndexName">
+          <button type="submit"
+                  ng-disabled="!indexNames || !searchBarIndexName">
+            Search
+          </button>
+        </a>
+    </form>
   </div>
 </div>
 

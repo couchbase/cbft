@@ -10,14 +10,16 @@
 
 <div class="query_bar">
   <div class="query_bar_input">
-    <input ng-model="query"
-           ng-change="queryChanged()"
-           type="text"
-           placeholder="please enter a query"/>
-    <button type="submit"
-            ng-click="runQuery(query)">
-      Search
-    </button>
+    <form>
+        <input ng-model="query"
+               ng-change="queryChanged()"
+               type="text"
+               placeholder="please enter a query"/>
+        <button type="submit"
+                ng-click="runQuery(query)">
+          Search
+        </button>
+    </form>
   </div>
 
   <div class="query_bar_advanced">
