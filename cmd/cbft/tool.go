@@ -14,7 +14,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"runtime/pprof"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/couchbase/clog"
@@ -43,42 +46,57 @@ func init() {
 
 		"partitionSeqs": &ToolDef{
 			Name:    "partitionSeqs",
-			Handler: ToolMakeRepeat(ToolPartitionSeqs),
-			Usage: `retrieves partition seqs from a source feed.
+			Handler: ToolRepeatable(ToolPartitionSeqs),
+			Usage: ToolRepeatableUsage(`retrieves partition seqs from a source feed.
       sourceType=SOURCE_TYPE
       sourceName=SOURCE_NAME
       sourceUUID=SOURCE_UUID (optional)
-      sourceParams=SOURCE_PARAMS (json encoded string)
-      repeat=N (optional, negative number to repeat forever)
-      repeatSleep=DURATION (optional, ex: "100ms", see go's time.ParseDuration())`,
+      sourceParams=SOURCE_PARAMS (json encoded string)`),
+		},
+
+		"profile": &ToolDef{
+			Name:    "profile",
+			Handler: ToolProfile,
+			Usage: `asynchronous cpu or memory profiling.
+      profileFile=FILE_PATH (example: "/tmp/cpu.pprof")
+      profileType=PROFILE_TYPE (optional, default: "cpu", can also be "memory")
+      profileWaitBefore=DURATION (optional, default: "0s", duration before profiling)
+      profileWait=DURATION (optional, default: "10s", duration of the profile)`,
 		},
 	}
 }
 
 func MainTool(cfg cbgt.Cfg, uuid string, tags []string, flags Flags,
 	options map[string]string) int {
-	tool, exists := options["tool"]
+	tools, exists := options["tool"]
 	if !exists {
 		return -1 // Negative means caller should keep going with main server.
 	}
 
-	if tool == "" || tool == "h" || tool == "?" || tool == "usage" {
-		tool = "help"
+	for _, tool := range strings.Split(tools, "|") {
+		if tool == "" || tool == "h" || tool == "?" || tool == "usage" {
+			tool = "help"
+		}
+
+		toolDef, exists := ToolDefs[tool]
+		if !exists {
+			log.Fatalf("tool: unknown tool: %s", tool)
+			return 1
+		}
+
+		rv := toolDef.Handler(cfg, uuid, tags, flags, options)
+		if rv >= 0 {
+			return rv
+		}
 	}
 
-	toolDef, exists := ToolDefs[tool]
-	if !exists {
-		log.Fatalf("tool: unknown tool: %s", tool)
-		return 1
-	}
-
-	return toolDef.Handler(cfg, uuid, tags, flags, options)
+	return -1
 }
 
 func ToolHelp(cfg cbgt.Cfg, uuid string, tags []string,
 	flags Flags, options map[string]string) (exitCode int) {
-	fmt.Println("cbft tool usage:")
-	fmt.Println("  ./cbft --options=tool=TOOL_NAME[,key0=val0[,keyN=valN]]\n")
+	fmt.Println("\ncbft tool usage:")
+	fmt.Println("  ./cbft [...] --options=tool=TOOL_NAME[,key0=val0[,keyN=valN]]\n")
 	fmt.Println("Supported TOOL_NAME's include:")
 	for tool, toolDef := range ToolDefs {
 		fmt.Printf("  %s\n    %s\n\n", tool, toolDef.Usage)
@@ -122,7 +140,7 @@ func ToolPartitionSeqs(cfg cbgt.Cfg, uuid string, tags []string,
 	return 0
 }
 
-func ToolMakeRepeat(body ToolDefHandler) ToolDefHandler {
+func ToolRepeatable(body ToolDefHandler) ToolDefHandler {
 	f := func(cfg cbgt.Cfg, uuid string, tags []string,
 		flags Flags, options map[string]string) (exitCode int) {
 		var err error
@@ -166,4 +184,79 @@ func ToolMakeRepeat(body ToolDefHandler) ToolDefHandler {
 	}
 
 	return f
+}
+
+func ToolRepeatableUsage(usage string) string {
+	return usage + `
+      repeat=N (optional, negative number to repeat forever)
+      repeatSleep=DURATION (optional, ex: "100ms", see go's time.ParseDuration())`
+}
+
+func ToolProfile(cfg cbgt.Cfg, uuid string, tags []string,
+	flags Flags, options map[string]string) (exitCode int) {
+	var err error
+
+	profileFile, exists := options["profileFile"]
+	if !exists || profileFile == "" {
+		fmt.Printf("tool: profile: profileFile option required\n")
+		return 1
+	}
+
+	profileWaitBefore := time.Duration(0 * time.Second)
+	v, exists := options["profileWaitBefore"]
+	if exists {
+		profileWaitBefore, err = time.ParseDuration(v)
+		if err != nil {
+			fmt.Printf("tool: profile: parse profileWaitBefore: %q,"+
+				" err: %v\n", v, err)
+			return 1
+		}
+	}
+
+	profileWait := time.Duration(10 * time.Second)
+	v, exists = options["profileWait"]
+	if exists {
+		profileWait, err = time.ParseDuration(v)
+		if err != nil {
+			fmt.Printf("tool: profile: parse profileWait: %q,"+
+				" err: %v\n", v, err)
+			return 1
+		}
+	}
+
+	f, err := os.Create(profileFile)
+	if err != nil {
+		fmt.Printf("tool: profile: create profileFile: %q, err: %v",
+			profileFile, err)
+		return 1
+	}
+
+	go func() {
+		time.Sleep(profileWaitBefore)
+
+		profileType := options["profileType"]
+		if profileType == "" || profileType == "cpu" {
+			err = pprof.StartCPUProfile(f)
+			if err != nil {
+				log.Printf("tool: profile: cpu, err: %v", err)
+				return
+			}
+		}
+
+		time.Sleep(profileWait)
+
+		if profileType == "" || profileType == "cpu" {
+			pprof.StopCPUProfile()
+		} else if profileType == "memory" {
+			pprof.WriteHeapProfile(f)
+		} else {
+			log.Printf("tool: profile: unknown profileType: %s", profileType)
+		}
+
+		f.Close()
+
+		log.Printf("tool: profile: done, profileFile: %s", profileFile)
+	}()
+
+	return -1
 }
