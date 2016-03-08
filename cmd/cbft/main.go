@@ -313,6 +313,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
+	exitCode := MainTool(cfg, uuid, tags, flags, options)
+	if exitCode >= 0 {
+		os.Exit(exitCode)
+	}
+
 	if server != "." && options["startCheckServer"] != "skip" {
 		_, err := couchbase.Connect(server)
 		if err != nil {
