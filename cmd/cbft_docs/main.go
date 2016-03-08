@@ -114,7 +114,7 @@ func main() {
 	mr, _ := cbgt.NewMsgRing(ioutil.Discard, 1)
 
 	router, meta, err :=
-		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr)
+		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr, nil)
 	if err != nil {
 		log.Panic(err)
 	}
