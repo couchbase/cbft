@@ -19,15 +19,23 @@ import (
 	"net/url"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
+	"time"
 	"unicode"
+
+	log "github.com/couchbase/clog"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"
 	"github.com/dustin/go-jsonpointer"
 )
+
+var SourcePartitionSeqsSleepDefault = 10 * time.Second
+var SourcePartitionSeqsCacheTimeoutDefault = 60 * time.Second
 
 // PartitionSeqsProvider represents source object that can provide
 // partition seqs, such as some pindex or dest implementations.
@@ -98,21 +106,21 @@ var statkeys = []string{
 	// stats from "FTS Stats" spec, see:
 	// https://docs.google.com/spreadsheets/d/1w8P68gLBIs0VUN4egUuUH6U_92_5xi9azfvH8pPw21s/edit#gid=104567684
 
-	"num_mutations_to_index",
-	// "doc_count", // per-index stat (same as before, see above).
-	"total_bytes_indexed",
-	"num_recs_to_persist",
+	"num_mutations_to_index", // per-index stat.
+	// "doc_count",           // per-index stat (see above).
+	"total_bytes_indexed", // per-index stat.
+	"num_recs_to_persist", // per-index stat.
 
-	"num_bytes_used_disk",
-	"num_bytes_live_data", // not in spec
+	"num_bytes_used_disk", // per-index stat.
+	"num_bytes_live_data", // per-index stat, not in spec
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
 	"num_pindexes_actual", // per-index stat.
 	"num_pindexes_target", // per-index stat.
 
-	"total_compactions",
+	"total_compactions", // per-index stat.
 
-	// "total_gc" -- PROCESS-LEVEL stat.
+	// "total_gc"   -- PROCESS-LEVEL stat.
 	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
 
 	"total_queries",             // per-index stat.
@@ -121,7 +129,7 @@ var statkeys = []string{
 	"total_queries_timeout",     // per-index stat.
 	"total_queries_error",       // per-index stat.
 	"total_bytes_query_results", // per-index stat.
-	"total_term_searchers",
+	"total_term_searchers",      // per-index stat.
 }
 
 // NewIndexStat ensures that all index stats
@@ -167,6 +175,10 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
 
+	runSourcePartitionSeqsOnce.Do(func() {
+		go RunSourcePartitionSeqs(h.mgr.Options(), nil)
+	})
+
 	// Keyed by indexName, sub-key is source partition id.
 	indexNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
@@ -205,16 +217,16 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		partitionSeqs, err := feedType.PartitionSeqs(
-			indexDef.SourceType, indexDef.SourceName, indexDef.SourceUUID,
-			indexDef.SourceParams, h.mgr.Server(), h.mgr.Options())
-		if err != nil {
-			rest.ShowError(w, req,
-				fmt.Sprintf("could not retrieve partition seqs: %v", err), 500)
-			return
+		partitionSeqs := GetSourcePartitionSeqs(SourceSpec{
+			SourceType:   indexDef.SourceType,
+			SourceName:   indexDef.SourceName,
+			SourceUUID:   indexDef.SourceUUID,
+			SourceParams: indexDef.SourceParams,
+			Server:       h.mgr.Server(),
+		})
+		if partitionSeqs != nil {
+			indexNameToSourcePartitionSeqs[indexName] = partitionSeqs
 		}
-
-		indexNameToSourcePartitionSeqs[indexName] = partitionSeqs
 	}
 
 	feeds, pindexes := h.mgr.CurrentMaps()
@@ -694,4 +706,140 @@ func (h *NsStatusHandler) ServeHTTP(
 	w.Write(statsNameSuffix)
 	w.Write([]byte("\"success\""))
 	w.Write(cbgt.JsonCloseBrace)
+}
+
+// ---------------------------------------------------------------
+
+type SourceSpec struct {
+	SourceType   string
+	SourceName   string
+	SourceUUID   string
+	SourceParams string
+	Server       string
+}
+
+type SourcePartitionSeqs struct {
+	PartitionSeqs map[string]cbgt.UUIDSeq
+	LastUpdated   time.Time
+	LastUsed      time.Time
+}
+
+var mapSourcePartitionSeqs = map[SourceSpec]*SourcePartitionSeqs{}
+var mapSourcePartitionSeqsM sync.Mutex
+var runSourcePartitionSeqsOnce sync.Once
+
+func GetSourcePartitionSeqs(sourceSpec SourceSpec) map[string]cbgt.UUIDSeq {
+	mapSourcePartitionSeqsM.Lock()
+	s := mapSourcePartitionSeqs[sourceSpec]
+	if s == nil {
+		s = &SourcePartitionSeqs{}
+		mapSourcePartitionSeqs[sourceSpec] = s
+	}
+	s.LastUsed = time.Now()
+	rv := s.PartitionSeqs
+	mapSourcePartitionSeqsM.Unlock()
+	return rv
+}
+
+func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
+	sourcePartitionSeqsSleep := SourcePartitionSeqsSleepDefault
+	v, exists := options["sourcePartitionSeqsSleepMS"]
+	if exists {
+		sourcePartitionSeqsSleepMS, err := strconv.Atoi(v)
+		if err != nil {
+			log.Printf("ns_server: parse sourcePartitionSeqsSleepMS: %q,"+
+				" err: %v", v, err)
+		} else {
+			sourcePartitionSeqsSleep = time.Millisecond *
+				time.Duration(sourcePartitionSeqsSleepMS)
+		}
+	}
+
+	sourcePartitionSeqsCacheTimeout := SourcePartitionSeqsCacheTimeoutDefault
+	v, exists = options["sourcePartitionSeqsCacheTimeoutMS"]
+	if exists {
+		sourcePartitionSeqsCacheTimeoutMS, err := strconv.Atoi(v)
+		if err != nil {
+			log.Printf("ns_server: parse sourcePartitionSeqsCacheTimeoutMS: %q,"+
+				" err: %v", v, err)
+		} else {
+			sourcePartitionSeqsCacheTimeout = time.Millisecond *
+				time.Duration(sourcePartitionSeqsCacheTimeoutMS)
+		}
+	}
+
+	m := &mapSourcePartitionSeqsM
+
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-time.After(sourcePartitionSeqsSleep):
+			// NO-OP.
+		}
+
+		m.Lock()
+		var sourceSpecs []SourceSpec // Snapshot the wanted sourceSpecs.
+		for sourceSpec := range mapSourcePartitionSeqs {
+			sourceSpecs = append(sourceSpecs, sourceSpec)
+		}
+		m.Unlock()
+
+		for _, sourceSpec := range sourceSpecs {
+			select {
+			case <-stopCh:
+				return
+			default:
+				// NO-OP.
+			}
+
+			m.Lock()
+			s := SourcePartitionSeqs{}
+			v, exists := mapSourcePartitionSeqs[sourceSpec]
+			if exists && v != nil {
+				s = *v // Copy fields.
+			}
+			m.Unlock()
+
+			if s.LastUpdated.After(s.LastUsed) {
+				if s.LastUpdated.Sub(s.LastUsed) > sourcePartitionSeqsCacheTimeout {
+					m.Lock()
+					delete(mapSourcePartitionSeqs, sourceSpec)
+					m.Unlock()
+				}
+
+				continue
+			}
+
+			if s.LastUsed.Sub(s.LastUpdated) > sourcePartitionSeqsSleep {
+				next := &SourcePartitionSeqs{}
+				*next = s // Copy fields.
+
+				feedType, exists := cbgt.FeedTypes[sourceSpec.SourceType]
+				if exists && feedType != nil && feedType.PartitionSeqs != nil {
+					partitionSeqs, err := feedType.PartitionSeqs(
+						sourceSpec.SourceType,
+						sourceSpec.SourceName,
+						sourceSpec.SourceUUID,
+						sourceSpec.SourceParams,
+						sourceSpec.Server, options)
+					if err != nil {
+						log.Printf("ns_server: retrieve partition seqs: %v", err)
+					} else {
+						next.PartitionSeqs = partitionSeqs
+					}
+				}
+
+				next.LastUpdated = time.Now()
+
+				m.Lock()
+				curr, exists := mapSourcePartitionSeqs[sourceSpec]
+				if exists && curr != nil {
+					next.LastUsed = curr.LastUsed
+				}
+				mapSourcePartitionSeqs[sourceSpec] = next
+				m.Unlock()
+			}
+		}
+	}
 }
