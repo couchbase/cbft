@@ -242,7 +242,9 @@ function bleveNewIndexMapping() {
             "tokenizers": {},
             "token_filters": {},
             "token_maps": {}
-        }
+        },
+        "store_dynamic": false,
+        "index_dynamic": true
     }
 };
 
