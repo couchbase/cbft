@@ -31,7 +31,6 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
-	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 	bleveSearchers "github.com/blevesearch/bleve/search/searchers"
 
@@ -44,7 +43,6 @@ import (
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/goutils/go-cbaudit"
 	"github.com/couchbase/goutils/platform"
-	"github.com/couchbase/moss"
 )
 
 var cmdName = "cbft"
@@ -59,15 +57,6 @@ func init() {
 	cbgt.DCPFeedPrefix = "fts:"
 
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
-
-	cbft.BlevePIndexAllowMoss = true
-
-	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
-		Log: log.Printf,
-		OnError: func(err error) {
-			log.Printf("moss OnError, err: %v", err)
-		},
-	}
 }
 
 func main() {
@@ -181,16 +170,6 @@ func main() {
 			"managerLoadDataDir": "async",
 			"authType":           flags.AuthType,
 		})
-
-	if bpamv, exists := options["blevePIndexAllowMoss"]; exists {
-		bpam, err := strconv.ParseBool(bpamv)
-		if err != nil {
-			log.Fatalf("main: option blevePIndexAllowMoss, err: %v", err)
-			return
-		}
-
-		cbft.BlevePIndexAllowMoss = bpam
-	}
 
 	// User may supply a comma-separated list of HOST:PORT values for
 	// http addresss/port listening, but only the first entry is used
@@ -323,6 +302,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	err := InitOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	err = InitMossOptions(options)
 	if err != nil {
 		return nil, err
 	}
