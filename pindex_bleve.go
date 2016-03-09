@@ -210,6 +210,11 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			kvConfig["mossLowerLevelStoreName"] = kvStoreName
 			kvStoreName = "moss"
 		}
+
+		_, exists = kvConfig["mossCollectionOptionsName"]
+		if !exists {
+			kvConfig["mossCollectionOptionsName"] = "fts"
+		}
 	}
 
 	// Use the "metrics" wrapper KVStore if it's allowed, available

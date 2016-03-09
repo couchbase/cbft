@@ -31,9 +31,11 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 	bleveSearchers "github.com/blevesearch/bleve/search/searchers"
 
+	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/cmd"
@@ -41,9 +43,8 @@ import (
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/goutils/go-cbaudit"
-
-	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/goutils/platform"
+	"github.com/couchbase/moss"
 )
 
 var cmdName = "cbft"
@@ -56,8 +57,17 @@ var expvars = expvar.NewMap("stats")
 
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
+
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
+
 	cbft.BlevePIndexAllowMoss = true
+
+	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
+		Log: log.Printf,
+		OnError: func(err error) {
+			log.Printf("moss OnError, err: %v", err)
+		},
+	}
 }
 
 func main() {
