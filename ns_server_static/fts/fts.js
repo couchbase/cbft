@@ -202,6 +202,10 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
 
     $scope.indexName = $stateParams.indexName;
 
+    $scope.decorateSearchHit = function(hit) {
+      hit.docIDLink = "/_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+    };
+
     $scope.static_base = "/_p/ui/fts";
 
     $scope.query = $routeParams.query || "";

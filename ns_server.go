@@ -32,6 +32,7 @@ import (
 	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"
 	"github.com/dustin/go-jsonpointer"
+	"github.com/gorilla/mux"
 )
 
 var SourcePartitionSeqsSleepDefault = 10 * time.Second
@@ -842,4 +843,35 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 			}
 		}
 	}
+}
+
+type NsSearchResultRedirct struct {
+	mgr *cbgt.Manager
+}
+
+func NsSearchResultRedirctHandler(mgr *cbgt.Manager) (*NsSearchResultRedirct, error) {
+	return &NsSearchResultRedirct{
+		mgr: mgr,
+	}, nil
+}
+
+func (h *NsSearchResultRedirct) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+
+	allPlanPIndexes, _, err := h.mgr.GetPlanPIndexes(false)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not get plan pindexes: %v", err), 500)
+		return
+	}
+
+	pIndexName := mux.Vars(req)["pIndexName"]
+	planPIndex, ok := allPlanPIndexes.PlanPIndexes[pIndexName]
+	if !ok {
+		rest.ShowError(w, req, fmt.Sprintf("no pindex named: %s", pIndexName), 400)
+		return
+	}
+
+	docID := mux.Vars(req)["docID"]
+	source := planPIndex.SourceName
+	http.Redirect(w, req, "/ui/index.html#/documents/"+docID+"?documentsBucket="+source, http.StatusMovedPermanently)
 }

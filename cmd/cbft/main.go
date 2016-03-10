@@ -375,6 +375,12 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	router.Handle(prefix+"/api/nsstatus", nsStatusHandler)
 
+	nsSearchResultRedirectHandler, err := cbft.NsSearchResultRedirctHandler(mgr)
+	if err != nil {
+		return nil, err
+	}
+	router.Handle(prefix+"/api/nsSearchResultRedirect/{pIndexName}/{docID}", nsSearchResultRedirectHandler)
+
 	// ------------------------------------------------
 
 	tagsMap := mgr.TagsMap()
