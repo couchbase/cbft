@@ -43,6 +43,7 @@ import (
 	"github.com/couchbase/goutils/go-cbaudit"
 
 	"github.com/couchbase/cbauth/service"
+	"github.com/couchbase/goutils/platform"
 )
 
 var cmdName = "cbft"
@@ -60,6 +61,9 @@ func init() {
 }
 
 func main() {
+	platform.HideConsole(true)
+	defer platform.HideConsole(false)
+
 	flag.Parse()
 
 	if flags.Help {
