@@ -407,6 +407,12 @@ func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 			if kvStats, ok := v.(map[string]interface{}); ok {
 				extractKVStats(kvStats, nsIndexStat)
 			}
+		} else {
+			// no moss at this level, but still look for kv stats
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
+			}
 		}
 	} else {
 		// maybe no metrics, look for moss at this level
