@@ -772,15 +772,17 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 }
 
 func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
-	var c uint64
-
 	rv = make(map[string]interface{})
 
-	if t.bindex != nil {
+	t.m.Lock()
+	bindex := t.bindex
+	t.m.Unlock()
 
-		rv["bleveIndexStats"] = t.bindex.StatsMap()
+	if bindex != nil {
+		rv["bleveIndexStats"] = bindex.StatsMap()
 
-		c, err = t.bindex.DocCount()
+		var c uint64
+		c, err = bindex.DocCount()
 		if err != nil {
 			return
 		}
