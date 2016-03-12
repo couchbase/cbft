@@ -1029,8 +1029,9 @@ func (t *BleveDestPartition) applyBatchLOCKED() error {
 		batch := t.batch
 		t.batch = nil
 
+		bindex := t.bindex
 		t.m.Unlock()
-		err := t.bindex.Batch(batch)
+		err := bindex.Batch(batch)
 		t.m.Lock()
 
 		return err
@@ -1051,7 +1052,9 @@ func (t *BleveDestPartition) applyBatchLOCKED() error {
 
 	// TODO: Would be good to reuse batch's memory; but, would need
 	// some public Reset() kind of method on bleve.Batch?
-	t.batch = t.bindex.NewBatch()
+	if t.bindex != nil {
+		t.batch = t.bindex.NewBatch()
+	}
 
 	return nil
 }
