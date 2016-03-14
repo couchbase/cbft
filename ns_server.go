@@ -145,17 +145,16 @@ func NewIndexStat() map[string]interface{} {
 }
 
 func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	_, indexDefsMap, err := h.mgr.GetIndexDefs(false)
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve index defs: %v", err), 500)
+	initNsServerCaching(h.mgr)
+
+	rd := <-recentDefsCh
+	if rd.err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
 		return
 	}
 
-	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(h.mgr.Cfg())
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve plan pIndexes: %v", err), 500)
-		return
-	}
+	indexDefsMap := rd.indexDefsMap
+	planPIndexes := rd.planPIndexes
 
 	nodeUUID := h.mgr.UUID()
 
@@ -175,10 +174,6 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
-
-	runSourcePartitionSeqsOnce.Do(func() {
-		go RunSourcePartitionSeqs(h.mgr.Options(), nil)
-	})
 
 	// Keyed by indexName, sub-key is source partition id.
 	indexNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
@@ -651,25 +646,17 @@ func NsHostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes,
 
 func (h *NsStatusHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
+	initNsServerCaching(h.mgr)
 
-	cfg := h.mgr.Cfg()
-	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(cfg)
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve plan pIndexes: %v", err), 500)
+	rd := <-recentDefsCh
+	if rd.err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
 		return
 	}
 
-	nodesDefs, _, err := cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
-	if err != nil {
-		rest.ShowError(w, req, "could not retrieve node defs (wanted)", 500)
-		return
-	}
-
-	_, indexDefsMap, err := h.mgr.GetIndexDefs(false)
-	if err != nil {
-		rest.ShowError(w, req, "could not retrieve index defs", 500)
-		return
-	}
+	indexDefsMap := rd.indexDefsMap
+	nodeDefs := rd.nodeDefs
+	planPIndexes := rd.planPIndexes
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Write(cbgt.JsonOpenBrace)
@@ -700,7 +687,7 @@ func (h *NsStatusHandler) ServeHTTP(
 		}{
 			Bucket: indexDef.SourceName,
 			Name:   indexDefName,
-			Hosts:  NsHostsForIndex(indexDefName, planPIndexes, nodesDefs),
+			Hosts:  NsHostsForIndex(indexDefName, planPIndexes, nodeDefs),
 			// FIXME hard-coded
 			Completion: 100,
 			Status:     "Ready",
@@ -734,6 +721,13 @@ type SourcePartitionSeqs struct {
 var mapSourcePartitionSeqs = map[SourceSpec]*SourcePartitionSeqs{}
 var mapSourcePartitionSeqsM sync.Mutex
 var runSourcePartitionSeqsOnce sync.Once
+
+func initNsServerCaching(mgr *cbgt.Manager) {
+	runSourcePartitionSeqsOnce.Do(func() {
+		go RunSourcePartitionSeqs(mgr.Options(), nil)
+		go RunDefsCache(mgr)
+	})
+}
 
 func GetSourcePartitionSeqs(sourceSpec SourceSpec) map[string]cbgt.UUIDSeq {
 	mapSourcePartitionSeqsM.Lock()
@@ -850,6 +844,89 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 		}
 	}
 }
+
+// ---------------------------------------------------------------
+
+type recentDefs struct {
+	indexDefs    *cbgt.IndexDefs
+	indexDefsMap map[string]*cbgt.IndexDef
+	nodeDefs     *cbgt.NodeDefs
+	planPIndexes *cbgt.PlanPIndexes
+	err          error
+}
+
+var recentDefsCh = make(chan *recentDefs)
+
+func RunDefsCache(mgr *cbgt.Manager) {
+	cfg := mgr.Cfg()
+
+	cfgChangedCh := make(chan struct{}, 10)
+
+	go func() { // Debounce cfg events to feed into the cfgChangedCh.
+		ech := make(chan cbgt.CfgEvent)
+		cfg.Subscribe(cbgt.PLAN_PINDEXES_KEY, ech)
+
+		for {
+			<-ech // First, wait for a cfg event.
+
+			debounceTimeCh := time.After(500 * time.Millisecond)
+
+		DEBOUNCE_LOOP:
+			for {
+				select {
+				case <-ech:
+					// NO-OP when there are more, spammy cfg events.
+
+				case <-debounceTimeCh:
+					break DEBOUNCE_LOOP
+				}
+			}
+
+			cfgChangedCh <- struct{}{}
+		}
+	}()
+
+	tickCh := time.Tick(1 * time.Minute)
+
+	for {
+		var nodeDefs *cbgt.NodeDefs
+		var planPIndexes *cbgt.PlanPIndexes
+
+		indexDefs, indexDefsMap, err := mgr.GetIndexDefs(false)
+		if err == nil {
+			nodeDefs, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
+			if err == nil {
+				planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
+			}
+		}
+
+		rd := &recentDefs{
+			indexDefs:    indexDefs,
+			indexDefsMap: indexDefsMap,
+			nodeDefs:     nodeDefs,
+			planPIndexes: planPIndexes,
+			err:          err,
+		}
+
+	REUSE_CACHE:
+		for {
+			select {
+			case <-cfgChangedCh:
+				break REUSE_CACHE
+
+			case <-tickCh:
+				break REUSE_CACHE
+
+			case recentDefsCh <- rd:
+				if rd.err != nil {
+					break REUSE_CACHE
+				}
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------
 
 type NsSearchResultRedirct struct {
 	mgr *cbgt.Manager
