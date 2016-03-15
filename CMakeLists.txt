@@ -57,7 +57,7 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.6)
 
-GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/blevesearch/bleve/utils/bleve_dump
+GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve-dump
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   ${_forestdb_dep}
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
@@ -67,7 +67,7 @@ GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/blevesearch/bleve/utils/ble
   INSTALL_PATH bin OUTPUT cbft-bleve-dump
   GOVERSION 1.6)
 
-GoInstall (TARGET cbft-bleve-query PACKAGE github.com/blevesearch/bleve/utils/bleve_query
+GoInstall (TARGET cbft-bleve-query PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve-query
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   ${_forestdb_dep}
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
