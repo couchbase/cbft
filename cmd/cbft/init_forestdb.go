@@ -130,6 +130,34 @@ func InitOptions(options map[string]string) error {
 		config.SetCompactorSleepDuration(i)
 	})
 
+	configInt("PrefetchDuration", func(i uint64) {
+		config.SetPrefetchDuration(i)
+	})
+
+	configInt("NumWalPartitions", func(i uint64) {
+		config.SetNumWalPartitions(uint16(i))
+	})
+
+	configInt("NumBcachePartitions", func(i uint64) {
+		config.SetNumBcachePartitions(uint16(i))
+	})
+
+	configInt("NumCompactorThreads", func(i uint64) {
+		config.SetNumCompactorThreads(int(i))
+	})
+
+	configInt("NumBgflusherThreads", func(i uint64) {
+		config.SetNumBgflusherThreads(int(i))
+	})
+
+	configInt("NumBlockReusingThreshold", func(i uint64) {
+		config.SetNumBlockReusingThreshold(int(i))
+	})
+
+	configInt("NumKeepingHeaders", func(i uint64) {
+		config.SetNumKeepingHeaders(int(i))
+	})
+
 	configInt("MaxWriterLockProb", func(i uint64) {
 		config.SetMaxWriterLockProb(uint8(i))
 	})
