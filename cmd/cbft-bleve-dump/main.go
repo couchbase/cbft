@@ -31,6 +31,7 @@ var indexPath = flag.String("index", "", "index path")
 var fieldsOnly = flag.Bool("fields", false, "print only field definitions")
 var docID = flag.String("docID", "", "print only rows related to specified document")
 var mappingOnly = flag.Bool("mapping", false, "print only index mappings")
+var dictionary = flag.String("dictionary", "", "print dictionary for this field")
 
 func init() {
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
@@ -90,6 +91,9 @@ index specified by -index.
 		dumpChan = index.DumpDoc(*docID)
 	} else if *fieldsOnly {
 		dumpChan = index.DumpFields()
+	} else if *dictionary != "" {
+		dumpDictionary(index, *dictionary)
+		return
 	} else {
 		dumpChan = index.DumpAll()
 	}
@@ -102,5 +106,26 @@ index specified by -index.
 			fmt.Printf("%v\n", rowOrErr)
 			fmt.Printf("Key:   % -100x\nValue: % -100x\n\n", rowOrErr.Key(), rowOrErr.Value())
 		}
+	}
+}
+
+func dumpDictionary(index bleve.Index, field string) {
+	i, _, err := index.Advanced()
+	if err != nil {
+		log.Fatal(err)
+	}
+	r, err := i.Reader()
+	if err != nil {
+		log.Fatal(err)
+	}
+	d, err := r.FieldDict(field)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	de, err := d.Next()
+	for err == nil && de != nil {
+		fmt.Printf("%s - %d\n", de.Term, de.Count)
+		de, err = d.Next()
 	}
 }
