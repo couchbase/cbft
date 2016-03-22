@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -26,6 +28,8 @@ import (
 
 	"github.com/couchbase/cbgt"
 )
+
+const RemoteRequestOverhead = 500 * time.Millisecond
 
 var httpPost = http.Post // Overridable for unit-testability.
 var httpGet = http.Get   // Overridable for unit-testability.
@@ -45,6 +49,16 @@ type IndexClient struct {
 	QueryURL    string
 	CountURL    string
 	Consistency *cbgt.ConsistencyParams
+
+	lastMutex        sync.RWMutex
+	lastSearchStatus int
+	lastErrBody      []byte
+}
+
+func (r *IndexClient) GetLast() (int, []byte) {
+	r.lastMutex.RLock()
+	defer r.lastMutex.RUnlock()
+	return r.lastSearchStatus, r.lastErrBody
 }
 
 func (r *IndexClient) Name() string {
@@ -127,6 +141,20 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		Ctl: cbgt.QueryCtl{
 			Consistency: r.Consistency,
 		},
+	}
+
+	// if timeout was set, compute time remaining
+	if deadline, ok := ctx.Deadline(); ok {
+		remaining := deadline.Sub(time.Now())
+		// FIXME arbitrarily reducing the timeout, to increase the liklihood
+		// that a live system replies via HTTP round-trip before we give up
+		// on the request externally
+		remaining -= RemoteRequestOverhead
+		if remaining < 0 {
+			// not enough time left
+			return nil, context.DeadlineExceeded
+		}
+		queryCtlParams.Ctl.Timeout = int64(remaining / time.Millisecond)
 	}
 
 	buf, err := json.Marshal(struct {
@@ -235,7 +263,12 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+
+	r.lastMutex.Lock()
+	defer r.lastMutex.Unlock()
+	r.lastSearchStatus = resp.StatusCode
+	if resp.StatusCode != http.StatusOK {
+		r.lastErrBody, _ = ioutil.ReadAll(resp.Body)
 		return nil, fmt.Errorf("remote: query got status code: %d,"+
 			" queryURL: %s, buf: %s, resp: %#v, err: %v",
 			resp.StatusCode, r.QueryURL, buf, resp, err)

@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/gorilla/mux"
 
 	"github.com/rcrowley/go-metrics"
@@ -298,7 +300,7 @@ func OpenBlevePIndexImpl(indexType, path string,
 
 func CountBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
+	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("bleve: CountBlevePIndexImpl indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -307,38 +309,58 @@ func CountBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string) (
 	return alias.DocCount()
 }
 
+func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
+	switch c.Level {
+	case "":
+		return nil
+	case "at_plus":
+		return nil
+	}
+	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
+}
+
 func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
+
+	// phase 0 - parsing/validating query
+	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
 		Ctl: cbgt.QueryCtl{
 			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
-
 	err := json.Unmarshal(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
-
 	searchRequest := &bleve.SearchRequest{}
-
 	err = json.Unmarshal(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
 
+	if queryCtlParams.Ctl.Consistency != nil {
+		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
+		if err != nil {
+			return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+				" validating consistency, req: %s, err: %v", req, err)
+		}
+	}
+
 	err = searchRequest.Query.Validate()
 	if err != nil {
-		return err
+		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+			" validating query, req: %s, err: %v", req, err)
 	}
 
 	v, exists := mgr.Options()["bleveMaxResultWindow"]
 	if exists {
 		bleveMaxResultWindow, err := strconv.Atoi(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+				" atoi: %v, err: %v", v, err)
 		}
 
 		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
@@ -348,32 +370,77 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 	}
 
-	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
+	// phase 1 - set up timeouts, wait for local consistency reqiurements
+	// to be satisfied, could return err 412
 
-	alias, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
+	// create a context with the appropriate timeout
+	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
+	// defer a call to cancel, this ensures that goroutine from
+	// setupContextAndCancelCh always exits
+	defer cancel()
+
+	alias, remoteClients, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
 		return err
 	}
 
-	doneCh := make(chan struct{})
-
-	var searchResult *bleve.SearchResult
-
-	go func() {
-		searchResult, err = alias.Search(searchRequest)
-
-		close(doneCh)
-	}()
-
-	select {
-	case <-cancelCh:
-		err = cbgt.ErrPIndexQueryTimeout
-
-	case <-doneCh:
-		if searchResult != nil {
-			rest.MustEncode(res, searchResult)
+	searchResult, err := alias.SearchInContext(ctx, searchRequest)
+	if searchResult != nil {
+		// check to see if any of the remote searches returned anything
+		// other than 0, 200 or 412, these are returned to the user as
+		// error status 400, and appear as phase 0 errors detected late
+		// 0 means we never heard anything back, that is dealt with
+		// in the following section
+		for _, remoteClient := range remoteClients {
+			lastStatus, lastErrBody := remoteClient.GetLast()
+			if lastStatus != http.StatusOK &&
+				lastStatus != http.StatusPreconditionFailed &&
+				lastStatus != 0 {
+				return fmt.Errorf("bleve: QueryBlevePIndexImpl remote client"+
+					" returned status: %d body: %s", lastStatus, lastErrBody)
+			}
 		}
+		// now see if any of the remote searches returned 412, these should be
+		// collated into a single 412 response at this level, these should
+		// be presented as phase 1 errors detected late
+		remoteConsistencyWaitError := cbgt.ErrorConsistencyWait{
+			Status:       "remote consistency error",
+			StartEndSeqs: make(map[string][]uint64),
+		}
+		numRemoteSilent := 0
+		for _, remoteClient := range remoteClients {
+			lastStatus, lastErrBody := remoteClient.GetLast()
+			if lastStatus == 0 {
+				numRemoteSilent++
+			}
+			if lastStatus == http.StatusPreconditionFailed {
+				var remoteConsistencyErr = struct {
+					StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
+				}{}
+				err := json.Unmarshal(lastErrBody, &remoteConsistencyErr)
+				if err == nil {
+					for k, v := range remoteConsistencyErr.StartEndSeqs {
+						remoteConsistencyWaitError.StartEndSeqs[k] = v
+					}
+				}
+			}
+		}
+		// if we had any explicitly returned consistency errors, return those
+		if len(remoteConsistencyWaitError.StartEndSeqs) > 0 {
+			return &remoteConsistencyWaitError
+		}
+
+		// we had *some* consistency requirements, but we never heard back
+		// from some of the remote pindexes, just punt for now and return
+		// a mostly empty 412 indicating we aren't sure
+		if queryCtlParams.Ctl.Consistency != nil &&
+			len(queryCtlParams.Ctl.Consistency.Vectors) > 0 &&
+			numRemoteSilent > 0 {
+			return &remoteConsistencyWaitError
+		}
+
+		rest.MustEncode(res, searchResult)
 	}
 
 	return err
@@ -562,54 +629,118 @@ func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 // ---------------------------------------------------------
 
 func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
-	cancelCh <-chan bool) error {
+	parentCancelCh <-chan bool) error {
+
+	// phase 0 - parsing/validating query
+	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
 		Ctl: cbgt.QueryCtl{
 			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
-
 	err := json.Unmarshal(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
-
 	searchRequest := &bleve.SearchRequest{}
-
 	err = json.Unmarshal(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
+	err = searchRequest.Query.Validate()
+	if err != nil {
+		return fmt.Errorf("bleve: BleveDest.Query"+
+			" validating query, req: %s, err: %v", req, err)
+	}
+
+	// phase 1 - set up timeouts, wait to satisfy consistency requirements
+	// could return err 412
+
+	// create a context with the appropriate timeout
+	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, parentCancelCh)
+	// defer a call to cancel, this ensures that goroutine from
+	// setupContextAndCancelCh always exits
+	defer cancel()
 
 	err = cbgt.ConsistencyWaitPIndex(pindex, t,
 		queryCtlParams.Ctl.Consistency, cancelCh)
 	if err != nil {
+		if _, ok := err.(*cbgt.ErrorConsistencyWait); !ok {
+			// not a consistency wait error
+			// check to see if context error
+			if ctx.Err() != nil {
+				// return this as search response error
+				sendSearchResponseErr(searchRequest, res, pindex.Name, ctx.Err())
+				return nil
+			}
+		}
+		// some other error occurred return this as 400
 		return err
 	}
 
-	err = searchRequest.Query.Validate()
-	if err != nil {
-		return err
-	}
-
+	// phase 2 - execute query
+	// always 200, possibly with errors inside status
 	t.m.Lock()
 	bindex := t.bindex
 	t.m.Unlock()
 
 	if bindex == nil {
-		return fmt.Errorf("bleve: Query, bindex already closed")
+		err := fmt.Errorf("bleve: Query, bindex already closed")
+		sendSearchResponseErr(searchRequest, res, pindex.Name, err)
+		return nil
 	}
 
-	searchResponse, err := bindex.Search(searchRequest)
+	searchResponse, err := bindex.SearchInContext(ctx, searchRequest)
 	if err != nil {
-		return err
+		sendSearchResponseErr(searchRequest, res, pindex.Name, err)
+		return nil
 	}
 
 	rest.MustEncode(res, searchResponse)
-
 	return nil
+}
+
+// ---------------------------------------------------------
+func sendSearchResponseErr(req *bleve.SearchRequest, res io.Writer, name string, err error) {
+	searchResponse := &bleve.SearchResult{
+		Request: req,
+		Status: &bleve.SearchStatus{
+			Total:      1,
+			Failed:     1,
+			Successful: 0,
+			Errors:     make(map[string]error),
+		},
+	}
+	searchResponse.Status.Errors[name] = err
+	rest.MustEncode(res, searchResponse)
+}
+
+// ---------------------------------------------------------
+
+func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams, parentCancelCh <-chan bool) (ctx context.Context, cancel context.CancelFunc, cancelChRv <-chan bool) {
+	if queryCtlParams.Ctl.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(queryCtlParams.Ctl.Timeout)*time.Millisecond)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	// now create cbgt compatible cancel channel
+	cancelCh := make(chan bool, 1)
+	cancelChRv = cancelCh
+	// spawn a goroutine to close the cancelCh when either:
+	//   - the context is Done()
+	// or
+	//   - the parentCancelCh is closed
+	go func() {
+		select {
+		case <-parentCancelCh:
+			close(cancelCh)
+		case <-ctx.Done():
+			close(cancelCh)
+		}
+	}()
+	return
 }
 
 // ---------------------------------------------------------
@@ -1073,16 +1204,16 @@ func (t *BleveDestPartition) applyBatchLOCKED() error {
 // activities.
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool) (bleve.IndexAlias, error) {
+	cancelCh <-chan bool) (bleve.IndexAlias, []*IndexClient, error) {
 	alias := bleve.NewIndexAlias()
 
-	err := bleveIndexTargets(mgr, indexName, indexUUID, ensureCanRead,
+	remoteClients, err := bleveIndexTargets(mgr, indexName, indexUUID, ensureCanRead,
 		consistencyParams, cancelCh, alias)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return alias, nil
+	return alias, remoteClients, nil
 }
 
 // BleveIndexCollector interface is a subset of the bleve.IndexAlias
@@ -1095,7 +1226,7 @@ type BleveIndexCollector interface {
 
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool, collector BleveIndexCollector) error {
+	cancelCh <-chan bool, collector BleveIndexCollector) ([]*IndexClient, error) {
 	planPIndexNodeFilter := cbgt.PlanPIndexNodeOk
 	if ensureCanRead {
 		planPIndexNodeFilter = cbgt.PlanPIndexNodeCanRead
@@ -1105,27 +1236,30 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		mgr.CoveringPIndexes(indexName, indexUUID, planPIndexNodeFilter,
 			"queries")
 	if err != nil {
-		return fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
+		return nil, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
 
 	prefix := mgr.Options()["urlPrefix"]
 
+	remoteClients := make([]*IndexClient, 0)
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		collector.Add(&IndexClient{
+		remoteClient := &IndexClient{
 			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
 			// TODO: Propagate auth to remote client.
-		})
+		}
+		remoteClients = append(remoteClients, remoteClient)
+		collector.Add(remoteClient)
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 
-	return cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
+	return remoteClients, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
 		func(localPIndex *cbgt.PIndex) error {
 			bindex, ok := localPIndex.Impl.(bleve.Index)

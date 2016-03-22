@@ -207,7 +207,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 					return err
 				}
 			} else if strings.HasPrefix(targetDef.Type, "fulltext-index") {
-				subAlias, err := bleveIndexAlias(mgr, targetName,
+				subAlias, _, err := bleveIndexAlias(mgr, targetName,
 					targetSpec.IndexUUID, ensureCanRead,
 					consistencyParams, cancelCh)
 				if err != nil {
