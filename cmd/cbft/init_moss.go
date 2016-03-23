@@ -87,9 +87,6 @@ func InitMossOptions(options map[string]string) (err error) {
 		}
 	}
 
-	// TODO: Need to split memory quota between moss and any
-	// lower-level storage (e.g., forestdb).
-
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
 		Log:     log.Printf,
 		OnError: func(err error) { log.Printf("moss OnError, err: %v", err) },
