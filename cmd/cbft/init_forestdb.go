@@ -15,7 +15,10 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
+
+	log "github.com/couchbase/clog"
 
 	"github.com/couchbase/goforestdb"
 )
@@ -27,6 +30,21 @@ func InitOptions(options map[string]string) error {
 
 	fmq, exists := options["ftsMemoryQuota"]
 	if exists {
+		frac, err := ParseFTSMemoryQuotaMossFraction(options)
+		if err != nil {
+			return err
+		}
+
+		if frac > 0.0 && frac < 1.0 {
+			fmqi, err := strconv.Atoi(fmq)
+			if err != nil {
+				return fmt.Errorf("init_forestdb:"+
+					" parsing ftsMemoryQuota: %q, err: %v", fmq, err)
+			}
+
+			fmq = fmt.Sprintf("%d", uint64((1.0-frac)*float64(fmqi)))
+		}
+
 		_, existsFBCS := options["forestdbBufferCacheSize"]
 		if !existsFBCS {
 			options["forestdbBufferCacheSize"] = fmq
@@ -48,6 +66,8 @@ func InitOptions(options map[string]string) error {
 				outerErr = err
 				return
 			}
+			log.Printf("init_forestdb: configInt, optionName: forestdb%s, i: %d",
+				optionName, i)
 			cb(i)
 			numConfig += 1
 		}
@@ -61,6 +81,8 @@ func InitOptions(options map[string]string) error {
 				outerErr = err
 				return
 			}
+			log.Printf("init_forestdb: configBool, optionName: forestdb%s, b: %t",
+				optionName, b)
 			cb(b)
 			numConfig += 1
 		}

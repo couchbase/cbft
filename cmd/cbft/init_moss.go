@@ -27,6 +27,21 @@ func init() {
 	cbft.BlevePIndexAllowMoss = true
 }
 
+var DefaultFTSMemoryQuotaMossFraction = 0.4 // 40%.
+
+func ParseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error) {
+	v, exists := options["ftsMemoryQuotaMossFraction"]
+	if exists {
+		p, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("init_moss: ParseFTSMemoryQuotaMossFraction,"+
+				" err: %v", err)
+		}
+		return p, nil
+	}
+	return DefaultFTSMemoryQuotaMossFraction, nil
+}
+
 func InitMossOptions(options map[string]string) (err error) {
 	if options == nil {
 		return nil
@@ -48,16 +63,28 @@ func InitMossOptions(options map[string]string) (err error) {
 
 	var memQuota uint64
 	v, exists := options["ftsMossMemoryQuota"] // In bytes.
-	if !exists {
-		v, exists = options["ftsMemoryQuota"] // In bytes.
-	}
 	if exists {
-		fmq, err := strconv.Atoi(v)
+		fmmq, err := strconv.Atoi(v)
 		if err != nil {
 			return fmt.Errorf("init_moss:"+
-				" parsing ftsMemoryQuota: %q, err: %v", v, err)
+				" parsing ftsMossMemoryQuota: %q, err: %v", v, err)
 		}
-		memQuota = uint64(fmq)
+		memQuota = uint64(fmmq)
+	} else {
+		frac, err := ParseFTSMemoryQuotaMossFraction(options)
+		if err != nil {
+			return err
+		}
+
+		v, exists = options["ftsMemoryQuota"] // In bytes.
+		if exists {
+			fmq, err := strconv.Atoi(v)
+			if err != nil {
+				return fmt.Errorf("init_moss:"+
+					" parsing ftsMemoryQuota: %q, err: %v", v, err)
+			}
+			memQuota = uint64(float64(fmq) * frac)
+		}
 	}
 
 	// TODO: Need to split memory quota between moss and any

@@ -19,6 +19,9 @@ import (
 	"github.com/couchbase/moss"
 )
 
+// TODO: The memory quota does not account for memory taken by moss
+// snapshots, which might be consuming many resources.
+
 // A MossHerder oversees multiple moss collection instances by pausing
 // batch ingest amongst the herd of moss once we've collectively
 // reached a given, shared memory quota.
