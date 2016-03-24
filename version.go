@@ -20,7 +20,7 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-const API_MAX_VERSION = "1.0.0" // TODO: Synchronize with other version metadata.
+const API_MAX_VERSION = "1.0.0" // See: MB-17990 on cbft API versioning.
 const API_MIN_VERSION = "0.0.0"
 
 const VersionTag = "version="
