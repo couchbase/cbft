@@ -161,6 +161,11 @@ func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
 		return fmt.Errorf("bleve: validate params, err: %v", err)
 	}
 
+	err = bp.Mapping.Validate()
+	if err != nil {
+		return fmt.Errorf("bleve: validate mapping, err: %v", err)
+	}
+
 	return nil
 }
 
