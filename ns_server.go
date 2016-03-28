@@ -35,6 +35,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var LogEveryNStats = 60
+
 var SourcePartitionSeqsSleepDefault = 10 * time.Second
 var SourcePartitionSeqsCacheTimeoutDefault = 60 * time.Second
 
@@ -51,7 +53,8 @@ var statsNameSuffix = []byte("\":")
 // NsStatsHandler is a REST handler that provides stats/metrics for
 // consumption by ns_server
 type NsStatsHandler struct {
-	mgr *cbgt.Manager
+	statsCount int64
+	mgr        *cbgt.Manager
 }
 
 func NewNsStatsHandler(mgr *cbgt.Manager) *NsStatsHandler {
@@ -145,6 +148,7 @@ func NewIndexStat() map[string]interface{} {
 }
 
 func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
 	initNsServerCaching(h.mgr)
 
 	rd := <-recentDefsCh
@@ -338,6 +342,17 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["pct_cpu_gc"] = memStats.GCCPUFraction
 
 	nsIndexStats[""] = topLevelStats
+
+	if currentStatsCount%int64(LogEveryNStats) == 0 {
+		go func() {
+			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
+			if err != nil {
+				log.Printf("error formatting JSON for logs: %v", err)
+				return
+			}
+			log.Printf("stats: %s", string(statsJSON))
+		}()
+	}
 
 	rest.MustEncode(w, nsIndexStats)
 }
