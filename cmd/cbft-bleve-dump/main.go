@@ -28,6 +28,7 @@ import (
 
 var indexPath = flag.String("index", "", "index path")
 
+var internalOnly = flag.Bool("internal", false, "print only internal rows")
 var fieldsOnly = flag.Bool("fields", false, "print only field definitions")
 var docID = flag.String("docID", "", "print only rows related to specified document")
 var mappingOnly = flag.Bool("mapping", false, "print only index mappings")
@@ -103,8 +104,10 @@ index specified by -index.
 		case error:
 			log.Printf("error dumping: %v", rowOrErr)
 		case upside_down.UpsideDownCouchRow:
-			fmt.Printf("%v\n", rowOrErr)
-			fmt.Printf("Key:   % -100x\nValue: % -100x\n\n", rowOrErr.Key(), rowOrErr.Value())
+			if _, isInternalRow := rowOrErr.(*upside_down.InternalRow); !*internalOnly || isInternalRow {
+				fmt.Printf("%v\n", rowOrErr)
+				fmt.Printf("Key:   % -100x\nValue: % -100x\n\n", rowOrErr.Key(), rowOrErr.Value())
+			}
 		}
 	}
 }
