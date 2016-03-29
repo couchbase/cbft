@@ -329,10 +329,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// FIXME hard-coded top-level stats
 	topLevelStats := map[string]interface{}{}
-	topLevelStats["num_connections"] = 0
-	topLevelStats["needs_restart"] = false
 
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
