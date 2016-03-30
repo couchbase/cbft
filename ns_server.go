@@ -691,18 +691,13 @@ func (h *NsStatusHandler) ServeHTTP(
 		}
 
 		rest.MustEncode(w, struct {
-			Completion int      `json:"completion"`
-			Hosts      []string `json:"hosts"`
-			Status     string   `json:"status"`
-			Bucket     string   `json:"bucket"`
-			Name       string   `json:"name"`
+			Hosts  []string `json:"hosts"`
+			Bucket string   `json:"bucket"`
+			Name   string   `json:"name"`
 		}{
 			Bucket: indexDef.SourceName,
 			Name:   indexDefName,
 			Hosts:  NsHostsForIndex(indexDefName, planPIndexes, nodeDefs),
-			// FIXME hard-coded
-			Completion: 100,
-			Status:     "Ready",
 		})
 	}
 
