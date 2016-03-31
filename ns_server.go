@@ -129,6 +129,7 @@ var statkeys = []string{
 
 	"total_queries",             // per-index stat.
 	"avg_queries_latency",       // per-index stat.
+	"total_request_time",        // per-index stat.
 	"total_queries_slow",        // per-index stat.
 	"total_queries_timeout",     // per-index stat.
 	"total_queries_error",       // per-index stat.
@@ -200,6 +201,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					float64((atomic.LoadUint64(&focusStats.TotRequestTimeNS) /
 						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
 			}
+			nsIndexStat["total_request_time"] =
+				atomic.LoadUint64(&focusStats.TotRequestTimeNS)
 			nsIndexStat["total_queries_slow"] =
 				atomic.LoadUint64(&focusStats.TotRequestSlow)
 			nsIndexStat["total_queries_timeout"] =
