@@ -311,6 +311,16 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
+	if options["logStatsEvery"] != "" {
+		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
+		if err != nil {
+			return nil, err
+		}
+		if logStatsEvery >= 0 {
+			cbft.LogEveryNStats = logStatsEvery
+		}
+	}
+
 	exitCode := MainTool(cfg, uuid, tags, flags, options)
 	if exitCode >= 0 {
 		os.Exit(exitCode)

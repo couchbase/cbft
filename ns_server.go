@@ -340,7 +340,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	nsIndexStats[""] = topLevelStats
 
-	if currentStatsCount%int64(LogEveryNStats) == 0 {
+	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {
 		go func() {
 			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
 			if err != nil {
