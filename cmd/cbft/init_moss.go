@@ -88,8 +88,10 @@ func InitMossOptions(options map[string]string) (err error) {
 	}
 
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
-		Log:     log.Printf,
-		OnError: func(err error) { log.Printf("moss OnError, err: %v", err) },
+		Log: log.Printf,
+		OnError: func(err error) {
+			log.Fatalf("moss OnError, treating this as fatal, err: %v", err)
+		},
 		OnEvent: NewMossHerderOnEvent(memQuota),
 	}
 
