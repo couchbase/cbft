@@ -61,11 +61,39 @@ var ftsPrefix = 'fts';
 // ----------------------------------------------
 
 function IndexesCtrlFT_NS($scope, $http, $stateParams,
-                          $log, $sce, $location) {
+                          $log, $sce, $location, mnServersService) {
     var $routeParams = $stateParams;
-    return IndexesCtrl($scope,
-                       prefixedHttp($http, '/_p/' + ftsPrefix),
-                       $routeParams, $log, $sce, $location);
+    var http = prefixedHttp($http, '/_p/' + ftsPrefix);
+    $scope.ftsChecking = true;
+    $scope.ftsAvailable = false;
+    $scope.ftsCheckError = "";
+    $scope.ftsNodes = [];
+    http.get("/api/runtime")
+    .success(function(data, status, headers, config) {
+      $scope.ftsAvailable = true;
+      $scope.ftsChecking = false;
+    })
+    .error(function(data, status, headers, config) {
+      $scope.ftsChecking = false;
+      // if we got a 404, there is no fts service on this node.
+      // let's go through the list of nodes
+      // and see which ones have a fts service
+      if (status == 404) {
+        mnServersService.getNodes().then(function (resp) {
+          var nodes = resp.allNodes;
+          for (var i = 0; i < nodes.length; i++) {
+            if (_.contains(nodes[i].services,"fts")) {
+              $scope.ftsNodes.push("http://" + nodes[i].hostname + "/ui/index.html#/fts_list");
+            }
+          }
+        });
+      } else {
+        // some other error to show
+        $scope.ftsCheckError = data;
+      }
+    });
+
+    return IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
 }
 
 function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
