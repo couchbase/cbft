@@ -12,7 +12,10 @@
 package cbft
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -84,7 +87,7 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 	}
 
 	if !allowed {
-		cbauth.SendUnauthorized(w)
+		cbauth.SendForbidden(w, perm)
 		return false
 	}
 
@@ -125,6 +128,14 @@ func preparePerm(mgr *cbgt.Manager, req *http.Request,
 					// Special case where PUT can mean CREATE, which
 					// we assume when there's no indexDef.
 					return preparePerm(mgr, req, "CREATE", path)
+				} else if method == "CREATE" {
+					sourceName, err := findCouchbaseSourceName(req, indexName)
+					if err != nil {
+						return "", err
+					}
+					perm = strings.Replace(perm, "<sourceName>",
+						sourceName, -1)
+					return perm, nil
 				}
 
 				return "", fmt.Errorf("index not found")
@@ -152,4 +163,28 @@ func preparePerm(mgr *cbgt.Manager, req *http.Request,
 	perm = strings.Replace(perm, "[]", "", -1)
 
 	return perm, nil
+}
+
+func findCouchbaseSourceName(req *http.Request, indexName string) (string, error) {
+
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return "", err
+	}
+	// reset req.Body so it can be read later by the handler
+	req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+
+	var indexDef cbgt.IndexDef
+	if len(requestBody) > 0 {
+		err := json.Unmarshal(requestBody, &indexDef)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	sourceType, sourceName := rest.ExtractSourceTypeName(req, &indexDef, indexName)
+	if sourceType == "couchbase" {
+		return sourceName, nil
+	}
+	return "", nil
 }

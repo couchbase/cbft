@@ -471,6 +471,14 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 }
 
 function errorMessage(errorMessageFull, code) {
+
+    if (code == 403 && typeof errorMessageFull == "object") {
+      rv = errorMessageFull.message + ": ";
+      for (var x in errorMessageFull.permissions) {
+        rv += errorMessageFull.permissions[x];
+      }
+      return rv;
+    }
     console.log("errorMessageFull", errorMessageFull, code);
     var a = (errorMessageFull || (code + "")).split("err: ");
     return a[a.length - 1];

@@ -27,7 +27,7 @@ cluster.bucket[<sourceName>].fts!write
 24577
 
 CREATE /api/index/{indexName}
-cluster.bucket.fts!write
+cluster.bucket[<sourceName>].fts!write
 24577
 
 DELETE /api/index/{indexName}
