@@ -188,3 +188,40 @@ func findCouchbaseSourceName(req *http.Request, indexName string) (string, error
 	}
 	return "", nil
 }
+
+type CBAuthBasicLogin struct {
+	mgr *cbgt.Manager
+}
+
+func CBAuthBasicLoginHandler(mgr *cbgt.Manager) (*CBAuthBasicLogin, error) {
+	return &CBAuthBasicLogin{
+		mgr: mgr,
+	}, nil
+}
+
+func (h *CBAuthBasicLogin) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+
+	authType := ""
+	if h.mgr != nil && h.mgr.Options() != nil {
+		authType = h.mgr.Options()["authType"]
+	}
+
+	if authType == "cbauth" {
+		creds, err := cbauth.AuthWebCreds(req)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
+				" err: %v ", err), 403)
+			return
+		}
+
+		if creds.Source() == "anonymous" {
+			// force basic auth login by sending 401
+			cbauth.SendUnauthorized(w)
+			return
+		}
+	}
+
+	// redirect to /
+	http.Redirect(w, req, "/", http.StatusMovedPermanently)
+}

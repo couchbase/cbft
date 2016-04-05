@@ -385,6 +385,12 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	router.Handle(prefix+"/api/nsSearchResultRedirect/{pIndexName}/{docID}", nsSearchResultRedirectHandler)
 
+	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
+	if err != nil {
+		return nil, err
+	}
+	router.Handle(prefix+"/login", cbAuthBasicLoginHadler)
+
 	// ------------------------------------------------
 
 	tagsMap := mgr.TagsMap()
