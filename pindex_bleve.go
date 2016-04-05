@@ -1293,11 +1293,11 @@ func BlevePIndexImplInitRouter(r *mux.Router, phase string,
 		r.PathPrefix(prefix + "/static-bleve-mapping/").Handler(
 			http.StripPrefix(prefix+"/static-bleve-mapping/",
 				staticBleveMapping))
-
-		bleveMappingUI.RegisterHandlers(r, prefix+"/api")
 	}
 
 	if phase == "manager.after" {
+		bleveMappingUI.RegisterHandlers(r, prefix+"/api")
+
 		// Using standard bleveHttp handlers for /api/pindex-bleve endpoints.
 		//
 		listIndexesHandler := bleveHttp.NewListIndexesHandler()

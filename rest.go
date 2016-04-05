@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -30,35 +31,46 @@ var MapRESTPathStats = map[string]*rest.RESTPathStats{
 
 func InitStaticRouter(staticDir, staticETag string,
 	mgr *cbgt.Manager) *mux.Router {
-	prefix := ""
-	if mgr != nil {
-		prefix = mgr.Options()["urlPrefix"]
-	}
-
-	hfsStaticX := http.FileServer(assetFS())
 
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
-	router.Handle(prefix+"/",
-		http.RedirectHandler(prefix+"/index.html", 302))
-	router.Handle(prefix+"/index.html",
-		http.RedirectHandler(prefix+"/staticx/index.html", 302))
-	router.Handle(prefix+"/static/partials/index/start.html",
-		http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
+	showUI := true
+	if mgr != nil && mgr.Options()["hideUI"] != "" {
+		hideUI, err := strconv.ParseBool(mgr.Options()["hideUI"])
+		if err == nil && hideUI {
+			showUI = false
+		}
+	}
 
-	router = rest.InitStaticRouterEx(router,
-		staticDir, staticETag, []string{
-			prefix + "/indexes",
-			prefix + "/nodes",
-			prefix + "/monitor",
-			prefix + "/manage",
-			prefix + "/logs",
-			prefix + "/debug",
-		}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
+	if showUI {
+		prefix := ""
+		if mgr != nil {
+			prefix = mgr.Options()["urlPrefix"]
+		}
 
-	router.PathPrefix(prefix + "/staticx/").Handler(
-		http.StripPrefix(prefix+"/staticx/", hfsStaticX))
+		hfsStaticX := http.FileServer(assetFS())
+
+		router.Handle(prefix+"/",
+			http.RedirectHandler(prefix+"/index.html", 302))
+		router.Handle(prefix+"/index.html",
+			http.RedirectHandler(prefix+"/staticx/index.html", 302))
+		router.Handle(prefix+"/static/partials/index/start.html",
+			http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
+
+		router = rest.InitStaticRouterEx(router,
+			staticDir, staticETag, []string{
+				prefix + "/indexes",
+				prefix + "/nodes",
+				prefix + "/monitor",
+				prefix + "/manage",
+				prefix + "/logs",
+				prefix + "/debug",
+			}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
+
+		router.PathPrefix(prefix + "/staticx/").Handler(
+			http.StripPrefix(prefix+"/staticx/", hfsStaticX))
+	}
 
 	return router
 }
