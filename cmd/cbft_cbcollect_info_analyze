@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+# TODO: WORK-IN-PROGRESS: interface might change!
+#
+# This script extracts the FTS /api/diag JSON from a cbcollect_info
+# directory (unzipped).  For example, to see cbft's goroutine stacks,
+# you might pipe the output to jq...
+#
+#   ./cbft_cbcollect_info_analyze $DIRECTORY | jq '.["/debug/pprof/goroutine?debug=2"] | split("\n")'
+#
+require 'json'
+
+path = ARGV[0] # Path to cbcollect_info directory (unzipped).
+
+# ---------------------------------------------------------------
+
+# Returns the FTS /api/diag string from the couchbase.log.
+def fetch_fts_api_diag(path)
+  couchbase_log = IO.read("#{path}/couchbase.log")
+  couchbase_log_parts = couchbase_log.split(/=============+\n/)
+
+  couchbase_log_parts.each_with_index do |part, i|
+    if part.start_with?("FTS /api/diag:")
+      return couchbase_log_parts[i+1]
+    end
+  end
+end
+
+# ---------------------------------------------------------------
+
+api_diag_s = fetch_fts_api_diag(path)
+api_diag = JSON.parse(api_diag_s)
+
+print JSON.generate(api_diag)
+print "\n"
