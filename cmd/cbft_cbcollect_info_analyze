@@ -1,46 +1,112 @@
 #!/usr/bin/env ruby
 
-# TODO: WORK-IN-PROGRESS: interface might change!
-#
-# This script extracts the FTS /api/diag JSON from cbcollect_info
-# directories (unzipped).  For example, to see cbft's goroutine
-# stacks, you might pipe the output to jq...
-#
-#   ./cbft_cbcollect_info_analyze $DIRECTORY $DIRECTORY $DIRECTORY | \
-#     jq '.["/debug/pprof/goroutine?debug=2"]? | split("\n")'
-#
-# To extract the bucketDataSourceStats, for example, try...
-#
-#   ./cbft_cbcollect_info_analyze $DIRECTORY $DIRECTORY $DIRECTORY | \
-#     jq '.["/api/stats"]?["feeds"]?[]?["bucketDataSourceStats"]?'
-#
 require 'json'
+
+usage = <<-eos
+Usage...
+  ./cbft_cbcollect_info_analyze CMD <OPTIONS>
+
+Valid CMD's include...
+  help | h | usage | ?
+    Prints this help message and exits.
+
+  extract NAME DIRECTORY[ DIRECTORY]
+    - NAME is an FTS related log item, like "/api/diag".
+    - DIRECTORY is a cbcollect_info directory (unzipped).
+
+    The extract command extracts the named cbft-related data from the
+    cbcollect_info directories (unzipped).
+
+    For example, to see cbft's goroutine stacks, you might pipe the
+    output to jq...
+
+     ./cbft_cbcollect_info_analyze extract /api/diag \\
+       $DIRECTORY $DIRECTORY $DIRECTORY | \\
+       jq '.["/debug/pprof/goroutine?debug=2"]? | split("\\n")'
+
+   To extract the bucketDataSourceStats, for example, try...
+
+    ./cbft_cbcollect_info_analyze extract /api/diag \\
+      $DIRECTORY $DIRECTORY $DIRECTORY | \\
+      jq '.["/api/stats"]?["feeds"]?[]?["bucketDataSourceStats"]?'
+eos
+
+if ARGV.length <= 0
+  print "error: missing CMD.\n\n"
+  print "#{usage}\n"
+  exit 2
+end
 
 # ---------------------------------------------------------------
 
-# Returns the FTS /api/diag string from the couchbase.log.
-def fetch_fts_api_diag(path)
-  couchbase_log = IO.read("#{path}/couchbase.log")
-  couchbase_log_parts = couchbase_log.split(/=============+\n/)
+# Returns a part of a file (such as from a couchbase.log).
+def fetch_file_part(path, fname, part_separator, part_prefix)
+  parts = IO.read("#{path}/#{fname}").split(part_separator)
 
-  couchbase_log_parts.each_with_index do |part, i|
-    if part.start_with?("FTS /api/diag:")
-      return couchbase_log_parts[i+1]
+  parts.each_with_index do |part, i|
+    if part.start_with?(part_prefix)
+      return parts[i+1]
     end
   end
 end
 
-# ---------------------------------------------------------------
+$cmd_extract_params = {
+  "/api/diag" => {
+    :file => "couchbase.log",
+    :part_separator => /=============+\n/,
+    :part_prefix => "FTS /api/diag:"
+  },
+}
 
-ARGV.each do |path|
-  # The path is directory of cbcollect_info (the unzipped files).
-  begin
-    api_diag_s = fetch_fts_api_diag(path)
-    api_diag = JSON.parse(api_diag_s)
-    print JSON.generate(api_diag)
-  rescue JSON::ParserError, JSON::GeneratorError, TypeError => err
-    print JSON.generate({"err" => err.to_s})
+def cmd_extract(argv)
+  if argv.length < 3
+    print "error: the extract CMD needs at least 2 params:\n\n"
+    print "  extract NAME DIRECTORY[ DIRECTORY]\n\n"
+    print "  supported NAME's include...\n"
+    $cmd_extract_params.each_key do |key|
+      print "  - \"#{key}\"\n"
+    end
+    print "\n"
+    return 2
   end
 
-  print "\n"
+  params = $cmd_extract_params[argv[1]]
+  unless params
+    print "error: unsupported extract NAME param: \"#{argv[1]}\"\n"
+    return 2
+  end
+
+  paths = argv[2..-1]
+
+  paths.each do |path|
+    # The path is directory of cbcollect_info (the unzipped files).
+    begin
+      part_s = fetch_file_part(path,
+                               params[:file],
+                               params[:part_separator],
+                               params[:part_prefix])
+      part_j = JSON.parse(part_s)
+      print JSON.generate(part_j)
+      print "\n"
+    rescue JSON::ParserError, JSON::GeneratorError, TypeError => err
+      print JSON.generate({"err" => err.to_s})
+      print "\n"
+    end
+  end
+
+  return 0
 end
+
+# ---------------------------------------------------------------
+
+if not ["help", "h", "-h", "--h", "usage", "?", "-?"].index(ARGV[0]).nil?
+  print "#{usage}\n"
+  exit 0
+end
+
+if ARGV[0] == 'extract'
+  exit cmd_extract(ARGV)
+end
+
+print "error: unknown CMD: #{ARGV[0]}\n"
+exit 1
