@@ -2,15 +2,19 @@
 
 # TODO: WORK-IN-PROGRESS: interface might change!
 #
-# This script extracts the FTS /api/diag JSON from a cbcollect_info
-# directory (unzipped).  For example, to see cbft's goroutine stacks,
-# you might pipe the output to jq...
+# This script extracts the FTS /api/diag JSON from cbcollect_info
+# directories (unzipped).  For example, to see cbft's goroutine
+# stacks, you might pipe the output to jq...
 #
-#   ./cbft_cbcollect_info_analyze $DIRECTORY | jq '.["/debug/pprof/goroutine?debug=2"] | split("\n")'
+#   ./cbft_cbcollect_info_analyze $DIRECTORY $DIRECTORY $DIRECTORY | \
+#     jq '.["/debug/pprof/goroutine?debug=2"]? | split("\n")'
+#
+# To extract the bucketDataSourceStats, for example, try...
+#
+#   ./cbft_cbcollect_info_analyze $DIRECTORY $DIRECTORY $DIRECTORY | \
+#     jq '.["/api/stats"]?["feeds"]?[]?["bucketDataSourceStats"]?'
 #
 require 'json'
-
-path = ARGV[0] # Path to cbcollect_info directory (unzipped).
 
 # ---------------------------------------------------------------
 
@@ -28,8 +32,15 @@ end
 
 # ---------------------------------------------------------------
 
-api_diag_s = fetch_fts_api_diag(path)
-api_diag = JSON.parse(api_diag_s)
+ARGV.each do |path|
+  # The path is directory of cbcollect_info (the unzipped files).
+  begin
+    api_diag_s = fetch_fts_api_diag(path)
+    api_diag = JSON.parse(api_diag_s)
+    print JSON.generate(api_diag)
+  rescue JSON::ParserError, JSON::GeneratorError, TypeError => err
+    print JSON.generate({"err" => err.to_s})
+  end
 
-print JSON.generate(api_diag)
-print "\n"
+  print "\n"
+end
