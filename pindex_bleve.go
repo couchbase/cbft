@@ -810,13 +810,11 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		if err != nil {
 			return
 		}
-		idxStats := t.bindex.Stats()
+		idxStats := t.bindex.StatsMap()
 		var idxStatsJSON []byte
 		idxStatsJSON, err = json.Marshal(idxStats)
 		if err != nil {
-			if _, ok := err.(*json.UnsupportedTypeError); ok {
-				log.Printf("json failed to marshal was: %#v", idxStats)
-			}
+			log.Printf("json failed to marshal was: %#v", idxStats)
 			return
 		}
 		_, err = w.Write(idxStatsJSON)
