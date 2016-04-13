@@ -345,6 +345,14 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {
 		go func() {
+			var buf bytes.Buffer
+			err := rest.WriteManagerStatsJSON(h.mgr, &buf, "")
+			if err != nil {
+				log.Printf("error formatting managerStatsJSON for logs: %v", err)
+			} else {
+				log.Printf("managerStats: %s", buf.String())
+			}
+
 			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
 			if err != nil {
 				log.Printf("error formatting JSON for logs: %v", err)
