@@ -32,20 +32,15 @@ type MossHerder struct {
 	waitCond *sync.Cond
 	waiting  int
 
-	// The baseProgress increases whenever there are collection
-	// persistence or collection close events.
-	baseProgress uint64
-
-	// The map value (uint64) is the last baseProgress seen by each
-	// Collection's merger.
-	collections map[moss.Collection]uint64
+	// The map tracks moss collections currently being herded
+	collections map[moss.Collection]struct{}
 }
 
 // NewMossHerder returns a new moss herder instance.
 func NewMossHerder(memQuota uint64) *MossHerder {
 	mh := &MossHerder{
 		memQuota:    memQuota,
-		collections: map[moss.Collection]uint64{},
+		collections: map[moss.Collection]struct{}{},
 	}
 	mh.waitCond = sync.NewCond(&mh.m)
 	return mh
@@ -73,8 +68,8 @@ func (mh *MossHerder) OnEvent(event moss.Event) {
 	case moss.EventKindClose:
 		mh.OnClose(event.Collection)
 
-	case moss.EventKindMergerProgress:
-		mh.OnMergerProgress(event.Collection)
+	case moss.EventKindBatchExecuteStart:
+		mh.OnBatchExecuteStart(event.Collection)
 
 	case moss.EventKindPersisterProgress:
 		mh.OnPersisterProgress(event.Collection)
@@ -93,8 +88,7 @@ func (mh *MossHerder) OnCloseStart(c moss.Collection) {
 		log.Printf("moss_herder: close start progess, waiting: %d", mh.waiting)
 	}
 
-	mh.baseProgress++
-	mh.waitCond.Broadcast()
+	delete(mh.collections, c)
 
 	mh.m.Unlock()
 }
@@ -110,27 +104,20 @@ func (mh *MossHerder) OnClose(c moss.Collection) {
 
 	delete(mh.collections, c)
 
-	mh.baseProgress++
-	mh.waitCond.Broadcast()
-
 	mh.m.Unlock()
 }
 
-func (mh *MossHerder) OnMergerProgress(c moss.Collection) {
+func (mh *MossHerder) OnBatchExecuteStart(c moss.Collection) {
 	if c.Options().LowerLevelUpdate == nil {
 		return
 	}
 
 	mh.m.Lock()
 
-	baseProgressSeen := mh.collections[c]
-	mh.collections[c] = mh.baseProgress
+	mh.collections[c] = struct{}{}
 
-	if mh.overMemQuotaLOCKED() &&
-		baseProgressSeen > 0 &&
-		baseProgressSeen >= mh.baseProgress {
-		// If we're over the memory quota, and we've seen all the
-		// progress so far, then wait for more progress.
+	for mh.overMemQuotaLOCKED() {
+		// If we're over the memory quota, then wait for persister progress.
 		mh.waiting++
 		mh.waitCond.Wait()
 		mh.waiting--
@@ -150,7 +137,6 @@ func (mh *MossHerder) OnPersisterProgress(c moss.Collection) {
 		log.Printf("moss_herder: persistence progess, waiting: %d", mh.waiting)
 	}
 
-	mh.baseProgress++
 	mh.waitCond.Broadcast()
 
 	mh.m.Unlock()
