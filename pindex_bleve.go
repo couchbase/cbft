@@ -44,6 +44,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
+
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 type BleveParams struct {
@@ -1138,7 +1140,8 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) error {
 		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
-	if seq < t.seqSnapEnd {
+	if seq < t.seqSnapEnd &&
+		(BleveMaxOpsPerBatch <= 0 || BleveMaxOpsPerBatch > t.batch.Size()) {
 		return nil
 	}
 

@@ -311,6 +311,14 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
+	if options["bleveMaxOpsPerBatch"] != "" {
+		bleveMaxOpsPerBatch, err := strconv.Atoi(options["bleveMaxOpsPerBatch"])
+		if err != nil {
+			return nil, err
+		}
+		cbft.BleveMaxOpsPerBatch = bleveMaxOpsPerBatch
+	}
+
 	if options["logStatsEvery"] != "" {
 		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
 		if err != nil {
@@ -364,6 +372,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if options["cbaudit"] == "true" {
 		adtSvc, _ = audit.NewAuditSvc(server)
 	}
+
 	router, _, err :=
 		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr,
 			adtSvc)
