@@ -984,9 +984,10 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	}
 
 	errv = json.Unmarshal(val, &v)
-	if errv == nil {
-		erri = t.batch.Index(k, v)
+	if errv != nil {
+		v = map[string]interface{}{}
 	}
+	erri = t.batch.Index(k, v)
 	err := t.updateSeqLOCKED(seq)
 
 	t.m.Unlock()
