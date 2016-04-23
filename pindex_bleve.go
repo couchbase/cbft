@@ -354,10 +354,10 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 	}
 
-	err = searchRequest.Query.Validate()
+	err = searchRequest.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
-			" validating query, req: %s, err: %v", req, err)
+			" validating request, req: %s, err: %v", req, err)
 	}
 
 	v, exists := mgr.Options()["bleveMaxResultWindow"]
@@ -654,10 +654,10 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
-	err = searchRequest.Query.Validate()
+	err = searchRequest.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
-			" validating query, req: %s, err: %v", req, err)
+			" validating request, req: %s, err: %v", req, err)
 	}
 
 	// phase 1 - set up timeouts, wait to satisfy consistency requirements
