@@ -1239,11 +1239,18 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		planPIndexNodeFilter = cbgt.PlanPIndexNodeCanRead
 	}
 
-	localPIndexes, remotePlanPIndexes, err :=
-		mgr.CoveringPIndexes(indexName, indexUUID, planPIndexNodeFilter,
+	localPIndexes, remotePlanPIndexes, missingPIndexNames, err :=
+		mgr.CoveringPIndexesBestEffort(indexName, indexUUID, planPIndexNodeFilter,
 			"queries")
 	if err != nil {
 		return nil, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
+	}
+
+	for _, missingPIndexName := range missingPIndexNames {
+		missingPIndex := &MissingPIndex{
+			name: missingPIndexName,
+		}
+		collector.Add(missingPIndex)
 	}
 
 	prefix := mgr.Options()["urlPrefix"]
