@@ -173,7 +173,11 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		return nil, err
 	}
 
-	rv := &bleve.SearchResult{}
+	rv := &bleve.SearchResult{
+		Status: &bleve.SearchStatus{
+			Errors: make(map[string]error),
+		},
+	}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("remote: search error parsing respBuf: %s,"+
