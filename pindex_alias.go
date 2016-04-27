@@ -130,6 +130,15 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	return nil
 }
 
+func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
+	params := AliasParams{}
+	err := json.Unmarshal([]byte(aliasDefParams), &params)
+	if err != nil {
+		return nil, err
+	}
+	return &params, nil
+}
+
 // The indexName/indexUUID is for a user-defined index alias.
 //
 // TODO: One day support user-defined aliases for non-bleve indexes.
@@ -169,8 +178,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 				aliasUUID, aliasDef.UUID, aliasName, indexName)
 		}
 
-		params := AliasParams{}
-		err := json.Unmarshal([]byte(aliasDef.Params), &params)
+		params, err := parseAliasParams(aliasDef.Params)
 		if err != nil {
 			return fmt.Errorf("alias: could not parse aliasDef.Params: %s,"+
 				" aliasName: %s, indexName: %s",

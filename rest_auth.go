@@ -72,23 +72,25 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 		return false
 	}
 
-	perm, err := preparePerm(mgr, req, req.Method, path)
+	perms, err := preparePerms(mgr, req, req.Method, path)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("rest_auth: preparePerm,"+
 			" err: %v ", err), 403)
 		return false
 	}
 
-	allowed, err = creds.IsAllowed(perm)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
-			" err: %v ", err), 403)
-		return false
-	}
+	for _, perm := range perms {
+		allowed, err = creds.IsAllowed(perm)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
+				" err: %v ", err), 403)
+			return false
+		}
 
-	if !allowed {
-		cbauth.SendForbidden(w, perm)
-		return false
+		if !allowed {
+			cbauth.SendForbidden(w, perm)
+			return false
+		}
 	}
 
 	return true
@@ -104,65 +106,140 @@ func UrlWithAuth(authType, urlStr string) (string, error) {
 
 // --------------------------------------------------------
 
-func preparePerm(mgr *cbgt.Manager, req *http.Request,
-	method, path string) (string, error) {
+func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
+	depth int) ([]string, error) {
+	if depth > 50 {
+		return nil, errAliasExpanstionTooDeep
+	}
+	rv := make([]string, 0)
+	indexDef, exists := indexDefsByName[name]
+	if exists && indexDef != nil && indexDef.Type == "fulltext-alias" {
+		aliasParams, err := parseAliasParams(indexDef.Params)
+		if err != nil {
+			return nil, fmt.Errorf("error expanding fulltext-alias: %v", err)
+		}
+		for aliasIndexName := range aliasParams.Targets {
+			aliasIndexDef, exists := indexDefsByName[aliasIndexName]
+			if !exists {
+				return nil, fmt.Errorf("fulltext-alias %s expands to include non-existant index %s", indexDef.Name, aliasIndexName)
+			}
+			if aliasIndexDef.Type == "fulltext-alias" {
+				// handle nested aliases with recursive call
+				nestedSources, err := sourceNamesForAlias(aliasIndexName,
+					indexDefsByName, depth+1)
+				if err != nil {
+					return nil, err
+				}
+				rv = append(rv, nestedSources...)
+			} else {
+				rv = append(rv, aliasIndexDef.SourceName)
+			}
+		}
+	}
+
+	return rv, nil
+}
+
+// an interface to abstract the bare minimum aspect of a cbgt.Manager
+// that we need, so that we can stub the interface for testing
+type definitionLookuper interface {
+	GetPIndex(pindexName string) *cbgt.PIndex
+	GetIndexDefs(refresh bool) (*cbgt.IndexDefs, map[string]*cbgt.IndexDef, error)
+}
+
+var errIndexNotFound = fmt.Errorf("index not found")
+var errPIndexNotFound = fmt.Errorf("pindex not found")
+var errAliasExpanstionTooDeep = fmt.Errorf("alias expansion too deep")
+
+func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
+	method, path string) ([]string, error) {
+	sourceNames := make([]string, 0)
+	indexName := rest.IndexNameLookup(req)
+	if indexName != "" {
+		_, indexDefsByName, err := mgr.GetIndexDefs(false)
+		if err != nil {
+			return nil, err
+		}
+
+		indexDef, exists := indexDefsByName[indexName]
+		if !exists || indexDef == nil {
+			if method == "PUT" {
+				// Special case where PUT can mean CREATE, which
+				// we assume when there's no indexDef.
+				return sourceNamesFromReq(mgr, req, "CREATE", path)
+			} else if method == "CREATE" {
+				sourceName, err := findCouchbaseSourceName(req, indexName)
+				if err != nil {
+					return nil, err
+				}
+				sourceNames = append(sourceNames, sourceName)
+				return sourceNames, nil
+			} else {
+				return nil, errIndexNotFound
+			}
+		}
+
+		if indexDef.Type == "fulltext-alias" {
+			// per MB-18868 only expand alias sources for these specific requests
+			if (req.Method == http.MethodGet &&
+				strings.HasSuffix(path, "/count")) ||
+				(req.Method == http.MethodPost &&
+					strings.HasSuffix(path, "/query")) {
+				aliasSourceNames, err := sourceNamesForAlias(indexName, indexDefsByName, 0)
+				if err != nil {
+					return nil, err
+				}
+				sourceNames = append(sourceNames, aliasSourceNames...)
+			}
+		} else {
+			sourceNames = append(sourceNames, indexDef.SourceName)
+		}
+	} else {
+		pindexName := rest.PIndexNameLookup(req)
+		if pindexName != "" {
+			pindex := mgr.GetPIndex(pindexName)
+			if pindex == nil {
+				return nil, errPIndexNotFound
+			}
+
+			sourceNames = append(sourceNames, pindex.SourceName)
+		} else {
+			return nil, fmt.Errorf("missing indexName/pindexName")
+		}
+	}
+
+	return sourceNames, nil
+}
+
+func preparePerms(mgr definitionLookuper, req *http.Request,
+	method, path string) ([]string, error) {
+
 	perm := restPermsMap[method+":"+path]
 	if perm == "" {
 		perm = restPermDefault
 	}
 
-	// TODO: Handle full-text-alias auth check better by calling
-	// IsAllowed on all of the target buckets of the alias.
-
 	if strings.Index(perm, "<sourceName>") >= 0 {
-		indexName := rest.IndexNameLookup(req)
-		if indexName != "" {
-			_, indexDefsByName, err := mgr.GetIndexDefs(false)
-			if err != nil {
-				return "", err
+		sourceNames, err := sourceNamesFromReq(mgr, req, method, path)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(sourceNames) > 0 {
+			// found some source names to replace
+			perms := make([]string, 0, len(sourceNames))
+			for _, sourceName := range sourceNames {
+				perms = append(perms,
+					strings.Replace(perm, "<sourceName>", sourceName, -1))
 			}
-
-			indexDef, exists := indexDefsByName[indexName]
-			if !exists || indexDef == nil {
-				if method == "PUT" {
-					// Special case where PUT can mean CREATE, which
-					// we assume when there's no indexDef.
-					return preparePerm(mgr, req, "CREATE", path)
-				} else if method == "CREATE" {
-					sourceName, err := findCouchbaseSourceName(req, indexName)
-					if err != nil {
-						return "", err
-					}
-					perm = strings.Replace(perm, "<sourceName>",
-						sourceName, -1)
-					return perm, nil
-				}
-
-				return "", fmt.Errorf("index not found")
-			}
-
-			perm = strings.Replace(perm, "<sourceName>",
-				indexDef.SourceName, -1)
+			return perms, nil
 		} else {
-			pindexName := rest.PIndexNameLookup(req)
-			if pindexName != "" {
-				pindex := mgr.GetPIndex(pindexName)
-				if pindex == nil {
-					return "", fmt.Errorf("no pindex,"+
-						" pindexName: %s", pindexName)
-				}
-
-				perm = strings.Replace(perm, "<sourceName>",
-					pindex.SourceName, -1)
-			} else {
-				return "", fmt.Errorf("missing indexName/pindexName")
-			}
+			//no source names, remove it from the perm
+			return []string{strings.Replace(perm, "[<sourceName>]", "", -1)}, nil
 		}
 	}
 
-	perm = strings.Replace(perm, "[]", "", -1)
-
-	return perm, nil
+	return []string{perm}, nil
 }
 
 func findCouchbaseSourceName(req *http.Request, indexName string) (string, error) {
