@@ -87,8 +87,19 @@ func InitMossOptions(options map[string]string) (err error) {
 		}
 	}
 
+	var mossDebug int
+	mossDebugV, exists := options["ftsMossDebug"] // Higher means more debug info.
+	if exists {
+		mossDebug, err = strconv.Atoi(mossDebugV)
+		if err != nil {
+			return fmt.Errorf("init_moss:"+
+				" parsing ftsMossDebug: %q, err: %v", mossDebugV, err)
+		}
+	}
+
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{
-		Log: log.Printf,
+		Debug: mossDebug,
+		Log:   log.Printf,
 		OnError: func(err error) {
 			log.Fatalf("moss OnError, treating this as fatal, err: %v", err)
 		},
