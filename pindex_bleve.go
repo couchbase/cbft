@@ -217,6 +217,13 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			kvStoreName != "moss" &&
 			bleveRegistry.KVStoreConstructorByName("moss") != nil {
 			kvConfig["mossLowerLevelStoreName"] = kvStoreName
+
+			if kvStoreName == "forestdb" {
+				if _, exists := kvConfig["skip_batch"]; !exists {
+					kvConfig["skip_batch"] = true
+				}
+			}
+
 			kvStoreName = "moss"
 		}
 
