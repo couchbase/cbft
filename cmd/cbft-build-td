@@ -14,20 +14,20 @@ echo "tmpfile for collation is $tmpfile"
 for f in $1_*.pindex
 do
   echo "Processing $f file..."
-  ${COUCHBASE_PATH}cbft-bleve-dump -dictionary $2 -index $f | awk '{print $1 "," $3}' >> $tmpfile
+  ${COUCHBASE_PATH}cbft-bleve-dump -dictionary $2 -index $f | awk '{print $1,$3}' >> $tmpfile
 done
 
 # sort by col1
 echo "sorting into $tmpfile.sorted"
-sort -t ',' -k1,1 $tmpfile > ${tmpfile}.sorted
+sort -t ' ' -k1,1 $tmpfile > ${tmpfile}.sorted
 
 # merge rows with same first column, sum second column
 echo "merging into $tmpfile.merged"
-awk -F ',' '{
+awk -F ' ' '{
   if($1==k) {
     sum+=$2
   } else if(NR!=1){
-    printf("%s,%d\n",k,sum)
+    printf("%s %d\n",k,sum)
     sum=$2
   }
   k=$1
@@ -40,28 +40,28 @@ LL=$(bc <<<"scale=0;$LOW_LOW*$3")
 
 # find hi,med,low terms
 echo "getting high ($HM <= x < $HH) - ${tmpfile}.hi"
-awk -v hh="$HH" -v hm="$HM" -F ',' '{
+awk -v hh="$HH" -v hm="$HM" -F ' ' '{
   if(($2 < hh) && ($2 >= hm)) {
-    printf("%s,%d\n",$1,$2)
+    printf("%s %d\n",$1,$2)
   }
 }' ${tmpfile}.merged > ${tmpfile}.hi
 
 echo "getting med ($LM <= x < $HM) - ${tmpfile}.med"
-awk -v hm="$HM" -v lm="$LM" -F ',' '{
+awk -v hm="$HM" -v lm="$LM" -F ' ' '{
   if(($2 < hm) && ($2 >= lm)) {
-    printf("%s,%d\n",$1,$2)
+    printf("%s %d\n",$1,$2)
   }
 }' ${tmpfile}.merged > ${tmpfile}.med
 
 echo "getting low ($LL <= x < $LM) - ${tmpfile}.low"
-awk -v lm="$LM" -v ll="$LL" -F ',' '{
+awk -v lm="$LM" -v ll="$LL" -F ' ' '{
   if(($2 < lm) && ($2 >= ll)) {
-    printf("%s,%d\n",$1,$2)
+    printf("%s %d\n",$1,$2)
   }
 }' ${tmpfile}.merged > ${tmpfile}.low
 
 # check too high
-awk -v hh="$HH" -F ',' 'BEGIN{
+awk -v hh="$HH" -F ' ' 'BEGIN{
   count = 0
 }{
   if($2 >= hh) {
@@ -73,7 +73,7 @@ END{
 }' ${tmpfile}.merged
 
 # check too low
-awk -v ll="$LL" -F ',' 'BEGIN{
+awk -v ll="$LL" -F ' ' 'BEGIN{
   count = 0
 }{
   if($2 < ll) {
