@@ -67,6 +67,16 @@ GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/couchbase/cbft/cmd/cbft-ble
   INSTALL_PATH bin OUTPUT cbft-bleve-dump
   GOVERSION 1.6)
 
+GoInstall (TARGET cbft-bleve-check PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve-check
+    GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
+    ${_forestdb_dep}
+    CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
+    CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
+    LDFLAGS "${_ldflags}"
+    GOTAGS "prod forestdb forestdb_default_kvstore"
+    INSTALL_PATH bin OUTPUT cbft-bleve-check
+    GOVERSION 1.6)
+
 GoInstall (TARGET cbft-bleve-query PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve-query
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   ${_forestdb_dep}
