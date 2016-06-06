@@ -80,7 +80,7 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
       // and see which ones have a fts service
       if (status == 404) {
         mnServersService.getNodes().then(function (resp) {
-          var nodes = resp.allNodes;
+          var nodes = resp.onlyActive;
           for (var i = 0; i < nodes.length; i++) {
             if (_.contains(nodes[i].services,"fts")) {
               $scope.ftsNodes.push("http://" + nodes[i].hostname + "/ui/index.html#/fts_list");
