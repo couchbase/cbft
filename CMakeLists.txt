@@ -25,6 +25,8 @@ PROJECT (cbft)
 # builds libforestdb.so; will set dependencies to ensure it is build
 # before attempting to compile indexer
 
+SET (FTS_DEFAULT_KVSTORE "mossStore_default_kvstore")
+
 INCLUDE (FindCouchbaseGo)
 
 SET (_forestdb_dep)
@@ -53,7 +55,7 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.6)
 
@@ -63,7 +65,7 @@ GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/couchbase/cbft/cmd/cbft-ble
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve-dump
   GOVERSION 1.6)
 
@@ -73,7 +75,7 @@ GoInstall (TARGET cbft-bleve-check PACKAGE github.com/couchbase/cbft/cmd/cbft-bl
     CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
     CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
     LDFLAGS "${_ldflags}"
-    GOTAGS "prod forestdb forestdb_default_kvstore"
+    GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
     INSTALL_PATH bin OUTPUT cbft-bleve-check
     GOVERSION 1.6)
 
@@ -83,7 +85,7 @@ GoInstall (TARGET cbft-bleve-query PACKAGE github.com/couchbase/cbft/cmd/cbft-bl
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve-query
   GOVERSION 1.6)
 
@@ -93,7 +95,7 @@ GoInstall (TARGET cbgt-ctl PACKAGE github.com/couchbase/cbgt/cmd/cbgt-ctl
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb forestdb_default_kvstore"
+  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbgt-ctl
   GOVERSION 1.6)
 
