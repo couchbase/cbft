@@ -92,7 +92,11 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	go cmd.DumpOnSignalForPlatform()
+	// disabling as speculative change for
+	// https://issues.couchbase.com/browse/MB-20002
+	// theory being that invoking signal.Notify()
+	// interferes with forestdb signal handler
+	// go cmd.DumpOnSignalForPlatform()
 
 	bleve.StoreDynamic = false
 	bleve.MappingJSONStrict = true
