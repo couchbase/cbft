@@ -49,8 +49,9 @@ var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 type BleveParams struct {
-	Mapping bleve.IndexMapping     `json:"mapping"`
-	Store   map[string]interface{} `json:"store"`
+	Mapping   bleve.IndexMapping     `json:"mapping"`
+	Store     map[string]interface{} `json:"store"`
+	DocConfig BleveDocumentConfig    `json:"doc_config"`
 }
 
 func NewBleveParams() *BleveParams {
@@ -59,15 +60,20 @@ func NewBleveParams() *BleveParams {
 		Store: map[string]interface{}{
 			"kvStoreName": bleve.Config.DefaultKVStore,
 		},
+		DocConfig: BleveDocumentConfig{
+			Mode:        "type_field",
+			TypeField:   "type",
+			DefaultType: "_default",
+		},
 	}
-
-	rv.Mapping.TypeField = "type"
 
 	return rv
 }
 
 type BleveDest struct {
 	path string
+
+	bleveDocConfig BleveDocumentConfig
 
 	// Invoked when mgr should restart this BleveDest, like on rollback.
 	restart func()
@@ -100,12 +106,13 @@ type BleveDestPartition struct {
 }
 
 func NewBleveDest(path string, bindex bleve.Index,
-	restart func()) *BleveDest {
+	restart func(), bleveDocConfig BleveDocumentConfig) *BleveDest {
 	return &BleveDest{
-		path:       path,
-		restart:    restart,
-		bindex:     bindex,
-		partitions: make(map[string]*BleveDestPartition),
+		path:           path,
+		bleveDocConfig: bleveDocConfig,
+		restart:        restart,
+		bindex:         bindex,
+		partitions:     make(map[string]*BleveDestPartition),
 		stats: cbgt.PIndexStoreStats{
 			TimerBatchStore: metrics.NewTimer(),
 			Errors:          list.New(),
@@ -274,7 +281,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDest(path, bindex, restart),
+		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
 	}, nil
 }
 
@@ -306,7 +313,7 @@ func OpenBlevePIndexImpl(indexType, path string,
 	}
 
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDest(path, bindex, restart),
+		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
 	}, nil
 }
 
@@ -978,12 +985,6 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte,
 	cas uint64,
 	extrasType cbgt.DestExtrasType, extras []byte) error {
-	k := string(key)
-
-	var v interface{}
-
-	var errv error
-	var erri error
 
 	t.m.Lock()
 
@@ -992,11 +993,8 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		return fmt.Errorf("bleve: DataUpdate nil batch")
 	}
 
-	errv = json.Unmarshal(val, &v)
-	if errv != nil {
-		v = map[string]interface{}{}
-	}
-	erri = t.batch.Index(k, v)
+	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val)
+	erri := t.batch.Index(string(key), cbftDoc)
 	err := t.updateSeqLOCKED(seq)
 
 	t.m.Unlock()

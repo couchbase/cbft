@@ -151,6 +151,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                            $location, $log, $sce, $uibModal,
                            $q, mnBucketsService) {
     mnBucketsService.getBucketsByType(true).then(function(buckets) {
+
+        $scope.ftsDocConfig = {}
         $scope.buckets = buckets;
         $scope.bucketNames = [];
         for (var i = 0; i < buckets.length; i++) {
@@ -186,6 +188,14 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 $scope.errorFields = {};
                 $scope.errorMessage = null;
                 $scope.errorMessageFull = null;
+
+
+                // copy the 'Default Type' setting out of the bleve-mapping-ui Advanced tab
+                $scope.ftsDocConfig.default_type = $scope.indexMapping.default_type
+                // set index mapping default type to emtpy string (not used)
+                $scope.indexMapping.default_type = ""
+                // stringify our doc_config and set that into newIndexParams
+                newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig)
 
                 var errs = [];
 
@@ -282,6 +292,11 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+      if ($scope.newIndexParams) {
+        $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
+      }
+
+
     if (initKind == "view") {
         $scope.viewOnly = true;
     }
