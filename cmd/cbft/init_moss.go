@@ -27,7 +27,7 @@ func init() {
 	cbft.BlevePIndexAllowMoss = true
 }
 
-var DefaultFTSMemoryQuotaMossFraction = 0.4 // 40%.
+var DefaultFTSMemoryQuotaMossFraction = 1.0 // 100%.
 
 func ParseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error) {
 	v, exists := options["ftsMemoryQuotaMossFraction"]

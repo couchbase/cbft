@@ -35,19 +35,21 @@ func InitOptions(options map[string]string) error {
 			return err
 		}
 
-		if frac > 0.0 && frac < 1.0 {
-			fmqi, err := strconv.Atoi(fmq)
-			if err != nil {
-				return fmt.Errorf("init_forestdb:"+
-					" parsing ftsMemoryQuota: %q, err: %v", fmq, err)
+		if frac < 1.0 {
+			if frac > 0.0 {
+				fmqi, err := strconv.Atoi(fmq)
+				if err != nil {
+					return fmt.Errorf("init_forestdb:"+
+						" parsing ftsMemoryQuota: %q, err: %v", fmq, err)
+				}
+
+				fmq = fmt.Sprintf("%d", uint64((1.0-frac)*float64(fmqi)))
 			}
 
-			fmq = fmt.Sprintf("%d", uint64((1.0-frac)*float64(fmqi)))
-		}
-
-		_, existsFBCS := options["forestdbBufferCacheSize"]
-		if !existsFBCS {
-			options["forestdbBufferCacheSize"] = fmq
+			_, existsFBCS := options["forestdbBufferCacheSize"]
+			if !existsFBCS {
+				options["forestdbBufferCacheSize"] = fmq
+			}
 		}
 	}
 
