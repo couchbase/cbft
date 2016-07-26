@@ -180,6 +180,12 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
         function finishIndexNewCtrlFTInit() {
             var putIndexOrig = $scope.putIndex;
 
+            $scope.typeIdentifierChanged = function() {
+              if ($scope.ftsDocConfig.mode == "type_field" && !$scope.ftsDocConfig.type_field) {
+                $scope.ftsDocConfig.type_field = "type";
+              }
+            }
+
             $scope.putIndex = function(newIndexName,
                                        newIndexType, newIndexParams,
                                        newSourceType, newSourceName,
@@ -188,16 +194,38 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 $scope.errorFields = {};
                 $scope.errorMessage = null;
                 $scope.errorMessageFull = null;
+                var errs = [];
 
+                // type identifier validation/cleanup
+                switch ($scope.ftsDocConfig.mode) {
+                  case "type_field":
+                    if (!$scope.ftsDocConfig.type_field) {
+                      errs.push("type field is required");
+                    }
+                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                    delete $scope.ftsDocConfig.docid_regexp;
+                  break;
 
-                // copy the 'Default Type' setting out of the bleve-mapping-ui Advanced tab
-                $scope.ftsDocConfig.default_type = $scope.indexMapping.default_type
-                // set index mapping default type to emtpy string (not used)
-                $scope.indexMapping.default_type = ""
+                  case "docid_prefix":
+                    if (!$scope.ftsDocConfig.docid_prefix_delim) {
+                      errs.push("Doc ID separator is required");
+                    }
+                    delete $scope.ftsDocConfig.type_field;
+                    delete $scope.ftsDocConfig.docid_regexp;
+                  break;
+
+                  case "docid_regexp":
+                    if (!$scope.ftsDocConfig.docid_regexp) {
+                      errs.push("Doc ID regexp is required");
+                    }
+                    delete $scope.ftsDocConfig.type_field;
+                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                  break;
+
+                }
+
                 // stringify our doc_config and set that into newIndexParams
                 newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig)
-
-                var errs = [];
 
                 if (!newIndexName) {
                     $scope.errorFields["indexName"] = true;

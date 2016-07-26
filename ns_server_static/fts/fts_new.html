@@ -65,23 +65,23 @@
     <label for="inputSourceName">Type Identifier</label>
     <div style="display: inline-block;">
         <div>
-          <input type="radio" value="type_field" id="type_field" ng-model="ftsDocConfig.mode">
+          <input type="radio" value="type_field" id="type_field" ng-model="ftsDocConfig.mode" ng-change="typeIdentifierChanged()">
           <label for="type_field" style="width:auto;margin-right:5px;">JSON type field:</label>
-          <input ng-model="ftsDocConfig.type_field"
+          <input ng-model="ftsDocConfig.type_field"  ng-disabled="ftsDocConfig.mode != 'type_field'"
                  type="text"
                  placeholder="field name"/>
         </div>
         <div>
-          <input type="radio" value="docid_prefix" id="docid_prefix" ng-model="ftsDocConfig.mode">
-          <label for="docid_prefix_delim" style="width:auto;">Up to this separator:</label>
-          <input ng-model="ftsDocConfig.docid_prefix_delim"
+          <input type="radio" value="docid_prefix" id="docid_prefix" ng-model="ftsDocConfig.mode"  ng-change="typeIdentifierChanged()">
+          <label for="docid_prefix_delim" style="width:auto;">Doc ID up to separator:</label>
+          <input ng-model="ftsDocConfig.docid_prefix_delim" ng-disabled="ftsDocConfig.mode != 'docid_prefix'"
                  type="text"
                  placeholder="delimiter"/>
         </div>
         <div>
-          <input type="radio" value="docid_regexp" id="docid_regexp" ng-model="ftsDocConfig.mode">
-          <label for="docid_regexp" style="width:auto;">Document ID with regex:</label>
-          <input ng-model="ftsDocConfig.docid_regexp"
+          <input type="radio" value="docid_regexp" id="docid_regexp" ng-model="ftsDocConfig.mode" ng-change="typeIdentifierChanged()">
+          <label for="docid_regexp" style="width:auto;">Doc ID with regex:</label>
+          <input ng-model="ftsDocConfig.docid_regexp" ng-disabled="ftsDocConfig.mode != 'docid_regexp'"
                  type="text"
                  placeholder="regular expression"/>
         </div>

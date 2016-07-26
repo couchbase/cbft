@@ -61,9 +61,8 @@ func NewBleveParams() *BleveParams {
 			"kvStoreName": bleve.Config.DefaultKVStore,
 		},
 		DocConfig: BleveDocumentConfig{
-			Mode:        "type_field",
-			TypeField:   "type",
-			DefaultType: "_default",
+			Mode:      "type_field",
+			TypeField: "type",
 		},
 	}
 
@@ -993,7 +992,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		return fmt.Errorf("bleve: DataUpdate nil batch")
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val)
+	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val, t.bindex.Mapping().DefaultType)
 	erri := t.batch.Index(string(key), cbftDoc)
 	err := t.updateSeqLOCKED(seq)
 

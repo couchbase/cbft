@@ -36,7 +36,6 @@ type BleveDocumentConfig struct {
 	TypeField        string         `json:"type_field"`
 	DocIDPrefixDelim string         `json:"docid_prefix_delim"`
 	DocIDRegexp      *regexp.Regexp `json:"docid_regexp"`
-	DefaultType      string         `json:"default_type"`
 }
 
 func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
@@ -46,7 +45,6 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		TypeField        string `json:"type_field"`
 		DocIDPrefixDelim string `json:"docid_prefix_delim"`
 		DocIDRegexp      string `json:"docid_regexp"`
-		DefaultType      string `json:"default_type"`
 	}{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
@@ -76,15 +74,13 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("unknown mode: %s", tmp.Mode)
 	}
 
-	b.DefaultType = tmp.DefaultType
-
 	return nil
 }
 
 // buildCbftDocument returns a CbftDocument for the k/v pair
 // NOTE: err may be non-nil AND a document is returned
 // this allows the error to be logged, but a stub document to be indexed
-func (b *BleveDocumentConfig) buildDocument(key, val []byte) (*BleveDocument, error) {
+func (b *BleveDocumentConfig) buildDocument(key, val []byte, defaultType string) (*BleveDocument, error) {
 	var v interface{}
 
 	err := json.Unmarshal(val, &v)
@@ -92,7 +88,7 @@ func (b *BleveDocumentConfig) buildDocument(key, val []byte) (*BleveDocument, er
 		v = map[string]interface{}{}
 	}
 
-	typ := b.determineType(key, v)
+	typ := b.determineType(key, v, defaultType)
 
 	doc := BleveDocument{
 		typ:            typ,
@@ -102,7 +98,7 @@ func (b *BleveDocumentConfig) buildDocument(key, val []byte) (*BleveDocument, er
 	return &doc, err
 }
 
-func (b *BleveDocumentConfig) determineType(key []byte, v interface{}) string {
+func (b *BleveDocumentConfig) determineType(key []byte, v interface{}, defaultType string) string {
 
 	switch b.Mode {
 	case "type_field":
@@ -122,8 +118,7 @@ func (b *BleveDocumentConfig) determineType(key []byte, v interface{}) string {
 		}
 	}
 
-	return b.DefaultType
-
+	return defaultType
 }
 
 // utility functions copied from bleve/reflect.go
