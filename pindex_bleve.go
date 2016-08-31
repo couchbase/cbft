@@ -1359,8 +1359,6 @@ func BleveMetaExtra(m map[string]interface{}) {
 
 	t, i := bleveRegistry.AnalyzerTypesAndInstances()
 	br["Analyzer"] = map[string][]string{"types": t, "instances": i}
-	t, i = bleveRegistry.ByteArrayConverterTypesAndInstances()
-	br["ByteArrayConverter"] = map[string][]string{"types": t, "instances": i}
 	t, i = bleveRegistry.CharFilterTypesAndInstances()
 	br["CharFilter"] = map[string][]string{"types": t, "instances": i}
 	t, i = bleveRegistry.DateTimeParserTypesAndInstances()
