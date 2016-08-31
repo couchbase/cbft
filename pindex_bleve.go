@@ -81,6 +81,8 @@ type BleveDest struct {
 	bindex     bleve.Index
 	partitions map[string]*BleveDestPartition
 
+	rev uint64 // Incremented whenever bindex changes.
+
 	stats cbgt.PIndexStoreStats
 }
 
@@ -981,8 +983,7 @@ func (t *BleveDestPartition) Close() error {
 }
 
 func (t *BleveDestPartition) DataUpdate(partition string,
-	key []byte, seq uint64, val []byte,
-	cas uint64,
+	key []byte, seq uint64, val []byte, cas uint64,
 	extrasType cbgt.DestExtrasType, extras []byte) error {
 
 	t.m.Lock()
@@ -992,12 +993,18 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		return fmt.Errorf("bleve: DataUpdate nil batch")
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val, t.bindex.Mapping().DefaultType)
+	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val,
+		t.bindex.Mapping().DefaultType)
+
 	erri := t.batch.Index(string(key), cbftDoc)
-	err := t.updateSeqLOCKED(seq)
+
+	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
 
 	t.m.Unlock()
 
+	if err == nil && revNeedsUpdate {
+		t.incRev()
+	}
 	if errv != nil {
 		t.bdest.AddError("json.Unmarshal", partition, key, seq, val, errv)
 	}
@@ -1020,9 +1027,15 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	}
 
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
-	err := t.updateSeqLOCKED(seq)
+
+	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
 
 	t.m.Unlock()
+
+	if err == nil && revNeedsUpdate {
+		t.incRev()
+	}
+
 	return err
 }
 
@@ -1030,7 +1043,7 @@ func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 
-	err := t.applyBatchLOCKED()
+	revNeedsUpdate, err := t.applyBatchLOCKED()
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -1039,6 +1052,11 @@ func (t *BleveDestPartition) SnapshotStart(partition string,
 	t.seqSnapEnd = snapEnd
 
 	t.m.Unlock()
+
+	if revNeedsUpdate {
+		t.incRev()
+	}
+
 	return nil
 }
 
@@ -1136,7 +1154,7 @@ func (t *BleveDestPartition) Stats(w io.Writer) error {
 
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) error {
+func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
 	if t.seqMax < seq {
 		t.seqMax = seq
 		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
@@ -1146,19 +1164,19 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) error {
 
 	if seq < t.seqSnapEnd &&
 		(BleveMaxOpsPerBatch <= 0 || BleveMaxOpsPerBatch > t.batch.Size()) {
-		return nil
+		return false, nil
 	}
 
 	return t.applyBatchLOCKED()
 }
 
-func (t *BleveDestPartition) applyBatchLOCKED() error {
+func (t *BleveDestPartition) applyBatchLOCKED() (bool, error) {
 	if t.batch == nil {
-		return fmt.Errorf("bleve: applyBatch batch nil")
+		return false, fmt.Errorf("bleve: applyBatch batch nil")
 	}
 
 	if t.bindex == nil {
-		return fmt.Errorf("bleve: applyBatch bindex already closed")
+		return false, fmt.Errorf("bleve: applyBatch bindex already closed")
 	}
 
 	err := cbgt.Timer(func() error {
@@ -1182,7 +1200,7 @@ func (t *BleveDestPartition) applyBatchLOCKED() error {
 		return err
 	}, t.bdest.stats.TimerBatchStore)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	t.seqMaxBatch = t.seqMax
@@ -1201,7 +1219,15 @@ func (t *BleveDestPartition) applyBatchLOCKED() error {
 		t.batch = t.bindex.NewBatch()
 	}
 
-	return nil
+	return true, nil
+}
+
+// ---------------------------------------------------------
+
+func (t *BleveDestPartition) incRev() {
+	t.bdest.m.Lock()
+	t.bdest.rev++
+	t.bdest.m.Unlock()
 }
 
 // ---------------------------------------------------------
@@ -1283,13 +1309,40 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	return remoteClients, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
 		func(localPIndex *cbgt.PIndex) error {
-			bindex, ok := localPIndex.Impl.(bleve.Index)
-			if !ok || bindex == nil ||
-				!strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
-				return fmt.Errorf("bleve: wrong type, localPIndex: %#v",
-					localPIndex)
+			if !strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
+				return fmt.Errorf("bleve: bleveIndexTargets, wrong type,"+
+					" localPIndex: %#v", localPIndex)
 			}
-			collector.Add(bindex)
+
+			destFwd, ok := localPIndex.Dest.(*cbgt.DestForwarder)
+			if !ok || destFwd == nil {
+				return fmt.Errorf("bleve: bleveIndexTargets, wrong destFwd type,"+
+					" localPIndex: %#v", localPIndex)
+			}
+
+			bdest, ok := destFwd.DestProvider.(*BleveDest)
+			if !ok || bdest == nil {
+				return fmt.Errorf("bleve: bleveIndexTargets, wrong provider type,"+
+					" localPIndex: %#v", localPIndex)
+			}
+
+			bdest.m.Lock()
+			bindex := bdest.bindex
+			rev := bdest.rev
+			bdest.m.Unlock()
+
+			if bindex == nil {
+				return fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+
+					" localPIndex: %#v", localPIndex)
+			}
+
+			collector.Add(&cacheBleveIndex{
+				pindex: localPIndex,
+				bindex: bindex,
+				rev:    rev,
+				name:   bindex.Name(),
+			})
+
 			return nil
 		})
 }

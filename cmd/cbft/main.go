@@ -333,6 +333,16 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	err = cbft.InitResultCacheOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cbft.InitBleveResultCacheOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
 	exitCode := MainTool(cfg, uuid, tags, flags, options)
 	if exitCode >= 0 {
 		os.Exit(exitCode)
