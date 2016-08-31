@@ -30,9 +30,8 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 				"type": "beer",
 			},
 			config: &BleveDocumentConfig{
-				Mode:        "type_field",
-				TypeField:   "type",
-				DefaultType: "_default",
+				Mode:      "type_field",
+				TypeField: "type",
 			},
 			expectedType: "beer",
 		},
@@ -40,9 +39,8 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			key: []byte("anything"),
 			val: map[string]interface{}{},
 			config: &BleveDocumentConfig{
-				Mode:        "type_field",
-				TypeField:   "type",
-				DefaultType: "_default",
+				Mode:      "type_field",
+				TypeField: "type",
 			},
 			expectedType: "_default",
 		},
@@ -54,7 +52,6 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			config: &BleveDocumentConfig{
 				Mode:        "docid_regexp",
 				DocIDRegexp: regexp.MustCompile(`^[^-]+`),
-				DefaultType: "_default",
 			},
 			expectedType: "beer",
 		},
@@ -66,7 +63,6 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			config: &BleveDocumentConfig{
 				Mode:        "docid_regexp",
 				DocIDRegexp: regexp.MustCompile(`^[^-]+`),
-				DefaultType: "_default",
 			},
 			expectedType: "_default",
 		},
@@ -78,7 +74,6 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			config: &BleveDocumentConfig{
 				Mode:             "docid_prefix",
 				DocIDPrefixDelim: "-",
-				DefaultType:      "_default",
 			},
 			expectedType: "beer",
 		},
@@ -90,14 +85,13 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			config: &BleveDocumentConfig{
 				Mode:             "docid_prefix",
 				DocIDPrefixDelim: "-",
-				DefaultType:      "_default",
 			},
 			expectedType: "_default",
 		},
 	}
 
 	for _, test := range tests {
-		actualType := test.config.determineType(test.key, test.val)
+		actualType := test.config.determineType(test.key, test.val, "_default")
 		if actualType != test.expectedType {
 			t.Fatalf("expected type: '%s', got '%s'", test.expectedType, actualType)
 		}
