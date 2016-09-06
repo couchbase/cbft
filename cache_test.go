@@ -15,10 +15,20 @@ import (
 	"testing"
 )
 
+func rcCopy(dst, src *resultCache) {
+	dst.cache = src.cache
+	dst.head = src.head
+	dst.tail = src.tail
+	dst.maxLen = src.maxLen
+	dst.minLookups = src.minLookups
+	dst.maxBytesPerEntry = src.maxBytesPerEntry
+}
+
 func TestInitResultCacheOptions(t *testing.T) {
-	rcOrig := ResultCache
+	var rcOrig resultCache
+	rcCopy(&rcOrig, &ResultCache)
 	defer func() {
-		ResultCache = rcOrig
+		rcCopy(&ResultCache, &rcOrig)
 	}()
 
 	err := InitResultCacheOptions(map[string]string{
@@ -65,9 +75,10 @@ func TestInitResultCacheOptions(t *testing.T) {
 }
 
 func TestResultCache(t *testing.T) {
-	rcOrig := ResultCache
+	var rcOrig resultCache
+	rcCopy(&rcOrig, &ResultCache)
 	defer func() {
-		ResultCache = rcOrig
+		rcCopy(&ResultCache, &rcOrig)
 	}()
 
 	rc := &ResultCache
