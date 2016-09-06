@@ -63,12 +63,12 @@ performance) be sure to also move/copy over the ```cbft.uuid``` file.
 cbft provides a HTTP/REST API endpoint, listening on the address:port
 specified by the ```bindHttp``` command-line parameter.
 
-The default value for ```bindHttp``` is "0.0.0.0:8095", so the default
-bind address is 0.0.0.0 and default port number is 8095.
+The default value for ```bindHttp``` is "0.0.0.0:8094", so the default
+bind address is 0.0.0.0 and default port number is 8094.
 
 For example:
 
-    ./cbft -bindHttp=0.0.0.0:8095 -server=http://cb-01:8091
+    ./cbft -bindHttp=0.0.0.0:8094 -server=http://cb-01:8091
 
 For clustering and for remote application/client accessibility, you
 must specify an actual IP address instead of the "0.0.0.0" (and also
@@ -77,10 +77,10 @@ other cbft nodes and client applications to contact your cbft node.
 
 For example, if your IP address is "10.1.1.10", then:
 
-    ./cbft -bindHttp=10.1.1.10:8095 -server=http://cb-01:8091 \
+    ./cbft -bindHttp=10.1.1.10:8094 -server=http://cb-01:8091 \
            -cfg=couchbase:http://cfg-bucket@cb-01:8091
 
-The port number (e.g., 8095) must also be enabled on your firewall
+The port number (e.g., 8094) must also be enabled on your firewall
 systems, if any, to allow remote access.
 
 Each cbft node in a cbft cluster can have its own, different port

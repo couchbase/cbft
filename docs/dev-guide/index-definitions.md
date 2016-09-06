@@ -484,15 +484,15 @@ creating an index definition.  The index definition will be named
 [bleve](http://blevesearch.com), and will have the "beer-sample"
 bucket from Couchbase as its datasource...
 
-    curl -XPUT 'http://localhost:8095/api/index/myFirstIndex?indexType=bleve&sourceType=couchbase'
+    curl -XPUT 'http://localhost:8094/api/index/myFirstIndex?indexType=bleve&sourceType=couchbase'
 
 To list all your index definitions, you can use...
 
-    curl http://localhost:8095/api/index
+    curl http://localhost:8094/api/index
 
 Here's an example of using curl to delete that index definition...
 
-    curl -XDELETE http://localhost:8095/api/index/beer-sample
+    curl -XDELETE http://localhost:8094/api/index/beer-sample
 
 For more information on the REST API, please see the
 [REST API reference](api-ref) documentation.

@@ -12,9 +12,9 @@ be sent in a single JSON response.
 For example, for a three node cluster, you could capture the
 ```/api/diag``` output of each node with something like:
 
-    curl http://cbft-01:8095/api/diag > cbft-01.json
-    curl http://cbft-02:8095/api/diag > cbft-02.json
-    curl http://cbft-03:8095/api/diag > cbft-03.json
+    curl http://cbft-01:8094/api/diag > cbft-01.json
+    curl http://cbft-02:8094/api/diag > cbft-02.json
+    curl http://cbft-03:8094/api/diag > cbft-03.json
 
 The ```/api/diag``` response can be a quite large JSON object (100's
 of KB and often much more).

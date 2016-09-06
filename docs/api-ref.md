@@ -547,7 +547,7 @@ Sample response:
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
-            "hostPort": "0.0.0.0:8095",
+            "hostPort": "0.0.0.0:8094",
             "implVersion": "4.1.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
@@ -564,7 +564,7 @@ Sample response:
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
-            "hostPort": "0.0.0.0:8095",
+            "hostPort": "0.0.0.0:8094",
             "implVersion": "4.1.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
@@ -630,7 +630,7 @@ Sample response:
 
     {
       "mgr": {
-        "bindHttp": "0.0.0.0:8095",
+        "bindHttp": "0.0.0.0:8094",
         "container": "",
         "dataDir": "tmp/data261623975",
         "extras": "",

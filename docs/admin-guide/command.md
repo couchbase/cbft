@@ -16,7 +16,7 @@ That will print out usage/help output...
       -b, -bindHttp ADDR:PORT
           local address:port where this node will listen and
           serve HTTP/REST API requests and the web-based
-          admin UI; default is '0.0.0.0:8095';
+          admin UI; default is '0.0.0.0:8094';
           multiple ADDR:PORT's can be specified, separated by commas,
           where the first ADDR:PORT is used for node cfg registration.
       -c, -cfg, -cfgConnect CFG_CONNECT

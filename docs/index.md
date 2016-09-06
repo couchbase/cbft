@@ -116,7 +116,7 @@ using the ```-dataDir``` command-line parameter.
 
 Next, point your web browser to cbft's web admin UI...
 
-    http://localhost:8095
+    http://localhost:8094
 
 In your web browser, you should see a "Welcome to cbft" page in the
 web admin UI.
@@ -211,13 +211,13 @@ You can also use the REST API to access your index.
 For example, if your index is named ```myFirstIndex```, here's how you
 can use the curl tool to check how many documents are indexed...
 
-    curl http://localhost:8095/api/index/myFirstIndex/count
+    curl http://localhost:8094/api/index/myFirstIndex/count
 
 Here's an example of using curl to query the ```myFirstIndex```...
 
     curl -XPOST --header Content-Type:text/json \
          -d '{"size":10,"query":{"query":"your search string"}}' \
-         http://localhost:8095/api/index/myFirstIndex/query
+         http://localhost:8094/api/index/myFirstIndex/query
 
 ## Where to go next
 

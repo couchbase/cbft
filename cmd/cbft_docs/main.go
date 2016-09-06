@@ -83,7 +83,7 @@ func main() {
 	container := ""
 	weight := 1
 	extras := ""
-	bindHttp := "0.0.0.0:8095"
+	bindHttp := "0.0.0.0:8094"
 
 	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		tags, container, weight, extras, bindHttp,

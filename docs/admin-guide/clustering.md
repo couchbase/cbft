@@ -42,7 +42,7 @@ For example...
 
     ./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
-           -bindHttp=10.1.1.10:8095
+           -bindHttp=10.1.1.10:8094
 
 ## The bindHttp address and port
 
@@ -68,7 +68,7 @@ at the same, shared ```cfg-bucket```...
 
     ./cbft -cfg=couchbase:http://cfg-bucket@couchbase-01:8091 \
            -server=http://couchbase-01:8091 \
-           -bindHttp=10.1.1.11:8095
+           -bindHttp=10.1.1.11:8094
 
 Since these two cbft nodes are using the same ```cfg-bucket``` as
 their Cfg provider ("http://cfg-bucket@couchbase-01:8091"), these two
