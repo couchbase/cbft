@@ -80,8 +80,6 @@ func (mh *MossHerder) OnEvent(event moss.Event) {
 }
 
 func (mh *MossHerder) OnCloseStart(c moss.Collection) {
-	log.Printf("moss_herder: OnCloseStart, collection: %p", c)
-
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
@@ -94,8 +92,6 @@ func (mh *MossHerder) OnCloseStart(c moss.Collection) {
 }
 
 func (mh *MossHerder) OnClose(c moss.Collection) {
-	log.Printf("moss_herder: OnClose, collection: %p", c)
-
 	mh.m.Lock()
 
 	if mh.waiting > 0 {

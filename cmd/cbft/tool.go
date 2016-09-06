@@ -96,7 +96,8 @@ func MainTool(cfg cbgt.Cfg, uuid string, tags []string, flags Flags,
 func ToolHelp(cfg cbgt.Cfg, uuid string, tags []string,
 	flags Flags, options map[string]string) (exitCode int) {
 	fmt.Println("\ncbft tool usage:")
-	fmt.Println("  ./cbft [...] --options=tool=TOOL_NAME[,key0=val0[,keyN=valN]]\n")
+	fmt.Println("  ./cbft [...] --options=tool=TOOL_NAME[,key0=val0[,keyN=valN]]")
+	fmt.Println("")
 	fmt.Println("Supported TOOL_NAME's include:")
 	for tool, toolDef := range ToolDefs {
 		fmt.Printf("  %s\n    %s\n\n", tool, toolDef.Usage)
