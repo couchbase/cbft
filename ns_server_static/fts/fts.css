@@ -79,6 +79,12 @@
   min-width: 20em;
 }
 
+.indexContainer .indexViewer.fulltext-index .indexMapping .viewOnly {
+  clear: both;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,

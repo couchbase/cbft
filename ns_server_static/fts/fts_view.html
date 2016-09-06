@@ -33,11 +33,14 @@
   <dd>{{indexDef.uuid}}</dd>
   <dt>Index Type:</dt>
   <dd>{{indexDef.type}}</dd>
-  <dt>Type Identifier</dt>
-  <dd ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">Doc ID Prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</dd>
-  <dd ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">Doc ID Regular Expression '{{indexDef.params.doc_config.docid_regexp}}'</dd>
-  <dd ng-if="indexDef.params.doc_config.mode == 'type_field'">Type Field '{{indexDef.params.doc_config.type_field}}'</dd>
-  <div ng-if="indexTemplates && indexTemplates[indexDef.type]">
+  <dt>Type Identifier:</dt>
+  <dd>
+    <span ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">Doc ID Prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</span>
+    <span ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">Doc ID Regular Expression '{{indexDef.params.doc_config.docid_regexp}}'</span>
+    <span ng-if="indexDef.params.doc_config.mode == 'type_field'">Type Field '{{indexDef.params.doc_config.type_field}}'</span>
+    &nbsp;
+  </dd>
+  <div ng-if="indexTemplates && indexTemplates[indexDef.type]" style="clear:both;">
     <dt></dt>
     <dd>
       <div class="indexViewer {{indexDef.type}}" data-nodrag>
