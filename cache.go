@@ -20,7 +20,7 @@ import (
 // TODO: Have a cache config based on cost to create an entry?
 
 // Default max number of entries in a result cache.
-var RESULT_CACHE_DEFAULT_MAX_LEN = 256
+var RESULT_CACHE_DEFAULT_MAX_LEN = 2000
 
 // Default number of lookups needed before we start caching a result.
 // The idea is avoid using resources for rarely encountered lookups.
