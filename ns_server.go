@@ -152,7 +152,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
 	initNsServerCaching(h.mgr)
 
-	rd := <-recentDefsCh
+	rd := <-recentInfoCh
 	if rd.err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
 		return
@@ -334,12 +334,9 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	topLevelStats := map[string]interface{}{}
 
-	memStats := &runtime.MemStats{}
-	runtime.ReadMemStats(memStats)
-
-	topLevelStats["num_bytes_used_ram"] = memStats.Alloc
-	topLevelStats["total_gc"] = memStats.NumGC
-	topLevelStats["pct_cpu_gc"] = memStats.GCCPUFraction
+	topLevelStats["num_bytes_used_ram"] = rd.memStats.Alloc
+	topLevelStats["total_gc"] = rd.memStats.NumGC
+	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 
 	nsIndexStats[""] = topLevelStats
 
@@ -676,7 +673,7 @@ func (h *NsStatusHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	initNsServerCaching(h.mgr)
 
-	rd := <-recentDefsCh
+	rd := <-recentInfoCh
 	if rd.err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
 		return
@@ -748,7 +745,7 @@ var runSourcePartitionSeqsOnce sync.Once
 func initNsServerCaching(mgr *cbgt.Manager) {
 	runSourcePartitionSeqsOnce.Do(func() {
 		go RunSourcePartitionSeqs(mgr.Options(), nil)
-		go RunDefsCache(mgr)
+		go RunRecentInfoCache(mgr)
 	})
 }
 
@@ -870,17 +867,18 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 
 // ---------------------------------------------------------------
 
-type recentDefs struct {
+type recentInfo struct {
 	indexDefs    *cbgt.IndexDefs
 	indexDefsMap map[string]*cbgt.IndexDef
 	nodeDefs     *cbgt.NodeDefs
 	planPIndexes *cbgt.PlanPIndexes
+	memStats     runtime.MemStats
 	err          error
 }
 
-var recentDefsCh = make(chan *recentDefs)
+var recentInfoCh = make(chan *recentInfo)
 
-func RunDefsCache(mgr *cbgt.Manager) {
+func RunRecentInfoCache(mgr *cbgt.Manager) {
 	cfg := mgr.Cfg()
 
 	cfgChangedCh := make(chan struct{}, 10)
@@ -923,13 +921,15 @@ func RunDefsCache(mgr *cbgt.Manager) {
 			}
 		}
 
-		rd := &recentDefs{
+		rd := &recentInfo{
 			indexDefs:    indexDefs,
 			indexDefsMap: indexDefsMap,
 			nodeDefs:     nodeDefs,
 			planPIndexes: planPIndexes,
 			err:          err,
 		}
+
+		runtime.ReadMemStats(&rd.memStats)
 
 	REUSE_CACHE:
 		for {
@@ -940,7 +940,7 @@ func RunDefsCache(mgr *cbgt.Manager) {
 			case <-tickCh:
 				break REUSE_CACHE
 
-			case recentDefsCh <- rd:
+			case recentInfoCh <- rd:
 				if rd.err != nil {
 					break REUSE_CACHE
 				}
