@@ -158,18 +158,6 @@ func (m *cacheBleveIndex) FieldDictPrefix(field string,
 	return m.bindex.FieldDictPrefix(field, termPrefix)
 }
 
-func (m *cacheBleveIndex) DumpAll() chan interface{} {
-	return m.bindex.DumpAll()
-}
-
-func (m *cacheBleveIndex) DumpDoc(id string) chan interface{} {
-	return m.bindex.DumpDoc(id)
-}
-
-func (m *cacheBleveIndex) DumpFields() chan interface{} {
-	return m.bindex.DumpFields()
-}
-
 func (m *cacheBleveIndex) Close() error {
 	return cacheBleveIndexUnimplementedErr
 }
