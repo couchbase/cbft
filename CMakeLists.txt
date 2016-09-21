@@ -55,7 +55,7 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
+  GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.6)
 
@@ -65,7 +65,7 @@ GoInstall (TARGET cbft-bleve-dump PACKAGE github.com/couchbase/cbft/cmd/cbft-ble
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
+  GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve-dump
   GOVERSION 1.6)
 
@@ -75,7 +75,7 @@ GoInstall (TARGET cbft-bleve-check PACKAGE github.com/couchbase/cbft/cmd/cbft-bl
     CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
     CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
     LDFLAGS "${_ldflags}"
-    GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
+    GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
     INSTALL_PATH bin OUTPUT cbft-bleve-check
     GOVERSION 1.6)
 
@@ -85,7 +85,7 @@ GoInstall (TARGET cbft-bleve-query PACKAGE github.com/couchbase/cbft/cmd/cbft-bl
   CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
   CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
   LDFLAGS "${_ldflags}"
-  GOTAGS "prod forestdb ${FTS_DEFAULT_KVSTORE}"
+  GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve-query
   GOVERSION 1.6)
 
