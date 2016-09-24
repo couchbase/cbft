@@ -149,7 +149,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 
-	indexDefs, _, err := cbgt.CfgGetIndexDefs(mgr.Cfg())
+	indexDefs, _, err := mgr.GetIndexDefs(false)
 	if err != nil {
 		return nil, fmt.Errorf("alias: could not get indexDefs,"+
 			" indexName: %s, err: %v", indexName, err)
