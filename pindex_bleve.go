@@ -1267,14 +1267,17 @@ type BleveIndexCollector interface {
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, collector BleveIndexCollector) ([]*IndexClient, error) {
-	planPIndexNodeFilter := cbgt.PlanPIndexNodeOk
+	planPIndexFilterName := "ok"
 	if ensureCanRead {
-		planPIndexNodeFilter = cbgt.PlanPIndexNodeCanRead
+		planPIndexFilterName = "canRead"
 	}
 
 	localPIndexes, remotePlanPIndexes, missingPIndexNames, err :=
-		mgr.CoveringPIndexesBestEffort(indexName, indexUUID, planPIndexNodeFilter,
-			"queries")
+		mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
+			IndexName: indexName,
+			IndexUUID: indexUUID,
+			PlanPIndexFilterName: planPIndexFilterName,
+		}, nil, false)
 	if err != nil {
 		return nil, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
