@@ -106,6 +106,10 @@ func (m *cacheBleveIndex) Search(req *bleve.SearchRequest) (
 
 func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+	if !ResultCache.enabled() {
+		return m.bindex.SearchInContext(ctx, req)
+	}
+
 	key, err := m.bleveSearchRequestToCacheKey(req)
 	if err != nil {
 		return nil, err

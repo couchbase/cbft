@@ -100,6 +100,13 @@ type resultCacheEntry struct {
 
 // ---------------------------------------------------------------
 
+func (c *resultCache) enabled() bool {
+	c.m.Lock()
+	rv := c.maxLen > 0
+	c.m.Unlock()
+	return rv
+}
+
 // lookup returns nil or a previously cached result.  The cached
 // result will have a rev greater or equal to the rev param.
 func (c *resultCache) lookup(key string, rev uint64) ([]byte, error) {
