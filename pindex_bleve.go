@@ -1274,8 +1274,8 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	localPIndexes, remotePlanPIndexes, missingPIndexNames, err :=
 		mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
-			IndexName: indexName,
-			IndexUUID: indexUUID,
+			IndexName:            indexName,
+			IndexUUID:            indexUUID,
 			PlanPIndexFilterName: planPIndexFilterName,
 		}, nil, false)
 	if err != nil {
