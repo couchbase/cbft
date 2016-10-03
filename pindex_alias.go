@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/search/query"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -106,9 +107,11 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
 
-	err = searchRequest.Query.Validate()
-	if err != nil {
-		return err
+	if srqv, ok := searchRequest.Query.(query.ValidatableQuery); ok {
+		err = srqv.Validate()
+		if err != nil {
+			return err
+		}
 	}
 
 	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)

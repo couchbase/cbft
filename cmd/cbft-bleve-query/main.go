@@ -20,6 +20,7 @@ import (
 	"github.com/blevesearch/bleve"
 	_ "github.com/blevesearch/bleve/config"
 	_ "github.com/blevesearch/bleve/index/store/metrics"
+	bleveQuery "github.com/blevesearch/bleve/search/query"
 	"github.com/couchbase/moss"
 
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
@@ -82,7 +83,7 @@ func main() {
 	}()
 
 	for i := 0; i < *repeat; i++ {
-		var query bleve.Query
+		var query bleveQuery.Query
 
 		switch *qtype {
 		case "prefix":

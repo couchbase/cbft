@@ -17,6 +17,7 @@ import (
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
 	"github.com/blevesearch/bleve/index/store"
+	"github.com/blevesearch/bleve/mapping"
 	"golang.org/x/net/context"
 )
 
@@ -98,7 +99,7 @@ func (m *MissingPIndex) Close() error {
 	return missingPIndexUnimplementedErr
 }
 
-func (m *MissingPIndex) Mapping() *bleve.IndexMapping {
+func (m *MissingPIndex) Mapping() mapping.IndexMapping {
 	return nil
 }
 

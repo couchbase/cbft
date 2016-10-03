@@ -22,6 +22,7 @@ import (
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
 	"github.com/blevesearch/bleve/index/store"
+	"github.com/blevesearch/bleve/mapping"
 
 	"github.com/couchbase/cbgt"
 )
@@ -166,7 +167,7 @@ func (m *cacheBleveIndex) Close() error {
 	return cacheBleveIndexUnimplementedErr
 }
 
-func (m *cacheBleveIndex) Mapping() *bleve.IndexMapping {
+func (m *cacheBleveIndex) Mapping() mapping.IndexMapping {
 	return m.bindex.Mapping()
 }
 

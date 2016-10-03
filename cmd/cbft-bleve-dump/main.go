@@ -20,7 +20,7 @@ import (
 	"github.com/blevesearch/bleve"
 	_ "github.com/blevesearch/bleve/config"
 	_ "github.com/blevesearch/bleve/index/store/metrics"
-	"github.com/blevesearch/bleve/index/upside_down"
+	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/couchbase/moss"
 
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
@@ -111,8 +111,8 @@ index specified by -index.
 		switch rowOrErr := rowOrErr.(type) {
 		case error:
 			log.Printf("error dumping: %v", rowOrErr)
-		case upside_down.UpsideDownCouchRow:
-			if _, isInternalRow := rowOrErr.(*upside_down.InternalRow); !*internalOnly || isInternalRow {
+		case upsidedown.UpsideDownCouchRow:
+			if _, isInternalRow := rowOrErr.(*upsidedown.InternalRow); !*internalOnly || isInternalRow {
 				fmt.Printf("%v\n", rowOrErr)
 				fmt.Printf("Key:   % -100x\nValue: % -100x\n\n", rowOrErr.Key(), rowOrErr.Value())
 			}

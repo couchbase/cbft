@@ -25,6 +25,7 @@ import (
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
 	"github.com/blevesearch/bleve/index/store"
+	"github.com/blevesearch/bleve/mapping"
 
 	"github.com/couchbase/cbgt"
 )
@@ -220,7 +221,7 @@ func (r *IndexClient) Close() error {
 	return indexClientUnimplementedErr
 }
 
-func (r *IndexClient) Mapping() *bleve.IndexMapping {
+func (r *IndexClient) Mapping() mapping.IndexMapping {
 	return nil
 }
 

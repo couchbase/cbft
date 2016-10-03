@@ -36,6 +36,7 @@ import (
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	"github.com/blevesearch/bleve/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	log "github.com/couchbase/clog"
@@ -49,14 +50,14 @@ var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 type BleveParams struct {
-	Mapping   bleve.IndexMapping     `json:"mapping"`
+	Mapping   mapping.IndexMapping   `json:"mapping"`
 	Store     map[string]interface{} `json:"store"`
 	DocConfig BleveDocumentConfig    `json:"doc_config"`
 }
 
 func NewBleveParams() *BleveParams {
 	rv := &BleveParams{
-		Mapping: *bleve.NewIndexMapping(),
+		Mapping: bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
 			"kvStoreName": bleve.Config.DefaultKVStore,
 		},
@@ -267,7 +268,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		bleveIndexType = bleve.Config.DefaultIndexType
 	}
 
-	bindex, err := bleve.NewUsing(path, &bleveParams.Mapping,
+	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
 		bleveIndexType, kvStoreName, kvConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
@@ -993,8 +994,12 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		return fmt.Errorf("bleve: DataUpdate nil batch")
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val,
-		t.bindex.Mapping().DefaultType)
+	defaultType := "_default"
+	if imi, ok := t.bindex.Mapping().(*mapping.IndexMappingImpl); ok {
+		defaultType = imi.DefaultType
+	}
+
+	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val, defaultType)
 
 	erri := t.batch.Index(string(key), cbftDoc)
 

@@ -108,7 +108,8 @@ func checkField(index bleve.Index, fieldName string) (int, error) {
 			break
 		}
 
-		tq := bleve.NewTermQuery(term).SetField(fieldName)
+		tq := bleve.NewTermQuery(term)
+		tq.SetField(fieldName)
 		req := bleve.NewSearchRequest(tq)
 		req.Size = 0
 		res, err := index.Search(req)

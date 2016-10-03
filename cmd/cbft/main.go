@@ -31,8 +31,9 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	bleveMapping "github.com/blevesearch/bleve/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
-	bleveSearchers "github.com/blevesearch/bleve/search/searchers"
+	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
@@ -98,9 +99,9 @@ func main() {
 	// interferes with forestdb signal handler
 	// go cmd.DumpOnSignalForPlatform()
 
-	bleve.StoreDynamic = false
-	bleve.MappingJSONStrict = true
-	bleveSearchers.DisjunctionMaxClauseCount = 1024
+	bleveMapping.StoreDynamic = false
+	bleveMapping.MappingJSONStrict = true
+	bleveSearcher.DisjunctionMaxClauseCount = 1024
 
 	MainWelcome(flagAliases)
 
