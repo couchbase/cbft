@@ -29,8 +29,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/rcrowley/go-metrics"
-
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveMapping "github.com/blevesearch/bleve/mapping"
@@ -81,19 +79,6 @@ func main() {
 
 	if os.Getenv("GOMAXPROCS") == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
-
-	metrics.UseNilMetrics = true
-
-	gometrics := os.Getenv("GOMETRICS")
-	if gometrics != "" {
-		gometricsEnabled, err := strconv.ParseBool(gometrics)
-		if err != nil {
-			log.Fatalf("main: could not parse GOMETRICS env var,"+
-				" err: %v", err)
-		}
-
-		metrics.UseNilMetrics = !gometricsEnabled
 	}
 
 	mr, err := cbgt.NewMsgRing(os.Stderr, 1000)
