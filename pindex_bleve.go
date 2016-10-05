@@ -49,6 +49,8 @@ var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
+var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
+
 type BleveParams struct {
 	Mapping   mapping.IndexMapping   `json:"mapping"`
 	Store     map[string]interface{} `json:"store"`
@@ -244,7 +246,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 
 	// Use the "metrics" wrapper KVStore if it's allowed, available
 	// and also not already configured.
-	kvStoreMetricsAllow := true
+	kvStoreMetricsAllow := BleveKVStoreMetricsAllow
 	ksmv, exists = kvConfig["kvStoreMetricsAllow"]
 	if exists {
 		v, ok := ksmv.(bool)

@@ -176,6 +176,17 @@ func main() {
 			"authType":           flags.AuthType,
 		})
 
+	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]
+	if bleveKVStoreMetricsAllow != "" {
+		v, err := strconv.ParseBool(bleveKVStoreMetricsAllow)
+		if err != nil {
+			log.Fatalf("main: could not parse bleveKVStoreMetricsAllow option,"+
+				" err: %v", err)
+		}
+
+		cbft.BleveKVStoreMetricsAllow = v
+	}
+
 	// User may supply a comma-separated list of HOST:PORT values for
 	// http addresss/port listening, but only the first entry is used
 	// for cbgt node and Cfg registration.
