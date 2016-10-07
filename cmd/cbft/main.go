@@ -188,14 +188,14 @@ func main() {
 	}
 
 	// User may supply a comma-separated list of HOST:PORT values for
-	// http addresss/port listening, but only the first entry is used
-	// for cbgt node and Cfg registration.
-	bindHttps := strings.Split(flags.BindHttp, ",")
+	// http addresss/port listening, but only the first http entry
+	// is used for cbgt node and Cfg registration.
+	bindHttpList := strings.Split(flags.BindHttp, ",")
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
-		bindHttps[0], flags.Register, flags.DataDir, uuid, options)
+		bindHttpList[0], flags.Register, flags.DataDir, uuid, options)
 	if err != nil {
 		if err == cmd.ErrorBindHttp {
 			log.Fatalf("%v", err)
@@ -216,7 +216,7 @@ func main() {
 
 	router, err := MainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
-		bindHttps[0], flags.DataDir,
+		bindHttpList[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr, options)
 	if err != nil {
@@ -232,25 +232,46 @@ func main() {
 
 	anyHostPorts := map[string]bool{}
 
-	// Bind to 0.0.0.0's first.
-	for _, bindHttp := range bindHttps {
+	// Bind to 0.0.0.0's first for http listening.
+	for _, bindHttp := range bindHttpList {
 		if strings.HasPrefix(bindHttp, "0.0.0.0:") {
-			go MainServeHttp(bindHttp, nil)
+			go MainServeHttp("http", bindHttp, nil, "", "")
 
 			anyHostPorts[bindHttp] = true
 		}
 	}
 
-	for i := len(bindHttps) - 1; i >= 1; i-- {
-		go MainServeHttp(bindHttps[i], anyHostPorts)
+	for i := len(bindHttpList) - 1; i >= 1; i-- {
+		go MainServeHttp("http", bindHttpList[i], anyHostPorts, "", "")
 	}
 
-	MainServeHttp(bindHttps[0], anyHostPorts)
+	if flags.BindHttps != "" {
+		bindHttpsList := strings.Split(flags.BindHttps, ",")
+
+		// Bind to 0.0.0.0's first for https listening.
+		for _, bindHttps := range bindHttpsList {
+			if strings.HasPrefix(bindHttps, "0.0.0.0:") {
+				go MainServeHttp("https", bindHttps, nil,
+					flags.TlsCertFile, flags.TlsKeyFile)
+
+				anyHostPorts[bindHttps] = true
+			}
+		}
+
+		for _, bindHttps := range bindHttpsList {
+			go MainServeHttp("https", bindHttps, anyHostPorts,
+				flags.TlsCertFile, flags.TlsKeyFile)
+		}
+	}
+
+	MainServeHttp("http", bindHttpList[0], anyHostPorts, "", "")
 
 	<-(make(chan struct{})) // Block forever.
 }
 
-func MainServeHttp(bindHttp string, anyHostPorts map[string]bool) {
+// The proto may be "http" or "https".
+func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
+	certFile, keyFile string) {
 	if bindHttp[0] == ':' {
 		bindHttp = "localhost" + bindHttp
 	}
@@ -267,7 +288,7 @@ func MainServeHttp(bindHttp string, anyHostPorts map[string]bool) {
 				if anyHostPort != bindHttp {
 					log.Printf(bar)
 					log.Printf("web UI / REST API is available"+
-						" (via 0.0.0.0): http://%s", bindHttp)
+						" (via 0.0.0.0): %s://%s", proto, bindHttp)
 					log.Printf(bar)
 				}
 				return
@@ -276,13 +297,18 @@ func MainServeHttp(bindHttp string, anyHostPorts map[string]bool) {
 	}
 
 	log.Printf(bar)
-	log.Printf("web UI / REST API is available: http://%s", bindHttp)
+	log.Printf("web UI / REST API is available: %s://%s", proto, bindHttp)
 	log.Printf(bar)
 
-	err := http.ListenAndServe(bindHttp, nil) // Blocks.
+	var err error
+	if proto == "http" {
+		err = http.ListenAndServe(bindHttp, nil) // Blocks on success.
+	} else {
+		err = http.ListenAndServeTLS(bindHttp, certFile, keyFile, nil)
+	}
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
-			"  Please check that your -bindHttp parameter (%q)\n"+
+			"  Please check that your -bindHttp(s) parameter (%q)\n"+
 			"  is correct and available.", err, bindHttp)
 	}
 }

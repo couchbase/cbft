@@ -24,6 +24,7 @@ const DEFAULT_DATA_DIR = "data"
 
 type Flags struct {
 	BindHttp   string
+	BindHttps  string
 	CfgConnect string
 	Container  string
 	DataDir    string
@@ -39,6 +40,9 @@ type Flags struct {
 	Weight     int
 	Extras     string
 	AuthType   string
+
+	TlsCertFile string
+	TlsKeyFile  string
 }
 
 var flags Flags
@@ -86,6 +90,11 @@ func initFlags(flags *Flags) map[string][]string {
 			"\nadmin UI; default is '0.0.0.0:8094';"+
 			"\nmultiple ADDR:PORT's can be specified, separated by commas,"+
 			"\nwhere the first ADDR:PORT is used for node cfg registration.")
+	s(&flags.BindHttps,
+		[]string{"bindHttps"}, "ADDR:PORT", "",
+		"local address:port where this node will listen and"+
+			"\nserve HTTPS/REST API requests and the web-based"+
+			"\nadmin UI; by default, disabled; for example, ':18094'.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg", "c"}, "CFG_CONNECT", "simple",
 		"connection string to a configuration provider/server"+
@@ -174,10 +183,16 @@ func initFlags(flags *Flags) map[string][]string {
 			"\nnode should have higher weight; default is 1.")
 	s(&flags.Extras,
 		[]string{"extras", "extra", "e"}, "EXTRAS", "",
-		"extra information you want stored with this node")
+		"extra information you want stored with this node.")
 	s(&flags.AuthType,
 		[]string{"authType", "auth"}, "AUTH_TYPE", "",
-		"authentication type for cbft requests")
+		"authentication type for cbft requests.")
+	s(&flags.TlsCertFile,
+		[]string{"tlsCertFile"}, "PATH", "",
+		"TLS cert file; see also bindHttps.")
+	s(&flags.TlsKeyFile,
+		[]string{"tlsKeyFile"}, "PATH", "",
+		"TLS key file; see also bindHttps.")
 
 	flag.Usage = func() {
 		if !flags.Help {
