@@ -1,0 +1,90 @@
+<div class="indexContainer">
+
+<div ng-show="errorMessage" class="error ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<h2>
+  Full Text Search: {{indexName}}
+</h2>
+
+<div class="query_bar">
+  <div class="query_bar_input">
+    <form>
+        <input ng-model="query"
+               ng-change="queryChanged()"
+               type="text"
+               placeholder="please enter a query"/>
+        <button type="submit"
+                ng-click="runNewQuery(query)">
+          Search
+        </button>
+    </form>
+  </div>
+
+  <div class="query_bar_advanced">
+    <label>
+      <input ng-model="query_advanced_toggle"
+             ng-change="queryChanged()"
+             type="checkbox"/>
+      Advanced
+    </label>
+  </div>
+</div>
+
+<div class="query_bar_help">
+  <div ng-if="queryHelp && queryHelp.length"
+       ng-bind-html="queryHelpSafe">
+  </div>
+</div>
+
+<div ng-show="query_advanced_toggle">
+  <div class="query_advanced">
+    <div class="form_group form_group_timeout">
+      <label>Timeout (msecs):</label>
+      <input ng-model="timeout" id="timeout"
+             ng-change="queryChanged()"/>
+    </div>
+    <div class="form_group form_group_consistencyLevel">
+      <label>Consistency Level:</label>
+      <input ng-model="consistencyLevel" id="consistencyLevel"
+             ng-change="queryChanged()"/>
+    </div>
+    <div class="form_group form_group_consistencyVectors">
+      <label>Consistency Vectors:</label>
+      <input ng-model="consistencyVectors" id="consistencyVectors"
+             ng-change="queryChanged()"/>
+    </div>
+    <div class="form_group form_group_jsonQuery">
+      <label>JSON for query request:
+        <span class="curl_example_toggle">
+          ( command-line curl example:
+            <input ng-model="curl_example_toggle"
+                   ng-change="queryChanged()"
+                   type="checkbox"/> )
+        </span>
+      </label>
+      <pre ng-show="!curl_example_toggle">{{jsonQuery}}</pre>
+      <pre ng-show="curl_example_toggle">curl -XPOST -H "Content-Type: application/json" \
+ http://{{hostPort}}/api/index/{{indexName}}/query \
+ -d '{{jsonQuery}}'</pre>
+    </div>
+  </div>
+</div>
+
+<div class="query_results_area">
+
+<div ng-show="results && !results.total_hits"
+     class="query_no_results">
+  <h5>no results for your query</h5>
+</div>
+
+<div class="query_results"
+     ng-include
+     src="static_base + '/static/partials/index/query-results.html'"
+     ng-show="results && results.hits && results.hits.length > 0">
+</div>
+
+</div>
+
+</div>

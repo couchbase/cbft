@@ -4,7 +4,7 @@
   "rest-api-prefix": "fts",
   "version-dirs": [
     {"version": [4, 5], "dir": "."},
-    {"version": [5, 0], "dir": "."}
+    {"version": [5, 0], "dir": "uia"}
   ],
   "doc-root": [
     "@GOPROJ_PREFIX@/cbft/ns_server_static/fts",

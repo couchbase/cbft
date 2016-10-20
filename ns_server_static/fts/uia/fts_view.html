@@ -1,0 +1,79 @@
+<div class="indexContainer">
+
+<h2>{{indexName}}</h2>
+
+<div ng-show="successMessage" class="success ng-cloak" role="alert">
+  {{successMessage}}
+</div>
+
+<div ng-show="errorMessage" class="error ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<dl class="dl-horizontal index-summary">
+  <div ng-show="indexCanCount">
+    Document Count:
+    <span ng-bind="indexDocCount"></span>
+    <span ng-if="progressPct">
+     ({{progressPct}}%)
+    </span>
+
+    <button ng-click="loadDocCount()"
+            class="btn btn-default btn-xs">
+      <span class="glyphicon glyphicon-refresh"></span>
+      Refresh
+    </button>
+
+    <hr/>
+  </div>
+
+  <dt>Index Name:</dt>
+  <dd>{{indexDef.name}}</dd>
+  <dt>Index UUID:</dt>
+  <dd>{{indexDef.uuid}}</dd>
+  <dt>Index Type:</dt>
+  <dd>{{indexDef.type}}</dd>
+  <dt>Type Identifier:</dt>
+  <dd>
+    <span ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">Doc ID Prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</span>
+    <span ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">Doc ID Regular Expression '{{indexDef.params.doc_config.docid_regexp}}'</span>
+    <span ng-if="indexDef.params.doc_config.mode == 'type_field'">Type Field '{{indexDef.params.doc_config.type_field}}'</span>
+    &nbsp;
+  </dd>
+  <div ng-if="indexTemplates && indexTemplates[indexDef.type]" style="clear:both;">
+    <dt></dt>
+    <dd>
+      <div class="indexViewer {{indexDef.type}}" data-nodrag>
+        <div ng-include="static_base + indexTemplates[indexDef.type]"/>
+      </div>
+    </dd>
+  </div>
+  <dt>Source Type:</dt>
+  <dd>{{indexDef.sourceType}}</dd>
+  <dt>Source Name:</dt>
+  <dd>{{indexDef.sourceName}}</dd>
+
+  <hr/>
+
+  <dt>Index Definition:</dt>
+  <dd>
+    <br/><br/>
+
+    <input ng-model="jsonDetails" type="checkbox">
+      Show index definition JSON
+    </input>
+    <div ng-show="jsonDetails">
+      <input ng-model="curlDetails" type="checkbox">
+        Show curl command to modify this index definition
+      </input>
+
+      <pre ng-show="curlDetails">curl -XPUT -H "Content-Type: application/json" \
+ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
+ -d '{{indexDefStr}}'</pre>
+
+      <pre ng-show="!curlDetails">{{indexDefStr}}</pre>
+    </div>
+  </dd>
+</dl>
+
+</div>

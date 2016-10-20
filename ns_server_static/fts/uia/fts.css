@@ -1,0 +1,550 @@
+.indexContainer h2 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.indexContainer button {
+  padding: 3px 10px 3px 10px;
+}
+
+.indexContainer .error {
+  color: red;
+  font-weight: bold;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .form_group,
+.indexContainer .form-group,
+.bleveModal .form-group {
+  padding: .4rem 0 0 0;
+  display: flex;
+  min-height: 1.5rem;
+  -webkit-box-align: left;
+  -webkit-align-items: left;
+  align-items: left;
+  flex-wrap: no-wrap;
+}
+
+.indexContainer .form_group label,
+.indexContainer .form-group label,
+.bleveModal .form-group label {
+  padding-right: 1em;
+  font-weight: bold;
+  text-align: right;
+}
+
+.indexContainer .form_group label,
+.indexContainer .form-group label {
+  min-width: 15em;
+}
+
+.indexContainer .form_group .form_control {
+  width: 100%;
+}
+
+.indexContainer .form_group .form_control textarea {
+  width: 100%;
+}
+
+.bleveModal .form-group label {
+  min-width: 12em;
+}
+
+.bleveModal .form-group select {
+  width: 15em;
+}
+
+.bleveModal .form-group ul.list-group {
+  min-width: 15em;
+  border: 1px solid #999;
+  padding: 2px 3px 2px 3px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .indexMapping {
+  margin-bottom: 10px;
+}
+
+.indexContainer .indexMapping .form_group.form_group_indexType {
+  display: none;
+}
+
+.indexContainer .indexMapping .form_group.form_group_sourceType {
+  display: none;
+}
+
+.indexContainer .indexMapping .form_group_targetIndexes select {
+  min-width: 20em;
+}
+
+.indexContainer .indexViewer.fulltext-index .indexMapping .viewOnly {
+  clear: both;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .glyphicon,
+.bleveModal .glyphicon {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  font-family: 'Courier';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+}
+
+.indexContainer .glyphicon-ok:before,
+.bleveModal .glyphicon-ok:before {
+  content: "ok";
+}
+
+.indexContainer .mapping .glyphicon-minus:before,
+.bleveModal .glyphicon-minus:before {
+  content: "-";
+}
+
+.indexContainer .glyphicon-pencil:before,
+.bleveModal .glyphicon-pencil:before {
+  content: "edit";
+}
+
+.indexContainer .glyphicon-plus:before,
+.bleveModal .glyphicon-plus:before {
+  content: "+";
+}
+
+.indexContainer .glyphicon-remove:before,
+.bleveModal .glyphicon-remove:before {
+  content: "cancel";
+}
+
+.indexContainer .glyphicon-trash:before,
+.bleveModal .glyphicon-trash:before {
+  content: "X";
+}
+
+.indexContainer .glyphicon-chevron-right:before,
+.bleveModal .glyphicon-chevron-right:before {
+  content: "▶";
+}
+
+.indexContainer .glyphicon-chevron-down:before,
+.bleveModal .glyphicon-chevron-down:before {
+  content: "▼";
+}
+
+.indexContainer .glyphicon-refresh:before,
+.bleveModal .glyphicon-refresh:before {
+  content: "▶";
+}
+
+.indexContainer .glyphicon-file:before,
+.bleveModal .glyphicon-file:before {
+  content: "#";
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .glyphicon,
+.bleveModal .glyphicon {
+  padding: 2px 5px 2px 5px;
+}
+
+.indexContainer .btn.pull-right {
+  margin-right: 10px;
+  float: right;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .query_bar {
+  padding: .4rem 0;
+  display: flex;
+  min-height: 1.5rem;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: left;
+  flex-wrap: no-wrap;
+}
+
+.indexContainer .query_bar .query_bar_index {
+  margin-right: 5px;
+}
+
+.indexContainer .query_bar .query_bar_input input {
+  min-width: 15em;
+}
+
+.indexContainer .query_bar .query_bar_input button {
+  padding: 3px 10px 3px 10px;
+}
+
+.indexContainer .query_bar .query_bar_advanced {
+  margin-left: 5px;
+}
+
+.indexContainer .query_advanced {
+  padding-top: 5px;
+}
+
+.indexContainer .query_advanced .form_group_jsonQuery {
+  display: block;
+  margin-top: 10px;
+  margin-left: 10px;
+  background-color: #eee;
+  padding: 5px 5px 5px 5px;
+}
+
+.indexContainer .query_advanced .form_group_jsonQuery pre{
+  padding: 5px 10px 5px 10px;
+}
+
+.indexContainer .query_results_area {
+  padding-top: 20px;
+}
+
+.indexContainer .query_results_area .resultsTop {
+  font-size: 10pt;
+  margin-bottom: 10px;
+}
+
+.indexContainer .query_results_area .pull-right {
+  float: right;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li {
+  margin: 3px 5px 5px 5px;
+  padding: 3px 0 3px 0;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li .badge {
+  display: none;
+}
+
+.indexContainer .query_results_area .resultsContainer ol li .well {
+  margin: 5px 10px 5px 10px;
+  background-color: #eee;
+  padding: 5px 10px 5px 10px;
+}
+
+.indexContainer .query_results_area .resultsContainer ul.pagination li {
+  display: inline-block;
+  margin: 5px 5px 5px 5px;
+}
+
+.indexContainer .query_results_area .resultsContainer ul.pagination li span {
+  background-color: #ddd;
+  padding-right: 4px;
+  padding-left: 4px;
+  color: #333;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .indexes_list {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+}
+
+.indexContainer .indexes_list .indexes_header {
+  display: flex;
+  min-height: 1.5rem;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  flex-wrap: no-wrap;
+  justify-content: space-between;
+}
+
+.indexContainer .indexes_body {
+  padding: 10px 10px 10px 15px;
+}
+
+.indexContainer table {
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.indexContainer table tr {
+  margin: .5rem 2rem .5rem 2rem;
+}
+
+.indexContainer table tr th {
+  min-width: 200px;
+  padding-left: 5px;
+  background-color: #eee;
+}
+
+.indexContainer table tr td {
+  min-width: 200px;
+  padding-left: 5px;
+}
+
+.indexContainer .indexes_list table tr td+td {
+  width: 90%;
+}
+
+.indexContainer .indexes_list table tr td.controls {
+  text-align: right;
+}
+
+/* -------------------------------------------------- */
+
+.bleveModal {
+  min-width: 500px;
+  padding: 10px 10px 10px 10px;
+}
+
+.bleveModal .modal-body {
+  padding: 20px 20px 20px 20px;
+  font-size: 12px;
+}
+
+.bleveModal .modal-footer {
+  text-align: right;
+}
+
+.bleveModal .modal-footer .btn {
+  height: 31px;
+  margin-top: 20px;
+  border: 0;
+  line-height: 1;
+  background: url("/images/devider_line_1.gif") repeat-x scroll 0 -1px #DFE0E0;
+  padding: 10px;
+  clear: both;
+}
+
+.bleveModal .modal-footer .btn-primary {
+  text-align: center;
+  width: 121px;
+  background: url(/images/button_blue.gif) 0 0 no-repeat;
+}
+
+.bleveModal button {
+  padding: 3px 5px 3px 5px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .section {
+  border: none;
+}
+
+.indexContainer .section .sectionHeader {
+  margin-top: 10px;
+}
+
+.indexContainer .section .sectionHeader label {
+  cursor: pointer;
+}
+
+.indexContainer .section .sectionBody {
+  margin-top: 15px;
+  margin-bottom: 30px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .mapping .btn-trash {
+  margin-right: 25px;
+}
+
+.indexContainer .mapping .btn-trash:hover {
+  color: #fff;
+  background-color: #d9534f;
+  border-color: #d43f3a;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .mapping label {
+  font-weight: normal;
+  margin-left: 10px;
+}
+
+.indexContainer .mapping .attrs {
+  font-weight: normal;
+  font-size: 9pt;
+}
+
+.indexContainer .mapping .mappingHandle {
+  border-top: 1px solid white;
+  padding: 4px 0 4px 4px;
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.indexContainer .mapping .mappingHandle::after {
+  clear: both;
+}
+
+.indexContainer .mapping .mappingHandle .attrControls {
+  visibility: hidden;
+}
+
+.indexContainer .mapping .mappingHandle:hover .attrControls,
+.indexContainer .mapping.editing .mappingHandle .attrControls {
+  visibility: inherit;
+}
+
+.indexContainer .mapping .mappingHandle .attrControls .glyphicon-trash:before {
+  content: "delete";
+}
+
+.indexContainer .mapping .field .fieldHandle .attrControls {
+  visibility: hidden;
+}
+
+.indexContainer .mapping .field .fieldHandle:hover .attrControls,
+.indexContainer .mapping .field.editing .fieldHandle .attrControls {
+  visibility: inherit;
+}
+
+.indexContainer .mapping .fieldHandle {
+  border-top: 1px solid white;
+  padding: 4px 0 4px 4px;
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.indexContainer .mapping .fieldHandle .attrControls .glyphicon-trash:before {
+  content: "delete";
+}
+
+.indexContainer .mapping .mappingHandle .editArea {
+  padding-left: 30px;
+}
+
+.indexContainer .mapping .field label > span {
+  display: inline-block;
+  text-align: right;
+  min-width: 8em;
+}
+
+.indexContainer .mapping .field label:first-child input[type=checkbox] {
+  margin-left: 9em;
+}
+
+.indexContainer .mapping.editing > *, .field.editing > * {
+  background: #f4f6f7;
+}
+
+.indexContainer .mapping input[type=text] {
+  width: 14em;
+}
+
+.indexContainer .typeMappingsSection ol {
+  margin-left: 20px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .mapping .popupContainer {
+  position: relative;
+  display: block;
+  top: 0px;
+  left: 0px;
+  overflow: visible;
+}
+
+.indexContainer .mapping .popupContainer.pull-right {
+  float: right;
+}
+
+.indexContainer .mapping .popup {
+  position: absolute;
+  display: block;
+  margin: 0 0 0 0;
+  top: 1.2em;
+  right: -2em;
+  border: 1px solid #666;
+  background: white;
+  padding: 5px 10px 5px 10px;
+  font-weight: normal;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .viewOnly .editable {
+  display: none;
+}
+
+.indexContainer .viewOnly button {
+  visibility: hidden !important;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer dl {
+  clear: both;
+  margin-top: 30px;
+}
+
+.indexContainer dl dt {
+  clear: both;
+  float: left;
+  display: block;
+  min-width: 100px;
+}
+
+.indexContainer dl dd {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.indexContainer hr {
+  clear: both;
+  margin: 10px 0 20px 0;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .section .angular-ui-tree-handle {
+  cursor: auto;
+}
+
+.indexContainer .angular-ui-tree-handle {
+  background: #f8faff;
+  border: 1px solid #dae2ea;
+  color: #7c9eb2;
+  padding: 10px 10px;
+}
+
+.indexContainer .angular-ui-tree-handle:hover {
+  color: #438eb9;
+  background: #f4f6f7;
+  border-color: #dce2e8;
+}
+
+.indexContainer .angular-ui-tree-placeholder {
+  background: #f0f9ff;
+  border: 2px dashed #bed2db;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .index-summary pre {
+  margin: 12px 0 0 40px;
+  overflow: auto;
+}
+
+.indexContainer .index-summary input[type=checkbox] {
+  margin-left: 10px;
+  margin-bottom: 5px;
+}
+
+#bleve-mapping-ui-type-field-row {
+  display: none;
+}
