@@ -22,7 +22,6 @@
 .bleveModal .form-group label {
   padding-right: 1em;
   font-weight: bold;
-  text-align: right;
 }
 
 .indexContainer .form_group label,
@@ -295,23 +294,7 @@
 }
 
 .bleveModal .modal-footer .btn {
-  height: 31px;
   margin-top: 20px;
-  border: 0;
-  line-height: 1;
-  background: url("/images/devider_line_1.gif") repeat-x scroll 0 -1px #DFE0E0;
-  padding: 10px;
-  clear: both;
-}
-
-.bleveModal .modal-footer .btn-primary {
-  text-align: center;
-  width: 121px;
-  background: url(/images/button_blue.gif) 0 0 no-repeat;
-}
-
-.bleveModal button {
-  padding: 3px 5px 3px 5px;
 }
 
 /* -------------------------------------------------- */
