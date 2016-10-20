@@ -1,12 +1,3 @@
-.indexContainer h2 {
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-.indexContainer button {
-  padding: 3px 10px 3px 10px;
-}
-
 .indexContainer .error {
   color: red;
   font-weight: bold;
