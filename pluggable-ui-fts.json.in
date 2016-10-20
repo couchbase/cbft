@@ -2,5 +2,9 @@
   "service": "fts",
   "proxy-strategy": "local",
   "rest-api-prefix": "fts",
+  "version-dirs": [
+    {"version": [4, 5], "dir": "."},
+    {"version": [5, 0], "dir": "."}
+  ],
   "doc-root": "@DOC_ROOT_PREFIX@fts"
 }

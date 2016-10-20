@@ -2,6 +2,10 @@
   "service": "fts",
   "proxy-strategy": "local",
   "rest-api-prefix": "fts",
+  "version-dirs": [
+    {"version": [4, 5], "dir": "."},
+    {"version": [5, 0], "dir": "."}
+  ],
   "doc-root": [
     "@GOPROJ_PREFIX@/cbft/ns_server_static/fts",
     "@GOPROJ_PREFIX@/cbft/staticx",
