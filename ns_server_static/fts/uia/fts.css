@@ -167,14 +167,6 @@
   margin-right: 5px;
 }
 
-.indexContainer .query_bar .query_bar_input input {
-  min-width: 15em;
-}
-
-.indexContainer .query_bar .query_bar_input button {
-  padding: 3px 10px 3px 10px;
-}
-
 .indexContainer .query_bar .query_bar_advanced {
   margin-left: 5px;
 }
