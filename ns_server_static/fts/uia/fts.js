@@ -96,6 +96,8 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
     return IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
 }
 
+// -------------------------------------------------------
+
 function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
@@ -147,17 +149,22 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
     ftsServiceHostPort($scope, $http, $location);
 }
 
+// -------------------------------------------------------
+
 function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                            $location, $log, $sce, $uibModal,
                            $q, mnBucketsService) {
     mnBucketsService.getBucketsByType(true).then(function(buckets) {
-
         $scope.ftsDocConfig = {}
+
         $scope.buckets = buckets;
         $scope.bucketNames = [];
         for (var i = 0; i < buckets.length; i++) {
             $scope.bucketNames.push(buckets[i].name);
         }
+
+        $scope.indexEditorPreview = {};
+        $scope.indexEditorPreview["fulltext-index"] = null;
 
         var $routeParams = $stateParams;
 
@@ -167,7 +174,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 if (!p) {
                     return $location.path();
                 }
-                return $location.path(p.replace(/^\/indexes\//, "/fts_view/"))
+                return $location.path(p.replace(/^\/indexes\//, "/fts_view/"));
             }
         }
 
@@ -175,7 +182,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                        prefixedHttp($http, '/_p/' + ftsPrefix),
                        $route, $routeParams,
                        $locationRewrite, $log, $sce, $uibModal,
-                       finishIndexNewCtrlFTInit)
+                       finishIndexNewCtrlFTInit);
 
         function finishIndexNewCtrlFTInit() {
             var putIndexOrig = $scope.putIndex;
@@ -194,6 +201,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 $scope.errorFields = {};
                 $scope.errorMessage = null;
                 $scope.errorMessageFull = null;
+
                 var errs = [];
 
                 // type identifier validation/cleanup
@@ -221,11 +229,10 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                     delete $scope.ftsDocConfig.type_field;
                     delete $scope.ftsDocConfig.docid_prefix_delim;
                   break;
-
                 }
 
                 // stringify our doc_config and set that into newIndexParams
-                newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig)
+                newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
 
                 if (!newIndexName) {
                     $scope.errorFields["indexName"] = true;
@@ -242,7 +249,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 if (errs.length > 0) {
                     $scope.errorMessage =
                         (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
-                    return
+                    return;
                 }
 
                 if (!newSourceUUID) {
@@ -262,6 +269,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
         }
     });
 }
+
+// -------------------------------------------------------
 
 function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location) {
     var $routeParams = $stateParams;
@@ -319,10 +328,9 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
-      if ($scope.newIndexParams) {
+    if ($scope.newIndexParams) {
         $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
-      }
-
+    }
 
     if (initKind == "view") {
         $scope.viewOnly = true;
@@ -352,7 +360,35 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope.bleveIndexMapping = function() {
         return imc.indexMapping();
     }
+
+    var done = false;
+    var previewPrev = "";
+
+    function updatePreview() {
+        if (done) {
+            return;
+        }
+
+        var m = imc.indexMapping();
+        if (m && $scope.indexEditorPreview) {
+            var preview = JSON.stringify(m, null, 1);
+            if (preview != previewPrev) {
+                $scope.indexEditorPreview["fulltext-index"] = preview;
+                previewPrev = preview;
+            }
+
+            setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
+        }
+    }
+
+    setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
+
+    $scope.$on('$locationChangeStart', function() {
+        done = true;
+    });
 }
+
+var bleveUpdatePreviewTimeoutMS = 1000;
 
 function blevePIndexDoneController(doneKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {

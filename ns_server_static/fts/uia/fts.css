@@ -107,6 +107,26 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .indexTemplateContainer .indexEditor {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.indexContainer .indexTemplateContainer .indexEditor .indexEditorMain {
+  flex: 1 0 0;
+}
+
+.indexContainer .indexTemplateContainer .indexEditor .indexEditorPreview {
+  font-size: 9pt;
+  font-family: monospace;
+  white-space: pre;
+  overflow-x: scroll;
+}
+
+/* -------------------------------------------------- */
+
 .indexContainer .glyphicon,
 .bleveModal .glyphicon {
   position: relative;

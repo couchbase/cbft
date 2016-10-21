@@ -62,7 +62,6 @@
     </div>
   </div>
 
-
   <div class="form_group form_group_typeIdentifier" ng-if="newIndexType != 'fulltext-alias'">
     <label for="inputSourceName">Type Identifier</label>
     <div style="display: inline-block;">
@@ -93,9 +92,12 @@
   <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]"
        class="form_group form_group_indexTypeTemplate">
     <label></label>
-    <div class="form_control">
+    <div class="form_control indexTemplateContainer">
       <div class="indexEditor {{newIndexType}}">
-        <div ng-include="indexTemplates[newIndexType]"></div>
+        <div class="indexEditorMain"
+             ng-include="indexTemplates[newIndexType]"></div>
+        <div class="indexEditorPreview"
+             ng-if="indexEditorPreview[newIndexType]">{{indexEditorPreview[newIndexType]}}</div>
       </div>
     </div>
   </div>
@@ -106,7 +108,7 @@
          ng-show="newIndexType == indexType && (advanced || !advancedFields[k])"
          ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
       <label>{{labelize(k)}}</label>
-      <div class="form_control">
+      <div class="form_control form_control_main">
         <textarea ng-model="newIndexParams[indexType][k]"
                   rows="{{paramNumLines[k]}}"></textarea>
       </div>
