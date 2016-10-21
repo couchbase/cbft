@@ -556,6 +556,16 @@
   overflow: auto;
 }
 
+.indexContainer .index-summary .btn-xs {
+  height: 1.5rem;
+  min-width: 5.5rem;
+  line-height: 1rem;
+  margin-left: 10px;
+  padding: 0 0 0 0;
+  font-size: 11px;
+  font-family: OpenSans, sans-serif;
+}
+
 .indexContainer .index-summary input[type=checkbox] {
   margin-left: 10px;
   margin-bottom: 5px;
@@ -585,7 +595,7 @@
 /* -------------------------------------------------- */
 
 .indexContainer .btn-xs {
-  padding: 0px 5px;
+  padding: 0px 5px 0px 5px;
   font-size: 11px;
   font-family: OpenSans, sans-serif;
 }
