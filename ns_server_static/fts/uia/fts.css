@@ -22,6 +22,12 @@
 .bleveModal .form-group label {
   padding-right: 1em;
   font-weight: bold;
+  white-space: nowrap;
+}
+
+.indexContainer .form_group > label,
+.indexContainer .form-group > label {
+  text-align: right;
 }
 
 .indexContainer .form_group label,
@@ -33,8 +39,20 @@
   width: 100%;
 }
 
+.indexContainer .form_group .form_control input[type="text"] {
+  min-width: 20em;
+}
+
+.indexContainer .form_group .form_control select {
+  min-width: 20em;
+}
+
 .indexContainer .form_group .form_control textarea {
   width: 100%;
+}
+
+.indexContainer .form_group_controls {
+  margin-top: 15px;
 }
 
 .bleveModal .form-group label {
@@ -43,12 +61,24 @@
 
 .bleveModal .form-group select {
   width: 15em;
+  margin-right: 5px;
 }
 
 .bleveModal .form-group ul.list-group {
-  min-width: 15em;
+  min-width: 210px;
+  margin-left: 0;
+  margin-bottom: 0px;
   border: 1px solid #999;
   padding: 2px 3px 2px 3px;
+  list-style-type: none;
+}
+
+.bleveModal .form-group ul.list-group .glyphicon-remove {
+  margin-left: 5px;
+  padding-top: 0px;
+  background-color: #4287d6;
+  border-radius: 2px;
+  color: white;
 }
 
 /* -------------------------------------------------- */
@@ -113,11 +143,6 @@
   content: "cancel";
 }
 
-.indexContainer .glyphicon-trash:before,
-.bleveModal .glyphicon-trash:before {
-  content: "X";
-}
-
 .indexContainer .glyphicon-chevron-right:before,
 .bleveModal .glyphicon-chevron-right:before {
   content: "▶";
@@ -146,6 +171,11 @@
 }
 
 .indexContainer .btn.pull-right {
+  margin-right: 10px;
+  float: right;
+}
+
+.indexContainer button.pull-right {
   margin-right: 10px;
   float: right;
 }
@@ -182,7 +212,7 @@
   padding: 5px 5px 5px 5px;
 }
 
-.indexContainer .query_advanced .form_group_jsonQuery pre{
+.indexContainer .query_advanced .form_group_jsonQuery pre {
   padding: 5px 10px 5px 10px;
 }
 
@@ -311,9 +341,18 @@
   cursor: pointer;
 }
 
+.indexContainer .section .sectionHeader div * {
+  display: inline;
+}
+
 .indexContainer .section .sectionBody {
+  min-width: 30em;
   margin-top: 15px;
   margin-bottom: 30px;
+}
+
+.indexContainer .section .sectionBody .row .col-sm-12 {
+  width: 100%;
 }
 
 /* -------------------------------------------------- */
@@ -352,6 +391,7 @@
 }
 
 .indexContainer .mapping .mappingHandle .attrControls {
+  margin-left: 5px;
   visibility: hidden;
 }
 
@@ -384,6 +424,11 @@
   content: "delete";
 }
 
+.indexContainer .mapping .attrControls > * {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .indexContainer .mapping .mappingHandle .editArea {
   padding-left: 30px;
 }
@@ -394,7 +439,7 @@
   min-width: 8em;
 }
 
-.indexContainer .mapping .field label:first-child input[type=checkbox] {
+.indexContainer .mapping .field label input[type=checkbox] {
   margin-left: 9em;
 }
 
@@ -408,6 +453,11 @@
 
 .indexContainer .typeMappingsSection ol {
   margin-left: 20px;
+}
+
+.indexContainer button.addTypeMapping {
+  margin-top: -30px;
+  margin-bottom: 10px;
 }
 
 /* -------------------------------------------------- */
@@ -511,6 +561,41 @@
   margin-bottom: 5px;
 }
 
+.indexContainer .index-summary dt {
+  min-width: 8em;
+  margin-right: 5px;
+}
+
 #bleve-mapping-ui-type-field-row {
   display: none;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .form_group_typeIdentifierParam label {
+  margin-right: 0;
+  padding-right: 0;
+  min-width: 12em;
+}
+
+.indexContainer .form_group_typeIdentifierParam > * {
+  display: inline-block;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .btn-xs {
+  padding: 0px 5px;
+  font-size: 11px;
+  font-family: OpenSans, sans-serif;
+}
+
+.indexContainer .btn-xs:hover {
+  color: white;
+}
+
+/* -------------------------------------------------- */
+
+.panel.dialog .modal-close {
+  border: none;
 }
