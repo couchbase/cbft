@@ -47,6 +47,10 @@ var indexClientUnimplementedErr = errors.New("unimplemented")
 type IndexClient struct {
 	mgr         *cbgt.Manager
 	name        string
+	HostPort    string
+	IndexName   string
+	IndexUUID   string
+	PIndexes    []string
 	QueryURL    string
 	CountURL    string
 	Consistency *cbgt.ConsistencyParams
