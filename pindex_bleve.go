@@ -132,19 +132,20 @@ const bleveQueryHelp = `<a href="http://www.blevesearch.com/docs/Query-String-Qu
 
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
-		Validate: ValidateBlevePIndexImpl,
+		Validate: ValidateBleve,
 
-		New:   NewBlevePIndexImpl,
-		Open:  OpenBlevePIndexImpl,
-		Count: CountBlevePIndexImpl,
-		Query: QueryBlevePIndexImpl,
+		New:  NewBlevePIndexImpl,
+		Open: OpenBlevePIndexImpl,
+
+		Count: CountBleve,
+		Query: QueryBleve,
 
 		Description: "general/fulltext-index " +
 			" - a full text index powered by the bleve engine",
 		StartSample:  NewBleveParams(),
-		QuerySamples: BlevePIndexQuerySamples,
+		QuerySamples: BleveQuerySamples,
 		QueryHelp:    bleveQueryHelp,
-		InitRouter:   BlevePIndexImplInitRouter,
+		InitRouter:   BleveInitRouter,
 		DiagHandlers: []cbgt.DiagHandler{
 			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
 		},
@@ -156,7 +157,7 @@ func init() {
 	})
 }
 
-func ValidateBlevePIndexImpl(indexType, indexName, indexParams string) error {
+func ValidateBleve(indexType, indexName, indexParams string) error {
 	if len(indexParams) <= 0 {
 		return nil
 	}
@@ -323,11 +324,11 @@ func OpenBlevePIndexImpl(indexType, path string,
 
 // ---------------------------------------------------------------
 
-func CountBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string) (
+func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
 	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("bleve: CountBlevePIndexImpl indexAlias error,"+
+		return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
 	}
 
@@ -344,7 +345,7 @@ func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
 	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
 }
 
-func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
+func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
 
 	// phase 0 - parsing/validating query
@@ -356,27 +357,27 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 	err := json.Unmarshal(req, &queryCtlParams)
 	if err != nil {
-		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
 	searchRequest := &bleve.SearchRequest{}
 	err = json.Unmarshal(req, searchRequest)
 	if err != nil {
-		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
-			return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+			return fmt.Errorf("bleve: QueryBleve"+
 				" validating consistency, req: %s, err: %v", req, err)
 		}
 	}
 
 	err = searchRequest.Validate()
 	if err != nil {
-		return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+		return fmt.Errorf("bleve: QueryBleve"+
 			" validating request, req: %s, err: %v", req, err)
 	}
 
@@ -384,7 +385,7 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 	if exists {
 		bleveMaxResultWindow, err := strconv.Atoi(v)
 		if err != nil {
-			return fmt.Errorf("bleve: QueryBlevePIndexImpl"+
+			return fmt.Errorf("bleve: QueryBleve"+
 				" atoi: %v, err: %v", v, err)
 		}
 
@@ -414,20 +415,20 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 	if searchResult != nil {
 		// check to see if any of the remote searches returned anything
 		// other than 0, 200 or 412, these are returned to the user as
-		// error status 400, and appear as phase 0 errors detected late
-		// 0 means we never heard anything back, that is dealt with
+		// error status 400, and appear as phase 0 errors detected late.
+		// 0 means we never heard anything back, and that is dealt with
 		// in the following section
 		for _, remoteClient := range remoteClients {
 			lastStatus, lastErrBody := remoteClient.GetLast()
 			if lastStatus != http.StatusOK &&
 				lastStatus != http.StatusPreconditionFailed &&
 				lastStatus != 0 {
-				return fmt.Errorf("bleve: QueryBlevePIndexImpl remote client"+
+				return fmt.Errorf("bleve: QueryBleve remote client"+
 					" returned status: %d body: %s", lastStatus, lastErrBody)
 			}
 		}
-		// now see if any of the remote searches returned 412, these should be
-		// collated into a single 412 response at this level, these should
+		// now see if any of the remote searches returned 412; these should be
+		// collated into a single 412 response at this level and will
 		// be presented as phase 1 errors detected late
 		remoteConsistencyWaitError := cbgt.ErrorConsistencyWait{
 			Status:       "remote consistency error",
@@ -457,7 +458,7 @@ func QueryBlevePIndexImpl(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 
 		// we had *some* consistency requirements, but we never heard back
-		// from some of the remote pindexes, just punt for now and return
+		// from some of the remote pindexes; just punt for now and return
 		// a mostly empty 412 indicating we aren't sure
 		if queryCtlParams.Ctl.Consistency != nil &&
 			len(queryCtlParams.Ctl.Consistency.Vectors) > 0 &&
@@ -1359,7 +1360,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 // ---------------------------------------------------------
 
-func BlevePIndexImplInitRouter(r *mux.Router, phase string,
+func BleveInitRouter(r *mux.Router, phase string,
 	mgr *cbgt.Manager) {
 	prefix := ""
 	if mgr != nil {
@@ -1446,7 +1447,7 @@ func BleveMetaExtra(m map[string]interface{}) {
 
 // ---------------------------------------------------------
 
-func BlevePIndexQuerySamples() []cbgt.Documentation {
+func BleveQuerySamples() []cbgt.Documentation {
 	return []cbgt.Documentation{
 		cbgt.Documentation{
 			Text: "A simple bleve query POST body:",
