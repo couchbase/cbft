@@ -50,7 +50,7 @@ type IndexClient struct {
 	HostPort    string
 	IndexName   string
 	IndexUUID   string
-	PIndexes    []string
+	PIndexNames []string
 	QueryURL    string
 	CountURL    string
 	Consistency *cbgt.ConsistencyParams
@@ -100,20 +100,24 @@ func (r *IndexClient) DocCount() (uint64, error) {
 			" docCountURL: %s, authType: %s, err: %v",
 			r.CountURL, r.AuthType(), err)
 	}
+
 	resp, err := httpGet(u)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return 0, fmt.Errorf("remote: count got status code: %d,"+
 			" docCountURL: %s, resp: %#v", resp.StatusCode, r.CountURL, resp)
 	}
+
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return 0, fmt.Errorf("remote: count error reading resp.Body,"+
 			" docCountURL: %s, resp: %#v, err: %v", r.CountURL, resp, err)
 	}
+
 	rv := struct {
 		Status string `json:"status"`
 		Count  uint64 `json:"count"`
@@ -124,6 +128,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 			" docCountURL: %s, resp: %#v, err: %v",
 			respBuf, r.CountURL, resp, err)
 	}
+
 	return rv.Count, nil
 }
 
@@ -148,6 +153,10 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		},
 	}
 
+	queryPIndexes := &QueryPIndexes{
+		PIndexNames: r.PIndexNames,
+	}
+
 	// if timeout was set, compute time remaining
 	if deadline, ok := ctx.Deadline(); ok {
 		remaining := deadline.Sub(time.Now())
@@ -164,9 +173,11 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 
 	buf, err := json.Marshal(struct {
 		*cbgt.QueryCtlParams
+		*QueryPIndexes
 		*bleve.SearchRequest
 	}{
 		queryCtlParams,
+		queryPIndexes,
 		req,
 	})
 	if err != nil {
@@ -175,7 +186,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 
 	respBuf, err := r.Query(buf)
 	if err != nil {
-		return nil, err
+		return makeSearchResultErr(req, r.PIndexNames, err), nil
 	}
 
 	rv := &bleve.SearchResult{
@@ -188,6 +199,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		return nil, fmt.Errorf("remote: search error parsing respBuf: %s,"+
 			" queryURL: %s, err: %v", respBuf, r.QueryURL, err)
 	}
+
 	return rv, nil
 }
 
@@ -266,6 +278,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 			" queryURL: %s, authType: %s, err: %v",
 			r.QueryURL, r.AuthType(), err)
 	}
+
 	resp, err :=
 		httpPost(u, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
@@ -275,6 +288,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 
 	r.lastMutex.Lock()
 	defer r.lastMutex.Unlock()
+
 	r.lastSearchStatus = resp.StatusCode
 	if resp.StatusCode != http.StatusOK {
 		r.lastErrBody, _ = ioutil.ReadAll(resp.Body)
@@ -282,12 +296,14 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 			" queryURL: %s, buf: %s, resp: %#v, err: %v",
 			resp.StatusCode, r.QueryURL, buf, resp, err)
 	}
+
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("remote: query error reading resp.Body,"+
 			" queryURL: %s, buf: %s, resp: %#v, err: %v",
 			r.QueryURL, buf, resp, err)
 	}
+
 	return respBuf, err
 }
 
@@ -302,4 +318,48 @@ func (r *IndexClient) AuthType() string {
 		return r.mgr.Options()["authType"]
 	}
 	return ""
+}
+
+// -----------------------------------------------------
+
+// GroupIndexClientsByHostPort groups the index clients by their
+// HostPort, merging the pindexNames.  This is an enabler to allow
+// scatter/gather to use fewer REST requests/connections.
+func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err error) {
+	m := map[string]*IndexClient{}
+
+	for _, client := range clients {
+		groupByKey := client.HostPort +
+			"/" + client.IndexName + "/" + client.IndexUUID
+
+		c, exists := m[groupByKey]
+		if !exists {
+			prefix := ""
+			if client.mgr != nil {
+				prefix = client.mgr.Options()["urlPrefix"]
+			}
+
+			baseURL := "http://" + client.HostPort +
+				prefix + "/api/index/" + client.IndexName
+
+			c = &IndexClient{
+				mgr:         client.mgr,
+				name:        groupByKey,
+				HostPort:    client.HostPort,
+				IndexName:   client.IndexName,
+				IndexUUID:   client.IndexUUID,
+				QueryURL:    baseURL + "/query",
+				CountURL:    baseURL + "/count",
+				Consistency: client.Consistency,
+			}
+
+			m[groupByKey] = c
+
+			rv = append(rv, c)
+		}
+
+		c.PIndexNames = append(c.PIndexNames, client.PIndexNames...)
+	}
+
+	return rv, nil
 }

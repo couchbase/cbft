@@ -326,7 +326,8 @@ func OpenBlevePIndexImpl(indexType, path string,
 
 func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
-	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil)
+	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
+		false, nil)
 	if err != nil {
 		return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
@@ -345,6 +346,15 @@ func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
 	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
 }
 
+// QueryPIndexes defines the part of the JSON query request that
+// allows the client to specify which pindexes the server should
+// consider during query processing.
+type QueryPIndexes struct {
+	// An empty or nil PIndexNames means the query should use all
+	// the pindexes of the index.
+	PIndexNames []string `json:"pindexNames,omitempty"`
+}
+
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
 
@@ -360,6 +370,14 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
+
+	queryPIndexes := QueryPIndexes{}
+	err = json.Unmarshal(req, &queryPIndexes)
+	if err != nil {
+		return fmt.Errorf("bleve: QueryBleve"+
+			" parsing queryPIndexes, req: %s, err: %v", req, err)
+	}
+
 	searchRequest := &bleve.SearchRequest{}
 	err = json.Unmarshal(req, searchRequest)
 	if err != nil {
@@ -405,8 +423,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// setupContextAndCancelCh always exits
 	defer cancel()
 
+	var onlyPIndexes map[string]bool
+	if len(queryPIndexes.PIndexNames) > 0 {
+		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
+	}
+
 	alias, remoteClients, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
-		queryCtlParams.Ctl.Consistency, cancelCh)
+		queryCtlParams.Ctl.Consistency, cancelCh, true, onlyPIndexes)
 	if err != nil {
 		return err
 	}
@@ -656,7 +679,6 @@ func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 
 func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	parentCancelCh <-chan bool) error {
-
 	// phase 0 - parsing/validating query
 	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
@@ -669,6 +691,7 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
+
 	searchRequest := &bleve.SearchRequest{}
 	err = json.Unmarshal(req, searchRequest)
 	if err != nil {
@@ -698,7 +721,7 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 			// check to see if context error
 			if ctx.Err() != nil {
 				// return this as search response error
-				sendSearchResponseErr(searchRequest, res, pindex.Name, ctx.Err())
+				sendSearchResultErr(searchRequest, res, []string{pindex.Name}, ctx.Err())
 				return nil
 			}
 		}
@@ -714,13 +737,13 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 
 	if bindex == nil {
 		err := fmt.Errorf("bleve: Query, bindex already closed")
-		sendSearchResponseErr(searchRequest, res, pindex.Name, err)
+		sendSearchResultErr(searchRequest, res, []string{pindex.Name}, err)
 		return nil
 	}
 
 	searchResponse, err := bindex.SearchInContext(ctx, searchRequest)
 	if err != nil {
-		sendSearchResponseErr(searchRequest, res, pindex.Name, err)
+		sendSearchResultErr(searchRequest, res, []string{pindex.Name}, err)
 		return nil
 	}
 
@@ -729,18 +752,27 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 }
 
 // ---------------------------------------------------------
-func sendSearchResponseErr(req *bleve.SearchRequest, res io.Writer, name string, err error) {
-	searchResponse := &bleve.SearchResult{
+
+func sendSearchResultErr(req *bleve.SearchRequest, res io.Writer,
+	pindexNames []string, err error) {
+	rest.MustEncode(res, makeSearchResultErr(req, pindexNames, err))
+}
+
+func makeSearchResultErr(req *bleve.SearchRequest,
+	pindexNames []string, err error) *bleve.SearchResult {
+	rv := &bleve.SearchResult{
 		Request: req,
 		Status: &bleve.SearchStatus{
-			Total:      1,
-			Failed:     1,
+			Total:      len(pindexNames),
+			Failed:     len(pindexNames),
 			Successful: 0,
 			Errors:     make(map[string]error),
 		},
 	}
-	searchResponse.Status.Errors[name] = err
-	rest.MustEncode(res, searchResponse)
+	for _, pindexName := range pindexNames {
+		rv.Status.Errors[pindexName] = err
+	}
+	return rv
 }
 
 // ---------------------------------------------------------
@@ -1252,11 +1284,13 @@ func (t *BleveDestPartition) incRev() {
 // activities.
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool) (bleve.IndexAlias, []*IndexClient, error) {
+	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool) (
+	bleve.IndexAlias, []*IndexClient, error) {
 	alias := bleve.NewIndexAlias()
 
-	remoteClients, err := bleveIndexTargets(mgr, indexName, indexUUID, ensureCanRead,
-		consistencyParams, cancelCh, alias)
+	remoteClients, err := bleveIndexTargets(mgr, indexName, indexUUID,
+		ensureCanRead, consistencyParams, cancelCh,
+		groupByNode, onlyPIndexes, alias)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1274,13 +1308,14 @@ type BleveIndexCollector interface {
 
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool, collector BleveIndexCollector) ([]*IndexClient, error) {
+	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
+	collector BleveIndexCollector) ([]*IndexClient, error) {
 	planPIndexFilterName := "ok"
 	if ensureCanRead {
 		planPIndexFilterName = "canRead"
 	}
 
-	localPIndexes, remotePlanPIndexes, missingPIndexNames, err :=
+	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
 		mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
 			IndexName:            indexName,
 			IndexUUID:            indexUUID,
@@ -1290,32 +1325,57 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		return nil, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
 
-	for _, missingPIndexName := range missingPIndexNames {
-		missingPIndex := &MissingPIndex{
-			name: missingPIndexName,
+	localPIndexes := localPIndexesAll
+	if onlyPIndexes != nil {
+		localPIndexes = make([]*cbgt.PIndex, 0, len(localPIndexesAll))
+		for _, localPIndex := range localPIndexesAll {
+			if onlyPIndexes[localPIndex.Name] {
+				localPIndexes = append(localPIndexes, localPIndex)
+			}
 		}
-		collector.Add(missingPIndex)
+	}
+
+	for _, missingPIndexName := range missingPIndexNames {
+		if onlyPIndexes == nil || onlyPIndexes[missingPIndexName] {
+			collector.Add(&MissingPIndex{
+				name: missingPIndexName,
+			})
+		}
 	}
 
 	prefix := mgr.Options()["urlPrefix"]
 
-	remoteClients := make([]*IndexClient, 0)
+	remoteClients := make([]*IndexClient, 0, len(remotePlanPIndexes))
 	for _, remotePlanPIndex := range remotePlanPIndexes {
+		if onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name] {
+			continue
+		}
+
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
-		remoteClient := &IndexClient{
+
+		remoteClients = append(remoteClients, &IndexClient{
 			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
 			HostPort:    remotePlanPIndex.NodeDef.HostPort,
 			IndexName:   indexName,
 			IndexUUID:   indexUUID,
-			PIndexes:    []string{remotePlanPIndex.PlanPIndex.Name},
+			PIndexNames: []string{remotePlanPIndex.PlanPIndex.Name},
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
 			// TODO: Propagate auth to remote client.
+		})
+	}
+
+	if groupByNode {
+		remoteClients, err = GroupIndexClientsByHostPort(remoteClients)
+		if err != nil {
+			return nil, err
 		}
-		remoteClients = append(remoteClients, remoteClient)
+	}
+
+	for _, remoteClient := range remoteClients {
 		collector.Add(remoteClient)
 	}
 

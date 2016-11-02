@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -84,5 +85,63 @@ func TestBadURLsIndexClient(t *testing.T) {
 	sr, err := bc.Search(nil)
 	if err == nil || sr != nil {
 		t.Errorf("expected search error on bad QueryURL")
+	}
+}
+
+func TestGroupIndexClientsByHostPort(t *testing.T) {
+	c0 := &IndexClient{
+		HostPort:    "x",
+		IndexName:   "indexA",
+		PIndexNames: []string{"a", "b"},
+		QueryURL:    "foo",
+	}
+	c1 := &IndexClient{
+		HostPort:    "x",
+		IndexName:   "indexA",
+		PIndexNames: []string{"c"},
+		QueryURL:    "bar",
+	}
+	c2 := &IndexClient{
+		HostPort:    "y",
+		IndexName:   "indexA",
+		PIndexNames: []string{"d"},
+		QueryURL:    "baz",
+	}
+
+	a, err := GroupIndexClientsByHostPort([]*IndexClient{c0, c1, c2})
+	if err != nil {
+		t.Errorf("expect nil err")
+	}
+	if len(a) != 2 {
+		t.Errorf("expect 2 hostPorts")
+	}
+	if a[0].HostPort != "x" ||
+		len(a[0].PIndexNames) != 3 ||
+		!reflect.DeepEqual(a[0].PIndexNames, []string{"a", "b", "c"}) {
+		t.Errorf("expect x has 3 pindexes")
+	}
+	if a[0].QueryURL != "http://x/api/index/indexA/query" {
+		t.Errorf("expect x query URL")
+	}
+	if a[1].HostPort != "y" ||
+		len(a[1].PIndexNames) != 1 ||
+		!reflect.DeepEqual(a[1].PIndexNames, []string{"d"}) {
+		t.Errorf("expect y has 1 pindexes")
+	}
+
+	a, err = GroupIndexClientsByHostPort([]*IndexClient{})
+	if err != nil {
+		t.Errorf("expect nil err")
+	}
+	if len(a) != 0 {
+		t.Errorf("expect 0 hostPorts")
+	}
+
+	a, err = GroupIndexClientsByHostPort(nil)
+	if err != nil {
+		t.Errorf("expect nil err")
+	}
+	if len(a) != 0 {
+		t.Errorf("expect 0 hostPorts")
 	}
 }

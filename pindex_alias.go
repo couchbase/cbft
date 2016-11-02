@@ -75,7 +75,7 @@ func ValidateAlias(indexType, indexName, indexParams string) error {
 func CountAlias(mgr *cbgt.Manager,
 	indexName, indexUUID string) (uint64, error) {
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
-		indexName, indexUUID, false, nil, nil)
+		indexName, indexUUID, false, nil, nil, false)
 	if err != nil {
 		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v",
@@ -118,7 +118,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, true,
-		queryCtlParams.Ctl.Consistency, cancelCh)
+		queryCtlParams.Ctl.Consistency, cancelCh, true)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 	indexName, indexUUID string, ensureCanRead bool,
 	consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool) (
+	cancelCh <-chan bool, groupByNode bool) (
 	bleve.IndexAlias, error) {
 	alias := bleve.NewIndexAlias()
 
@@ -218,9 +218,9 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 					return err
 				}
 			} else if strings.HasPrefix(targetDef.Type, "fulltext-index") {
-				subAlias, _, err := bleveIndexAlias(mgr, targetName,
-					targetSpec.IndexUUID, ensureCanRead,
-					consistencyParams, cancelCh)
+				subAlias, _, err := bleveIndexAlias(mgr,
+					targetName, targetSpec.IndexUUID, ensureCanRead,
+					consistencyParams, cancelCh, true, nil)
 				if err != nil {
 					return err
 				}
