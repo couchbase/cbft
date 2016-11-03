@@ -184,23 +184,37 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		return nil, err
 	}
 
-	respBuf, err := r.Query(buf)
-	if err != nil {
-		return makeSearchResultErr(req, r.PIndexNames, err), nil
-	}
+	resultCh := make(chan *bleve.SearchResult)
 
-	rv := &bleve.SearchResult{
-		Status: &bleve.SearchStatus{
-			Errors: make(map[string]error),
-		},
-	}
-	err = json.Unmarshal(respBuf, rv)
-	if err != nil {
-		return nil, fmt.Errorf("remote: search error parsing respBuf: %s,"+
-			" queryURL: %s, err: %v", respBuf, r.QueryURL, err)
-	}
+	go func() {
+		respBuf, err := r.Query(buf)
+		if err != nil {
+			resultCh <- makeSearchResultErr(req, r.PIndexNames, err)
+			return
+		}
 
-	return rv, nil
+		rv := &bleve.SearchResult{
+			Status: &bleve.SearchStatus{
+				Errors: make(map[string]error),
+			},
+		}
+		err = json.Unmarshal(respBuf, rv)
+		if err != nil {
+			resultCh <- makeSearchResultErr(req, r.PIndexNames,
+				fmt.Errorf("remote: search error parsing respBuf: %s,"+
+					" queryURL: %s, err: %v", respBuf, r.QueryURL, err))
+			return
+		}
+
+		resultCh <- rv
+	}()
+
+	select {
+	case <-ctx.Done():
+		return makeSearchResultErr(req, r.PIndexNames, ctx.Err()), nil
+	case rv := <-resultCh:
+		return rv, nil
+	}
 }
 
 func (r *IndexClient) Fields() ([]string, error) {
