@@ -50,6 +50,7 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	b.Mode = tmp.Mode
 	switch tmp.Mode {
 	case "type_field":
 		b.TypeField = tmp.TypeField
@@ -99,7 +100,6 @@ func (b *BleveDocumentConfig) buildDocument(key, val []byte, defaultType string)
 }
 
 func (b *BleveDocumentConfig) determineType(key []byte, v interface{}, defaultType string) string {
-
 	switch b.Mode {
 	case "type_field":
 		typ, ok := mustString(lookupPropertyPath(v, b.TypeField))
