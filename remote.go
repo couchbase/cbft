@@ -32,8 +32,8 @@ import (
 
 const RemoteRequestOverhead = 500 * time.Millisecond
 
-var httpPost = http.Post // Overridable for unit-testability.
-var httpGet = http.Get   // Overridable for unit-testability.
+var HttpPost = http.Post // Overridable for unit-testability, advanced needs, etc.
+var HttpGet = http.Get   // Overridable for unit-testability, advanced needs, etc.
 
 var indexClientUnimplementedErr = errors.New("unimplemented")
 
@@ -101,7 +101,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 			r.CountURL, r.AuthType(), err)
 	}
 
-	resp, err := httpGet(u)
+	resp, err := HttpGet(u)
 	if err != nil {
 		return 0, err
 	}
@@ -293,7 +293,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 			r.QueryURL, r.AuthType(), err)
 	}
 
-	resp, err := httpPost(u, "application/json", bytes.NewBuffer(buf))
+	resp, err := HttpPost(u, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
 	}

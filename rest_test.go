@@ -1829,10 +1829,10 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	var feed0 *cbgt.PrimaryFeed
 	var feed1 *cbgt.PrimaryFeed
 
-	httpGetPrev := httpGet
-	defer func() { httpGet = httpGetPrev }()
+	httpGetPrev := HttpGet
+	defer func() { HttpGet = httpGetPrev }()
 
-	httpGet = func(urlStr string) (
+	HttpGet = func(urlStr string) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -1848,10 +1848,10 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 		}, nil
 	}
 
-	httpPostPrev := httpPost
-	defer func() { httpPost = httpPostPrev }()
+	httpPostPrev := HttpPost
+	defer func() { HttpPost = httpPostPrev }()
 
-	httpPost = func(urlStr string, bodyType string, body io.Reader) (
+	HttpPost = func(urlStr string, bodyType string, body io.Reader) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -2107,10 +2107,10 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 
 	var feed0 *cbgt.PrimaryFeed
 
-	httpGetPrev := httpGet
-	defer func() { httpGet = httpGetPrev }()
+	httpGetPrev := HttpGet
+	defer func() { HttpGet = httpGetPrev }()
 
-	httpGet = func(urlStr string) (
+	HttpGet = func(urlStr string) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -2126,10 +2126,10 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 		}, nil
 	}
 
-	httpPostPrev := httpPost
-	defer func() { httpPost = httpPostPrev }()
+	httpPostPrev := HttpPost
+	defer func() { HttpPost = httpPostPrev }()
 
-	httpPost = func(urlStr string, bodyType string, body io.Reader) (
+	HttpPost = func(urlStr string, bodyType string, body io.Reader) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
