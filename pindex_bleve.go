@@ -568,44 +568,6 @@ func (t *BleveDest) closeLOCKED() error {
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Rollback(partition string, rollbackSeq uint64) error {
-	t.AddError("dest rollback", partition, nil, rollbackSeq, nil, nil)
-
-	t.m.Lock()
-	defer t.m.Unlock()
-
-	// NOTE: A rollback of any partition means a rollback of all
-	// partitions, since they all share a single bleve.Index backend.
-	// That's why we grab and keep BleveDest.m locked.
-	//
-	// TODO: Implement partial rollback one day.  Implementation
-	// sketch: we expect bleve to one day to provide an additional
-	// Snapshot() and Rollback() API, where Snapshot() returns some
-	// opaque and persistable snapshot ID ("SID"), which cbft can
-	// occasionally record into the bleve's Get/SetInternal() storage.
-	// A stream rollback operation then needs to loop through
-	// appropriate candidate SID's until a Rollback(SID) succeeds.
-	// Else, we eventually devolve down to restarting/rebuilding
-	// everything from scratch or zero.
-	//
-	// For now, always rollback to zero, in which we close the pindex,
-	// erase files and have the janitor rebuild from scratch.
-
-	err := t.closeLOCKED()
-	if err != nil {
-		return fmt.Errorf("bleve: can't close during rollback,"+
-			" err: %v", err)
-	}
-
-	os.RemoveAll(t.path)
-
-	t.restart()
-
-	return nil
-}
-
-// ---------------------------------------------------------
-
 func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 	consistencyLevel string,
 	consistencySeq uint64,
@@ -1160,11 +1122,6 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 
 	t.m.Unlock()
 	return nil
-}
-
-func (t *BleveDestPartition) Rollback(partition string,
-	rollbackSeq uint64) error {
-	return t.bdest.Rollback(partition, rollbackSeq)
 }
 
 func (t *BleveDestPartition) ConsistencyWait(
