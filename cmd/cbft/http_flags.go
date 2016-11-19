@@ -21,12 +21,12 @@ import (
 	"github.com/couchbase/cbft"
 )
 
-var httpTransportDialContextTimeout = 30 * time.Second // Go's default is 30 secs.
+var httpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
 var httpTransportDialContextKeepAlive = 30 * time.Second // Go's default is 30 secs.
-var httpTransportMaxIdleConns = 300 // Go's default is 100 (0 means no limit).
-var httpTransportMaxIdleConnsPerHost = 100 // Go's default is 2.
-var httpTransportIdleConnTimeout = 90 * time.Second // Go's default is 90 secs.
-var httpTransportTLSHandshakeTimeout = 10 * time.Second // Go's default is 10 secs.
+var httpTransportMaxIdleConns = 300                      // Go's default is 100 (0 means no limit).
+var httpTransportMaxIdleConnsPerHost = 100               // Go's default is 2.
+var httpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 secs.
+var httpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
 var httpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
 
 func InitHttpOptions(options map[string]string) error {
@@ -85,28 +85,28 @@ func InitHttpOptions(options map[string]string) error {
 	}
 
 	transport := &http.Transport{
-        Proxy: http.ProxyFromEnvironment,
-        DialContext: (&net.Dialer{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
 			Timeout:   httpTransportDialContextTimeout,
 			KeepAlive: httpTransportDialContextKeepAlive,
-        }).DialContext,
-        MaxIdleConns:          httpTransportMaxIdleConns,
+		}).DialContext,
+		MaxIdleConns:          httpTransportMaxIdleConns,
 		MaxIdleConnsPerHost:   httpTransportMaxIdleConnsPerHost,
-        IdleConnTimeout:       httpTransportIdleConnTimeout,
-        TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
-        ExpectContinueTimeout: httpTransportExpectContinueTimeout,
+		IdleConnTimeout:       httpTransportIdleConnTimeout,
+		TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
+		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
 	}
 
 	httpClient := &http.Client{Transport: transport}
 
 	cbft.HttpGet = func(url string) (resp *http.Response, err error) {
-			return httpClient.Get(url)
-		}
+		return httpClient.Get(url)
+	}
 
 	cbft.HttpPost = func(url string, bodyType string, body io.Reader) (
 		resp *http.Response, err error) {
-			return httpClient.Post(url, bodyType, body)
-		}
+		return httpClient.Post(url, bodyType, body)
+	}
 
 	return nil
 }
