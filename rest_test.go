@@ -27,6 +27,11 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/couchbase/cbgt"
+
+	"github.com/couchbase/moss"
+
+	"github.com/blevesearch/bleve"
+	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 )
 
 // Implements ManagerEventHandlers interface.
@@ -1538,7 +1543,30 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	testRESTHandlers(t, tests, router)
 }
 
-func TestHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
+func TestHandlersWithOnePartitionPrimaryFeedRollbackMoss(t *testing.T) {
+	BlevePIndexAllowMossPrev := BlevePIndexAllowMoss
+	BlevePIndexAllowMoss = true
+
+	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
+	bleve.Config.DefaultKVStore = "mossStore"
+
+	bleveMossRegistryCollectionOptionsFTSPrev := bleveMoss.RegistryCollectionOptions["fts"]
+	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
+
+	defer func() {
+		BlevePIndexAllowMoss = BlevePIndexAllowMossPrev
+		bleve.Config.DefaultKVStore = bleveConfigDefaultKVStorePrev
+		bleveMoss.RegistryCollectionOptions["fts"] = bleveMossRegistryCollectionOptionsFTSPrev
+	}()
+
+	testHandlersWithOnePartitionPrimaryFeedRollback(t)
+}
+
+func TestHandlersWithOnePartitionPrimaryFeedRollbackDefault(t *testing.T) {
+	testHandlersWithOnePartitionPrimaryFeedRollback(t)
+}
+
+func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
