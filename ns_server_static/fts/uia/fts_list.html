@@ -20,7 +20,7 @@
                ng-model="searchBarInput"
                type="text"
                placeholder="search for..."/>
-        <a ui-sref="app.admin.indexes.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
+        <a ui-sref="^.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
            ng-disabled="!indexNames || !searchBarIndexName">
           <button type="submit"
                   ng-disabled="!indexNames || !searchBarIndexName">
@@ -34,7 +34,7 @@
 <div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Indexes</h4>
-    <a ui-sref="app.admin.indexes.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+    <a ui-sref="^.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
        class="btn_1">
       <span>
         New Full Text Index
@@ -51,7 +51,7 @@
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
         ng-if="indexDef.type != 'fulltext-alias'">
       <td>
-        <a ui-sref="app.admin.indexes.fts_view({indexName: indexName})">{{indexName}}</a>
+        <a ui-sref="^.fts_view({indexName: indexName})">{{indexName}}</a>
       </td>
       <td>
         <span ng-if="indexDef.sourceType != 'couchbase'">
@@ -61,10 +61,10 @@
         {{indexDef.sourceName}}
       </td>
       <td class="controls">
-        <a ui-sref="app.admin.indexes.fts_edit({indexName: indexName})">
+        <a ui-sref="^.fts_edit({indexName: indexName})">
           <button>edit</button>
         </a>
-        <a ui-sref="app.admin.indexes.fts_clone({indexName: indexName})">
+        <a ui-sref="^.fts_clone({indexName: indexName})">
           <button>clone</button>
         </a>
         <a ng-click="deleteIndex(indexName)">
@@ -79,7 +79,7 @@
 <div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Aliases</h4>
-    <a ui-sref="app.admin.indexes.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
+    <a ui-sref="^.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
        class="btn_1">
       <span>
         New Full Text Alias
@@ -96,19 +96,19 @@
     <tr ng-repeat="(indexName, indexDef) in indexDefs"
         ng-if="indexDef.type == 'fulltext-alias'">
       <td>
-        <a ui-sref="app.admin.indexes.fts_view({indexName: indexName})">{{indexName}}</a>
+        <a ui-sref="^.fts_view({indexName: indexName})">{{indexName}}</a>
       </td>
       <td>
         <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
-          <a ui-sref="app.admin.indexes.fts_view({indexName: targetName})">
+          <a ui-sref="^.fts_view({indexName: targetName})">
             {{targetName}}</a><span ng-show="!$last">, </span>
         </span>
       </td>
       <td class="controls">
-        <a ui-sref="app.admin.indexes.fts_edit({indexName: indexName})">
+        <a ui-sref="^.fts_edit({indexName: indexName})">
           <button>edit</button>
         </a>
-        <a ui-sref="app.admin.indexes.fts_clone({indexName: indexName})">
+        <a ui-sref="^.fts_clone({indexName: indexName})">
           <button>clone</button>
         </a>
         <a ng-click="deleteIndex(indexName)">

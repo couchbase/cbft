@@ -10,37 +10,82 @@ var ftsPrefix = 'fts';
     .module(ftsAppName,
             ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider) {
-      $stateProvider
-            .state('app.admin.indexes.fts_list', {
-                url: '/fts_list',
-                controller: 'IndexesCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_list.html'
-            })
-            .state('app.admin.indexes.fts_view', {
-                url: '/fts_view/:indexName?tabName',
+
+      addFtsStates("app.admin.indexes");
+
+      function addFtsStates(parent) {
+        $stateProvider
+          .state(parent + '.fts_list', {
+            url: '/fts_list',
+            controller: 'IndexesCtrlFT_NS',
+            templateUrl: '/_p/ui/fts/uia/fts_list.html'
+          })
+          .state(parent + '.fts_view', {
+            url: '/fts_view/:indexName?tabName',
+            views: {
+              "main@app.admin": {
                 controller: 'IndexCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/uia/fts_view.html'
-            })
-            .state('app.admin.indexes.fts_new', {
-                url: '/fts_new/?indexType&sourceType',
+              }
+            },
+            data: {
+              title: "FTS View",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_new', {
+            url: '/fts_new/?indexType&sourceType',
+            views: {
+              "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/uia/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_edit', {
-                url: '/fts_edit/:indexName/_edit',
+              }
+            },
+            data: {
+              title: "FTS New",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_edit', {
+            url: '/fts_edit/:indexName/_edit',
+            views: {
+              "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/uia/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_clone', {
-                url: '/fts_clone/:indexName/_clone',
+              }
+            },
+            data: {
+              title: "FTS Edit",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_clone', {
+            url: '/fts_clone/:indexName/_clone',
+            views: {
+              "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/uia/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_search', {
-                url: '/fts_search/:indexName/_search?query',
+              }
+            },
+            data: {
+              title: "FTS Clone",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_search', {
+            url: '/fts_search/:indexName/_search?query',
+            views: {
+              "main@app.admin": {
                 controller: 'IndexSearchCtrlFT_NS',
                 templateUrl: '/_p/ui/fts/uia/fts_search.html'
-            });
+              }
+            },
+            data: {
+              title: "FTS Search",
+              child: parent + '.fts_list'
+            }
+          });
+      }
 
         mnPluggableUiRegistryProvider.registerConfig({
             name: 'Full Text',
