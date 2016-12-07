@@ -31,9 +31,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
-	bleveMapping "github.com/blevesearch/bleve/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
-	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
@@ -98,10 +96,6 @@ func main() {
 	// theory being that invoking signal.Notify()
 	// interferes with forestdb signal handler
 	// go cmd.DumpOnSignalForPlatform()
-
-	bleveMapping.StoreDynamic = false
-	bleveMapping.MappingJSONStrict = true
-	bleveSearcher.DisjunctionMaxClauseCount = 1024
 
 	MainWelcome(flagAliases)
 
@@ -175,17 +169,6 @@ func main() {
 			"managerLoadDataDir": "async",
 			"authType":           flags.AuthType,
 		})
-
-	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]
-	if bleveKVStoreMetricsAllow != "" {
-		v, err := strconv.ParseBool(bleveKVStoreMetricsAllow)
-		if err != nil {
-			log.Fatalf("main: could not parse bleveKVStoreMetricsAllow option,"+
-				" err: %v", err)
-		}
-
-		cbft.BleveKVStoreMetricsAllow = v
-	}
 
 	err = InitHttpOptions(options)
 	if err != nil {
@@ -359,12 +342,9 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	if options["bleveMaxOpsPerBatch"] != "" {
-		bleveMaxOpsPerBatch, err := strconv.Atoi(options["bleveMaxOpsPerBatch"])
-		if err != nil {
-			return nil, err
-		}
-		cbft.BleveMaxOpsPerBatch = bleveMaxOpsPerBatch
+	err = InitBleveOptions(options)
+	if err != nil {
+		return nil, err
 	}
 
 	if options["logStatsEvery"] != "" {
