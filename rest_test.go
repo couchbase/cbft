@@ -2180,6 +2180,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 			Method: "PUT",
 			Params: url.Values{
 				"indexType":    []string{"fulltext-index"},
+				"indexParams":  []string{"{}"},
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":2}`},
 				"planParams":   planParams,
