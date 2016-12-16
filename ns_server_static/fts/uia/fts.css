@@ -630,3 +630,11 @@
 .panel.dialog .modal-close {
   border: none;
 }
+
+/* -------------------------------------------------- */
+
+.indexContainer.ftsCheck h1 {
+  padding-bottom: .5rem;
+  font-size: .961rem;
+  color: #333;
+}

@@ -122,7 +122,8 @@
 
 </div>
 
-<div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="indexContainer">
+<div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError"
+  class="indexContainer ftsCheck">
   <h1>The full text search interface is only available on Couchbase nodes running the full text service.</h1>
   <h1 ng-show="ftsNodes.length > 0">Full text services were found at the following nodes:</h1>
   <ul>
@@ -133,7 +134,8 @@
   <h1 ng-show="ftsNodes.length == 0">No full text search nodes were found on this cluster.</h1>
 </div>
 
-<div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError" class="error ng-cloak" role="alert">
+<div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"
+  class="error ng-cloak ftsCheck" role="alert">
   {{ftsCheckError}}
 </div>
 
