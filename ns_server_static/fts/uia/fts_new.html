@@ -96,8 +96,12 @@
       <div class="indexEditor {{newIndexType}}">
         <div class="indexEditorMain"
              ng-include="indexTemplates[newIndexType]"></div>
+
         <div class="indexEditorPreview"
-             ng-if="indexEditorPreview[newIndexType]">{{indexEditorPreview[newIndexType]}}</div>
+             ng-if="indexEditorPreview[newIndexType]">
+          <label>JSON for index mapping (preview):</label>
+          <div>{{indexEditorPreview[newIndexType]}}</div>
+        </div>
       </div>
     </div>
   </div>
