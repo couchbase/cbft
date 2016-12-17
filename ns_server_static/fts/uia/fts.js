@@ -507,13 +507,17 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
             ($routeParams.indexType == 'fulltext-alias') ||
             (origIndexDef && origIndexDef.type == 'fulltext-alias');
         if (isAlias) {
+            var isEdit = $location.path().match(/_edit$/);
+
             // The aliasTargets will be the union of currently available
             // indexes (and aliases) and the existing targets of the alias.
             // Note that existing targets may have been deleted, but we
             // we will still offer them as options.
             $scope.aliasTargets = [];
             for (var indexName in indexDefs) {
-                $scope.aliasTargets.push(indexName);
+                if (!isEdit || indexName != $routeParams.indexName) {
+                    $scope.aliasTargets.push(indexName);
+                }
             }
 
             $scope.selectedTargetIndexes = [];
