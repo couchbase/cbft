@@ -597,6 +597,10 @@
   margin-right: 5px;
 }
 
+.indexContainer .index-summary {
+  margin-bottom: 2rem;
+}
+
 #bleve-mapping-ui-type-field-row {
   display: none;
 }

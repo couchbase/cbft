@@ -143,7 +143,7 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
 
 // -------------------------------------------------------
 
-function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
+function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
@@ -190,6 +190,24 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
     if ($scope.tab === "summary") {
         $scope.loadDocCount();
     }
+
+    $scope.deleteIndex = function(name) {
+        if (!confirm("Are you sure you want to permanenty delete the index '"
+                     + name + "'?")) {
+            return;
+        }
+
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
+        http.delete('/api/index/' + name).success(function(data) {
+            $state.go('^.fts_list');
+        }).
+        error(function(data, code) {
+            $scope.errorMessage = errorMessage(data, code);
+            $scope.errorMessageFull = data;
+        });
+    };
 
     ftsServiceHostPort($scope, $http, $location);
 }
