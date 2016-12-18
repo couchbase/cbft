@@ -73,7 +73,7 @@ var ftsPrefix = 'fts';
             }
           })
           .state(parent + '.fts_search', {
-            url: '/fts_search/:indexName/_search?query',
+            url: '/fts_search/:indexName/_search?q&p',
             views: {
               "main@app.admin": {
                 controller: 'IndexSearchCtrlFT_NS',
@@ -346,13 +346,13 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
 
     $scope.static_base = "/_p/ui/fts";
 
-    $scope.query = $routeParams.query || "";
-    $scope.page = $routeParams.page || 1;
+    $scope.query = $routeParams.q || "";
+    $scope.page = $routeParams.p || 1;
 
     if (!$location.search().q) {
         $location.search("q", $scope.query);
     }
-    if (!$location.search().page) {
+    if (!$location.search().p) {
         $location.search("p", $scope.page);
     }
 
