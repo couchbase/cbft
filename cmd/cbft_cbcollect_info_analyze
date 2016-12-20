@@ -48,6 +48,8 @@ def fetch_file_part(path, fname, part_separator, part_prefix)
       return parts[i+1]
     end
   end
+
+  return nil
 end
 
 $cmd_extract_params = {
@@ -85,11 +87,13 @@ def cmd_extract(argv)
                                params[:file],
                                params[:part_separator],
                                params[:part_prefix])
-      part_j = JSON.parse(part_s)
-      print JSON.generate(part_j)
-      print "\n"
+      if part_s
+        part_j = JSON.parse(part_s)
+        print JSON.generate(part_j)
+        print "\n"
+      end
     rescue JSON::ParserError, JSON::GeneratorError, TypeError => err
-      print JSON.generate({"err" => err.to_s})
+      print JSON.generate({"err" => err.to_s, "part_s" => part_s})
       print "\n"
     end
   end
