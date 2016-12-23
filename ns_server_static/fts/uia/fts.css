@@ -647,3 +647,11 @@
   font-size: .961rem;
   color: #333;
 }
+
+/* -------------------------------------------------- */
+
+.indexContainer .query_results mark {
+  padding: 0 0;
+  background-color: yellow;
+}
+
