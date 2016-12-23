@@ -20,7 +20,7 @@
                ng-model="searchBarInput"
                type="text"
                placeholder="search for..."/>
-        <a ui-sref="^.fts_search({indexName: searchBarIndexName, query: searchBarInput})"
+        <a ui-sref="^.fts_search({indexName: searchBarIndexName, q: searchBarInput})"
            ng-disabled="!indexNames || !searchBarIndexName">
           <button type="submit"
                   ng-disabled="!indexNames || !searchBarIndexName">
