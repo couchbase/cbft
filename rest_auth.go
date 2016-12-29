@@ -201,7 +201,6 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 			if pindex == nil {
 				return nil, errPIndexNotFound
 			}
-
 			sourceNames = append(sourceNames, pindex.SourceName)
 		} else {
 			return nil, fmt.Errorf("missing indexName/pindexName")
@@ -234,7 +233,7 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 			}
 			return perms, nil
 		} else {
-			//no source names, remove it from the perm
+			// no source names, remove it from the perm
 			return []string{strings.Replace(perm, "[<sourceName>]", "", -1)}, nil
 		}
 	}
