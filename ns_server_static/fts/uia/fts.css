@@ -223,11 +223,19 @@
 }
 
 .indexContainer .query_bar .query_bar_advanced {
-  margin-left: 5px;
+  margin-left: 25px;
 }
 
 .indexContainer .query_advanced {
   padding-top: 5px;
+}
+
+.indexContainer .query_advanced input {
+  border: 1px solid #d1d1d1;
+  border-radius: 2px;
+  font-size: .875rem;
+  padding: 0 .5rem;
+  line-height: 2rem;
 }
 
 .indexContainer .query_advanced .form_group_jsonQuery {
