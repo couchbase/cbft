@@ -18,14 +18,14 @@ var ftsPrefix = 'fts';
           .state(parent + '.fts_list', {
             url: '/fts_list',
             controller: 'IndexesCtrlFT_NS',
-            templateUrl: '/_p/ui/fts/uia/fts_list.html'
+            templateUrl: '../_p/ui/fts/uia/fts_list.html'
           })
           .state(parent + '.fts_view', {
             url: '/fts_view/:indexName?tabName',
             views: {
               "main@app.admin": {
                 controller: 'IndexCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_view.html'
+                templateUrl: '../_p/ui/fts/uia/fts_view.html'
               }
             },
             data: {
@@ -38,7 +38,7 @@ var ftsPrefix = 'fts';
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_new.html'
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
               }
             },
             data: {
@@ -51,7 +51,7 @@ var ftsPrefix = 'fts';
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_new.html'
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
               }
             },
             data: {
@@ -64,7 +64,7 @@ var ftsPrefix = 'fts';
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_new.html'
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
               }
             },
             data: {
@@ -77,7 +77,7 @@ var ftsPrefix = 'fts';
             views: {
               "main@app.admin": {
                 controller: 'IndexSearchCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/uia/fts_search.html'
+                templateUrl: '../_p/ui/fts/uia/fts_search.html'
               }
             },
             data: {
@@ -108,7 +108,7 @@ var ftsPrefix = 'fts';
 function IndexesCtrlFT_NS($scope, $http, $stateParams,
                           $log, $sce, $location, mnServersService) {
     var $routeParams = $stateParams;
-    var http = prefixedHttp($http, '/_p/' + ftsPrefix);
+    var http = prefixedHttp($http, '../_p/' + ftsPrefix);
     $scope.ftsChecking = true;
     $scope.ftsAvailable = false;
     $scope.ftsCheckError = "";
@@ -147,7 +147,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
-    var http = prefixedHttp($http, '/_p/' + ftsPrefix)
+    var http = prefixedHttp($http, '../_p/' + ftsPrefix)
 
     $scope.progress = "";
     $scope.sourceDocCount = "";
@@ -242,7 +242,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
         }
 
         IndexNewCtrlFT($scope,
-                       prefixedHttp($http, '/_p/' + ftsPrefix),
+                       prefixedHttp($http, '../_p/' + ftsPrefix),
                        $route, $routeParams,
                        $locationRewrite, $log, $sce, $uibModal,
                        finishIndexNewCtrlFTInit);
@@ -341,10 +341,10 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
     $scope.indexName = $stateParams.indexName;
 
     $scope.decorateSearchHit = function(hit) {
-      hit.docIDLink = "/_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+      hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
     };
 
-    $scope.static_base = "/_p/ui/fts";
+    $scope.static_base = "../_p/ui/fts";
 
     $scope.query = $routeParams.q || "";
     $scope.page = $routeParams.p || 1;
@@ -357,7 +357,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
     }
 
     QueryCtrl($scope,
-              prefixedHttp($http, '/_p/' + ftsPrefix, true),
+              prefixedHttp($http, '../_p/' + ftsPrefix, true),
               $routeParams, $log, $sce, $location);
 
     ftsServiceHostPort($scope, $http, $location);
@@ -399,7 +399,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         $scope.viewOnly = true;
     }
 
-    $scope.static_prefix = "/_p/ui/fts/static-bleve-mapping";
+    $scope.static_prefix = "../_p/ui/fts/static-bleve-mapping";
 
     $scope.indexTemplates = $scope.indexTemplates || {};
     $scope.indexTemplates["fulltext-index"] =
@@ -477,28 +477,28 @@ angular.module(ftsAppName).
 function BleveAnalyzerModalCtrl_NS($scope, $uibModalInstance, $http,
                                    name, value, mapping, static_prefix) {
     return BleveAnalyzerModalCtrl($scope, $uibModalInstance,
-                                  prefixedHttp($http, '/_p/' + ftsPrefix),
+                                  prefixedHttp($http, '../_p/' + ftsPrefix),
                                   name, value, mapping, static_prefix);
 }
 
 function BleveCharFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                      name, value, mapping, static_prefix) {
     return BleveCharFilterModalCtrl($scope, $uibModalInstance,
-                                    prefixedHttp($http, '/_p/' + ftsPrefix),
+                                    prefixedHttp($http, '../_p/' + ftsPrefix),
                                     name, value, mapping, static_prefix);
 }
 
 function BleveTokenFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                       name, value, mapping, static_prefix) {
     return BleveTokenFilterModalCtrl($scope, $uibModalInstance,
-                                     prefixedHttp($http, '/_p/' + ftsPrefix),
+                                     prefixedHttp($http, '../_p/' + ftsPrefix),
                                      name, value, mapping, static_prefix);
 }
 
 function BleveTokenizerModalCtrl_NS($scope, $uibModalInstance, $http,
                                     name, value, mapping, static_prefix) {
     return BleveTokenizerModalCtrl($scope, $uibModalInstance,
-                                   prefixedHttp($http, '/_p/' + ftsPrefix),
+                                   prefixedHttp($http, '../_p/' + ftsPrefix),
                                    name, value, mapping, static_prefix);
 }
 
