@@ -69,11 +69,23 @@
         Show curl command to modify this index definition
       </input>
 
-      <pre ng-show="curlDetails">curl -XPUT -H "Content-Type: application/json" \
+      <div ng-show="curlDetails">
+        <button class="btn btn-xs copyToClipboard"
+                ngclipboard data-clipboard-target="#indexDefStr_details_curl">
+          copy to clipboard
+        </button>
+        <pre id="indexDefStr_details_curl">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
+      </div>
 
-      <pre ng-show="!curlDetails">{{indexDefStr}}</pre>
+      <div ng-show="!curlDetails">
+        <button class="btn btn-xs copyToClipboard"
+                ngclipboard data-clipboard-target="#indexDefStr_details">
+          copy to clipboard
+        </button>
+        <pre id="indexDefStr_details">{{indexDefStr}}</pre>
+      </div>
     </div>
   </dd>
 </dl>

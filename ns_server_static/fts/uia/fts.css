@@ -663,3 +663,10 @@
   background-color: yellow;
 }
 
+/* -------------------------------------------------- */
+
+.indexContainer .index-summary button.copyToClipboard {
+  float: right;
+  padding-right: .5em;
+  padding-left: .5em;
+}
