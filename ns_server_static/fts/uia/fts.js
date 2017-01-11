@@ -106,7 +106,7 @@ var ftsPrefix = 'fts';
 // ----------------------------------------------
 
 function IndexesCtrlFT_NS($scope, $http, $stateParams,
-                          $log, $sce, $location, mnServersService) {
+                          $log, $sce, $location, mnPoolDefault) {
     var $routeParams = $stateParams;
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
     $scope.ftsChecking = true;
@@ -124,13 +124,8 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
       // let's go through the list of nodes
       // and see which ones have a fts service
       if (status == 404) {
-        mnServersService.getNodes().then(function (resp) {
-          var nodes = resp.onlyActive;
-          for (var i = 0; i < nodes.length; i++) {
-            if (_.contains(nodes[i].services,"fts")) {
-              $scope.ftsNodes.push("http://" + nodes[i].hostname + "/ui/index.html#/fts_list");
-            }
-          }
+        mnPoolDefault.get().then(function(value){
+          $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
         });
       } else {
         // some other error to show
