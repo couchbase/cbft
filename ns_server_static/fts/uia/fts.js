@@ -16,22 +16,9 @@ var ftsPrefix = 'fts';
       function addFtsStates(parent) {
         $stateProvider
           .state(parent + '.fts_list', {
-            url: '/fts_list',
+            url: '/fts_list?open',
             controller: 'IndexesCtrlFT_NS',
             templateUrl: '../_p/ui/fts/uia/fts_list.html'
-          })
-          .state(parent + '.fts_view', {
-            url: '/fts_view/:indexName?tabName',
-            views: {
-              "main@app.admin": {
-                controller: 'IndexCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/uia/fts_view.html'
-              }
-            },
-            data: {
-              title: "FTS View",
-              child: parent + '.fts_list'
-            }
           })
           .state(parent + '.fts_new', {
             url: '/fts_new/?indexType&sourceType',
@@ -105,14 +92,19 @@ var ftsPrefix = 'fts';
 
 // ----------------------------------------------
 
-function IndexesCtrlFT_NS($scope, $http, $stateParams,
+var updateDocCountIntervalMS = 5000;
+
+function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
                           $log, $sce, $location, mnPoolDefault) {
     var $routeParams = $stateParams;
+
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
+
     $scope.ftsChecking = true;
     $scope.ftsAvailable = false;
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
+
     http.get("/api/runtime")
     .success(function(data, status, headers, config) {
       $scope.ftsAvailable = true;
@@ -131,6 +123,45 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
         // some other error to show
         $scope.ftsCheckError = data;
       }
+    });
+
+    $scope.detailsOpened = {};
+    if ($state.params && $state.params.open) {
+        $scope.detailsOpened[$state.params.open] = true;
+    }
+
+    $scope.detailsOpenedJSON = {};
+    $scope.detailsOpenedJSONCurl = {};
+
+    $scope.searchInputs = {};
+
+    var done = false;
+
+    $scope.indexViewController = function($scope, $route, $state, $uibModal) {
+        var stateParams = {indexName: $scope.indexName};
+
+        $scope.jsonDetails = false;
+        $scope.curlDetails = false;
+
+        var rv =  IndexCtrlFT_NS($scope, $http, $route, stateParams, $state,
+                                 $location, $log, $sce, $uibModal);
+
+        var loadDocCount = $scope.loadDocCount;
+
+        function updateDocCount() {
+            if (!done) {
+                loadDocCount();
+                setTimeout(updateDocCount, updateDocCountIntervalMS);
+            }
+        }
+
+        setTimeout(updateDocCount, updateDocCountIntervalMS);
+
+        return rv;
+    }
+
+    $scope.$on('$locationChangeStart', function() {
+        done = true;
     });
 
     return IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
@@ -186,30 +217,12 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         $scope.loadDocCount();
     }
 
-    $scope.deleteIndex = function(name) {
-        if (!confirm("Are you sure you want to permanenty delete the index '"
-                     + name + "'?")) {
-            return;
-        }
-
-        $scope.errorMessage = null;
-        $scope.errorMessageFull = null;
-
-        http.delete('/api/index/' + name).success(function(data) {
-            $state.go('^.fts_list');
-        }).
-        error(function(data, code) {
-            $scope.errorMessage = errorMessage(data, code);
-            $scope.errorMessageFull = data;
-        });
-    };
-
     ftsServiceHostPort($scope, $http, $location);
 }
 
 // -------------------------------------------------------
 
-function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
+function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                            $location, $log, $sce, $uibModal,
                            $q, mnBucketsService) {
     mnBucketsService.getBucketsByType(true).then(function(buckets) {
@@ -232,7 +245,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 if (!p) {
                     return $location.path();
                 }
-                return $location.path(p.replace(/^\/indexes\//, "/fts_view/"));
+                var newIndexName = p.replace(/^\/indexes\//, "");
+                $state.go("app.admin.indexes.fts_list", { open: newIndexName });
             }
         }
 
@@ -611,7 +625,6 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 }
 
 function errorMessage(errorMessageFull, code) {
-
     if (code == 403 && typeof errorMessageFull == "object") {
       rv = errorMessageFull.message + ": ";
       for (var x in errorMessageFull.permissions) {

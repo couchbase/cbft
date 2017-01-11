@@ -337,8 +337,46 @@
   width: 90%;
 }
 
-.indexContainer .indexes_list table tr td.controls {
-  text-align: right;
+.indexContainer .indexes_list table tr td.tight {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.indexContainer .indexes_list table tr.detailsOpened td {
+  border-bottom: 0px;
+}
+
+.indexContainer .indexes_list table tr .indexDetails {
+  padding-left: 20px;
+}
+
+.indexContainer .indexes_list table tr .indexDetails .query_bar {
+  float: right;
+  padding-top: 0px;
+  margin-bottom: 5px;
+}
+
+.indexContainer .indexes_list table tr .indexDetails .typeIdentifier * {
+  display: inline-block;
+}
+
+.indexContainer .indexes_list table tr .indexDetails .indexDetailsJSONControls * {
+  display: inline-block;
+}
+
+.indexContainer .indexes_list table tr .indexDetails .indexDetailsJSON button.copyToClipboard {
+  position: relative;
+  top: -4px;
+  margin-left: 10px;
+  padding-right: .5em;
+  padding-left: .5em;
+}
+
+.indexContainer .indexes_list table tr .indexDetails .controls {
+  clear: both;
+  float: right;
+  margin-top: 20px;
+  margin-bottom: 15px;
 }
 
 /* -------------------------------------------------- */
