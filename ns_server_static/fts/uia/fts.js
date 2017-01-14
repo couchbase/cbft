@@ -143,8 +143,8 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.jsonDetails = false;
         $scope.curlDetails = false;
 
-        var rv =  IndexCtrlFT_NS($scope, $http, $route, stateParams, $state,
-                                 $location, $log, $sce, $uibModal);
+        var rv = IndexCtrlFT_NS($scope, $http, $route, stateParams, $state,
+                                $location, $log, $sce, $uibModal);
 
         var loadDocCount = $scope.loadDocCount;
 
@@ -160,11 +160,13 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         return rv;
     }
 
-    $scope.$on('$locationChangeStart', function() {
+    var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
+
+    $scope.$on('$stateChangeStart', function() {
         done = true;
     });
 
-    return IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
+    return rv;
 }
 
 // -------------------------------------------------------
@@ -455,7 +457,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
 
-    $scope.$on('$locationChangeStart', function() {
+    $scope.$on('$stateChangeStart', function() {
         done = true;
     });
 }
