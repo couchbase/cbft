@@ -88,28 +88,28 @@
                 <input ng-model="jsonDetails" type="checkbox">
                   Show index definition JSON
                 </input>
-                <button ng-show="jsonDetails && !curlDetails"
-                        class="btn btn-xs copyToClipboard"
-                        ngclipboard data-clipboard-target="#indexDefStr_details">
-                  copy to clipboard
-                </button>
-                <button ng-show="jsonDetails &&  curlDetails"
-                        class="btn btn-xs copyToClipboard"
-                        ngclipboard data-clipboard-target="#indexDefStr_details_curl">
-                  copy to clipboard
-                </button>
               </div>
               <div ng-show="jsonDetails">
                 <input ng-model="curlDetails" type="checkbox">
                   Show curl command to modify this index definition
                 </input>
 
-                <div ng-show="curlDetails">
+                <div ng-show="curlDetails"
+                     class="indexDetailsJSONContent">
+                  <button class="btn btn-xs copyToClipboard"
+                          ngclipboard data-clipboard-target="#indexDefStr_details_curl">
+                    copy to clipboard
+                  </button>
                   <pre id="indexDefStr_details_curl">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
                 </div>
-                <div ng-show="!curlDetails">
+                <div ng-show="!curlDetails"
+                     class="indexDetailsJSONContent">
+                  <button class="btn btn-xs copyToClipboard"
+                          ngclipboard data-clipboard-target="#indexDefStr_details">
+                    copy to clipboard
+                  </button>
                   <pre id="indexDefStr_details">{{indexDefStr}}</pre>
                 </div>
               </div>

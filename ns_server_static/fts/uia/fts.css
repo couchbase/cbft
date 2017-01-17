@@ -365,11 +365,19 @@
 }
 
 .indexContainer .indexes_list table tr .indexDetails .indexDetailsJSON button.copyToClipboard {
-  position: relative;
-  top: -4px;
-  margin-left: 10px;
+  float: right;
+  margin-top: 10px;
+  margin-right: 10px;
   padding-right: .5em;
   padding-left: .5em;
+}
+
+.indexContainer .indexes_list table tr .indexDetailsJSONContent {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.indexContainer .indexes_list table tr .indexDetailsJSONContent pre {
+  background: none;
 }
 
 .indexContainer .indexes_list table tr .indexDetails .controls {
@@ -699,12 +707,4 @@
 .indexContainer .query_results mark {
   padding: 0 0;
   background-color: yellow;
-}
-
-/* -------------------------------------------------- */
-
-.indexContainer .index-summary button.copyToClipboard {
-  float: right;
-  padding-right: .5em;
-  padding-left: .5em;
 }
