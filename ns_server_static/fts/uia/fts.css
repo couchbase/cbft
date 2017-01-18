@@ -718,6 +718,11 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .query_bar .query_bar_input input {
+  width: 30em;
+  min-width: 15em;
+}
+
 .indexContainer .query_results mark {
   padding: 0 0;
   background-color: yellow;
