@@ -637,23 +637,14 @@ func NsHostsForIndex(name string, planPIndexes *cbgt.PlanPIndexes,
 	}
 
 	// look for all these nodes in the nodes wanted
-	nodeExtras := make(map[string]string)
+	nodeExtras := make(map[string]string) // Keyed by node UUID.
 	for _, nodeDef := range nodeDefs.NodeDefs {
 		_, ok := nodes[nodeDef.UUID]
 		if ok {
-			var e struct {
-				NsHostPort string `json:"nsHostPort"`
+			extras, err := ParseExtras(nodeDef.Extras)
+			if err == nil {
+				nodeExtras[nodeDef.UUID] = extras["nsHostPort"]
 			}
-
-			err := json.Unmarshal([]byte(nodeDef.Extras), &e)
-			if err != nil {
-				// Early versions of ns_server integration had a
-				// simple, non-JSON "host:port" format for
-				// nodeDef.Extras, so fall back to that.
-				e.NsHostPort = nodeDef.Extras
-			}
-
-			nodeExtras[nodeDef.UUID] = e.NsHostPort
 		}
 	}
 

@@ -12,6 +12,7 @@
 package main
 
 import (
+	"encoding/json"
 	"expvar"
 	"flag"
 	"fmt"
@@ -46,7 +47,7 @@ import (
 
 var cmdName = "cbft"
 
-var VERSION = "v0.3.1"
+var VERSION = "v0.4.0"
 
 var DefaultCtlVerbose = 3
 
@@ -332,7 +333,22 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
-	err := InitOptions(options)
+	extrasMap, err := cbft.ParseExtras(extras)
+	if err != nil {
+		return nil, err
+	}
+
+	extrasMap["version-cbft.app"] = VERSION
+	extrasMap["version-cbft.lib"] = cbft.VERSION
+
+	extrasJson, err := json.Marshal(extrasMap)
+	if err != nil {
+		return nil, err
+	}
+
+	extras = string(extrasJson)
+
+	err = InitOptions(options)
 	if err != nil {
 		return nil, err
 	}
