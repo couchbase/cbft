@@ -66,10 +66,24 @@
                    type="checkbox"/> )
         </span>
       </label>
-      <pre ng-show="!curl_example_toggle">{{jsonQuery}}</pre>
-      <pre ng-show="curl_example_toggle">curl -XPOST -H "Content-Type: application/json" \
+      <div ng-show="!curl_example_toggle"
+           class="jsonQuery">
+        <button class="btn btn-xs copyToClipboard"
+                ngclipboard data-clipboard-target="#jsonQueryContent">
+                copy to clipboard
+        </button>
+        <pre id="jsonQueryContent">{{jsonQuery}}</pre>
+      </div>
+      <div ng-show="curl_example_toggle"
+           class="jsonQueryCurl">
+        <button class="btn btn-xs copyToClipboard"
+                ngclipboard data-clipboard-target="#jsonQueryCurlContent">
+                copy to clipboard
+        </button>
+        <pre id="jsonQueryCurlContent">curl -XPOST -H "Content-Type: application/json" \
  http://{{hostPort}}/api/index/{{indexName}}/query \
  -d '{{jsonQuery}}'</pre>
+      </div>
     </div>
   </div>
 </div>

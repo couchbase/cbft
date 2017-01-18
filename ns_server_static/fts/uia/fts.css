@@ -246,8 +246,22 @@
   padding: 5px 5px 5px 5px;
 }
 
+.indexContainer .query_advanced .form_group_jsonQuery label {
+  text-align: left;
+  margin-left: 5px;
+}
+
+.indexContainer .query_advanced .form_group_jsonQuery button.copyToClipboard {
+  float: right;
+  margin-top: -10px;
+  margin-right: 10px;
+  padding-right: .5em;
+  padding-left: .5em;
+}
+
 .indexContainer .query_advanced .form_group_jsonQuery pre {
   padding: 5px 10px 5px 10px;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 .indexContainer .query_results_area {
@@ -377,7 +391,7 @@
 }
 
 .indexContainer .indexes_list table tr .indexDetailsJSONContent pre {
-  background: none;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 .indexContainer .indexes_list table tr .indexDetails .controls {
