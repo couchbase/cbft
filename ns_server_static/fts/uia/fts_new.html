@@ -173,9 +173,6 @@
   <div class="form_group form_group_controls">
     <label></label>
     <div class="form_control">
-      <a ui-sref="^.fts_list">
-        <button class="cancel">Cancel</button>
-      </a>
       <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
               ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
               type="submit">
@@ -196,6 +193,9 @@
           Update Index Alias
         </span>
       </button>
+      <a ui-sref="^.fts_list">
+        <button class="cancel outline">Cancel</button>
+      </a>
     </div>
   </div>
 </form>

@@ -117,14 +117,14 @@
           </div>
 
           <div class="controls">
-            <a ui-sref="^.fts_edit({indexName: indexName})">
-              <button>edit</button>
+            <a ng-click="deleteIndex(indexName)">
+              <button class="outline">delete</button>
             </a>
             <a ui-sref="^.fts_clone({indexName: indexName})">
-              <button>clone</button>
+              <button class="outline">clone</button>
             </a>
-            <a ng-click="deleteIndex(indexName)">
-              <button>delete</button>
+            <a ui-sref="^.fts_edit({indexName: indexName})">
+              <button>edit</button>
             </a>
           </div>
         </td>
@@ -225,14 +225,14 @@
             </div>
 
             <div class="controls">
-              <a ui-sref="^.fts_edit({indexName: indexName})">
-                <button>edit</button>
+              <a ng-click="deleteIndex(indexName)">
+                <button class="outline">delete</button>
               </a>
               <a ui-sref="^.fts_clone({indexName: indexName})">
-                <button>clone</button>
+                <button class="outline">clone</button>
               </a>
-              <a ng-click="deleteIndex(indexName)">
-                <button>delete</button>
+              <a ui-sref="^.fts_edit({indexName: indexName})">
+                <button>edit</button>
               </a>
             </div>
           </div>

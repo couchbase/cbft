@@ -87,6 +87,10 @@
   margin-bottom: 10px;
 }
 
+.indexContainer .indexMapping h2 {
+  margin-bottom: 10px;
+}
+
 .indexContainer .indexMapping .form_group.form_group_indexType {
   display: none;
 }
