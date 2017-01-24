@@ -553,6 +553,11 @@
   margin-left: 20px;
 }
 
+.indexContainer .typeMappingsSection select.mapping_default_analyzer {
+  margin-left: 10px;
+  min-width: 10em;
+}
+
 .indexContainer button.addTypeMapping {
   margin-top: -30px;
   margin-bottom: 10px;

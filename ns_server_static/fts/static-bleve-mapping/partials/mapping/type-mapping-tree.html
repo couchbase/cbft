@@ -1,6 +1,10 @@
 <div>
   <div ui-tree-handle
        class="mappingHandle">
+    <input type="checkbox"
+           ng-disabled="viewOnly || mapping._editing"
+           ng-model="mapping.enabled"/>
+
     <span ng-if="mapping._kind == 'mappingType'">
       <i class="glyphicon glyphicon-file"></i></span>
     <span ng-if="mapping._kind != 'mappingType'">
@@ -34,7 +38,8 @@
              ng-model="mapping.name"/>
     </span>
     <span ng-if="mapping.enabled && mapping._editing">
-      <select ng-model="mapping.default_analyzer"
+      <select class="mapping_default_analyzer"
+              ng-model="mapping.default_analyzer"
               ng-options="t as t for t in analyzerNames">
         <option value="">inherit</option>
       </select>
@@ -64,6 +69,7 @@
       </div>
       <a class="pull-right btn btn-xs btn-edit"
          data-nodrag
+         ng-if="mapping.enabled"
          ng-click="editAttrs(mapping)">
          <i class="glyphicon glyphicon-pencil"></i></a>
     </span>
@@ -88,10 +94,6 @@
     <div ng-if="mapping._editing"
          class="editArea editAreaMapping"
          data-nodrag>
-      <label><input type="checkbox"
-                    ng-model="mapping.enabled"/>
-             enabled
-      </label>
       <label ng-if="mapping.enabled">
              <input type="checkbox"
                     ng-init="mapping._specifiedChecked = !mapping.dynamic"
