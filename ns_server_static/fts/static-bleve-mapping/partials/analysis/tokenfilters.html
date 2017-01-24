@@ -1,0 +1,44 @@
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr ng-repeat="(tfname,tfval) in indexMapping.analysis.token_filters">
+      <td><a ng-click="editTokenFilter(tfname, tfval, true)">{{tfname}}</a></td>
+      <td>{{tfval.type}}</td>
+      <td>
+        <div class="btn-group btn-group-xs" role="group">
+          <button ng-if="!viewOnlyModal"
+                  ng-click="editTokenFilter(tfname, tfval)" type="button"
+                  class="btn btn-default btn-xs">
+            <span class="glyphicon glyphicon-edit"
+                  aria-hidden="true"></span> Edit
+          </button>
+          <button ng-if="!viewOnlyModal"
+                  ng-click="deleteTokenFilter(tfname)" type="button"
+                  class="btn btn-default btn-xs">
+            <span class="glyphicon glyphicon-trash"
+                  aria-hidden="true"></span> Delete
+          </button>
+        </div>
+      </td>
+    </tr>
+    <tr ng-show="Utils.keys(indexMapping.analysis.token_filters).length < 1">
+      <td colspan="3">None</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3">
+        <button ng-if="!viewOnlyModal"
+                ng-click="newTokenFilter()" type="button"
+                class="btn btn-sm btn-default pull-right">New Token Filter</button>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+

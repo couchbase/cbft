@@ -1,0 +1,60 @@
+<div class="bleveModal">
+
+<div class="modal-header">
+    <h3 class="modal-title">Custom Word List</h3>
+</div>
+
+<div class="modal-body">
+    <div ng-show="errorMessage"
+         class="alert alert-danger ng-cloak"
+         role="alert"> {{errorMessage}}
+    </div>
+
+    <form class="form" role="form">
+        <div class="form-group">
+            <label for="tname">Name</label>
+            <input ng-disabled="viewOnlyModal"
+                   ng-model="name" type="text"
+                   class="form-control" id="tname" placeholder="Name">
+        </div>
+
+        <div class="form-group">
+            <label for="words">Words</label>
+            <select ng-disabled="viewOnlyModal"
+                    ng-model="selectedWords" multiple ng-multiple="true"
+                    id="words" size="5" class="form-control"
+                    ng-options="idx as word for (idx, word) in words">
+            </select>
+        </div>
+
+        <div ng-if="!viewOnlyModal"
+             class="form-group">
+            <label for="what"></label>
+            <div class="col-sm-9">
+              <input ng-model="formdata.newWord" type="text"
+                     class="form-control" id="newWord" placeholder="word">
+            </div>
+            <div class="col-sm-3">
+                <button ng-click="addWord()"
+                        type="submit"
+                        class="btn btn-sm btn-default">Add</button>
+                <button ng-click="removeWords(selectedWords)"
+                        ng-disabled="selectedWords.length < 1"
+                        type="button"
+                        class="btn btn-sm btn-default pull-right">Remove</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button ng-if="viewOnlyModal" class="btn btn-default"
+            ng-click="cancel()">Close</button>
+    <button ng-if="!viewOnlyModal" class="btn btn-default"
+            ng-click="cancel()">Cancel</button>
+    <button ng-if="!viewOnlyModal"
+            ng-click="build(name)"
+            type="button" class="btn btn-primary pull-right">Save</button>
+</div>
+
+</div>

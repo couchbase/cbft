@@ -1,0 +1,239 @@
+<div>
+  <div ui-tree-handle
+       class="mappingHandle">
+    <span ng-if="mapping._kind == 'mappingType'">
+      <i class="glyphicon glyphicon-file"></i></span>
+    <span ng-if="mapping._kind != 'mappingType'">
+      {}
+    </span>
+
+    <span ng-if="mapping.name == null">
+      <i>default</i>
+    </span>
+
+    <span ng-if="!mapping._editing">
+      <span ng-if="mapping.name">
+        {{mapping.name}}
+      </span>
+
+      <span class="attrs">
+        <span ng-if="!mapping.enabled">| disabled</span>
+        <span ng-if="mapping.enabled && mapping.default_analyzer">
+          | {{mapping.default_analyzer}}</span>
+        <span ng-if="mapping.enabled && !mapping.dynamic">
+          | only index specified fields</span>
+      </span>
+    </span>
+    <span ng-if="mapping._editing && mapping.name != null"
+          data-nodrag>
+      <input ng-if="mapping._kind == 'mappingType'"
+             type="text" placeholder="please enter a type name"
+             ng-model="mapping.name"/>
+      <input ng-if="mapping._kind == 'mapping'"
+             type="text" placeholder="please enter a property name"
+             ng-model="mapping.name"/>
+    </span>
+    <span ng-if="mapping.enabled && mapping._editing">
+      <select ng-model="mapping.default_analyzer"
+              ng-options="t as t for t in analyzerNames">
+        <option value="">inherit</option>
+      </select>
+    </span>
+
+    <span ng-if="!editing"
+          class="attrControls editable">
+      <a class="pull-right btn btn-xs"
+         data-nodrag
+         ng-if="mapping.enabled"
+         ng-click="popupToggle(mapping)">
+         <i class="glyphicon glyphicon-plus"></i></a>
+      <div class="pull-right popupContainer"
+           data-nodrag
+           ng-if="mapping.enabled">
+        <div ng-show="popup == mapping"
+             class="popup">
+          <div>
+            <a ng-click="addChildMapping(mapping)">
+               insert child mapping</a>
+          </div>
+          <div>
+            <a ng-click="addChildField(mapping)">
+               insert child field</a>
+          </div>
+        </div>
+      </div>
+      <a class="pull-right btn btn-xs btn-edit"
+         data-nodrag
+         ng-click="editAttrs(mapping)">
+         <i class="glyphicon glyphicon-pencil"></i></a>
+    </span>
+    <span ng-if="editing == mapping"
+          class="attrControls"
+          data-nodrag>
+      <a class="pull-right btn btn-xs"
+         data-nodrag
+         ng-click="editAttrsDone(mapping, false)">
+         <i class="glyphicon glyphicon-remove"></i></a>
+      <a class="pull-right btn btn-xs btn-success"
+         data-nodrag
+         ng-click="editAttrsDone(mapping, true)">
+         <i class="glyphicon glyphicon-ok"></i></a>
+      <a ng-if="mapping._editing === true && mapping.name != null"
+         class="pull-right btn btn-xs btn-trash"
+         data-nodrag
+         ng-click="removeFromParent(mapping, this)">
+         <i class="glyphicon glyphicon-trash"></i></a>
+    </span>
+
+    <div ng-if="mapping._editing"
+         class="editArea editAreaMapping"
+         data-nodrag>
+      <label><input type="checkbox"
+                    ng-model="mapping.enabled"/>
+             enabled
+      </label>
+      <label ng-if="mapping.enabled">
+             <input type="checkbox"
+                    ng-init="mapping._specifiedChecked = !mapping.dynamic"
+                    ng-model="mapping._specifiedChecked"
+                    ng-change="mapping.dynamic = !mapping._specifiedChecked"/>
+             only index specified fields
+      </label>
+    </div>
+  </div>
+
+  <ol ui-tree-nodes
+      ng-if="mapping.enabled"
+      ng-model="mapping.fields"
+      data-type="fieldContainer">
+    <li ng-repeat="field in mapping.fields"
+        ui-tree-node
+        class="field"
+        ng-class="{'editing': field._editing}">
+      <div ui-tree-handle
+           class="fieldHandle">
+        <span ng-if="!field._editing">
+          {{field.property}}
+          <span class="attrs">
+            <span ng-if="field.type">| {{field.type}}</span>
+            <span ng-if="field.type != 'disabled'">
+              <span ng-if="field.name != field.property">
+                | searchable as <i>{{field.name}}</i>
+              </span>
+              <span ng-if="field.analyzer && field.type == 'text'">
+                | {{field.analyzer}}
+              </span>
+              <span ng-if="field.index">| index</span>
+              <span ng-if="field.store">| store</span>
+              <span ng-if="field.include_in_all">| include in <i>_all</i> field</span>
+              <span ng-if="field.include_term_vectors && field.type == 'text'">
+                | include term vectors
+              </span>
+            </span>
+          </span>
+        </span>
+        <span ng-if="field._editing"
+              data-nodrag>
+          <label>
+            <span>field</span>
+            <input type="text"
+                   placeholder="please enter a field name"
+                   ng-model="field.property"
+                   ng-change="changedProperty(field)"/>
+          </label>
+        </span>
+
+        <span ng-if="!editing"
+              class="attrControls editable">
+          <a class="pull-right btn btn-xs btn-edit"
+             data-nodrag
+             ng-click="editAttrs(field)">
+             <i class="glyphicon glyphicon-pencil"></i></a>
+        </span>
+        <span ng-if="editing == field"
+              class="attrControls"
+              data-nodrag>
+          <a class="pull-right btn btn-xs"
+             data-nodrag
+             ng-click="editAttrsDone(field, false)">
+             <i class="glyphicon glyphicon-remove"></i></a>
+          <a class="pull-right btn btn-xs btn-success"
+             data-nodrag
+             ng-click="editAttrsDone(field, true)">
+             <i class="glyphicon glyphicon-ok"></i></a>
+          <a ng-if="field._editing === true"
+             class="pull-right btn btn-xs btn-trash"
+             data-nodrag
+             ng-click="removeFromParent(field, this)">
+             <i class="glyphicon glyphicon-trash"></i></a>
+        </span>
+
+        <div ng-if="field._editing"
+             class="editArea editAreaField"
+             data-nodrag>
+          <div>
+            <label>
+              <span>type</span>
+              <select ng-model="field.type"
+                      ng-options="t as t for t in fieldTypes">
+              </select>
+            </label>
+          </div>
+          <div ng-if="field.type != 'disabled'">
+            <label>
+              <span>searchable as</span>
+              <input type="text"
+                     placeholder="please enter a name"
+                     ng-model="field.name"/>
+            </label>
+          </div>
+          <div ng-if="field.type == 'text'">
+            <label>
+              <span>analyzer</span>
+              <select ng-model="field.analyzer"
+                      ng-options="t as t for t in analyzerNames">
+                <option value="">inherit</option>
+              </select>
+            </label>
+          </div>
+          <div ng-if="field.type == 'datetime'">
+            <label>
+              <span>datetime parser</span>
+              <select ng-model="field.date_format"
+                      ng-options="t as t for t in dateTimeParserNames">
+                <option value="">inherit</option>
+              </select>
+            </label>
+          </div>
+          <div ng-if="field.type != 'disabled'"
+               class="editAreaFieldCheckboxes">
+            <label><input type="checkbox" ng-model="field.index"/>
+                   index
+            </label>
+            <label><input type="checkbox" ng-model="field.store"/>
+                   store
+            </label>
+            <label><input type="checkbox" ng-model="field.include_in_all"/>
+                   include in <i>_all</i> field
+            </label>
+            <label ng-if="field.type == 'text'">
+                   <input type="checkbox" ng-model="field.include_term_vectors"/>
+                   include term vectors
+            </label>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <ol ui-tree-nodes
+      ng-if="mapping.enabled"
+      ng-model="mapping.mappings"
+      data-type="mappingContainer">
+    <li ng-repeat="mapping in mapping.mappings"
+        ui-tree-node
+        class="mapping"
+        ng-class="{'editing': mapping._editing}"
+        ng-include="static_prefix + '/partials/mapping/type-mapping-tree.html'"></li>
+  </ol>
+</div>

@@ -1,0 +1,11 @@
+<div ui-tree="options">
+  <ol ui-tree-nodes
+      ng-model="mappings"
+      data-type="mappingTypeContainer">
+    <li ng-repeat="mapping in mappings"
+        ui-tree-node
+        class="mapping"
+        ng-class="{'editing': mapping._editing}"
+        ng-include="static_prefix + '/partials/mapping/type-mapping-tree.html'"></li>
+  </ol>
+</div>

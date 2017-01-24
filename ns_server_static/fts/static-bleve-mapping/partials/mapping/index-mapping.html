@@ -1,0 +1,199 @@
+<div class="indexMapping">
+<div ng-class="{'viewOnly': viewOnly}">
+
+<!-- ======================================================= -->
+
+<div class="section">
+
+<div class="sectionHeader showTypeMappingsSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <a ng-show="!showTypeMappingsSection"
+         ng-click="showTypeMappingsSection = true">
+        <i class="glyphicon glyphicon-chevron-right"></i>
+        <label>Type Mappings</label>
+      </a>
+      <a ng-show="showTypeMappingsSection"
+         ng-click="showTypeMappingsSection = false">
+        <i class="glyphicon glyphicon-chevron-down"></i>
+        <label>Type Mappings</label>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sectionBody typeMappingsSection"
+   ng-show="showTypeMappingsSection">
+  <div class="row editable">
+    <div class="col-sm-12">
+      <button class="pull-right addTypeMapping"
+              ng-click="addChildMapping(null)">Add Type Mapping</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12">
+      <div ng-include="static_prefix + '/partials/mapping/type-mapping.html'"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ======================================================= -->
+
+<div class="section">
+
+<div class="sectionHeader showAnalyzersSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <a ng-show="!showAnalyzersSection"
+         ng-click="showAnalyzersSection = true">
+        <i class="glyphicon glyphicon-chevron-right"></i>
+        <label>Analyzers</label>
+      </a>
+      <a ng-show="showAnalyzersSection"
+         ng-click="showAnalyzersSection = false">
+        <i class="glyphicon glyphicon-chevron-down"></i>
+        <label>Analyzers</label>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sectionBody analyzersSection"
+   ng-show="showAnalyzersSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <div ng-include src="static_prefix + '/partials/analysis/analyzers.html'"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ======================================================= -->
+
+<div class="section">
+
+<div class="sectionHeader showFiltersSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <a ng-show="!showFiltersSection"
+         ng-click="showFiltersSection = true">
+        <i class="glyphicon glyphicon-chevron-right"></i>
+        <label>Custom Filters</label>
+      </a>
+      <a ng-show="showFiltersSection"
+         ng-click="showFiltersSection = false">
+        <i class="glyphicon glyphicon-chevron-down"></i>
+        <label>Custom Filters</label>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sectionBody filtersSection"
+   ng-show="showFiltersSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <uib-tabset>
+        <uib-tab heading="Character Filters">
+          <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
+        </uib-tab>
+        <uib-tab heading="Tokenizers">
+          <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
+        </uib-tab>
+        <uib-tab heading="Token Filters">
+          <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
+        </uib-tab>
+        <uib-tab heading="Word Lists">
+          <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
+        </uib-tab>
+      </uib-tabset>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ======================================================= -->
+
+<div class="section">
+
+<div class="sectionHeader showPropertiesSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <a ng-show="!showPropertiesSection"
+         ng-click="showPropertiesSection = true">
+        <i class="glyphicon glyphicon-chevron-right"></i>
+        <label>Advanced</label>
+      </a>
+      <a ng-show="showPropertiesSection"
+         ng-click="showPropertiesSection = false">
+        <i class="glyphicon glyphicon-chevron-down"></i>
+        <label>Advanced</label>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sectionBody propertiesSection"
+   ng-show="showPropertiesSection">
+  <div class="row">
+    <div class="col-sm-12">
+      <div id="bleve-mapping-ui-type-field-row" class="form-group">
+        <label>Type Field</label>
+        <input type="text" class="form-control"
+               ng-disabled="viewOnly"
+               ng-model="indexMapping.type_field"
+               placeholder="placeholder"/>
+      </div>
+      <div class="form-group">
+        <label>Default Type</label>
+        <input type="text" class="form-control"
+               ng-disabled="viewOnly"
+               ng-model="indexMapping.default_type"
+               placeholder="placeholder"/>
+      </div>
+      <div class="form-group">
+        <label>Default Analyzer</label>
+        <select ng-disabled="viewOnly"
+                ng-model="indexMapping.default_analyzer"
+                ng-options="t as t for t in analyzerNames"
+                class="form-control">
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Default Date/Time Parser</label>
+        <select ng-disabled="viewOnly"
+                ng-model="indexMapping.default_datetime_parser"
+                ng-options="t as t for t in dateTimeParserNames"
+                class="form-control">
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Default Field</label>
+        <input type="text" class="form-control"
+               ng-disabled="viewOnly"
+               ng-model="indexMapping.default_field"
+               placeholder="placeholder"/>
+      </div>
+      <div class="form-group">
+        <label>Store Dynamic Fields</label>
+        <input type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.store_dynamic"/>
+      </div>
+      <div class="form-group">
+        <label>Index Dynamic Fields</label>
+        <input type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.index_dynamic"/>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ======================================================= -->
+
+</div>
+</div>
