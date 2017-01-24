@@ -266,7 +266,7 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 		bindHttp = "localhost" + bindHttp
 	}
 
-	bar := "------------------------------------------------------------"
+	bar := "main: ------------------------------------------------------"
 
 	if anyHostPorts != nil {
 		// If we've already bound to 0.0.0.0 on the same port, then
@@ -277,7 +277,7 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 			if anyHostPorts[anyHostPort] {
 				if anyHostPort != bindHttp {
 					log.Printf(bar)
-					log.Printf("web UI / REST API is available"+
+					log.Printf("main: web UI / REST API is available"+
 						" (via 0.0.0.0): %s://%s", proto, bindHttp)
 					log.Printf(bar)
 				}
@@ -287,7 +287,7 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 	}
 
 	log.Printf(bar)
-	log.Printf("web UI / REST API is available: %s://%s", proto, bindHttp)
+	log.Printf("main: web UI / REST API is available: %s://%s", proto, bindHttp)
 	log.Printf(bar)
 
 	var err error
@@ -305,7 +305,7 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 
 func LoggerFunc(level, format string, args ...interface{}) string {
 	ts := time.Now().Format("2006-01-02T15:04:05.000-07:00")
-	prefix := ts + " [" + level + "] "
+	prefix := ts + " " + level + " "
 	if format != "" {
 		return prefix + fmt.Sprintf(format, args...)
 	}
