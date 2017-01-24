@@ -26,7 +26,7 @@
     <tbody ng-repeat="(indexName, indexDef) in indexDefs"
            class="has-hover"
            ng-if="indexDef.type != 'fulltext-alias'"
-           ng-click="detailsOpened[indexName] = !detailsOpened[indexName]"
+           ng-click="expando(indexName)"
            ng-controller="indexViewController">
       <tr ng-class="{
                    'grayblue-5 detailsOpened': detailsOpened[indexName],
@@ -53,7 +53,8 @@
             <div class="query_bar">
               <div class="query_bar_input">
                 <form>
-                  <input ng-model="searchInputs[indexName]"
+                  <input id="query_bar_input_{{indexName}}"
+                         ng-model="searchInputs[indexName]"
                          type="text"
                          placeholder="search this index..."/>
                   <a ui-sref="^.fts_search({indexName: indexName, q: searchInputs[indexName]})">

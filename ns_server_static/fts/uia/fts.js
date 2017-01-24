@@ -166,6 +166,17 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         done = true;
     });
 
+    $scope.expando = function(indexName) {
+        $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
+
+        // The timeout gives angular some time to create the input control.
+        if ($scope.detailsOpened[indexName]) {
+            setTimeout(function() {
+                document.getElementById('query_bar_input_' + indexName).focus()
+            }, 100);
+        }
+    }
+
     return rv;
 }
 
@@ -372,6 +383,10 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
               $routeParams, $log, $sce, $location);
 
     ftsServiceHostPort($scope, $http, $location);
+
+    setTimeout(function() {
+        document.getElementById("query_bar_input").focus();
+    }, 100);
 }
 
 // -------------------------------------------------------
