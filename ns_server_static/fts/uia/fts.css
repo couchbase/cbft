@@ -593,6 +593,10 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .indexMapping .viewOnly {
+  display: none;
+}
+
 .indexContainer .viewOnly .editable {
   display: none;
 }
