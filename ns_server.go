@@ -954,7 +954,6 @@ func NsSearchResultRedirctHandler(mgr *cbgt.Manager) (*NsSearchResultRedirct, er
 
 func (h *NsSearchResultRedirct) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
-
 	allPlanPIndexes, _, err := h.mgr.GetPlanPIndexes(false)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("could not get plan pindexes: %v", err), 500)
