@@ -87,9 +87,6 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/staticx"
 install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static"
   DESTINATION lib/fts)
 
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com/blevesearch/bleve-mapping-ui/static-bleve-mapping"
-  DESTINATION lib/fts)
-
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
 SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
