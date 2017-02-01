@@ -113,4 +113,7 @@ cluster.bucket[<sourceName>].fts!read
 
 POST /api/pindex/{pindexName}/query
 cluster.bucket[<sourceName>].fts!read
+
+GET /api/ping
+none
 `

@@ -407,3 +407,22 @@ func TestPreparePerms(t *testing.T) {
 	}
 
 }
+
+func TestPingAuth(t *testing.T) {
+	path := "/api/ping"
+
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actualPerms, err := preparePerms(nil, req, "GET", path)
+
+	if actualPerms != nil {
+		t.Errorf("Invalid perms for ping %v, was not expecting any", actualPerms)
+	}
+
+	ok := CheckAPIAuth(nil, nil, req, path)
+	if ok != true {
+		t.Errorf("Not expecting auth failure for ping")
+	}
+}

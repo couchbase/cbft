@@ -216,6 +216,8 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 	perm := restPermsMap[method+":"+path]
 	if perm == "" {
 		perm = restPermDefault
+	} else if perm == "none" {
+		return nil, nil
 	}
 
 	if strings.Index(perm, "<sourceName>") >= 0 {
