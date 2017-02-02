@@ -32,7 +32,7 @@
 
 .indexContainer .form_group label,
 .indexContainer .form-group label {
-  min-width: 15em;
+  min-width: 10em;
 }
 
 .indexContainer .form_group .form_control {
@@ -122,12 +122,25 @@
   flex: 1 0 0;
 }
 
-.indexContainer .indexTemplateContainer .indexEditor .indexEditorPreview {
-  border: 1px solid #ddd;
+/* -------------------------------------------------- */
+
+.indexContainer .indexMapping .indexEditorStage {
+  display: flex;
+}
+
+.indexContainer .indexMapping .indexEditorStage .indexEditorForm {
+  flex-grow: 4;
+}
+
+.indexContainer .indexMapping .indexEditorStage .indexEditorPreview {
+  flex-grow: 1;
+  width: 20%;
+  margin-left: 1.5em;
+  border-left: 1px solid #ddd;
   padding: 1.5em 1em 1.5em 1em;
 }
 
-.indexContainer .indexTemplateContainer .indexEditor .indexEditorPreview div {
+.indexContainer .indexMapping .indexEditorStage .indexEditorPreview div {
   margin-left: 1.5em;
   font-size: 9pt;
   font-family: monospace;
