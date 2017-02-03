@@ -51,6 +51,10 @@
   width: 100%;
 }
 
+.indexContainer .form_group .form_controlDesc {
+  margin-left: 8px;
+}
+
 .indexContainer .form_group_controls {
   margin-top: 15px;
 }
@@ -101,6 +105,10 @@
 
 .indexContainer .indexMapping .form_group_targetIndexes select {
   min-width: 20em;
+}
+
+.indexContainer .indexMapping .form_group.form_group_numReplicas select {
+  min-width: 4em;
 }
 
 .indexContainer .indexViewer.fulltext-index .indexMapping .viewOnly {

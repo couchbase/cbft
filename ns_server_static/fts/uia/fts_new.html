@@ -135,6 +135,19 @@
       </div>
     </div>
   </div>
+  <div class="form_group form_group_numReplicas"
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+    <label for="inputNumReplicas">Replicas</label>
+    <div class="form_control">
+      <select ng-model="$parent.numReplicas">
+         <option value="0">0</option>
+         <option value="1">1</option>
+         <option value="2">2</option>
+         <option value="3">3</option>
+      </select>
+      <span class="form_controlDesc">Number of replica (backup) copies</span>
+    </div>
+  </div>
   <div class="form_group form_group_sourceParams"
        ng-show="newSourceType && newSourceType != 'nil' && advanced">
     <label for="inputSourceParams">Source Params</label>
