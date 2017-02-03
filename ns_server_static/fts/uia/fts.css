@@ -501,18 +501,23 @@
 /* -------------------------------------------------- */
 
 .indexContainer .mapping .mappingHandle {
+  display: flex;
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
   background-color: #eee;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .indexContainer .mapping .mappingHandle::after {
   clear: both;
 }
 
+.indexContainer .mapping .mappingHandle_main {
+  flex-grow: 2;
+}
+
 .indexContainer .mapping .mappingHandle .attrControls {
-  margin-left: 5px;
   visibility: hidden;
 }
 
@@ -522,12 +527,12 @@
 }
 
 .indexContainer .mapping .field .fieldHandle .attrControls {
-  visibility: hidden;
+  display: none;
 }
 
 .indexContainer .mapping .field .fieldHandle:hover .attrControls,
 .indexContainer .mapping .field.editing .fieldHandle .attrControls {
-  visibility: inherit;
+  display: inherit;
 }
 
 /* -------------------------------------------------- */
@@ -538,6 +543,10 @@
   padding: 4px 0 4px 4px;
   background-color: #eee;
   cursor: pointer;
+}
+
+.indexContainer .mapping .fieldHandle_main {
+  flex-grow: 2;
 }
 
 .indexContainer .mapping .field .fieldHandle .attrControls {
@@ -558,6 +567,10 @@
 
 .indexContainer .mapping .attrControls a {
   margin: 0px 10px 0px 10px;
+}
+
+.indexContainer .mapping .attrControls a.btn-trash {
+  margin-top: 15px;
 }
 
 .indexContainer .mapping .attrControls .glyphicon-trash:before {

@@ -1,6 +1,7 @@
 <div>
   <div ui-tree-handle
        class="mappingHandle">
+   <div class="mappingHandle_main">
     <input type="checkbox"
            ng-disabled="viewOnly || mapping._editing"
            ng-model="mapping.enabled"/>
@@ -45,6 +46,20 @@
       </select>
     </span>
 
+    <div ng-if="mapping._editing"
+         class="editArea editAreaMapping"
+         data-nodrag>
+      <label ng-if="mapping.enabled">
+             <input type="checkbox"
+                    ng-init="mapping._specifiedChecked = !mapping.dynamic"
+                    ng-model="mapping._specifiedChecked"
+                    ng-change="mapping.dynamic = !mapping._specifiedChecked"/>
+             only index specified fields
+      </label>
+    </div>
+   </div>
+
+   <div class="mappingHandle_attrControls">
     <span ng-if="!editing"
           class="attrControls editable">
       <a class="pull-right btn btn-xs"
@@ -73,35 +88,25 @@
          ng-click="editAttrs(mapping)">
          <i class="glyphicon glyphicon-pencil"></i></a>
     </span>
+
     <span ng-if="editing == mapping"
-          class="attrControls"
+          class="attrControls attrControlsVertical"
           data-nodrag>
-      <a class="pull-right btn btn-xs"
-         data-nodrag
-         ng-click="editAttrsDone(mapping, false)">
-         <i class="glyphicon glyphicon-remove"></i></a>
-      <a class="pull-right btn btn-xs btn-success"
+      <a class="btn btn-xs btn-success"
          data-nodrag
          ng-click="editAttrsDone(mapping, true)">
          <i class="glyphicon glyphicon-ok"></i></a>
+      <a class="btn btn-xs btn-cancel"
+         data-nodrag
+         ng-click="editAttrsDone(mapping, false)">
+         <i class="glyphicon glyphicon-remove"></i></a>
       <a ng-if="mapping._editing === true && mapping.name != null"
-         class="pull-right btn btn-xs btn-trash"
+         class="btn btn-xs btn-trash"
          data-nodrag
          ng-click="removeFromParent(mapping, this)">
          <i class="glyphicon glyphicon-trash"></i></a>
     </span>
-
-    <div ng-if="mapping._editing"
-         class="editArea editAreaMapping"
-         data-nodrag>
-      <label ng-if="mapping.enabled">
-             <input type="checkbox"
-                    ng-init="mapping._specifiedChecked = !mapping.dynamic"
-                    ng-model="mapping._specifiedChecked"
-                    ng-change="mapping.dynamic = !mapping._specifiedChecked"/>
-             only index specified fields
-      </label>
-    </div>
+   </div>
   </div>
 
   <ol ui-tree-nodes
