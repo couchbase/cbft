@@ -806,3 +806,13 @@
   padding: 0 0;
   background-color: yellow;
 }
+
+/* -------------------------------------------------- */
+
+.indexContainer .sectionBody.propertiesSection label {
+  min-width: 17em;
+}
+
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] {
+  margin-top: .6rem;
+}
