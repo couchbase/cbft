@@ -153,7 +153,7 @@
     <label for="inputSourceParams">Source Params</label>
     <div class="form_control"
          ng-repeat="(sourceType, p) in newSourceParams"
-         ng-class="{'has-error': errorFields.sourceParams[sourceType]}">
+         ng-class="{'has-error': errorFields.sourceParams[sourceType], 'nosize': newSourceType != sourceType}">
       <textarea ng-model="newSourceParams[sourceType]"
                 rows="{{paramNumLines[sourceType]}}"
                 ng-show="newSourceType == sourceType"></textarea>

@@ -39,6 +39,11 @@
   width: 100%;
 }
 
+.indexContainer .form_group .form_control.nosize {
+  min-width: 0;
+  width: 0;
+}
+
 .indexContainer .form_group .form_control input[type="text"] {
   min-width: 20em;
 }
