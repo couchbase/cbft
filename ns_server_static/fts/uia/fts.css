@@ -816,3 +816,9 @@
 .indexContainer .sectionBody.propertiesSection input[type="checkbox"] {
   margin-top: .6rem;
 }
+
+/* -------------------------------------------------- */
+
+.indexContainer .filtersSection .btn-xs {
+  min-width: 8em;
+}
