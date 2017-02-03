@@ -498,6 +498,8 @@
   font-size: 9pt;
 }
 
+/* -------------------------------------------------- */
+
 .indexContainer .mapping .mappingHandle {
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
@@ -519,10 +521,6 @@
   visibility: inherit;
 }
 
-.indexContainer .mapping .mappingHandle .attrControls .glyphicon-trash:before {
-  content: "delete";
-}
-
 .indexContainer .mapping .field .fieldHandle .attrControls {
   visibility: hidden;
 }
@@ -532,25 +530,52 @@
   visibility: inherit;
 }
 
+/* -------------------------------------------------- */
+
 .indexContainer .mapping .fieldHandle {
+  display: flex;
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
   background-color: #eee;
   cursor: pointer;
 }
 
-.indexContainer .mapping .fieldHandle .attrControls .glyphicon-trash:before {
+.indexContainer .mapping .field .fieldHandle .attrControls {
+  display: none;
+}
+
+.indexContainer .mapping .field .fieldHandle:hover .attrControls,
+.indexContainer .mapping .field.editing .fieldHandle .attrControls {
+  display: inherit;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .mapping .attrControls > * {
+  min-width: 8em;
+  white-space: nowrap;
+}
+
+.indexContainer .mapping .attrControls a {
+  margin: 0px 10px 0px 10px;
+}
+
+.indexContainer .mapping .attrControls .glyphicon-trash:before {
   content: "delete";
 }
 
-.indexContainer .mapping .attrControls > * {
-  display: inline-block;
-  white-space: nowrap;
+.indexContainer .mapping .attrControlsVertical a {
+  display: block;
+  margin-bottom: 8px;
 }
+
+/* -------------------------------------------------- */
 
 .indexContainer .mapping .mappingHandle .editArea {
   padding-left: 30px;
 }
+
+/* -------------------------------------------------- */
 
 .indexContainer .mapping .field label > span {
   display: inline-block;
@@ -569,6 +594,8 @@
 .indexContainer .mapping input[type=text] {
   width: 14em;
 }
+
+/* -------------------------------------------------- */
 
 .indexContainer .typeMappingsSection ol {
   margin-left: 20px;
@@ -603,7 +630,7 @@
   display: block;
   margin: 0 0 0 0;
   top: 1.2em;
-  right: -2em;
+  right: -4em;
   border: 1px solid #666;
   background: white;
   padding: 5px 10px 5px 10px;
@@ -726,9 +753,9 @@
 
 .indexContainer .btn-xs {
   padding: 0px 5px 0px 5px;
-  height: 1.5rem;
-  line-height: 1.5rem;
-  font-size: 11px;
+  height: 1.4rem;
+  line-height: 1.4rem;
+  font-size: 10px;
   font-family: OpenSans, sans-serif;
 }
 

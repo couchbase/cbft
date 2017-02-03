@@ -114,6 +114,7 @@
         ng-class="{'editing': field._editing}">
       <div ui-tree-handle
            class="fieldHandle">
+       <div class="fieldHandle_main">
         <span ng-if="!field._editing">
           {{field.property}}
           <span class="attrs">
@@ -143,31 +144,6 @@
                    ng-model="field.property"
                    ng-change="changedProperty(field)"/>
           </label>
-        </span>
-
-        <span ng-if="!editing"
-              class="attrControls editable">
-          <a class="pull-right btn btn-xs btn-edit"
-             data-nodrag
-             ng-click="editAttrs(field)">
-             <i class="glyphicon glyphicon-pencil"></i></a>
-        </span>
-        <span ng-if="editing == field"
-              class="attrControls"
-              data-nodrag>
-          <a class="pull-right btn btn-xs"
-             data-nodrag
-             ng-click="editAttrsDone(field, false)">
-             <i class="glyphicon glyphicon-remove"></i></a>
-          <a class="pull-right btn btn-xs btn-success"
-             data-nodrag
-             ng-click="editAttrsDone(field, true)">
-             <i class="glyphicon glyphicon-ok"></i></a>
-          <a ng-if="field._editing === true"
-             class="pull-right btn btn-xs btn-trash"
-             data-nodrag
-             ng-click="removeFromParent(field, this)">
-             <i class="glyphicon glyphicon-trash"></i></a>
         </span>
 
         <div ng-if="field._editing"
@@ -224,6 +200,34 @@
             </label>
           </div>
         </div>
+       </div>
+
+       <div class="fieldHandle_attrControls">
+        <span ng-if="!editing"
+              class="attrControls editable">
+          <a class="btn btn-xs btn-edit"
+             data-nodrag
+             ng-click="editAttrs(field)">
+             <i class="glyphicon glyphicon-pencil"></i></a>
+        </span>
+        <span ng-if="editing == field"
+              class="attrControls attrControlsVertical"
+              data-nodrag>
+          <a class="btn btn-xs btn-success"
+             data-nodrag
+             ng-click="editAttrsDone(field, true)">
+             <i class="glyphicon glyphicon-ok"></i></a>
+          <a class="btn btn-xs btn-cancel"
+             data-nodrag
+             ng-click="editAttrsDone(field, false)">
+             <i class="glyphicon glyphicon-remove"></i></a>
+          <a ng-if="field._editing === true"
+             class="btn btn-xs btn-trash"
+             data-nodrag
+             ng-click="removeFromParent(field, this)">
+             <i class="glyphicon glyphicon-trash"></i></a>
+        </span>
+       </div>
       </div>
     </li>
   </ol>
