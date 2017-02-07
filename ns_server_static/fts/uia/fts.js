@@ -10,11 +10,22 @@ var ftsPrefix = 'fts';
     .module(ftsAppName,
             ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider) {
-
-      addFtsStates("app.admin.indexes");
+      addFtsStates("app.admin.search");
 
       function addFtsStates(parent) {
         $stateProvider
+          .state(parent, {
+            abstract: true,
+            views: {
+              "main@app.admin": {
+                controller: "IndexesCtrlFT_NS",
+                templateUrl: '../_p/ui/fts/uia/fts_list.html'
+              }
+            },
+            data: {
+              title: "Search"
+            }
+          })
           .state(parent + '.fts_list', {
             url: '/fts_list?open',
             controller: 'IndexesCtrlFT_NS',
@@ -75,9 +86,10 @@ var ftsPrefix = 'fts';
       }
 
         mnPluggableUiRegistryProvider.registerConfig({
-            name: 'Full Text',
-            state: 'app.admin.indexes.fts_list',
-            plugIn: 'indexesTab'
+            name: 'Search',
+            state: 'app.admin.search.fts_list',
+            plugIn: 'adminTab',
+            after: 'indexes'
         });
     });
 
@@ -259,7 +271,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                     return $location.path();
                 }
                 var newIndexName = p.replace(/^\/indexes\//, "");
-                $state.go("app.admin.indexes.fts_list", { open: newIndexName });
+                $state.go("app.admin.search.fts_list", { open: newIndexName });
             }
         }
 

@@ -9,7 +9,7 @@
 <div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Indexes</h4>
-    <a ui-sref="^.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+    <a ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
        class="btn_1">
       <span>
         New Full Text Index
@@ -57,7 +57,7 @@
                          ng-model="searchInputs[indexName]"
                          type="text"
                          placeholder="search this index..."/>
-                  <a ui-sref="^.fts_search({indexName: indexName, q: searchInputs[indexName]})">
+                  <a ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
                     <button type="submit">
                       Search
                     </button>
@@ -121,10 +121,10 @@
             <a ng-click="deleteIndex(indexName)">
               <button class="outline">delete</button>
             </a>
-            <a ui-sref="^.fts_clone({indexName: indexName})">
+            <a ui-sref="^.search.fts_clone({indexName: indexName})">
               <button class="outline">clone</button>
             </a>
-            <a ui-sref="^.fts_edit({indexName: indexName})">
+            <a ui-sref="^.search.fts_edit({indexName: indexName})">
               <button>edit</button>
             </a>
           </div>
@@ -138,7 +138,7 @@
 <div class="indexes_list shadow_box" ng-show="indexNamesReady">
   <div class="indexes_header header_2">
     <h4>Full Text Aliases</h4>
-    <a ui-sref="^.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
+    <a ui-sref="^.search.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
        class="btn_1">
       <span>
         New Full Text Alias
@@ -176,7 +176,7 @@
                        type="text"
                        placeholder="search this alias..."
                        ng-click="$event.stopPropagation()"/>
-                <a ui-sref="^.fts_search({indexName: indexName, q: searchInputs[indexName]})">
+                <a ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
                   <button type="submit">
                     Search
                   </button>
@@ -229,10 +229,10 @@
               <a ng-click="deleteIndex(indexName)">
                 <button class="outline">delete</button>
               </a>
-              <a ui-sref="^.fts_clone({indexName: indexName})">
+              <a ui-sref="^.search.fts_clone({indexName: indexName})">
                 <button class="outline">clone</button>
               </a>
-              <a ui-sref="^.fts_edit({indexName: indexName})">
+              <a ui-sref="^.search.fts_edit({indexName: indexName})">
                 <button>edit</button>
               </a>
             </div>
