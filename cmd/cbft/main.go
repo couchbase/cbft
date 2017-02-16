@@ -167,8 +167,9 @@ func main() {
 
 	options := cmd.ParseOptions(flags.Options, "CBFT_ENV_OPTIONS",
 		map[string]string{
-			"managerLoadDataDir": "async",
-			"authType":           flags.AuthType,
+			cbgt.FeedAllotmentOption: cbgt.FeedAllotmentOnePerPIndex,
+			"managerLoadDataDir":     "async",
+			"authType":               flags.AuthType,
 		})
 
 	err = InitHttpOptions(options)
