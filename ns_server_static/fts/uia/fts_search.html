@@ -26,11 +26,12 @@
   </div>
 
   <div class="query_bar_advanced">
-    <label>
       <input ng-model="query_advanced_toggle"
              ng-change="queryChanged()"
-             type="checkbox"/>
-      Advanced
+             type="checkbox"
+            id="for-search-advanced-fts">
+      <label for="for-search-advanced-fts">
+        Advanced
     </label>
   </div>
 </div>
@@ -59,12 +60,15 @@
              ng-change="queryChanged()"/>
     </div>
     <div class="form_group form_group_jsonQuery">
-      <label>JSON for query request:
+      <label class="inline">JSON for query request:</label>
         <span class="curl_example_toggle">
-          ( command-line curl example:
             <input ng-model="curl_example_toggle"
                    ng-change="queryChanged()"
-                   type="checkbox"/> )
+                   type="checkbox"
+                  id="for-search-curl-fts">
+            <label for="for-search-curl-fts">
+            command-line curl example:
+          </label>
         </span>
       </label>
       <div ng-show="!curl_example_toggle"

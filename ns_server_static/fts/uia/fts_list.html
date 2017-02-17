@@ -86,14 +86,16 @@
             <div class="indexDetailsJSON"
                  ng-click="$event.stopPropagation()">
               <div class="indexDetailsJSONControls">
-                <input ng-model="jsonDetails" type="checkbox">
+                <input id="for-show-definition-fts" type="checkbox" ng-model="jsonDetails">
+                <label for="for-show-definition-fts">
                   Show index definition JSON
-                </input>
+                </label>
               </div>
               <div ng-show="jsonDetails">
-                <input ng-model="curlDetails" type="checkbox">
+                <input id="for-show-curlmod-fts" ng-model="curlDetails" type="checkbox">
+                <label for="for-show-curlmod-fts">
                   Show curl command to modify this index definition
-                </input>
+                </label>
 
                 <div ng-show="curlDetails"
                      class="indexDetailsJSONContent">

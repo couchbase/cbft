@@ -65,24 +65,24 @@
 
   <div class="form_group form_group_typeIdentifier" ng-if="newIndexType != 'fulltext-alias'">
     <label for="inputSourceName">Type Identifier</label>
-    <div style="display: inline-block;">
-        <div class="form_group_typeIdentifierParam">
+    <div>
+        <div>
           <input type="radio" value="type_field" id="type_field" ng-model="ftsDocConfig.mode" ng-change="typeIdentifierChanged()">
-          <label for="type_field">JSON type field:</label>
+          <label for="type_field">&nbsp;JSON type field:</label>
           <input ng-model="ftsDocConfig.type_field"  ng-disabled="ftsDocConfig.mode != 'type_field'"
                  type="text"
                  placeholder="field name"/>
         </div>
-        <div class="form_group_typeIdentifierParam">
+        <div>
           <input type="radio" value="docid_prefix" id="docid_prefix" ng-model="ftsDocConfig.mode"  ng-change="typeIdentifierChanged()">
-          <label for="docid_prefix_delim">Doc ID up to separator:</label>
+          <label for="docid_prefix">&nbsp;Doc ID up to separator:</label>
           <input ng-model="ftsDocConfig.docid_prefix_delim" ng-disabled="ftsDocConfig.mode != 'docid_prefix'"
                  type="text"
                  placeholder="delimiter"/>
         </div>
-        <div class="form_group_typeIdentifierParam">
+        <div>
           <input type="radio" value="docid_regexp" id="docid_regexp" ng-model="ftsDocConfig.mode" ng-change="typeIdentifierChanged()">
-          <label for="docid_regexp">Doc ID with regex:</label>
+          <label for="docid_regexp">&nbsp;Doc ID with regex:</label>
           <input ng-model="ftsDocConfig.docid_regexp" ng-disabled="ftsDocConfig.mode != 'docid_regexp'"
                  type="text"
                  placeholder="regular expression"/>
@@ -128,10 +128,10 @@
     <label></label>
     <div class="form_control">
       <div ng-show="newIndexType && newIndexType != 'fulltext-alias'">
-        <input ng-model="$parent.advanced" type="checkbox">
+        <input id="for-show-advanced-fts" ng-model="$parent.advanced" type="checkbox">
+        <label for="for-show-advanced-fts">
           Show advanced settings
-        </input>
-        <br/>
+        </label>
       </div>
     </div>
   </div>
