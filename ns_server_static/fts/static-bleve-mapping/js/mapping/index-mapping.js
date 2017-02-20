@@ -7,6 +7,9 @@ function initBleveIndexMappingController(
 	var indexMapping =
         $scope.indexMapping = JSON.parse(JSON.stringify(indexMappingIn));
 
+    indexMapping.defaultMappingKey = "defaultMappingKey_" +
+        Math.random() + Math.random() + Math.random();
+
     indexMapping.types =
         indexMapping.types || {};
     indexMapping.analysis =
@@ -23,10 +26,11 @@ function initBleveIndexMappingController(
         indexMapping.analysis.token_maps || {};
 
     if (indexMapping["default_mapping"]) {
-        indexMapping.types[""] = indexMapping["default_mapping"];
+        indexMapping.types[indexMapping.defaultMappingKey] = indexMapping["default_mapping"];
     }
 
-    var tmc = initBleveTypeMappingController($scope, indexMapping.types, options);
+    var tmc = initBleveTypeMappingController($scope, indexMapping.types,
+                                             indexMapping.defaultMappingKey, options);
 
     $scope.isValid = function() { return tmc.isValid(); };
 
@@ -86,8 +90,9 @@ function initBleveIndexMappingController(
         var r = JSON.parse(JSON.stringify($scope.indexMapping));
 
         r.types = tmc.typeMapping();
-        r.default_mapping = r.types[""];
-        delete r.types[""];
+        r.default_mapping = r.types[indexMapping.defaultMappingKey];
+        delete r.types[indexMapping.defaultMappingKey];
+        delete r["defaultMappingKey"]
 
         return JSON.parse(JSON.stringify(scrub(r)));
     }

@@ -206,8 +206,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
 }
 
 // Convert from a near-bleve-friendly TypeMapping data structure to a
-// UI-friendly data structure.  By "near", an entry with "" key
-// represents the default type mapping.
+// UI-friendly data structure.
 function bleveConvertFromTypeMapping(typeMapping) {
     var mappings = [];
 
@@ -277,9 +276,8 @@ function bleveConvertFromTypeMapping(typeMapping) {
     }
 }
 
-// Convert froma UI-friendly data structure to a near-bleve-friendly
-// TypeMapping data structure.  By "near", an entry with "" key
-// represents the default type mapping.
+// Convert from a UI-friendly data structure to a near-bleve-friendly
+// TypeMapping data structure.
 function bleveConvertToTypeMapping(mappings) {
     var typeMapping = {};
 

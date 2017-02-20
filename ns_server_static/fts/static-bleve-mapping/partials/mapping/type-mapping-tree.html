@@ -13,12 +13,12 @@
       {}
     </span>
 
-    <span ng-if="mapping.name == null">
+    <span ng-if="mapping.name == indexMapping.defaultMappingKey">
       <i>default</i>
     </span>
 
     <span ng-if="!mapping._editing">
-      <span ng-if="mapping.name">
+      <span ng-if="mapping.name != indexMapping.defaultMappingKey">
         {{mapping.name}}
       </span>
 
@@ -30,7 +30,7 @@
           | only index specified fields</span>
       </span>
     </span>
-    <span ng-if="mapping._editing && mapping.name != null"
+    <span ng-if="mapping._editing && mapping.name != indexMapping.defaultMappingKey"
           data-nodrag>
       <input ng-if="mapping._kind == 'mappingType'"
              type="text" placeholder="please enter a type name"
@@ -103,7 +103,7 @@
          data-nodrag
          ng-click="editAttrsDone(mapping, false)">
          <i class="glyphicon glyphicon-remove"></i></a>
-      <a ng-if="mapping._editing === true && mapping.name != null"
+      <a ng-if="mapping._editing === true && mapping.name != indexMapping.defaultMappingKey"
          class="btn btn-xs btn-trash"
          data-nodrag
          ng-click="removeFromParent(mapping, this)">
