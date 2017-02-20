@@ -404,10 +404,6 @@
   display: inline-block;
 }
 
-.indexContainer .indexes_list table tr .indexDetails .indexDetailsJSONControls * {
-  display: inline-block;
-}
-
 .indexContainer .indexes_list table tr .indexDetails .indexDetailsJSON button.copyToClipboard {
   float: right;
   margin-top: 10px;
