@@ -359,7 +359,6 @@
 .indexContainer table {
   width: 100%;
   text-align: left;
-  white-space: nowrap;
 }
 
 .indexContainer table tr {
