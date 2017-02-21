@@ -443,15 +443,18 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
-    if ((initKind == "edit" || initKind == "create") && $scope.newPlanParams) {
+    if (initKind == "edit" || initKind == "create") {
         $scope.numReplicas = "0";
-        try {
-            var newPlanParamsObj = JSON.parse($scope.newPlanParams);
-            $scope.numReplicas = (newPlanParamsObj["numReplicas"] || 0) + "";
-            delete newPlanParamsObj["numReplicas"];
-            $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
-        } catch (e) {
-            console.log("blevePIndexInitController", initKind, e)
+
+        if ($scope.newPlanParams) {
+            try {
+                var newPlanParamsObj = JSON.parse($scope.newPlanParams);
+                $scope.numReplicas = (newPlanParamsObj["numReplicas"] || 0) + "";
+                delete newPlanParamsObj["numReplicas"];
+                $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+            } catch (e) {
+                console.log("blevePIndexInitController", initKind, e)
+            }
         }
     }
 

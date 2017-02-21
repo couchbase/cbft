@@ -764,6 +764,12 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .form_group_advanced_fts {
+  margin-top: 15px;
+}
+
+/* -------------------------------------------------- */
+
 .indexContainer .btn-xs {
   padding: 0px 5px 0px 5px;
   height: 1.4rem;

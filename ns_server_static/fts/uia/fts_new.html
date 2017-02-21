@@ -92,7 +92,7 @@
 
   <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]"
        class="form_group form_group_indexTypeTemplate">
-    <label></label>
+    <label>Mapping</label>
     <div class="form_control indexTemplateContainer">
       <div class="indexEditor {{newIndexType}}">
         <div class="indexEditorMain"
@@ -124,19 +124,8 @@
       </select>
     </div>
   </div>
-  <div class="form_group">
-    <label></label>
-    <div class="form_control">
-      <div ng-show="newIndexType && newIndexType != 'fulltext-alias'">
-        <input id="for-show-advanced-fts" ng-model="$parent.advanced" type="checkbox">
-        <label for="for-show-advanced-fts">
-          Show advanced settings
-        </label>
-      </div>
-    </div>
-  </div>
   <div class="form_group form_group_numReplicas"
-       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+       ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputNumReplicas">Replicas</label>
     <div class="form_control">
       <select ng-model="$parent.numReplicas">
@@ -145,7 +134,22 @@
          <option value="2">2</option>
          <option value="3">3</option>
       </select>
-      <span class="form_controlDesc">Number of replica (backup) copies</span>
+      <span class="fa-stack icon-info"
+            uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="right">
+        <span class="icon fa-circle-thin fa-stack-2x"></span>
+        <span class="icon fa-info fa-stack-1x"></span>
+      </span>
+    </div>
+  </div>
+  <div class="form_group form_group_advanced_fts">
+    <label></label>
+    <div class="form_control">
+      <div ng-show="newIndexType && newIndexType != 'fulltext-alias'">
+        <input id="for-show-advanced-fts" ng-model="$parent.advanced" type="checkbox">
+        <label for="for-show-advanced-fts">
+          Additional options
+        </label>
+      </div>
     </div>
   </div>
   <div class="form_group form_group_sourceParams"
