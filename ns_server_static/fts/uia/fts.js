@@ -467,8 +467,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     try {
         $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
     } catch (e) {
-        console.log("blevePIndexInitController doc_config", initKind,
-                    $scope.newIndexParams['fulltext-index'].doc_config, e)
+        console.log("blevePIndexInitController doc_config", initKind, e)
     }
 
     if (initKind == "view") {
