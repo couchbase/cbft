@@ -16,7 +16,8 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
     $scope.tokenMapNames = [];
 
     $scope.loadTokenMapNames = function() {
-        $http.post('/api/_tokenMapNames',mapping).success(function(data) {
+        $http.post('/api/_tokenMapNames', bleveIndexMappingScrub(mapping)).
+        success(function(data) {
             $scope.tokenMapNames = data.token_maps;
         }).
         error(function(data, code) {
@@ -173,7 +174,8 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
             }
         };
 
-        $http.post('/api/_validateMapping',testMapping).success(function(data) {
+        $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+        success(function(data) {
             // if its valid return it
             result = {};
             result[name] = $scope.tokenfilter;

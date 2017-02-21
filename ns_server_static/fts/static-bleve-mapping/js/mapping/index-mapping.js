@@ -87,15 +87,22 @@ function initBleveIndexMappingController(
             return null;
         }
 
-        var r = JSON.parse(JSON.stringify($scope.indexMapping));
+        return bleveIndexMappingScrub($scope.indexMapping, tmc)
+    }
+}
 
+function bleveIndexMappingScrub(indexMapping, tmc) {
+    var r = JSON.parse(JSON.stringify(indexMapping));
+
+    if (tmc) {
         r.types = tmc.typeMapping();
         r.default_mapping = r.types[indexMapping.defaultMappingKey];
         delete r.types[indexMapping.defaultMappingKey];
-        delete r["defaultMappingKey"]
-
-        return JSON.parse(JSON.stringify(scrub(r)));
     }
+
+    delete r["defaultMappingKey"]
+
+    return JSON.parse(JSON.stringify(scrub(r)));
 
     // Recursively remove every entry with '$' prefix, which might be
     // due to angularjs metadata.

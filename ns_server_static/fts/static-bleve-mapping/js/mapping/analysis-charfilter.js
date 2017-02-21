@@ -99,7 +99,8 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
             }
         };
 
-        $http.post('/api/_validateMapping',testMapping).success(function(data) {
+        $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+        success(function(data) {
             // if its valid return it
             result = {};
             result[name] = $scope.charfilter;

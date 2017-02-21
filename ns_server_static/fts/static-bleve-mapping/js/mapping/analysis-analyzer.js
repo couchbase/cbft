@@ -31,7 +31,8 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.tokenizerNames = [];
 
     $scope.loadTokenizerNames = function() {
-        $http.post('/api/_tokenizerNames',mapping).success(function(data) {
+        $http.post('/api/_tokenizerNames', bleveIndexMappingScrub(mapping)).
+        success(function(data) {
             $scope.tokenizerNames = data.tokenizers;
         }).
         error(function(data, code) {
@@ -44,7 +45,8 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.charFilterNames = [];
 
     $scope.loadCharFilterNames = function() {
-        $http.post('/api/_charFilterNames',mapping).success(function(data) {
+        $http.post('/api/_charFilterNames', bleveIndexMappingScrub(mapping)).
+        success(function(data) {
             $scope.charFilterNames = data.char_filters;
         }).
         error(function(data, code) {
@@ -68,7 +70,8 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.tokenFilterNames = [];
 
     $scope.loadTokenFilterNames = function() {
-        $http.post('/api/_tokenFilterNames',mapping).success(function(data) {
+        $http.post('/api/_tokenFilterNames', bleveIndexMappingScrub(mapping)).
+        success(function(data) {
             $scope.tokenFilterNames = data.token_filters;
         }).
         error(function(data, code) {
@@ -130,7 +133,8 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
             "analysis": analysis
         };
 
-        $http.post('/api/_validateMapping',testMapping).success(function(data) {
+        $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+        success(function(data) {
             // if its valid return it
             result = {};
             result[name] = $scope.analyzer;

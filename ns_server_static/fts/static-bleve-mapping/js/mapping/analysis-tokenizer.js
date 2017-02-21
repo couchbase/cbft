@@ -16,7 +16,8 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
     $scope.tokenizerNames = [];
 
     $scope.loadTokenizerNames = function() {
-        $http.post('/api/_tokenizerNames',mapping).success(function(data) {
+        $http.post('/api/_tokenizerNames', bleveIndexMappingScrub(mapping)).
+        success(function(data) {
             $scope.tokenizerNames = data.tokenizers;
         }).
         error(function(data, code) {
@@ -132,7 +133,8 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
             }
         };
 
-        $http.post('/api/_validateMapping',testMapping).success(function(data) {
+        $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+        success(function(data) {
             // if its valid return it
             result = {};
             result[name] = $scope.tokenizer;
