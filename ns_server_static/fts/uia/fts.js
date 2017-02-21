@@ -453,13 +453,22 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 delete newPlanParamsObj["numReplicas"];
                 $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
             } catch (e) {
-                console.log("blevePIndexInitController", initKind, e)
+                console.log("blevePIndexInitController numReplicas", initKind, e)
             }
         }
     }
 
-    if ($scope.newIndexParams) {
+    try {
+        $scope.ftsDocConfig = JSON.parse(JSON.stringify($scope.meta.sourceTypes["fulltext-index"].startSample.doc_config))
+    } catch (e) {
+        console.log("blevePIndexInitController initial-doc_config", initKind, e)
+    }
+
+    try {
         $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
+    } catch (e) {
+        console.log("blevePIndexInitController doc_config", initKind,
+                    $scope.newIndexParams['fulltext-index'].doc_config, e)
     }
 
     if (initKind == "view") {
