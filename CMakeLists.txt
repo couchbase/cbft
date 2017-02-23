@@ -92,3 +92,9 @@ SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
 configure_file (pluggable-ui-fts.cluster_run.json.in
                 ${PROJECT_BINARY_DIR}/../../../../../cluster_run_ui_plugins/pluggable-ui-fts.cluster_run.json)
+
+GoInstall(TARGET mossScope
+  PACKAGE github.com/couchbase/moss/cmd/mossScope
+  GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
+  INSTALL_PATH bin OUTPUT mossScope
+  GOVERSION 1.8)
