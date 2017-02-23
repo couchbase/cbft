@@ -57,7 +57,7 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   LDFLAGS "${_ldflags}"
   GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.7)
+  GOVERSION 1.8)
 
 GoInstall (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
@@ -67,7 +67,7 @@ GoInstall (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   LDFLAGS "${_ldflags}"
   GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve
-  GOVERSION 1.7)
+  GOVERSION 1.8)
 
 # Generate pluggable-ui-fts.json file.
 SET (DOC_ROOT_PREFIX "")
