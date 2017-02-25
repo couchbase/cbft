@@ -798,6 +798,10 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .query_bar .query_bar_input form {
+  white-space: nowrap;
+}
+
 .indexContainer .query_bar .query_bar_input input {
   width: 30em;
   min-width: 15em;
@@ -806,6 +810,11 @@
 .indexContainer .query_results mark {
   padding: 0 0;
   background-color: yellow;
+}
+
+.indexContainer .indexes_list_aliases .query_bar .query_bar_input input {
+  width: 25em;
+  min-width: 15em;
 }
 
 /* -------------------------------------------------- */
