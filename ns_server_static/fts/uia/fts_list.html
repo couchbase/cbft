@@ -86,34 +86,36 @@
             <div class="indexDetailsJSON"
                  ng-click="$event.stopPropagation()">
               <div class="indexDetailsJSONControls">
-                <input id="for-show-definition-fts" type="checkbox" ng-model="jsonDetails">
-                <label for="for-show-definition-fts">
+                <input id="for-show-def-fts-{{indexName}}" type="checkbox"
+                       ng-model="detailsOpenedJSON[indexName]">
+                <label for="for-show-def-fts-{{indexName}}">
                   Show index definition JSON
                 </label>
               </div>
-              <div ng-show="jsonDetails">
-                <input id="for-show-curlmod-fts" ng-model="curlDetails" type="checkbox">
-                <label for="for-show-curlmod-fts">
+              <div ng-show="detailsOpenedJSON[indexName]">
+                <input id="for-show-def-fts-curl-{{indexName}}" type="checkbox"
+                       ng-model="detailsOpenedJSONCurl[indexName]">
+                <label for="for-show-def-fts-curl-{{indexName}}">
                   Show curl command to modify this index definition
                 </label>
 
-                <div ng-show="curlDetails"
+                <div ng-show="detailsOpenedJSONCurl[indexName]"
                      class="indexDetailsJSONContent">
                   <button class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details_curl">
+                          ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
                     copy to clipboard
                   </button>
-                  <pre id="indexDefStr_details_curl">curl -XPUT -H "Content-Type: application/json" \
+                  <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
                 </div>
-                <div ng-show="!curlDetails"
+                <div ng-show="!detailsOpenedJSONCurl[indexName]"
                      class="indexDetailsJSONContent">
                   <button class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details">
+                          ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
                     copy to clipboard
                   </button>
-                  <pre id="indexDefStr_details">{{indexDefStr}}</pre>
+                  <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
                 </div>
               </div>
             </div>
@@ -196,32 +198,36 @@
               <div class="indexDetailsJSON"
                    ng-click="$event.stopPropagation()">
                 <div class="indexDetailsJSONControls">
-                  <input ng-model="jsonDetails" type="checkbox">
+                  <input ng-model="detailsOpenedJSON[indexName]" type="checkbox"
+                         id="for-show-alias-def-fts-{{indexName}}">
+                  <label for="for-show-alias-def-fts-{{indexName}}">
                     Show alias definition JSON
-                  </input>
-                  <button ng-show="jsonDetails && !curlDetails"
+                  </label>
+                  <button ng-show="detailsOpenedJSON[indexName] && !detailsOpenedJSONCurl[indexName]"
                           class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details">
+                          ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
                     copy to clipboard
                   </button>
-                  <button ng-show="jsonDetails &&  curlDetails"
+                  <button ng-show="detailsOpenedJSON[indexName] && detailsOpenedJSONCurl[indexName]"
                           class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details_curl">
+                          ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
                     copy to clipboard
                   </button>
                 </div>
-                <div ng-show="jsonDetails">
-                  <input ng-model="curlDetails" type="checkbox">
+                <div ng-show="detailsOpenedJSON[indexName]">
+                  <input ng-model="detailsOpenedJSONCurl[indexName]" type="checkbox"
+                         id="for-show-alias-def-fts-curl-{{indexName}}">
+                  <label for="for-show-alias-def-fts-curl-{{indexName}}">
                     Show curl command to modify this alias definition
-                  </input>
+                  </label>
 
-                  <div ng-show="curlDetails">
-                    <pre id="indexDefStr_details_curl">curl -XPUT -H "Content-Type: application/json" \
+                  <div ng-show="detailsOpenedJSONCurl[indexName]">
+                    <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
                   </div>
-                  <div ng-show="!curlDetails">
-                    <pre id="indexDefStr_details">{{indexDefStr}}</pre>
+                  <div ng-show="!detailsOpenedJSONCurl[indexName]">
+                    <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
                   </div>
                 </div>
               </div>
