@@ -145,6 +145,16 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.detailsOpenedJSON = {};
     $scope.detailsOpenedJSONCurl = {};
 
+    $scope.escapeCmdLineParam = function(s) {
+        // Transform single quotes (') into '"'"', so...
+        //   curl http://foo -d '{{escapeCmdLineParam(stringWithQuotes)}}'
+        // where...
+        //   stringWithQuotes == "he said 'hi' twice"
+        // will result in...
+        //   curl http://foo -d 'he said '"'"'hi'"'"' twice'
+        return s.replace(/\'/g, '\'"\'"\'');
+    }
+
     $scope.searchInputs = {};
 
     var done = false;

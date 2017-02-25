@@ -107,7 +107,7 @@
                   </button>
                   <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
- -d '{{indexDefStr}}'</pre>
+ -d '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                 </div>
                 <div ng-show="!detailsOpenedJSONCurl[indexName]"
                      class="indexDetailsJSONContent">
@@ -219,7 +219,7 @@
                     </button>
                     <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
- -d '{{indexDefStr}}'</pre>
+ -d '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                   </div>
                   <div ng-show="!detailsOpenedJSONCurl[indexName]"
                        class="indexDetailsJSONContent">
