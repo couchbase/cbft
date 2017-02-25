@@ -203,16 +203,6 @@
                   <label for="for-show-alias-def-fts-{{indexName}}">
                     Show alias definition JSON
                   </label>
-                  <button ng-show="detailsOpenedJSON[indexName] && !detailsOpenedJSONCurl[indexName]"
-                          class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
-                    copy to clipboard
-                  </button>
-                  <button ng-show="detailsOpenedJSON[indexName] && detailsOpenedJSONCurl[indexName]"
-                          class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
-                    copy to clipboard
-                  </button>
                 </div>
                 <div ng-show="detailsOpenedJSON[indexName]">
                   <input ng-model="detailsOpenedJSONCurl[indexName]" type="checkbox"
@@ -221,12 +211,22 @@
                     Show curl command to modify this alias definition
                   </label>
 
-                  <div ng-show="detailsOpenedJSONCurl[indexName]">
+                  <div ng-show="detailsOpenedJSONCurl[indexName]"
+                       class="indexDetailsJSONContent">
+                    <button class="btn btn-xs copyToClipboard"
+                            ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                      copy to clipboard
+                    </button>
                     <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
                   </div>
-                  <div ng-show="!detailsOpenedJSONCurl[indexName]">
+                  <div ng-show="!detailsOpenedJSONCurl[indexName]"
+                       class="indexDetailsJSONContent">
+                    <button class="btn btn-xs copyToClipboard"
+                            ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
+                      copy to clipboard
+                    </button>
                     <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
                   </div>
                 </div>
