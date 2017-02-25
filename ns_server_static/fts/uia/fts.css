@@ -827,6 +827,15 @@
   margin-top: .6rem;
 }
 
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] + label::before {
+  margin-right: .3rem;
+}
+
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] + label {
+  margin-left: 10rem;
+  text-align: left;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .filtersSection .btn-xs {
