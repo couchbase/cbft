@@ -10,7 +10,7 @@
     <tr ng-repeat="(tfname,tfval) in indexMapping.analysis.token_filters">
       <td><a ng-click="editTokenFilter(tfname, tfval, true)">{{tfname}}</a></td>
       <td>{{tfval.type}}</td>
-      <td>
+      <td class="controls">
         <div class="btn-group btn-group-xs" role="group">
           <button ng-if="!viewOnlyModal"
                   ng-click="editTokenFilter(tfname, tfval)" type="button"

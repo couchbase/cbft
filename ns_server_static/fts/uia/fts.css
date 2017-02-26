@@ -474,6 +474,17 @@
   width: 100%;
 }
 
+.indexContainer .section .sectionBody.analyzersSection table td.controls,
+.indexContainer .section .sectionBody.filtersSection table td.controls {
+  text-align: right;
+}
+
+.indexContainer .section .sectionBody.analyzersSection table tfoot td,
+.indexContainer .section .sectionBody.filtersSection table tfoot td {
+  text-align: right;
+  padding-right: 0;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .mapping .btn-trash {
@@ -842,6 +853,12 @@
 
 /* -------------------------------------------------- */
 
+.indexContainer .analyzersSection .btn-xs,
 .indexContainer .filtersSection .btn-xs {
   min-width: 8em;
+}
+
+.indexContainer .analyzersSection .btn-xs span,
+.indexContainer .filtersSection .btn-xs span {
+  display: none;
 }

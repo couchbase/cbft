@@ -10,7 +10,7 @@
     <tr ng-repeat="(tmname,tmval) in indexMapping.analysis.token_maps">
       <td><a ng-click="editWordList(tmname, tmval, true)">{{tmname}}</a></td>
       <td>{{tmname}}</td>
-      <td>
+      <td class="controls">
         <div class="btn-group btn-group-xs" role="group">
           <button ng-if="!viewOnlyModal"
                   ng-click="editWordList(tmname, tmval)" type="button"

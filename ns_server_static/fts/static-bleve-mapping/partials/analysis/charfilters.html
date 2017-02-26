@@ -10,7 +10,7 @@
     <tr ng-repeat="(cfname,cfval) in indexMapping.analysis.char_filters">
       <td><a ng-click="editCharFilter(cfname, cfval, true)">{{cfname}}</a></td>
       <td>{{cfval.type}}</td>
-      <td>
+      <td class="controls">
         <div class="btn-group btn-group-xs" role="group">
           <button ng-if="!viewOnlyModal"
                   ng-click="editCharFilter(cfname, cfval)" type="button"

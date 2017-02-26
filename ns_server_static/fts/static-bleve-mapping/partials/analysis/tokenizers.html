@@ -10,7 +10,7 @@
     <tr ng-repeat="(tname,tval) in indexMapping.analysis.tokenizers">
       <td><a ng-click="editTokenizer(tname, tval, true)">{{tname}}</a></td>
       <td>{{tval.type}}</td>
-      <td>
+      <td class="controls">
         <div class="btn-group btn-group-xs" role="group">
           <button ng-if="!viewOnlyModal"
                   ng-click="editTokenizer(tname, tval)" type="button"
