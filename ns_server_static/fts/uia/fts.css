@@ -493,6 +493,10 @@
   margin-left: 10px;
 }
 
+.indexContainer .mapping input[type="checkbox"] {
+  display: inline;
+}
+
 .indexContainer .mapping .attrs {
   font-weight: normal;
   font-size: 9pt;
