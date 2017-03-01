@@ -20,7 +20,7 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "4.1.0",
+        "implVersion": "5.0.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
@@ -82,10 +82,9 @@ Sample response:
       "planPIndexes": [
         {
           "indexName": "myFirstIndex",
-          "indexParams": null,
           "indexType": "blackhole",
           "indexUUID": "6cc599ab7a85bf3b",
-          "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+          "name": "myFirstIndex_6cc599ab7a85bf3b_00000000",
           "nodes": {
             "78fc2ffac2fd9401": {
               "canRead": true,
@@ -94,11 +93,10 @@ Sample response:
             }
           },
           "sourceName": "",
-          "sourceParams": null,
           "sourcePartitions": "",
           "sourceType": "nil",
           "sourceUUID": "",
-          "uuid": "64bed6e2edf354c3"
+          "uuid": "1ac72081ac81e0aa"
         }
       ],
       "status": "ok",
@@ -139,15 +137,23 @@ For indexType ```fulltext-index```, an example indexParams JSON:
           "dynamic": true,
           "default_analyzer": ""
         },
-        "type_field": "type",
+        "type_field": "_type",
         "default_type": "_default",
         "default_analyzer": "standard",
         "default_datetime_parser": "dateTimeOptional",
         "default_field": "_all",
+        "store_dynamic": true,
+        "index_dynamic": true,
         "analysis": {}
       },
       "store": {
         "kvStoreName": "boltdb"
+      },
+      "doc_config": {
+        "mode": "type_field",
+        "type_field": "type",
+        "docid_prefix_delim": "",
+        "docid_regexp": null
       }
     }
 
@@ -172,10 +178,6 @@ Intended for clients that want to check that they are not overwriting the index 
 For sourceType ```couchbase```, an example sourceParams JSON:
 
     {
-      "authUser": "",
-      "authPassword": "",
-      "authSaslUser": "",
-      "authSaslPassword": "",
       "clusterManagerBackoffFactor": 0,
       "clusterManagerSleepInitMS": 0,
       "clusterManagerSleepMaxMS": 2000,
@@ -306,50 +308,61 @@ Sample response:
         "TotCreateIndex": 1,
         "TotCreateIndexOk": 1,
         "TotDeleteIndex": 0,
+        "TotDeleteIndexBySource": 0,
+        "TotDeleteIndexBySourceErr": 0,
+        "TotDeleteIndexBySourceOk": 0,
         "TotDeleteIndexOk": 0,
         "TotIndexControl": 0,
         "TotIndexControlOk": 0,
         "TotJanitorClosePIndex": 0,
-        "TotJanitorKick": 2,
-        "TotJanitorKickErr": 0,
+        "TotJanitorKick": 3,
+        "TotJanitorKickErr": 1,
         "TotJanitorKickOk": 2,
-        "TotJanitorKickStart": 2,
+        "TotJanitorKickStart": 3,
         "TotJanitorLoadDataDir": 0,
         "TotJanitorNOOP": 0,
         "TotJanitorNOOPOk": 0,
-        "TotJanitorOpDone": 2,
-        "TotJanitorOpErr": 0,
-        "TotJanitorOpRes": 2,
-        "TotJanitorOpStart": 2,
+        "TotJanitorOpDone": 3,
+        "TotJanitorOpErr": 1,
+        "TotJanitorOpRes": 3,
+        "TotJanitorOpStart": 3,
         "TotJanitorRemovePIndex": 0,
         "TotJanitorStop": 0,
-        "TotJanitorSubscriptionEvent": 0,
+        "TotJanitorSubscriptionEvent": 1,
         "TotJanitorUnknownErr": 0,
         "TotKick": 0,
-        "TotPlannerKick": 2,
+        "TotPlannerKick": 3,
         "TotPlannerKickChanged": 1,
         "TotPlannerKickErr": 0,
-        "TotPlannerKickOk": 2,
-        "TotPlannerKickStart": 2,
+        "TotPlannerKickOk": 3,
+        "TotPlannerKickStart": 3,
         "TotPlannerNOOP": 0,
         "TotPlannerNOOPOk": 0,
-        "TotPlannerOpDone": 2,
+        "TotPlannerOpDone": 3,
         "TotPlannerOpErr": 0,
-        "TotPlannerOpRes": 2,
-        "TotPlannerOpStart": 2,
+        "TotPlannerOpRes": 3,
+        "TotPlannerOpStart": 3,
         "TotPlannerStop": 0,
-        "TotPlannerSubscriptionEvent": 0,
+        "TotPlannerSubscriptionEvent": 1,
         "TotPlannerUnknownErr": 0,
+        "TotRefreshLastIndexDefs": 2,
+        "TotRefreshLastNodeDefs": 0,
+        "TotRefreshLastPlanPIndexes": 1,
+        "TotRegisterFeed": 1,
+        "TotRegisterPIndex": 1,
         "TotSaveNodeDef": 2,
         "TotSaveNodeDefGetErr": 0,
         "TotSaveNodeDefNil": 0,
         "TotSaveNodeDefOk": 2,
         "TotSaveNodeDefRetry": 0,
         "TotSaveNodeDefSame": 0,
-        "TotSaveNodeDefSetErr": 0
+        "TotSaveNodeDefSetErr": 0,
+        "TotSetOptions": 0,
+        "TotUnregisterFeed": 0,
+        "TotUnregisterPIndex": 0
       },
       "pindexes": {
-        "myFirstIndex_6cc599ab7a85bf3b_0": null
+        "myFirstIndex_6cc599ab7a85bf3b_00000000": null
       }
     }
 
@@ -369,7 +382,7 @@ Sample response:
         "myFirstIndex_6cc599ab7a85bf3b": {}
       },
       "pindexes": {
-        "myFirstIndex_6cc599ab7a85bf3b_0": null
+        "myFirstIndex_6cc599ab7a85bf3b_00000000": null
       }
     }
 
@@ -447,15 +460,16 @@ A simple bleve query POST body:
 
     {
       "query": {
-        "query": "a sample query",
-        "boost": 1
+        "query": "a sample query"
       },
       "size": 10,
       "from": 0,
       "highlight": null,
       "fields": null,
       "facets": null,
-      "explain": false
+      "explain": false,
+      "sort": null,
+      "includeLocations": false
     }
 An example POST body using from/size for results paging,
 using ctl for a timeout and for "at_plus" consistency level.
@@ -478,8 +492,7 @@ should have a vbucketUUID of a0b1c2):
         }
       },
       "query": {
-        "query": "alice smith",
-        "boost": 1
+        "query": "alice smith"
       },
       "size": 10,
       "from": 20,
@@ -491,7 +504,9 @@ should have a vbucketUUID of a0b1c2):
         "*"
       ],
       "facets": null,
-      "explain": true
+      "explain": true,
+      "sort": null,
+      "includeLocations": false
     }
 
 
@@ -516,7 +531,7 @@ Sample response:
 
     {
       "indexDefs": {
-        "implVersion": "4.1.0",
+        "implVersion": "5.0.0",
         "indexDefs": {
           "myFirstIndex": {
             "name": "myFirstIndex",
@@ -539,16 +554,16 @@ Sample response:
         },
         "uuid": "6cc599ab7a85bf3b"
       },
-      "indexDefsCAS": 3,
+      "indexDefsCAS": 4,
       "indexDefsErr": null,
       "nodeDefsKnown": {
-        "implVersion": "4.1.0",
+        "implVersion": "5.0.0",
         "nodeDefs": {
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8094",
-            "implVersion": "4.1.0",
+            "implVersion": "5.0.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -559,13 +574,13 @@ Sample response:
       "nodeDefsKnownCAS": 1,
       "nodeDefsKnownErr": null,
       "nodeDefsWanted": {
-        "implVersion": "4.1.0",
+        "implVersion": "5.0.0",
         "nodeDefs": {
           "78fc2ffac2fd9401": {
             "container": "",
             "extras": "",
             "hostPort": "0.0.0.0:8094",
-            "implVersion": "4.1.0",
+            "implVersion": "5.0.0",
             "tags": null,
             "uuid": "78fc2ffac2fd9401",
             "weight": 1
@@ -576,14 +591,13 @@ Sample response:
       "nodeDefsWantedCAS": 2,
       "nodeDefsWantedErr": null,
       "planPIndexes": {
-        "implVersion": "4.1.0",
+        "implVersion": "5.0.0",
         "planPIndexes": {
-          "myFirstIndex_6cc599ab7a85bf3b_0": {
+          "myFirstIndex_6cc599ab7a85bf3b_00000000": {
             "indexName": "myFirstIndex",
-            "indexParams": null,
             "indexType": "blackhole",
             "indexUUID": "6cc599ab7a85bf3b",
-            "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+            "name": "myFirstIndex_6cc599ab7a85bf3b_00000000",
             "nodes": {
               "78fc2ffac2fd9401": {
                 "canRead": true,
@@ -592,14 +606,13 @@ Sample response:
               }
             },
             "sourceName": "",
-            "sourceParams": null,
             "sourcePartitions": "",
             "sourceType": "nil",
             "sourceUUID": "",
-            "uuid": "64bed6e2edf354c3"
+            "uuid": "1ac72081ac81e0aa"
           }
         },
-        "uuid": "6327debf817a5ec7",
+        "uuid": "414f9eea6197296d",
         "warnings": {
           "myFirstIndex": []
         }
@@ -632,14 +645,14 @@ Sample response:
       "mgr": {
         "bindHttp": "0.0.0.0:8094",
         "container": "",
-        "dataDir": "tmp/data261623975",
+        "dataDir": "tmp/data249764618",
         "extras": "",
         "options": {},
         "server": "http://localhost:8091",
-        "startTime": "2016-02-02T10:24:59.5111207-08:00",
+        "startTime": "2017-03-01T13:32:10.172035612-08:00",
         "tags": null,
         "uuid": "78fc2ffac2fd9401",
-        "version": "4.1.0",
+        "version": "5.0.0",
         "weight": 1
       },
       "status": "ok"
@@ -666,6 +679,14 @@ Returns information on the node's capabilities,
                        to be more dynamically metadata driven.
 
 **version introduced**: 0.0.1
+
+---
+
+PUT `/api/managerOptions`
+
+Set the options for the manager
+
+**version introduced**: 4.2.0
 
 ---
 
@@ -702,6 +723,14 @@ Sample response:
 
 ---
 
+GET `/api/ping`
+
+Returns an empty body as a quick aliveness check.
+
+**version introduced**: 5.0.0
+
+---
+
 GET `/api/runtime`
 
 Returns information on the node's software,
@@ -718,12 +747,12 @@ Sample response:
         "GOMAXPROCS": 8,
         "GOROOT": "/usr/local/go",
         "compiler": "gc",
-        "version": "go1.5.2"
+        "version": "go1.8"
       },
       "numCPU": 8,
       "os": "darwin",
-      "versionData": "4.1.0",
-      "versionMain": "v0.3.1-114-g364d629"
+      "versionData": "5.0.0",
+      "versionMain": "v0.3.1-345-ga3409b2"
     }
 
 ---
@@ -806,18 +835,18 @@ Sample response:
 
     {
       "pindexes": {
-        "myFirstIndex_6cc599ab7a85bf3b_0": {
+        "myFirstIndex_6cc599ab7a85bf3b_00000000": {
           "indexName": "myFirstIndex",
           "indexParams": "",
           "indexType": "blackhole",
           "indexUUID": "6cc599ab7a85bf3b",
-          "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+          "name": "myFirstIndex_6cc599ab7a85bf3b_00000000",
           "sourceName": "",
           "sourceParams": "",
           "sourcePartitions": "",
           "sourceType": "nil",
           "sourceUUID": "",
-          "uuid": "2d9ecb8b574a9f6a"
+          "uuid": "337163e07b605e92"
         }
       },
       "status": "ok"

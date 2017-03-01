@@ -11,14 +11,18 @@ That will print out usage/help output...
     Usage: cbft [flags]
     
     Flags:
-      -auth AUTH
-          authentication method for cbft requests
+      -auth, -authType AUTH_TYPE
+          authentication type for cbft requests.
       -b, -bindHttp ADDR:PORT
           local address:port where this node will listen and
           serve HTTP/REST API requests and the web-based
           admin UI; default is '0.0.0.0:8094';
           multiple ADDR:PORT's can be specified, separated by commas,
           where the first ADDR:PORT is used for node cfg registration.
+      -bindHttps ADDR:PORT
+          local address:port where this node will listen and
+          serve HTTPS/REST API requests and the web-based
+          admin UI; by default, disabled; for example, ':18094'.
       -c, -cfg, -cfgConnect CFG_CONNECT
           connection string to a configuration provider/server
           for clustering multiple cbft nodes:
@@ -45,7 +49,7 @@ That will print out usage/help output...
           local config files will be stored for this node;
           default is 'data'.
       -e, -extra, -extras EXTRAS
-          extra information you want stored with this node
+          extra information you want stored with this node.
       -h, -H, -?, -help 
           print this usage message and exit.
       -options KEY=VALUE,...
@@ -85,6 +89,10 @@ That will print out usage/help output...
           * planner - node can replan cluster-wide resource allocations;
           * queryer - node can execute queries;
           default is ("") which means all roles are enabled.
+      -tlsCertFile PATH
+          TLS cert file; see also bindHttps.
+      -tlsKeyFile PATH
+          TLS key file; see also bindHttps.
       -uuid UUID
           optional uuid for this node; by default, a previous uuid file
           is read from the dataDir, or a new uuid is auto-generated
