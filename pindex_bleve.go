@@ -43,6 +43,8 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+
+	"github.com/couchbase/moss"
 )
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
@@ -51,10 +53,102 @@ var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
 
+// BleveParams represents the bleve index params.  See also
+// cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
+//     {
+//        "mapping": {
+//           // See bleve.mapping.IndexMapping.
+//        },
+//        "store": {
+//           // See BleveParamsStore.
+//        },
+//        "doc_config": {
+//           // See BleveDocumentConfig.
+//        }
+//     }
 type BleveParams struct {
 	Mapping   mapping.IndexMapping   `json:"mapping"`
 	Store     map[string]interface{} `json:"store"`
 	DocConfig BleveDocumentConfig    `json:"doc_config"`
+}
+
+// BleveParamsStore represents some of the publically available
+// options in the "store" part of a bleve index params.  See also the
+// BleveParams.Store field.
+type BleveParamsStore struct {
+	// The indexType defaults to bleve.Config.DefaultIndexType.
+	// Example: "upside_down".  See bleve.index.upsidedown.Name and
+	// bleve.registry.RegisterIndexType().
+	IndexType string `json:"indexType"`
+
+	// The kvStoreName defaults to bleve.Config.DefaultKVStore.  It
+	// can be (and usually is in public builds) initialized to a
+	// default of "mossStore" via the mossStore_default_kvstore build
+	// tag.  See also bleve.registry.RegisterKVStore().
+	KvStoreName string `json:"kvStoreName"`
+
+	// The kvStoreMetricsAllow flag defaults to
+	// cbft.BleveKVStoreMetricsAllow.  When true, an
+	// interposing wrapper that captures additional metrics will be
+	// initialized as part of a bleve index's KVStore.
+	//
+	// Note: the interposing metrics wrapper might introduce
+	// additional performance costs.
+	KvStoreMetricsAllow bool `json:"kvStoreMetricsAllow"`
+
+	// The kvStoreMossAllow defaults to true.
+	//
+	// The moss cache will be used for a bleve index's KVStore when
+	// both this kvStoreMossAllow flag and the
+	// cbft.BlevePIndexAllowMoss global flag are true.
+	//
+	// A user can also explicitly specify a kvStoreName of "moss" to
+	// force usage of the moss cache.
+	KvStoreMossAllow bool `json:"kvStoreMossAllow"`
+
+	// The mossCollectionOptions allows users to specify moss cache
+	// collection options, with defaults coming from
+	// moss.DefaultCollectionOptions.
+	//
+	// It only applies when a moss cache is in use for an index (see
+	// kvStoreMossAllow).
+	MossCollectionOptions moss.CollectionOptions `json:"mossCollectionOptions"`
+
+	// The mossLowerLevelStoreName specifies which lower-level
+	// bleve.index.store.KVStore to use underneath a moss cache.
+	// See also bleve.registry.RegisterKVStore().
+	//
+	// It only applies when a moss cache is in use for an index (see
+	// kvStoreMossAllow).
+	//
+	// As a special case, when moss cache is allowed, and the
+	// kvStoreName is not "moss", and the mossLowerLevelStoreName is
+	// unspecified or "", then the system will automatically
+	// reconfigure as a convenience so that the
+	// mossLowerLevelStoreName becomes the kvStoreName, and the
+	// kvStoreName becomes "moss", hence injecting moss cache into
+	// usage for an index.
+	//
+	// In another case, when the kvStoreName is "moss" and the
+	// mossLowerLevelStoreName is "" (empty string), that means the
+	// moss cache will run in memory-only mode with no lower-level
+	// storage.
+	MossLowerLevelStoreName string `json:"mossLowerLevelStoreName"`
+
+	// The mossLowerLevelStoreConfig can be used to provide advanced
+	// options to the lower-level KVStore that's used under a moss
+	// cache.  For example, forestdb KVStore configurations would be
+	// defined here.
+	//
+	// NOTE: when the mossLowerLevelStoreName is "mossStore", the
+	// mossLowerLevelStoreConfig is not used; instead, please use
+	// mossStoreOptions.
+	MossLowerLevelStoreConfig map[string]interface{} `json:"mossLowerLevelStoreConfig"`
+
+	// The mossStoreOptions allows the user to specify advanced
+	// configuration options when moss cache is in use and when the
+	// mossLowerLevelStoreName is "mossStore",
+	MossStoreOptions moss.StoreOptions `json:"mossStoreOptions"`
 }
 
 func NewBleveParams() *BleveParams {
