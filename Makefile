@@ -5,7 +5,7 @@ CBFT_TAGS     =
 
 pwd     = $(shell pwd)
 version = $(shell git describe --long)
-goflags = -ldflags '-X main.VERSION $(version)' \
+goflags = -ldflags '-X main.VERSION=$(version)' \
           -tags "debug kagome $(CBFT_TAGS)"
 
 # -------------------------------------------------------------------
