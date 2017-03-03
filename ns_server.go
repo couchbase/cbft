@@ -194,7 +194,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 		focusStats := indexQueryPathStats.FocusStats(indexName)
 		if focusStats != nil {
-			totalQueries := atomic.LoadUint64(&focusStats.TotRequest)
+			totalQueries := atomic.LoadUint64(&focusStats.TotClientRequest)
 			nsIndexStat["total_queries"] = totalQueries
 			if totalQueries > 0 {
 				nsIndexStat["avg_queries_latency"] =

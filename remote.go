@@ -292,8 +292,14 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 			" queryURL: %s, authType: %s, err: %v",
 			r.QueryURL, r.AuthType(), err)
 	}
-
-	resp, err := HttpPost(u, "application/json", bytes.NewBuffer(buf))
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", u, bytes.NewReader(buf))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Internal-Cluster-Action", "fts-scatter/gather")
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
