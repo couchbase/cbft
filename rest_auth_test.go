@@ -68,12 +68,12 @@ func TestSourceNamesForAlias(t *testing.T) {
 		// no such definition exists
 		{
 			alias:   "x",
-			sources: []string{},
+			sources: []string(nil),
 		},
 		// not an alias
 		{
 			alias:   "i1",
-			sources: []string{},
+			sources: []string(nil),
 		},
 		// alias to 1
 		{
@@ -104,7 +104,7 @@ func TestSourceNamesForAlias(t *testing.T) {
 		}
 		sort.Strings(actualNames)
 		if !reflect.DeepEqual(actualNames, test.sources) {
-			t.Errorf("test %d, expected %v, got %v", i, test.sources, actualNames)
+			t.Errorf("test %d, expected %#v, got %#v", i, test.sources, actualNames)
 		}
 	}
 }
@@ -198,12 +198,12 @@ func TestSourceNamesFromReq(t *testing.T) {
 			path:   "/api/pindex/{pindexName}",
 			err:    errPIndexNotFound,
 		},
-		// case with valid alias, but this operation does NOT expand alias
+		// case with valid alias, with operation that expands alias
 		{
 			method:  http.MethodGet,
 			uri:     "/api/index/a1",
 			path:    "/api/index/{indexName}",
-			sources: []string{},
+			sources: []string{"s1"},
 		},
 		// case with valid alias, and this operation DOES expand alias
 		{
@@ -253,7 +253,6 @@ func TestSourceNamesFromReq(t *testing.T) {
 }
 
 func TestPreparePerms(t *testing.T) {
-
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -336,12 +335,12 @@ func TestPreparePerms(t *testing.T) {
 			path:   "/api/pindex/{pindexName}",
 			err:    errPIndexNotFound,
 		},
-		// case with valid alias, but this operation does NOT expand alias
+		// case with valid alias, with operation that expands alias
 		{
 			method: http.MethodGet,
 			uri:    "/api/index/a1",
 			path:   "/api/index/{indexName}",
-			perms:  []string{"cluster.bucket.fts!read"},
+			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
 		// case with valid alias, and this operation DOES expand alias
 		{

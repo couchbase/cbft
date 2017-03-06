@@ -251,12 +251,16 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 }
 
 func findCouchbaseSourceNames(req *http.Request, indexName string,
-	indexDefsByName map[string]*cbgt.IndexDef) ([]string, error) {
+	indexDefsByName map[string]*cbgt.IndexDef) (rv []string, err error) {
+	var requestBody []byte
 
-	requestBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
+	if req.Body != nil {
+		requestBody, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	// reset req.Body so it can be read later by the handler
 	req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
 
