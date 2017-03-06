@@ -263,7 +263,7 @@ func main() {
 // The proto may be "http" or "https".
 func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 	certFile, keyFile string) {
-	if bindHttp[0] == ':' {
+	if bindHttp[0] == ':' && proto == "http" {
 		bindHttp = "localhost" + bindHttp
 	}
 
