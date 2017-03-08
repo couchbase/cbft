@@ -220,7 +220,7 @@ func NewBleveDest(path string, bindex bleve.Index,
 
 // ---------------------------------------------------------
 
-const bleveQueryHelp = `<a href="http://www.blevesearch.com/docs/Query-String-Query/">
+const bleveQueryHelp = `<a href="https://developer.couchbase.com/fts/5.0/query-string-query">
        full text query syntax help
      </a>`
 
