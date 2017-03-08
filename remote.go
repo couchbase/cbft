@@ -32,8 +32,9 @@ import (
 
 const RemoteRequestOverhead = 500 * time.Millisecond
 
-var HttpPost = http.Post // Overridable for unit-testability, advanced needs, etc.
-var HttpGet = http.Get   // Overridable for unit-testability, advanced needs, etc.
+var HttpClient = http.DefaultClient // Overridable for testability / advanced needs.
+var HttpPost = http.Post            // Overridable for testability / advanced needs.
+var HttpGet = http.Get              // Overridable for testability / advanced needs.
 
 var indexClientUnimplementedErr = errors.New("unimplemented")
 
@@ -292,14 +293,15 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 			" queryURL: %s, authType: %s, err: %v",
 			r.QueryURL, r.AuthType(), err)
 	}
-	client := &http.Client{}
+
 	req, err := http.NewRequest("POST", u, bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Internal-Cluster-Action", "fts-scatter/gather")
 	req.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(req)
+
+	resp, err := HttpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

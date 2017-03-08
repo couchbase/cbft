@@ -99,6 +99,8 @@ func InitHttpOptions(options map[string]string) error {
 
 	httpClient := &http.Client{Transport: transport}
 
+	cbft.HttpClient = httpClient
+
 	cbft.HttpGet = func(url string) (resp *http.Response, err error) {
 		return httpClient.Get(url)
 	}
