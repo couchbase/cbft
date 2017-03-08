@@ -111,7 +111,7 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 	if depth > 50 {
 		return nil, errAliasExpanstionTooDeep
 	}
-	rv := make([]string, 0)
+	var rv []string
 	indexDef, exists := indexDefsByName[name]
 	if exists && indexDef != nil && indexDef.Type == "fulltext-alias" {
 		aliasParams, err := parseAliasParams(indexDef.Params)
@@ -120,19 +120,19 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 		}
 		for aliasIndexName := range aliasParams.Targets {
 			aliasIndexDef, exists := indexDefsByName[aliasIndexName]
-			if !exists {
-				return nil, fmt.Errorf("fulltext-alias %s expands to include non-existant index %s", indexDef.Name, aliasIndexName)
-			}
-			if aliasIndexDef.Type == "fulltext-alias" {
-				// handle nested aliases with recursive call
-				nestedSources, err := sourceNamesForAlias(aliasIndexName,
-					indexDefsByName, depth+1)
-				if err != nil {
-					return nil, err
+			// if alias target doesn't exist, do nothing
+			if exists {
+				if aliasIndexDef.Type == "fulltext-alias" {
+					// handle nested aliases with recursive call
+					nestedSources, err := sourceNamesForAlias(aliasIndexName,
+						indexDefsByName, depth+1)
+					if err != nil {
+						return nil, err
+					}
+					rv = append(rv, nestedSources...)
+				} else {
+					rv = append(rv, aliasIndexDef.SourceName)
 				}
-				rv = append(rv, nestedSources...)
-			} else {
-				rv = append(rv, aliasIndexDef.SourceName)
 			}
 		}
 	}
@@ -168,11 +168,10 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 				// we assume when there's no indexDef.
 				return sourceNamesFromReq(mgr, req, "CREATE", path)
 			} else if method == "CREATE" {
-				sourceName, err := findCouchbaseSourceName(req, indexName)
+				sourceNames, err = findCouchbaseSourceNames(req, indexName, indexDefsByName)
 				if err != nil {
 					return nil, err
 				}
-				sourceNames = append(sourceNames, sourceName)
 				return sourceNames, nil
 			} else {
 				return nil, errIndexNotFound
@@ -180,19 +179,27 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 		}
 
 		if indexDef.Type == "fulltext-alias" {
-			// per MB-18868 only expand alias sources for these specific requests
-			if (req.Method == http.MethodGet &&
-				strings.HasSuffix(path, "/count")) ||
-				(req.Method == http.MethodPost &&
-					strings.HasSuffix(path, "/query")) {
-				aliasSourceNames, err := sourceNamesForAlias(indexName, indexDefsByName, 0)
-				if err != nil {
-					return nil, err
-				}
-				sourceNames = append(sourceNames, aliasSourceNames...)
+			// this finds the sources in current definition
+			currSourceNames, err := sourceNamesForAlias(indexName, indexDefsByName, 0)
+			if err != nil {
+				return nil, err
 			}
+			sourceNames = append(sourceNames, currSourceNames...)
+			// now also extra sources from new definition in the request
+			newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
+			if err != nil {
+				return nil, err
+			}
+			sourceNames = append(sourceNames, newSourceNames...)
 		} else {
+			// first use the source in current definition
 			sourceNames = append(sourceNames, indexDef.SourceName)
+			// now also add any sources from new definition in the request
+			newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
+			if err != nil {
+				return nil, err
+			}
+			sourceNames = append(sourceNames, newSourceNames...)
 		}
 	} else {
 		pindexName := rest.PIndexNameLookup(req)
@@ -235,19 +242,20 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 			}
 			return perms, nil
 		} else {
-			// no source names, remove it from the perm
-			return []string{strings.Replace(perm, "[<sourceName>]", "", -1)}, nil
+			// perm depends on sources, there are no sources, therefore no perms
+			return []string{}, nil
 		}
 	}
 
 	return []string{perm}, nil
 }
 
-func findCouchbaseSourceName(req *http.Request, indexName string) (string, error) {
+func findCouchbaseSourceNames(req *http.Request, indexName string,
+	indexDefsByName map[string]*cbgt.IndexDef) ([]string, error) {
 
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// reset req.Body so it can be read later by the handler
 	req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
@@ -256,15 +264,30 @@ func findCouchbaseSourceName(req *http.Request, indexName string) (string, error
 	if len(requestBody) > 0 {
 		err := json.Unmarshal(requestBody, &indexDef)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
-	sourceType, sourceName := rest.ExtractSourceTypeName(req, &indexDef, indexName)
-	if sourceType == "couchbase" {
-		return sourceName, nil
+	if indexDef.Type == "fulltext-index" {
+		sourceType, sourceName := rest.ExtractSourceTypeName(req, &indexDef, indexName)
+		if sourceType == "couchbase" {
+			return []string{sourceName}, nil
+		}
+	} else if indexDef.Type == "fulltext-alias" {
+		// create a copy of indexDefNames with the new one added
+		futureIndexDefsByName := make(map[string]*cbgt.IndexDef,
+			len(indexDefsByName)+1)
+		for k, v := range indexDefsByName {
+			futureIndexDefsByName[k] = v
+		}
+		futureIndexDefsByName[indexName] = &indexDef
+		aliasSourceNames, err := sourceNamesForAlias(indexName, futureIndexDefsByName, 0)
+		if err != nil {
+			return nil, err
+		}
+		return aliasSourceNames, nil
 	}
-	return "", nil
+	return nil, nil
 }
 
 type CBAuthBasicLogin struct {
