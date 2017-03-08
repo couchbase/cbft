@@ -13,7 +13,7 @@ package cbft
 
 // See: https://docs.google.com/document/d/1JXm4PXyli45KE5dyGvD5oQLb6MQPJSkubDR21JZQycQ/edit?ts=56b15d8f#
 //
-var restPermDefault = "cluster!read"
+var restPermDefault = "cluster.fts!read"
 
 var restPerms = `
 GET /api/index
@@ -47,10 +47,10 @@ cluster.bucket[<sourceName>].fts!manage
 24579
 
 GET /api/stats
-cluster.bucket.stats!read
+cluster.bucket.stats.fts!read
 
 GET /api/stats/index/{indexName}
-cluster.bucket[<sourceName>].stats!read
+cluster.bucket[<sourceName>].stats.fts!read
 
 GET /api/index/{indexName}/count
 cluster.bucket[<sourceName>].fts!read
@@ -59,48 +59,48 @@ POST /api/index/{indexName}/query
 cluster.bucket[<sourceName>].fts!read
 
 GET /api/cfg
-cluster.settings!read
+cluster.settings.fts!read
 
 POST /api/cfgRefresh
-cluster.settings!write
+cluster.settings.fts!write
 24580
 
 POST /api/managerKick
-cluster.settings!write
+cluster.settings.fts!write
 24581
 
 GET /api/managerMeta
-cluster.settings!read
+cluster.settings.fts!read
 
 GET /api/diag
-cluster.logs!read
+cluster.logs.fts!read
 
 GET /api/log
-cluster.logs!read
+cluster.logs.fts!read
 
 GET /api/runtime
-cluster.settings!read
+cluster.settings.fts!read
 
 GET /api/runtime/args
-cluster.settings!read
+cluster.settings.fts!read
 
 POST /api/runtime/profile/cpu
-cluster.settings!write
+cluster.settings.fts!write
 24583
 
 POST /api/runtime/profile/memory
-cluster.settings!write
+cluster.settings.fts!write
 24584
 
 POST /api/runtime/gc
-cluster.settings!write
+cluster.settings.fts!write
 24582
 
 GET /api/runtime/stats
-cluster.stats!read
+cluster.stats.fts!read
 
 GET /api/runtime/statsMem
-cluster.stats!read
+cluster.stats.fts!read
 
 GET /api/pindex
 cluster.bucket.fts!read
