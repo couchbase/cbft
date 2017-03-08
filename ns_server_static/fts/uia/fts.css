@@ -603,6 +603,10 @@
   padding-left: 30px;
 }
 
+.indexContainer .mapping .mappingHandle input.invalid {
+  color: red;
+}
+
 /* -------------------------------------------------- */
 
 .indexContainer .mapping .field label > span {

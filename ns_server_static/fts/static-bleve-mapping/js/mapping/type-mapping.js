@@ -122,6 +122,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         m._editing = function() { removeEntry(mapping.mappings, m); };
         mapping.mappings.unshift(m);
 
+        $scope.validateMapping(m, mapping.mappings)
+
         $scope.editing = m;
         $scope.popup = null;
     }
@@ -192,6 +194,23 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
                 field._invalid = true;
             } else {
                 delete field._invalid;
+            }
+        }
+    }
+
+    $scope.validateMapping = function(mapping, mappings) {
+        if (mappings) {
+            var taken = false;
+            for (var i in mappings) {
+                if (mappings[i] != mapping &&
+                    mappings[i].name == mapping.name) {
+                    taken = true;
+                }
+            }
+            if (taken) {
+                mapping._invalid = true;
+            } else {
+                delete mapping._invalid;
             }
         }
     }

@@ -33,10 +33,14 @@
           data-nodrag>
       <input ng-if="mapping._kind == 'mappingType'"
              type="text" placeholder="please enter a type name"
-             ng-model="mapping.name"/>
+             ng-model="mapping.name"
+             ng-change="validateMapping(mapping, mappings)"
+             ng-class="{'invalid': mapping._invalid}"/>
       <input ng-if="mapping._kind == 'mapping'"
              type="text" placeholder="please enter a property name"
-             ng-model="mapping.name"/>
+             ng-model="mapping.name"
+             ng-change="validateMapping(mapping, mappings)"
+             ng-class="{'invalid': mapping._invalid}"/>
     </span>
     <span ng-if="mapping.enabled && mapping._editing">
       <select class="mapping_default_analyzer"
@@ -94,6 +98,7 @@
           data-nodrag>
       <a class="btn btn-xs btn-success"
          data-nodrag
+         ng-disabled="mapping._invalid"
          ng-click="editAttrsDone(mapping, true)">
          <i class="glyphicon glyphicon-ok"></i></a>
       <a class="btn btn-xs btn-cancel"
@@ -241,9 +246,9 @@
 
   <ol ui-tree-nodes
       ng-if="mapping.enabled"
-      ng-model="mapping.mappings"
+      ng-repeat="mappings in [mapping.mappings]"
       data-type="mappingContainer">
-    <li ng-repeat="mapping in mapping.mappings"
+    <li ng-repeat="mapping in mappings"
         ui-tree-node
         class="mapping"
         ng-class="{'editing': mapping._editing}"
