@@ -143,11 +143,11 @@
         <span ng-if="field._editing"
               data-nodrag>
           <label>
-            <span>field</span>
+            <span ng-class="{'invalid': field._invalid}">field</span>
             <input type="text"
                    placeholder="please enter a field name"
                    ng-model="field.property"
-                   ng-change="changedProperty(field)"/>
+                   ng-change="changedProperty(field, mapping)"/>
           </label>
         </span>
 
@@ -164,10 +164,11 @@
           </div>
           <div ng-if="field.type != 'disabled'">
             <label>
-              <span>searchable as</span>
+              <span ng-class="{'invalid': field._invalid}">searchable as</span>
               <input type="text"
                      placeholder="please enter a name"
-                     ng-model="field.name"/>
+                     ng-model="field.name"
+                     ng-change="validateField(field, mapping)"/>
             </label>
           </div>
           <div ng-if="field.type == 'text'">
@@ -220,6 +221,7 @@
               data-nodrag>
           <a class="btn btn-xs btn-success"
              data-nodrag
+             ng-disabled="field._invalid"
              ng-click="editAttrsDone(field, true)">
              <i class="glyphicon glyphicon-ok"></i></a>
           <a class="btn btn-xs btn-cancel"

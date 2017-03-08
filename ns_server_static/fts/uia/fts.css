@@ -611,6 +611,10 @@
   min-width: 8em;
 }
 
+.indexContainer .mapping .field label > span.invalid {
+  color: red;
+}
+
 .indexContainer .mapping .field label input[type=checkbox] {
   margin-left: 9em;
 }

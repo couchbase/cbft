@@ -96,6 +96,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         f._editing = function() { removeEntry(mapping.fields, f); };
         mapping.fields.unshift(f);
 
+        $scope.validateField(f, mapping);
+
         $scope.editing = f;
         $scope.popup = null;
     }
@@ -168,9 +170,29 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         $scope.editing = null;
     }
 
-    $scope.changedProperty = function(field) {
+    $scope.changedProperty = function(field, mapping) {
         if (field._name_PREV == field._property_PREV) {
             field.name = field.property;
+        }
+
+        $scope.validateField(field, mapping)
+    }
+
+    $scope.validateField = function(field, mapping) {
+        if (mapping) {
+            var taken = false;
+            for (var i in mapping.fields) {
+                if (mapping.fields[i] != field &&
+                    mapping.fields[i].name == field.name &&
+                    mapping.fields[i].property == field.property) {
+                    taken = true;
+                }
+            }
+            if (taken) {
+                field._invalid = true;
+            } else {
+                delete field._invalid;
+            }
         }
     }
 
