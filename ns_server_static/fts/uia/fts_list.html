@@ -1,275 +1,271 @@
-<div class="main-content">
+<div ng-show="!ftsChecking && ftsAvailable" class="fts-indexes-lists indexContainer">
 
-<div ng-show="!ftsChecking && ftsAvailable" class="indexContainer">
-
-<div ng-show="errorMessage" class="error ng-cloak" role="alert">
-  {{errorMessage}}
-</div>
-
-<div class="indexes_list shadow_box" ng-show="indexNamesReady">
-  <div class="indexes_header header_2">
-    <h4>Full Text Indexes</h4>
-    <a ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-       class="btn_1">
-      <span>
-        New Full Text Index
-      </span>
-    </a>
+  <div ng-show="errorMessage" class="error ng-cloak" role="alert">
+    {{errorMessage}}
   </div>
-  <div class="indexes_body">
-  <table class="table-stroked">
-    <tr>
-      <th>Name</th>
-      <th>Bucket</th>
-      <th>Documents</th>
-    </tr>
-    <tbody ng-repeat="(indexName, indexDef) in indexDefs"
-           class="has-hover"
-           ng-if="indexDef.type != 'fulltext-alias'"
-           ng-click="expando(indexName)"
-           ng-controller="indexViewController">
+
+<!-- table of indexes  ******************** -->
+  <span ng-show="indexNamesReady">
+    <div class="row margin-bottom-half">
+      <h4>Full Text Indexes</h4>
+      <button ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})">
+        Add Index
+      </button>
+    </div>
+    <table class="fts-indexes-list table-stroked">
+      <tr>
+        <th>index name</th>
+        <th>bucket</th>
+        <th>doc count</th>
+        <th>indexing progress</th>
+      </tr>
+      <tbody ng-repeat="(indexName, indexDef) in indexDefs"
+             class="has-hover"
+             ng-if="indexDef.type != 'fulltext-alias'"
+             ng-click="expando(indexName)"
+             ng-controller="indexViewController">
+        <tr ng-class="{
+                     'grayblue-5 detailsOpened': detailsOpened[indexName],
+                     'no-stroke': detailsOpened[node.hostname]
+                     }">
+          <td>{{indexName}}</td>
+          <td>
+            <span ng-if="indexDef.sourceType != 'couchbase'">
+              {{indexDef.sourceType}}
+              &nbsp;/&nbsp;
+            </span>
+            {{indexDef.sourceName}}
+          </td>
+          <td>
+            <span ng-bind="indexDocCount"></span>
+          </td>
+          <td>
+            <span ng-if="progressPct">{{progressPct}}%</span>
+          </td>
+        </tr>
+<!-- index details area ************************* -->
+        <tr class="grayblue-5" ng-if="detailsOpened[indexName]">
+          <td colspan="4">
+            <div class="fts-index-details">
+              <form>
+              <div class="row margin-bottom1">
+              <!--  <span>
+                  <span>
+                    <span class="semi-bold">Type Identifier:&nbsp;</span>
+                    <span ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">doc ID prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</span>
+                    <span ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">doc ID regular expression '{{indexDef.params.doc_config.docid_regexp}}'</span>
+                    <span ng-if="indexDef.params.doc_config.mode == 'type_field'">type field '{{indexDef.params.doc_config.type_field}}'</span>
+                  </span>
+
+                  <span ng-if="indexTemplates && indexTemplates[indexDef.type]">
+                    <span class="{{indexDef.type}}" data-nodrag>
+                      <span ng-include="static_base + indexTemplates[indexDef.type]"></span>
+                    </span>
+                  </span>
+                </span> -->
+
+<!-- index search controls ************************* -->
+              <div class="fts-query-bar" ng-click="$event.stopPropagation()">
+                <input id="query_bar_input_{{indexName}}"
+                     ng-model="searchInputs[indexName]"
+                     type="text"
+                     placeholder="search this index..."/>
+                <button ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
+                  Search
+                </button>
+              </div>
+
+<!-- index action buttons ************************* -->
+                <span class="nowrap" ng-click="$event.stopPropagation()">
+                  <button class="outline" ng-click="deleteIndex(indexName)">
+                    Delete
+                  </button>
+                  <button class="outline" ui-sref="^.search.fts_clone({indexName: indexName})">
+                    Clone
+                  </button>
+                  <button ui-sref="^.search.fts_edit({indexName: indexName})">
+                    Edit
+                  </button>
+                </span>
+              </div>
+              </form>
+
+<!-- index definition ******************************* -->
+              <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
+                <div
+                   class="disclosure margin-bottom-half"
+                   ng-class="{disclosed: showJSON[indexName]}"
+                   ng-click="showJSON[indexName] = !showJSON[indexName]">
+                  {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
+                </div>
+                <div class="indent-1" ng-show="showJSON[indexName]">
+                  <input
+                     id="for-show-def-fts-curl-{{indexName}}"
+                     type="checkbox"
+                     ng-model="showJSONCurl[indexName]">
+                  <label for="for-show-def-fts-curl-{{indexName}}">
+                    Show curl command to modify this index definition
+                  </label>
+                </div>
+
+<!-- defintion JSON ******************** -->
+                <div
+                   ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
+                   class="json-content row items-top">
+                  <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
+                  <button
+                     class="outline copy-to-clipboard"
+                     ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
+                    Copy to Clipboard
+                  </button>
+                </div>
+
+<!-- definition with CURL ****************** -->
+                  <div
+                     ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                     class="json-content row items-top">
+<pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
+http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
+'{{escapeCmdLineParam(indexDefStr)}}'</pre>
+                    <button
+                       class="outline copy-to-clipboard"
+                       ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                      Copy to Clipboard
+                    </button>
+                  </div>
+                </div>
+              </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+<!-- table of aliases  ******************** -->
+    <div class="row margin-bottom-half">
+      <h4>Full Text Aliases</h4>
+      <button ui-sref="^.search.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})">
+        Add Alias
+      </button>
+    </div>
+    <table class="fts-indexes-list table-stroked">
+      <tr>
+        <th>alias name</th>
+        <th>target indexes</th>
+      </tr>
+      <tbody ng-repeat="(indexName, indexDef) in indexDefs"
+             class="has-hover"
+             ng-if="indexDef.type == 'fulltext-alias'"
+             ng-click="detailsOpened[indexName] = !detailsOpened[indexName]"
+             ng-controller="indexViewController">
       <tr ng-class="{
                    'grayblue-5 detailsOpened': detailsOpened[indexName],
                    'no-stroke': detailsOpened[node.hostname]
                    }">
         <td>{{indexName}}</td>
         <td>
-          <span ng-if="indexDef.sourceType != 'couchbase'">
-            {{indexDef.sourceType}}
-            &nbsp;/&nbsp;
-          </span>
-          {{indexDef.sourceName}}
-        </td>
-        <td>
-          <span ng-bind="indexDocCount"></span>
-          <span ng-if="progressPct">({{progressPct}}%)</span>
-        </td>
-      </tr>
-      <tr class="grayblue-5"
-          ng-if="detailsOpened[indexName]">
-        <td colspan="3">
-          <div class="indexDetails"
-               ng-click="$event.stopPropagation()">
-            <div class="query_bar">
-              <div class="query_bar_input">
-                <form>
-                  <input id="query_bar_input_{{indexName}}"
-                         ng-model="searchInputs[indexName]"
-                         type="text"
-                         placeholder="search this index..."/>
-                  <a ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
-                    <button type="submit">
-                      Search
-                    </button>
-                  </a>
-                </form>
-              </div>
-            </div>
-
-            <div class="typeIdentifier">
-              <dt>Type Identifier:</dt>
-              <dd>
-                <span ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">Doc ID Prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</span>
-                <span ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">Doc ID Regular Expression '{{indexDef.params.doc_config.docid_regexp}}'</span>
-                <span ng-if="indexDef.params.doc_config.mode == 'type_field'">Type Field '{{indexDef.params.doc_config.type_field}}'</span>
-                &nbsp;
-              </dd>
-            </div>
-
-            <div ng-if="indexTemplates && indexTemplates[indexDef.type]"
-                 style="clear:both;">
-              <div class="indexViewer {{indexDef.type}}" data-nodrag>
-                <div ng-include="static_base + indexTemplates[indexDef.type]"/>
-              </div>
-            </div>
-
-            <div class="indexDetailsJSON"
-                 ng-click="$event.stopPropagation()">
-              <div class="indexDetailsJSONControls">
-                <input id="for-show-def-fts-{{indexName}}" type="checkbox"
-                       ng-model="detailsOpenedJSON[indexName]">
-                <label for="for-show-def-fts-{{indexName}}">
-                  Show index definition JSON
-                </label>
-              </div>
-              <div ng-show="detailsOpenedJSON[indexName]">
-                <input id="for-show-def-fts-curl-{{indexName}}" type="checkbox"
-                       ng-model="detailsOpenedJSONCurl[indexName]">
-                <label for="for-show-def-fts-curl-{{indexName}}">
-                  Show curl command to modify this index definition
-                </label>
-
-                <div ng-show="detailsOpenedJSONCurl[indexName]"
-                     class="indexDetailsJSONContent">
-                  <button class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
-                    copy to clipboard
-                  </button>
-                  <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
- http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
- -d '{{escapeCmdLineParam(indexDefStr)}}'</pre>
-                </div>
-                <div ng-show="!detailsOpenedJSONCurl[indexName]"
-                     class="indexDetailsJSONContent">
-                  <button class="btn btn-xs copyToClipboard"
-                          ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
-                    copy to clipboard
-                  </button>
-                  <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="controls">
-            <a ng-click="deleteIndex(indexName)">
-              <button class="outline">delete</button>
-            </a>
-            <a ui-sref="^.search.fts_clone({indexName: indexName})">
-              <button class="outline">clone</button>
-            </a>
-            <a ui-sref="^.search.fts_edit({indexName: indexName})">
-              <button>edit</button>
-            </a>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-</div>
-
-<div class="indexes_list indexes_list_aliases shadow_box"
-     ng-show="indexNamesReady">
-  <div class="indexes_header header_2">
-    <h4>Full Text Aliases</h4>
-    <a ui-sref="^.search.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})"
-       class="btn_1">
-      <span>
-        New Full Text Alias
-      </span>
-    </a>
-  </div>
-  <div class="indexes_body">
-  <table class="table-stroked">
-    <tr>
-      <th>Name</th>
-      <th>Target Full Text Indexes</th>
-      <th></th>
-    </tr>
-    <tbody ng-repeat="(indexName, indexDef) in indexDefs"
-           class="has-hover"
-           ng-if="indexDef.type == 'fulltext-alias'"
-           ng-click="detailsOpened[indexName] = !detailsOpened[indexName]">
-      <tr ng-class="{
-                   'grayblue-5 detailsOpened': detailsOpened[indexName],
-                   'no-stroke': detailsOpened[node.hostname]
-                   }">
-        <td>{{indexName}}
-        </td>
-        <td>
           <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
             {{targetName}}<span ng-show="!$last">, </span>
           </span>
         </td>
-        <td class="tight">
-          <div ng-if="detailsOpened[indexName]"
-               class="query_bar">
-            <div class="query_bar_input">
-              <form>
-                <input ng-model="searchInputs[indexName]"
-                       type="text"
-                       placeholder="search this alias..."
-                       ng-click="$event.stopPropagation()"/>
-                <a ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
-                  <button type="submit">
-                    Search
-                  </button>
-                </a>
-              </form>
-            </div>
-          </div>
-        </td>
       </tr>
-      <tr class="grayblue-5"
-          ng-if="detailsOpened[indexName]">
-        <td colspan="3">
-          <div class="indexDetails">
-            <div ng-controller="indexViewController"/>
-              <div class="indexDetailsJSON"
-                   ng-click="$event.stopPropagation()">
-                <div class="indexDetailsJSONControls">
-                  <input ng-model="detailsOpenedJSON[indexName]" type="checkbox"
-                         id="for-show-alias-def-fts-{{indexName}}">
-                  <label for="for-show-alias-def-fts-{{indexName}}">
-                    Show alias definition JSON
-                  </label>
-                </div>
-                <div ng-show="detailsOpenedJSON[indexName]">
-                  <input ng-model="detailsOpenedJSONCurl[indexName]" type="checkbox"
-                         id="for-show-alias-def-fts-curl-{{indexName}}">
-                  <label for="for-show-alias-def-fts-curl-{{indexName}}">
-                    Show curl command to modify this alias definition
-                  </label>
+<!-- alias details area ************************* -->
+      <tr class="grayblue-5" ng-if="detailsOpened[indexName]">
+        <td colspan="2">
+          <div class="fts-index-details">
+          <form>
+            <div class="row margin-bottom1">
 
-                  <div ng-show="detailsOpenedJSONCurl[indexName]"
-                       class="indexDetailsJSONContent">
-                    <button class="btn btn-xs copyToClipboard"
-                            ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
-                      copy to clipboard
-                    </button>
-                    <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
- http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
- -d '{{escapeCmdLineParam(indexDefStr)}}'</pre>
-                  </div>
-                  <div ng-show="!detailsOpenedJSONCurl[indexName]"
-                       class="indexDetailsJSONContent">
-                    <button class="btn btn-xs copyToClipboard"
-                            ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
-                      copy to clipboard
-                    </button>
-                    <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
-                  </div>
-                </div>
+<!-- search controls **************************** -->
+              <div class="fts-query-bar" ng-click="$event.stopPropagation()">
+                <input
+                     ng-model="searchInputs[indexName]"
+                     type="text"
+                     placeholder="search this alias..."/>
+                <button ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
+                  Search
+                </button>
               </div>
-            </div>
 
-            <div class="controls">
-              <a ng-click="deleteIndex(indexName)">
-                <button class="outline">delete</button>
-              </a>
-              <a ui-sref="^.search.fts_clone({indexName: indexName})">
-                <button class="outline">clone</button>
-              </a>
-              <a ui-sref="^.search.fts_edit({indexName: indexName})">
-                <button>edit</button>
-              </a>
+<!-- alias action buttons ************************* -->
+              <span class="nowrap" ng-click="$event.stopPropagation()">
+                <button ng-click="deleteIndex(indexName)" class="outline">
+                  Delete
+                </button>
+                <button ui-sref="^.search.fts_clone({indexName: indexName})" class="outline">
+                  Clone
+                </button>
+                <button ui-sref="^.search.fts_edit({indexName: indexName})">
+                  Edit
+                </button>
+              </span>
+            </div>
+            </form>
+
+<!-- alias index definition ******************************* -->
+            <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
+              <div
+                 class="disclosure margin-bottom-half"
+                 ng-class="{disclosed: showJSON[indexName]}"
+                 ng-click="showJSON[indexName] = !showJSON[indexName]">
+                 {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+              </div>
+              <div class="indent-1" ng-show="showJSON[indexName]">
+                <input
+                   id="for-show-alias-def-fts-curl-{{indexName}}"
+                   ng-model="showJSONCurl[indexName]"
+                   type="checkbox">
+                <label for="for-show-alias-def-fts-curl-{{indexName}}">
+                  Show curl command to modify this alias definition
+                </label>
+              </div>
+
+<!-- alias definition JSON ******************** -->
+              <div
+                 ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
+                 class="json-content row items-top">
+                <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
+                <button
+                   class="outline copy-to-clipboard"
+                   ngclipboard data-clipboard-target="#aliasDefStr_details-{{indexName}}">
+                  Copy to Clipboard
+                </button>
+              </div>
+
+<!-- alias definition with CURL ****************** -->
+              <div
+                 ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                 class="json-content row items-top">
+<pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
+http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
+'{{escapeCmdLineParam(indexDefStr)}}'</pre>
+                <button
+                   class="outline copy-to-clipboard"
+                   ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                  Copy to Clipboard
+                </button>
+              </div>
             </div>
           </div>
         </td>
       </tr>
     </tbody>
-  </table>
+    </table>
+  </span>
+</div>
+
+<!-- display results of check for query nodes ********************  -->
+  <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="fts-check">
+    <p>The Full Text Search interface is only available on Couchbase nodes running the Full Text Search service.</p>
+    <p ng-show="ftsNodes.length > 0">Full Text Search services were found at the following nodes:</p>
+    <ul>
+      <li ng-show="ftsNodes.length > 0" ng-repeat="url in ftsNodes">
+        <a href="{{url}}">{{url}}</a>
+      </li>
+    </ul>
+    <p ng-show="ftsNodes.length == 0" class="error">No full text search nodes were found on this cluster.</p>
   </div>
-</div>
 
-</div>
-
-<div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError"
-     class="indexContainer ftsCheck">
-  <h1>The full text search interface is only available on Couchbase nodes running the full text service.</h1>
-  <h1 ng-show="ftsNodes.length > 0">Full text services were found at the following nodes:</h1>
-  <ul>
-    <li ng-show="ftsNodes.length > 0" class="cbui-nodelist"
-      ng-repeat="url in ftsNodes"><a
-      href="{{url}}">{{url}}</a></li>
-  </ul>
-  <h1 ng-show="ftsNodes.length == 0">No full text search nodes were found on this cluster.</h1>
-</div>
-
-<div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"
-  class="error ng-cloak ftsCheck" role="alert">
-  {{ftsCheckError}}
-</div>
-
-</div>
+  <div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"
+    class="error ng-cloak ftsCheck" role="alert">
+    {{ftsCheckError}}
+  </div>

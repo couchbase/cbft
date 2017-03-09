@@ -23,7 +23,7 @@ var ftsPrefix = 'fts';
               }
             },
             data: {
-              title: "Search"
+              title: "Full Text Search"
             }
           })
           .state(parent + '.fts_list', {
@@ -79,7 +79,7 @@ var ftsPrefix = 'fts';
               }
             },
             data: {
-              title: "FTS Search",
+              title: "Search Results",
               child: parent + '.fts_list'
             }
           });
