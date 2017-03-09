@@ -1490,6 +1490,12 @@ func BleveInitRouter(r *mux.Router, phase string,
 				staticBleveMapping))
 	}
 
+	if phase == "manager.before" {
+		r.Handle(prefix+"/api/index",
+			NewFilteredListIndexHandler(mgr)).
+			Methods("GET").Name(prefix + "/api/index")
+	}
+
 	if phase == "manager.after" {
 		bleveMappingUI.RegisterHandlers(r, prefix+"/api")
 

@@ -17,16 +17,12 @@ var restPermDefault = "cluster.fts!read"
 
 var restPerms = `
 GET /api/index
-cluster.bucket.fts!read
+cluster.bucket{}.fts!read
 
 GET /api/index/{indexName}
 cluster.bucket[<sourceName>].fts!read
 
 PUT /api/index/{indexName}
-cluster.bucket[<sourceName>].fts!write
-24577
-
-CREATE /api/index/{indexName}
 cluster.bucket[<sourceName>].fts!write
 24577
 
@@ -47,9 +43,12 @@ cluster.bucket[<sourceName>].fts!manage
 24579
 
 GET /api/stats
-cluster.bucket.stats.fts!read
+cluster.bucket[].stats.fts!read
 
 GET /api/stats/index/{indexName}
+cluster.bucket[<sourceName>].stats.fts!read
+
+GET /api/stats/sourceStats/{indexName}
 cluster.bucket[<sourceName>].stats.fts!read
 
 GET /api/index/{indexName}/count
@@ -103,7 +102,7 @@ GET /api/runtime/statsMem
 cluster.stats.fts!read
 
 GET /api/pindex
-cluster.bucket.fts!read
+cluster.bucket[].fts!read
 
 GET /api/pindex/{pindexName}
 cluster.bucket[<sourceName>].fts!read

@@ -260,7 +260,15 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                            $location, $log, $sce, $uibModal,
                            $q, mnBucketsService) {
-    mnBucketsService.getBucketsByType(true).then(function(buckets) {
+    mnBucketsService.getBucketsByType(true).
+        then(initWithBuckets,
+             function(err) {
+                 // Possible RBAC issue listing buckets or other error.
+                 console.log("mnBucketsService.getBucketsByType failed", err);
+                 initWithBuckets([]);
+             });
+
+    function initWithBuckets(buckets) {
         $scope.ftsDocConfig = {}
 
         $scope.buckets = buckets;
@@ -388,7 +396,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                                     newPlanParams, prevIndexUUID);
             };
         }
-    });
+    }
 }
 
 // -------------------------------------------------------

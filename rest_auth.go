@@ -25,6 +25,41 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+// CBAuthWebCreds extra level-of-indirection allows for overrides and
+// for more testability.
+var CBAuthWebCreds = cbauth.AuthWebCreds
+
+// CBAuthIsAllowed extra level-of-indirection allows for overrides and
+// for more testability.
+var CBAuthIsAllowed = func(creds cbauth.Creds, permission string) (
+	bool, error) {
+	return creds.IsAllowed(permission)
+}
+
+// CBAuthSendForbidden extra level-of-indirection allows for overrides
+// and for more testability.
+var CBAuthSendForbidden = func(w http.ResponseWriter, permission string) {
+	cbauth.SendForbidden(w, permission)
+}
+
+// CBAuthSendUnauthorized extra level-of-indirection allows for
+// overrides and for more testability.
+var CBAuthSendUnauthorized = func(w http.ResponseWriter) {
+	cbauth.SendUnauthorized(w)
+}
+
+// UrlWithAuth extra level-of-indirection allows for
+// overrides and for more testability.
+var UrlWithAuth = func(authType, urlStr string) (string, error) {
+	if authType == "cbauth" {
+		return cbgt.CBAuthURL(urlStr)
+	}
+
+	return urlStr, nil
+}
+
+// --------------------------------------------------
+
 // Map of "method:path" => "perm".  For example, "GET:/api/index" =>
 // "cluster.bucket.fts!read".
 var restPermsMap = map[string]string{}
@@ -65,43 +100,39 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 		return false
 	}
 
-	creds, err := cbauth.AuthWebCreds(req)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
-			" err: %v ", err), 403)
-		return false
-	}
-
 	perms, err := preparePerms(mgr, req, req.Method, path)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("rest_auth: preparePerm,"+
-			" err: %v ", err), 403)
+			" err: %v", err), 403)
+		return false
+	}
+
+	if len(perms) <= 0 {
+		return true
+	}
+
+	creds, err := CBAuthWebCreds(req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
+			" err: %v", err), 403)
 		return false
 	}
 
 	for _, perm := range perms {
-		allowed, err = creds.IsAllowed(perm)
+		allowed, err = CBAuthIsAllowed(creds, perm)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
-				" err: %v ", err), 403)
+				" err: %v", err), 403)
 			return false
 		}
 
 		if !allowed {
-			cbauth.SendForbidden(w, perm)
+			CBAuthSendForbidden(w, perm)
 			return false
 		}
 	}
 
 	return true
-}
-
-func UrlWithAuth(authType, urlStr string) (string, error) {
-	if authType == "cbauth" {
-		return cbgt.CBAuthURL(urlStr)
-	}
-
-	return urlStr, nil
 }
 
 // --------------------------------------------------------
@@ -155,7 +186,6 @@ var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 
 func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 	method, path string) ([]string, error) {
-	sourceNames := make([]string, 0)
 	indexName := rest.IndexNameLookup(req)
 	if indexName != "" {
 		_, indexDefsByName, err := mgr.GetIndexDefs(false)
@@ -166,19 +196,14 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 		indexDef, exists := indexDefsByName[indexName]
 		if !exists || indexDef == nil {
 			if method == "PUT" {
-				// Special case where PUT can mean CREATE, which
-				// we assume when there's no indexDef.
-				return sourceNamesFromReq(mgr, req, "CREATE", path)
-			} else if method == "CREATE" {
-				sourceNames, err = findCouchbaseSourceNames(req, indexName, indexDefsByName)
-				if err != nil {
-					return nil, err
-				}
-				return sourceNames, nil
-			} else {
-				return nil, errIndexNotFound
+				// Special case where PUT represents an index creation
+				// when there's no indexDef.
+				return findCouchbaseSourceNames(req, indexName, indexDefsByName)
 			}
+			return nil, errIndexNotFound
 		}
+
+		var sourceNames []string
 
 		if indexDef.Type == "fulltext-alias" {
 			// this finds the sources in current definition
@@ -187,36 +212,30 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 				return nil, err
 			}
 			sourceNames = append(sourceNames, currSourceNames...)
-			// now also extra sources from new definition in the request
-			newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
-			if err != nil {
-				return nil, err
-			}
-			sourceNames = append(sourceNames, newSourceNames...)
 		} else {
 			// first use the source in current definition
 			sourceNames = append(sourceNames, indexDef.SourceName)
-			// now also add any sources from new definition in the request
-			newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
-			if err != nil {
-				return nil, err
-			}
-			sourceNames = append(sourceNames, newSourceNames...)
 		}
-	} else {
-		pindexName := rest.PIndexNameLookup(req)
-		if pindexName != "" {
-			pindex := mgr.GetPIndex(pindexName)
-			if pindex == nil {
-				return nil, errPIndexNotFound
-			}
-			sourceNames = append(sourceNames, pindex.SourceName)
-		} else {
-			return nil, fmt.Errorf("missing indexName/pindexName")
+
+		// now also add any sources from new definition in the request
+		newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
+		if err != nil {
+			return nil, err
 		}
+
+		return append(sourceNames, newSourceNames...), nil
 	}
 
-	return sourceNames, nil
+	pindexName := rest.PIndexNameLookup(req)
+	if pindexName != "" {
+		pindex := mgr.GetPIndex(pindexName)
+		if pindex == nil {
+			return nil, errPIndexNotFound
+		}
+		return []string{pindex.SourceName}, nil
+	}
+
+	return nil, fmt.Errorf("missing indexName/pindexName")
 }
 
 func preparePerms(mgr definitionLookuper, req *http.Request,
@@ -226,6 +245,8 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 		perm = restPermDefault
 	} else if perm == "none" {
 		return nil, nil
+	} else if strings.Index(perm, "{}") >= 0 {
+		return nil, nil // Need dynamic post-filtering of REST response.
 	}
 
 	if strings.Index(perm, "<sourceName>") >= 0 {
@@ -234,18 +255,12 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 			return nil, err
 		}
 
-		if len(sourceNames) > 0 {
-			// found some source names to replace
-			perms := make([]string, 0, len(sourceNames))
-			for _, sourceName := range sourceNames {
-				perms = append(perms,
-					strings.Replace(perm, "<sourceName>", sourceName, -1))
-			}
-			return perms, nil
-		} else {
-			// perm depends on sources, there are no sources, therefore no perms
-			return []string{}, nil
+		perms := make([]string, 0, len(sourceNames))
+		for _, sourceName := range sourceNames {
+			perms = append(perms,
+				strings.Replace(perm, "<sourceName>", sourceName, -1))
 		}
+		return perms, nil
 	}
 
 	return []string{perm}, nil
@@ -311,16 +326,16 @@ func (h *CBAuthBasicLogin) ServeHTTP(
 	}
 
 	if authType == "cbauth" {
-		creds, err := cbauth.AuthWebCreds(req)
+		creds, err := CBAuthWebCreds(req)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
-				" err: %v ", err), 403)
+				" err: %v", err), 403)
 			return
 		}
 
 		if creds.Source() == "anonymous" {
 			// force basic auth login by sending 401
-			cbauth.SendUnauthorized(w)
+			CBAuthSendUnauthorized(w)
 			return
 		}
 	}

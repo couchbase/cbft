@@ -56,10 +56,13 @@
        ng-show="newSourceType && newSourceType != 'nil'">
     <label for="inputSourceName">Bucket</label>
     <div class="form_control">
-      <select ng-model="newSourceName"
+      <select ng-show="bucketNames && bucketNames.length > 0"
+              ng-model="newSourceName"
               ng-options="t for t in bucketNames">
         <option value="">-- choose bucket --</option>
       </select>
+      <input ng-show="!bucketNames || bucketNames.length <= 0"
+             ng-model="newSourceName" type="text" placeholder="bucket name"/>
     </div>
   </div>
 

@@ -13,6 +13,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +21,10 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
+
+	"github.com/couchbase/cbauth"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -315,7 +319,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index",
 			path:   "/api/index",
-			perms:  []string{"cluster.bucket.fts!read"},
+			perms:  nil,
 		},
 		// case with valid index name
 		{
@@ -450,6 +454,174 @@ func TestPreparePerms(t *testing.T) {
 		if !reflect.DeepEqual(actualPerms, test.perms) {
 			t.Errorf("test %d, expected %v, got %v", i, test.perms, actualPerms)
 		}
+	}
+}
+
+func TestFilteredListIndexes(t *testing.T) {
+	origCBAuthWebCreds := CBAuthWebCreds
+	origCBAuthIsAllowed := CBAuthIsAllowed
+	origCBAuthSendForbidden := CBAuthSendForbidden
+	origCBAuthSendUnauthorized := CBAuthSendUnauthorized
+
+	defer func() {
+		CBAuthWebCreds = origCBAuthWebCreds
+		CBAuthIsAllowed = origCBAuthIsAllowed
+		CBAuthSendForbidden = origCBAuthSendForbidden
+		CBAuthSendUnauthorized = origCBAuthSendUnauthorized
+	}()
+
+	CBAuthWebCreds = func(req *http.Request) (creds cbauth.Creds, err error) {
+		return nil, nil
+	}
+
+	CBAuthIsAllowed = func(creds cbauth.Creds, permission string) (
+		bool, error) {
+		if strings.HasPrefix(permission, "cluster.bucket[s2].fts") {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	CBAuthSendForbidden = func(w http.ResponseWriter, permission string) {
+		t.Fatalf("CBAuthSendForbidden unexpected")
+	}
+
+	CBAuthSendUnauthorized = func(w http.ResponseWriter) {
+		t.Fatalf("CBAuthSendForbidden unexpected")
+	}
+
+	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	defer os.RemoveAll(emptyDir)
+
+	cfg := cbgt.NewCfgMem()
+	meh := &TestMEH{}
+	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		nil, "", 1, "", ":1000", emptyDir, "some-datasource", meh,
+		map[string]string{
+			"authType": "cbauth",
+		})
+	mgr.Start("wanted")
+	mgr.Kick("test-start-kick")
+
+	mr, _ := cbgt.NewMsgRing(os.Stderr, 1000)
+
+	router, _, err := NewRESTRouter("v0", mgr, "static", "", mr, nil)
+	if err != nil || router == nil {
+		t.Errorf("no mux router")
+	}
+	router.KeepContext = true // so we can see the mux vars
+
+	s := &stubDefinitionLookuper{
+		pindexes: testPIndexesByName,
+		defs: &cbgt.IndexDefs{
+			IndexDefs: map[string]*cbgt.IndexDef{
+				"i1": &cbgt.IndexDef{
+					Type:       "fulltext-index",
+					SourceName: "s1",
+				},
+				"i2": &cbgt.IndexDef{
+					Type:       "fulltext-index",
+					SourceName: "s2",
+				},
+				"a1": &cbgt.IndexDef{
+					Type:   "fulltext-alias",
+					Params: `{"targets":{"i1":{}}}`,
+				},
+				"a2": &cbgt.IndexDef{
+					Type:   "fulltext-alias",
+					Params: `{"targets":{"i2":{}}}`,
+				},
+				"a1-2": &cbgt.IndexDef{
+					Type:   "fulltext-alias",
+					Params: `{"targets":{"i1":{},"i2":{}}}`,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		method string
+		uri    string
+		body   []byte
+		path   string
+		vars   map[string]string
+		perms  []string
+		err    error
+	}{
+		// case with valid perm not containing source
+		{
+			method: http.MethodGet,
+			uri:    "/api/index",
+			path:   "/api/index",
+			perms:  nil,
+		},
+	}
+
+	requestVariableLookupOrig := rest.RequestVariableLookup
+	defer func() {
+		rest.RequestVariableLookup = requestVariableLookupOrig
+	}()
+
+	for i, test := range tests {
+		rest.RequestVariableLookup = func(req *http.Request, name string) string {
+			if test.vars == nil {
+				return ""
+			}
+			return test.vars[name]
+		}
+
+		var r io.Reader
+		if test.body != nil {
+			r = bytes.NewBuffer(test.body)
+		}
+		req, err := http.NewRequest(test.method, test.uri, r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actualPerms, err := preparePerms(s, req, test.method, test.path)
+		if err != test.err {
+			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
+		}
+		sort.Strings(actualPerms)
+		if !reflect.DeepEqual(actualPerms, test.perms) {
+			t.Errorf("test %d, expected %v, got %v", i, test.perms, actualPerms)
+		}
+	}
+
+	req, _ := http.NewRequest("GET", "/api/index", nil)
+	record := httptest.NewRecorder()
+
+	h := &FilteredListIndexHandler{mgr: s, isCBAuth: true}
+	h.ServeHTTP(record, req)
+
+	resp, err := ioutil.ReadAll(record.Result().Body)
+	if err != nil {
+		t.Errorf("expected no err, got: %v", err)
+	}
+
+	var got struct {
+		Status    string          `json:"status"`
+		IndexDefs *cbgt.IndexDefs `json:"indexDefs"`
+	}
+	err = json.Unmarshal(resp, &got)
+	if err != nil {
+		t.Errorf("expected no json err, got: %v, resp: %s", err, resp)
+	}
+	if got.Status != "ok" {
+		t.Errorf("expected ok, got: %v", got)
+	}
+	if got.IndexDefs == nil || got.IndexDefs.IndexDefs == nil {
+		t.Errorf("expected indexDefs")
+	}
+	if len(got.IndexDefs.IndexDefs) != 2 {
+		t.Errorf("expected only 2 entries, got: %v", got.IndexDefs.IndexDefs)
+	}
+	if got.IndexDefs.IndexDefs["i1"] == nil ||
+		got.IndexDefs.IndexDefs["i2"] != nil ||
+		got.IndexDefs.IndexDefs["a1"] == nil ||
+		got.IndexDefs.IndexDefs["a2"] != nil ||
+		got.IndexDefs.IndexDefs["a1-2"] != nil {
+		t.Errorf("saw unexpectedly denied entries from s2, got: %v", got.IndexDefs.IndexDefs)
 	}
 }
 

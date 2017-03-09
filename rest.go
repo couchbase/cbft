@@ -19,6 +19,7 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+
 	"github.com/couchbase/goutils/go-cbaudit"
 )
 
@@ -31,7 +32,6 @@ var MapRESTPathStats = map[string]*rest.RESTPathStats{
 
 func InitStaticRouter(staticDir, staticETag string,
 	mgr *cbgt.Manager) *mux.Router {
-
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
@@ -142,6 +142,7 @@ func (c *AuthVersionHandler) ServeHTTP(
 	if !CheckAPIAuth(c.mgr, w, req, path) {
 		return
 	}
+
 	if c.H != nil {
 		c.H.ServeHTTP(w, req)
 	}
@@ -156,5 +157,4 @@ func (c *AuthVersionHandler) doAudit(req *http.Request, path string) {
 		d := GetAuditEventData(eventId, req)
 		go c.adtSvc.Write(eventId, d)
 	}
-	return
 }
