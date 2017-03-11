@@ -287,7 +287,7 @@ function bleveConvertFromTypeMapping(typeMapping) {
 
         for (var property in mapping.properties) {
             var m = mapping.properties[property];
-            if (isEmpty(m.properties)) {
+            if (isEmpty(m.properties) && !isEmpty(m.fields)) {
                 // Promote m's fields into to propertied fields.
                 for (var i in m.fields) {
                     var field = m.fields[i];
