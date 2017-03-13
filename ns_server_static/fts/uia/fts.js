@@ -40,7 +40,7 @@ var ftsPrefix = 'fts';
               }
             },
             data: {
-              title: "FTS New",
+              title: "Add Index",
               child: parent + '.fts_list'
             }
           })
@@ -53,7 +53,7 @@ var ftsPrefix = 'fts';
               }
             },
             data: {
-              title: "FTS Edit",
+              title: "Edit Index",
               child: parent + '.fts_list'
             }
           })
@@ -66,7 +66,7 @@ var ftsPrefix = 'fts';
               }
             },
             data: {
-              title: "FTS Clone",
+              title: "Clone Index",
               child: parent + '.fts_list'
             }
           })

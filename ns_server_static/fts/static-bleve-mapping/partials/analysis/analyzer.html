@@ -1,118 +1,113 @@
-<div class="bleveModal">
+<div class="dialog-med">
+  <div class="panel-header">
+      <h2>Custom Analyzer</h2>
+  </div>
 
-<div class="modal-header">
-    <h3 class="modal-title">Custom Analyzer</h3>
-</div>
-
-<div class="modal-body">
+  <form role="form" class="forms">
+  <div class="panel-content">
     <div ng-show="errorMessage"
-         class="alert alert-danger ng-cloak"
+         class="error error-form ng-cloak"
          role="alert"> {{errorMessage}}
     </div>
+    <div class="formrow">
+      <label>Name</label>
+      <input
+         ng-disabled="viewOnlyModal"
+         ng-model="name"
+         type="text"
+         id="tname"
+         autofocus>
+    </div>
 
-    <form class="form" role="form">
-        <div class="form-group">
-            <label for="aname">Name</label>
-            <input ng-disabled="viewOnlyModal"
-                   ng-model="name" type="text"
-                   class="form-control" id="tname" placeholder="Name">
+    <div class="formrow">
+      <label>Character Filters</label>
+      <ul class="list-text" ng-show="analyzer.char_filters.length > 0">
+        <li
+           ui-sortable
+           ng-model="analyzer.char_filters"
+           ng-repeat="analyzerCharFilter in analyzer.char_filters track by $index">
+        <div class="row">
+          {{ analyzerCharFilter }}
+          <a ng-if="!viewOnlyModal"
+             href=""
+             ng-click="removeCharFilter($index)">
+            remove
+          </a>
         </div>
+        </li>
+      </ul>
+      <div ng-if="!viewOnlyModal" class="row input-append">
+        <select
+           ng-change="addCharFilterChanged()"
+           ng-model="addCharacterFilterName"
+           id="addCharacterFilters">
+          <option ng-repeat="charFilter in charFilterNames">{{charFilter}}</option>
+        </select>
+        <button ng-click="addCharFilter(this)" type="button" class="outline">+ Add</button>
+      </div>
+    </div>
 
-        <div class="form-group">
-          <label>Character Filters</label>
-          <ul class="list-group"
-              ng-show="analyzer.char_filters.length < 1">
-            <li class="list-group-item">None</li>
-          </ul>
-          <ul class="list-group"
-              ng-show="analyzer.char_filters.length > 0"
-              ui-sortable
-              ng-model="analyzer.char_filters">
-            <li class="list-group-item"
-                ng-repeat="analyzerCharFilter in analyzer.char_filters track by $index">
-              <span class="glyphicon glyphicon-minus"></span> {{ analyzerCharFilter }}
-              <span ng-if="!viewOnlyModal"
-                    ng-click="removeCharFilter($index)"
-                    class="glyphicon glyphicon-remove pull-right"></span>
-            </li>
-          </ul>
-        </div>
+    <div class="formrow">
+      <label>Tokenizer</label>
+      <select
+         ng-disabled="viewOnlyModal"
+         ng-change="tokenizerChanged()"
+         ng-model="analyzer.tokenizer"
+         id="analyzerTokenizer">
+        <option ng-repeat="tokenizer in tokenizerNames">{{tokenizer}}</option>
+      </select>
+    </div>
 
-        <div ng-if="!viewOnlyModal"
-             class="form-group">
-          <label></label>
-          <div class="col-sm-10">
-            <select ng-change="addCharFilterChanged()"
-                    ng-model="addCharacterFilterName"
-                    class="form-control"
-                    id="addCharacterFilters">
-              <option ng-repeat="charFilter in charFilterNames">{{charFilter}}</option>
-            </select>
+    <div class="formrow">
+      <label>Token Filters</label>
+      <ul class="list-text" ng-show="analyzer.token_filters.length > 0">
+        <li
+           ui-sortable
+           ng-model="analyzer.token_filters"
+           ng-repeat="analyzerTokenFilter in analyzer.token_filters">
+          <div class="row">
+            {{ analyzerTokenFilter }}
+            <a
+               href=""
+               ng-if="!viewOnlyModal"
+               ng-click="removeTokenFilter($index)">
+              remove
+            </a>
           </div>
-          <div class="col-sm-2">
-            <button ng-click="addCharFilter(this)" type="button"
-                    class="btn btn-default pull-right">Add</button>
-          </div>
-        </div>
+        </li>
+      </ul>
 
-        <div class="form-group">
-          <label for="analyzerTokenizer">Tokenizer</label>
-          <select ng-disabled="viewOnlyModal"
-                  ng-change="tokenizerChanged()"
-                  ng-model="analyzer.tokenizer"
-                  class="form-control"
-                  id="analyzerTokenizer">
-            <option ng-repeat="tokenizer in tokenizerNames">{{tokenizer}}</option>
-          </select>
-        </div>
+      <div ng-if="!viewOnlyModal" class="row input-append">
+        <select
+           ng-change="addTokenFilterChanged()"
+           ng-model="addTokenFilterName"
+           id="addTokenFilters">
+          <option ng-repeat="tokenFilter in tokenFilterNames">{{tokenFilter}}</option>
+        </select>
+        <button
+           ng-click="addTokenFilter(this)"
+           type="button"
+           class="outline">
+          + Add
+        </button>
+      </div>
+    </div>
+  </div>
 
-        <div class="form-group">
-          <label>Token Filters</label>
-          <ul class="list-group"
-              ng-show="analyzer.token_filters.length < 1">
-            <li class="list-group-item">None</li>
-          </ul>
-          <ul class="list-group"
-              ng-show="analyzer.token_filters.length > 0"
-              ui-sortable
-              ng-model="analyzer.token_filters">
-            <li class="list-group-item"
-                ng-repeat="analyzerTokenFilter in analyzer.token_filters">
-              <span class="glyphicon glyphicon-minus"></span> {{ analyzerTokenFilter }}
-              <span ng-if="!viewOnlyModal"
-                    ng-click="removeTokenFilter($index)"
-                    class="glyphicon glyphicon-remove pull-right"></span>
-            </li>
-          </ul>
-        </div>
-
-        <div ng-if="!viewOnlyModal"
-             class="form-group">
-          <label></label>
-          <div class="col-sm-10">
-            <select ng-change="addTokenFilterChanged()"
-                    ng-model="addTokenFilterName"
-                    class="form-control"
-                    id="addTokenFilters">
-              <option ng-repeat="tokenFilter in tokenFilterNames">{{tokenFilter}}</option>
-            </select>
-          </div>
-          <div class="col-sm-2">
-            <button ng-click="addTokenFilter(this)" type="button"
-                    class="btn btn-default pull-right">Add</button>
-          </div>
-        </div>
-    </form>
-</div>
-
-<div class="modal-footer">
-    <button ng-if="viewOnlyModal" class="btn btn-default"
-            ng-click="cancel()">Close</button>
-    <button ng-if="!viewOnlyModal" class="btn btn-default"
-            ng-click="cancel()">Cancel</button>
-    <button ng-if="!viewOnlyModal"
-            ng-click="build(name)"
-            type="button" class="btn btn-primary pull-right">Save</button>
-</div>
+  <div class="panel-footer">
+    <a
+       ng-if="viewOnlyModal"
+       href=""
+       ng-click="cancel()">Cancel</a>
+    <a
+       ng-if="!viewOnlyModal"
+       href=""
+       ng-click="cancel()">Cancel</a>
+    <button
+       ng-if="!viewOnlyModal"
+       ng-click="build(name)"
+       type="button">Save</button>
+         </form>
+  </div>
 
 </div>

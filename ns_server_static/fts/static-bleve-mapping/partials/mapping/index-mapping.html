@@ -1,199 +1,118 @@
-<div class="indexMapping">
+<div class="fts-index-mapping">
 <div ng-class="{'viewOnly': viewOnly}">
 
-<!-- ======================================================= -->
-
-<div class="section">
-
-<div class="sectionHeader showTypeMappingsSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <a ng-show="!showTypeMappingsSection"
-         ng-click="showTypeMappingsSection = true">
-        <i class="glyphicon glyphicon-chevron-right"></i>
-        <label>Type Mappings</label>
-      </a>
-      <a ng-show="showTypeMappingsSection"
-         ng-click="showTypeMappingsSection = false">
-        <i class="glyphicon glyphicon-chevron-down"></i>
-        <label>Type Mappings</label>
-      </a>
-    </div>
+<!-- TYPE MAPPINGS ********************************** -->
+  <div class="row min-height-2 margin-bottom-half">
+    <label
+       class="disclosed reverse"
+       ng-class="{disclosure : hideTypeMaps}"
+       ng-click="hideTypeMaps = !hideTypeMaps">
+      Type Mappings
+    </label>
+    <button
+       class="outline"
+       ng-click="addChildMapping(null)"
+       ng-show="!hideTypeMaps"
+       style="width:200px;">
+      + Add Type Mapping
+    </button>
   </div>
-</div>
-
-<div class="sectionBody typeMappingsSection"
-   ng-show="showTypeMappingsSection">
-  <div class="row editable">
-    <div class="col-sm-12">
-      <button class="pull-right addTypeMapping"
-              ng-click="addChildMapping(null)">Add Type Mapping</button>
-    </div>
+  <div ng-show="!hideTypeMaps" class="indent-1 margin-bottom1">
+    <div ng-include="static_prefix + '/partials/mapping/type-mapping.html'"></div>
   </div>
 
-  <div class="row">
-    <div class="col-sm-12">
-      <div ng-include="static_prefix + '/partials/mapping/type-mapping.html'"></div>
-    </div>
+<!-- ANALYZERS *********************************** -->
+  <div class="row min-height-2 margin-bottom-half">
+    <label
+       class="disclosure"
+       ng-class="{disclosed : showAnalyzer}"
+       ng-click="showAnalyzer = !showAnalyzer">
+      Analyzers
+    </label>
   </div>
-</div>
-
-</div>
-
-<!-- ======================================================= -->
-
-<div class="section">
-
-<div class="sectionHeader showAnalyzersSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <a ng-show="!showAnalyzersSection"
-         ng-click="showAnalyzersSection = true">
-        <i class="glyphicon glyphicon-chevron-right"></i>
-        <label>Analyzers</label>
-      </a>
-      <a ng-show="showAnalyzersSection"
-         ng-click="showAnalyzersSection = false">
-        <i class="glyphicon glyphicon-chevron-down"></i>
-        <label>Analyzers</label>
-      </a>
-    </div>
+  <div ng-show="showAnalyzer" class="indent-1 margin-bottom1">
+    <div ng-include src="static_prefix + '/partials/analysis/analyzers.html'"></div>
   </div>
-</div>
 
-<div class="sectionBody analyzersSection"
-   ng-show="showAnalyzersSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <div ng-include src="static_prefix + '/partials/analysis/analyzers.html'"></div>
-    </div>
+<!-- FILTERS *********************************** -->
+  <div class="row min-height-2 margin-bottom-half">
+    <label
+       class="disclosure"
+       ng-class="{disclosed : showFilters}"
+       ng-click="showFilters = !showFilters">
+      Custom Filters
+    </label>
   </div>
-</div>
-
-</div>
-
-<!-- ======================================================= -->
-
-<div class="section">
-
-<div class="sectionHeader showFiltersSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <a ng-show="!showFiltersSection"
-         ng-click="showFiltersSection = true">
-        <i class="glyphicon glyphicon-chevron-right"></i>
-        <label>Custom Filters</label>
-      </a>
-      <a ng-show="showFiltersSection"
-         ng-click="showFiltersSection = false">
-        <i class="glyphicon glyphicon-chevron-down"></i>
-        <label>Custom Filters</label>
-      </a>
-    </div>
+  <div ng-show="showFilters" class="indent-1 margin-bottom1">
+    <uib-tabset>
+      <uib-tab heading="Character Filters">
+        <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
+      </uib-tab>
+      <uib-tab heading="Tokenizers">
+        <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
+      </uib-tab>
+      <uib-tab heading="Token Filters">
+        <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
+      </uib-tab>
+      <uib-tab heading="Word Lists">
+        <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
+      </uib-tab>
+    </uib-tabset>
   </div>
-</div>
 
-<div class="sectionBody filtersSection"
-   ng-show="showFiltersSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <uib-tabset>
-        <uib-tab heading="Character Filters">
-          <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
-        </uib-tab>
-        <uib-tab heading="Tokenizers">
-          <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
-        </uib-tab>
-        <uib-tab heading="Token Filters">
-          <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
-        </uib-tab>
-        <uib-tab heading="Word Lists">
-          <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
-        </uib-tab>
-      </uib-tabset>
-    </div>
+<!-- ADVANCED SETTINGS *********************************** -->
+  <div class="min-height-2 margin-bottom-half">
+    <label
+       class="disclosure"
+       ng-class="{disclosed : showAdvanced}"
+       ng-click="showAdvanced = !showAdvanced">
+      Advanced
+    </label>
   </div>
-</div>
 
-</div>
-
-<!-- ======================================================= -->
-
-<div class="section">
-
-<div class="sectionHeader showPropertiesSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <a ng-show="!showPropertiesSection"
-         ng-click="showPropertiesSection = true">
-        <i class="glyphicon glyphicon-chevron-right"></i>
-        <label>Advanced</label>
-      </a>
-      <a ng-show="showPropertiesSection"
-         ng-click="showPropertiesSection = false">
-        <i class="glyphicon glyphicon-chevron-down"></i>
-        <label>Advanced</label>
-      </a>
-    </div>
-  </div>
-</div>
-
-<div class="sectionBody propertiesSection"
-   ng-show="showPropertiesSection">
-  <div class="row">
-    <div class="col-sm-12">
-      <div id="bleve-mapping-ui-type-field-row" class="form-group">
+<div ng-show="showAdvanced" class="width-480 indent-1">
+      <div class="formrow">
         <label>Type Field</label>
-        <input type="text" class="form-control"
+        <input type="text"
                ng-disabled="viewOnly"
                ng-model="indexMapping.type_field"
                placeholder="placeholder"/>
       </div>
-      <div class="form-group">
+      <div class="formrow">
         <label>Default Type</label>
-        <input type="text" class="form-control"
+        <input type="text"
                ng-disabled="viewOnly"
-               ng-model="indexMapping.default_type"
-               placeholder="placeholder"/>
+               ng-model="indexMapping.default_type">
       </div>
-      <div class="form-group">
+      <div class="formrow">
         <label>Default Analyzer</label>
         <select ng-disabled="viewOnly"
                 ng-model="indexMapping.default_analyzer"
-                ng-options="t as t for t in analyzerNames"
-                class="form-control">
+                ng-options="t as t for t in analyzerNames">
         </select>
       </div>
-      <div class="form-group">
+      <div class="formrow">
         <label>Default Date/Time Parser</label>
         <select ng-disabled="viewOnly"
                 ng-model="indexMapping.default_datetime_parser"
-                ng-options="t as t for t in dateTimeParserNames"
-                class="form-control">
+                ng-options="t as t for t in dateTimeParserNames">
         </select>
       </div>
-      <div class="form-group">
+      <div class="formrow">
         <label>Default Field</label>
         <input type="text" class="form-control"
                ng-disabled="viewOnly"
-               ng-model="indexMapping.default_field"
-               placeholder="placeholder"/>
+               ng-model="indexMapping.default_field">
       </div>
-      <div class="form-group">
-        <input id="for-store_dynamic-fts" type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.store_dynamic"/>
+      <div class="formrow">
+        <input id="for-store_dynamic-fts" type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.store_dynamic">
         <label for="for-store_dynamic-fts">Store Dynamic Fields</label>
       </div>
-      <div class="form-group">
-        <input id="for-index-dynamic-fts" type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.index_dynamic"/>
+      <div class="formrow">
+        <input id="for-index-dynamic-fts" type="checkbox" ng-disabled="viewOnly" ng-model="indexMapping.index_dynamic">
         <label for="for-index-dynamic-fts">Index Dynamic Fields</label>
       </div>
-    </div>
-  </div>
 </div>
-
-</div>
-
-<!-- ======================================================= -->
 
 </div>
 </div>

@@ -1,9 +1,17 @@
-<table class="table table-striped">
+<table class="table">
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th></th>
+      <th>token filter</th>
+      <th>type</th>
+      <th class="text-right">
+        <button
+           ng-if="!viewOnlyModal"
+           ng-click="newTokenFilter()" type="button"
+           class="outline"
+           style="width:200px;">
+          + Add Token Filter
+        </button>
+      </th>
     </tr>
   </thead>
   <tbody>
@@ -11,34 +19,22 @@
       <td><a ng-click="editTokenFilter(tfname, tfval, true)">{{tfname}}</a></td>
       <td>{{tfval.type}}</td>
       <td class="controls">
-        <div class="btn-group btn-group-xs" role="group">
-          <button ng-if="!viewOnlyModal"
-                  ng-click="editTokenFilter(tfname, tfval)" type="button"
-                  class="btn btn-default btn-xs">
-            <span class="glyphicon glyphicon-edit"
-                  aria-hidden="true"></span> Edit
-          </button>
-          <button ng-if="!viewOnlyModal"
-                  ng-click="deleteTokenFilter(tfname)" type="button"
-                  class="btn btn-default btn-xs">
-            <span class="glyphicon glyphicon-trash"
-                  aria-hidden="true"></span> Delete
-          </button>
-        </div>
+        <a
+           href=""
+           ng-if="!viewOnlyModal"
+           ng-click="editTokenFilter(tfname, tfval)">
+          Edit
+        </a>
+        <a
+           href=""
+           ng-if="!viewOnlyModal"
+           ng-click="deleteTokenFilter(tfname)">
+          Delete
+        </a>
       </td>
     </tr>
     <tr ng-show="Utils.keys(indexMapping.analysis.token_filters).length < 1">
       <td colspan="3">None</td>
     </tr>
   </tbody>
-  <tfoot>
-    <tr>
-      <td colspan="3">
-        <button ng-if="!viewOnlyModal"
-                ng-click="newTokenFilter()" type="button"
-                class="btn btn-sm btn-default pull-right">New Token Filter</button>
-      </td>
-    </tr>
-  </tfoot>
 </table>
-

@@ -1,5 +1,11 @@
 /* FTS plugin styles-------------------------------------------------- */
 
+.fts-index-editor {
+  flex: 1 0 0;
+  margin-bottom: 2rem;
+}
+.fts-index-mapping {
+}
 .indexContainer .form_group,
 .indexContainer .form-group,
 .bleveModal .form-group {
@@ -55,49 +61,26 @@
   width: 15em;
   margin-right: 5px;
 }
-.bleveModal .form-group ul.list-group {
-  min-width: 210px;
+ul.list-text {
   margin-left: 0;
-  margin-bottom: 0px;
-  border: 1px solid #999;
-  padding: 2px 3px 2px 3px;
+  margin-bottom: .5rem;
   list-style-type: none;
+  font-size: .875rem;
 }
-.bleveModal .form-group ul.list-group .glyphicon-remove {
-  margin-left: 5px;
-  padding-top: 0px;
-  background-color: #4287d6;
-  border-radius: 2px;
-  color: white;
+ul.list-text li {
+  padding: 0 0 .5rem .5rem;
 }
 
 /* -------------------------------------------------- */
 
-.indexContainer .indexMapping {
-  margin-bottom: 10px;
-}
-.indexContainer .indexMapping h2 {
-  margin-bottom: 10px;
-}
-.indexContainer .indexMapping .form_group.form_group_indexType {
-  display: none;
-}
-.indexContainer .indexMapping .form_group.form_group_sourceType {
-  display: none;
-}
-.indexContainer .indexMapping .form_group_targetIndexes select {
-  min-width: 20em;
-}
-.indexContainer .indexMapping .form_group.form_group_numReplicas select {
-  min-width: 4em;
-}
+
 .indexContainer .indexViewer.fulltext-index .indexMapping .viewOnly {
   clear: both;
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-/* -------------------------------------------------- */
+/* --------------------------------------------------
 
 .indexContainer .indexTemplateContainer .indexEditor {
   display: flex;
@@ -108,30 +91,27 @@
 .indexContainer .indexTemplateContainer .indexEditor .indexEditorMain {
   flex: 1 0 0;
 }
+*/
 
-/* -------------------------------------------------- */
-
-.indexContainer .indexMapping .indexEditorStage {
-  display: flex;
+.index-definition-preview {
+  margin-left: 2.5rem;
+  padding: 1rem .5rem;
+  width: 360px;
+  flex: 0 0 auto;
 }
-.indexContainer .indexMapping .indexEditorStage .indexEditorForm {
-  flex-grow: 4;
+.index-definition-preview .json-content  {
+  min-height: 600px;
+  position: relative;
 }
-.indexContainer .indexMapping .indexEditorStage .indexEditorPreview {
-  flex-grow: 1;
-  width: 20%;
-  margin-left: 1.5em;
-  border-left: 1px solid #ddd;
-  padding: 1.5em 1em 1.5em 1em;
+.json-content > .spinner {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url(/images/spinner/spinner_3.gif) center 43% no-repeat;
 }
-.indexContainer .indexMapping .indexEditorStage .indexEditorPreview div {
-  margin-left: 1.5em;
-  font-size: 9pt;
-  font-family: monospace;
-  white-space: pre;
-  overflow-x: scroll;
-}
-
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,
@@ -196,7 +176,7 @@
   float: right;
 }
 
-/* search index input and advanced search options ---- */
+/* ---- search index input and advanced search options ---- */
 .indexContainer .fts-query-bar {
   display: flex;
   margin-right: 1rem;
@@ -216,7 +196,7 @@
   font-size: .75rem;
 }
 
-/* query results ----------------------- */
+/* ---- query results ----------------------- */
 .fts-query-results-area {
   padding: 0 2rem;
   margin: 0;
@@ -286,7 +266,7 @@ ul.pagination li span {
  background-color: yellow;
 }
 
-/* indexes list & aliases list tables  --------------------------------- */
+/* ---- indexes list & aliases list tables  --------------------------------- */
 
 .indexContainer table {
   width: 100%;
@@ -294,31 +274,41 @@ ul.pagination li span {
   table-layout: fixed;
   margin-bottom: 2.5rem;
 }
+.fts-index-mapping table {
+  margin-bottom: 1.5rem;
+}
 .indexContainer table tr th {
   padding-left: 1rem;
   background-color: #ececec;
 }
 .indexContainer table tr td {
-  padding-left: 1rem;
+  padding: .5rem 1rem .5rem 1rem;
+}
+.indexContainer table tr th {
+  padding: .5rem .5rem .5rem 1rem;
 }
 .indexContainer table tr td.index-name,
 .indexContainer table tr td.alias-name,
 .indexContainer table tr td.alias-targets {
   overflow: hidden;
 }
+td.controls {
+  text-align: right;
+}
+td.controls a:first-child {
+  margin-right: 1rem;
+}
 .indexContainer table.fts-indexes-list tr.detailsOpened td {
   border-bottom: 0px;
 }
-.indexContainer button.copy-to-clipboard {
-  margin: 1rem;
-}
-.indexContainer .json-content {
+.json-content {
   margin: .5rem 0 0 0;
+  padding: 1rem 1rem 0 0;
   background-color: #ececec;
 }
-.indexContainer .json-content pre {
-  padding: 1rem 1rem 0 1rem;
-  background-color: #ececec;
+.json-content pre {
+  padding-left: 1rem;
+  padding-bottom: .5rem;
 }
 .fts-check {
 margin-top: 1rem;
@@ -343,6 +333,7 @@ margin-top: 1rem;
 
 /* -------------------------------------------------- */
 
+/*
 .indexContainer .section {
   border: none;
 }
@@ -371,7 +362,7 @@ margin-top: 1rem;
 .indexContainer .section .sectionBody.filtersSection table tfoot td {
   text-align: right;
   padding-right: 0;
-}
+} */
 
 /* -------------------------------------------------- */
 
@@ -483,10 +474,6 @@ margin-top: 1rem;
   margin-left: 10px;
   min-width: 10em;
 }
-.indexContainer button.addTypeMapping {
-  margin-top: -30px;
-  margin-bottom: 10px;
-}
 
 /* -------------------------------------------------- */
 
@@ -592,10 +579,6 @@ dl dd {
   margin-bottom: 2rem;
 }
 
-#bleve-mapping-ui-type-field-row {
-  display: none;
-}
-
 /* -------------------------------------------------- */
 
 .indexContainer .form_group_typeIdentifierParam label {
@@ -623,12 +606,12 @@ dl dd {
   color: white;
 }
 
-/* -------------------------------------------------- */
+/* --------------------------------------------------
 
 .panel.dialog .modal-close {
   border: none;
 }
-
+*/
 /* -------------------------------------------------- */
 
 .indexContainer .sectionBody.propertiesSection label {
@@ -654,4 +637,10 @@ dl dd {
 .indexContainer .analyzersSection .btn-xs span,
 .indexContainer .filtersSection .btn-xs span {
   display: none;
+}
+
+/* ROB ADD-ONS *-------------------------------------- */
+input.narrow,
+select.narrow {
+  width: 120px;
 }
