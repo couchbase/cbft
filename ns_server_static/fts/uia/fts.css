@@ -307,6 +307,11 @@ ul.pagination li span {
 .indexContainer table tr td {
   padding-left: 1rem;
 }
+.indexContainer table tr td.index-name,
+.indexContainer table tr td.alias-name,
+.indexContainer table tr td.alias-targets {
+  overflow: hidden;
+}
 .indexContainer table.fts-indexes-list tr.detailsOpened td {
   border-bottom: 0px;
 }

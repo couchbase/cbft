@@ -28,7 +28,7 @@
                      'grayblue-5 detailsOpened': detailsOpened[indexName],
                      'no-stroke': detailsOpened[node.hostname]
                      }">
-          <td>{{indexName}}</td>
+          <td class="index-name">{{indexName}}</td>
           <td>
             <span ng-if="indexDef.sourceType != 'couchbase'">
               {{indexDef.sourceType}}
@@ -160,8 +160,8 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
                    'grayblue-5 detailsOpened': detailsOpened[indexName],
                    'no-stroke': detailsOpened[node.hostname]
                    }">
-        <td>{{indexName}}</td>
-        <td>
+        <td class="alias-name">{{indexName}}</td>
+        <td class="alias-targets">
           <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
             {{targetName}}<span ng-show="!$last">, </span>
           </span>
