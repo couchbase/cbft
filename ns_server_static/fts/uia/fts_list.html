@@ -155,8 +155,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
       <tbody ng-repeat="(indexName, indexDef) in indexDefs"
              class="has-hover"
              ng-if="indexDef.type == 'fulltext-alias'"
-             ng-click="detailsOpened[indexName] = !detailsOpened[indexName]"
-             ng-controller="indexViewController">
+             ng-click="detailsOpened[indexName] = !detailsOpened[indexName]">
       <tr ng-class="{
                    'grayblue-5 detailsOpened': detailsOpened[indexName],
                    'no-stroke': detailsOpened[node.hostname]
@@ -202,47 +201,49 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
             </form>
 
 <!-- alias index definition ******************************* -->
-            <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
-              <div
-                 class="disclosure margin-bottom-half"
-                 ng-class="{disclosed: showJSON[indexName]}"
-                 ng-click="showJSON[indexName] = !showJSON[indexName]">
-                 {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
-              </div>
-              <div class="indent-1" ng-show="showJSON[indexName]">
-                <input
-                   id="for-show-alias-def-fts-curl-{{indexName}}"
-                   ng-model="showJSONCurl[indexName]"
-                   type="checkbox">
-                <label for="for-show-alias-def-fts-curl-{{indexName}}">
-                  Show curl command to modify this alias definition
-                </label>
-              </div>
+            <div ng-controller="indexViewController">
+              <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
+                <div
+                   class="disclosure margin-bottom-half"
+                   ng-class="{disclosed: showJSON[indexName]}"
+                   ng-click="showJSON[indexName] = !showJSON[indexName]">
+                   {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+                </div>
+                <div class="indent-1" ng-show="showJSON[indexName]">
+                  <input
+                     id="for-show-alias-def-fts-curl-{{indexName}}"
+                     ng-model="showJSONCurl[indexName]"
+                     type="checkbox">
+                  <label for="for-show-alias-def-fts-curl-{{indexName}}">
+                    Show curl command to modify this alias definition
+                  </label>
+                </div>
 
-<!-- alias definition JSON ******************** -->
-              <div
-                 ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
-                 class="json-content row items-top">
-                <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
-                <button
-                   class="outline copy-to-clipboard"
-                   ngclipboard data-clipboard-target="#aliasDefStr_details-{{indexName}}">
-                  Copy to Clipboard
-                </button>
-              </div>
+  <!-- alias definition JSON ******************** -->
+                <div
+                   ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
+                   class="json-content row items-top">
+                  <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
+                  <button
+                     class="outline copy-to-clipboard"
+                     ngclipboard data-clipboard-target="#aliasDefStr_details-{{indexName}}">
+                    Copy to Clipboard
+                  </button>
+                </div>
 
-<!-- alias definition with CURL ****************** -->
-              <div
-                 ng-show="showJSONCurl[indexName] && showJSON[indexName]"
-                 class="json-content row items-top">
-<pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
-http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
-'{{escapeCmdLineParam(indexDefStr)}}'</pre>
-                <button
-                   class="outline copy-to-clipboard"
-                   ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
-                  Copy to Clipboard
-                </button>
+  <!-- alias definition with CURL ****************** -->
+                <div
+                   ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                   class="json-content row items-top">
+  <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
+  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \ -d
+  '{{escapeCmdLineParam(indexDefStr)}}'</pre>
+                  <button
+                     class="outline copy-to-clipboard"
+                     ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                    Copy to Clipboard
+                  </button>
+                </div>
               </div>
             </div>
           </div>
