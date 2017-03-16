@@ -109,9 +109,11 @@ func UrlWithAuth(authType, urlStr string) (string, error) {
 func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 	depth int) ([]string, error) {
 	if depth > 50 {
-		return nil, errAliasExpanstionTooDeep
+		return nil, errAliasExpansionTooDeep
 	}
+
 	var rv []string
+
 	indexDef, exists := indexDefsByName[name]
 	if exists && indexDef != nil && indexDef.Type == "fulltext-alias" {
 		aliasParams, err := parseAliasParams(indexDef.Params)
@@ -149,7 +151,7 @@ type definitionLookuper interface {
 
 var errIndexNotFound = fmt.Errorf("index not found")
 var errPIndexNotFound = fmt.Errorf("pindex not found")
-var errAliasExpanstionTooDeep = fmt.Errorf("alias expansion too deep")
+var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 
 func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 	method, path string) ([]string, error) {
@@ -219,7 +221,6 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 
 func preparePerms(mgr definitionLookuper, req *http.Request,
 	method, path string) ([]string, error) {
-
 	perm := restPermsMap[method+":"+path]
 	if perm == "" {
 		perm = restPermDefault
@@ -306,7 +307,6 @@ func CBAuthBasicLoginHandler(mgr *cbgt.Manager) (*CBAuthBasicLogin, error) {
 
 func (h *CBAuthBasicLogin) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
-
 	authType := ""
 	if h.mgr != nil && h.mgr.Options() != nil {
 		authType = h.mgr.Options()["authType"]

@@ -93,7 +93,7 @@ func TestSourceNamesForAlias(t *testing.T) {
 		// alias with loop
 		{
 			alias: "a4",
-			err:   errAliasExpanstionTooDeep,
+			err:   errAliasExpansionTooDeep,
 		},
 	}
 
