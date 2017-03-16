@@ -25,6 +25,8 @@ const VERSION = "v0.4.0"
 const API_MAX_VERSION = "1.0.0" // See: MB-17990 on cbft API versioning.
 const API_MIN_VERSION = "0.0.0"
 
+var API_MAX_VERSION_JSON = WithJSONVersion(API_MAX_VERSION)
+
 const VersionTag = "version="
 
 func HandleAPIVersion(h string) (string, error) {
@@ -61,25 +63,27 @@ func WithJSONVersion(v string) string {
 }
 
 func CheckAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
-	var version = API_MAX_VERSION
+	if req.Header != nil {
+		accept := req.Header["Accept"]
+		if len(accept) > 0 {
+			version, err := HandleAPIVersion(accept[0])
+			if err != nil {
+				w.WriteHeader(406)
 
-	if req.Header != nil && len(req.Header["Accept"]) > 0 {
-		version, err = HandleAPIVersion(req.Header["Accept"][0])
-		if err != nil {
-			w.WriteHeader(406)
+				versionList := []string{
+					WithJSONVersion(API_MAX_VERSION),
+					WithJSONVersion(API_MIN_VERSION),
+				}
 
-			versionList := []string{
-				WithJSONVersion(API_MAX_VERSION),
-				WithJSONVersion(API_MIN_VERSION),
+				rest.MustEncode(w, versionList)
+				return err
 			}
 
-			rest.MustEncode(w, versionList)
-
-			return err
+			w.Header().Set("Content-type", WithJSONVersion(version))
+			return nil
 		}
 	}
 
-	w.Header().Set("Content-type", WithJSONVersion(version))
-
+	w.Header().Set("Content-type", API_MAX_VERSION_JSON)
 	return nil
 }
