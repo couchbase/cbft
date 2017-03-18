@@ -286,12 +286,10 @@ func findCouchbaseSourceNames(req *http.Request, indexName string,
 			futureIndexDefsByName[k] = v
 		}
 		futureIndexDefsByName[indexName] = &indexDef
-		aliasSourceNames, err := sourceNamesForAlias(indexName, futureIndexDefsByName, 0)
-		if err != nil {
-			return nil, err
-		}
-		return aliasSourceNames, nil
+
+		return sourceNamesForAlias(indexName, futureIndexDefsByName, 0)
 	}
+
 	return nil, nil
 }
 

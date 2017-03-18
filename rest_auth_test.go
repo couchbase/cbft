@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 )
 
 var testIndexDefsByName = map[string]*cbgt.IndexDef{
@@ -59,7 +60,6 @@ var testPIndexesByName = map[string]*cbgt.PIndex{
 }
 
 func TestSourceNamesForAlias(t *testing.T) {
-
 	tests := []struct {
 		alias   string
 		sources []string
@@ -118,12 +118,12 @@ func (s *stubDefinitionLookuper) GetPIndex(pindexName string) *cbgt.PIndex {
 	return s.pindexes[pindexName]
 }
 
-func (s *stubDefinitionLookuper) GetIndexDefs(refresh bool) (*cbgt.IndexDefs, map[string]*cbgt.IndexDef, error) {
+func (s *stubDefinitionLookuper) GetIndexDefs(refresh bool) (
+	*cbgt.IndexDefs, map[string]*cbgt.IndexDef, error) {
 	return s.defs, s.defs.IndexDefs, nil
 }
 
 func TestSourceNamesFromReq(t *testing.T) {
-
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
@@ -153,6 +153,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 		method  string
 		uri     string
 		path    string
+		vars    map[string]string
 		sources []string
 		err     error
 	}{
@@ -161,6 +162,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/index/i1",
 			path:    "/api/index/{indexName}",
+			vars:    map[string]string{"indexName": "i1"},
 			sources: []string{"s1"},
 		},
 		// case with invalid index name
@@ -168,6 +170,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/x1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "x1"},
 			err:    errIndexNotFound,
 		},
 		// case with invalid index name (actuall pindex name)
@@ -175,6 +178,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/p1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "p1"},
 			err:    errIndexNotFound,
 		},
 		// case with valid pindex name
@@ -182,6 +186,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/pindex/p1",
 			path:    "/api/pindex/{pindexName}",
+			vars:    map[string]string{"pindexName": "p1"},
 			sources: []string{"s3"},
 		},
 		// case with invalid pindex name
@@ -189,6 +194,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/pindex/y1",
 			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "y1"},
 			err:    errPIndexNotFound,
 		},
 		// case with invalid pindex name (actually index name)
@@ -196,6 +202,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/pindex/i1",
 			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "i1"},
 			err:    errPIndexNotFound,
 		},
 		// case with valid alias, with operation that expands alias
@@ -203,6 +210,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/index/a1",
 			path:    "/api/index/{indexName}",
+			vars:    map[string]string{"indexName": "a1"},
 			sources: []string{"s1"},
 		},
 		// case with valid alias, and this operation DOES expand alias
@@ -210,6 +218,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/index/a1/count",
 			path:    "/api/index/{indexName}/count",
+			vars:    map[string]string{"indexName": "a1"},
 			sources: []string{"s1"},
 		},
 		// case with valid alias (multi), and this operation DOES expand alias
@@ -217,6 +226,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/index/a2/count",
 			path:    "/api/index/{indexName}/count",
+			vars:    map[string]string{"indexName": "a2"},
 			sources: []string{"s1", "s2"},
 		},
 		// case with valid alias (containing another alias),
@@ -225,11 +235,24 @@ func TestSourceNamesFromReq(t *testing.T) {
 			method:  http.MethodGet,
 			uri:     "/api/index/a3/count",
 			path:    "/api/index/{indexName}/count",
+			vars:    map[string]string{"indexName": "a3"},
 			sources: []string{"s1", "s2"},
 		},
 	}
 
+	requestVariableLookupOrig := rest.RequestVariableLookup
+	defer func() {
+		rest.RequestVariableLookup = requestVariableLookupOrig
+	}()
+
 	for i, test := range tests {
+		rest.RequestVariableLookup = func(req *http.Request, name string) string {
+			if test.vars == nil {
+				return ""
+			}
+			return test.vars[name]
+		}
+
 		req, err := http.NewRequest(test.method, test.uri, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -283,6 +306,7 @@ func TestPreparePerms(t *testing.T) {
 		uri    string
 		body   []byte
 		path   string
+		vars   map[string]string
 		perms  []string
 		err    error
 	}{
@@ -298,6 +322,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/i1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "i1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
 		// case with invalid index name
@@ -305,6 +330,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/x1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "x1"},
 			err:    errIndexNotFound,
 		},
 		// case with invalid index name (actuall pindex name)
@@ -312,6 +338,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/p1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "p1"},
 			err:    errIndexNotFound,
 		},
 		// case with valid pindex name
@@ -319,6 +346,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/pindex/p1",
 			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "p1"},
 			perms:  []string{"cluster.bucket[s3].fts!read"},
 		},
 		// case with invalid pindex name
@@ -326,6 +354,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/pindex/y1",
 			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "y1"},
 			err:    errPIndexNotFound,
 		},
 		// case with invalid pindex name (actually index name)
@@ -333,6 +362,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/pindex/i1",
 			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "i1"},
 			err:    errPIndexNotFound,
 		},
 		// case with valid alias, with operation that expands alias
@@ -340,6 +370,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/a1",
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "a1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
 		// case with valid alias, and this operation DOES expand alias
@@ -347,6 +378,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/a1/count",
 			path:   "/api/index/{indexName}/count",
+			vars:   map[string]string{"indexName": "a1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
 		// case with valid alias (multi), and this operation DOES expand alias
@@ -354,6 +386,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/a2/count",
 			path:   "/api/index/{indexName}/count",
+			vars:   map[string]string{"indexName": "a2"},
 			perms:  []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read"},
 		},
 		// case with valid alias (containing another alias),
@@ -362,6 +395,7 @@ func TestPreparePerms(t *testing.T) {
 			method: http.MethodGet,
 			uri:    "/api/index/a3/count",
 			path:   "/api/index/{indexName}/count",
+			vars:   map[string]string{"indexName": "a3"},
 			perms:  []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read"},
 		},
 		// test special case for creating new index
@@ -370,11 +404,24 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/anewone",
 			body:   []byte(`{"type":"fulltext-index","sourceType":"couchbase","sourceName":"abucket"}`),
 			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "anewone"},
 			perms:  []string{"cluster.bucket[abucket].fts!write"},
 		},
 	}
 
+	requestVariableLookupOrig := rest.RequestVariableLookup
+	defer func() {
+		rest.RequestVariableLookup = requestVariableLookupOrig
+	}()
+
 	for i, test := range tests {
+		rest.RequestVariableLookup = func(req *http.Request, name string) string {
+			if test.vars == nil {
+				return ""
+			}
+			return test.vars[name]
+		}
+
 		var r io.Reader
 		if test.body != nil {
 			r = bytes.NewBuffer(test.body)
@@ -404,7 +451,6 @@ func TestPreparePerms(t *testing.T) {
 			t.Errorf("test %d, expected %v, got %v", i, test.perms, actualPerms)
 		}
 	}
-
 }
 
 func TestPingAuth(t *testing.T) {
