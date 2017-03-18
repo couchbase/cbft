@@ -56,7 +56,7 @@ func GetAuditEventData(eventId uint32, req *http.Request) interface{} {
 		d := IndexControlAuditLog{
 			GenericFields: audit.GetAuditBasicFields(req),
 			IndexName:     indexName,
-			Control:       rest.MuxVariableLookup(req, "op"),
+			Control:       rest.RequestVariableLookup(req, "op"),
 		}
 		return d
 	}
