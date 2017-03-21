@@ -39,13 +39,21 @@ type BleveDocumentConfig struct {
 }
 
 func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
-
+	docIDRegexp := ""
+	if b.DocIDRegexp != nil {
+		docIDRegexp = b.DocIDRegexp.String()
+	}
 	tmp := struct {
 		Mode             string `json:"mode"`
 		TypeField        string `json:"type_field"`
 		DocIDPrefixDelim string `json:"docid_prefix_delim"`
 		DocIDRegexp      string `json:"docid_regexp"`
-	}{}
+	}{
+		Mode:             b.Mode,
+		TypeField:        b.TypeField,
+		DocIDPrefixDelim: b.DocIDPrefixDelim,
+		DocIDRegexp:      docIDRegexp,
+	}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
