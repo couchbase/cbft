@@ -107,7 +107,7 @@ var ftsPrefix = 'fts';
 var updateDocCountIntervalMS = 5000;
 
 function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
-                          $log, $sce, $location, mnPoolDefault) {
+                          $log, $sce, $location, mnPoolDefault, mnPermissions) {
     var $routeParams = $stateParams;
 
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
@@ -116,6 +116,11 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.ftsAvailable = false;
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
+
+    try {
+        $scope.permsCluster = mnPermissions.export.cluster;
+    } catch (e) {
+    }
 
     http.get("/api/runtime")
     .success(function(data, status, headers, config) {
@@ -178,6 +183,11 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         setTimeout(updateDocCount, updateDocCountIntervalMS);
+
+        if ($scope.indexDef.sourceName) {
+            mnPermissions.set("cluster.bucket[" + $scope.indexDef.sourceName + "].fts!write")
+            mnPermissions.check()
+        }
 
         return rv;
     }
