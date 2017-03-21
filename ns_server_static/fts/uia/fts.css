@@ -267,13 +267,7 @@
   padding: .5rem 1rem;
   font-size: .961rem;
 }
-.well + .well {
-  display: none;
-}
-.well.ng-hide + .well {
-  display: none;
-  margin: 0;
-}
+
 ul.pagination {
   float: right;
 }
