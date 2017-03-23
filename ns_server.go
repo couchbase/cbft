@@ -198,7 +198,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			nsIndexStat["total_queries"] = totalQueries
 			if totalQueries > 0 {
 				nsIndexStat["avg_queries_latency"] =
-					float64((atomic.LoadUint64(&focusStats.TotRequestTimeNS) /
+					float64((atomic.LoadUint64(&focusStats.TotClientRequestTimeNS) /
 						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
 			}
 			nsIndexStat["total_request_time"] =
