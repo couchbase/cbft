@@ -102,11 +102,11 @@ function bleveIndexMappingScrub(indexMapping, tmc) {
 
     delete r["defaultMappingKey"]
 
-    return JSON.parse(JSON.stringify(scrub(r)));
+    return JSON.parse(JSON.stringify(scrub(r, "")));
 
     // Recursively remove every entry with '$' prefix, which might be
     // due to angularjs metadata.
-    function scrub(m) {
+    function scrub(m, path) {
         if (typeof(m) == "object") {
             for (var k in m) {
                 if (typeof(k) == "string" && k.charAt(0) == "$") {
@@ -114,9 +114,15 @@ function bleveIndexMappingScrub(indexMapping, tmc) {
                     continue;
                 }
 
-                m[k] = scrub(m[k]);
+                m[k] = scrub(m[k], path + "/" + k);
 
                 if (typeof(m[k]) == "object" && isEmpty(m[k])) {
+                    // Don't remove empty tokens [] array under the path of
+                    // "/analysis/token_maps/$TOKEN_MAP_NAME/tokens".
+                    if (path.match(/^\/analysis\/token_maps\/[^\/]*$/) &&
+                        k == "tokens") {
+                        continue;
+                    }
                     delete m[k];
                 }
             }
