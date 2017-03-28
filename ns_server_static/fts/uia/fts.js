@@ -308,41 +308,45 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
               }
             }
 
-            $scope.putIndex = function(newIndexName,
-                                       newIndexType, newIndexParams,
-                                       newSourceType, newSourceName,
-                                       newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID) {
-                $scope.errorFields = {};
-                $scope.errorMessage = null;
-                $scope.errorMessageFull = null;
-
+            $scope.prepareFTSIndex = function(newIndexName,
+                                              newIndexType, newIndexParams,
+                                              newSourceType, newSourceName,
+                                              newSourceUUID, newSourceParams,
+                                              newPlanParams, prevIndexUUID,
+                                              readOnly) {
+                var errorFields = {};
                 var errs = [];
 
                 // type identifier validation/cleanup
                 switch ($scope.ftsDocConfig.mode) {
                   case "type_field":
                     if (!$scope.ftsDocConfig.type_field) {
-                      errs.push("type field is required");
+                        errs.push("type field is required");
                     }
-                    delete $scope.ftsDocConfig.docid_prefix_delim;
-                    delete $scope.ftsDocConfig.docid_regexp;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.docid_prefix_delim;
+                        delete $scope.ftsDocConfig.docid_regexp;
+                    }
                   break;
 
                   case "docid_prefix":
                     if (!$scope.ftsDocConfig.docid_prefix_delim) {
-                      errs.push("Doc ID separator is required");
+                        errs.push("Doc ID separator is required");
                     }
-                    delete $scope.ftsDocConfig.type_field;
-                    delete $scope.ftsDocConfig.docid_regexp;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.type_field;
+                        delete $scope.ftsDocConfig.docid_regexp;
+                    }
                   break;
 
                   case "docid_regexp":
                     if (!$scope.ftsDocConfig.docid_regexp) {
-                      errs.push("Doc ID regexp is required");
+                        errs.push("Doc ID regexp is required");
                     }
-                    delete $scope.ftsDocConfig.type_field;
-                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.type_field;
+                        delete $scope.ftsDocConfig.docid_prefix_delim;
+                    }
                   break;
                 }
 
@@ -350,12 +354,12 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                 newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
 
                 if (!newIndexName) {
-                    $scope.errorFields["indexName"] = true;
+                    errorFields["indexName"] = true;
                     errs.push("index name is required");
                 } else if ($scope.meta &&
                            $scope.meta.indexNameRE &&
                            !newIndexName.match($scope.meta.indexNameRE)) {
-                    $scope.errorFields["indexName"] = true;
+                    errorFields["indexName"] = true;
                     errs.push("index name '" + newIndexName + "'" +
                               " must start with an alphabetic character, and" +
                               " must only use alphanumeric or '-' or '_' characters");
@@ -376,9 +380,12 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                 }
 
                 if (errs.length > 0) {
-                    $scope.errorMessage =
+                    var errorMessage =
                         (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
-                    return;
+                    return {
+                        errorFields: errorFields,
+                        errorMessage: errorMessage,
+                    }
                 }
 
                 if (!newSourceUUID) {
@@ -388,6 +395,35 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                         }
                     }
                 }
+
+                return {
+                    newSourceUUID: newSourceUUID,
+                    newPlanParams: newPlanParams
+                }
+            }
+
+            $scope.putIndex = function(newIndexName,
+                                       newIndexType, newIndexParams,
+                                       newSourceType, newSourceName,
+                                       newSourceUUID, newSourceParams,
+                                       newPlanParams, prevIndexUUID) {
+                $scope.errorFields = {};
+                $scope.errorMessage = null;
+                $scope.errorMessageFull = null;
+
+                var rv = $scope.prepareFTSIndex(newIndexName,
+                                                newIndexType, newIndexParams,
+                                                newSourceType, newSourceName,
+                                                newSourceUUID, newSourceParams,
+                                                newPlanParams, prevIndexUUID)
+                if (rv.errorFields || rv.errorMessage) {
+                    $scope.errorFields = rv.errorFields;
+                    $scope.errorMessage = rv.errorMessage;
+                    return
+                }
+
+                newSourceUUID = rv.newSourceUUID;
+                newPlanParams = rv.newPlanParams;
 
                 return putIndexOrig(newIndexName,
                                     newIndexType, newIndexParams,
@@ -525,12 +561,31 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             return;
         }
 
-        var m = imc.indexMapping();
-        if (m && $scope.indexEditorPreview) {
-            var preview = JSON.stringify(m, null, 1);
-            if (preview != previewPrev) {
-                $scope.indexEditorPreview["fulltext-index"] = preview;
-                previewPrev = preview;
+        if ($scope.prepareIndex &&
+            $scope.prepareFTSIndex &&
+            $scope.indexEditorPreview) {
+            var rv = $scope.prepareFTSIndex(
+                $scope.newIndexName,
+                $scope.newIndexType, $scope.newIndexParams,
+                $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
+                $scope.newPlanParams, $scope.prevIndexUUID,
+                true);
+            if (!rv.errorFields && !rv.errorMessage) {
+                var newSourceUUID = rv.newSourceUUID;
+                var newPlanParams = rv.newPlanParams;
+
+                var rv = $scope.prepareIndex(
+                    $scope.newIndexName,
+                    $scope.newIndexType, $scope.newIndexParams,
+                    $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
+                    newPlanParams, $scope.prevIndexUUID);
+                if (rv.indexDef) {
+                    var preview = JSON.stringify(rv.indexDef, null, 1);
+                    if (preview != previewPrev) {
+                        $scope.indexEditorPreview["fulltext-index"] = preview;
+                        previewPrev = preview;
+                    }
+                }
             }
 
             setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
