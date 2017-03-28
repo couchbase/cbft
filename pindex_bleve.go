@@ -266,6 +266,14 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 	err = json.Unmarshal(b, bp)
 	if err != nil {
+		if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
+			if typeErr.Type.String() == "map[string]json.RawMessage" {
+				return fmt.Errorf("bleve: validate params,"+
+					" JSON parse was expecting a string key/field-name"+
+					" but instead saw a %s", typeErr.Value)
+			}
+		}
+
 		return fmt.Errorf("bleve: validate params, err: %v", err)
 	}
 
