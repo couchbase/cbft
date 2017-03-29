@@ -2058,7 +2058,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`number of index targets is zero`: true,
+				`no index targets were specified`: true,
 			},
 		},
 		{

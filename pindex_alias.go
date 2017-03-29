@@ -65,8 +65,8 @@ func ValidateAlias(indexType, indexName, indexParams string) error {
 	err := json.Unmarshal([]byte(indexParams), &params)
 	if err == nil {
 		if len(params.Targets) == 0 {
-			return fmt.Errorf("alias: ValidateAlias" +
-				" number of index targets is zero")
+			return fmt.Errorf("ValidateAlias: cannot create index alias" +
+				" because no index targets were specified")
 		}
 	}
 	return err
