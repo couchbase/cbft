@@ -87,7 +87,7 @@ http://{{hostPort}}/api/index/{{indexName}}/query \
 <!-- results title, no-results msg, and results **************** -->
   <h3 class="fts-query-results-title">Results for {{indexName}}</h3>
   <div ng-show="results && !results.total_hits">
-    <p>No results found for your query. It's okay...it happens.<br>Check your search term(s) and/or use the syntax help link under the search field.</p>
+    <p>No results found for your query.<br>Please check your search term(s) and/or use the syntax help link under the search field.</p>
   </div>
   <div ng-show="!results" class="spinner"></div>
   <div class="fts-query-results"
