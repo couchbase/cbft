@@ -216,7 +216,9 @@
   </div>
 
 <!-- definition preview sidebar ********************* -->
-  <div class="index-definition-preview" ng-if="newIndexType != 'fulltext-alias'">
+  <div class="index-definition-preview"
+       ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}"
+       ng-if="newIndexType != 'fulltext-alias'">
     <div class="row">
       <label>Index Definition Preview</label>
       <a href=""
@@ -226,7 +228,6 @@
       </a>
     </div>
     <div class="json-content">
-      <div ng-show="!indexEditorPreview[newIndexType]" class="spinner"></div>
       <pre id="index_def_preview">{{indexEditorPreview[newIndexType]}}</pre>
     </div>
   </div>
