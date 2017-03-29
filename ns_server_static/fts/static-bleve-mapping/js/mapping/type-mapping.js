@@ -331,8 +331,6 @@ function bleveConvertToTypeMapping(mappings) {
         delete mapping["name"];
 
         convertPropertiedFields(mapping);
-
-        mapping.display_order = i;
     }
 
     return typeMapping;

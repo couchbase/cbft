@@ -114,6 +114,14 @@ function bleveIndexMappingScrub(indexMapping, tmc) {
                     continue;
                 }
 
+                if (k == "display_order" && typeof(m[k]) == "string") {
+                    var i = parseInt(m[k]);
+                    if (i >= 0 && String(i) == m[k]) {
+                        delete m[k];
+                        continue;
+                    }
+                }
+
                 m[k] = scrub(m[k], path + "/" + k);
 
                 if (typeof(m[k]) == "object" && isEmpty(m[k])) {
