@@ -425,10 +425,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	var adtSvc *audit.AuditSvc
 	if options["cbaudit"] == "true" {
-		adtSvc, err = audit.NewAuditSvc(server)
-		if err != nil {
-			return nil, err
-		}
+		adtSvc, _ = audit.NewAuditSvc(server)
 	}
 
 	router, _, err :=
