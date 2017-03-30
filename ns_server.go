@@ -479,11 +479,6 @@ func extractMossStats(mossStats *moss.CollectionStats, nsIndexStat map[string]in
 }
 
 var kvStats = map[string]string{
-	// From forestdb...
-	"/file_size":  "num_bytes_used_disk", // actual bytes used on disk
-	"/space_used": "num_bytes_live_data", // bytes used by live data
-	"/compacts":   "total_compactions",
-
 	// From mossStore...
 	"/num_bytes_used_disk": "num_bytes_used_disk",
 	"/total_compactions":   "total_compactions",

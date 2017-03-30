@@ -14,16 +14,6 @@ PROJECT (cbft)
 #
 # GODEPSDIR - should point to a Go workspace directory containing all
 #      transitive Go dependencies
-#
-# FORESTDB_INCLUDE_DIR - should point to where libforestdb/forestdb.h exists
-#
-# FORESTDB_LIBRARY_DIR - should point to where libforestdb.so resides
-#
-# Optionally:
-#
-# FORESTDB_TARGET - if set, assumed to the the CMake target name which
-# builds libforestdb.so; will set dependencies to ensure it is build
-# before attempting to compile indexer
 
 SET (FTS_DEFAULT_KVSTORE "mossStore_default_kvstore")
 

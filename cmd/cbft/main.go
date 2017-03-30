@@ -92,11 +92,7 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	// disabling as speculative change for
-	// https://issues.couchbase.com/browse/MB-20002
-	// theory being that invoking signal.Notify()
-	// interferes with forestdb signal handler
-	// go cmd.DumpOnSignalForPlatform()
+	go cmd.DumpOnSignalForPlatform()
 
 	MainWelcome(flagAliases)
 
@@ -348,11 +344,6 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	extras = string(extrasJson)
-
-	err = InitOptions(options)
-	if err != nil {
-		return nil, err
-	}
 
 	err = InitMossOptions(options)
 	if err != nil {

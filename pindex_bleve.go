@@ -137,8 +137,7 @@ type BleveParamsStore struct {
 
 	// The mossLowerLevelStoreConfig can be used to provide advanced
 	// options to the lower-level KVStore that's used under a moss
-	// cache.  For example, forestdb KVStore configurations would be
-	// defined here.
+	// cache.
 	//
 	// NOTE: when the mossLowerLevelStoreName is "mossStore", the
 	// mossLowerLevelStoreConfig is not used; instead, please use
@@ -331,12 +330,6 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			kvStoreName != "moss" &&
 			bleveRegistry.KVStoreConstructorByName("moss") != nil {
 			kvConfig["mossLowerLevelStoreName"] = kvStoreName
-
-			if kvStoreName == "forestdb" {
-				if _, exists := kvConfig["skip_batch"]; !exists {
-					kvConfig["skip_batch"] = true
-				}
-			}
 
 			kvStoreName = "moss"
 		}
