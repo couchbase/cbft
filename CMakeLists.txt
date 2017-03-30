@@ -29,43 +29,15 @@ SET (FTS_DEFAULT_KVSTORE "mossStore_default_kvstore")
 
 INCLUDE (FindCouchbaseGo)
 
-SET (_forestdb_dep)
-IF (DEFINED FORESTDB_TARGET)
-  SET (_forestdb_dep DEPENDS ${FORESTDB_TARGET})
-ENDIF (DEFINED FORESTDB_TARGET)
-
-IF (APPLE)
-  # On OS X 10.11 (El Capitan) upwards we can no longer use DYLD_LIBRARY_PATH to locate
-  # runtime dependancies. Instead add the location of forestdb etc to the actual
-  # binary itself.
-  SET (_ldflags "-extldflags '-Wl,-rpath,@executable_path/../lib'")
-ENDIF ()
-
-IF (WIN32)
-  INCLUDE (PlatformIntrospection)
-  _DETERMINE_ARCH (_arch)
-  IF (NOT _arch STREQUAL x86)
-    SET (_ldflags "-linkmode internal")
-  ENDIF ()
-ENDIF ()
-
 GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
-  ${_forestdb_dep}
-  CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
-  CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
-  LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
+  GOTAGS "${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.8)
 
 GoInstall (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
-  ${_forestdb_dep}
-  CGO_INCLUDE_DIRS "${FORESTDB_INCLUDE_DIR}"
-  CGO_LIBRARY_DIRS "${FORESTDB_LIBRARY_DIR}"
-  LDFLAGS "${_ldflags}"
-  GOTAGS "forestdb ${FTS_DEFAULT_KVSTORE}"
+  GOTAGS "${FTS_DEFAULT_KVSTORE}"
   INSTALL_PATH bin OUTPUT cbft-bleve
   GOVERSION 1.8)
 
