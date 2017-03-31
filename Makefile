@@ -22,9 +22,6 @@ build: gen-bindata
 build-static:
 	$(MAKE) build CBFT_TAGS="libstemmer"
 
-build-forestdb:
-	$(MAKE) build CBFT_TAGS="libstemmer icu forestdb"
-
 build-leveldb:
 	$(MAKE) build CBFT_TAGS="libstemmer icu leveldb"
 

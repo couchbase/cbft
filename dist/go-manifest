@@ -25,7 +25,7 @@ detect() {
 
 process() {
     pkg="$1"
-    dir=`go list -tags 'debug libstemmer leveldb forestdb' -f {{.Dir}} "$pkg"`
+    dir=`go list -tags 'debug libstemmer leveldb' -f {{.Dir}} "$pkg"`
     case "$dir" in
         $GOROOT*)
             # echo "$pkg is stdlib";;
@@ -36,7 +36,7 @@ process() {
     esac
 }
 
-for pkg in `go list -tags 'debug libstemmer leveldb forestdb' -f '{{ range .Deps }} {{.}} {{end}}' "$@"`
+for pkg in `go list -tags 'debug libstemmer leveldb' -f '{{ range .Deps }} {{.}} {{end}}' "$@"`
 do
     process $pkg
 done

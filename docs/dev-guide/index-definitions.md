@@ -318,7 +318,7 @@ Allowed values for ```kvStoreName``` include:
 - ```"goleveldb"``` - a pure-golang re-implementation of the leveldb
   storage library (EXPERIMENTAL)
 
-- TBD (leveldb, forestdb, ...others...)
+- TBD (leveldb, ...others...)
 
 The other sub-fields under the ```store``` JSON sub-object are
 dependent on the persistent storage implementation that is being used.

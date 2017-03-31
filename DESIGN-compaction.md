@@ -9,79 +9,19 @@ Full Text pindexes powered by the bleve full-text indexing engine.
 - need to add a REST api and/or configurability to cbft to allow
   applications (or testing systems) to be able to explicitly control
   compactions.  Until such explicit control appears, a workaround for
-  testing is to use the CBFT_ENV_OPTIONS environment variable.  For
-  example, for forestdb, please see the forestdbCompactorSleepDuration
-  setting below.
+  testing is to use the CBFT_ENV_OPTIONS environment variable.
 
 -------------------------------------------------
 = Key considerations
 
 Compaction of cbft's Full Text pindexes depends on the KV storage
-engine (i.e., forestdb, boltdb, mossStore) that the user has
+engine (i.e., boltdb, mossStore) that the user has
 configured as part of their index definition.
 
 Some storage engines such as boltdb, for example, don't have a concept
 of compaction, but perform in-place updates of a file.  In such
 storage engines, it's possible that files might never really shrink
 even though large parts of the files are actually unused.
-
--------------------------------------------------
-= forestdb storage engine
-
-You can configure cbft / bleve to use forestdb as the index storage
-engine by setting the "store" / "kvStoreName" property to "forestdb".
-Your index definition JSON, for example, would look somewhat like...
-
-    {
-        "mapping": {
-            ...
-        },
-        "store": {
-            "kvStoreName": "forestdb",
-            ...
-        }
-    }
-
-The forestdb storage engine is used by cbft / bleve in an "automatic"
-compaction mode, where cbft / bleve configures forestdb by default to
-automatically check whether compaction should be performed on a
-regular schedule (see: forestdbCompactorSleepDuration, by default 8
-hours) and only when certain configured conditions are met (see:
-forestdbCompactionThreshold and forestdbCompaciionMinimumFilesize).
-
-The forestdb storage engine is configurable only on a process-wide
-basis, via the CBFT_ENV_OPTIONS environment variable.
-
-== CBFT_ENV_OPTIONS for forestdb
-
-For the forestdb storage engine, the relevant CBFT_ENV_OPTIONS
-include...
-
-    forestdbCompactionBufferSizeMax (uint32)
-      4MB by default
-
-    forestdbCompactionThreshold (uint8)
-      Compaction threshold in the unit of percentage (%). It can be calculated
-      as '(stale data size)/(total file size)'. The compaction daemon triggers
-      compaction if this threshold is satisfied.
-      Compaction will not be performed when this value is set to zero or 100.
-
-    forestdbCompaciionMinimumFilesize (uint64)
-      The minimum filesize to perform compaction.
-
-    forestdbCompactorSleepDuration (uint64)
-      Duration that the compaction daemon task periodically wakes up, in the unit of
-      second. This is a local config that can be configured per file.
-      If the daemon compaction interval for a given file needs to be adjusted, then
-      fdb_set_daemon_compaction_interval API can be used.
-
-    forestdbNumCompactorThreads (int)
-      Number of daemon compactor threads. It is set to 4 threads by default.
-
-For example, you might launch couchbase-server with something like...
-
-    CBFT_ENV_OPTIONS=forestdbCompactorSleepDuration=120,forestdbNumCompactorThreads=8 \
-        /opt/couchbase/bin/couchbase-server ...
 
 -------------------------------------------------
 = mossStore storage engine
