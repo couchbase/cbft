@@ -427,10 +427,11 @@ func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
 		false, nil)
 	if err != nil {
-		return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
-			" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
+		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); !ok {
+			return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
+				" indexName: %s, indexUUID: %s, err: %v", indexName, indexUUID, err)
+		}
 	}
-
 	return alias.DocCount()
 }
 
@@ -527,10 +528,12 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
-	alias, remoteClients, err := bleveIndexAlias(mgr, indexName, indexUUID, true,
+	alias, remoteClients, er := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh, true, onlyPIndexes)
-	if err != nil {
-		return err
+	if er != nil {
+		if _, ok := er.(*cbgt.ErrorLocalPIndexHealth); !ok {
+			return er
+		}
 	}
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
@@ -588,6 +591,20 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			return &remoteConsistencyWaitError
 		}
 
+		if er != nil {
+			if err, ok := er.(*cbgt.ErrorLocalPIndexHealth); ok && len(err.IndexErrMap) > 0 {
+				// populate the searchResuls with the details of
+				// pindexes not searched/covered in this query.
+				if searchResult.Status.Errors == nil {
+					searchResult.Status.Errors = make(map[string]error)
+				}
+				for pi, e := range err.IndexErrMap {
+					searchResult.Status.Errors[pi] = e
+					searchResult.Status.Failed++
+					searchResult.Status.Total++
+				}
+			}
+		}
 		rest.MustEncode(res, searchResult)
 	}
 
@@ -1348,6 +1365,9 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		ensureCanRead, consistencyParams, cancelCh,
 		groupByNode, onlyPIndexes, alias)
 	if err != nil {
+		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); ok {
+			return alias, remoteClients, err
+		}
 		return nil, nil, err
 	}
 
