@@ -356,7 +356,8 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	if options["logStatsEvery"] != "" {
-		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
+		var logStatsEvery int
+		logStatsEvery, err = strconv.Atoi(options["logStatsEvery"])
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +382,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	if server != "." && options["startCheckServer"] != "skip" {
-		_, err := couchbase.Connect(server)
+		_, err = couchbase.Connect(server)
 		if err != nil {
 			if !strings.HasPrefix(server, "http://") &&
 				!strings.HasPrefix(server, "https://") {
@@ -422,6 +423,9 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router, _, err :=
 		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr,
 			adtSvc)
+	if err != nil {
+		return nil, err
+	}
 
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]
@@ -481,7 +485,8 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			" dryRun: %v, waitForMemberNodes: %d, verbose: %d",
 			dryRun, waitForMemberNodes, verbose)
 
-		c, err := ctl.StartCtl(cfg, server, mgr.Options(), ctl.CtlOptions{
+		var c *ctl.Ctl
+		c, err = ctl.StartCtl(cfg, server, mgr.Options(), ctl.CtlOptions{
 			DryRun:             dryRun,
 			Verbose:            verbose,
 			FavorMinNodes:      false,
@@ -505,7 +510,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			go func() {
 				log.Printf("main: cbauth_service registering...")
 
-				err := service.RegisterManager(ctlMgr, nil)
+				err = service.RegisterManager(ctlMgr, nil)
 				if err != nil {
 					log.Printf("main: cbauth_service register err: %v", err)
 					return

@@ -48,7 +48,8 @@ func InitMossOptions(options map[string]string) (err error) {
 	}
 
 	if bpamv, exists := options["blevePIndexAllowMoss"]; exists {
-		bpam, err := strconv.ParseBool(bpamv)
+		var bpam bool
+		bpam, err = strconv.ParseBool(bpamv)
 		if err != nil {
 			return fmt.Errorf("init_moss:"+
 				" parsing blevePIndexAllowMoss: %q, err: %v", bpamv, err)
@@ -64,21 +65,24 @@ func InitMossOptions(options map[string]string) (err error) {
 	var memQuota uint64
 	v, exists := options["ftsMossMemoryQuota"] // In bytes.
 	if exists {
-		fmmq, err := strconv.Atoi(v)
+		var fmmq int
+		fmmq, err = strconv.Atoi(v)
 		if err != nil {
 			return fmt.Errorf("init_moss:"+
 				" parsing ftsMossMemoryQuota: %q, err: %v", v, err)
 		}
 		memQuota = uint64(fmmq)
 	} else {
-		frac, err := ParseFTSMemoryQuotaMossFraction(options)
+		var frac float64
+		frac, err = ParseFTSMemoryQuotaMossFraction(options)
 		if err != nil {
 			return err
 		}
 
 		v, exists = options["ftsMemoryQuota"] // In bytes.
 		if exists {
-			fmq, err := strconv.Atoi(v)
+			var fmq int
+			fmq, err = strconv.Atoi(v)
 			if err != nil {
 				return fmt.Errorf("init_moss:"+
 					" parsing ftsMemoryQuota: %q, err: %v", v, err)

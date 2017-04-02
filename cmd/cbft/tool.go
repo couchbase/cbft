@@ -38,13 +38,13 @@ var ToolDefs map[string]*ToolDef
 
 func init() {
 	ToolDefs = map[string]*ToolDef{
-		"help": &ToolDef{
+		"help": {
 			Name:    "help",
 			Handler: ToolHelp,
 			Usage:   `prints out this help message.`,
 		},
 
-		"partitionSeqs": &ToolDef{
+		"partitionSeqs": {
 			Name:    "partitionSeqs",
 			Handler: ToolRepeatable(ToolPartitionSeqs),
 			Usage: ToolRepeatableUsage(`retrieves partition seqs from a source feed.
@@ -54,7 +54,7 @@ func init() {
       sourceParams=SOURCE_PARAMS (json encoded string)`),
 		},
 
-		"profile": &ToolDef{
+		"profile": {
 			Name:    "profile",
 			Handler: ToolProfile,
 			Usage: `asynchronous cpu or memory profiling.

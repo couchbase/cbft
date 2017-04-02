@@ -53,7 +53,7 @@ func init() {
 }
 
 func initFlags(flags *Flags) map[string][]string {
-	flagAliases := map[string][]string{} // main flag name => all aliases.
+	flagAliasesInit := map[string][]string{} // main flag name => all aliases.
 	flagKinds := map[string]string{}
 
 	s := func(v *string, names []string, kind string,
@@ -61,7 +61,7 @@ func initFlags(flags *Flags) map[string][]string {
 		for _, name := range names {
 			flag.StringVar(v, name, defaultVal, usage)
 		}
-		flagAliases[names[0]] = names
+		flagAliasesInit[names[0]] = names
 		flagKinds[names[0]] = kind
 	}
 
@@ -70,7 +70,7 @@ func initFlags(flags *Flags) map[string][]string {
 		for _, name := range names {
 			flag.IntVar(v, name, defaultVal, usage)
 		}
-		flagAliases[names[0]] = names
+		flagAliasesInit[names[0]] = names
 		flagKinds[names[0]] = kind
 	}
 
@@ -79,7 +79,7 @@ func initFlags(flags *Flags) map[string][]string {
 		for _, name := range names {
 			flag.BoolVar(v, name, defaultVal, usage)
 		}
-		flagAliases[names[0]] = names
+		flagAliasesInit[names[0]] = names
 		flagKinds[names[0]] = kind
 	}
 
@@ -211,13 +211,13 @@ func initFlags(flags *Flags) map[string][]string {
 		})
 
 		flags := []string(nil)
-		for name := range flagAliases {
+		for name := range flagAliasesInit {
 			flags = append(flags, name)
 		}
 		sort.Strings(flags)
 
 		for _, name := range flags {
-			aliases := flagAliases[name]
+			aliases := flagAliasesInit[name]
 			a := []string(nil)
 			for i := len(aliases) - 1; i >= 0; i-- {
 				a = append(a, aliases[i])
@@ -236,7 +236,7 @@ func initFlags(flags *Flags) map[string][]string {
 			" http://github.com/couchbase/cbft\n\n")
 	}
 
-	return flagAliases
+	return flagAliasesInit
 }
 
 const examples = `
