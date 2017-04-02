@@ -31,34 +31,34 @@ import (
 )
 
 var testIndexDefsByName = map[string]*cbgt.IndexDef{
-	"i1": &cbgt.IndexDef{
+	"i1": {
 		Type:       "fulltext-index",
 		SourceName: "s1",
 	},
-	"i2": &cbgt.IndexDef{
+	"i2": {
 		Type:       "fulltext-index",
 		SourceName: "s2",
 	},
-	"a1": &cbgt.IndexDef{
+	"a1": {
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"i1":{}}}`,
 	},
-	"a2": &cbgt.IndexDef{
+	"a2": {
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"i1":{},"i2":{}}}`,
 	},
-	"a3": &cbgt.IndexDef{
+	"a3": {
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"a1":{},"i2":{}}}`,
 	},
-	"a4": &cbgt.IndexDef{
+	"a4": {
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"a4":{},"i2":{}}}`,
 	},
 }
 
 var testPIndexesByName = map[string]*cbgt.PIndex{
-	"p1": &cbgt.PIndex{
+	"p1": {
 		SourceName: "s3",
 	},
 }
@@ -515,23 +515,23 @@ func TestFilteredListIndexes(t *testing.T) {
 		pindexes: testPIndexesByName,
 		defs: &cbgt.IndexDefs{
 			IndexDefs: map[string]*cbgt.IndexDef{
-				"i1": &cbgt.IndexDef{
+				"i1": {
 					Type:       "fulltext-index",
 					SourceName: "s1",
 				},
-				"i2": &cbgt.IndexDef{
+				"i2": {
 					Type:       "fulltext-index",
 					SourceName: "s2",
 				},
-				"a1": &cbgt.IndexDef{
+				"a1": {
 					Type:   "fulltext-alias",
 					Params: `{"targets":{"i1":{}}}`,
 				},
-				"a2": &cbgt.IndexDef{
+				"a2": {
 					Type:   "fulltext-alias",
 					Params: `{"targets":{"i2":{}}}`,
 				},
-				"a1-2": &cbgt.IndexDef{
+				"a1-2": {
 					Type:   "fulltext-alias",
 					Params: `{"targets":{"i1":{},"i2":{}}}`,
 				},
@@ -574,11 +574,13 @@ func TestFilteredListIndexes(t *testing.T) {
 		if test.body != nil {
 			r = bytes.NewBuffer(test.body)
 		}
-		req, err := http.NewRequest(test.method, test.uri, r)
+		var req *http.Request
+		req, err = http.NewRequest(test.method, test.uri, r)
 		if err != nil {
 			t.Fatal(err)
 		}
-		actualPerms, err := preparePerms(s, req, test.method, test.path)
+		var actualPerms []string
+		actualPerms, err = preparePerms(s, req, test.method, test.path)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
 		}

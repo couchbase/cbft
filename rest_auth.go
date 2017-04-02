@@ -207,7 +207,8 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 
 		if indexDef.Type == "fulltext-alias" {
 			// this finds the sources in current definition
-			currSourceNames, err := sourceNamesForAlias(indexName, indexDefsByName, 0)
+			var currSourceNames []string
+			currSourceNames, err = sourceNamesForAlias(indexName, indexDefsByName, 0)
 			if err != nil {
 				return nil, err
 			}

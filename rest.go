@@ -27,7 +27,7 @@ const RESTIndexQueryPath = "/api/index/{indexName}/query"
 
 // MapRESTPathStats is keyed by path spec strings.
 var MapRESTPathStats = map[string]*rest.RESTPathStats{
-	RESTIndexQueryPath: &rest.RESTPathStats{},
+	RESTIndexQueryPath: {},
 }
 
 func InitStaticRouter(staticDir, staticETag string,

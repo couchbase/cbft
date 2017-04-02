@@ -240,7 +240,8 @@ func init() {
 		QueryHelp:    bleveQueryHelp,
 		InitRouter:   BleveInitRouter,
 		DiagHandlers: []cbgt.DiagHandler{
-			{"/api/pindex-bleve", bleveHttp.NewListIndexesHandler(), nil},
+			{Name: "/api/pindex-bleve", Handler: bleveHttp.NewListIndexesHandler(),
+				HandlerFunc: nil},
 		},
 		MetaExtra: BleveMetaExtra,
 		UI: map[string]string{
@@ -318,14 +319,15 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	kvStoreMossAllow := true
 	ksmv, exists := kvConfig["kvStoreMossAllow"]
 	if exists {
-		v, ok := ksmv.(bool)
+		var v bool
+		v, ok = ksmv.(bool)
 		if ok {
 			kvStoreMossAllow = v
 		}
 	}
 
 	if kvStoreMossAllow && BlevePIndexAllowMoss {
-		_, exists := kvConfig["mossLowerLevelStoreName"]
+		_, exists = kvConfig["mossLowerLevelStoreName"]
 		if !exists &&
 			kvStoreName != "moss" &&
 			bleveRegistry.KVStoreConstructorByName("moss") != nil {
@@ -345,7 +347,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	kvStoreMetricsAllow := BleveKVStoreMetricsAllow
 	ksmv, exists = kvConfig["kvStoreMetricsAllow"]
 	if exists {
-		v, ok := ksmv.(bool)
+		var v bool
+		v, ok = ksmv.(bool)
 		if ok {
 			kvStoreMetricsAllow = v
 		}
@@ -496,7 +499,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	v, exists := mgr.Options()["bleveMaxResultWindow"]
 	if exists {
-		bleveMaxResultWindow, err := strconv.Atoi(v)
+		var bleveMaxResultWindow int
+		bleveMaxResultWindow, err = strconv.Atoi(v)
 		if err != nil {
 			return fmt.Errorf("bleve: QueryBleve"+
 				" atoi: %v, err: %v", v, err)
@@ -562,7 +566,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				var remoteConsistencyErr = struct {
 					StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 				}{}
-				err := json.Unmarshal(lastErrBody, &remoteConsistencyErr)
+				err = json.Unmarshal(lastErrBody, &remoteConsistencyErr)
 				if err == nil {
 					for k, v := range remoteConsistencyErr.StartEndSeqs {
 						remoteConsistencyWaitError.StartEndSeqs[k] = v
@@ -793,7 +797,7 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	t.m.Unlock()
 
 	if bindex == nil {
-		err := fmt.Errorf("bleve: Query, bindex already closed")
+		err = fmt.Errorf("bleve: Query, bindex already closed")
 		sendSearchResultErr(searchRequest, res, []string{pindex.Name}, err)
 		return nil
 	}
@@ -1571,7 +1575,7 @@ func BleveMetaExtra(m map[string]interface{}) {
 
 func BleveQuerySamples() []cbgt.Documentation {
 	return []cbgt.Documentation{
-		cbgt.Documentation{
+		{
 			Text: "A simple bleve query POST body:",
 			JSON: &struct {
 				*cbgt.QueryCtlParams
@@ -1585,7 +1589,7 @@ func BleveQuerySamples() []cbgt.Documentation {
 				},
 			},
 		},
-		cbgt.Documentation{
+		{
 			Text: `An example POST body using from/size for results paging,
 using ctl for a timeout and for "at_plus" consistency level.
 On consistency, the index must have incorporated at least mutation
@@ -1602,7 +1606,7 @@ should have a vbucketUUID of a0b1c2):`,
 						Consistency: &cbgt.ConsistencyParams{
 							Level: "at_plus",
 							Vectors: map[string]cbgt.ConsistencyVector{
-								"customerIndex": cbgt.ConsistencyVector{
+								"customerIndex": {
 									"0":        123,
 									"1/a0b1c2": 234,
 								},

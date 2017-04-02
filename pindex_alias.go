@@ -39,7 +39,7 @@ func init() {
 			" to one or more actual, target full text indexes",
 		StartSample: &AliasParams{
 			Targets: map[string]*AliasParamsTarget{
-				"yourIndexName": &AliasParamsTarget{},
+				"yourIndexName": {},
 			},
 		},
 	})
@@ -181,7 +181,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 				aliasUUID, aliasDef.UUID, aliasName, indexName)
 		}
 
-		params, err := parseAliasParams(aliasDef.Params)
+		var params *AliasParams
+		params, err = parseAliasParams(aliasDef.Params)
 		if err != nil {
 			return fmt.Errorf("alias: could not parse aliasDef.Params: %s,"+
 				" aliasName: %s, indexName: %s",
@@ -218,7 +219,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 					return err
 				}
 			} else if strings.HasPrefix(targetDef.Type, "fulltext-index") {
-				subAlias, _, err := bleveIndexAlias(mgr,
+				var subAlias bleve.IndexAlias
+				subAlias, _, err = bleveIndexAlias(mgr,
 					targetName, targetSpec.IndexUUID, ensureCanRead,
 					consistencyParams, cancelCh, true, nil)
 				if err != nil {

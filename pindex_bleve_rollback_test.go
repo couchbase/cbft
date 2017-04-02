@@ -94,7 +94,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			stats := map[string]interface{}{
 				"num_recs_to_persist": float64(0),
 			}
-			err := addPIndexStats(pindex, stats)
+			err = addPIndexStats(pindex, stats)
 			if err != nil {
 				t.Errorf("expected nil addPIndexStats err, got: %v", err)
 			}
