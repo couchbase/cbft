@@ -199,10 +199,16 @@ func TestPartitioningMutations(t *testing.T) {
 				t.Errorf("expected bleve.Index")
 			}
 			n, err := bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0, got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -217,10 +223,16 @@ func TestPartitioningMutations(t *testing.T) {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
 			n, err = bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -271,10 +283,16 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected bleve.Index")
 			}
 			n, err := bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0, got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -289,10 +307,16 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
 			n, err = bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex1, got: %d", n)
 			}
@@ -306,10 +330,16 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
 			n, err = bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex1, got: %d", n)
 			}
@@ -362,11 +392,17 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected bleve.Index")
 			}
 			n, err = bindex0.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 0 {
 				t.Errorf("expected 0 docs in bindex0 after rollback,"+
 					" got: %d", n)
 			}
 			n, err = bindex1.DocCount()
+			if err != nil {
+				t.Errorf("error getting doc count: %v", err)
+			}
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex1 after rollback,"+
 					" got: %d", n)

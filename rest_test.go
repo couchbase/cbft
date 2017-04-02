@@ -2509,6 +2509,9 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 	testRESTHandlers(t, tests, router0)
 
 	indexDefs, indexDefsCas, err := cbgt.CfgGetIndexDefs(cfg)
+	if err != nil {
+		t.Errorf("error CfgGetIndexDefs: %v", err)
+	}
 	indexDefs.IndexDefs["myIdx"].PlanParams.PlanFrozen = true
 	_, err = cbgt.CfgSetIndexDefs(cfg, indexDefs, indexDefsCas)
 	if err != nil {

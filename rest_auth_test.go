@@ -633,6 +633,9 @@ func TestPingAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	actualPerms, err := preparePerms(nil, req, "GET", path)
+	if err != nil {
+		t.Errorf("error preparing perms: %v", err)
+	}
 
 	if actualPerms != nil {
 		t.Errorf("Invalid perms for ping %v, was not expecting any", actualPerms)
