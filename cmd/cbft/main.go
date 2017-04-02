@@ -47,9 +47,9 @@ import (
 
 var cmdName = "cbft"
 
-var VERSION = "v0.4.0"
+var version = "v0.4.0"
 
-var DefaultCtlVerbose = 3
+var defaultCtlVerbose = 3
 
 var expvars = expvar.NewMap("stats")
 
@@ -72,7 +72,7 @@ func main() {
 
 	if flags.Version {
 		fmt.Printf("%s main: %s, data: %s\n", path.Base(os.Args[0]),
-			VERSION, cbgt.VERSION)
+			version, cbgt.VERSION)
 		os.Exit(0)
 	}
 
@@ -85,21 +85,21 @@ func main() {
 		log.Fatalf("main: could not create MsgRing, err: %v", err)
 	}
 	log.SetOutput(mr)
-	log.SetLoggerCallback(LoggerFunc)
+	log.SetLoggerCallback(loggerFunc)
 
 	log.Printf("main: %s started (%s/%s)",
-		os.Args[0], VERSION, cbgt.VERSION)
+		os.Args[0], version, cbgt.VERSION)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	go cmd.DumpOnSignalForPlatform()
 
-	MainWelcome(flagAliases)
+	mainWelcome(flagAliases)
 
 	s, err := os.Stat(flags.DataDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if flags.DataDir == DEFAULT_DATA_DIR {
+			if flags.DataDir == defaultDataDir {
 				log.Printf("main: creating data directory, dataDir: %s",
 					flags.DataDir)
 				err = os.Mkdir(flags.DataDir, 0700)
@@ -168,7 +168,7 @@ func main() {
 			"authType":               flags.AuthType,
 		})
 
-	err = InitHttpOptions(options)
+	err = initHTTPOptions(options)
 	if err != nil {
 		log.Fatalf("main: InitHttpOptions, err: %v", err)
 		return
@@ -177,12 +177,12 @@ func main() {
 	// User may supply a comma-separated list of HOST:PORT values for
 	// http addresss/port listening, but only the first http entry
 	// is used for cbgt node and Cfg registration.
-	bindHttpList := strings.Split(flags.BindHttp, ",")
+	bindHTTPList := strings.Split(flags.BindHTTP, ",")
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
-		bindHttpList[0], flags.Register, flags.DataDir, uuid, options)
+		bindHTTPList[0], flags.Register, flags.DataDir, uuid, options)
 	if err != nil {
 		if err == cmd.ErrorBindHttp {
 			log.Fatalf("%v", err)
@@ -201,9 +201,9 @@ func main() {
 		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
-	router, err := MainStart(cfg, uuid, tagsArr,
+	router, err := mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
-		bindHttpList[0], flags.DataDir,
+		bindHTTPList[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
 		flags.Server, flags.Register, mr, options)
 	if err != nil {
@@ -220,47 +220,48 @@ func main() {
 	anyHostPorts := map[string]bool{}
 
 	// Bind to 0.0.0.0's first for http listening.
-	for _, bindHttp := range bindHttpList {
-		if strings.HasPrefix(bindHttp, "0.0.0.0:") {
-			go MainServeHttp("http", bindHttp, nil, "", "")
+	for _, bindHTTP := range bindHTTPList {
+		if strings.HasPrefix(bindHTTP, "0.0.0.0:") {
+			go mainServeHTTP("http", bindHTTP, nil, "", "")
 
-			anyHostPorts[bindHttp] = true
+			anyHostPorts[bindHTTP] = true
 		}
 	}
 
-	for i := len(bindHttpList) - 1; i >= 1; i-- {
-		go MainServeHttp("http", bindHttpList[i], anyHostPorts, "", "")
+	for i := len(bindHTTPList) - 1; i >= 1; i-- {
+		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts, "", "")
 	}
 
-	if flags.BindHttps != "" {
-		bindHttpsList := strings.Split(flags.BindHttps, ",")
+	if flags.BindHTTPS != "" {
+		bindHTTPSList := strings.Split(flags.BindHTTPS, ",")
 
 		// Bind to 0.0.0.0's first for https listening.
-		for _, bindHttps := range bindHttpsList {
-			if strings.HasPrefix(bindHttps, "0.0.0.0:") {
-				go MainServeHttp("https", bindHttps, nil,
-					flags.TlsCertFile, flags.TlsKeyFile)
+		for _, bindHTTPS := range bindHTTPSList {
+			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") {
+				go mainServeHTTP("https", bindHTTPS, nil,
+					flags.TLSCertFile, flags.TLSKeyFile)
 
-				anyHostPorts[bindHttps] = true
+				anyHostPorts[bindHTTPS] = true
 			}
 		}
 
-		for _, bindHttps := range bindHttpsList {
-			go MainServeHttp("https", bindHttps, anyHostPorts,
-				flags.TlsCertFile, flags.TlsKeyFile)
+		for _, bindHTTPS := range bindHTTPSList {
+			go mainServeHTTP("https", bindHTTPS, anyHostPorts,
+				flags.TLSCertFile, flags.TLSKeyFile)
 		}
 	}
 
-	MainServeHttp("http", bindHttpList[0], anyHostPorts, "", "")
+	mainServeHTTP("http", bindHTTPList[0], anyHostPorts, "", "")
 
 	<-(make(chan struct{})) // Block forever.
 }
 
+// mainServeHTTP starts the http/https serves for cbft.
 // The proto may be "http" or "https".
-func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
+func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	certFile, keyFile string) {
-	if bindHttp[0] == ':' && proto == "http" {
-		bindHttp = "localhost" + bindHttp
+	if bindHTTP[0] == ':' && proto == "http" {
+		bindHTTP = "localhost" + bindHTTP
 	}
 
 	bar := "main: ------------------------------------------------------"
@@ -268,14 +269,14 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 	if anyHostPorts != nil {
 		// If we've already bound to 0.0.0.0 on the same port, then
 		// skip this hostPort.
-		hostPort := strings.Split(bindHttp, ":")
+		hostPort := strings.Split(bindHTTP, ":")
 		if len(hostPort) >= 2 {
 			anyHostPort := "0.0.0.0:" + hostPort[1]
 			if anyHostPorts[anyHostPort] {
-				if anyHostPort != bindHttp {
+				if anyHostPort != bindHTTP {
 					log.Printf(bar)
 					log.Printf("main: web UI / REST API is available"+
-						" (via 0.0.0.0): %s://%s", proto, bindHttp)
+						" (via 0.0.0.0): %s://%s", proto, bindHTTP)
 					log.Printf(bar)
 				}
 				return
@@ -284,23 +285,23 @@ func MainServeHttp(proto, bindHttp string, anyHostPorts map[string]bool,
 	}
 
 	log.Printf(bar)
-	log.Printf("main: web UI / REST API is available: %s://%s", proto, bindHttp)
+	log.Printf("main: web UI / REST API is available: %s://%s", proto, bindHTTP)
 	log.Printf(bar)
 
 	var err error
 	if proto == "http" {
-		err = http.ListenAndServe(bindHttp, nil) // Blocks on success.
+		err = http.ListenAndServe(bindHTTP, nil) // Blocks on success.
 	} else {
-		err = http.ListenAndServeTLS(bindHttp, certFile, keyFile, nil)
+		err = http.ListenAndServeTLS(bindHTTP, certFile, keyFile, nil)
 	}
 	if err != nil {
 		log.Fatalf("main: listen, err: %v\n"+
 			"  Please check that your -bindHttp(s) parameter (%q)\n"+
-			"  is correct and available.", err, bindHttp)
+			"  is correct and available.", err, bindHTTP)
 	}
 }
 
-func LoggerFunc(level, format string, args ...interface{}) string {
+func loggerFunc(level, format string, args ...interface{}) string {
 	ts := time.Now().Format("2006-01-02T15:04:05.000-07:00")
 	prefix := ts + " " + level + " "
 	if format != "" {
@@ -309,7 +310,7 @@ func LoggerFunc(level, format string, args ...interface{}) string {
 	return prefix + fmt.Sprint(args...)
 }
 
-func MainWelcome(flagAliases map[string][]string) {
+func mainWelcome(flagAliases map[string][]string) {
 	cmd.LogFlags(flagAliases)
 
 	log.Printf("main: registered bleve stores")
@@ -322,8 +323,8 @@ func MainWelcome(flagAliases map[string][]string) {
 	}
 }
 
-func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
-	weight int, extras, bindHttp, dataDir, staticDir, staticETag, server string,
+func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
+	weight int, extras, bindHTTP, dataDir, staticDir, staticETag, server string,
 	register string, mr *cbgt.MsgRing, options map[string]string) (
 	*mux.Router, error) {
 	if server == "" {
@@ -335,22 +336,22 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	extrasMap["version-cbft.app"] = VERSION
+	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
 
-	extrasJson, err := json.Marshal(extrasMap)
+	extrasJSON, err := json.Marshal(extrasMap)
 	if err != nil {
 		return nil, err
 	}
 
-	extras = string(extrasJson)
+	extras = string(extrasJSON)
 
-	err = InitMossOptions(options)
+	err = initMossOptions(options)
 	if err != nil {
 		return nil, err
 	}
 
-	err = InitBleveOptions(options)
+	err = initBleveOptions(options)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +377,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	exitCode := MainTool(cfg, uuid, tags, flags, options)
+	exitCode := mainTool(cfg, uuid, tags, flags, options)
 	if exitCode >= 0 {
 		os.Exit(exitCode)
 	}
@@ -404,10 +405,10 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	meh := &MainHandlers{}
+	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
-		extras, bindHttp, dataDir, server, meh, options)
+		extras, bindHTTP, dataDir, server, meh, options)
 	meh.mgr = mgr
 
 	err = mgr.Start(register)
@@ -421,7 +422,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	router, _, err :=
-		cbft.NewRESTRouter(VERSION, mgr, staticDir, staticETag, mr,
+		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr,
 			adtSvc)
 	if err != nil {
 		return nil, err
@@ -472,7 +473,7 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			}
 		}
 
-		verbose := DefaultCtlVerbose
+		verbose := defaultCtlVerbose
 		verboseV := mgr.Options()["cbauth_service.verbose"]
 		if verboseV != "" {
 			verbose, err = strconv.Atoi(verboseV)
@@ -528,11 +529,11 @@ func MainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 // -------------------------------------------------------
 
-type MainHandlers struct {
+type mainHandlers struct {
 	mgr *cbgt.Manager
 }
 
-func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
+func (meh *mainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
 		bleveHttp.RegisterIndexName(pindex.Name, bindex)
@@ -540,11 +541,11 @@ func (meh *MainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	}
 }
 
-func (meh *MainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
+func (meh *mainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 	bleveHttp.UnregisterIndexByName(pindex.Name)
 }
 
-func (meh *MainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
+func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 	log.Printf("main: meh.OnFeedError, srcType: %s, err: %v", srcType, err)
 
 	if _, ok := err.(*couchbase.BucketNotFoundError); !ok ||

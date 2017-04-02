@@ -25,29 +25,29 @@ import (
 	"github.com/couchbase/cbgt"
 )
 
-type ToolDefHandler func(cfg cbgt.Cfg, uuid string, tags []string,
-	flags Flags, options map[string]string) (exitCode int)
+type toolDefHandler func(cfg cbgt.Cfg, uuid string, tags []string,
+	flags cbftFlags, options map[string]string) (exitCode int)
 
-type ToolDef struct {
+type toolDef struct {
 	Name    string
-	Handler ToolDefHandler
+	Handler toolDefHandler
 	Usage   string
 }
 
-var ToolDefs map[string]*ToolDef
+var toolDefs map[string]*toolDef
 
 func init() {
-	ToolDefs = map[string]*ToolDef{
+	toolDefs = map[string]*toolDef{
 		"help": {
 			Name:    "help",
-			Handler: ToolHelp,
+			Handler: toolHelp,
 			Usage:   `prints out this help message.`,
 		},
 
 		"partitionSeqs": {
 			Name:    "partitionSeqs",
-			Handler: ToolRepeatable(ToolPartitionSeqs),
-			Usage: ToolRepeatableUsage(`retrieves partition seqs from a source feed.
+			Handler: toolRepeatable(toolPartitionSeqs),
+			Usage: toolRepeatableUsage(`retrieves partition seqs from a source feed.
       sourceType=SOURCE_TYPE
       sourceName=SOURCE_NAME
       sourceUUID=SOURCE_UUID (optional)
@@ -56,7 +56,7 @@ func init() {
 
 		"profile": {
 			Name:    "profile",
-			Handler: ToolProfile,
+			Handler: toolProfile,
 			Usage: `asynchronous cpu or memory profiling.
       profileFile=FILE_PATH (example: "/tmp/cpu.pprof")
       profileType=PROFILE_TYPE (optional, default: "cpu", can also be "memory")
@@ -66,8 +66,7 @@ func init() {
 	}
 }
 
-func MainTool(cfg cbgt.Cfg, uuid string, tags []string, flags Flags,
-	options map[string]string) int {
+func mainTool(cfg cbgt.Cfg, uuid string, tags []string, flags cbftFlags, options map[string]string) int {
 	tools, exists := options["tool"]
 	if !exists {
 		return -1 // Negative means caller should keep going with main server.
@@ -78,7 +77,7 @@ func MainTool(cfg cbgt.Cfg, uuid string, tags []string, flags Flags,
 			tool = "help"
 		}
 
-		toolDef, exists := ToolDefs[tool]
+		toolDef, exists := toolDefs[tool]
 		if !exists {
 			log.Fatalf("tool: unknown tool: %s", tool)
 			return 1
@@ -93,20 +92,20 @@ func MainTool(cfg cbgt.Cfg, uuid string, tags []string, flags Flags,
 	return -1
 }
 
-func ToolHelp(cfg cbgt.Cfg, uuid string, tags []string,
-	flags Flags, options map[string]string) (exitCode int) {
+func toolHelp(cfg cbgt.Cfg, uuid string, tags []string,
+	flags cbftFlags, options map[string]string) (exitCode int) {
 	fmt.Println("\ncbft tool usage:")
 	fmt.Println("  ./cbft [...] --options=tool=TOOL_NAME[,key0=val0[,keyN=valN]]")
 	fmt.Println("")
 	fmt.Println("Supported TOOL_NAME's include:")
-	for tool, toolDef := range ToolDefs {
+	for tool, toolDef := range toolDefs {
 		fmt.Printf("  %s\n    %s\n\n", tool, toolDef.Usage)
 	}
 	return 2
 }
 
-func ToolPartitionSeqs(cfg cbgt.Cfg, uuid string, tags []string,
-	flags Flags, options map[string]string) (exitCode int) {
+func toolPartitionSeqs(cfg cbgt.Cfg, uuid string, tags []string,
+	flags cbftFlags, options map[string]string) (exitCode int) {
 	sourceType := options["sourceType"]
 
 	feedType, exists := cbgt.FeedTypes[sourceType]
@@ -141,9 +140,9 @@ func ToolPartitionSeqs(cfg cbgt.Cfg, uuid string, tags []string,
 	return 0
 }
 
-func ToolRepeatable(body ToolDefHandler) ToolDefHandler {
+func toolRepeatable(body toolDefHandler) toolDefHandler {
 	f := func(cfg cbgt.Cfg, uuid string, tags []string,
-		flags Flags, options map[string]string) (exitCode int) {
+		flags cbftFlags, options map[string]string) (exitCode int) {
 		var err error
 
 		repeat := 0
@@ -187,14 +186,14 @@ func ToolRepeatable(body ToolDefHandler) ToolDefHandler {
 	return f
 }
 
-func ToolRepeatableUsage(usage string) string {
+func toolRepeatableUsage(usage string) string {
 	return usage + `
       repeat=N (optional, negative number to repeat forever)
       repeatSleep=DURATION (optional, ex: "100ms", see go's time.ParseDuration())`
 }
 
-func ToolProfile(cfg cbgt.Cfg, uuid string, tags []string,
-	flags Flags, options map[string]string) (exitCode int) {
+func toolProfile(cfg cbgt.Cfg, uuid string, tags []string,
+	flags cbftFlags, options map[string]string) (exitCode int) {
 	var err error
 
 	profileFile, exists := options["profileFile"]

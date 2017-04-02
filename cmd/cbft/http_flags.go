@@ -29,7 +29,7 @@ var httpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 s
 var httpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
 var httpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
 
-func InitHttpOptions(options map[string]string) error {
+func initHTTPOptions(options map[string]string) error {
 	s := options["httpTransportDialContextTimeout"]
 	if s != "" {
 		v, err := time.ParseDuration(s)

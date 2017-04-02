@@ -23,7 +23,7 @@ import (
 	"github.com/couchbase/cbft"
 )
 
-func InitBleveOptions(options map[string]string) error {
+func initBleveOptions(options map[string]string) error {
 	bleveMapping.StoreDynamic = false
 	bleveMapping.MappingJSONStrict = true
 	bleveSearcher.DisjunctionMaxClauseCount = 1024

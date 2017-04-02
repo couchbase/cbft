@@ -20,11 +20,11 @@ import (
 	"strings"
 )
 
-const DEFAULT_DATA_DIR = "data"
+const defaultDataDir = "data"
 
-type Flags struct {
-	BindHttp   string
-	BindHttps  string
+type cbftFlags struct {
+	BindHTTP   string
+	BindHTTPS  string
 	CfgConnect string
 	Container  string
 	DataDir    string
@@ -41,18 +41,18 @@ type Flags struct {
 	Extras     string
 	AuthType   string
 
-	TlsCertFile string
-	TlsKeyFile  string
+	TLSCertFile string
+	TLSKeyFile  string
 }
 
-var flags Flags
+var flags cbftFlags
 var flagAliases map[string][]string
 
 func init() {
 	flagAliases = initFlags(&flags)
 }
 
-func initFlags(flags *Flags) map[string][]string {
+func initFlags(flags *cbftFlags) map[string][]string {
 	flagAliasesInit := map[string][]string{} // main flag name => all aliases.
 	flagKinds := map[string]string{}
 
@@ -83,14 +83,14 @@ func initFlags(flags *Flags) map[string][]string {
 		flagKinds[names[0]] = kind
 	}
 
-	s(&flags.BindHttp,
+	s(&flags.BindHTTP,
 		[]string{"bindHttp", "b"}, "ADDR:PORT", "0.0.0.0:8094",
 		"local address:port where this node will listen and"+
 			"\nserve HTTP/REST API requests and the web-based"+
 			"\nadmin UI; default is '0.0.0.0:8094';"+
 			"\nmultiple ADDR:PORT's can be specified, separated by commas,"+
 			"\nwhere the first ADDR:PORT is used for node cfg registration.")
-	s(&flags.BindHttps,
+	s(&flags.BindHTTPS,
 		[]string{"bindHttps"}, "ADDR:PORT", "",
 		"local address:port where this node will listen and"+
 			"\nserve HTTPS/REST API requests and the web-based"+
@@ -119,10 +119,10 @@ func initFlags(flags *Flags) map[string][]string {
 		"optional slash separated path of logical parent containers"+
 			"\nfor this node, for shelf/rack/row/zone awareness.")
 	s(&flags.DataDir,
-		[]string{"dataDir", "data"}, "DIR", DEFAULT_DATA_DIR,
+		[]string{"dataDir", "data"}, "DIR", defaultDataDir,
 		"optional directory path where local index data and"+
 			"\nlocal config files will be stored for this node;"+
-			"\ndefault is '"+DEFAULT_DATA_DIR+"'.")
+			"\ndefault is '"+defaultDataDir+"'.")
 	b(&flags.Help,
 		[]string{"help", "?", "H", "h"}, "", false,
 		"print this usage message and exit.")
@@ -187,10 +187,10 @@ func initFlags(flags *Flags) map[string][]string {
 	s(&flags.AuthType,
 		[]string{"authType", "auth"}, "AUTH_TYPE", "",
 		"authentication type for cbft requests.")
-	s(&flags.TlsCertFile,
+	s(&flags.TLSCertFile,
 		[]string{"tlsCertFile"}, "PATH", "",
 		"TLS cert file; see also bindHttps.")
-	s(&flags.TlsKeyFile,
+	s(&flags.TLSKeyFile,
 		[]string{"tlsKeyFile"}, "PATH", "",
 		"TLS key file; see also bindHttps.")
 

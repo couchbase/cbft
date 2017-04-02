@@ -27,9 +27,9 @@ func init() {
 	cbft.BlevePIndexAllowMoss = true
 }
 
-var DefaultFTSMemoryQuotaMossFraction = 1.0 // 100%.
+var defaultFTSMemoryQuotaMossFraction = 1.0 // 100%.
 
-func ParseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error) {
+func parseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error) {
 	v, exists := options["ftsMemoryQuotaMossFraction"]
 	if exists {
 		p, err := strconv.ParseFloat(v, 64)
@@ -39,10 +39,10 @@ func ParseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error)
 		}
 		return p, nil
 	}
-	return DefaultFTSMemoryQuotaMossFraction, nil
+	return defaultFTSMemoryQuotaMossFraction, nil
 }
 
-func InitMossOptions(options map[string]string) (err error) {
+func initMossOptions(options map[string]string) (err error) {
 	if options == nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func InitMossOptions(options map[string]string) (err error) {
 		memQuota = uint64(fmmq)
 	} else {
 		var frac float64
-		frac, err = ParseFTSMemoryQuotaMossFraction(options)
+		frac, err = parseFTSMemoryQuotaMossFraction(options)
 		if err != nil {
 			return err
 		}

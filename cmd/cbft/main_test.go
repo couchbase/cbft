@@ -23,13 +23,13 @@ func TestMainStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	router, err := MainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
+	router, err := mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
 		"bad data dir", "./static", "etag", "", "", mr, nil)
 	if router != nil || err == nil {
 		t.Errorf("expected empty server string to fail mainStart()")
 	}
 
-	router, err = MainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
+	router, err = mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
 		"bad data dir", "./static", "etag", "bad server", "", mr, nil)
 	if router != nil || err == nil {
 		t.Errorf("expected bad server string to fail mainStart()")
@@ -37,5 +37,5 @@ func TestMainStart(t *testing.T) {
 }
 
 func TestMainWelcome(t *testing.T) {
-	MainWelcome(flagAliases) // Don't crash.
+	mainWelcome(flagAliases) // Don't crash.
 }

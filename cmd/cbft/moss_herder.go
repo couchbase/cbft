@@ -22,10 +22,10 @@ import (
 // TODO: The memory quota does not account for memory taken by moss
 // snapshots, which might be consuming many resources.
 
-// A MossHerder oversees multiple moss collection instances by pausing
+// A mossHerder oversees multiple moss collection instances by pausing
 // batch ingest amongst the herd of moss once we've collectively
 // reached a given, shared memory quota.
-type MossHerder struct {
+type mossHerder struct {
 	memQuota uint64
 
 	m        sync.Mutex // Protects the fields that follow.
@@ -36,9 +36,9 @@ type MossHerder struct {
 	collections map[moss.Collection]struct{}
 }
 
-// NewMossHerder returns a new moss herder instance.
-func NewMossHerder(memQuota uint64) *MossHerder {
-	mh := &MossHerder{
+// newMossHerder returns a new moss herder instance.
+func newMossHerder(memQuota uint64) *mossHerder {
+	mh := &mossHerder{
 		memQuota:    memQuota,
 		collections: map[moss.Collection]struct{}{},
 	}
@@ -55,12 +55,12 @@ func NewMossHerderOnEvent(memQuota uint64) func(moss.Event) {
 
 	log.Printf("moss_herder: memQuota: %d", memQuota)
 
-	mh := NewMossHerder(memQuota)
+	mh := newMossHerder(memQuota)
 
 	return func(event moss.Event) { mh.OnEvent(event) }
 }
 
-func (mh *MossHerder) OnEvent(event moss.Event) {
+func (mh *mossHerder) OnEvent(event moss.Event) {
 	switch event.Kind {
 	case moss.EventKindCloseStart:
 		mh.OnCloseStart(event.Collection)
@@ -79,7 +79,7 @@ func (mh *MossHerder) OnEvent(event moss.Event) {
 	}
 }
 
-func (mh *MossHerder) OnCloseStart(c moss.Collection) {
+func (mh *mossHerder) OnCloseStart(c moss.Collection) {
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
@@ -91,7 +91,7 @@ func (mh *MossHerder) OnCloseStart(c moss.Collection) {
 	mh.m.Unlock()
 }
 
-func (mh *MossHerder) OnClose(c moss.Collection) {
+func (mh *mossHerder) OnClose(c moss.Collection) {
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
@@ -103,7 +103,7 @@ func (mh *MossHerder) OnClose(c moss.Collection) {
 	mh.m.Unlock()
 }
 
-func (mh *MossHerder) OnBatchExecuteStart(c moss.Collection) {
+func (mh *mossHerder) OnBatchExecuteStart(c moss.Collection) {
 	if c.Options().LowerLevelUpdate == nil {
 		return
 	}
@@ -122,7 +122,7 @@ func (mh *MossHerder) OnBatchExecuteStart(c moss.Collection) {
 	mh.m.Unlock()
 }
 
-func (mh *MossHerder) OnPersisterProgress(c moss.Collection) {
+func (mh *mossHerder) OnPersisterProgress(c moss.Collection) {
 	if c.Options().LowerLevelUpdate == nil {
 		return
 	}
@@ -142,7 +142,7 @@ func (mh *MossHerder) OnPersisterProgress(c moss.Collection) {
 
 // overMemQuotaLOCKED() returns true if the number of dirty bytes is
 // greater than the memory quota.
-func (mh *MossHerder) overMemQuotaLOCKED() bool {
+func (mh *mossHerder) overMemQuotaLOCKED() bool {
 	var totDirtyBytes uint64
 
 	for c := range mh.collections {
