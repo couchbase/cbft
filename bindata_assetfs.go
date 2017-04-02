@@ -412,29 +412,29 @@ type _bintree_t struct {
 }
 
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
-	"staticx": &_bintree_t{nil, map[string]*_bintree_t{
-		"css": &_bintree_t{nil, map[string]*_bintree_t{
-			"cbft.css": &_bintree_t{staticx_css_cbft_css, map[string]*_bintree_t{}},
+	"staticx": {nil, map[string]*_bintree_t{
+		"css": {nil, map[string]*_bintree_t{
+			"cbft.css": {staticx_css_cbft_css, map[string]*_bintree_t{}},
 		}},
-		"dist": &_bintree_t{nil, map[string]*_bintree_t{
-			"LICENSE.txt":  &_bintree_t{staticx_dist_license_txt, map[string]*_bintree_t{}},
-			"manifest.txt": &_bintree_t{staticx_dist_manifest_txt, map[string]*_bintree_t{}},
-			"version.txt":  &_bintree_t{staticx_dist_version_txt, map[string]*_bintree_t{}},
+		"dist": {nil, map[string]*_bintree_t{
+			"LICENSE.txt":  {staticx_dist_license_txt, map[string]*_bintree_t{}},
+			"manifest.txt": {staticx_dist_manifest_txt, map[string]*_bintree_t{}},
+			"version.txt":  {staticx_dist_version_txt, map[string]*_bintree_t{}},
 		}},
-		"index-ft.html": &_bintree_t{staticx_index_ft_html, map[string]*_bintree_t{}},
-		"index.html":    &_bintree_t{staticx_index_html, map[string]*_bintree_t{}},
-		"js": &_bintree_t{nil, map[string]*_bintree_t{
-			"debug.js": &_bintree_t{staticx_js_debug_js, map[string]*_bintree_t{}},
+		"index-ft.html": {staticx_index_ft_html, map[string]*_bintree_t{}},
+		"index.html":    {staticx_index_html, map[string]*_bintree_t{}},
+		"js": {nil, map[string]*_bintree_t{
+			"debug.js": {staticx_js_debug_js, map[string]*_bintree_t{}},
 		}},
-		"partials": &_bintree_t{nil, map[string]*_bintree_t{
-			"debug-rows.html": &_bintree_t{staticx_partials_debug_rows_html, map[string]*_bintree_t{}},
-			"debug.html":      &_bintree_t{staticx_partials_debug_html, map[string]*_bintree_t{}},
-			"index": &_bintree_t{nil, map[string]*_bintree_t{
-				"ft": &_bintree_t{nil, map[string]*_bintree_t{
-					"list.html": &_bintree_t{staticx_partials_index_ft_list_html, map[string]*_bintree_t{}},
-					"new.html":  &_bintree_t{staticx_partials_index_ft_new_html, map[string]*_bintree_t{}},
+		"partials": {nil, map[string]*_bintree_t{
+			"debug-rows.html": {staticx_partials_debug_rows_html, map[string]*_bintree_t{}},
+			"debug.html":      {staticx_partials_debug_html, map[string]*_bintree_t{}},
+			"index": {nil, map[string]*_bintree_t{
+				"ft": {nil, map[string]*_bintree_t{
+					"list.html": {staticx_partials_index_ft_list_html, map[string]*_bintree_t{}},
+					"new.html":  {staticx_partials_index_ft_new_html, map[string]*_bintree_t{}},
 				}},
-				"start.html": &_bintree_t{staticx_partials_index_start_html, map[string]*_bintree_t{}},
+				"start.html": {staticx_partials_index_start_html, map[string]*_bintree_t{}},
 			}},
 		}},
 	}},
