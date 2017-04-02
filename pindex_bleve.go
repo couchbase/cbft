@@ -1442,19 +1442,19 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		func(localPIndex *cbgt.PIndex) error {
 			if !strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
 				return fmt.Errorf("bleve: bleveIndexTargets, wrong type,"+
-					" localPIndex: %#v", localPIndex)
+					" localPIndex: %s, type: %s", localPIndex.Name, localPIndex.IndexType)
 			}
 
 			destFwd, ok := localPIndex.Dest.(*cbgt.DestForwarder)
 			if !ok || destFwd == nil {
 				return fmt.Errorf("bleve: bleveIndexTargets, wrong destFwd type,"+
-					" localPIndex: %#v", localPIndex)
+					" localPIndex: %s, destFwd type: %T", localPIndex.Name, localPIndex.Dest)
 			}
 
 			bdest, ok := destFwd.DestProvider.(*BleveDest)
 			if !ok || bdest == nil {
 				return fmt.Errorf("bleve: bleveIndexTargets, wrong provider type,"+
-					" localPIndex: %#v", localPIndex)
+					" localPIndex: %s, provider type: %T", localPIndex.Name, destFwd.DestProvider)
 			}
 
 			bdest.m.Lock()
@@ -1464,7 +1464,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 			if bindex == nil {
 				return fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+
-					" localPIndex: %#v", localPIndex)
+					" localPIndex: %s", localPIndex.Name)
 			}
 
 			collector.Add(&cacheBleveIndex{
