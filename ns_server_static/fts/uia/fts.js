@@ -8,8 +8,8 @@ var ftsPrefix = 'fts';
 
   angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard"])
-    .config(function($stateProvider, mnPluggableUiRegistryProvider) {
+            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard", "mnPermissions"])
+    .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
       addFtsStates("app.admin.search");
 
       function addFtsStates(parent) {
@@ -89,8 +89,12 @@ var ftsPrefix = 'fts';
             name: 'Search',
             state: 'app.admin.search.fts_list',
             plugIn: 'adminTab',
-            after: 'indexes'
+            after: 'indexes',
+            ngShow: 'rbac.cluster.settings.fts.read'
         });
+
+      (["cluster.settings.fts!read", "cluster.settings.fts!write"])
+        .forEach(mnPermissionsProvider.set);
     });
 
   angular.module('mnAdmin').requires.push('fts');
