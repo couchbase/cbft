@@ -65,7 +65,10 @@ func TestNewRESTRouter(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
-	ring, err := cbgt.NewMsgRing(nil, 1)
+	ring, err := cbgt.NewMsgRing(os.Stderr, 1000)
+	if err != nil {
+		t.Errorf("expected no ring errors")
+	}
 
 	cfg := cbgt.NewCfgMem()
 	mgr := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
