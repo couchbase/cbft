@@ -3,6 +3,7 @@
       ng-model="mappings"
       data-type="mappingTypeContainer">
     <li ng-repeat="mapping in mappings"
+        ng-model="mapping"
         ui-tree-node
         class="mapping"
         ng-class="{'editing': mapping._editing}"

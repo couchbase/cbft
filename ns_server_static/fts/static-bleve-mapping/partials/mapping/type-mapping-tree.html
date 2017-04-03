@@ -114,11 +114,12 @@
    </div>
   </div>
 
-  <ol ui-tree-nodes
-      ng-if="mapping.enabled"
+  <ol ng-if="mapping.enabled"
       ng-model="mapping.fields"
+      ui-tree-nodes
       data-type="fieldContainer">
     <li ng-repeat="field in mapping.fields"
+        ng-model="field"
         ui-tree-node
         class="field"
         ng-class="{'editing': field._editing}">
@@ -244,11 +245,13 @@
     </li>
   </ol>
 
-  <ol ui-tree-nodes
+  <ol ng-model="mapping.mappings"
+      ui-tree-nodes
       ng-if="mapping.enabled"
       ng-repeat="mappings in [mapping.mappings]"
       data-type="mappingContainer">
     <li ng-repeat="mapping in mappings"
+        ng-model="mapping"
         ui-tree-node
         class="mapping"
         ng-class="{'editing': mapping._editing}"
