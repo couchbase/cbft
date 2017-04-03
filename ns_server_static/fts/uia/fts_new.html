@@ -65,7 +65,7 @@
       <div ng-if="newIndexType != 'fulltext-alias'" class="margin-bottom1">
         <label>Type Identifier</label>
         <div class="row width-480 margin-bottom-half">
-          <div class="column width-5">
+          <div class="width-5">
             <input type="radio" value="type_field" id="for-type-field"
                    ng-model="$parent.$parent.ftsDocConfig.mode"
                    ng-change="typeIdentifierChanged()">
@@ -81,7 +81,7 @@
           </div>
         </div>
         <div class="row width-480 margin-bottom-half">
-          <div class="column width-5">
+          <div class="width-5">
               <input type="radio" value="docid_prefix" id="docid_prefix"
                      ng-model="$parent.$parent.ftsDocConfig.mode"
                      ng-change="typeIdentifierChanged()">
@@ -97,7 +97,7 @@
           </div>
         </div>
         <div class="row width-480">
-          <div class="column width-5">
+          <div class="width-5">
             <input
                type="radio"
                value="docid_regexp"
