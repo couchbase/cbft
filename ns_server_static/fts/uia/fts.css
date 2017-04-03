@@ -5,6 +5,7 @@
   margin-bottom: 2rem;
 }
 .fts-index-mapping {
+
 }
 .indexContainer .form_group,
 .indexContainer .form-group,
@@ -364,7 +365,7 @@ margin-top: 1rem;
   padding-right: 0;
 } */
 
-/* -------------------------------------------------- */
+/* MORE MAPPING STYLES -------------------------- */
 
 .indexContainer .mapping .btn-trash {
   margin-right: 25px;
@@ -376,7 +377,8 @@ margin-top: 1rem;
 }
 .indexContainer .mapping label {
   font-weight: normal;
-  margin-left: 10px;
+  margin-left: 8px;
+  font-size: 14px;
 }
 .indexContainer .mapping input[type="checkbox"] {
   display: inline;
@@ -389,7 +391,7 @@ margin-top: 1rem;
   display: flex;
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
-  background-color: #eee;
+  background-color: #ececec;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -423,6 +425,8 @@ margin-top: 1rem;
 .indexContainer .mapping .fieldHandle_main {
   flex-grow: 2;
 }
+
+/* SAVE/CANCEL CONTROLS PER TYPE MAP ------------------------- */
 .indexContainer .mapping .field .fieldHandle .attrControls {
   display: none;
 }
@@ -447,8 +451,9 @@ margin-top: 1rem;
   display: block;
   margin-bottom: 8px;
 }
-.indexContainer .mapping .mappingHandle .editArea {
-  padding-left: 30px;
+.indexContainer .mapping .mappingHandle .editArea { /* checkboxes under menus */
+  padding-left: 2rem;
+  font-size: 14px;
 }
 .indexContainer .mapping .field label > span {
   display: inline-block;
@@ -456,7 +461,10 @@ margin-top: 1rem;
   min-width: 8em;
 }
 .indexContainer .mapping .field label input[type=checkbox] {
-  margin-left: 9em;
+
+}
+.indexContainer .editAreaFieldCheckboxes {
+  margin-left: 7.5em;
 }
 .indexContainer .mapping.editing > *, .field.editing > * {
   background: #f4f6f7;
@@ -464,8 +472,6 @@ margin-top: 1rem;
 .indexContainer .mapping input[type=text] {
   width: 14em;
 }
-
-/* -------------------------------------------------- */
 
 .indexContainer .typeMappingsSection ol {
   margin-left: 20px;
@@ -475,7 +481,7 @@ margin-top: 1rem;
   min-width: 10em;
 }
 
-/* -------------------------------------------------- */
+/* TYPE MAPPING POPUP MENU ------------------------------- */
 
 .indexContainer .mapping .popupContainer {
   position: relative;
@@ -501,7 +507,7 @@ margin-top: 1rem;
   z-index: 100;
 }
 
-/* -------------------------------------------------- */
+/* VIEW ONLY STYLES ??  -------------------------------- */
 
 .indexContainer .indexMapping .viewOnly {
   display: none;
@@ -530,7 +536,7 @@ dl dd {
   width: 100%;
 }
 
-/* -------------------------------------------------- */
+/* DRAGGABLE TYPE MAP BODY ------------------------------ */
 
 .indexContainer .section .angular-ui-tree-handle {
   cursor: auto;
@@ -554,7 +560,7 @@ dl dd {
   box-sizing: border-box;
 }
 
-/* -------------------------------------------------- */
+/* INDEX SUMMARY ------------------------------------- */
 
 .indexContainer .index-summary pre {
   margin: 12px 0 0 40px;
