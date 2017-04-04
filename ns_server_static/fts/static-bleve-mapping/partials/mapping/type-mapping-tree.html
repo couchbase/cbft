@@ -35,12 +35,14 @@
              type="text" placeholder="please enter a type name"
              ng-model="mapping.name"
              ng-change="validateMapping(mapping, mappings)"
-             ng-class="{'invalid': mapping._invalid}"/>
+             ng-class="{'invalid': mapping._invalid}"
+             style="min-width:240px;">
       <input ng-if="mapping._kind == 'mapping'"
              type="text" placeholder="please enter a property name"
              ng-model="mapping.name"
              ng-change="validateMapping(mapping, mappings)"
-             ng-class="{'invalid': mapping._invalid}"/>
+             ng-class="{'invalid': mapping._invalid}"
+             style="min-width:240px;">
     </span>
     <span ng-if="mapping.enabled && mapping._editing">
       <select class="mapping_default_analyzer"
