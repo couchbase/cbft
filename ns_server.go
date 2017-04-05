@@ -346,14 +346,14 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			var buf bytes.Buffer
 			err := rest.WriteManagerStatsJSON(h.mgr, &buf, "")
 			if err != nil {
-				log.Printf("error formatting managerStatsJSON for logs: %v", err)
+				log.Warnf("error formatting managerStatsJSON for logs: %v", err)
 			} else {
 				log.Printf("managerStats: %s", buf.String())
 			}
 
 			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
 			if err != nil {
-				log.Printf("error formatting JSON for logs: %v", err)
+				log.Warnf("error formatting JSON for logs: %v", err)
 				return
 			}
 			log.Printf("stats: %s", string(statsJSON))
@@ -755,7 +755,7 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 	if exists {
 		sourcePartitionSeqsSleepMS, err := strconv.Atoi(v)
 		if err != nil {
-			log.Printf("ns_server: parse sourcePartitionSeqsSleepMS: %q,"+
+			log.Warnf("ns_server: parse sourcePartitionSeqsSleepMS: %q,"+
 				" err: %v", v, err)
 		} else {
 			sourcePartitionSeqsSleep = time.Millisecond *
@@ -768,7 +768,7 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 	if exists {
 		sourcePartitionSeqsCacheTimeoutMS, err := strconv.Atoi(v)
 		if err != nil {
-			log.Printf("ns_server: parse sourcePartitionSeqsCacheTimeoutMS: %q,"+
+			log.Warnf("ns_server: parse sourcePartitionSeqsCacheTimeoutMS: %q,"+
 				" err: %v", v, err)
 		} else {
 			sourcePartitionSeqsCacheTimeout = time.Millisecond *
@@ -832,7 +832,7 @@ func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 						sourceSpec.SourceParams,
 						sourceSpec.Server, options)
 					if err != nil {
-						log.Printf("ns_server: retrieve partition seqs: %v", err)
+						log.Warnf("ns_server: retrieve partition seqs: %v", err)
 					} else {
 						next.PartitionSeqs = partitionSeqs
 					}

@@ -945,7 +945,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		var idxStatsJSON []byte
 		idxStatsJSON, err = json.Marshal(idxStats)
 		if err != nil {
-			log.Printf("json failed to marshal was: %#v", idxStats)
+			log.Errorf("json failed to marshal was: %#v", idxStats)
 			return
 		}
 		_, err = w.Write(idxStatsJSON)

@@ -80,7 +80,6 @@ func mainTool(cfg cbgt.Cfg, uuid string, tags []string, flags cbftFlags, options
 		toolDef, exists := toolDefs[tool]
 		if !exists {
 			log.Fatalf("tool: unknown tool: %s", tool)
-			return 1
 		}
 
 		rv := toolDef.Handler(cfg, uuid, tags, flags, options)
@@ -238,7 +237,7 @@ func toolProfile(cfg cbgt.Cfg, uuid string, tags []string,
 		if profileType == "" || profileType == "cpu" {
 			err = pprof.StartCPUProfile(f)
 			if err != nil {
-				log.Printf("tool: profile: cpu, err: %v", err)
+				log.Warnf("tool: profile: cpu, err: %v", err)
 				return
 			}
 		}
@@ -250,7 +249,7 @@ func toolProfile(cfg cbgt.Cfg, uuid string, tags []string,
 		} else if profileType == "memory" {
 			pprof.WriteHeapProfile(f)
 		} else {
-			log.Printf("tool: profile: unknown profileType: %s", profileType)
+			log.Warnf("tool: profile: unknown profileType: %s", profileType)
 		}
 
 		f.Close()

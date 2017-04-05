@@ -110,31 +110,26 @@ func main() {
 			} else {
 				log.Fatalf("main: data directory does not exist,"+
 					" dataDir: %s", flags.DataDir)
-				return
 			}
 		} else {
 			log.Fatalf("main: could not access data directory,"+
 				" dataDir: %s, err: %v", flags.DataDir, err)
-			return
 		}
 	} else {
 		if !s.IsDir() {
 			log.Fatalf("main: not a directory, dataDir: %s", flags.DataDir)
-			return
 		}
 	}
 
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("main: os.Getwd, err: %#v", err)
-		return
 	}
 	log.Printf("main: curr dir: %q", wd)
 
 	dataDirAbs, err := filepath.Abs(flags.DataDir)
 	if err != nil {
 		log.Fatalf("main: filepath.Abs, err: %#v", err)
-		return
 	}
 	log.Printf("main: data dir: %q", dataDirAbs)
 
@@ -149,7 +144,6 @@ func main() {
 				"  Please check that your -data/-dataDir parameter (%q)\n"+
 				"  is to a writable directory where %s can persist data.",
 				uuidPath, flags.DataDir, cmdName)
-			return
 		}
 	}
 
@@ -157,7 +151,6 @@ func main() {
 		uuid, err = cmd.MainUUID(cmdName, flags.DataDir)
 		if err != nil {
 			log.Fatalf("%v", err)
-			return
 		}
 	}
 
@@ -171,7 +164,6 @@ func main() {
 	err = initHTTPOptions(options)
 	if err != nil {
 		log.Fatalf("main: InitHttpOptions, err: %v", err)
-		return
 	}
 
 	// User may supply a comma-separated list of HOST:PORT values for
@@ -186,14 +178,12 @@ func main() {
 	if err != nil {
 		if err == cmd.ErrorBindHttp {
 			log.Fatalf("%v", err)
-			return
 		}
 		log.Fatalf("main: could not start cfg, cfgConnect: %s, err: %v\n"+
 			"  Please check that your -cfg/-cfgConnect parameter (%q)\n"+
 			"  is correct and/or that your configuration provider\n"+
 			"  is available.",
 			flags.CfgConnect, err, flags.CfgConnect)
-		return
 	}
 
 	var tagsArr []string
@@ -513,7 +503,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 				err = service.RegisterManager(ctlMgr, nil)
 				if err != nil {
-					log.Printf("main: cbauth_service register err: %v", err)
+					log.Errorf("main: cbauth_service register, err: %v", err)
 					return
 				}
 

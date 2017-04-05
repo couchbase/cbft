@@ -83,7 +83,7 @@ func (mh *mossHerder) OnCloseStart(c moss.Collection) {
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
-		log.Printf("moss_herder: close start progess, waiting: %d", mh.waiting)
+		log.Printf("moss_herder: close start progress, waiting: %d", mh.waiting)
 	}
 
 	delete(mh.collections, c)
@@ -95,7 +95,7 @@ func (mh *mossHerder) OnClose(c moss.Collection) {
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
-		log.Printf("moss_herder: close progess, waiting: %d", mh.waiting)
+		log.Printf("moss_herder: close progress, waiting: %d", mh.waiting)
 	}
 
 	delete(mh.collections, c)
@@ -130,7 +130,7 @@ func (mh *mossHerder) OnPersisterProgress(c moss.Collection) {
 	mh.m.Lock()
 
 	if mh.waiting > 0 {
-		log.Printf("moss_herder: persistence progess, waiting: %d", mh.waiting)
+		log.Printf("moss_herder: persistence progress, waiting: %d", mh.waiting)
 	}
 
 	mh.waitCond.Broadcast()
@@ -148,8 +148,7 @@ func (mh *mossHerder) overMemQuotaLOCKED() bool {
 	for c := range mh.collections {
 		s, err := c.Stats()
 		if err != nil {
-			log.Printf("moss_herder: stats, err: %v", err)
-
+			log.Warnf("moss_herder: stats, err: %v", err)
 			continue
 		}
 
