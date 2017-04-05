@@ -17,10 +17,11 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
 
     $scope.loadTokenMapNames = function() {
         $http.post('/api/_tokenMapNames', bleveIndexMappingScrub(mapping)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.tokenMapNames = data.token_maps;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -109,10 +110,12 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
     $scope.tokenFilterTypes = [];
 
     updateTokenFilterTypes = function() {
-        $http.get('/api/_tokenFilterTypes').success(function(data) {
+        $http.get('/api/_tokenFilterTypes').
+        then(function(response) {
+            var data = response.data;
             $scope.tokenFilterTypes = data.token_filter_types;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -175,14 +178,14 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        success(function(data) {
+        then(function(response) {
             // if its valid return it
             result = {};
             result[name] = $scope.tokenfilter;
             $modalInstance.close(result);
-        }).
-        error(function(data, code) {
+        }, function(response) {
             // otherwise display error
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };

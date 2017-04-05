@@ -13,10 +13,11 @@ function DebugCtrl($scope, $http, $routeParams, $log) {
         $scope.errorMessage = null;
 
         $http.get('/api/pindex-bleve/'+$scope.pindexName+'/fields/').
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.fieldsResults = data;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     }
@@ -30,19 +31,21 @@ function DebugCtrl($scope, $http, $routeParams, $log) {
 
         $http.get('/api/pindex-bleve/'+$scope.pindexName+'/doc/'+
                   encodeURIComponent($scope.docId)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.docResults = data;
 
             $http.get('/api/pindex-bleve/'+$scope.pindexName+'/docDebug/'+
                       encodeURIComponent($scope.docId)).
-            success(function(data) {
+            then(function(response) {
+                var data = response.data;
                 $scope.processDocDebugResults(data);
-            }).
-            error(function(data, code) {
+            }, function(response) {
+                var data = response.data;
                 $scope.errorMessage = data;
             });
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };

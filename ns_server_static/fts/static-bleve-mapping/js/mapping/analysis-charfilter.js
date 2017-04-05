@@ -34,10 +34,12 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
     $scope.charFilterTypes = [];
 
     updateCharFilterTypes = function() {
-        $http.get('/api/_charFilterTypes').success(function(data) {
+        $http.get('/api/_charFilterTypes').
+        then(function(response) {
+            var data = response.data;
             $scope.charFilterTypes = data.char_filter_types;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -100,14 +102,14 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        success(function(data) {
+        then(function(response) {
             // if its valid return it
             result = {};
             result[name] = $scope.charfilter;
             $modalInstance.close(result);
-        }).
-        error(function(data, code) {
+        }, function(response) {
             // otherwise display error
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };

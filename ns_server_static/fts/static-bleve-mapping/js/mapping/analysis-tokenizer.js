@@ -17,10 +17,11 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
 
     $scope.loadTokenizerNames = function() {
         $http.post('/api/_tokenizerNames', bleveIndexMappingScrub(mapping)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.tokenizerNames = data.tokenizers;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -54,10 +55,12 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
     $scope.tokenizerTypes = [];
 
     updateTokenizerTypes = function() {
-        $http.get('/api/_tokenizerTypes').success(function(data) {
+        $http.get('/api/_tokenizerTypes').
+        then(function(response) {
+            var data = response.data;
             $scope.tokenizerTypes = data.tokenizer_types;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -134,14 +137,14 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        success(function(data) {
+        then(function(response) {
             // if its valid return it
             result = {};
             result[name] = $scope.tokenizer;
             $modalInstance.close(result);
-        }).
-        error(function(data, code) {
+        }, function(response) {
             // otherwise display error
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };

@@ -42,10 +42,11 @@ function initBleveIndexMappingController(
     $scope.analyzerNames = options.analyzerNames || [];
 	$scope.loadAnalyzerNames = function() {
         $http.post('/api/_analyzerNames', $scope.indexMappingResult()).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.analyzerNames = data.analyzers;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
 			$scope.errorMessage = data;
         });
 	};
@@ -56,10 +57,11 @@ function initBleveIndexMappingController(
     $scope.dateTimeParserNames = options.dateTimeParserNames || [];
 	$scope.loadDatetimeParserNames = function() {
         $http.post('/api/_datetimeParserNames', $scope.indexMappingResult()).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.dateTimeParserNames = data.datetime_parsers;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
 			$scope.errorMessage = data;
         });
 	};

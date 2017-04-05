@@ -32,10 +32,11 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
 
     $scope.loadTokenizerNames = function() {
         $http.post('/api/_tokenizerNames', bleveIndexMappingScrub(mapping)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.tokenizerNames = data.tokenizers;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -46,10 +47,11 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
 
     $scope.loadCharFilterNames = function() {
         $http.post('/api/_charFilterNames', bleveIndexMappingScrub(mapping)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.charFilterNames = data.char_filters;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -71,10 +73,11 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
 
     $scope.loadTokenFilterNames = function() {
         $http.post('/api/_tokenFilterNames', bleveIndexMappingScrub(mapping)).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             $scope.tokenFilterNames = data.token_filters;
-        }).
-        error(function(data, code) {
+        }, function(response) {
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };
@@ -134,14 +137,14 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        success(function(data) {
+        then(function(response) {
             // if its valid return it
             result = {};
             result[name] = $scope.analyzer;
             $modalInstance.close(result);
-        }).
-        error(function(data, code) {
+        }, function(response) {
             // otherwise display error
+            var data = response.data;
             $scope.errorMessage = data;
         });
     };

@@ -68,23 +68,22 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
     $scope.ftsAvailable = false;
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
-    http.get("/api/runtime")
-    .success(function(data, status, headers, config) {
+    http.get("/api/runtime").
+    then(function(response) {
       $scope.ftsAvailable = true;
       $scope.ftsChecking = false;
-    })
-    .error(function(data, status, headers, config) {
+    }, function(response) {
       $scope.ftsChecking = false;
       // if we got a 404, there is no fts service on this node.
       // let's go through the list of nodes
       // and see which ones have a fts service
-      if (status == 404) {
+      if (response.status == 404) {
         mnPoolDefault.get().then(function(value){
           $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
         });
       } else {
         // some other error to show
-        $scope.ftsCheckError = data;
+        $scope.ftsCheckError = response.data;
       }
     });
 
@@ -111,13 +110,13 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
         $scope.errorMessageFull = null;
 
         http.get('/api/stats/sourceStats/' + $scope.indexName).
-        success(function(data) {
+        then(function(response) {
+            var data = response.data;
             if (data) {
                 $scope.sourceDocCount = data.docCount;
                 updateProgressPct();
             }
-        }).
-        error(function(data, code) {
+        }, function(response) {
             $scope.sourceDocCount = "error"
             updateProgressPct();
         });
@@ -411,7 +410,9 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
     $scope.indexDefs = null;
 
     $http.get('/api/index').
-    success(function(data) {
+    then (function(response) {
+        var data = response.data;
+
         var indexDefs = $scope.indexDefs =
             data && data.indexDefs && data.indexDefs.indexDefs;
 
