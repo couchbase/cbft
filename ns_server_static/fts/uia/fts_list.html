@@ -260,10 +260,10 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 </div>
 
 <!-- display results of check for query nodes ********************  -->
-  <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="fts-check">
-    <p>The Full Text Search interface is only available on Couchbase nodes running the Full Text Search service.</p>
-    <p ng-show="ftsNodes.length > 0">Full Text Search services were found at the following nodes:</p>
-    <ul>
+  <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="margin-top1">
+    <p>The full text search interface is only available on Couchbase nodes running the full text search service.</p>
+    <p ng-show="ftsNodes.length > 0">The full text search service was found at the following nodes:</p>
+    <ul class="nobullet">
       <li ng-show="ftsNodes.length > 0" ng-repeat="url in ftsNodes">
         <a href="{{url}}">{{url}}</a>
       </li>
