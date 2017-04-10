@@ -238,6 +238,16 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 				"incorrect or missing secs parameter": true,
 			},
 		},
+		{
+			Path:   "/api/runtime/trace",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				"incorrect or missing secs parameter": true,
+			},
+		},
 	}
 
 	testRESTHandlers(t, tests, router)

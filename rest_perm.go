@@ -95,6 +95,10 @@ POST /api/runtime/gc
 cluster.settings.fts!write
 24582
 
+POST /api/runtime/trace
+cluster.settings.fts!write
+24585
+
 GET /api/runtime/stats
 cluster.stats.fts!read
 

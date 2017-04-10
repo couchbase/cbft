@@ -819,6 +819,14 @@ Returns information on the node's
 
 ---
 
+POST `/api/runtime/trace`
+
+Requests the node to trace the program
+
+**version introduced**: 5.0.0
+
+---
+
 # Advanced
 
 ---
