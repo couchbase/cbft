@@ -178,10 +178,19 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
         var loadDocCount = $scope.loadDocCount;
 
+        function checkRetStatus(code) {
+            if (code == 403) {
+                // http status for FORBIDDEN
+                return false;
+            }
+            return true;
+        }
+
         function updateDocCount() {
             if (!done) {
-                loadDocCount();
-                setTimeout(updateDocCount, updateDocCountIntervalMS);
+                if (loadDocCount(checkRetStatus)) {
+                    setTimeout(updateDocCount, updateDocCountIntervalMS);
+                }
             }
         }
 
@@ -225,10 +234,15 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 
     $scope.progress = "";
     $scope.sourceDocCount = "";
+    $scope.httpStatus = 200;    // OK
 
-    $scope.loadDocCount = function() {
+    $scope.loadDocCount = function(callback) {
         $scope.loadIndexDocCount();
         $scope.loadSourceDocCount();
+        if (callback) {
+            return callback($scope.httpStatus);
+        }
+        return true;
     }
 
     $scope.loadSourceDocCount = function() {
@@ -245,6 +259,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
             }
         }, function(response) {
             $scope.sourceDocCount = "error"
+            $scope.httpStatus = response.status;
             updateProgressPct();
         });
     }
