@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -34,6 +35,7 @@ import (
 	bleveHttp "github.com/blevesearch/bleve/http"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
+	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
@@ -52,6 +54,13 @@ var version = "v0.5.0"
 var defaultCtlVerbose = 3
 
 var expvars = expvar.NewMap("stats")
+
+// List of active https servers
+var httpsServers []*http.Server
+var httpsServersMutex sync.Mutex
+
+// http router in use
+var routerInUse *mux.Router
 
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
@@ -191,7 +200,7 @@ func main() {
 		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
-	router, err := mainStart(cfg, uuid, tagsArr,
+	routerInUse, err = mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
 		bindHTTPList[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
@@ -205,7 +214,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	http.Handle("/", router)
+	http.Handle("/", routerInUse)
 
 	anyHostPorts := map[string]bool{}
 
@@ -221,6 +230,44 @@ func main() {
 	for i := len(bindHTTPList) - 1; i >= 1; i-- {
 		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts, "", "")
 	}
+
+	if options["authType"] == "cbauth" {
+		// Registering a certificate refresh callback with cbauth,
+		// which will be responsible for updating https listeners,
+		// whenever ssl certificates are changed.
+		cbauth.RegisterCertRefreshCallback(setupHTTPSListeners)
+	} else {
+		setupHTTPSListeners()
+	}
+
+	mainServeHTTP("http", bindHTTPList[0], anyHostPorts, "", "")
+
+	<-(make(chan struct{})) // Block forever.
+}
+
+// Add to HTTPS Server list serially
+func addToHTTPSServerList(entry *http.Server) {
+	httpsServersMutex.Lock()
+	httpsServers = append(httpsServers, entry)
+	httpsServersMutex.Unlock()
+}
+
+// Close all HTTPS Servers and clear HTTPS Server list
+func closeAndClearHTTPSServerList() {
+	httpsServersMutex.Lock()
+	defer httpsServersMutex.Unlock()
+
+	for _, server := range httpsServers {
+		server.Close()
+	}
+	httpsServers = nil
+}
+
+func setupHTTPSListeners() error {
+	// Close any previously open https servers
+	closeAndClearHTTPSServerList()
+
+	anyHostPorts := map[string]bool{}
 
 	if flags.BindHTTPS != "" {
 		bindHTTPSList := strings.Split(flags.BindHTTPS, ",")
@@ -241,12 +288,10 @@ func main() {
 		}
 	}
 
-	mainServeHTTP("http", bindHTTPList[0], anyHostPorts, "", "")
-
-	<-(make(chan struct{})) // Block forever.
+	return nil
 }
 
-// mainServeHTTP starts the http/https serves for cbft.
+// mainServeHTTP starts the http/https servers for cbft.
 // The proto may be "http" or "https".
 func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	certFile, keyFile string) {
@@ -278,16 +323,23 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	log.Printf("main: web UI / REST API is available: %s://%s", proto, bindHTTP)
 	log.Printf(bar)
 
-	var err error
+	server := &http.Server{Addr: bindHTTP, Handler: routerInUse}
+
 	if proto == "http" {
-		err = http.ListenAndServe(bindHTTP, nil) // Blocks on success.
+		err := server.ListenAndServe() // Blocks on success.
+		if err != nil {
+			log.Fatalf("main: listen, err: %v;\n"+
+				"  Please check that your -bindHttp(s) parameter (%q)\n"+
+				"  is correct and available.", err, bindHTTP)
+		}
 	} else {
-		err = http.ListenAndServeTLS(bindHTTP, certFile, keyFile, nil)
-	}
-	if err != nil {
-		log.Fatalf("main: listen, err: %v\n"+
-			"  Please check that your -bindHttp(s) parameter (%q)\n"+
-			"  is correct and available.", err, bindHTTP)
+		addToHTTPSServerList(server)
+		err := server.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			log.Printf("main: listen, err: %v;\n"+
+				" HTTP listeners closed, likely to be re-initialized, "+
+				" -bindHttp(s) (%q)\n", err, bindHTTP)
+		}
 	}
 }
 
