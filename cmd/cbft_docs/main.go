@@ -31,7 +31,7 @@ import (
 	"github.com/couchbase/cbgt"
 )
 
-var VERSION = "v0.3.1" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.
+var VERSION = "v0.5.0" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.
 
 func categoryParse(categoryFull string) (string, string, string, string) {
 	ma := strings.Split(categoryFull, "|")

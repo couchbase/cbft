@@ -20,9 +20,13 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-const VERSION = "v0.4.0"
+// cbft product version
+const VERSION = "v0.5.0"
 
-const API_MAX_VERSION = "1.0.0" // See: MB-17990 on cbft API versioning.
+// cbft api versions, helps in controlling the
+// service expectations during upgrades.
+// See: MB-17990 on cbft API versioning.
+const API_MAX_VERSION = "2.0.0"
 const API_MIN_VERSION = "0.0.0"
 
 var API_MAX_VERSION_JSON = WithJSONVersion(API_MAX_VERSION)

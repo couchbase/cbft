@@ -30,6 +30,8 @@ import (
 
 	"github.com/couchbase/moss"
 
+	"fmt"
+
 	"github.com/blevesearch/bleve"
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 )
@@ -3057,7 +3059,7 @@ func TestIndexDefWithJSON(t *testing.T) {
                             "sourceUUID": "beefbeef",
                             "sourceParams": "{\"numPartitions\":10}"
                           }`),
-			ResponseHeader: map[string]string{"Content-type": "application/json;version=1.0.0"},
+			ResponseHeader: map[string]string{"Content-type": "application/json;version=" + API_MAX_VERSION},
 			Status:         http.StatusOK,
 			ResponseMatch: map[string]bool{
 				`{"status":"ok"}`: true,
@@ -3079,7 +3081,7 @@ func TestIndexDefWithJSON(t *testing.T) {
                             "sourceParams": "{\"numPartitions\":10}"
                           }`),
 			Header:       map[string]string{"Accept": "version=3.0.0"},
-			ResponseBody: []byte(`["application/json;version=1.0.0","application/json;version=0.0.0"]`),
+			ResponseBody: []byte(fmt.Sprintf(`["application/json;version=%s","application/json;version=0.0.0"]`, API_MAX_VERSION)),
 			Status:       406,
 		},
 		{

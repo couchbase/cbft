@@ -47,7 +47,7 @@ import (
 
 var cmdName = "cbft"
 
-var version = "v0.4.0"
+var version = "v0.5.0"
 
 var defaultCtlVerbose = 3
 
