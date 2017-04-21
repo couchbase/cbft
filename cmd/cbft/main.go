@@ -1,4 +1,4 @@
-//  Copyright (c) 2014 Couchbase, Inc.
+//  Copyright (c) 2017 Couchbase, Inc.
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the
 //  License. You may obtain a copy of the License at
@@ -485,13 +485,18 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if err != nil {
 		return nil, err
 	}
-	router.Handle(prefix+"/api/nsSearchResultRedirect/{pIndexName}/{docID}", nsSearchResultRedirectHandler)
+	router.Handle(prefix+"/api/nsSearchResultRedirect/{pIndexName}/{docID}",
+		nsSearchResultRedirectHandler)
 
 	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
 	if err != nil {
 		return nil, err
 	}
 	router.Handle(prefix+"/login", cbAuthBasicLoginHadler)
+
+	router.Handle(prefix+"/api/managerOptions",
+		cbft.NewManagerOptionsExt(mgr)).
+		Methods("PUT").Name(prefix + "/api/managerOptions")
 
 	// ------------------------------------------------
 
