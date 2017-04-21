@@ -22,6 +22,8 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 
+	"encoding/json"
+
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/moss"
 )
@@ -48,6 +50,13 @@ func TestPartialRollbackMossSeq0(t *testing.T) {
 	testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t, 0,
 		"Rollback to seq number 0",
 		map[string]bool{`{"status":"ok","count":0}`: true})
+}
+
+func setVBucketFailoverLog(feed *cbgt.PrimaryFeed, partition string) {
+	flog := make([][]uint64, 1)
+	flog[0] = []uint64{0, 100}
+	buf, _ := json.Marshal(flog)
+	feed.OpaqueSet(partition, buf)
 }
 
 func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
@@ -105,9 +114,11 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 					return
 				}
 			}
+
 			time.Sleep(50 * time.Millisecond)
 		}
 		t.Errorf("persistence took too long!")
+
 	}
 
 	tests := []*RESTHandlerTest{
@@ -159,6 +170,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
+				setVBucketFailoverLog(feed, partition)
 			},
 			Desc:   "count idx0 0 when snapshot just started, pre-rollback",
 			Path:   "/api/index/idx0/count",
@@ -318,7 +330,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			// w.r.t. doing an actual rollback.
 			Before: func() {
 				partition := "0"
-				err = feed.Rollback(partition, rollbackToSeq)
+				err = feed.RollbackEx(partition, 0, rollbackToSeq)
 				if err != nil {
 					t.Errorf("expected no err on rollback, got: %v", err)
 				}
