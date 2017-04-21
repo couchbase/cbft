@@ -334,7 +334,7 @@ func (h *CBAuthBasicLogin) ServeHTTP(
 			return
 		}
 
-		if creds.Source() == "anonymous" {
+		if creds.Domain() == "anonymous" {
 			// force basic auth login by sending 401
 			CBAuthSendUnauthorized(w)
 			return
