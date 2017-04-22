@@ -44,6 +44,19 @@ var ftsPrefix = 'fts';
               child: parent + '.fts_list'
             }
           })
+          .state(parent + '.fts_new_alias', {
+            url: '/fts_new_alias/?indexType&sourceType',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
+              }
+            },
+            data: {
+              title: "Add Alias",
+              child: parent + '.fts_list'
+            }
+          })
           .state(parent + '.fts_edit', {
             url: '/fts_edit/:indexName/_edit',
             views: {
@@ -57,6 +70,19 @@ var ftsPrefix = 'fts';
               child: parent + '.fts_list'
             }
           })
+          .state(parent + '.fts_edit_alias', {
+            url: '/fts_edit_alias/:indexName/_edit',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
+              }
+            },
+            data: {
+              title: "Edit Alias",
+              child: parent + '.fts_list'
+            }
+          })
           .state(parent + '.fts_clone', {
             url: '/fts_clone/:indexName/_clone',
             views: {
@@ -67,6 +93,19 @@ var ftsPrefix = 'fts';
             },
             data: {
               title: "Clone Index",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_clone_alias', {
+            url: '/fts_clone_alias/:indexName/_clone',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/uia/fts_new.html'
+              }
+            },
+            data: {
+              title: "Clone Alias",
               child: parent + '.fts_list'
             }
           })

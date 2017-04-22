@@ -148,7 +148,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 <!-- table of aliases  ******************** -->
     <div class="row margin-bottom-half">
       <h4>Full Text Aliases</h4>
-      <button ui-sref="^.search.fts_new({indexType: 'fulltext-alias', sourceType: 'nil'})">
+      <button ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})">
         Add Alias
       </button>
     </div>
@@ -195,10 +195,10 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
                 <button ng-click="deleteIndex(indexName)" class="outline">
                   Delete
                 </button>
-                <button ui-sref="^.search.fts_clone({indexName: indexName})" class="outline">
+                <button ui-sref="^.search.fts_clone_alias({indexName: indexName})" class="outline">
                   Clone
                 </button>
-                <button ui-sref="^.search.fts_edit({indexName: indexName})">
+                <button ui-sref="^.search.fts_edit_alias({indexName: indexName})">
                   Edit
                 </button>
               </span>
