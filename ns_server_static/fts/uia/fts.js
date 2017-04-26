@@ -124,13 +124,13 @@ var ftsPrefix = 'fts';
           });
       }
 
-        mnPluggableUiRegistryProvider.registerConfig({
-            name: 'Search',
-            state: 'app.admin.search.fts_list',
-            plugIn: 'adminTab',
-            after: 'indexes',
-            ngShow: 'rbac.cluster.settings.fts.read'
-        });
+      mnPluggableUiRegistryProvider.registerConfig({
+          name: 'Search',
+          state: 'app.admin.search.fts_list',
+          plugIn: 'adminTab',
+          after: 'indexes',
+          ngShow: 'rbac.cluster.settings.fts.read'
+      });
 
       (["cluster.settings.fts!read", "cluster.settings.fts!write"])
         .forEach(mnPermissionsProvider.set);
@@ -507,13 +507,39 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
 
 // -------------------------------------------------------
 
-function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location) {
-    var $routeParams = $stateParams;
+function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
+                              $location, mnPermissions) {
+  var $httpPrefixed = prefixedHttp($http, '../_p/' + ftsPrefix, true);
 
-    $scope.indexName = $stateParams.indexName;
+  var $routeParams = $stateParams;
+
+  $scope.indexName = $stateParams.indexName;
+
+  $httpPrefixed.get('/api/index/' + $scope.indexName).then(function(response) {
+    $scope.indexDef = response.data.indexDef;
+    if ($scope.indexDef &&
+        $scope.indexDef.sourceType == "couchbase") {
+      mnPermissions.set("cluster.bucket[" + $scope.indexDef.sourceName + "].data!read")
+      mnPermissions.check()
+    }
+
+    try {
+        $scope.permsCluster = mnPermissions.export.cluster;
+    } catch (e) {
+    }
 
     $scope.decorateSearchHit = function(hit) {
-      hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+      hit.docIDLink = null;
+      try {
+        if (($scope.indexDef &&
+             $scope.indexDef.sourceType == "couchbase" &&
+             $scope.permsCluster.bucket[$scope.indexDef.sourceName] &&
+             ($scope.permsCluster.bucket[$scope.indexDef.sourceName].data.read ||
+              $scope.permsCluster.bucket[$scope.indexDef.sourceName].data.docs.read)) ||
+            $scope.permsCluster.bucket["*"].data.read) {
+          hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+        }
+      } catch (e) {}
     };
 
     $scope.static_base = "../_p/ui/fts";
@@ -528,15 +554,14 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location
         $location.search("p", $scope.page);
     }
 
-    QueryCtrl($scope,
-              prefixedHttp($http, '../_p/' + ftsPrefix, true),
-              $routeParams, $log, $sce, $location);
+    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location);
 
     ftsServiceHostPort($scope, $http, $location);
 
     setTimeout(function() {
         document.getElementById("query_bar_input").focus();
     }, 100);
+  })
 }
 
 // -------------------------------------------------------
