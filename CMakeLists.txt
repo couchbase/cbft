@@ -46,8 +46,32 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ns_server_static/fts"
 install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/staticx"
   DESTINATION lib/fts)
 
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static"
-  DESTINATION lib/fts)
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/css"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/fonts"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/img"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/js"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/modal"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/partials"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/tabs"
+  DESTINATION lib/fts/static)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-route"
+  DESTINATION lib/fts/static/lib)
+
+install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-ui-tree"
+  DESTINATION lib/fts/static/lib)
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
 SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
