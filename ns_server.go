@@ -965,5 +965,5 @@ func (h *NsSearchResultRedirct) ServeHTTP(
 
 	docID := mux.Vars(req)["docID"]
 	source := planPIndex.SourceName
-	http.Redirect(w, req, "/ui/index.html#/buckets/documents/"+docID+"?bucket="+source, http.StatusMovedPermanently)
+	http.Redirect(w, req, "/ui/index.html#!/buckets/documents/"+docID+"?bucket="+source, http.StatusMovedPermanently)
 }
