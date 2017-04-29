@@ -160,6 +160,9 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
 
+    mnPermissions.set("cluster.settings.fts!write")
+    mnPermissions.check()
+
     try {
         $scope.permsCluster = mnPermissions.export.cluster;
     } catch (e) {
