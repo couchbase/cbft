@@ -89,7 +89,7 @@ http://{{hostPort}}/api/index/{{indexName}}/query \
   <div ng-show="results && !results.total_hits">
     <p>No results found for your query.<br>Please check your search term(s) and/or use the syntax help link under the search field.</p>
   </div>
-  <div ng-show="!results" class="spinner"></div>
+  <div ng-show="!resultsAvailable()" class="spinner"></div>
   <div class="fts-query-results"
        ng-include
        src="static_base + '/static/partials/index/query-results.html'"
