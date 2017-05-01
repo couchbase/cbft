@@ -803,6 +803,9 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
         if (andThen) {
             andThen();
         }
+    }, function(response) {
+        $scope.errorMessage = errorMessage(response.data, response.code);
+        $scope.errorMessageFull = response.data;
     });
 }
 
