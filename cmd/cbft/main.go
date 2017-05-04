@@ -149,10 +149,11 @@ func main() {
 
 		err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
 		if err != nil {
-			log.Fatalf("main: could not write uuidPath: %s\n"+
+			log.Fatalf("main: could not write uuidPath: %s,\n"+
+				"  err: %#v,\n"+
 				"  Please check that your -data/-dataDir parameter (%q)\n"+
 				"  is to a writable directory where %s can persist data.",
-				uuidPath, flags.DataDir, cmdName)
+				uuidPath, err, flags.DataDir, cmdName)
 		}
 	}
 
