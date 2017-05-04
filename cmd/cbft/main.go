@@ -323,16 +323,15 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	log.Printf("main: web UI / REST API is available: %s://%s", proto, bindHTTP)
 	log.Printf(bar)
 
-	server := &http.Server{Addr: bindHTTP, Handler: routerInUse}
-
 	if proto == "http" {
-		err := server.ListenAndServe() // Blocks on success.
+		err := http.ListenAndServe(bindHTTP, nil) // Blocks on success.
 		if err != nil {
 			log.Fatalf("main: listen, err: %v;\n"+
 				"  Please check that your -bindHttp(s) parameter (%q)\n"+
 				"  is correct and available.", err, bindHTTP)
 		}
 	} else {
+		server := &http.Server{Addr: bindHTTP, Handler: routerInUse}
 		addToHTTPSServerList(server)
 		err := server.ListenAndServeTLS(certFile, keyFile)
 		if err != nil {
