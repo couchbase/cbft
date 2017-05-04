@@ -12,6 +12,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"expvar"
 	"flag"
@@ -23,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -30,6 +32,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 
 	"github.com/blevesearch/bleve"
 	bleveHttp "github.com/blevesearch/bleve/http"
@@ -41,6 +44,7 @@ import (
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/cmd"
 	"github.com/couchbase/cbgt/ctl"
+	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
 	"github.com/couchbase/goutils/go-cbaudit"
@@ -60,7 +64,7 @@ var httpsServers []*http.Server
 var httpsServersMutex sync.Mutex
 
 // http router in use
-var routerInUse *mux.Router
+var routerInUse http.Handler
 
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
@@ -370,7 +374,7 @@ func mainWelcome(flagAliases map[string][]string) {
 func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, extras, bindHTTP, dataDir, staticDir, staticETag, server string,
 	register string, mr *cbgt.MsgRing, options map[string]string) (
-	*mux.Router, error) {
+	http.Handler, error) {
 	if server == "" {
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
@@ -475,7 +479,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		adtSvc, _ = audit.NewAuditSvc(server)
 	}
 
-	router, _, err :=
+	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr,
 			adtSvc)
 	if err != nil {
@@ -485,32 +489,34 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]
 
-	router.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
+	muxrouter.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
 
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
 		return nil, err
 	}
-	router.Handle(prefix+"/api/nsstatus", nsStatusHandler)
+	muxrouter.Handle(prefix+"/api/nsstatus", nsStatusHandler)
 
 	nsSearchResultRedirectHandler, err := cbft.NsSearchResultRedirctHandler(mgr)
 	if err != nil {
 		return nil, err
 	}
-	router.Handle(prefix+"/api/nsSearchResultRedirect/{pIndexName}/{docID}",
+	muxrouter.Handle(prefix+"/api/nsSearchResultRedirect/:pIndexName/:docID",
 		nsSearchResultRedirectHandler)
 
 	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
 	if err != nil {
 		return nil, err
 	}
-	router.Handle(prefix+"/login", cbAuthBasicLoginHadler)
+	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
-	router.Handle(prefix+"/api/managerOptions",
-		cbft.NewManagerOptionsExt(mgr)).
-		Methods("PUT").Name(prefix + "/api/managerOptions")
+	router := exportMuxRoutesToHttprouter(muxrouter)
 
-	router.Handle("/api/conciseOptions", cbft.NewConciseOptions(mgr)).Methods("GET")
+	router.Handler("PUT", prefix+"/api/managerOptions",
+		cbft.NewManagerOptionsExt(mgr))
+
+	router.Handler("GET", prefix+"/api/conciseOptions",
+		cbft.NewConciseOptions(mgr))
 
 	// ------------------------------------------------
 
@@ -586,6 +592,102 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// ------------------------------------------------
 
 	return router, err
+}
+
+// -------------------------------------------------------
+
+const (
+	ctxKey = iota
+)
+
+func ContextSet(req *http.Request, val interface{}) *http.Request {
+	if val == "" {
+		return req
+	}
+
+	return req.WithContext(context.WithValue(req.Context(), ctxKey, val))
+}
+
+func ContextGet(req *http.Request, name string) string {
+	if rv := req.Context().Value(ctxKey); rv != nil {
+		for _, entry := range rv.(httprouter.Params) {
+			if entry.Key == name {
+				return entry.Value
+			}
+		}
+	}
+	return ""
+}
+
+// Fetches all routes, their methods and handlers from gorilla/mux router
+// and initializes the julienschmidt/httprouter router with them.
+func exportMuxRoutesToHttprouter(router *mux.Router) *httprouter.Router {
+	hr := httprouter.New()
+
+	re := regexp.MustCompile("{([^/]*)}")
+
+	routesHandled := map[string]bool{}
+
+	handleRoute := func(method, path string, handler http.Handler) {
+		if _, handled := routesHandled[method+path]; !handled {
+			httpRouterHandler := func(w http.ResponseWriter, req *http.Request,
+				p httprouter.Params) {
+				req = ContextSet(req, p)
+				handler.ServeHTTP(w, req)
+			}
+
+			hr.Handle(method, path, httpRouterHandler)
+			routesHandled[method+path] = true
+		}
+	}
+
+	err := router.Walk(func(route *mux.Route, router *mux.Router,
+		ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		adjustedPath := re.ReplaceAllString(path, ":$1")
+
+		if adjustedPath == "/api/managerOptions" {
+			// This path is set with an extended handler as part of the
+			// router setup within mainStart().
+			return nil
+		}
+
+		handler := route.GetHandler()
+
+		avh, ok := handler.(*cbft.AuthVersionHandler)
+		if ok {
+			hwrm, ok := avh.H.(*rest.HandlerWithRESTMeta)
+			if ok && hwrm.RESTMeta != nil {
+				handleRoute(hwrm.RESTMeta.Method, adjustedPath, handler)
+			} else {
+				log.Errorf("Failed to type assert auth version handler for "+
+					"path: %v", adjustedPath)
+			}
+		} else {
+			// Fetch the methods if these are bleve pindex routes.
+			if method, ok := cbft.BleveRouteMethods[path]; ok {
+				handleRoute(method, adjustedPath, handler)
+			} else {
+				for _, method := range []string{"GET", "PUT", "POST"} {
+					handleRoute(method, adjustedPath, handler)
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Fatalf("Error walking gorilla/mux to fetch registered routes!")
+	}
+
+	// Set Request Variable Lookup
+	rest.RequestVariableLookup = ContextGet
+
+	return hr
 }
 
 // -------------------------------------------------------
