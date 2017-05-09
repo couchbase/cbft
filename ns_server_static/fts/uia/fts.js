@@ -613,15 +613,11 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     try {
         $scope.ftsDocConfig = JSON.parse(JSON.stringify($scope.meta.sourceTypes["fulltext-index"].startSample.doc_config))
-    } catch (e) {
-        console.log("blevePIndexInitController initial-doc_config", initKind, e)
-    }
+    } catch (e) {}
 
     try {
         $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
-    } catch (e) {
-        console.log("blevePIndexInitController doc_config", initKind, e)
-    }
+    } catch (e) {}
 
     if (initKind == "view") {
         $scope.viewOnly = true;
