@@ -134,6 +134,13 @@ var ftsPrefix = 'fts';
 
       (["cluster.settings.fts!read", "cluster.settings.fts!write"])
         .forEach(mnPermissionsProvider.set);
+
+      mnPermissionsProvider.setBucketSpecific(function(name) {
+        return [
+          "cluster.bucket[" + name + "].fts!write",
+          "cluster.bucket[" + name + "].data!read"
+        ];
+      });
     });
 
   angular.module('mnAdmin').requires.push('fts');
@@ -160,7 +167,6 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
 
-    mnPermissions.set("cluster.settings.fts!write")
     mnPermissions.check()
 
     try {
@@ -239,7 +245,6 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         setTimeout(updateDocCount, updateDocCountIntervalMS);
 
         if ($scope.indexDef.sourceName) {
-            mnPermissions.set("cluster.bucket[" + $scope.indexDef.sourceName + "].fts!write")
             mnPermissions.check()
         }
 
@@ -519,7 +524,6 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
     $scope.indexDef = response.data.indexDef;
     if ($scope.indexDef &&
         $scope.indexDef.sourceType == "couchbase") {
-      mnPermissions.set("cluster.bucket[" + $scope.indexDef.sourceName + "].data!read")
       mnPermissions.check()
     }
 
