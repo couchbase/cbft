@@ -325,7 +325,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	log.Printf(bar)
 
 	if proto == "http" {
-		err := http.ListenAndServe(bindHTTP, nil) // Blocks on success.
+		err := http.ListenAndServe(bindHTTP, routerInUse) // Blocks on success.
 		if err != nil {
 			log.Fatalf("main: listen, err: %v;\n"+
 				"  Please check that your -bindHttp(s) parameter (%q)\n"+
