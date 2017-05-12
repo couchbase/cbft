@@ -597,6 +597,16 @@ function bleveNewIndexMapping() {
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
     if (initKind == "edit" || initKind == "create") {
+        $scope.replicaOptions = [0];
+        $http.get('/api/conciseOptions').
+        then(function(response) {
+            var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
+            $scope.replicaOptions = [];
+            for (var i = 0; i <= maxReplicasAllowed; i++) {
+                $scope.replicaOptions.push(i);
+            }
+        });
+
         $scope.numReplicas = "0";
 
         if ($scope.newPlanParams) {

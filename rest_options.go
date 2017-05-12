@@ -12,7 +12,9 @@
 package cbft
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -42,9 +44,31 @@ type ManagerOptionsExt struct {
 }
 
 func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
+	mgrOptions := rest.NewManagerOptions(mgr)
+	mgrOptions.Validate = func(options map[string]string) (map[string]string, error) {
+		// Validate logLevel
+		logLevelStr := options["logLevel"]
+		if logLevelStr != "" {
+			_, exists := logLevels[logLevelStr]
+			if !exists {
+				return nil, fmt.Errorf("invalid setting for"+
+					" logLevel: %v", logLevelStr)
+			}
+		}
+
+		// Validate maxReplicasAllowed
+		if options["maxReplicasAllowed"] != mgr.Options()["maxReplicasAllowed"] {
+			return nil, fmt.Errorf("maxReplicasAllowed setting is at '%v',"+
+				" but request is for '%v'", mgr.Options()["maxReplicasAllowed"],
+				options["maxReplicasAllowed"])
+		}
+
+		return options, nil
+	}
+
 	return &ManagerOptionsExt{
 		mgr:        mgr,
-		mgrOptions: rest.NewManagerOptions(mgr),
+		mgrOptions: mgrOptions,
 	}
 }
 
@@ -53,13 +77,31 @@ func (h *ManagerOptionsExt) ServeHTTP(
 	h.mgrOptions.ServeHTTP(w, req)
 
 	// Update log level if requested
-	logLevel := h.mgr.Options()["logLevel"]
-	if len(logLevel) > 0 {
-		logLevelInt, exists := logLevels[logLevel]
-		if exists {
-			log.SetLevel(log.LogLevel(logLevelInt))
-		} else {
-			log.Warnf("Unrecognized log level setting: %v", logLevel)
-		}
+	logLevelStr := h.mgr.Options()["logLevel"]
+	if logLevelStr != "" {
+		logLevel, _ := logLevels[logLevelStr]
+		log.SetLevel(log.LogLevel(logLevel))
 	}
+}
+
+type ConciseOptions struct {
+	mgr *cbgt.Manager
+}
+
+func NewConciseOptions(mgr *cbgt.Manager) *ConciseOptions {
+	return &ConciseOptions{mgr: mgr}
+}
+
+func (h *ConciseOptions) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	maxReplicasAllowed, _ := strconv.Atoi(h.mgr.Options()["maxReplicasAllowed"])
+
+	rv := struct {
+		Status             string `json:"status"`
+		MaxReplicasAllowed int    `json:"maxReplicasAllowed"`
+	}{
+		Status:             "ok",
+		MaxReplicasAllowed: maxReplicasAllowed,
+	}
+	rest.MustEncode(w, rv)
 }

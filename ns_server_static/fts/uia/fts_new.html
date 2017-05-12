@@ -144,11 +144,10 @@
           <span class="icon fa-circle-thin fa-stack-2x"></span>
           <span class="icon fa-info fa-stack-1x"></span>
         </span>
-          <select ng-model="$parent.numReplicas" class="narrow">
-             <option value="0">0</option>
-             <option value="1">1</option>
-             <option value="2">2</option>
-             <option value="3">3</option>
+          <select ng-init="$parent.numReplicas = replicaOptions[0]"
+                  ng-model="$parent.numReplicas"
+                  class="narrow"
+                  ng-options="item for item in replicaOptions">
           </select>
       </div>
 

@@ -447,6 +447,16 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// If maxReplicasAllowed is among options provided, ensure that it
+	// holds a valid value.
+	if options["maxReplicasAllowed"] != "" {
+		_, err = strconv.Atoi(options["maxReplicasAllowed"])
+		if err != nil {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				"maxReplicasAllowed: %v", options["maxReplicasAllowed"])
+		}
+	}
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
@@ -497,6 +507,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.Handle(prefix+"/api/managerOptions",
 		cbft.NewManagerOptionsExt(mgr)).
 		Methods("PUT").Name(prefix + "/api/managerOptions")
+
+	router.Handle("/api/conciseOptions", cbft.NewConciseOptions(mgr)).Methods("GET")
 
 	// ------------------------------------------------
 
