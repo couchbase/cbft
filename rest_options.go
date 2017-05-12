@@ -63,6 +63,13 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 				options["maxReplicasAllowed"])
 		}
 
+		// Validate bucketTypesAllowed
+		if options["bucketTypesAllowed"] != mgr.Options()["bucketTypesAllowed"] {
+			return nil, fmt.Errorf("bucketTypesAllowed setting is at '%v',"+
+				" but request is for: '%v'", mgr.Options()["bucketTypesAllowed"],
+				options["bucketTypesAllowed"])
+		}
+
 		return options, nil
 	}
 
@@ -95,13 +102,16 @@ func NewConciseOptions(mgr *cbgt.Manager) *ConciseOptions {
 func (h *ConciseOptions) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	maxReplicasAllowed, _ := strconv.Atoi(h.mgr.Options()["maxReplicasAllowed"])
+	bucketTypesAllowed := h.mgr.Options()["bucketTypesAllowed"]
 
 	rv := struct {
 		Status             string `json:"status"`
 		MaxReplicasAllowed int    `json:"maxReplicasAllowed"`
+		BucketTypesAllowed string `json:"bucketTypesAllowed"`
 	}{
 		Status:             "ok",
 		MaxReplicasAllowed: maxReplicasAllowed,
+		BucketTypesAllowed: bucketTypesAllowed,
 	}
 	rest.MustEncode(w, rv)
 }

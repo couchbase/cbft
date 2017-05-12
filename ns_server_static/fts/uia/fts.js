@@ -349,7 +349,10 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
         $scope.buckets = buckets;
         $scope.bucketNames = [];
         for (var i = 0; i < buckets.length; i++) {
-            $scope.bucketNames.push(buckets[i].name);
+            // Add membase buckets only to list of index-able buckets
+            if (buckets[i].bucketType === "membase") {
+                $scope.bucketNames.push(buckets[i].name);
+            }
         }
 
         $scope.indexEditorPreview = {};
@@ -604,6 +607,18 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             $scope.replicaOptions = [];
             for (var i = 0; i <= maxReplicasAllowed; i++) {
                 $scope.replicaOptions.push(i);
+            }
+
+            if (response.data.bucketTypesAllowed != "") {
+                var bucketTypesAllowed = response.data.bucketTypesAllowed.split(":");
+                var bucketNamesAllowed = [];
+                for (var i = 0; i < $scope.buckets.length; i++) {
+                    if (bucketTypesAllowed.includes($scope.buckets[i].bucketType)) {
+                        bucketNamesAllowed.push($scope.buckets[i].name);
+                    }
+                }
+                // Update bucketNames based on what's supported.
+                $scope.bucketNames = bucketNamesAllowed;
             }
         });
 
