@@ -2120,8 +2120,10 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	defer os.RemoveAll(emptyDir0)
 
 	meh0 := &TestMEH{}
-	mgr0 := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
-		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource", meh0)
+	options0 := map[string]string{"maxReplicasAllowed": "1"}
+	mgr0 := cbgt.NewManagerEx(cbgt.VERSION, cfg, cbgt.NewUUID(),
+		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource",
+		meh0, options0)
 	mgr0.Start("wanted")
 	mgr0.Kick("test-start-kick")
 	mr0, _ := cbgt.NewMsgRing(os.Stderr, 1000)
