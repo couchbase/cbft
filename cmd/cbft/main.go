@@ -69,9 +69,6 @@ func init() {
 }
 
 func main() {
-	platform.HideConsole(true)
-	defer platform.HideConsole(false)
-
 	flag.Parse()
 
 	if flags.Help {
@@ -213,6 +210,11 @@ func main() {
 	if flags.Register == "unknown" {
 		log.Printf("main: unregistered node; now exiting")
 		os.Exit(0)
+	}
+
+	if os.Getenv("CBFT_CONSOLE") != "show" {
+		platform.HideConsole(true)
+		defer platform.HideConsole(false)
 	}
 
 	http.Handle("/", routerInUse)
