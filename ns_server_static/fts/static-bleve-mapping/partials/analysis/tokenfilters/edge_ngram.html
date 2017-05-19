@@ -11,6 +11,8 @@
     <input ng-disabled="viewOnlyModal"
            ng-model="tokenfilter.min"
            type="number"
+           min=0
+           oninput="validity.valid||(value='');"
            id="tokenfilterMin">
 </div>
 
@@ -19,5 +21,7 @@
     <input ng-disabled="viewOnlyModal"
            ng-model="tokenfilter.max"
            type="number"
+           min=0
+           oninput="validity.valid||(value='');"
            id="tokenfilterMax">
 </div>

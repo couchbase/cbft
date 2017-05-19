@@ -4,5 +4,7 @@
      ng-disabled="viewOnlyModal"
      ng-model="tokenfilter.length"
      type="number"
+     min=0
+     oninput="validity.valid||(value='');"
      id="tokenfilterLen">
 </div>

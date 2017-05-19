@@ -166,6 +166,21 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
             return;
         }
 
+        switch ($scope.tokenfilter.type) {
+            case "edge_ngram":
+            case "length":
+            case "ngram":
+            case "shingle":
+                // Max >= Min for length
+                if ($scope.tokenfilter.min > $scope.tokenfilter.max) {
+                    $scope.errorMessage = "Min should be <= Max";
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+
         // ensure that this new mapping component is valid
         tokenfilters = {};
         tokenfilters[name] = $scope.tokenfilter;
