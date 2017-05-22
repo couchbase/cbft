@@ -885,7 +885,7 @@ func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams, parentCancelCh 
 func (t *BleveDest) AddError(op, partition string,
 	key []byte, seq uint64, val []byte, err error) {
 	log.Printf("bleve: %s, partition: %s, key: %q, seq: %d,"+
-		" val: %q, err: %v", op, partition, key, seq, val, err)
+		" err: %v", op, partition, key, seq, err)
 
 	e := struct {
 		Time      string
@@ -893,7 +893,6 @@ func (t *BleveDest) AddError(op, partition string,
 		Partition string
 		Key       string
 		Seq       uint64
-		Val       string
 		Err       string
 	}{
 		Time:      time.Now().Format(time.RFC3339Nano),
@@ -901,7 +900,6 @@ func (t *BleveDest) AddError(op, partition string,
 		Partition: partition,
 		Key:       string(key),
 		Seq:       seq,
-		Val:       string(val),
 		Err:       fmt.Sprintf("%v", err),
 	}
 
