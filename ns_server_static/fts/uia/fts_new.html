@@ -21,13 +21,11 @@
       </div>
       <div class="width-6" ng-show="newSourceType && newSourceType != 'nil'">
         <label for="inputSourceName">Bucket</label>
-        <select ng-show="bucketNames && bucketNames.length > 0"
+        <select ng-show="bucketNames && bucketNames.length >= 0"
                 ng-model="$parent.newSourceName"
                 ng-options="t for t in bucketNames">
             <option value=""></option>
-          </select>
-          <input ng-show="!bucketNames || bucketNames.length <= 0"
-                 ng-model="$parent.newSourceName" type="text" placeholder="bucket name"/>
+        </select>
       </div>
     </div>
 

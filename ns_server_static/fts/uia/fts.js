@@ -619,6 +619,10 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 }
                 // Update bucketNames based on what's supported.
                 $scope.bucketNames = bucketNamesAllowed;
+
+                if ($scope.bucketNames.length == 0) {
+                    $scope.errorMessage = "No buckets available to access!";
+                }
             }
         });
 
