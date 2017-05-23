@@ -257,6 +257,61 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 		return nil
 	}
 
+	// Validate token filters in indexParams
+	validateIndexParams := func() error {
+		var iParams map[string]interface{}
+		err := json.Unmarshal([]byte(indexParams), &iParams)
+		if err != nil {
+			// Ignore the JSON unmarshalling error, if in the case
+			// indexParams isn't JSON.
+			return nil
+		}
+
+		mapping, found := iParams["mapping"]
+		if !found {
+			// Entry for mapping not found
+			return nil
+		}
+
+		analysis, found := mapping.(map[string]interface{})["analysis"]
+		if !found {
+			// No sub entry with the name analysis within mapping
+			return nil
+		}
+
+		tokenfilters, found := analysis.(map[string]interface{})["token_filters"]
+		if !found {
+			// No entry for token_filters within mapping/analysis
+			return nil
+		}
+
+		for _, val := range tokenfilters.(map[string]interface{}) {
+			param := val.(map[string]interface{})
+			switch param["type"] {
+			case "edge_ngram", "length", "ngram", "shingle":
+				if param["min"].(float64) > param["max"].(float64) {
+					return fmt.Errorf("bleve: token_filter validation failed"+
+						" for %v => min(%v) > max(%v)", param["type"],
+						param["min"], param["max"])
+				}
+			case "truncate_token":
+				if param["length"].(float64) < 0 {
+					return fmt.Errorf("bleve: token_filter validation failed"+
+						"for %v => length(%v) < 0", param["type"], param["length"])
+				}
+			default:
+				break
+			}
+		}
+
+		return nil
+	}
+
+	err := validateIndexParams()
+	if err != nil {
+		return err
+	}
+
 	b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 	if err != nil {
 		return fmt.Errorf("bleve: validate CleanseJSON,"+
