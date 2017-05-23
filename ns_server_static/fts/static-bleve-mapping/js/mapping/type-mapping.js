@@ -357,6 +357,17 @@ function bleveConvertToTypeMapping(mappings) {
         var properties = {};
         var fields = [];
 
+        for (var i in m.mappings) {
+            var mapping = m.mappings[i];
+
+            properties[mapping.name] = mapping;
+
+            delete mapping["name"];
+            mapping.display_order = i;
+
+            convertPropertiedFields(mapping);
+        }
+
         for (var i in m.fields) {
             var field = m.fields[i];
 
@@ -371,9 +382,12 @@ function bleveConvertToTypeMapping(mappings) {
                     property = properties[field.property] = {
                         enabled: true,
                         dynamic: false,
-                        properties: {},
-                        fields: []
+                        properties: {}
                     };
+                }
+
+                if (!property.fields) {
+                    property.fields = [];
                 }
 
                 property.fields.push(field);
@@ -383,17 +397,6 @@ function bleveConvertToTypeMapping(mappings) {
 
             delete field["property"];
             field.display_order = i;
-        }
-
-        for (var i in m.mappings) {
-            var mapping = m.mappings[i];
-
-            properties[mapping.name] = mapping;
-
-            delete mapping["name"];
-            mapping.display_order = i;
-
-            convertPropertiedFields(mapping);
         }
 
         delete m["mappings"];
