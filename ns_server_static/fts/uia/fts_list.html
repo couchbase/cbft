@@ -79,16 +79,16 @@
 <!-- index action buttons ************************* -->
                 <span class="nowrap" ng-click="$event.stopPropagation()">
                   <button class="outline"
-                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write"
+                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                           ng-click="deleteIndex(indexName)">
                     Delete
                   </button>
                   <button class="outline"
-                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write"
+                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                           ui-sref="^.search.fts_clone({indexName: indexName})">
                     Clone
                   </button>
-                  <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write"
+                  <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                           ui-sref="^.search.fts_edit({indexName: indexName})">
                     Edit
                   </button>
