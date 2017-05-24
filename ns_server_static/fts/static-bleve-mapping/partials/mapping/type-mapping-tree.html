@@ -23,6 +23,7 @@
 
       <span class="attrs">
         <span ng-if="!mapping.enabled">| disabled</span>
+        <span ng-if="mapping.dynamic">| dynamic</span>
         <span ng-if="mapping.enabled && mapping.default_analyzer">
           | {{mapping.default_analyzer}}</span>
         <span ng-if="mapping.enabled && !mapping.dynamic">
