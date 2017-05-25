@@ -185,11 +185,13 @@ angular.module('cbgtApp').
     controller('BleveWordListModalCtrl', BleveWordListModalCtrl);
 
 angular.module('cbgtApp').
-    config(['$routeProvider',
-        function($routeProvider) {
+    config(['$routeProvider', '$locationProvider', '$httpProvider',
+        function($routeProvider, $locationProvider, $httpProvider) {
             $routeProvider.when('/debug/',
                 {templateUrl: '/staticx/partials/debug.html',
                  controller: 'DebugCtrl'});
+
+            $httpProvider.defaults.headers.common['ns-server-ui'] = 'yes';
         }]);
 </script>
 </html>
