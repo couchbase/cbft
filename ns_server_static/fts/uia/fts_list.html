@@ -26,7 +26,7 @@
              ng-click="expando(indexName)"
              ng-controller="indexViewController">
         <tr ng-class="{
-                     'grayblue-5 detailsOpened': detailsOpened[indexName],
+                     'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                      'no-stroke': detailsOpened[node.hostname]
                      }">
           <td class="index-name">{{indexName}}</td>
@@ -45,7 +45,7 @@
           </td>
         </tr>
 <!-- index details area ************************* -->
-        <tr class="grayblue-5" ng-if="detailsOpened[indexName]">
+        <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
           <td colspan="4">
             <div class="fts-index-details">
               <form>
@@ -164,7 +164,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
              ng-if="indexDef.type == 'fulltext-alias'"
              ng-click="detailsOpened[indexName] = !detailsOpened[indexName]">
       <tr ng-class="{
-                   'grayblue-5 detailsOpened': detailsOpened[indexName],
+                   'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                    'no-stroke': detailsOpened[node.hostname]
                    }">
         <td class="alias-name">{{indexName}}</td>
@@ -175,7 +175,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
         </td>
       </tr>
 <!-- alias details area ************************* -->
-      <tr class="grayblue-5" ng-if="detailsOpened[indexName]">
+      <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
         <td colspan="2">
           <div class="fts-index-details">
           <form>
