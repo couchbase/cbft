@@ -194,13 +194,16 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 
 <!-- alias action buttons ************************* -->
               <span class="nowrap" ng-click="$event.stopPropagation()">
-                <button ng-click="deleteIndex(indexName)" class="outline">
+                <button ng-disabled="!permsCluster.bucket['.'].fts.write"
+                        ng-click="deleteIndex(indexName)" class="outline">
                   Delete
                 </button>
-                <button ui-sref="^.search.fts_clone_alias({indexName: indexName})" class="outline">
+                <button ng-disabled="!permsCluster.bucket['.'].fts.write"
+                        ui-sref="^.search.fts_clone_alias({indexName: indexName})" class="outline">
                   Clone
                 </button>
-                <button ui-sref="^.search.fts_edit_alias({indexName: indexName})">
+                <button ng-disabled="!permsCluster.bucket['.'].fts.write"
+                        ui-sref="^.search.fts_edit_alias({indexName: indexName})">
                   Edit
                 </button>
               </span>
