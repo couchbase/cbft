@@ -444,9 +444,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                 }
 
                 if (newPlanParams) {
-                    var numReplicasStr = $scope.numReplicas;
                     try {
-                        var numReplicas = parseInt(numReplicasStr);
+                        var numReplicas = $scope.numReplicas;
                         if (numReplicas >= 0 ) {
                             var newPlanParamsObj = JSON.parse(newPlanParams);
                             newPlanParamsObj["numReplicas"] = numReplicas;
@@ -599,8 +598,10 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+
     if (initKind == "edit" || initKind == "create") {
         $scope.replicaOptions = [0];
+        $scope.numReplicas = $scope.replicaOptions[0];
         $http.get('/api/conciseOptions').
         then(function(response) {
             var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
@@ -624,20 +625,18 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     $scope.errorMessage = "No buckets available to access!";
                 }
             }
-        });
 
-        $scope.numReplicas = "0";
-
-        if ($scope.newPlanParams) {
-            try {
-                var newPlanParamsObj = JSON.parse($scope.newPlanParams);
-                $scope.numReplicas = (newPlanParamsObj["numReplicas"] || 0) + "";
-                delete newPlanParamsObj["numReplicas"];
-                $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
-            } catch (e) {
-                console.log("blevePIndexInitController numReplicas", initKind, e)
+            if ($scope.newPlanParams) {
+                try {
+                    var newPlanParamsObj = JSON.parse($scope.newPlanParams);
+                    $scope.numReplicas = $scope.replicaOptions[newPlanParamsObj["numReplicas"] || 0];
+                    delete newPlanParamsObj["numReplicas"];
+                    $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                } catch (e) {
+                    console.log("blevePIndexInitController numReplicas", initKind, e)
+                }
             }
-        }
+        });
     }
 
     try {
