@@ -44,7 +44,8 @@
     <div class="formrow form-inline">
       <label class="checkbox">Timeout (msecs)</label>
       <input
-         type="text"
+         type="number" min=0
+         oninput="validity.valid||(value='');"
          ng-model="timeout" id="timeout"
          ng-change="queryChanged()">
     </div>
