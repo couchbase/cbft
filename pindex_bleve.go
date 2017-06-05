@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -249,6 +250,7 @@ func init() {
 			"controllerInitName": "blevePIndexInitController",
 			"controllerDoneName": "blevePIndexDoneController",
 		},
+		AnalyzeIndexDefUpdates: RestartOnIndexDefChanges,
 	})
 }
 
@@ -1713,4 +1715,86 @@ should have a vbucketUUID of a0b1c2):`,
 			},
 		},
 	}
+}
+
+func parseStoreOptions(input string) *moss.StoreOptions {
+	params := make(map[string]map[string]interface{})
+	err := json.Unmarshal([]byte(input), &params)
+	if err != nil {
+		return nil
+	}
+	if v, ok := params["store"]["mossStoreOptions"]; ok {
+		// Convert from map[string]interface{}.
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil
+		}
+		storeOptions := &moss.StoreOptions{}
+		err = json.Unmarshal(b, storeOptions)
+		if err != nil {
+			return nil
+		}
+		return storeOptions
+	}
+	return nil
+}
+
+func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
+	bpPrev := NewBleveParams()
+	err := json.Unmarshal([]byte(paramPrev), bpPrev)
+	if err != nil {
+		return false
+	}
+	bpCur := NewBleveParams()
+	err = json.Unmarshal([]byte(paramCur), bpCur)
+	if err != nil {
+		return false
+	}
+	// check for non store parameter differences
+	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) ||
+		!reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
+		return false
+	}
+	// check storeOption changes
+	soPrev := parseStoreOptions(paramPrev)
+	soCur := parseStoreOptions(paramCur)
+	if soPrev == nil || soCur == nil {
+		return false
+	}
+	if soPrev.PersistKind != soCur.PersistKind {
+		return false
+	}
+	// even if there are no storeOption changes, we are good for a restart
+	log.Printf("bleve: reloadable storeOptions detected, before: %s, "+
+		" after: %s", paramPrev, paramCur)
+	return true
+}
+
+// RestartOnIndexDefChanges checks whether the changes in the indexDefns are
+// quickly adoptable over a reboot of the pindex implementations.
+// eg: kvstore configs updates like compaction percentage.
+func RestartOnIndexDefChanges(
+	configRequest *cbgt.ConfigAnalyzeRequest) cbgt.ResultCode {
+	if configRequest == nil || configRequest.IndexDefnCur == nil ||
+		configRequest.IndexDefnPrev == nil {
+		return ""
+	}
+	if configRequest.IndexDefnPrev.Name != configRequest.IndexDefnCur.Name ||
+		configRequest.IndexDefnPrev.SourceName !=
+			configRequest.IndexDefnCur.SourceName ||
+		configRequest.IndexDefnPrev.SourceType !=
+			configRequest.IndexDefnCur.SourceType ||
+		configRequest.IndexDefnPrev.SourceUUID !=
+			configRequest.IndexDefnCur.SourceUUID ||
+		configRequest.IndexDefnPrev.SourceParams !=
+			configRequest.IndexDefnCur.SourceParams ||
+		configRequest.IndexDefnPrev.Type !=
+			configRequest.IndexDefnCur.Type ||
+		!reflect.DeepEqual(configRequest.SourcePartitionsCur,
+			configRequest.SourcePartitionsPrev) ||
+		!reloadableIndexDefParamChange(configRequest.IndexDefnPrev.Params,
+			configRequest.IndexDefnCur.Params) {
+		return ""
+	}
+	return cbgt.PINDEXES_RESTART
 }
