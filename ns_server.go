@@ -32,7 +32,6 @@ import (
 	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"
 	"github.com/dustin/go-jsonpointer"
-	"github.com/gorilla/mux"
 )
 
 var LogEveryNStats = 60
@@ -956,14 +955,14 @@ func (h *NsSearchResultRedirct) ServeHTTP(
 		return
 	}
 
-	pIndexName := mux.Vars(req)["pIndexName"]
+	pIndexName := rest.PIndexNameLookup(req)
 	planPIndex, ok := allPlanPIndexes.PlanPIndexes[pIndexName]
 	if !ok {
 		rest.ShowError(w, req, fmt.Sprintf("no pindex named: %s", pIndexName), 400)
 		return
 	}
 
-	docID := mux.Vars(req)["docID"]
+	docID := rest.DocIDLookup(req)
 	source := planPIndex.SourceName
 	http.Redirect(w, req, "/ui/index.html#!/buckets/documents/"+docID+"?bucket="+source, http.StatusMovedPermanently)
 }

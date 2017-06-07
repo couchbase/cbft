@@ -501,7 +501,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if err != nil {
 		return nil, err
 	}
-	muxrouter.Handle(prefix+"/api/nsSearchResultRedirect/:pIndexName/:docID",
+	muxrouter.Handle(prefix+"/api/nsSearchResultRedirect/{pindexName}/{docID}",
 		nsSearchResultRedirectHandler)
 
 	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
