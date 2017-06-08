@@ -36,6 +36,7 @@ type MossStoreActualHolder interface {
 
 func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq uint64) error {
 	t.AddError("dest rollback", partition, nil, rollbackSeq, nil, nil)
+
 	// NOTE: A rollback of any partition means a rollback of all the
 	// partitions in the bindex, so lock the entire BleveDest.
 	t.m.Lock()
@@ -102,6 +103,7 @@ func (t *BleveDest) partialRollbackLOCKED(partition string,
 
 	// TODO: Handle non-upsidedown bleve index types some day.
 	seqMaxKey := upsidedown.NewInternalRow([]byte(partition), nil).Key()
+
 	// get vBucketMap/Opaque key
 	var vBucketMapKey []byte
 	if t.partitions[partition] != nil {
@@ -120,6 +122,7 @@ func (t *BleveDest) partialRollbackLOCKED(partition string,
 	ss, err = store.Snapshot()
 	for err == nil && ss != nil {
 		totSnapshotsExamined++
+
 		var tryRevert bool
 		tryRevert, err = snapshotAtOrBeforeSeq(t.path, ss, seqMaxKey,
 			vBucketMapKey, rollbackSeq, vBucketUUID)

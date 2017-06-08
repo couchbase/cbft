@@ -104,3 +104,6 @@ To emit moss collection histograms (pretty output) for the cbft node...
     curl http://<username>:<password>@<ip>:8094/api/stats | jq '.["pindexes"][]["bleveIndexStats"]["index"]["kv"]["coll_histograms"] | split("\n")'
     cat fts_diag.json | jq '.["pindexes"][]["bleveIndexStats"]["index"]["kv"]["coll_histograms"] | split("\n")'
 
+To see if FTS handled a DCP rollback...
+
+    grep 'feed_dcp: rollback' cbc*/ns_server.fts.log
