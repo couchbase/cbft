@@ -135,10 +135,12 @@ ul.list-text li {
 }
 .indexContainer .glyphicon-pencil:before,
 .bleveModal .glyphicon-pencil:before {
+  font-size: 15px;
   content: "edit";
 }
 .indexContainer .glyphicon-plus:before,
 .bleveModal .glyphicon-plus:before {
+  font-size: 15px;
   content: "+";
 }
 .indexContainer .glyphicon-remove:before,
