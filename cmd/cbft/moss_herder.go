@@ -114,9 +114,15 @@ func (mh *mossHerder) OnBatchExecuteStart(c moss.Collection) {
 
 	for mh.overMemQuotaLOCKED() {
 		// If we're over the memory quota, then wait for persister progress.
+
+		log.Printf("moss_header: waiting for persister progress, as usage"+
+			" over memQuota (%v)", mh.memQuota)
+
 		mh.waiting++
 		mh.waitCond.Wait()
 		mh.waiting--
+
+		log.Printf("moss_herder: resuming upon persister progress ..")
 	}
 
 	mh.m.Unlock()
