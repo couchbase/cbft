@@ -277,8 +277,9 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
-    var http = prefixedHttp($http, '../_p/' + ftsPrefix)
+    var http = prefixedHttp($http, '../_p/' + ftsPrefix);
 
+    $scope.progressPct = "";
     $scope.sourceDocCount = "";
     $scope.httpStatus = 200;    // OK
 
@@ -292,7 +293,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
     }
 
     $scope.loadSourceDocCount = function() {
-        $scope.sourceDocCount = "..."
+        $scope.sourceDocCount = "...";
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
@@ -311,11 +312,16 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
     }
 
     function updateProgressPct() {
-        $scope.progressPct = "";
         var i = parseInt($scope.indexDocCount);
         var s = parseInt($scope.sourceDocCount);
-        if (i >= 0 && s > 0) {
-            $scope.progressPct = Math.round(((1.0 * i) / s) * 10000) / 100.0;
+        if (s > 0) {
+            if (i >= 0) {
+                $scope.progressPct = Math.round(((1.0 * i) / s) * 10000) / 100.0;
+            } else {
+                $scope.progressPct = 0.0;
+            }
+        } else {
+            $scope.progressPct = "--";
         }
     }
 
