@@ -96,7 +96,6 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
 
     var http = prefixedHttp($http, '/_p/' + ftsPrefix)
 
-    $scope.progress = "";
     $scope.sourceDocCount = "";
 
     $scope.loadDocCount = function() {
