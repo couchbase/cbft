@@ -13,6 +13,7 @@ package main
 
 import (
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -28,6 +29,12 @@ var httpTransportMaxIdleConnsPerHost = 100               // Go's default is 2.
 var httpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 secs.
 var httpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
 var httpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
+
+var httpMaxConnections = 100000
+
+// high defaults to avoid any backward compatibility issues.
+var httpReadTimeout = 20 * time.Second
+var httpWriteTimeout = 60 * time.Second
 
 func initHTTPOptions(options map[string]string) error {
 	s := options["httpTransportDialContextTimeout"]
@@ -84,6 +91,19 @@ func initHTTPOptions(options map[string]string) error {
 		httpTransportTLSHandshakeTimeout = v
 	}
 
+	mc, found := parseOptionsInt(options, "httpMaxConnections")
+	if found {
+		httpMaxConnections = mc
+	}
+	rt, found := parseOptionsInt(options, "httpReadTimeout")
+	if found {
+		httpReadTimeout = time.Duration(rt) * time.Second
+	}
+	wt, found := parseOptionsInt(options, "httpWriteTimeout")
+	if found {
+		httpWriteTimeout = time.Duration(wt) * time.Second
+	}
+
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -111,4 +131,16 @@ func initHTTPOptions(options map[string]string) error {
 	}
 
 	return nil
+}
+
+func parseOptionsInt(options map[string]string, configKey string) (int, bool) {
+	if val, exists := options[configKey]; exists && val != "" {
+		n, err := strconv.Atoi(val)
+		if err == nil {
+			log.Printf("http_flags: %s set to %d", configKey, n)
+			return n, exists
+		}
+		log.Printf("http_flags: %s parse, err: %v", configKey, err)
+	}
+	return 0, false
 }
