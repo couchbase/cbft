@@ -434,7 +434,9 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                 }
 
                 // stringify our doc_config and set that into newIndexParams
-                newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
+                try {
+                    newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
+                } catch (e) {}
 
                 if (!newIndexName) {
                     errorFields["indexName"] = true;
