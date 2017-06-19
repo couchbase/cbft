@@ -137,10 +137,10 @@ func parseOptionsInt(options map[string]string, configKey string) (int, bool) {
 	if val, exists := options[configKey]; exists && val != "" {
 		n, err := strconv.Atoi(val)
 		if err == nil {
-			log.Printf("http_flags: %s set to %d", configKey, n)
+			log.Printf("parseOptionsInt: %s set to %d", configKey, n)
 			return n, exists
 		}
-		log.Printf("http_flags: %s parse, err: %v", configKey, err)
+		log.Printf("parseOptionsInt: %s parse, err: %v", configKey, err)
 	}
 	return 0, false
 }

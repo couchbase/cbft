@@ -425,16 +425,24 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			}
 		}
 
-		log.Printf("main: cbauth_service ctl starting,"+
-			" dryRun: %v, waitForMemberNodes: %d, verbose: %d",
-			dryRun, waitForMemberNodes, verbose)
+		maxConcurrentPartitionMovesPerNode := 1
+		v, found := parseOptionsInt(mgr.Options(), "maxConcurrentPartitionMovesPerNode")
+		if found {
+			maxConcurrentPartitionMovesPerNode = v
+		}
+
+		log.Printf("main: ctl starting,"+
+			" dryRun: %v, waitForMemberNodes: %d, verbose: %d,"+
+			" maxConcurrentPartitionMovesPerNode: %d", dryRun, waitForMemberNodes,
+			verbose, maxConcurrentPartitionMovesPerNode)
 
 		var c *ctl.Ctl
 		c, err = ctl.StartCtl(cfg, server, mgr.Options(), ctl.CtlOptions{
-			DryRun:             dryRun,
-			Verbose:            verbose,
-			FavorMinNodes:      false,
-			WaitForMemberNodes: waitForMemberNodes,
+			DryRun:                             dryRun,
+			Verbose:                            verbose,
+			FavorMinNodes:                      false,
+			WaitForMemberNodes:                 waitForMemberNodes,
+			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
