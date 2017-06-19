@@ -1,0 +1,55 @@
+{
+  "_from": "angular-legacy-sortablejs-maintained",
+  "_id": "angular-legacy-sortablejs-maintained@0.5.2",
+  "_inBundle": false,
+  "_integrity": "sha1-8FfoRTCVLt4ZqZvJ/es8Qwdnof0=",
+  "_location": "/angular-legacy-sortablejs-maintained",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "angular-legacy-sortablejs-maintained",
+    "name": "angular-legacy-sortablejs-maintained",
+    "escapedName": "angular-legacy-sortablejs-maintained",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/angular-legacy-sortablejs-maintained/-/angular-legacy-sortablejs-maintained-0.5.2.tgz",
+  "_shasum": "f057e84530952ede19a99bc9fdeb3c430767a1fd",
+  "_spec": "angular-legacy-sortablejs-maintained",
+  "_where": "/Users/abhinavdangeti/Documents/couchbaseSpk/goproj/src/github.com/couchbase/cbgt/rest/static/lib",
+  "author": {
+    "name": "samjacobclift",
+    "email": "samjacobclift@gmail.com"
+  },
+  "bugs": {
+    "url": "https://github.com/SortableJS/angular-legacy-sortablejs/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "Angular (legacy) directive for SortableJS.",
+  "homepage": "https://github.com/SortableJS/angular-legacy-sortablejs#readme",
+  "keywords": [
+    "angular",
+    "sortable"
+  ],
+  "license": "MIT",
+  "main": "angular-legacy-sortable.js",
+  "name": "angular-legacy-sortablejs-maintained",
+  "peerDependencies": {
+    "sortablejs": "~1.5.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SortableJS/angular-legacy-sortablejs.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.5.2"
+}
