@@ -3,6 +3,7 @@
 javascript/css components:
 - angular
 - angular-bootstrap
+- angular-legacy-sortablejs
 - angular-route
 - angular-ui-tree
 - bootstrap
@@ -13,6 +14,7 @@ javascript/css components:
 - jsonpointer
 - prism
 - rickshaw
+- Sortable
 
 -----------------------------------------
 github.com/blevesearch/bleve

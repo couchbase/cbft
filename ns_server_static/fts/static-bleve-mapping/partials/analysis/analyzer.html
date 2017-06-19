@@ -24,7 +24,7 @@
             <label>Character Filters</label>
             <ul class="list-text"
                 ng-show="analyzer.char_filters.length > 0"
-                ui-sortable
+                ng-sortable
                 ng-model="analyzer.char_filters">
                 <li ng-repeat="analyzerCharFilter in analyzer.char_filters track by $index">
                     <div class="row">
@@ -61,7 +61,7 @@
             <label>Token Filters</label>
             <ul class="list-text"
                 ng-show="analyzer.token_filters.length > 0"
-                ui-sortable
+                ng-sortable
                 ng-model="analyzer.token_filters">
                 <li ng-repeat="analyzerTokenFilter in analyzer.token_filters">
                     <div class="row">

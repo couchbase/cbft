@@ -8,7 +8,7 @@ var ftsPrefix = 'fts';
 
   angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard", "mnPermissions"])
+            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard", "mnPermissions", "ng-sortable"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
       addFtsStates("app.admin.search");
 
