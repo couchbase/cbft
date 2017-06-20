@@ -34,7 +34,8 @@ import (
 	"github.com/dustin/go-jsonpointer"
 )
 
-var LogEveryNStats = 60
+// Dump stats to log once every 5min
+var LogEveryNStats = 300
 
 var SourcePartitionSeqsSleepDefault = 10 * time.Second
 var SourcePartitionSeqsCacheTimeoutDefault = 60 * time.Second
