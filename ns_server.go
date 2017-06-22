@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -917,6 +918,25 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 
 		runtime.ReadMemStats(&rd.memStats)
+
+		// Check memory quota if golang's GC needs to be triggered.
+		ftsMemoryQuota, _ := strconv.Atoi(mgr.Options()["ftsMemoryQuota"])
+		gcMinThreshold, _ := strconv.Atoi(mgr.Options()["gcMinThreshold"])
+		gcTriggerPct, _ := strconv.Atoi(mgr.Options()["gcTriggerPct"])
+
+		if gcTriggerPct > 0 {
+			allocedBytes := rd.memStats.Alloc
+			if allocedBytes > uint64(gcMinThreshold) &&
+				allocedBytes >= uint64(gcTriggerPct*ftsMemoryQuota/100) {
+				// Invoke golang's gargage collector through runtime/debug's
+				// FreeOSMemory api which forces a garbage collection followed
+				// by an attempt to return as much memory to the operating
+				// system as possible.
+				log.Printf("runtime/debug.FreeOSMemory() start..")
+				debug.FreeOSMemory()
+				log.Printf("runtime/debuf.FreeOSMemory() done.")
+			}
+		}
 
 	REUSE_CACHE:
 		for {

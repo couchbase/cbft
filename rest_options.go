@@ -70,6 +70,20 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 				options["bucketTypesAllowed"])
 		}
 
+		// Validate gcMinThreshold
+		gcMinThreshold, err := strconv.Atoi(options["gcMinThreshold"])
+		if err != nil || gcMinThreshold < 0 {
+			return nil, fmt.Errorf("illegal value for gcMinThreshold: '%v'",
+				options["gcMinThreshold"])
+		}
+
+		// Validate gcTriggerPct
+		gcTriggerPct, err := strconv.Atoi(options["gcTriggerPct"])
+		if err != nil || gcTriggerPct < 0 {
+			return nil, fmt.Errorf("illegal value for gcTriggerPct: '%v'",
+				options["gcTriggerPct"])
+		}
+
 		return options, nil
 	}
 

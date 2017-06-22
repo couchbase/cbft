@@ -339,6 +339,28 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// If gcMinThreshold is among options provided, ensure that it
+	// holds a valid value.
+	if options["gcMinThreshold"] != "" {
+		var gcMinThreshold int
+		gcMinThreshold, err = strconv.Atoi(options["gcMinThreshold"])
+		if err != nil || gcMinThreshold < 0 {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				"gcMinThreshold: %v", options["gcMinThreshold"])
+		}
+	}
+
+	// If gcTriggerPct is among options provided, ensure that it
+	// holds a valid value.
+	if options["gcTriggerPct"] != "" {
+		var gcTriggerPct int
+		gcTriggerPct, err = strconv.Atoi(options["gcTriggerPct"])
+		if err != nil || gcTriggerPct < 0 {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				"gcTriggerPct: %v", options["gcTriggerPct"])
+		}
+	}
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
