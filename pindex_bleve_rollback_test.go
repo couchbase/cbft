@@ -129,7 +129,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			Params: url.Values{
 				"indexType": []string{"fulltext-index"},
 				"indexParams": []string{
-					`{"store":{"mossStoreOptions":{"CompactionPercentage":100000.0}}}`,
+					`{"store":{"mossStoreOptions":{"CompactionLevelMaxSegments":100000}}}`,
 				}, // Never compact during this test.
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
