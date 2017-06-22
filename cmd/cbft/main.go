@@ -361,6 +361,17 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// If memStatsLoggingInterval is among options provided, ensure that it
+	// holds a valid value, defaults to 0 => disabled.
+	if options["memStatsLoggingInterval"] != "" {
+		var memStatsLoggingInterval int
+		memStatsLoggingInterval, err = strconv.Atoi(options["memStatsLoggingInterval"])
+		if err != nil || memStatsLoggingInterval < 0 {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				"memStatsLoggingInterval: %v", options["memStatsLoggingInterval"])
+		}
+	}
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,

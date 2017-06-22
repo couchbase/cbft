@@ -84,6 +84,13 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 				options["gcTriggerPct"])
 		}
 
+		// Validate memStatsLoggingInterval
+		memStatsLoggingInterval, err := strconv.Atoi(options["memStatsLoggingInterval"])
+		if err != nil || memStatsLoggingInterval < 0 {
+			return nil, fmt.Errorf("illegal value for memStatsLoggingInterval: '%v'",
+				options["memStatsLoggingInterval"])
+		}
+
 		return options, nil
 	}
 

@@ -897,6 +897,9 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 	tickCh := time.Tick(1 * time.Minute)
 
+	memStatsLoggingInterval, _ := strconv.Atoi(mgr.Options()["memStatsLoggingInterval"])
+	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
+
 	for {
 		var nodeDefs *cbgt.NodeDefs
 		var planPIndexes *cbgt.PlanPIndexes
@@ -947,12 +950,28 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 			case <-tickCh:
 				break REUSE_CACHE
 
+			case <-logMemStatCh:
+				logMemStatInfo(&rd.memStats)
+
 			case recentInfoCh <- rd:
 				if rd.err != nil {
 					break REUSE_CACHE
 				}
 			}
 		}
+	}
+}
+
+func logMemStatInfo(ms *runtime.MemStats) {
+	if ms != nil {
+		log.Printf("memstats:: TotalAlloc: %+v, Alloc: %+v, Sys: %+v", ms.TotalAlloc, ms.Alloc, ms.Sys)
+		log.Printf("memstats:: Lookups: %+v, Mallocs: %+v, Frees: %+v", ms.Lookups, ms.Mallocs, ms.Frees)
+		log.Printf("memstats:: LastGC: %+v, NextGC: %+v, NumGC: %+v", ms.LastGC, ms.NextGC, ms.NumGC)
+		log.Printf("memstats:: PauseTotalNs: %+v, EnableGC: %+v, GCCPUFraction: %+v", ms.PauseTotalNs, ms.EnableGC, ms.GCCPUFraction)
+		log.Printf("heapstats:: HeapAlloc: %+v, HeapSys: %+v, HeapIdle: %+v", ms.HeapAlloc, ms.HeapSys, ms.HeapIdle)
+		log.Printf("heapstats:: HeapInuse: %+v, HeapReleased: %+v, HeapObjects: %+v", ms.HeapInuse, ms.HeapReleased, ms.HeapObjects)
+		log.Printf("stackstats:: StackInuse: %+v, StackSys: %+v, MSpanInuse: %+v", ms.StackInuse, ms.StackSys, ms.MSpanInuse)
+		log.Printf("stackstats:: MSpanSys: %+v, MCacheInuse: %+v, GCSys: %+v", ms.MSpanSys, ms.MCacheInuse, ms.GCSys)
 	}
 }
 
