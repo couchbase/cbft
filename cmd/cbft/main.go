@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"os"
 	"path"
 	"path/filepath"
@@ -415,6 +415,18 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	router.Handler("GET", prefix+"/api/conciseOptions",
 		cbft.NewConciseOptions(mgr))
+
+	// Setup all debug/pprof routes
+	router.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/block", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/goroutine", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/heap", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/mutex", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/threadcreate", pprof.Index)
+	router.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
+	router.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
+	router.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
+	router.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
 
 	// ------------------------------------------------
 
