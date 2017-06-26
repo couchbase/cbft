@@ -185,7 +185,8 @@ For sourceType ```couchbase```, an example sourceParams JSON:
       "dataManagerSleepInitMS": 0,
       "dataManagerSleepMaxMS": 2000,
       "feedBufferSizeBytes": 0,
-      "feedBufferAckThreshold": 0
+      "feedBufferAckThreshold": 0,
+      "noopTimeIntervalsecs": 1
     }
 
 For sourceType ```files```, an example sourceParams JSON:
