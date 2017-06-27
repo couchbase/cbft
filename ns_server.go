@@ -35,7 +35,8 @@ import (
 	"github.com/dustin/go-jsonpointer"
 )
 
-// Dump stats to log once every 5min
+// Dump stats to log once every 5min. This stat is configurable
+// through the ENV_OPTION: logStatsEvery
 var LogEveryNStats = 300
 
 var SourcePartitionSeqsSleepDefault = 10 * time.Second
