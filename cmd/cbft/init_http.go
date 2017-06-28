@@ -150,12 +150,17 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		}
 	} else {
 		addToHTTPSServerList(server)
-		// ugly adoption from ListenAndServeTLS for sneaking in the LimitListener
-		// for TLS connections, at the risk of missing any changes to the default
-		// ListenAndServeTLS
-		config := &tls.Config{
-			NextProtos: []string{"h2", "http/1.1"},
+		// Initialize server.TLSConfig to the listener's TLS Config before calling
+		// server for HTTP/2 support.
+		// See: https://golang.org/pkg/net/http/#Server.Serve
+		config := cloneTLSConfig(server.TLSConfig)
+		if !strSliceContains(config.NextProtos, "http/1.1") {
+			config.NextProtos = append(config.NextProtos, "http/1.1")
 		}
+		if !strSliceContains(config.NextProtos, "h2") {
+			config.NextProtos = append(config.NextProtos, "h2")
+		}
+
 		config.Certificates = make([]tls.Certificate, 1)
 		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
@@ -170,6 +175,25 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 				" -bindHttp(s) (%q)\n", err, bindHTTP)
 		}
 	}
+}
+
+// Helper function to determine if the provided string is already
+// present in the provided array of strings.
+func strSliceContains(ss []string, s string) bool {
+	for _, v := range ss {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+// cloneTLSConfig returns a clone of the tls.Config.
+func cloneTLSConfig(cfg *tls.Config) *tls.Config {
+	if cfg == nil {
+		return &tls.Config{}
+	}
+	return cfg.Clone()
 }
 
 // tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
