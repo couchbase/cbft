@@ -227,7 +227,7 @@ func main() {
 
 func loggerFunc(level, format string, args ...interface{}) string {
 	ts := time.Now().Format("2006-01-02T15:04:05.000-07:00")
-	prefix := ts + " " + level + " "
+	prefix := ts + " [" + level + "] "
 	if format != "" {
 		return prefix + fmt.Sprintf(format, args...)
 	}

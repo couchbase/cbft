@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
+	log "github.com/couchbase/clog"
 )
 
 var VERSION = "v0.5.0" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.

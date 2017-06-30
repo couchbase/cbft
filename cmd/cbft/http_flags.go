@@ -13,13 +13,13 @@ package main
 
 import (
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/couchbase/cbft"
+	log "github.com/couchbase/clog"
 )
 
 var httpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.

@@ -13,13 +13,13 @@ package main
 
 import (
 	"crypto/tls"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/couchbase/cbauth"
+	log "github.com/couchbase/clog"
 
 	"golang.org/x/net/netutil"
 )
