@@ -315,6 +315,15 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			},
 		},
 		{
+			Desc:         "Sets the given node definitions in Cfg ",
+			Path:         "/api/cfgNodeDefs",
+			Method:       "PUT",
+			Params:       nil,
+			Body:         nil,
+			Status:       http.StatusBadRequest,
+			ResponseBody: []byte(`rest_manage: no request body found`),
+		},
+		{
 			Desc:   "manager kick on empty, unchanged manager",
 			Path:   "/api/managerKick",
 			Method: "POST",

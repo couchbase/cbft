@@ -64,6 +64,10 @@ POST /api/cfgRefresh
 cluster.settings.fts!write
 24580
 
+POST /api/cfgNodeDefs
+cluster.settings.fts!write
+24586
+
 POST /api/managerKick
 cluster.settings.fts!write
 24581
