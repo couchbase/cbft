@@ -438,7 +438,8 @@ For example, your Source Params JSON would then look like...
       "dataManagerSleepInitMS": 0,
       "dataManagerSleepMaxMS": 20000,
       "feedBufferSizeBytes": 0,
-      "feedBufferAckThreshold": 0
+      "feedBufferAckThreshold": 0,
+      "noopTimeIntervalSecs":1
     }
 
 The other parameters are for specifying optional, advanced connection
@@ -473,6 +474,10 @@ Couchbase DCP (data change protocol) streams:
 - ```feedBufferAckThreshold```: float - used for DCP flow control and
   buffer-ack messages when this percentage of
   ```feedBufferSizeBytes``` is reached.
+
+- ```noopTimeIntervalSecs```: int - time interval in seconds of NO-OP
+  messages for DCP flow control, needs to be set to a non-zero value
+  to enable no-ops.
 
 ## Index definition REST API
 
