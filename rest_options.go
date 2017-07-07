@@ -71,24 +71,30 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 		}
 
 		// Validate gcMinThreshold
-		gcMinThreshold, err := strconv.Atoi(options["gcMinThreshold"])
-		if err != nil || gcMinThreshold < 0 {
-			return nil, fmt.Errorf("illegal value for gcMinThreshold: '%v'",
-				options["gcMinThreshold"])
+		if options["gcMinThreshold"] != "" {
+			gcMinThreshold, err := strconv.Atoi(options["gcMinThreshold"])
+			if err != nil || gcMinThreshold < 0 {
+				return nil, fmt.Errorf("illegal value for gcMinThreshold: '%v'",
+					options["gcMinThreshold"])
+			}
 		}
 
 		// Validate gcTriggerPct
-		gcTriggerPct, err := strconv.Atoi(options["gcTriggerPct"])
-		if err != nil || gcTriggerPct < 0 {
-			return nil, fmt.Errorf("illegal value for gcTriggerPct: '%v'",
-				options["gcTriggerPct"])
+		if options["gcTriggerPct"] != "" {
+			gcTriggerPct, err := strconv.Atoi(options["gcTriggerPct"])
+			if err != nil || gcTriggerPct < 0 {
+				return nil, fmt.Errorf("illegal value for gcTriggerPct: '%v'",
+					options["gcTriggerPct"])
+			}
 		}
 
 		// Validate memStatsLoggingInterval
-		memStatsLoggingInterval, err := strconv.Atoi(options["memStatsLoggingInterval"])
-		if err != nil || memStatsLoggingInterval < 0 {
-			return nil, fmt.Errorf("illegal value for memStatsLoggingInterval: '%v'",
-				options["memStatsLoggingInterval"])
+		if options["memStatsLoggingInterval"] != "" {
+			memStatsLoggingInterval, err := strconv.Atoi(options["memStatsLoggingInterval"])
+			if err != nil || memStatsLoggingInterval < 0 {
+				return nil, fmt.Errorf("illegal value for memStatsLoggingInterval: '%v'",
+					options["memStatsLoggingInterval"])
+			}
 		}
 
 		return options, nil
