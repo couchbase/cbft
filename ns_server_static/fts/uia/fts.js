@@ -111,6 +111,7 @@ var ftsPrefix = 'fts';
           })
           .state(parent + '.fts_search', {
             url: '/fts_search/:indexName/_search?q&p',
+            reloadOnSearch: false,
             views: {
               "main@app.admin": {
                 controller: 'IndexSearchCtrlFT_NS',
