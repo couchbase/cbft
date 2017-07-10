@@ -124,7 +124,8 @@ var statkeys = []string{
 	"num_pindexes_actual", // per-index stat.
 	"num_pindexes_target", // per-index stat.
 
-	"total_compactions", // per-index stat.
+	"total_compactions",              // per-index stat.
+	"total_compaction_written_bytes", // per-index stat.
 
 	// "total_gc"   -- PROCESS-LEVEL stat.
 	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
@@ -482,8 +483,8 @@ func extractMossStats(mossStats *moss.CollectionStats, nsIndexStat map[string]in
 
 var kvStats = map[string]string{
 	// From mossStore...
-	"/num_bytes_used_disk": "num_bytes_used_disk",
-	"/total_compactions":   "total_compactions",
+	"/num_bytes_used_disk":            "num_bytes_used_disk",
+	"/total_compaction_written_bytes": "total_compaction_written_bytes",
 }
 
 func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
