@@ -68,8 +68,21 @@ func InitStaticRouter(staticDir, staticETag string,
 				prefix + "/debug",
 			}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
 
-		router.PathPrefix(prefix + "/staticx/").Handler(
-			http.StripPrefix(prefix+"/staticx/", hfsStaticX))
+		staticxRoutes := []string{
+			"/staticx/",
+			"/staticx/index.html",
+			"/staticx/index-ft.html",
+			"/staticx/js/debug.js",
+			"/staticx/partials/debug-rows.html",
+			"/staticx/partials/debug.html",
+			"/staticx/partials/index/ft/list.html",
+			"/staticx/partials/index/ft/new.html",
+			"/staticx/partials/index/start.html",
+		}
+
+		for _, route := range staticxRoutes {
+			router.Handle(prefix+route, http.StripPrefix(prefix+"/staticx/", hfsStaticX))
+		}
 	}
 
 	return router
