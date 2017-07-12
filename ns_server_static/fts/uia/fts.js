@@ -321,6 +321,8 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
             } else {
                 $scope.progressPct = 0.0;
             }
+        } else if (s == 0 && i == 0) {
+            $scope.progressPct = 100.0;
         } else {
             $scope.progressPct = "--";
         }
