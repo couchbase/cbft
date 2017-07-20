@@ -439,6 +439,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
 	router.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
 
+	// Handle expvar route(s)
+	router.Handler("GET", "/debug/vars", expvar.Handler())
+
 	// ------------------------------------------------
 
 	tagsMap := mgr.TagsMap()
