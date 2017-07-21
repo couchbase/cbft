@@ -1572,9 +1572,43 @@ func BleveInitRouter(r *mux.Router, phase string,
 	if phase == "static.before" {
 		staticBleveMapping := http.FileServer(bleveMappingUI.AssetFS())
 
-		r.PathPrefix(prefix + "/static-bleve-mapping/").Handler(
-			http.StripPrefix(prefix+"/static-bleve-mapping/",
+		staticBleveMappingRoutes := []string{
+			"/static-bleve-mapping/partials/mapping/index-mapping.html",
+			"/static-bleve-mapping/partials/mapping/type-mapping-tree.html",
+			"/static-bleve-mapping/partials/mapping/type-mapping.html",
+			"/static-bleve-mapping/partials/analysis/analyzer.html",
+			"/static-bleve-mapping/partials/analysis/analyzers.html",
+			"/static-bleve-mapping/partials/analysis/charfilter.html",
+			"/static-bleve-mapping/partials/analysis/charfilters.html",
+			"/static-bleve-mapping/partials/analysis/tokenizer.html",
+			"/static-bleve-mapping/partials/analysis/tokenizers.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilter.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters.html",
+			"/static-bleve-mapping/partials/analysis/wordlist.html",
+			"/static-bleve-mapping/partials/analysis/wordlists.html",
+			"/static-bleve-mapping/partials/analysis/charfilters/generic.html",
+			"/static-bleve-mapping/partials/analysis/charfilters/regexp.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/dict_compound.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/edge_ngram.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/elison.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/generic.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/keyword_marker.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/length.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/ngram.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/normalize_unicode.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/shingle.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/stop_tokens.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/truncate_token.html",
+			"/static-bleve-mapping/partials/analysis/tokenfilters/wordmap.html",
+			"/static-bleve-mapping/partials/analysis/tokenizers/exception.html",
+			"/static-bleve-mapping/partials/analysis/tokenizers/generic.html",
+			"/static-bleve-mapping/partials/analysis/tokenizers/regexp.html",
+		}
+
+		for _, route := range staticBleveMappingRoutes {
+			r.Handle(prefix+route, http.StripPrefix(prefix+"/static-bleve-mapping/",
 				staticBleveMapping))
+		}
 	}
 
 	if phase == "manager.before" {

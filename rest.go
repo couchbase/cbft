@@ -57,6 +57,12 @@ func InitStaticRouter(staticDir, staticETag string,
 			http.RedirectHandler(prefix+"/staticx/index.html", 302))
 		router.Handle(prefix+"/static/partials/index/start.html",
 			http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
+		router.Handle(prefix+"/static/partials/index/new.html",
+			http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
+		router.Handle(prefix+"/static/partials/index/list.html",
+			http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
+		router.Handle(prefix+"/static/partials/index/index.html",
+			http.RedirectHandler(prefix+"/staticx/partials/debug.html", 302))
 
 		router = rest.InitStaticRouterEx(router,
 			staticDir, staticETag, []string{
