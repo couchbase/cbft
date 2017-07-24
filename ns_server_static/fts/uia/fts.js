@@ -130,6 +130,7 @@ var ftsPrefix = 'fts';
           state: 'app.admin.search.fts_list',
           plugIn: 'adminTab',
           after: 'indexes',
+          includedByState: 'app.admin.search',
           ngShow: 'rbac.cluster.settings.fts.read'
       });
 
