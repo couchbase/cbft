@@ -76,6 +76,7 @@ func InitStaticRouter(staticDir, staticETag string,
 
 		staticxRoutes := []string{
 			"/staticx/",
+			"/staticx/css/cbft.css",
 			"/staticx/index.html",
 			"/staticx/index-ft.html",
 			"/staticx/js/debug.js",

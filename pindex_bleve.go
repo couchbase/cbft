@@ -1573,9 +1573,14 @@ func BleveInitRouter(r *mux.Router, phase string,
 		staticBleveMapping := http.FileServer(bleveMappingUI.AssetFS())
 
 		staticBleveMappingRoutes := []string{
-			"/static-bleve-mapping/partials/mapping/index-mapping.html",
-			"/static-bleve-mapping/partials/mapping/type-mapping-tree.html",
-			"/static-bleve-mapping/partials/mapping/type-mapping.html",
+			"/static-bleve-mapping/js/mapping/analysis-analyzer.js",
+			"/static-bleve-mapping/js/mapping/analysis-charfilter.js",
+			"/static-bleve-mapping/js/mapping/analysis-tokenfilter.js",
+			"/static-bleve-mapping/js/mapping/analysis-tokenizer.js",
+			"/static-bleve-mapping/js/mapping/analysis-wordlist.js",
+			"/static-bleve-mapping/js/mapping/analysis.js",
+			"/static-bleve-mapping/js/mapping/index-mapping.js",
+			"/static-bleve-mapping/js/mapping/type-mapping.js",
 			"/static-bleve-mapping/partials/analysis/analyzer.html",
 			"/static-bleve-mapping/partials/analysis/analyzers.html",
 			"/static-bleve-mapping/partials/analysis/charfilter.html",
@@ -1603,6 +1608,9 @@ func BleveInitRouter(r *mux.Router, phase string,
 			"/static-bleve-mapping/partials/analysis/tokenizers/exception.html",
 			"/static-bleve-mapping/partials/analysis/tokenizers/generic.html",
 			"/static-bleve-mapping/partials/analysis/tokenizers/regexp.html",
+			"/static-bleve-mapping/partials/mapping/index-mapping.html",
+			"/static-bleve-mapping/partials/mapping/type-mapping-tree.html",
+			"/static-bleve-mapping/partials/mapping/type-mapping.html",
 		}
 
 		for _, route := range staticBleveMappingRoutes {
