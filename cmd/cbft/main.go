@@ -28,7 +28,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -57,10 +56,6 @@ var version = "v0.5.0"
 var defaultCtlVerbose = 3
 
 var expvars = expvar.NewMap("stats")
-
-// List of active https servers
-var httpsServers []*http.Server
-var httpsServersMutex sync.Mutex
 
 // http router in use
 var routerInUse http.Handler

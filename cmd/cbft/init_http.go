@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/couchbase/cbauth"
@@ -23,6 +24,15 @@ import (
 
 	"golang.org/x/net/netutil"
 )
+
+type httpsServer struct {
+	server   *http.Server
+	listener net.Listener
+}
+
+// List of active https servers
+var httpsServers []*httpsServer
+var httpsServersMutex sync.Mutex
 
 func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string, options map[string]string) {
 	http.Handle("/", routerInUse)
@@ -53,8 +63,12 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string, 
 }
 
 // Add to HTTPS Server list serially
-func addToHTTPSServerList(entry *http.Server) {
+func addToHTTPSServerList(server *http.Server, listener net.Listener) {
 	httpsServersMutex.Lock()
+	entry := &httpsServer{
+		server:   server,
+		listener: listener,
+	}
 	httpsServers = append(httpsServers, entry)
 	httpsServersMutex.Unlock()
 }
@@ -64,8 +78,11 @@ func closeAndClearHTTPSServerList() {
 	httpsServersMutex.Lock()
 	defer httpsServersMutex.Unlock()
 
-	for _, server := range httpsServers {
-		server.Close()
+	for _, entry := range httpsServers {
+		// Close the listener associated with the server first.
+		entry.listener.Close()
+		// Then Close the server.
+		entry.server.Close()
 	}
 	httpsServers = nil
 }
@@ -134,7 +151,6 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	if err != nil {
 		log.Fatalf("init_http: listen, err: %v", err)
 	}
-	defer listener.Close()
 	server := &http.Server{Addr: bindHTTP,
 		Handler:      routerInUse,
 		ReadTimeout:  httpReadTimeout,
@@ -149,7 +165,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 				"  is correct and available.", err, bindHTTP)
 		}
 	} else {
-		addToHTTPSServerList(server)
+		addToHTTPSServerList(server, listener)
 		// Initialize server.TLSConfig to the listener's TLS Config before calling
 		// server for HTTP/2 support.
 		// See: https://golang.org/pkg/net/http/#Server.Serve
