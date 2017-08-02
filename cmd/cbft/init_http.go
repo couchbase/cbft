@@ -34,6 +34,9 @@ type httpsServer struct {
 var httpsServers []*httpsServer
 var httpsServersMutex sync.Mutex
 
+// AuthType used for HTTPS connections
+var authType string
+
 func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string, options map[string]string) {
 	http.Handle("/", routerInUse)
 	anyHostPorts := map[string]bool{}
@@ -50,7 +53,9 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string, 
 		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts, "", "")
 	}
 
-	if options["authType"] == "cbauth" {
+	authType = options["authType"]
+
+	if authType == "cbauth" {
 		// Registering a certificate refresh callback with cbauth,
 		// which will be responsible for updating https listeners,
 		// whenever ssl certificates are changed.
@@ -182,6 +187,14 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		if err != nil {
 			log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
 		}
+
+		if authType == "cbauth" {
+			// Set MinTLSVersion and CipherSuites to what is provided by
+			// cbauth if authType were cbauth.
+			config.MinVersion = cbauth.MinTLSVersion()
+			config.CipherSuites = cbauth.CipherSuites()
+		}
+
 		tlsListener := tls.NewListener(tcpKeepAliveListener{listener.(*net.TCPListener)}, config)
 		limitListener := netutil.LimitListener(tlsListener, httpMaxConnections)
 		err = server.Serve(limitListener)
