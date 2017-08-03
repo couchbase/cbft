@@ -25,18 +25,9 @@ Sample response:
           "myFirstIndex": {
             "name": "myFirstIndex",
             "params": null,
-            "planParams": {
-              "hierarchyRules": null,
-              "maxPartitionsPerPIndex": 0,
-              "nodePlanParams": null,
-              "numReplicas": 0,
-              "pindexWeights": null,
-              "planFrozen": false
-            },
-            "sourceName": "",
+            "planParams": {},
             "sourceParams": null,
             "sourceType": "nil",
-            "sourceUUID": "",
             "type": "blackhole",
             "uuid": "6cc599ab7a85bf3b"
           }
@@ -64,18 +55,9 @@ Sample response:
       "indexDef": {
         "name": "myFirstIndex",
         "params": null,
-        "planParams": {
-          "hierarchyRules": null,
-          "maxPartitionsPerPIndex": 0,
-          "nodePlanParams": null,
-          "numReplicas": 0,
-          "pindexWeights": null,
-          "planFrozen": false
-        },
-        "sourceName": "",
+        "planParams": {},
         "sourceParams": null,
         "sourceType": "nil",
-        "sourceUUID": "",
         "type": "blackhole",
         "uuid": "6cc599ab7a85bf3b"
       },
@@ -92,10 +74,8 @@ Sample response:
               "priority": 0
             }
           },
-          "sourceName": "",
           "sourcePartitions": "",
           "sourceType": "nil",
-          "sourceUUID": "",
           "uuid": "1ac72081ac81e0aa"
         }
       ],
@@ -177,17 +157,7 @@ Intended for clients that want to check that they are not overwriting the index 
 
 For sourceType ```couchbase```, an example sourceParams JSON:
 
-    {
-      "clusterManagerBackoffFactor": 0,
-      "clusterManagerSleepInitMS": 0,
-      "clusterManagerSleepMaxMS": 2000,
-      "dataManagerBackoffFactor": 0,
-      "dataManagerSleepInitMS": 0,
-      "dataManagerSleepMaxMS": 2000,
-      "feedBufferSizeBytes": 0,
-      "feedBufferAckThreshold": 0,
-      "noopTimeIntervalSecs": 1
-    }
+    {}
 
 For sourceType ```files```, an example sourceParams JSON:
 
@@ -328,6 +298,7 @@ Sample response:
         "TotJanitorOpRes": 3,
         "TotJanitorOpStart": 3,
         "TotJanitorRemovePIndex": 0,
+        "TotJanitorRestartPIndex": 0,
         "TotJanitorStop": 0,
         "TotJanitorSubscriptionEvent": 1,
         "TotJanitorUnknownErr": 0,
@@ -513,6 +484,18 @@ should have a vbucketUUID of a0b1c2):
 
 ---
 
+## PIndex lookup
+
+---
+
+POST `/api/index/{indexName}/pindexLookup`
+
+Returns the PIndex ID.
+
+**version introduced**: 5.0.0
+
+---
+
 # Node
 
 ---
@@ -537,18 +520,9 @@ Sample response:
           "myFirstIndex": {
             "name": "myFirstIndex",
             "params": null,
-            "planParams": {
-              "hierarchyRules": null,
-              "maxPartitionsPerPIndex": 0,
-              "nodePlanParams": null,
-              "numReplicas": 0,
-              "pindexWeights": null,
-              "planFrozen": false
-            },
-            "sourceName": "",
+            "planParams": {},
             "sourceParams": null,
             "sourceType": "nil",
-            "sourceUUID": "",
             "type": "blackhole",
             "uuid": "6cc599ab7a85bf3b"
           }
@@ -606,10 +580,8 @@ Sample response:
                 "priority": 0
               }
             },
-            "sourceName": "",
             "sourcePartitions": "",
             "sourceType": "nil",
-            "sourceUUID": "",
             "uuid": "1ac72081ac81e0aa"
           }
         },
@@ -622,6 +594,15 @@ Sample response:
       "planPIndexesErr": null,
       "status": "ok"
     }
+
+---
+
+PUT `/api/cfgNodeDefs`
+
+Sets the given nodeDefs configurations
+                       to the Cfg.
+
+**version introduced**: 5.0.0
 
 ---
 
@@ -646,11 +627,11 @@ Sample response:
       "mgr": {
         "bindHttp": "0.0.0.0:8094",
         "container": "",
-        "dataDir": "tmp/data249764618",
+        "dataDir": "tmp/data124816448",
         "extras": "",
         "options": {},
         "server": "http://localhost:8091",
-        "startTime": "2017-03-01T13:32:10.172035612-08:00",
+        "startTime": "2017-08-03T11:32:11.42682616-07:00",
         "tags": null,
         "uuid": "78fc2ffac2fd9401",
         "version": "5.0.0",
@@ -746,14 +727,14 @@ Sample response:
       "arch": "amd64",
       "go": {
         "GOMAXPROCS": 8,
-        "GOROOT": "/usr/local/go",
+        "GOROOT": "/usr/local/Cellar/go/1.8.1/libexec",
         "compiler": "gc",
-        "version": "go1.8"
+        "version": "go1.8.1"
       },
       "numCPU": 8,
       "os": "darwin",
       "versionData": "5.0.0",
-      "versionMain": "v0.3.1-345-ga3409b2"
+      "versionMain": "v0.3.1-493-g4a247d2"
     }
 
 ---
@@ -783,6 +764,14 @@ Requests the node to capture lcoal
                        memory usage profiling information.
 
 **version introduced**: 0.0.1
+
+---
+
+POST `/api/runtime/trace`
+
+Requests the node to go trace the program.
+
+**version introduced**: 5.0.0
 
 ---
 
@@ -817,14 +806,6 @@ Returns information on the node's
                        low-level GC and memory related runtime stats as JSON.
 
 **version introduced**: 0.0.1
-
----
-
-POST `/api/runtime/trace`
-
-Requests the node to trace the program
-
-**version introduced**: 5.0.0
 
 ---
 
