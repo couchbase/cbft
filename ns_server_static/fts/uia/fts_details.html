@@ -1,0 +1,49 @@
+<div class="indexContainer">
+
+    <div ng-show="errorMessage" class="error ng-cloak" role="alert">
+        {{errorMessage}}
+    </div>
+
+    <div class="row margin-bottom-half">
+    <h3>Details for {{indexName}}</h3>
+    </div>
+    <hr/>
+
+    <div class="tabs">
+        <button ng-class="{ active: isIndexTab(1) }"
+                ng-click="setIndexTab(1)">
+            Summary
+        </button>
+        <button ng-class="{ active: isIndexTab(2) }"
+                ng-click="setIndexTab(2)">
+            Monitor
+        </button>
+        <button ng-class="{ active: isIndexTab(3) }"
+                ng-click="setIndexTab(3)">
+            Manage
+        </button>
+    </div>
+
+    <p/>
+    <hr/>
+
+    <div ng-show="isIndexTab(1)">
+        <div class="fts-query-results"
+             ng-include
+             src="'../_p/ui/fts/static/partials/index/tab-summary.html'">
+        </div>
+    </div>
+    <div ng-show="isIndexTab(2)">
+        <div class="fts-query-results"
+             ng-include
+             src="'../_p/ui/fts/static/partials/index/tab-monitor.html'">
+        </div>
+    </div>
+    <div ng-show="isIndexTab(3)">
+        <div class="fts-query-results"
+             ng-include
+             src="'../_p/ui/fts/static/partials/index/tab-manage.html'">
+        </div>
+    </div>
+
+</div>

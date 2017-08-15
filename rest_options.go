@@ -130,15 +130,18 @@ func (h *ConciseOptions) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	maxReplicasAllowed, _ := strconv.Atoi(h.mgr.Options()["maxReplicasAllowed"])
 	bucketTypesAllowed := h.mgr.Options()["bucketTypesAllowed"]
+	hideUI := h.mgr.Options()["hideUI"]
 
 	rv := struct {
 		Status             string `json:"status"`
 		MaxReplicasAllowed int    `json:"maxReplicasAllowed"`
 		BucketTypesAllowed string `json:"bucketTypesAllowed"`
+		HideUI             string `json:"hideUI"`
 	}{
 		Status:             "ok",
 		MaxReplicasAllowed: maxReplicasAllowed,
 		BucketTypesAllowed: bucketTypesAllowed,
+		HideUI:             hideUI,
 	}
 	rest.MustEncode(w, rv)
 }

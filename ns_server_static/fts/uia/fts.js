@@ -122,6 +122,19 @@ var ftsPrefix = 'fts';
               title: "Search Results",
               child: parent + '.fts_list'
             }
+          })
+          .state(parent + '.fts_details', {
+            url: '/fts_details/:indexName',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexDetailsCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/uia/fts_details.html'
+              }
+            },
+            data: {
+              title: "Index Details",
+              child: parent + '.fts_list'
+            }
           });
       }
 
@@ -151,7 +164,8 @@ var ftsPrefix = 'fts';
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
-        controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS);
+        controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
+        controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS);
 }());
 
 // ----------------------------------------------
@@ -284,6 +298,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
     $scope.progressPct = "";
     $scope.sourceDocCount = "";
     $scope.httpStatus = 200;    // OK
+    $scope.showHiddenUI = false;
 
     $scope.loadDocCount = function(callback) {
         $scope.loadIndexDocCount();
@@ -313,6 +328,18 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         });
     }
 
+    $scope.checkHiddenUI = function() {
+        $scope.showHiddenUI = false;
+
+        http.get('/api/conciseOptions').
+        then(function(response) {
+            hideUI = response.data.hideUI;
+            if (hideUI === "false") {
+                $scope.showHiddenUI = true;
+            }
+        });
+    }
+
     function updateProgressPct() {
         var i = parseInt($scope.indexDocCount);
         var s = parseInt($scope.sourceDocCount);
@@ -334,6 +361,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 
     if ($scope.tab === "summary") {
         $scope.loadDocCount();
+        $scope.checkHiddenUI();
     }
 
     ftsServiceHostPort($scope, $http, $location);
@@ -579,6 +607,33 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
         document.getElementById("query_bar_input").focus();
     }, 100);
   })
+}
+
+// -------------------------------------------------------
+
+function IndexDetailsCtrlFT_NS($scope, $http, $route, $stateParams,
+                               $location, $log, $sce, $uibModal) {
+    var $routeParams = $stateParams;
+
+    var http = prefixedHttp($http, '/../_p/' + ftsPrefix);
+
+    $scope.indexName = $stateParams.indexName;
+
+    $scope.jsonDetails = false;
+    $scope.curlDetails = false;
+
+    $scope.indexTab = 1;
+
+    $scope.setIndexTab = function(newTab) {
+        $scope.indexTab = newTab;
+    }
+
+    $scope.isIndexTab = function(tabNum) {
+        return $scope.indexTab === tabNum
+    }
+
+    IndexCtrl($scope, http, $route, $routeParams,
+              $location, $log, $sce, $uibModal);
 }
 
 // -------------------------------------------------------
