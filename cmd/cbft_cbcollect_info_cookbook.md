@@ -94,6 +94,10 @@ To get the goroutine dump out of our fts_diag.json in original formatting...
     # The -r is the magic to get it back out of a json string,
     # removing quoting, and evaluate newlines again.
 
+As another approach, to have cbft process to log or dump goroutine info (to stdout/stderr or logs)...
+
+    kill -s SIGUSR2 $CBFT_PID
+
 To emit moss store histograms (pretty output) for the cbft node...
 
     curl http://<username>:<password>@<ip>:8094/api/stats | jq '.["pindexes"][]["bleveIndexStats"]["index"]["kv"]["store_histograms"] | split("\n")'
