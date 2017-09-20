@@ -546,21 +546,21 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
-	err := json.Unmarshal(req, &queryCtlParams)
+	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
 
 	queryPIndexes := QueryPIndexes{}
-	err = json.Unmarshal(req, &queryPIndexes)
+	err = UnmarshalJSON(req, &queryPIndexes)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryPIndexes, req: %s, err: %v", req, err)
 	}
 
 	searchRequest := &bleve.SearchRequest{}
-	err = json.Unmarshal(req, searchRequest)
+	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
@@ -651,7 +651,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				var remoteConsistencyErr = struct {
 					StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 				}{}
-				err = json.Unmarshal(lastErrBody, &remoteConsistencyErr)
+				err = UnmarshalJSON(lastErrBody, &remoteConsistencyErr)
 				if err == nil {
 					for k, v := range remoteConsistencyErr.StartEndSeqs {
 						remoteConsistencyWaitError.StartEndSeqs[k] = v
@@ -687,7 +687,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				}
 			}
 		}
-		rest.MustEncode(res, searchResult)
+		mustEncode(res, searchResult)
 	}
 
 	return err
@@ -848,14 +848,14 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
-	err := json.Unmarshal(req, &queryCtlParams)
+	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
 	}
 
 	searchRequest := &bleve.SearchRequest{}
-	err = json.Unmarshal(req, searchRequest)
+	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
@@ -1025,7 +1025,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		}
 		idxStats := t.bindex.StatsMap()
 		var idxStatsJSON []byte
-		idxStatsJSON, err = json.Marshal(idxStats)
+		idxStatsJSON, err = MarshalJSON(idxStats)
 		if err != nil {
 			log.Errorf("json failed to marshal was: %#v", idxStats)
 			return
@@ -1970,4 +1970,37 @@ func RestartOnIndexDefChanges(
 		return ""
 	}
 	return cbgt.PINDEXES_RESTART
+}
+
+func mustEncode(w io.Writer, i interface{}) {
+	if JSONImpl != nil && JSONImpl.GetManagerOptions()["jsonImpl"] != "std" {
+		MustEncodeWithParser(w, i)
+	} else {
+		rest.MustEncode(w, i)
+	}
+}
+
+// MustEncodeWithParser encode with the registered parserType,
+func MustEncodeWithParser(w io.Writer, i interface{}) {
+	rw, rwOk := w.(http.ResponseWriter)
+	if rwOk {
+		h := rw.Header()
+		if h != nil {
+			h.Set("Cache-Control", "no-cache")
+			if h.Get("Content-type") == "" {
+				h.Set("Content-type", "application/json")
+			}
+		}
+	}
+	var err error
+	if JSONImpl != nil {
+		err = JSONImpl.Encode(w, i)
+	} else {
+		err = fmt.Errorf("bleve: MustEncodeWithParser fails as no custom parser found")
+	}
+	if err != nil {
+		if rwOk {
+			http.Error(rw, fmt.Sprintf("rest: custom JSON: %s encode, err: %v", JSONImpl.GetParserType(), err), 500)
+		}
+	}
 }

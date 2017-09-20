@@ -385,6 +385,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
+	// enabled by default, runtime controllable through manager options
+	log.Printf("main: custom jsoniter json implementation enabled")
+	cbft.JSONImpl = &cbft.CustomJSONImpl{CustomJSONImplType: "jsoniter"}
+	cbft.JSONImpl.SetManager(mgr)
+
 	var adtSvc *audit.AuditSvc
 	if options["cbaudit"] == "true" {
 		adtSvc, _ = audit.NewAuditSvc(server)

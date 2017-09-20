@@ -11,7 +11,6 @@ package cbft
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -135,7 +134,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 		Status string `json:"status"`
 		Count  uint64 `json:"count"`
 	}{}
-	err = json.Unmarshal(respBuf, &rv)
+	err = UnmarshalJSON(respBuf, &rv)
 	if err != nil {
 		return 0, fmt.Errorf("remote: count error parsing respBuf: %s,"+
 			" countURL: %s, resp: %#v, err: %v",
@@ -184,7 +183,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		queryCtlParams.Ctl.Timeout = int64(remaining / time.Millisecond)
 	}
 
-	buf, err := json.Marshal(struct {
+	buf, err := MarshalJSON(struct {
 		*cbgt.QueryCtlParams
 		*QueryPIndexes
 		*bleve.SearchRequest
@@ -211,7 +210,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 				Errors: make(map[string]error),
 			},
 		}
-		err = json.Unmarshal(respBuf, rv)
+		err = UnmarshalJSON(respBuf, rv)
 		if err != nil {
 			resultCh <- makeSearchResultErr(req, r.PIndexNames,
 				fmt.Errorf("remote: search error parsing respBuf: %s,"+

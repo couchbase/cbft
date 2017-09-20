@@ -12,7 +12,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -62,7 +61,7 @@ type AliasParamsTarget struct {
 
 func ValidateAlias(indexType, indexName, indexParams string) error {
 	params := AliasParams{}
-	err := json.Unmarshal([]byte(indexParams), &params)
+	err := UnmarshalJSON([]byte(indexParams), &params)
 	if err == nil {
 		if len(params.Targets) == 0 {
 			return fmt.Errorf("ValidateAlias: cannot create index alias" +
@@ -93,7 +92,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		},
 	}
 
-	err := json.Unmarshal(req, &queryCtlParams)
+	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("alias: QueryAlias"+
 			" parsing queryCtlParams, req: %s, err: %v", req, err)
@@ -101,7 +100,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	searchRequest := &bleve.SearchRequest{}
 
-	err = json.Unmarshal(req, searchRequest)
+	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("alias: QueryAlias"+
 			" parsing searchRequest, req: %s, err: %v", req, err)
@@ -135,7 +134,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 
 func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 	params := AliasParams{}
-	err := json.Unmarshal([]byte(aliasDefParams), &params)
+	err := UnmarshalJSON([]byte(aliasDefParams), &params)
 	if err != nil {
 		return nil, err
 	}
