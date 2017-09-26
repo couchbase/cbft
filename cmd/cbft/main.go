@@ -258,6 +258,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
 
+	s := options["http2"]
+	if s == "true" {
+		extrasMap["bindHTTP"] = flags.BindHTTP
+		extrasMap["bindHTTPS"] = flags.BindHTTPS
+	}
+
 	extrasJSON, err := json.Marshal(extrasMap)
 	if err != nil {
 		return nil, err

@@ -341,6 +341,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["num_bytes_used_ram"] = rd.memStats.Alloc
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
+	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
+	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttp2)
 
 	nsIndexStats[""] = topLevelStats
 

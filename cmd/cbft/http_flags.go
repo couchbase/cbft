@@ -12,7 +12,7 @@
 package main
 
 import (
-	"io"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -20,6 +20,8 @@ import (
 
 	"github.com/couchbase/cbft"
 	log "github.com/couchbase/clog"
+
+	"golang.org/x/net/http2"
 )
 
 var httpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
@@ -117,18 +119,27 @@ func initHTTPOptions(options map[string]string) error {
 		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
 	}
 
-	httpClient := &http.Client{Transport: transport}
+	cbft.HttpClient = &http.Client{Transport: transport}
 
-	cbft.HttpClient = httpClient
-
-	cbft.HttpGet = func(url string) (resp *http.Response, err error) {
-		return httpClient.Get(url)
+	transport2 := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   httpTransportDialContextTimeout,
+			KeepAlive: httpTransportDialContextKeepAlive,
+		}).DialContext,
+		MaxIdleConns:          httpTransportMaxIdleConns,
+		MaxIdleConnsPerHost:   httpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:       httpTransportIdleConnTimeout,
+		TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
+		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
 	}
 
-	cbft.HttpPost = func(url string, bodyType string, body io.Reader) (
-		resp *http.Response, err error) {
-		return httpClient.Post(url, bodyType, body)
+	err := http2.ConfigureTransport(transport2)
+	if err != nil {
+		return fmt.Errorf("initHTTPOptions: unable to configure"+
+			"http.Transport for http2, err: %v", err)
 	}
+	cbft.Http2Client = &http.Client{Transport: transport2}
 
 	return nil
 }

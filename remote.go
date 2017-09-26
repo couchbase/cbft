@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -32,9 +33,19 @@ import (
 
 const RemoteRequestOverhead = 500 * time.Millisecond
 
-var HttpClient = http.DefaultClient // Overridable for testability / advanced needs.
-var HttpPost = http.Post            // Overridable for testability / advanced needs.
-var HttpGet = http.Get              // Overridable for testability / advanced needs.
+var HttpClient = http.DefaultClient  // Overridable for testability / advanced needs.
+var Http2Client = http.DefaultClient // Overridable for testability / advanced needs.
+
+// Overridable for testability / advanced needs.
+var HttpPost = func(client *http.Client,
+	url string, bodyType string, body io.Reader) (*http.Response, error) {
+	return client.Post(url, bodyType, body)
+}
+
+// Overridable for testability / advanced needs.
+var HttpGet = func(client *http.Client, url string) (*http.Response, error) {
+	return client.Get(url)
+}
 
 var indexClientUnimplementedErr = errors.New("unimplemented")
 
@@ -55,6 +66,7 @@ type IndexClient struct {
 	QueryURL    string
 	CountURL    string
 	Consistency *cbgt.ConsistencyParams
+	httpClient  *http.Client
 
 	lastMutex        sync.RWMutex
 	lastSearchStatus int
@@ -102,7 +114,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 			r.CountURL, r.AuthType(), err)
 	}
 
-	resp, err := HttpGet(u)
+	resp, err := HttpGet(r.httpClient, u)
 	if err != nil {
 		return 0, err
 	}
@@ -301,7 +313,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	req.Header.Add("Internal-Cluster-Action", "fts-scatter/gather")
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := HttpClient.Do(req)
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -371,6 +383,7 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 				QueryURL:    baseURL + "/query",
 				CountURL:    baseURL + "/count",
 				Consistency: client.Consistency,
+				httpClient:  client.httpClient,
 			}
 
 			m[groupByKey] = c

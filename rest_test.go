@@ -1884,7 +1884,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	httpGetPrev := HttpGet
 	defer func() { HttpGet = httpGetPrev }()
 
-	HttpGet = func(urlStr string) (
+	HttpGet = func(client *http.Client, urlStr string) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -1903,7 +1903,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	httpPostPrev := HttpPost
 	defer func() { HttpPost = httpPostPrev }()
 
-	HttpPost = func(urlStr string, bodyType string, body io.Reader) (
+	HttpPost = func(client *http.Client,
+		urlStr string, bodyType string, body io.Reader) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -2164,7 +2165,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	httpGetPrev := HttpGet
 	defer func() { HttpGet = httpGetPrev }()
 
-	HttpGet = func(urlStr string) (
+	HttpGet = func(client *http.Client, urlStr string) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{
@@ -2183,7 +2184,8 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	httpPostPrev := HttpPost
 	defer func() { HttpPost = httpPostPrev }()
 
-	HttpPost = func(urlStr string, bodyType string, body io.Reader) (
+	HttpPost = func(client *http.Client,
+		urlStr string, bodyType string, body io.Reader) (
 		resp *http.Response, err error) {
 		u, _ := url.Parse(urlStr)
 		req := &http.Request{

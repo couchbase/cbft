@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/net/context"
@@ -1401,6 +1402,13 @@ func (t *BleveDestPartition) incRev() {
 
 // ---------------------------------------------------------
 
+// Atomic counters that keep track of the number of times http and http2
+// were used for scatter gather over remote pindexes.
+var totRemoteHttp uint64
+var totRemoteHttp2 uint64
+
+// ---------------------------------------------------------
+
 // Returns a bleve.IndexAlias that represents all the PIndexes for the
 // index, including perhaps bleve remote client PIndexes.
 //
@@ -1486,7 +1494,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
 			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 
-		remoteClients = append(remoteClients, &IndexClient{
+		indexClient := &IndexClient{
 			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
 			HostPort:    remotePlanPIndex.NodeDef.HostPort,
@@ -1496,8 +1504,26 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
+			httpClient:  HttpClient,
 			// TODO: Propagate auth to remote client.
-		})
+		}
+
+		extrasMap, er := ParseExtras(remotePlanPIndex.NodeDef.Extras)
+		if er != nil {
+			log.Warnf("bleveIndexTargets: unable to parse extras for"+
+				" remotePlanPIndex: %v with hostport: %v",
+				indexClient.IndexName, indexClient.HostPort)
+		} else {
+			if strings.Contains(extrasMap["bindHTTP"], indexClient.HostPort) ||
+				strings.Contains(extrasMap["bindHTTPS"], indexClient.HostPort) {
+				indexClient.httpClient = Http2Client
+				atomic.AddUint64(&totRemoteHttp2, 1)
+			} else {
+				atomic.AddUint64(&totRemoteHttp, 1)
+			}
+		}
+
+		remoteClients = append(remoteClients, indexClient)
 	}
 
 	if groupByNode {

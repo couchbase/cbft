@@ -75,8 +75,9 @@ func TestNegativeIndexClient(t *testing.T) {
 
 func TestBadURLsIndexClient(t *testing.T) {
 	bc := &IndexClient{
-		CountURL: "bogus url",
-		QueryURL: "fake url",
+		CountURL:   "bogus url",
+		QueryURL:   "fake url",
+		httpClient: HttpClient,
 	}
 	c, err := bc.DocCount()
 	if err == nil || c != 0 {
@@ -94,18 +95,21 @@ func TestGroupIndexClientsByHostPort(t *testing.T) {
 		IndexName:   "indexA",
 		PIndexNames: []string{"a", "b"},
 		QueryURL:    "foo",
+		httpClient:  HttpClient,
 	}
 	c1 := &IndexClient{
 		HostPort:    "x",
 		IndexName:   "indexA",
 		PIndexNames: []string{"c"},
 		QueryURL:    "bar",
+		httpClient:  HttpClient,
 	}
 	c2 := &IndexClient{
 		HostPort:    "y",
 		IndexName:   "indexA",
 		PIndexNames: []string{"d"},
 		QueryURL:    "baz",
+		httpClient:  HttpClient,
 	}
 
 	a, err := GroupIndexClientsByHostPort([]*IndexClient{c0, c1, c2})
