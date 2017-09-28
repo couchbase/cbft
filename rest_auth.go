@@ -102,8 +102,8 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 
 	perms, err := preparePerms(mgr, req, req.Method, path)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("rest_auth: preparePerm,"+
-			" err: %v", err), 403)
+		http.Error(w, fmt.Sprintf("rest_auth: preparePerms,"+
+			" err: %v", err), 400)
 		return false
 	}
 
