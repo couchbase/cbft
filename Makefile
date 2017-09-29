@@ -29,7 +29,7 @@ build-full:
 	$(MAKE) build CBFT_TAGS="full"
 
 gen-bindata:
-	go-bindata-assetfs -pkg=cbft ./staticx/...
+	go-bindata-assetfs -pkg=cbft ./staticx/... ./ns_server_static/fts/static-bleve-mapping/...
 	gofmt -s -w bindata_assetfs.go
 
 gen-docs: cmd/cbft_docs/main.go
