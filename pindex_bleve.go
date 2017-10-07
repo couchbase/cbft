@@ -1508,19 +1508,32 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			// TODO: Propagate auth to remote client.
 		}
 
-		extrasMap, er := ParseExtras(remotePlanPIndex.NodeDef.Extras)
-		if er != nil {
-			log.Warnf("bleveIndexTargets: unable to parse extras for"+
-				" remotePlanPIndex: %v with hostport: %v",
-				indexClient.IndexName, indexClient.HostPort)
-		} else {
-			if strings.Contains(extrasMap["bindHTTP"], indexClient.HostPort) ||
-				strings.Contains(extrasMap["bindHTTPS"], indexClient.HostPort) {
-				indexClient.httpClient = Http2Client
-				atomic.AddUint64(&totRemoteHttp2, 1)
-			} else {
-				atomic.AddUint64(&totRemoteHttp, 1)
+		http2Enabled := false
+		extrasBindHTTP, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTP")
+		if er == nil && extrasBindHTTP != nil {
+			if extrasBindHTTPstr, ok := extrasBindHTTP.(string); ok {
+				if strings.Contains(extrasBindHTTPstr, indexClient.HostPort) {
+					http2Enabled = true
+				}
 			}
+		}
+
+		if !http2Enabled {
+			extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
+			if er == nil && extrasBindHTTPS != nil {
+				if extrasBindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
+					if strings.Contains(extrasBindHTTPSstr, indexClient.HostPort) {
+						http2Enabled = true
+					}
+				}
+			}
+		}
+
+		if http2Enabled {
+			indexClient.httpClient = Http2Client
+			atomic.AddUint64(&totRemoteHttp2, 1)
+		} else {
+			atomic.AddUint64(&totRemoteHttp, 1)
 		}
 
 		remoteClients = append(remoteClients, indexClient)
