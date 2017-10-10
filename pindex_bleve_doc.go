@@ -147,15 +147,19 @@ func lookupPropertyPath(data interface{}, path string) interface{} {
 
 func lookupPropertyPathPart(data interface{}, part string) interface{} {
 	val := reflect.ValueOf(data)
+	if !val.IsValid() {
+		return nil
+	}
 	typ := val.Type()
 	switch typ.Kind() {
 	case reflect.Map:
 		// FIXME can add support for other map keys in the future
 		if typ.Key().Kind() == reflect.String {
-			key := reflect.ValueOf(part)
-			entry := val.MapIndex(key)
-			if entry.IsValid() {
-				return entry.Interface()
+			if key := reflect.ValueOf(part); key.IsValid() {
+				entry := val.MapIndex(key)
+				if entry.IsValid() {
+					return entry.Interface()
+				}
 			}
 		}
 	case reflect.Struct:
