@@ -55,6 +55,9 @@ var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
 
+// represents the number of async batch workers per pindex
+var asyncBatchWorkerCount = 4 // need to make it configurable,
+
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
 //     {
@@ -182,6 +185,9 @@ type BleveDest struct {
 	rev uint64 // Incremented whenever bindex changes.
 
 	stats cbgt.PIndexStoreStats
+
+	batchReqChs []chan *batchRequest
+	stopCh      chan struct{}
 }
 
 // Used to track state for a single partition.
@@ -201,12 +207,20 @@ type BleveDestPartition struct {
 	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
 
-	cwrQueue cbgt.CwrQueue
+	cwrQueue          cbgt.CwrQueue
+	lastAsyncBatchErr error // for returning async batch err on next call
+}
+
+type batchRequest struct {
+	bdp    *BleveDestPartition
+	bindex bleve.Index
+	batch  *bleve.Batch
 }
 
 func NewBleveDest(path string, bindex bleve.Index,
 	restart func(), bleveDocConfig BleveDocumentConfig) *BleveDest {
-	return &BleveDest{
+
+	bleveDest := &BleveDest{
 		path:           path,
 		bleveDocConfig: bleveDocConfig,
 		restart:        restart,
@@ -216,7 +230,17 @@ func NewBleveDest(path string, bindex bleve.Index,
 			TimerBatchStore: metrics.NewTimer(),
 			Errors:          list.New(),
 		},
+		stopCh: make(chan struct{}),
 	}
+
+	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+	for i := 0; i < asyncBatchWorkerCount; i++ {
+		bleveDest.batchReqChs[i] = make(chan *batchRequest, 1)
+		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh)
+		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, bindex.Name())
+	}
+
+	return bleveDest
 }
 
 // ---------------------------------------------------------
@@ -515,7 +539,6 @@ type QueryPIndexes struct {
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
-
 	// phase 0 - parsing/validating query
 	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
@@ -717,6 +740,8 @@ func (t *BleveDest) closeLOCKED() error {
 	if t.bindex == nil {
 		return nil // Already closed.
 	}
+
+	close(t.stopCh)
 
 	partitions := t.partitions
 	t.partitions = make(map[string]*BleveDestPartition)
@@ -1218,7 +1243,7 @@ func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
 
-	revNeedsUpdate, err := t.applyBatchLOCKED()
+	revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 	if err != nil {
 		t.m.Unlock()
 		return err
@@ -1334,10 +1359,113 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
 
 	if seq < t.seqSnapEnd &&
 		(BleveMaxOpsPerBatch <= 0 || BleveMaxOpsPerBatch > t.batch.Size()) {
-		return false, nil
+		return false, t.lastAsyncBatchErr
 	}
 
-	return t.applyBatchLOCKED()
+	return t.submitAsyncBatchRequestLOCKED()
+}
+
+func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
+	// fetch the needed parameters and remain unlocked until requestCh
+	// is ready to accommodate this request
+	bindex := t.bindex
+	batch := t.batch
+	p := t.partition
+	batchReqChs := t.bdest.batchReqChs
+	stopCh := t.bdest.stopCh
+	t.m.Unlock()
+	// ensure that batch requests from a given partition always goes
+	// to the same worker queue so that the order of seq numbers are maintained
+	partition, err := strconv.Atoi(p)
+	if err != nil {
+		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED, err: %v", err)
+		t.m.Lock()
+		return false, err
+	}
+
+	reqChIndex := partition % asyncBatchWorkerCount
+	br := &batchRequest{bdp: t, bindex: bindex,
+		batch: batch,
+	}
+	select {
+	case <-stopCh:
+		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED stopped ")
+		t.m.Lock()
+		return false, t.lastAsyncBatchErr
+
+	case batchReqChs[reqChIndex] <- br:
+	}
+
+	// acquire lock
+	t.m.Lock()
+	t.batch = t.bindex.NewBatch()
+	return false, t.lastAsyncBatchErr
+}
+
+func (t *BleveDestPartition) setLastAsyncBatchErr(err error) {
+	t.m.Lock()
+	t.lastAsyncBatchErr = err
+	t.m.Unlock()
+}
+
+func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
+	for {
+		select {
+		case batchReq := <-requestCh:
+			if batchReq == nil {
+				log.Printf("pindex_bleve: batchWorker stopped ")
+				return
+			}
+			if batchReq.bdp == nil || batchReq.bindex == nil {
+				continue
+			}
+
+			_, err := executeBatch(batchReq.bdp, batchReq.bindex, batchReq.batch)
+			if err != nil {
+				batchReq.bdp.setLastAsyncBatchErr(err)
+			}
+
+		case <-stopCh:
+			log.Printf("pindex_bleve: batchWorker stopped ")
+			return
+		}
+	}
+}
+
+func executeBatch(t *BleveDestPartition,
+	bindex bleve.Index, batch *bleve.Batch) (bool, error) {
+	if batch == nil {
+		return false, fmt.Errorf("pindex_bleve: executeBatch batch nil")
+	}
+
+	if bindex == nil {
+		return false, fmt.Errorf("pindex_bleve: executeBatch bindex already closed")
+	}
+
+	err := cbgt.Timer(func() error {
+		err := bindex.Batch(batch)
+		if err != nil {
+			log.Printf("pindex_bleve: executeBatch, err: %+v ", err)
+		}
+
+		return err
+	}, t.bdest.stats.TimerBatchStore)
+	if err != nil {
+		return false, err
+	}
+
+	t.m.Lock()
+	t.seqMaxBatch = t.seqMax
+	for t.cwrQueue.Len() > 0 &&
+		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
+		cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
+		if cwr != nil && cwr.DoneCh != nil {
+			close(cwr.DoneCh)
+		}
+	}
+	t.m.Unlock()
+
+	return true, nil
 }
 
 func (t *BleveDestPartition) applyBatchLOCKED() (bool, error) {

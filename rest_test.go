@@ -857,6 +857,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	if err != nil || router == nil {
 		t.Errorf("no mux router")
 	}
+	var pindex *cbgt.PIndex
 
 	var doneCh chan *httptest.ResponseRecorder
 
@@ -907,6 +908,10 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
+				}
+				for _, p := range pindexes {
+					pindex = p
+					break
 				}
 			},
 		},
@@ -1009,6 +1014,9 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
+
+				WaitForPersistence(pindex, float64(2))
+
 			},
 			Desc:   "count idx0 should be 2 when 1st snapshot ended",
 			Path:   "/api/index/idx0/count",
@@ -1110,7 +1118,6 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex get",
 			Method: "NOOP",
 			After: func() {
-				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex,"+
@@ -1143,7 +1150,6 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query on mismatched pindex UUID",
 			Method: "NOOP",
 			After: func() {
-				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex,"+
@@ -1182,7 +1188,6 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query with clipped requestBody",
 			Method: "NOOP",
 			After: func() {
-				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex,"+
@@ -1219,7 +1224,6 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Desc:   "direct pindex query",
 			Method: "NOOP",
 			After: func() {
-				var pindex *cbgt.PIndex
 				_, pindexes := mgr.CurrentMaps()
 				if len(pindexes) != 1 {
 					t.Errorf("expected to be 1 pindex,"+
@@ -1381,6 +1385,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
+				WaitForPersistence(pindex, float64(3))
 			},
 			Desc:   "count idx0 should be 3 when 2st snapshot ended",
 			Path:   "/api/index/idx0/count",
@@ -1612,6 +1617,8 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 
 	var feed *cbgt.PrimaryFeed
 
+	var pindex *cbgt.PIndex
+
 	tests := []*RESTHandlerTest{
 		{
 			Desc:   "create dest feed with 1 partition for rollback",
@@ -1642,6 +1649,11 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
+				}
+
+				for _, p := range pindexes {
+					pindex = p
+					break
 				}
 			},
 		},
@@ -1743,6 +1755,7 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
+				WaitForPersistence(pindex, float64(2))
 			},
 			Desc:   "count idx0 2 when 1st snapshot ended, pre-rollback",
 			Path:   "/api/index/idx0/count",

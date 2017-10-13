@@ -12,16 +12,48 @@
 package cbft
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/blevesearch/bleve"
 
 	"github.com/couchbase/cbgt"
 )
+
+func WaitForPersistence(pindex *cbgt.PIndex, docCount float64) error {
+	for i := 0; i < 100; i++ {
+		stats := map[string]interface{}{
+			"doc_count":           float64(0),
+			"num_recs_to_persist": float64(0),
+		}
+		err := addPIndexStats(pindex, stats)
+		if err != nil {
+			return fmt.Errorf("expected nil addPIndexStats err, got: %v", err)
+		}
+		dv, ok := stats["doc_count"]
+		if ok {
+			dc, ok := dv.(float64)
+			if ok && dc == docCount {
+				v, ok1 := stats["num_recs_to_persist"]
+				if ok1 {
+					nrtp, ok1 := v.(float64)
+					if ok1 && nrtp <= 0.0 {
+						return nil
+					}
+				}
+			}
+
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("persistence took too long!")
+}
 
 func TestManagerRestart(t *testing.T) {
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
@@ -222,6 +254,7 @@ func TestPartitioningMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
+			WaitForPersistence(pindex0, float64(1))
 			n, err = bindex0.DocCount()
 			if err != nil {
 				t.Errorf("error getting doc count: %v", err)
@@ -306,6 +339,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
+			WaitForPersistence(pindex0_0, float64(1))
 			n, err = bindex0.DocCount()
 			if err != nil {
 				t.Errorf("error getting doc count: %v", err)
@@ -329,6 +363,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if err != nil {
 				t.Errorf("expected no error to update, err: %v", err)
 			}
+			WaitForPersistence(pindex0_0, float64(1))
 			n, err = bindex0.DocCount()
 			if err != nil {
 				t.Errorf("error getting doc count: %v", err)
@@ -336,6 +371,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if n != 1 {
 				t.Errorf("expected 1 docs in bindex0, got: %d", n)
 			}
+			WaitForPersistence(pindex1, float64(1))
 			n, err = bindex1.DocCount()
 			if err != nil {
 				t.Errorf("error getting doc count: %v", err)

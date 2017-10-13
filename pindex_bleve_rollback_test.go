@@ -98,9 +98,10 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 	var pindex *cbgt.PIndex
 	var feed *cbgt.PrimaryFeed
 
-	waitForPersistence := func() {
+	waitForPersistence := func(docCount float64) {
 		for i := 0; i < 100; i++ {
 			stats := map[string]interface{}{
+				"doc_count":           float64(0),
 				"num_recs_to_persist": float64(0),
 			}
 			err = addPIndexStats(pindex, stats)
@@ -111,14 +112,19 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			if ok {
 				nrtp, ok := v.(float64)
 				if ok && nrtp <= 0.0 {
-					return
+					dv, ok1 := stats["doc_count"]
+					if ok1 {
+						dc, ok := dv.(float64)
+						if ok && dc == docCount {
+							return
+						}
+					}
 				}
 			}
 
 			time.Sleep(50 * time.Millisecond)
 		}
 		t.Errorf("persistence took too long!")
-
 	}
 
 	tests := []*RESTHandlerTest{
@@ -231,7 +237,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
-				waitForPersistence()
+				waitForPersistence(float64(2))
 			},
 			Desc:   "count idx0 2 when 1st snapshot ended, pre-rollback",
 			Path:   "/api/index/idx0/count",
@@ -271,7 +277,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
-				waitForPersistence()
+				waitForPersistence(float64(3))
 			},
 			Desc:   "count idx0 3 when 2nd snapshot ended, pre-rollback",
 			Path:   "/api/index/idx0/count",
@@ -313,7 +319,10 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 				if err != nil {
 					t.Errorf("expected no err on snapshot-start")
 				}
-				waitForPersistence()
+				// need to revisit this sleep part, ideally
+				// waitForPersistence should have sufficed
+				time.Sleep(100 * time.Millisecond)
+				waitForPersistence(float64(4))
 			},
 			Desc:   "count idx0 4 when 3rd snapshot ended, pre-rollback",
 			Path:   "/api/index/idx0/count",
@@ -338,6 +347,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 				// we get a kick, but unfortunately results will be race-y.
 				time.Sleep(100 * time.Millisecond)
 				mgr.Kick("after-rollback")
+
 			},
 			Desc:          rollbackDesc,
 			Path:          "/api/index/idx0/count",
