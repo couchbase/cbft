@@ -254,7 +254,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if err != nil {
 		return nil, err
 	}
-	extrasMap["features"] = "leanPlan"
+
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
 
