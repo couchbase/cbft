@@ -654,7 +654,8 @@ function bleveNewIndexMapping() {
             "char_filters": {},
             "tokenizers": {},
             "token_filters": {},
-            "token_maps": {}
+            "token_maps": {},
+            "date_time_parsers": {}
         },
         "store_dynamic": false,
         "index_dynamic": true
@@ -806,7 +807,9 @@ angular.module(ftsAppName).
     controller('BleveTokenFilterModalCtrl',
                BleveTokenFilterModalCtrl_NS).
     controller('BleveWordListModalCtrl',
-               BleveWordListModalCtrl_NS);
+               BleveWordListModalCtrl_NS).
+    controller('BleveDatetimeParserModalCtrl',
+               BleveDatetimeParserModalCtrl_NS);
 
 // ----------------------------------------------
 
@@ -842,6 +845,12 @@ function BleveWordListModalCtrl_NS($scope, $uibModalInstance,
                                    name, words, mapping, static_prefix) {
     return BleveWordListModalCtrl($scope, $uibModalInstance,
                                   name, words, mapping, static_prefix);
+}
+
+function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
+                                         name, layouts, mapping, static_prefix) {
+    return BleveDatetimeParserModalCtrl($scope, $uibModalInstance,
+                                        name, layouts, mapping, static_prefix);
 }
 
 // ----------------------------------------------

@@ -40,33 +40,33 @@ function initBleveIndexMappingController(
     // ------------------------------------------------
 
     $scope.analyzerNames = options.analyzerNames || [];
-	$scope.loadAnalyzerNames = function() {
+    $scope.loadAnalyzerNames = function() {
         $http.post('/api/_analyzerNames', $scope.indexMappingResult()).
         then(function(response) {
             var data = response.data;
             $scope.analyzerNames = data.analyzers;
         }, function(response) {
             var data = response.data;
-			$scope.errorMessage = data;
+            $scope.errorMessage = data;
         });
-	};
+    };
     if (options.analyzerNames == null) {
-	    $scope.loadAnalyzerNames();
+        $scope.loadAnalyzerNames();
     }
 
     $scope.dateTimeParserNames = options.dateTimeParserNames || [];
-	$scope.loadDatetimeParserNames = function() {
+    $scope.loadDatetimeParserNames = function() {
         $http.post('/api/_datetimeParserNames', $scope.indexMappingResult()).
         then(function(response) {
             var data = response.data;
             $scope.dateTimeParserNames = data.datetime_parsers;
         }, function(response) {
             var data = response.data;
-			$scope.errorMessage = data;
+            $scope.errorMessage = data;
         });
-	};
+    };
     if (options.dateTimeParserNames == null) {
-	    $scope.loadDatetimeParserNames();
+        $scope.loadDatetimeParserNames();
     }
 
     // ------------------------------------------------

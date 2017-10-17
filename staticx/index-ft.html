@@ -64,6 +64,7 @@
   <script src="/static-bleve-mapping/js/mapping/analysis-charfilter.js"></script>
   <script src="/static-bleve-mapping/js/mapping/analysis-tokenizer.js"></script>
   <script src="/static-bleve-mapping/js/mapping/analysis-tokenfilter.js"></script>
+  <script src="/static-bleve-mapping/js/mapping/analysis-datetimeparser.js"></script>
 
   <script src="/staticx/js/debug.js"></script>
 
@@ -134,7 +135,8 @@ angular.module('cbgtApp').
     controller('BleveCharFilterModalCtrl', BleveCharFilterModalCtrl).
     controller('BleveTokenizerModalCtrl', BleveTokenizerModalCtrl).
     controller('BleveTokenFilterModalCtrl', BleveTokenFilterModalCtrl).
-    controller('BleveWordListModalCtrl', BleveWordListModalCtrl);
+    controller('BleveWordListModalCtrl', BleveWordListModalCtrl).
+    controller('BleveDatetimeParserModalCtrl', BleveDatetimeParserModalCtrl);
 
 angular.module('cbgtApp').
     config(['$routeProvider', '$locationProvider', '$httpProvider',

@@ -13,7 +13,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     };
 
     $scope.deleteAnalyzer = function(name) {
-        used = $scope.isAnalyzerUsed(name);
+        var used = $scope.isAnalyzerUsed(name);
         if (used) {
             alert("This analyzer cannot be deleted"+
                   " because it is being used by the " + used + ".");
@@ -34,15 +34,15 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
         // then check the default documnt mapping
         var dm = $scope.indexMapping.default_mapping;
-        used = $scope.isAnalyzerUsedInDocMapping(name, dm, "");
+        var used = $scope.isAnalyzerUsedInDocMapping(name, dm, "");
         if (used) {
             return "default document mapping " + used;
         }
 
         // then check the document mapping for each type
         for (var docType in $scope.indexMapping.types) {
-            docMapping = $scope.indexMapping.types[docType];
-            used = $scope.isAnalyzerUsedInDocMapping(name, docMapping, "");
+            var docMapping = $scope.indexMapping.types[docType];
+            var used = $scope.isAnalyzerUsedInDocMapping(name, docMapping, "");
             if (used) {
                 return "document mapping type '" + docType + "' ";
             }
@@ -64,7 +64,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
         // now check fields at this level
         for (var fieldIndex in docMapping.fields) {
-            field = docMapping.fields[fieldIndex];
+            var field = docMapping.fields[fieldIndex];
             if (field.analyzer == name) {
                 if (field.name) {
                     return "in the field named " + field.name;
@@ -75,7 +75,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
         // now check each nested property
         for (var propertyName in docMapping.properties) {
-            subDoc = docMapping.properties[propertyName];
+            var subDoc = docMapping.properties[propertyName];
             if (path) {
                 return $scope.isAnalyzerUsedInDocMapping(name, subDoc,
                                                          path+"."+propertyName);
@@ -147,7 +147,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     };
 
     $scope.deleteWordList = function(name) {
-        used = $scope.isWordListUsed(name);
+        var used = $scope.isWordListUsed(name);
         if (used) {
             alert("This word list cannot be deleted"+
                   " because it is being used by the " + used + ".");
@@ -161,7 +161,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     $scope.isWordListUsed = function(name) {
         // word lists are only used by token filters
         for (var tokenFilterName in $scope.indexMapping.analysis.token_filters) {
-            tokenFilter =
+            var tokenFilter =
                 $scope.indexMapping.analysis.token_filters[tokenFilterName];
             // word lists are embeded in a variety of different field names
             if (tokenFilter.dict_token_map == name ||
@@ -225,7 +225,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     };
 
     $scope.deleteCharFilter = function(name) {
-        used = $scope.isCharFilterUsed(name);
+        var used = $scope.isCharFilterUsed(name);
         if (used) {
             alert("This character filter cannot be deleted"+
                   " because it is being used by the " + used + ".");
@@ -239,9 +239,9 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     $scope.isCharFilterUsed = function(name) {
         // character filters can only be used by analyzers
         for (var analyzerName in $scope.indexMapping.analysis.analyzers) {
-            analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
+            var analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
             for (var charFilterIndex in analyzer.char_filters) {
-                charFilterName = analyzer.char_filters[charFilterIndex];
+                var charFilterName = analyzer.char_filters[charFilterIndex];
                 if (charFilterName == name) {
                     return "analyzer named '" + analyzerName + "'";
                 }
@@ -301,7 +301,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     };
 
     $scope.deleteTokenizer = function(name) {
-        used = $scope.isTokenizerUsed(name);
+        var used = $scope.isTokenizerUsed(name);
         if (used) {
             alert("This tokenizer cannot be deleted"+
                   " because it is being used by the " + used + ".");
@@ -315,7 +315,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     $scope.isTokenizerUsed = function(name) {
         // tokenizers can be used by *other* tokenizers
         for (var tokenizerName in $scope.indexMapping.analysis.tokenizers) {
-            tokenizer = $scope.indexMapping.analysis.tokenizers[tokenizerName];
+            var tokenizer = $scope.indexMapping.analysis.tokenizers[tokenizerName];
             if (tokenizer.tokenizer == name) {
                 return "tokenizer named '" + tokenizerName + "'";
             }
@@ -323,7 +323,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
         // tokenizers can be used by analyzers
         for (var analyzerName in $scope.indexMapping.analysis.analyzers) {
-            analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
+            var analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
             if (analyzer.tokenizer == name) {
                 return "analyzer named '" + analyzerName + "'";
             }
@@ -382,7 +382,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     };
 
     $scope.deleteTokenFilter = function(name) {
-        used = $scope.isTokenFilterUsed(name);
+        var used = $scope.isTokenFilterUsed(name);
         if (used) {
             alert("This token filter cannot be deleted"+
                   " because it is being used by the " + used + ".");
@@ -396,7 +396,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     $scope.isTokenFilterUsed = function(name) {
         // token filters can only be used by analyzers
         for (var analyzerName in $scope.indexMapping.analysis.analyzers) {
-            analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
+            var analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
             for (var tokenFilterIndex in analyzer.token_filters) {
                 tokenFilterName = analyzer.token_filters[tokenFilterIndex];
                 if (tokenFilterName == name) {
@@ -444,6 +444,134 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
                 }
                 $scope.indexMapping.analysis.token_filters[resultKey] =
                     result[resultKey];
+            }
+        }, function() {
+          $scope.viewOnlyModal = false;
+          $log.info('Modal dismissed at: ' + new Date());
+        });
+    };
+
+    // date time parsers
+
+    $scope.newDatetimeParser = function() {
+        return $scope.editDatetimeParser("", {
+            "type": "flexiblego",
+            "layouts": []
+        });
+    };
+
+    $scope.deleteDatetimeParser = function(name) {
+        var used = $scope.isDatetimeParserUsed(name);
+        if (used) {
+            alert("This date/time parser cannot be deleted"+
+                  " because it is being used by the " + used + ".");
+            return;
+        }
+        if (confirm("Are you sure you want to delete '" + name + "'?'")) {
+            delete $scope.indexMapping.analysis.date_time_parsers[name]
+        }
+    };
+
+    $scope.isDatetimeParserUsed = function(name) {
+        // first check index level default date/time parser
+        if ($scope.indexMapping.default_datetime_parser == name) {
+            return "index mapping default datetime parser";
+        }
+
+        // check the document mapping for each type
+        for (var docType in $scope.indexMapping.types) {
+            var docMapping = $scope.indexMapping.types[docType];
+            var used = $scope.isDatetimeParserUsedInDocMapping(name, docMapping, "");
+            if (used) {
+                return "document mapping type '" + docType + "' ";
+            }
+        }
+
+        return null;
+    };
+
+    // a recursive helper
+    $scope.isDatetimeParserUsedInDocMapping = function(name, docMapping, path) {
+        // first check the document level default analyzer
+        if (docMapping.default_datetime_parser == name) {
+            if (path) {
+                return "default datetime parser at " + path;
+            } else {
+                return "default datetime parser";
+            }
+        }
+
+        // now check fields at this level
+        for (var fieldIndex in docMapping.fields) {
+            var field = docMapping.fields[fieldIndex];
+            if (field.date_format == name) {
+                if (field.name) {
+                    return "in the field named " + field.name;
+                }
+                return "in the field at path " + path;
+            }
+        }
+
+        // now check each nested property
+        for (var propertyName in docMapping.properties) {
+            var subDoc = docMapping.properties[propertyName];
+            if (path) {
+                return $scope.isDatetimeParserUsedInDocMapping(name, subDoc,
+                                                               path+"."+propertyName);
+            } else {
+                return $scope.isDatetimeParserUsedInDocMapping(name, subDoc,
+                                                               propertyName);
+            }
+        }
+
+        return null;
+    };
+
+    $scope.editDatetimeParser = function(name, value, viewOnlyIn) {
+        var viewOnlyModal = $scope.viewOnlyModal = viewOnlyIn || viewOnly;
+        var modalInstance = $modal.open({
+          scope: $scope,
+          animation: $scope.animationsEnabled,
+          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
+                '/partials/analysis/datetimeparser.html',
+          controller: 'BleveDatetimeParserModalCtrl',
+          resolve: {
+            name: function() {
+                return name;
+            },
+            layouts: function() {
+                return value.layouts;
+            },
+            mapping: function() {
+                return $scope.indexMapping;
+            },
+            static_prefix: function() {
+                return $scope.static_prefix;
+            },
+            viewOnlyModal: function() {
+                return viewOnlyModal;
+            }
+          }
+        });
+
+        modalInstance.result.then(function(result) {
+            $scope.viewOnlyModal = false;
+            // add this result to the mapping
+            for (var resultKey in result) {
+                if (name !== "" && resultKey != name) {
+                    // remove the old name
+                    delete $scope.indexMapping.analysis.date_time_parsers[name];
+                }
+                $scope.indexMapping.analysis.date_time_parsers[resultKey] =
+                    result[resultKey];
+
+                // reload available date_time_parsers
+                var lan =
+                    $scope.loadDatetimeParserNames ||
+                    $scope.$parent.loadDatetimeParserNames;
+                if (lan) {
+                    lan();
+                }
             }
         }, function() {
           $scope.viewOnlyModal = false;

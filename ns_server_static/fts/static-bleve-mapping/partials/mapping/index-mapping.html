@@ -60,6 +60,19 @@
     </uib-tabset>
   </div>
 
+<!-- DATE TIME PARSERS *********************************** -->
+  <div class="row min-height-2 margin-bottom-half">
+    <label
+       class="disclosure"
+       ng-class="{disclosed : showDatetimeParser}"
+       ng-click="showDatetimeParser = !showDatetimeParser">
+      Date/Time Parsers
+    </label>
+  </div>
+  <div ng-show="showDatetimeParser" class="indent-1 margin-bottom1">
+    <div ng-include src="static_prefix + '/partials/analysis/datetimeparsers.html'"></div>
+  </div>
+
 <!-- ADVANCED SETTINGS *********************************** -->
   <div class="min-height-2 margin-bottom-half">
     <label

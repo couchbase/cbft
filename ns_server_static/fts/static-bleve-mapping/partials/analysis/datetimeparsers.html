@@ -1,0 +1,39 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th>date/time parser name</th>
+            <th class="text-right">
+                <button
+                ng-if="!viewOnlyModal && showDatetimeParser"
+                ng-click="newDatetimeParser()" type="button"
+                ng-show="showDatetimeParser"
+                class="outline"
+                style="width:200px;">
+                    + Add Date/Time Parser
+                </button>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="(aname,aval) in indexMapping.analysis.date_time_parsers">
+            <td><a ng-click="editDatetimeParser(aname, aval, true)">{{aname}}</a></td>
+            <td class="controls">
+                <a href=""
+                   ng-if="!viewOnlyModal"
+                   ng-click="editDatetimeParser(aname, aval)">
+                    Edit
+                </a>
+                <a href=""
+                   ng-if="!viewOnlyModal"
+                   ng-click="deleteDatetimeParser(aname)">
+                    Delete
+                </a>
+            </td>
+        </tr>
+        <tr ng-show="Utils.keys(indexMapping.analysis.date_time_parsers).length < 1">
+            <td colspan="2">None</td>
+        </tr>
+    </tbody>
+    <tfoot>
+    </tfoot>
+</table>

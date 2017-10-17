@@ -1,0 +1,64 @@
+<div class="dialog-med">
+    <div class="panel-header">
+        <h2>Custom Date/Time Parser</h2>
+    </div>
+
+    <form role="form" class="forms">
+        <div class="panel-content">
+            <div
+             ng-show="errorMessage"
+             class="error error-form ng-cloak"
+             role="alert"> {{errorMessage}}
+            </div>
+
+            <form class="form" role="form">
+                <div class="formrow">
+                    <label>Name</label>
+                    <input
+                     ng-disabled="viewOnlyModal"
+                     ng-model="name"
+                     type="text"
+                     id="tname">
+                </div>
+
+                <div class="formrow">
+                    <label for="layouts">Layouts</label>
+                    <select ng-disabled="viewOnlyModal"
+                            ng-model="selectedLayouts" multiple ng-multiple="true"
+                            id="layouts" size="4"
+                            ng-options="idx as layout for (idx, layout) in layouts">
+                    </select>
+                </div>
+                <div ng-if="!viewOnlyModal" class="formrow">
+                    <input ng-model="formdata.newLayout" type="text"
+                           id="newLayout" placeholder="layout to be added">
+                </div>
+                <div class="formrow row flex-right">
+                    <span>
+                        <button ng-click="removeLayouts(selectedLayouts)"
+                                ng-disabled="selectedLayouts.length < 1"
+                                type="button"
+                                class="outline">Remove</button>
+                        <button ng-click="addLayout()"
+                                ng-disabled="formdata.newLayout.length < 1"
+                                type="submit"
+                                class="outline">+ Add</button>
+                    </span>
+                </div>
+            </form>
+        </div>
+
+        <div class="panel-footer">
+            <a href=""
+               ng-if="viewOnlyModal"
+               ng-click="cancel()">Cancel</a>
+            <a href=""
+               ng-if="!viewOnlyModal"
+               ng-click="cancel()">Cancel</a>
+            <button
+               ng-if="!viewOnlyModal"
+               ng-click="build(name)"
+               type="button">Save</button>
+        </div>
+    </form>
+</div>
