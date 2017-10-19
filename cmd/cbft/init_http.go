@@ -15,6 +15,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,12 +38,19 @@ var httpsServersMutex sync.Mutex
 // AuthType used for HTTPS connections
 var authType string
 
-func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string, options map[string]string) {
+// Use IPv6
+var ipv6 string
+
+func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
+	options map[string]string) {
 	http.Handle("/", routerInUse)
+	ipv6 = options["ipv6"]
+
 	anyHostPorts := map[string]bool{}
-	// Bind to 0.0.0.0's first for http listening.
+	// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
 	for _, bindHTTP := range bindHTTPList {
-		if strings.HasPrefix(bindHTTP, "0.0.0.0:") {
+		if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
+			strings.HasPrefix(bindHTTP, "[::]:") {
 			go mainServeHTTP("http", bindHTTP, nil, "", "")
 
 			anyHostPorts[bindHTTP] = true
@@ -103,7 +111,8 @@ func setupHTTPSListeners() error {
 
 		// Bind to 0.0.0.0's first for https listening.
 		for _, bindHTTPS := range bindHTTPSList {
-			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") {
+			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") ||
+				strings.HasPrefix(bindHTTPS, "[::]:") {
 				go mainServeHTTP("https", bindHTTPS, nil,
 					flags.TLSCertFile, flags.TLSKeyFile)
 
@@ -130,22 +139,33 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 
 	bar := "main: ------------------------------------------------------"
 
-	if anyHostPorts != nil {
-		// If we've already bound to 0.0.0.0 on the same port, then
+	if anyHostPorts != nil && len(bindHTTP) > 0 {
+		// If we've already bound to 0.0.0.0 or [::] on the same port, then
 		// skip this hostPort.
-		hostPort := strings.Split(bindHTTP, ":")
-		if len(hostPort) >= 2 {
-			anyHostPort := "0.0.0.0:" + hostPort[1]
-			if anyHostPorts[anyHostPort] {
-				if anyHostPort != bindHTTP {
-					log.Printf(bar)
-					log.Printf("init_http: web UI / REST API is available"+
-						" (via 0.0.0.0): %s://%s", proto, bindHTTP)
-					log.Printf(bar)
+		portIndex := strings.LastIndex(bindHTTP, ":") + 1
+		if portIndex > 0 && portIndex < len(bindHTTP) {
+			// Possibly valid port available.
+			port := bindHTTP[portIndex:]
+			if _, err := strconv.Atoi(port); err == nil {
+				// Valid port.
+				host := "0.0.0.0"
+				if net.ParseIP(bindHTTP[:portIndex-1]).To4() == nil && // Not an IPv4
+					ipv6 == "true" {
+					host = "[::]"
 				}
-				return
+
+				anyHostPort := host + ":" + port
+				if anyHostPorts[anyHostPort] {
+					if anyHostPort != bindHTTP {
+						log.Printf(bar)
+						log.Printf("init_http: web UI / REST API is available"+
+							" (via %v): %s://%s", host, proto, bindHTTP)
+						log.Printf(bar)
+					}
+					return
+				}
 			}
-		}
+		} // Else port not found.
 	}
 
 	log.Printf(bar)
