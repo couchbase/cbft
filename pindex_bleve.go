@@ -1931,6 +1931,9 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	// check storeOption changes
 	soPrev := parseStoreOptions(paramPrev)
 	soCur := parseStoreOptions(paramCur)
+	if soPrev == nil && soCur == nil {
+		return true
+	}
 	if soPrev == nil || soCur == nil {
 		return false
 	}
@@ -1941,6 +1944,40 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	log.Printf("bleve: reloadable storeOptions detected, before: %s, "+
 		" after: %s", paramPrev, paramCur)
 	return true
+}
+
+func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
+	if paramPrev == paramCur {
+		return true
+	}
+
+	var prevMap map[string]interface{}
+	err := json.Unmarshal([]byte(paramPrev), &prevMap)
+	if err != nil {
+		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
+			" json parse paramPrev: %s, err: %v",
+			paramPrev, err)
+		return false
+	}
+
+	var curMap map[string]interface{}
+	err = json.Unmarshal([]byte(paramCur), &curMap)
+	if err != nil {
+		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
+			" json parse paramCur: %s, err: %v",
+			paramCur, err)
+		return false
+	}
+
+	// any parsing err doesn't matter here.
+	po, _ := cbgt.ParseFeedAllotmentOption(paramPrev)
+	co, _ := cbgt.ParseFeedAllotmentOption(paramCur)
+	if po != co {
+		prevMap["feedAllotment"] = ""
+		curMap["feedAllotment"] = ""
+	}
+
+	return reflect.DeepEqual(prevMap, curMap)
 }
 
 // RestartOnIndexDefChanges checks whether the changes in the indexDefns are
@@ -1959,8 +1996,8 @@ func RestartOnIndexDefChanges(
 			configRequest.IndexDefnCur.SourceType ||
 		configRequest.IndexDefnPrev.SourceUUID !=
 			configRequest.IndexDefnCur.SourceUUID ||
-		configRequest.IndexDefnPrev.SourceParams !=
-			configRequest.IndexDefnCur.SourceParams ||
+		!reloadableSourceParamsChange(configRequest.IndexDefnPrev.SourceParams,
+			configRequest.IndexDefnCur.SourceParams) ||
 		configRequest.IndexDefnPrev.Type !=
 			configRequest.IndexDefnCur.Type ||
 		!reflect.DeepEqual(configRequest.SourcePartitionsCur,
