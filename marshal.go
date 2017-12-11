@@ -61,7 +61,8 @@ func registerCustomJSONEncoders() {
 }
 
 func encodeBleveIndexErrMap(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	iem := *((*bleve.IndexErrMap)(ptr))
+	mapPtr := unsafe.Pointer(&ptr)
+	iem := *((*bleve.IndexErrMap)(mapPtr))
 	tmp := make(map[string]string, len(iem))
 	for k, v := range iem {
 		tmp[k] = v.Error()
