@@ -13,6 +13,8 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -66,10 +68,11 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 	authType = options["authType"]
 
 	if authType == "cbauth" {
-		// Registering a certificate refresh callback with cbauth,
-		// which will be responsible for updating https listeners,
-		// whenever ssl certificates are changed.
-		cbauth.RegisterCertRefreshCallback(setupHTTPSListeners)
+		// Registering a TLS refresh callback with cbauth, which
+		// will be responsible for updating https listeners,
+		// whenever ssl certificates or the client cert auth settings
+		// are changed.
+		cbauth.RegisterTLSRefreshCallback(setupHTTPSListeners)
 	} else {
 		setupHTTPSListeners()
 	}
@@ -218,13 +221,30 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 			// cbauth if authType were cbauth.
 			config.MinVersion = cbauth.MinTLSVersion()
 			config.CipherSuites = cbauth.CipherSuites()
+
+			clientAuthType, er := cbauth.GetClientCertAuthType()
+			if er != nil {
+				log.Fatalf("init_http: GetClientCertAuthType, err: %v", err)
+			}
+
+			if clientAuthType != tls.NoClientCert {
+				caCert, er := ioutil.ReadFile(certFile)
+				if er != nil {
+					log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
+				}
+				caCertPool := x509.NewCertPool()
+				caCertPool.AppendCertsFromPEM(caCert)
+				config.ClientCAs = caCertPool
+				config.ClientAuth = clientAuthType
+			}
 		}
 
-		tlsListener := tls.NewListener(tcpKeepAliveListener{listener.(*net.TCPListener)}, config)
-		limitListener := netutil.LimitListener(tlsListener, httpMaxConnections)
+		keepAliveListener := tcpKeepAliveListener{listener.(*net.TCPListener)}
+		limitListener := netutil.LimitListener(keepAliveListener, httpMaxConnections)
+		tlsListener := tls.NewListener(limitListener, config)
 		log.Printf("init_http: Setting up a https limit listener over %q", bindHTTP)
 		atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
-		err = server.Serve(limitListener)
+		err = server.Serve(tlsListener)
 		if err != nil {
 			log.Printf("init_http: Serve, err: %v;\n"+
 				" HTTPS listeners closed, likely to be re-initialized, "+
