@@ -132,6 +132,7 @@ func initHTTPOptions(options map[string]string) error {
 		IdleConnTimeout:       httpTransportIdleConnTimeout,
 		TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
 		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
+		TLSClientConfig:       cbft.TLSConfig,
 	}
 
 	err := http2.ConfigureTransport(transport2)

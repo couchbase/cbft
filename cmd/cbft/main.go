@@ -166,6 +166,12 @@ func main() {
 			"authType":               flags.AuthType,
 		})
 
+	// Init TLSConfig
+	err = cbft.InitTLSConfig(flags.TLSCertFile, flags.TLSKeyFile)
+	if err != nil {
+		log.Fatalf("Error in initializing TLS Config, err: %v", err)
+	}
+
 	err = initHTTPOptions(options)
 	if err != nil {
 		log.Fatalf("main: InitHttpOptions, err: %v", err)
@@ -260,8 +266,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	extrasMap["version-cbft.lib"] = cbft.VERSION
 
 	s := options["http2"]
-	if s == "true" {
-		extrasMap["bindHTTP"] = flags.BindHTTP
+	if s == "true" && flags.TLSCertFile != "" && flags.TLSKeyFile != "" {
 		extrasMap["bindHTTPS"] = flags.BindHTTPS
 	}
 

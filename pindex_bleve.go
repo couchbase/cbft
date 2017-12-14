@@ -1619,13 +1619,38 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			continue
 		}
 
-		baseURL := "http://" + remotePlanPIndex.NodeDef.HostPort +
-			prefix + "/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
+		delimiterPos := strings.LastIndex(remotePlanPIndex.NodeDef.HostPort, ":")
+		if delimiterPos < 0 || delimiterPos >= len(remotePlanPIndex.NodeDef.HostPort)-1 {
+			// No port available
+			log.Warnf("bleveIndexTargets: IndexClient with no possible port into: %v",
+				remotePlanPIndex.NodeDef.HostPort)
+			continue
+		}
+		host := remotePlanPIndex.NodeDef.HostPort[:delimiterPos]
+		port := remotePlanPIndex.NodeDef.HostPort[delimiterPos+1:]
+
+		proto := "http://"
+
+		http2Enabled := false
+		extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
+		if er == nil && extrasBindHTTPS != nil {
+			if bindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
+				portPos := strings.LastIndex(bindHTTPSstr, ":") + 1
+				if portPos > 0 && portPos < len(bindHTTPSstr) {
+					port = bindHTTPSstr[portPos:]
+					proto = "https://"
+					http2Enabled = true
+				}
+			}
+		}
+
+		baseURL := proto + host + ":" + port + prefix +
+			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 
 		indexClient := &IndexClient{
 			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
-			HostPort:    remotePlanPIndex.NodeDef.HostPort,
+			HostPort:    host + ":" + port,
 			IndexName:   indexName,
 			IndexUUID:   indexUUID,
 			PIndexNames: []string{remotePlanPIndex.PlanPIndex.Name},
@@ -1634,27 +1659,6 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			Consistency: consistencyParams,
 			httpClient:  HttpClient,
 			// TODO: Propagate auth to remote client.
-		}
-
-		http2Enabled := false
-		extrasBindHTTP, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTP")
-		if er == nil && extrasBindHTTP != nil {
-			if extrasBindHTTPstr, ok := extrasBindHTTP.(string); ok {
-				if strings.Contains(extrasBindHTTPstr, indexClient.HostPort) {
-					http2Enabled = true
-				}
-			}
-		}
-
-		if !http2Enabled {
-			extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
-			if er == nil && extrasBindHTTPS != nil {
-				if extrasBindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
-					if strings.Contains(extrasBindHTTPSstr, indexClient.HostPort) {
-						http2Enabled = true
-					}
-				}
-			}
 		}
 
 		if http2Enabled {

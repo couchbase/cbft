@@ -11,11 +11,13 @@ package cbft
 
 import (
 	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +36,22 @@ const RemoteRequestOverhead = 500 * time.Millisecond
 
 var HttpClient = http.DefaultClient  // Overridable for testability / advanced needs.
 var Http2Client = http.DefaultClient // Overridable for testability / advanced needs.
+
+// For HTTPS, HTTP2 clients
+var TLSConfig *tls.Config
+
+func InitTLSConfig(certFile, keyFile string) error {
+	if certFile != "" && keyFile != "" {
+		// Placeholder for adding x509 authentication with provided
+		// certificates for scatter gather
+
+		TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	return nil
+}
 
 // Overridable for testability / advanced needs.
 var HttpPost = func(client *http.Client,
@@ -370,7 +388,12 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 				prefix = client.mgr.Options()["urlPrefix"]
 			}
 
-			baseURL := "http://" + client.HostPort +
+			proto := "http://"
+			if strings.Contains(client.QueryURL, "https") {
+				proto = "https://"
+			}
+
+			baseURL := proto + client.HostPort +
 				prefix + "/api/index/" + client.IndexName
 
 			c = &IndexClient{
