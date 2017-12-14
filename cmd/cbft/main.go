@@ -336,6 +336,17 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// Set logLevel if requested, after ensuring that it is a valid value.
+	logLevelStr := options["logLevel"]
+	if logLevelStr != "" {
+		logLevel, exists := cbft.LogLevels[logLevelStr]
+		if !exists {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				" logLevel: %v", logLevelStr)
+		}
+		log.SetLevel(log.LogLevel(logLevel))
+	}
+
 	// If maxReplicasAllowed is among options provided, ensure that it
 	// holds a valid value.
 	if options["maxReplicasAllowed"] != "" {

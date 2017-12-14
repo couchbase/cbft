@@ -23,16 +23,16 @@ import (
 
 // List of log levels that maps strings to integers.
 // (Works with clog - https://github.com/couchbase/clog)
-var logLevels map[string]uint32
+var LogLevels map[string]uint32
 
 func init() {
-	logLevels = make(map[string]uint32)
+	LogLevels = make(map[string]uint32)
 
-	logLevels["INFO"] = 0
-	logLevels["CRIT"] = 3
-	logLevels["ERRO"] = 2
-	logLevels["FATA"] = 3
-	logLevels["WARN"] = 1
+	LogLevels["INFO"] = 0
+	LogLevels["CRIT"] = 3
+	LogLevels["ERRO"] = 2
+	LogLevels["FATA"] = 3
+	LogLevels["WARN"] = 1
 }
 
 // ManagerOptionsExt is a REST handler that serves as a wrapper for
@@ -49,7 +49,7 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 		// Validate logLevel
 		logLevelStr := options["logLevel"]
 		if logLevelStr != "" {
-			_, exists := logLevels[logLevelStr]
+			_, exists := LogLevels[logLevelStr]
 			if !exists {
 				return nil, fmt.Errorf("invalid setting for"+
 					" logLevel: %v", logLevelStr)
@@ -110,10 +110,10 @@ func (h *ManagerOptionsExt) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	h.mgrOptions.ServeHTTP(w, req)
 
-	// Update log level if requested
+	// Update log level if requested.
 	logLevelStr := h.mgr.Options()["logLevel"]
 	if logLevelStr != "" {
-		logLevel, _ := logLevels[logLevelStr]
+		logLevel, _ := LogLevels[logLevelStr]
 		log.SetLevel(log.LogLevel(logLevel))
 	}
 }
