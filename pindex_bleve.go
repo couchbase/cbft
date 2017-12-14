@@ -968,7 +968,7 @@ func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams, parentCancelCh 
 func (t *BleveDest) AddError(op, partition string,
 	key []byte, seq uint64, val []byte, err error) {
 	log.Printf("bleve: %s, partition: %s, key: %q, seq: %d,"+
-		" err: %v", op, partition, key, seq, err)
+		" err: %v", op, partition, log.Tag(log.UserData, key), seq, err)
 
 	e := struct {
 		Time      string
