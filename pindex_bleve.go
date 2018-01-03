@@ -392,6 +392,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	kvConfig := map[string]interface{}{
 		"create_if_missing": true,
 		"error_if_exists":   true,
+		"unsafe_batch":      true,
 	}
 	for k, v := range bleveParams.Store {
 		kvConfig[k] = v
