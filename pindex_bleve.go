@@ -1318,7 +1318,8 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
 	t.lastUUID = cbgt.ParseOpaqueToUUID(value)
 
-	t.batch.SetInternal(t.partitionOpaque, t.lastOpaque)
+	anotherCopy := append([]byte(nil), value...)
+	t.batch.SetInternal(t.partitionOpaque, anotherCopy)
 
 	t.m.Unlock()
 	return nil
