@@ -13,10 +13,12 @@
 package main
 
 import (
+	"fmt"
 	"runtime"
 	"strconv"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/index/scorch"
 	bleveMapping "github.com/blevesearch/bleve/mapping"
 	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
 
@@ -69,6 +71,19 @@ func initBleveOptions(options map[string]string) error {
 	}
 
 	bleve.Config.SetAnalysisQueueSize(bleveAnalysisQueueSize)
+
+	// set scorch index's OnEvent callbacks with the provided ftsMemoryQuota
+	var memQuota uint64
+	v, exists := options["ftsMemoryQuota"] // In bytes.
+	if exists {
+		fmq, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("init_bleve:"+
+				" parsing ftsMemoryQuota: %q, err: %v", v, err)
+		}
+		memQuota = uint64(fmq)
+	}
+	scorch.RegistryEventCallbacks["scorchEventCallbacks"] = NewScorchHerderOnEvent(memQuota)
 
 	return nil
 }

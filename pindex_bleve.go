@@ -393,6 +393,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		"create_if_missing": true,
 		"error_if_exists":   true,
 		"unsafe_batch":      true,
+		"eventCallbackName": "scorchEventCallbacks",
 	}
 	for k, v := range bleveParams.Store {
 		kvConfig[k] = v
