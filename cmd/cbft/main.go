@@ -408,12 +408,14 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	var adtSvc *audit.AuditSvc
 	if options["cbaudit"] == "true" {
-		adtSvc, _ = audit.NewAuditSvc(server)
+		adtSvc, err = audit.NewAuditSvc(server)
+		if err != nil {
+			log.Warnf("main: failed to start audit service with err: %v", err)
+		}
 	}
 
 	muxrouter, _, err :=
-		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr,
-			adtSvc)
+		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)
 	if err != nil {
 		return nil, err
 	}
