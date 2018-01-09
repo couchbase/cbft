@@ -14,6 +14,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"strconv"
 
@@ -84,6 +85,10 @@ func initBleveOptions(options map[string]string) error {
 		memQuota = uint64(fmq)
 	}
 	scorch.RegistryEventCallbacks["scorchEventCallbacks"] = NewScorchHerderOnEvent(memQuota)
+
+	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] = func(err error) {
+		log.Fatalf("scorch AsyncError, treating this as fatal, err: %v", err)
+	}
 
 	return nil
 }
