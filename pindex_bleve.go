@@ -1374,6 +1374,7 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	// is ready to accommodate this request
 	bindex := t.bindex
 	batch := t.batch
+	t.batch = t.bindex.NewBatch()
 	p := t.partition
 	batchReqChs := t.bdest.batchReqChs
 	stopCh := t.bdest.stopCh
@@ -1393,7 +1394,7 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	}
 	select {
 	case <-stopCh:
-		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED stopped ")
+		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED stopped")
 		t.m.Lock()
 		return false, t.lastAsyncBatchErr
 
@@ -1402,7 +1403,6 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 
 	// acquire lock
 	t.m.Lock()
-	t.batch = t.bindex.NewBatch()
 	return false, t.lastAsyncBatchErr
 }
 
