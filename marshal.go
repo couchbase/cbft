@@ -84,6 +84,13 @@ func encodeBleveDateTimeRange(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 		"start": dr.Start,
 		"end":   dr.End,
 	}
+	if dr.Start.IsZero() && dr.startString != nil {
+		rv["start"] = dr.startString
+	}
+	if dr.End.IsZero() && dr.endString != nil {
+		rv["end"] = dr.endString
+	}
+
 	stream.WriteVal(rv)
 }
 
