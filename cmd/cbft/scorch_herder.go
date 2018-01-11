@@ -12,13 +12,15 @@
 package main
 
 import (
-	"runtime"
 	"sync"
 
 	log "github.com/couchbase/clog"
 
 	"github.com/blevesearch/bleve/index/scorch"
 )
+
+// ratio of memory quota above which backpressure kicks in.
+var threshold = float64(0.40)
 
 // A scorchHerder oversees multiple bleve scorch instances by
 // pausing batch ingest amongst the herd of scorch once we've
@@ -78,7 +80,7 @@ func (sh *scorchHerder) OnCloseStart(s *scorch.Scorch) {
 	sh.m.Lock()
 
 	if sh.waiting > 0 {
-		log.Debugf("scorch_herder: close start progress, waiting: %d", sh.waiting)
+		log.Printf("scorch_herder: close start progress, waiting: %d", sh.waiting)
 	}
 
 	delete(sh.indexes, s)
@@ -94,14 +96,14 @@ func (sh *scorchHerder) OnBatchIntroductionStart(s *scorch.Scorch) {
 	for sh.overMemQuotaLOCKED() {
 		// If we're over the memory quota, then wait for persister progress.
 
-		log.Debugf("scorch_herder: waiting for persister progress, as usage"+
-			" over memQuota (%v)", sh.memQuota)
+		log.Printf("scorch_herder: waiting for persister progress, as usage"+
+			" over %v%% of memQuota (%v)", threshold*float64(100), sh.memQuota)
 
 		sh.waiting++
 		sh.waitCond.Wait()
 		sh.waiting--
 
-		log.Debugf("scorch_herder: resuming upon persister progress ..")
+		log.Printf("scorch_herder: resuming upon persister progress ..")
 	}
 
 	sh.m.Unlock()
@@ -111,7 +113,7 @@ func (sh *scorchHerder) OnPersisterProgress(s *scorch.Scorch) {
 	sh.m.Lock()
 
 	if sh.waiting > 0 {
-		log.Debugf("scorch_herder: persister progress, waiting: %d", sh.waiting)
+		log.Printf("scorch_herder: persister progress, waiting: %d", sh.waiting)
 	}
 
 	sh.waitCond.Broadcast()
@@ -124,8 +126,11 @@ func (sh *scorchHerder) OnPersisterProgress(s *scorch.Scorch) {
 // overMemQuotaLOCKED() returns true if the number of dirty bytes is
 // greater than the memory quota.
 func (sh *scorchHerder) overMemQuotaLOCKED() bool {
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
+	var memoryUsed uint64
 
-	return mem.HeapAlloc > sh.memQuota
+	for s := range sh.indexes {
+		memoryUsed += s.MemoryUsed()
+	}
+
+	return memoryUsed > uint64(float64(sh.memQuota)*threshold)
 }
