@@ -125,6 +125,7 @@ var statkeys = []string{
 	"num_recs_to_persist", // per-index stat.
 
 	"num_bytes_used_disk", // per-index stat.
+	"num_files_on_disk",   // per-index stat.
 	"num_bytes_live_data", // per-index stat, not in spec
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
@@ -418,6 +419,7 @@ func updateStat(name string, val float64, nsIndexStat map[string]interface{}) {
 }
 
 func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
+	// common stats across different index types
 	v := jsonpointer.Get(bpsm, "/DocCount")
 	if v, ok := v.(uint64); ok {
 		updateStat("doc_count", float64(v), nsIndexStat)
@@ -431,45 +433,54 @@ func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 		updateStat("total_bytes_indexed", float64(v), nsIndexStat)
 	}
 
-	// see if metrics are enabled, they would always be at the top-level
-	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
-	if metrics, ok := v.(map[string]interface{}); ok {
-		extractMetricsStats(metrics, nsIndexStat)
-		// if we found metrics, look for moss one level deeper
-		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/moss")
-		if mossStats, ok := v.(*moss.CollectionStats); ok {
-			extractMossStats(mossStats, nsIndexStat)
-			// if we found moss, look for kv one level deeper
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/kv")
-			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
+	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+	if _, ok := v.(map[string]interface{}); ok {
+		// see if metrics are enabled, they would always be at the top-level
+		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
+		if metrics, ok := v.(map[string]interface{}); ok {
+			extractMetricsStats(metrics, nsIndexStat)
+			// if we found metrics, look for moss one level deeper
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/moss")
+			if mossStats, ok := v.(*moss.CollectionStats); ok {
+				extractMossStats(mossStats, nsIndexStat)
+				// if we found moss, look for kv one level deeper
+				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/kv")
+				if kvStats, ok := v.(map[string]interface{}); ok {
+					extractKVStats(kvStats, nsIndexStat)
+				}
+			} else {
+				// no moss at this level, but still look for kv stats
+				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+				if kvStats, ok := v.(map[string]interface{}); ok {
+					extractKVStats(kvStats, nsIndexStat)
+				}
 			}
 		} else {
-			// no moss at this level, but still look for kv stats
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
-			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
+			// maybe no metrics, look for moss at this level
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/moss")
+			if mossStats, ok := v.(*moss.CollectionStats); ok {
+				extractMossStats(mossStats, nsIndexStat)
+				// if we found moss, look for kv one level deeper
+				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+				if kvStats, ok := v.(map[string]interface{}); ok {
+					extractKVStats(kvStats, nsIndexStat)
+				}
+			} else {
+				// maybe no metrics or moss, look for kv here
+				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+				if kvStats, ok := v.(map[string]interface{}); ok {
+					extractKVStats(kvStats, nsIndexStat)
+				}
 			}
 		}
 	} else {
-		// maybe no metrics, look for moss at this level
-		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/moss")
-		if mossStats, ok := v.(*moss.CollectionStats); ok {
-			extractMossStats(mossStats, nsIndexStat)
-			// if we found moss, look for kv one level deeper
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
-			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
-			}
-		} else {
-			// maybe no metrics or moss, look for kv here
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
-			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
-			}
+		// scorch stats are available at bleveIndexStats/index
+		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index")
+		if sstats, ok := v.(map[string]interface{}); ok {
+			extractScorchStats(sstats, nsIndexStat)
 		}
-
 	}
+
 	return nil
 }
 
@@ -514,6 +525,32 @@ func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
 			updateStat(statname, float64(vuint64), nsIndexStat)
 		}
 	}
+	return nil
+}
+
+var scorchStats = map[string]string{
+	"/num_bytes_used_disk": "num_bytes_used_disk",
+	"/num_files_on_disk":   "num_files_on_disk",
+}
+
+func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
+	var numItemsIntroduced, numItemsPersisted uint64
+	v := jsonpointer.Get(sstats, "/num_items_introduced")
+	numItemsIntroduced, _ = v.(uint64)
+	v = jsonpointer.Get(sstats, "/num_items_persisted")
+	numItemsPersisted, _ = v.(uint64)
+
+	updateStat("num_recs_to_persist",
+		float64(numItemsIntroduced-numItemsPersisted),
+		nsIndexStat)
+
+	for path, statname := range scorchStats {
+		v = jsonpointer.Get(sstats, path)
+		if vuint64, ok := v.(uint64); ok {
+			updateStat(statname, float64(vuint64), nsIndexStat)
+		}
+	}
+
 	return nil
 }
 
