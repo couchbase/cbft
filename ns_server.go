@@ -42,6 +42,13 @@ var LogEveryNStats = 300
 var SourcePartitionSeqsSleepDefault = 10 * time.Second
 var SourcePartitionSeqsCacheTimeoutDefault = 60 * time.Second
 
+// Atomic counters to keep track of the number of active
+// http and https limit listeners.
+var TotHTTPLimitListenersOpened uint64
+var TotHTTPLimitListenersClosed uint64
+var TotHTTPSLimitListenersOpened uint64
+var TotHTTPSLimitListenersClosed uint64
+
 // PartitionSeqsProvider represents source object that can provide
 // partition seqs, such as some pindex or dest implementations.
 type PartitionSeqsProvider interface {
@@ -343,6 +350,15 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
 	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttp2)
+
+	topLevelStats["tot_http_limitlisteners_opened"] =
+		atomic.LoadUint64(&TotHTTPLimitListenersOpened)
+	topLevelStats["tot_http_limitlisteners_closed"] =
+		atomic.LoadUint64(&TotHTTPLimitListenersClosed)
+	topLevelStats["tot_https_limitlisteners_opened"] =
+		atomic.LoadUint64(&TotHTTPSLimitListenersOpened)
+	topLevelStats["tot_https_limitlisteners_closed"] =
+		atomic.LoadUint64(&TotHTTPSLimitListenersClosed)
 
 	nsIndexStats[""] = topLevelStats
 

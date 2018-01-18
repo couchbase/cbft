@@ -18,9 +18,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/couchbase/cbauth"
+	"github.com/couchbase/cbft"
 	log "github.com/couchbase/clog"
 
 	"golang.org/x/net/netutil"
@@ -183,12 +185,15 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 
 	if proto == "http" {
 		limitListener := netutil.LimitListener(listener, httpMaxConnections)
+		log.Printf("init_http: Setting up a http limit listener over %q", bindHTTP)
+		atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
 		err = server.Serve(limitListener)
 		if err != nil {
 			log.Fatalf("init_http: Serve, err: %v;\n"+
 				"  Please check that your -bindHttp(s) parameter (%q)\n"+
 				"  is correct and available.", err, bindHTTP)
 		}
+		atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
 	} else {
 		addToHTTPSServerList(server, listener)
 		// Initialize server.TLSConfig to the listener's TLS Config before calling
@@ -217,12 +222,15 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 
 		tlsListener := tls.NewListener(tcpKeepAliveListener{listener.(*net.TCPListener)}, config)
 		limitListener := netutil.LimitListener(tlsListener, httpMaxConnections)
+		log.Printf("init_http: Setting up a https limit listener over %q", bindHTTP)
+		atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
 		err = server.Serve(limitListener)
 		if err != nil {
 			log.Printf("init_http: Serve, err: %v;\n"+
 				" HTTPS listeners closed, likely to be re-initialized, "+
 				" -bindHttp(s) (%q)\n", err, bindHTTP)
 		}
+		atomic.AddUint64(&cbft.TotHTTPSLimitListenersClosed, 1)
 	}
 }
 
