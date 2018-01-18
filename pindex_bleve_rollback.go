@@ -12,27 +12,14 @@
 package cbft
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
-	"strconv"
 
-	"github.com/blevesearch/bleve/index/store"
+	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/index/upsidedown"
-
-	"github.com/couchbase/cbgt"
-	"github.com/couchbase/moss"
 
 	log "github.com/couchbase/clog"
 )
-
-type LowerLevelStoreHolder interface {
-	LowerLevelStore() store.KVStore
-}
-
-type MossStoreActualHolder interface {
-	Actual() *moss.Store
-}
 
 func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq uint64) error {
 	t.AddError("dest rollback", partition, nil, rollbackSeq, nil, nil)
@@ -64,147 +51,29 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 	return nil
 }
 
-// Attempt partial rollback.  Implementation sketch: walk through
-// previous mossStore snapshots until we reach to a point at or before
-// the wanted rollbackSeq and vBucketUUID.
-// If found, revert to that prevous snapshot.
+// Attempt partial rollback.
 func (t *BleveDest) partialRollbackLOCKED(partition string,
 	vBucketUUID uint64, rollbackSeq uint64) (bool, bool, error) {
 	if t.bindex == nil {
 		return false, false, nil
 	}
-	_, kvstore, err := t.bindex.Advanced()
+
+	index, kvstore, err := t.bindex.Advanced()
 	if err != nil {
 		return false, false, err
 	}
 
-	llsh, ok := kvstore.(LowerLevelStoreHolder)
-	if !ok {
-		return false, false, fmt.Errorf("kvstore not a llsh, kvstore: %#v", kvstore)
+	if _, ok := index.(*upsidedown.UpsideDownCouch); ok {
+		return t.partialMossRollbackLOCKED(kvstore,
+			partition, vBucketUUID, rollbackSeq)
 	}
 
-	lls := llsh.LowerLevelStore()
-	if lls == nil {
-		return false, false, fmt.Errorf("lls nil")
+	if sh, ok := index.(*scorch.Scorch); ok {
+		return t.partialScorchRollbackLOCKED(sh,
+			partition, vBucketUUID, rollbackSeq)
 	}
 
-	msah, ok := lls.(MossStoreActualHolder)
-	if !ok {
-		return false, false, fmt.Errorf("llsh not a msah, llsh: %#v", llsh)
-	}
-
-	store := msah.Actual()
-	if store == nil {
-		return false, false, nil // No moss store, so no partial rollback.
-	}
-
-	store.AddRef()
-	defer store.Close()
-
-	// TODO: Handle non-upsidedown bleve index types some day.
-	seqMaxKey := upsidedown.NewInternalRow([]byte(partition), nil).Key()
-
-	// get vBucketMap/Opaque key
-	var vBucketMapKey []byte
-	if t.partitions[partition] != nil {
-		po := t.partitions[partition].partitionOpaque
-		vBucketMapKey = upsidedown.NewInternalRow(po, nil).Key()
-	}
-
-	totSnapshotsExamined := 0
-	defer func() {
-		log.Printf("pindex_bleve_rollback: path: %s, totSnapshotsExamined: %d",
-			t.path, totSnapshotsExamined)
-	}()
-
-	var ss, ssPrev moss.Snapshot
-
-	ss, err = store.Snapshot()
-	for err == nil && ss != nil {
-		totSnapshotsExamined++
-
-		var tryRevert bool
-		tryRevert, err = snapshotAtOrBeforeSeq(t.path, ss, seqMaxKey,
-			vBucketMapKey, rollbackSeq, vBucketUUID)
-		if err != nil {
-			ss.Close()
-			return false, false, err
-		}
-
-		if tryRevert {
-			log.Printf("pindex_bleve_rollback: trying revert, path: %s", t.path)
-
-			// Close the bleve index, but keep our ref-counts on the
-			// underlying store and snapshot until after the revert.
-			t.closeLOCKED()
-
-			err = store.SnapshotRevert(ss)
-
-			ss.Close()
-
-			return true, err == nil, err
-		}
-
-		ssPrev, err = store.SnapshotPrevious(ss)
-		ss.Close()
-		ss = ssPrev
-	}
-
-	return false, false, err
-}
-
-// snapshotAtOrBeforeSeq returns true if the snapshot represents a seq
-// number at or before the given seq number with a matching vBucket UUID.
-func snapshotAtOrBeforeSeq(path string, ss moss.Snapshot,
-	seqMaxKey []byte, vBucketMapKey []byte,
-	seqMaxWant uint64, vBucketUUIDWant uint64) (bool, error) {
-	// Equivalent of bleve.Index.GetInternal(seqMaxKey).
-	v, err := ss.Get(seqMaxKey, moss.ReadOptions{})
-	if err != nil {
-		return false, err
-	}
-	if v == nil {
-		return false, nil
-	}
-	if len(v) != 8 {
-		return false, fmt.Errorf("wrong len seqMaxKey: %s, v: %s", seqMaxKey, v)
-	}
-	seqMaxCurr := binary.BigEndian.Uint64(v[0:8])
-
-	// when no vBucketUUIDWant is given from Rollback
-	// then fallback to seqMaxCurr checks
-	if vBucketUUIDWant == 0 {
-		log.Printf("pindex_bleve_rollback: examining snapshot, path: %s,"+
-			" seqMaxKey: %s, seqMaxCurr: %d, seqMaxWant: %d",
-			path, seqMaxKey, seqMaxCurr, seqMaxWant)
-		return seqMaxCurr <= seqMaxWant, nil
-	}
-	// get the vBucketUUID
-	vbMap, err := ss.Get(vBucketMapKey, moss.ReadOptions{})
-	if err != nil {
-		log.Printf("pindex_bleve_rollback: snapshot Get failed,"+
-			" for vBucketMapKey: %s, err: %v", vBucketMapKey, err)
-		return false, err
-	}
-	if vbMap == nil {
-		log.Printf("pindex_bleve_rollback: No vBucketMap for vBucketMapKey: %s",
-			vBucketMapKey)
-		return false, nil
-	}
-	vBucketUUIDCur, err := strconv.ParseUint(cbgt.ParseOpaqueToUUID(vbMap), 10, 64)
-	if err != nil {
-		log.Printf("pindex_bleve_rollback: ParseOpaqueToUUID failed for "+
-			"vbMap: %s, err: %s", vbMap, err)
-		return false, err
-	}
-
-	log.Printf("pindex_bleve_rollback: examining snapshot, path: %s,"+
-		" seqMaxKey: %s, seqMaxCurr: %d, seqMaxWant: %d"+
-		" vBucketMapKey: %s, vBucketUUIDCur: %d, vBucketUUIDWant: %d",
-		path, seqMaxKey, seqMaxCurr, seqMaxWant, vBucketMapKey,
-		vBucketUUIDCur, vBucketUUIDWant)
-
-	return (seqMaxCurr <= seqMaxWant && vBucketUUIDCur == vBucketUUIDWant), nil
+	return false, false, fmt.Errorf("unknown index type")
 }
 
 func (t *BleveDestPartition) Rollback(partition string,
