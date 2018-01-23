@@ -382,7 +382,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 
 function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                            $location, $log, $sce, $uibModal,
-                           $q, mnBucketsService) {
+                           $q, mnBucketsService, mnPoolDefault) {
     mnBucketsService.getBucketsByType(true).
         then(initWithBuckets,
              function(err) {
@@ -392,7 +392,12 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
              });
 
     function initWithBuckets(buckets) {
-        $scope.ftsDocConfig = {}
+        $scope.ftsDocConfig = {};
+
+        $scope.ftsNodes = [];
+        mnPoolDefault.get().then(function(value){
+          $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
+        });
 
         $scope.buckets = buckets;
         $scope.bucketNames = [];

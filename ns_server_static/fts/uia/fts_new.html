@@ -142,10 +142,11 @@
           <span class="icon fa-circle-thin fa-stack-2x"></span>
           <span class="icon fa-info fa-stack-1x"></span>
         </span>
-          <select ng-model="$parent.numReplicas"
-                  class="narrow"
-                  ng-options="item for item in replicaOptions">
-          </select>
+        <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
+        <select ng-model="$parent.numReplicas"
+                class="narrow"
+                ng-options="item for item in replicaOptions">
+        </select>
       </div>
 
 <!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->
