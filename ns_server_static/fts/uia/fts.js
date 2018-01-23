@@ -780,6 +780,10 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
                     newPlanParams, $scope.prevIndexUUID);
                 if (rv.indexDef) {
+                    // Remove 'uuid' entry from preview, so that when a user copies the config
+                    // from an existing index - it is not deemed unusable because of the uuid
+                    // being pre-existing one.
+                    delete rv.indexDef['uuid']
                     var preview = JSON.stringify(rv.indexDef, null, 1);
                     if (preview != previewPrev) {
                         $scope.indexEditorPreview["fulltext-index"] = preview;
