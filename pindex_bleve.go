@@ -2045,6 +2045,10 @@ func MustEncodeWithParser(w io.Writer, i interface{}) {
 	}
 	if err != nil {
 		if rwOk {
+			crw, ok := rw.(*rest.CountResponseWriter)
+			if ok && crw.Wrote {
+				return
+			}
 			http.Error(rw, fmt.Sprintf("rest: custom JSON: %s encode, err: %v", JSONImpl.GetParserType(), err), 500)
 		}
 	}
