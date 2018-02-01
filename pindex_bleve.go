@@ -2085,7 +2085,9 @@ func MustEncodeWithParser(w io.Writer, i interface{}) {
 			if ok && crw.Wrote {
 				return
 			}
-			http.Error(rw, fmt.Sprintf("rest: custom JSON: %s encode, err: %v", JSONImpl.GetParserType(), err), 500)
+			rest.PropagateError(rw, nil,
+				fmt.Sprintf("rest: custom JSON: %s encode, err: %v",
+					JSONImpl.GetParserType(), err), http.StatusInternalServerError)
 		}
 	}
 }

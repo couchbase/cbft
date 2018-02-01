@@ -20,7 +20,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"reflect"
 	"runtime"
 	"testing"
 
@@ -119,7 +118,7 @@ func (test *RESTHandlerTest) check(t *testing.T,
 	}
 	got := bytes.TrimRight(record.Body.Bytes(), "\n")
 	if test.ResponseBody != nil {
-		if !reflect.DeepEqual(got, test.ResponseBody) {
+		if !bytes.Contains(got, test.ResponseBody) {
 			t.Errorf("%s: expected: '%s', got: '%s'",
 				desc, test.ResponseBody, got)
 		}

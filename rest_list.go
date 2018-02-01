@@ -38,7 +38,7 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	indexDefs, indexDefsByName, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("rest_list: filteredListIndex,"+
+		rest.PropagateError(w, req, fmt.Sprintf("rest_list: filteredListIndex,"+
 			" could not retrieve index defs, err: %v", err),
 			http.StatusInternalServerError)
 		return
@@ -47,8 +47,8 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 	if h.isCBAuth {
 		creds, err := CBAuthWebCreds(req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("rest_list: filteredListIndex,"+
-				" cbauth.AuthWebCreds, err: %v", err), 403)
+			rest.PropagateError(w, req, fmt.Sprintf("rest_list: filteredListIndex,"+
+				" cbauth.AuthWebCreds, err: %v", err), http.StatusForbidden)
 			return
 		}
 
@@ -71,9 +71,9 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 					sourceNames, err :=
 						sourceNamesForAlias(indexName, indexDefsByName, 0)
 					if err != nil {
-						http.Error(w, fmt.Sprintf("rest_list: filteredListIndex,"+
-							" sourceNamesForAlias, err: %v", err),
-							http.StatusInternalServerError)
+						rest.PropagateError(w, req,
+							fmt.Sprintf("rest_list: filteredListIndex, sourceNamesForAlias,"+
+								" err: %v", err), http.StatusInternalServerError)
 						return
 					}
 

@@ -472,6 +472,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// Handle expvar route(s)
 	router.Handler("GET", "/debug/vars", expvar.Handler())
 
+	// Handle untracked route(s)
+	router.NotFound = &untrackedRouteHandler{}
+
 	// ------------------------------------------------
 
 	tagsMap := mgr.TagsMap()
@@ -653,6 +656,14 @@ func exportMuxRoutesToHttprouter(router *mux.Router) *httprouter.Router {
 	rest.RequestVariableLookup = ContextGet
 
 	return hr
+}
+
+// Custom handler for handling untracked route(s)
+type untrackedRouteHandler struct{}
+
+func (h *untrackedRouteHandler) ServeHTTP(w http.ResponseWriter,
+	req *http.Request) {
+	rest.PropagateError(w, req, fmt.Sprintf("Page not found"), http.StatusNotFound)
 }
 
 // -------------------------------------------------------

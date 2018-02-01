@@ -165,7 +165,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	rd := <-recentInfoCh
 	if rd.err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -267,7 +268,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			err := addPIndexStats(pindex, nsIndexStat)
 			if err != nil {
 				rest.ShowError(w, req,
-					fmt.Sprintf("error processing PIndex stats: %v", err), 500)
+					fmt.Sprintf("error processing PIndex stats: %v", err),
+					http.StatusInternalServerError)
 				return
 			}
 
@@ -309,7 +311,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			err := addFeedStats(feed, nsIndexStat)
 			if err != nil {
 				rest.ShowError(w, req,
-					fmt.Sprintf("error processing Feed stats: %v", err), 500)
+					fmt.Sprintf("error processing Feed stats: %v", err),
+					http.StatusInternalServerError)
 				return
 			}
 		}
@@ -721,7 +724,8 @@ func (h *NsStatusHandler) ServeHTTP(
 
 	rd := <-recentInfoCh
 	if rd.err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), 500)
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -1049,14 +1053,16 @@ func (h *NsSearchResultRedirct) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	allPlanPIndexes, _, err := h.mgr.GetPlanPIndexes(false)
 	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not get plan pindexes: %v", err), 500)
+		rest.ShowError(w, req, fmt.Sprintf("could not get plan pindexes: %v", err),
+			http.StatusInternalServerError)
 		return
 	}
 
 	pIndexName := rest.PIndexNameLookup(req)
 	planPIndex, ok := allPlanPIndexes.PlanPIndexes[pIndexName]
 	if !ok {
-		rest.ShowError(w, req, fmt.Sprintf("no pindex named: %s", pIndexName), 400)
+		rest.ShowError(w, req, fmt.Sprintf("no pindex named: %s", pIndexName),
+			http.StatusBadRequest)
 		return
 	}
 
