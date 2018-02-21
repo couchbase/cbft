@@ -28,6 +28,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -93,6 +94,14 @@ func main() {
 
 	log.Printf("main: %s started (%s/%s)",
 		os.Args[0], version, cbgt.VERSION)
+
+	var rLimit syscall.Rlimit
+	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		log.Printf("main: could not check file descriptor limit, err: %v", err)
+	} else {
+		log.Printf("main: file descriptor limit current: %d max: %d", rLimit.Cur, rLimit.Max)
+	}
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
