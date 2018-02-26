@@ -254,8 +254,9 @@ func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
 		Validate: ValidateBleve,
 
-		New:  NewBlevePIndexImpl,
-		Open: OpenBlevePIndexImpl,
+		New:       NewBlevePIndexImpl,
+		Open:      OpenBlevePIndexImpl,
+		OpenUsing: OpenBlevePIndexImplUsing,
 
 		Count: CountBleve,
 		Query: QueryBleve,
@@ -384,76 +385,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	kvStoreName, ok := bleveParams.Store["kvStoreName"].(string)
-	if !ok || kvStoreName == "" {
-		kvStoreName = bleve.Config.DefaultKVStore
-	}
-
-	kvConfig := map[string]interface{}{
-		"create_if_missing":      true,
-		"error_if_exists":        true,
-		"unsafe_batch":           true,
-		"eventCallbackName":      "scorchEventCallbacks",
-		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
-	}
-	for k, v := range bleveParams.Store {
-		kvConfig[k] = v
-	}
-
-	// Use the "moss" wrapper KVStore if it's allowed, available
-	// and also not already configured.
-	kvStoreMossAllow := true
-	ksmv, exists := kvConfig["kvStoreMossAllow"]
-	if exists {
-		var v bool
-		v, ok = ksmv.(bool)
-		if ok {
-			kvStoreMossAllow = v
-		}
-	}
-
-	if kvStoreMossAllow && BlevePIndexAllowMoss {
-		_, exists = kvConfig["mossLowerLevelStoreName"]
-		if !exists &&
-			kvStoreName != "moss" &&
-			bleveRegistry.KVStoreConstructorByName("moss") != nil {
-			kvConfig["mossLowerLevelStoreName"] = kvStoreName
-
-			kvStoreName = "moss"
-		}
-
-		_, exists = kvConfig["mossCollectionOptionsName"]
-		if !exists {
-			kvConfig["mossCollectionOptionsName"] = "fts"
-		}
-	}
-
-	// Use the "metrics" wrapper KVStore if it's allowed, available
-	// and also not already configured.
-	kvStoreMetricsAllow := BleveKVStoreMetricsAllow
-	ksmv, exists = kvConfig["kvStoreMetricsAllow"]
-	if exists {
-		var v bool
-		v, ok = ksmv.(bool)
-		if ok {
-			kvStoreMetricsAllow = v
-		}
-	}
-
-	if kvStoreMetricsAllow {
-		_, exists := kvConfig["kvStoreName_actual"]
-		if !exists &&
-			kvStoreName != "metrics" &&
-			bleveRegistry.KVStoreConstructorByName("metrics") != nil {
-			kvConfig["kvStoreName_actual"] = kvStoreName
-			kvStoreName = "metrics"
-		}
-	}
-
-	bleveIndexType, ok := bleveParams.Store["indexType"].(string)
-	if !ok || bleveIndexType == "" {
-		bleveIndexType = bleve.Config.DefaultIndexType
-	}
+	kvConfig, bleveIndexType, kvStoreName := bleveRuntimeConfigMap(bleveParams)
 
 	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
 		bleveIndexType, kvStoreName, kvConfig)
@@ -476,10 +408,102 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 
 func OpenBlevePIndexImpl(indexType, path string,
 	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
-	buf, err := ioutil.ReadFile(path +
-		string(os.PathSeparator) + "PINDEX_BLEVE_META")
-	if err != nil {
-		return nil, nil, err
+	return OpenBlevePIndexImplUsing(indexType, path, "", restart)
+}
+
+func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
+	string, string) {
+	// check the indexType
+	bleveIndexType, ok := bleveParams.Store["indexType"].(string)
+	if !ok || bleveIndexType == "" {
+		bleveIndexType = bleve.Config.DefaultIndexType
+	}
+
+	kvConfig := map[string]interface{}{
+		"create_if_missing":      true,
+		"error_if_exists":        true,
+		"unsafe_batch":           true,
+		"eventCallbackName":      "scorchEventCallbacks",
+		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
+	}
+	for k, v := range bleveParams.Store {
+		kvConfig[k] = v
+	}
+
+	kvStoreName := "scorch"
+	if bleveIndexType != "scorch" {
+		kvStoreName, ok = bleveParams.Store["kvStoreName"].(string)
+		if !ok || kvStoreName == "" {
+			kvStoreName = bleve.Config.DefaultKVStore
+		}
+
+		// Use the "moss" wrapper KVStore if it's allowed, available
+		// and also not already configured.
+		kvStoreMossAllow := true
+		ksmv, exists := kvConfig["kvStoreMossAllow"]
+		if exists {
+			var v bool
+			v, ok = ksmv.(bool)
+			if ok {
+				kvStoreMossAllow = v
+			}
+		}
+
+		if kvStoreMossAllow && BlevePIndexAllowMoss {
+			_, exists = kvConfig["mossLowerLevelStoreName"]
+			if !exists &&
+				kvStoreName != "moss" &&
+				bleveRegistry.KVStoreConstructorByName("moss") != nil {
+				kvConfig["mossLowerLevelStoreName"] = kvStoreName
+
+				kvStoreName = "moss"
+			}
+
+			_, exists = kvConfig["mossCollectionOptionsName"]
+			if !exists {
+				kvConfig["mossCollectionOptionsName"] = "fts"
+			}
+		}
+
+		// Use the "metrics" wrapper KVStore if it's allowed, available
+		// and also not already configured.
+		kvStoreMetricsAllow := BleveKVStoreMetricsAllow
+		ksmv, exists = kvConfig["kvStoreMetricsAllow"]
+		if exists {
+			var v bool
+			v, ok = ksmv.(bool)
+			if ok {
+				kvStoreMetricsAllow = v
+			}
+		}
+
+		if kvStoreMetricsAllow {
+			_, exists := kvConfig["kvStoreName_actual"]
+			if !exists &&
+				kvStoreName != "metrics" &&
+				bleveRegistry.KVStoreConstructorByName("metrics") != nil {
+				kvConfig["kvStoreName_actual"] = kvStoreName
+				kvStoreName = "metrics"
+			}
+		}
+	} else {
+		// dummy entry for bleve in case of scorch indextype
+		kvConfig["kvStoreName"] = "scorch"
+	}
+
+	return kvConfig, bleveIndexType, kvStoreName
+}
+
+func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
+	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	buf := []byte(indexParams)
+	var err error
+	if len(buf) == 0 {
+		buf, err = ioutil.ReadFile(path +
+			string(os.PathSeparator) + "PINDEX_BLEVE_META")
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	buf, err = bleveMappingUI.CleanseJSON(buf)
@@ -494,9 +518,10 @@ func OpenBlevePIndexImpl(indexType, path string,
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
 
+	kvConfig, _, _ := bleveRuntimeConfigMap(bleveParams)
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
 	// where perhaps there was a previous missing or race-y Close().
-	bindex, err := bleve.Open(path)
+	bindex, err := bleve.OpenUsing(path, kvConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1920,6 +1945,18 @@ func parseStoreOptions(input string) *moss.StoreOptions {
 	return nil
 }
 
+func parseIndexType(input string) string {
+	params := make(map[string]map[string]interface{})
+	err := json.Unmarshal([]byte(input), &params)
+	if err != nil {
+		return ""
+	}
+	if v, ok := params["store"]["indexType"]; ok {
+		return v.(string)
+	}
+	return ""
+}
+
 func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	bpPrev := NewBleveParams()
 	err := json.Unmarshal([]byte(paramPrev), bpPrev)
@@ -1935,6 +1972,18 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) ||
 		!reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
 		return false
+	}
+	// check for indexType updates
+	prevType := parseIndexType(paramPrev)
+	curType := parseIndexType(paramCur)
+	if prevType != curType {
+		return false
+	}
+	// always reboot partitions on scorch option changes
+	if curType == "scorch" {
+		log.Printf("bleve: reloadable scorch option change "+
+			" detected, before: %s, after: %s", paramPrev, paramCur)
+		return true
 	}
 	// check storeOption changes
 	soPrev := parseStoreOptions(paramPrev)
