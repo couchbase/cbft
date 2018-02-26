@@ -62,9 +62,6 @@ func NewMossHerderOnEvent(memQuota uint64) func(moss.Event) {
 
 func (mh *mossHerder) OnEvent(event moss.Event) {
 	switch event.Kind {
-	case moss.EventKindCloseStart:
-		mh.OnCloseStart(event.Collection)
-
 	case moss.EventKindClose:
 		mh.OnClose(event.Collection)
 
@@ -77,18 +74,6 @@ func (mh *mossHerder) OnEvent(event moss.Event) {
 	default:
 		return
 	}
-}
-
-func (mh *mossHerder) OnCloseStart(c moss.Collection) {
-	mh.m.Lock()
-
-	if mh.waiting > 0 {
-		log.Printf("moss_herder: close start progress, waiting: %d", mh.waiting)
-	}
-
-	delete(mh.collections, c)
-
-	mh.m.Unlock()
 }
 
 func (mh *mossHerder) OnClose(c moss.Collection) {

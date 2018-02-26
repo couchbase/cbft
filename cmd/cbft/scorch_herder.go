@@ -62,8 +62,8 @@ func NewScorchHerderOnEvent(memQuota uint64) func(scorch.Event) {
 
 func (sh *scorchHerder) OnEvent(event scorch.Event) {
 	switch event.Kind {
-	case scorch.EventKindCloseStart:
-		sh.OnCloseStart(event.Scorch)
+	case scorch.EventKindClose:
+		sh.OnClose(event.Scorch)
 
 	case scorch.EventKindBatchIntroductionStart:
 		sh.OnBatchIntroductionStart(event.Scorch)
@@ -76,7 +76,7 @@ func (sh *scorchHerder) OnEvent(event scorch.Event) {
 	}
 }
 
-func (sh *scorchHerder) OnCloseStart(s *scorch.Scorch) {
+func (sh *scorchHerder) OnClose(s *scorch.Scorch) {
 	sh.m.Lock()
 
 	if sh.waiting > 0 {
