@@ -12,11 +12,10 @@
 package cbft
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strconv"
-
-	"golang.org/x/net/context"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"

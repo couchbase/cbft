@@ -10,6 +10,7 @@
 package cbft
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/blevesearch/bleve/index"
 	"github.com/blevesearch/bleve/index/store"
 	"github.com/blevesearch/bleve/mapping"
-	"golang.org/x/net/context"
 )
 
 var missingPIndexUnimplementedErr = errors.New("unimplemented")

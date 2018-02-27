@@ -11,6 +11,7 @@ package cbft
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -20,8 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"

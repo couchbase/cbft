@@ -14,6 +14,7 @@ package cbft
 import (
 	"container/heap"
 	"container/list"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -27,8 +28,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/gorilla/mux"
 
