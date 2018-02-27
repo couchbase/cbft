@@ -12,10 +12,11 @@
 package main
 
 import (
-	"log"
 	"runtime"
 	"runtime/debug"
 	"time"
+
+	log "github.com/couchbase/clog"
 )
 
 type Goverseer struct {

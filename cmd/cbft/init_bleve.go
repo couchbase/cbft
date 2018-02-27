@@ -14,7 +14,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"strconv"
 
@@ -24,6 +23,7 @@ import (
 	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
 
 	"github.com/couchbase/cbft"
+	log "github.com/couchbase/clog"
 )
 
 func initBleveOptions(options map[string]string) error {
