@@ -51,7 +51,9 @@ func (g *Goverseer) Run() {
 			}
 			targetGOGC := int(ratio * 100)
 			if last != targetGOGC {
-				log.Printf("goverseer: new target: %d, previous: %d, heap alloc: %d, remaining: %d, ratio: %f", targetGOGC, last, memstats.HeapAlloc, spaceRemaining, ratio)
+				log.Printf("goverseer: new target: %d, previous: %d, heap alloc: %d, "+
+					"remaining: %d, ratio: %f", targetGOGC, last, memstats.HeapAlloc,
+					spaceRemaining, ratio)
 				debug.SetGCPercent(targetGOGC)
 				last = targetGOGC
 			}

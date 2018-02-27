@@ -41,7 +41,7 @@ func initMemOptions(options map[string]string) (err error) {
 		memCheckInterval, err = time.ParseDuration(v)
 		if err != nil {
 			return fmt.Errorf("init_mem:"+
-				" parsing numCheckInterval: %q, err: %v", v, err)
+				" parsing memCheckInterval: %q, err: %v", v, err)
 		}
 	}
 
