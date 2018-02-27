@@ -286,6 +286,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extras = string(extrasJSON)
 
+	err = initMemOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
 	err = initMossOptions(options)
 	if err != nil {
 		return nil, err
