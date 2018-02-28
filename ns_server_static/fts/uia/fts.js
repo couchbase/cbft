@@ -152,8 +152,8 @@ var ftsPrefix = 'fts';
       mnPluggableUiRegistryProvider.registerConfig({
           name: 'Search',
           state: 'app.admin.search.fts_list',
-          plugIn: 'adminTab',
-          after: 'indexes',
+          plugIn: 'workbenchTab',
+          index: 3,
           includedByState: 'app.admin.search',
           ngShow: 'rbac.cluster.settings.fts.read'
       });
