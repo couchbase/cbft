@@ -34,7 +34,7 @@ func initMemOptions(options map[string]string) (err error) {
 		memQuota = uint64(fmq)
 	}
 
-	memCheckInterval := time.Second
+	var memCheckInterval time.Duration
 	v, exists = options["memCheckInterval"] // In Go duration format.
 	if exists {
 		var err error
