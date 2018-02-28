@@ -96,8 +96,6 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	logFileDescriptorLimit()
-
 	go cmd.DumpOnSignalForPlatform()
 
 	mainWelcome(flagAliases)
