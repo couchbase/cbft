@@ -13,7 +13,6 @@
 package main
 
 import (
-	"fmt"
 	"runtime"
 	"strconv"
 
@@ -73,22 +72,14 @@ func initBleveOptions(options map[string]string) error {
 
 	bleve.Config.SetAnalysisQueueSize(bleveAnalysisQueueSize)
 
-	// set scorch index's OnEvent callbacks with the provided ftsMemoryQuota
-	var memQuota uint64
-	v, exists := options["ftsMemoryQuota"] // In bytes.
-	if exists {
-		fmq, err := strconv.Atoi(v)
-		if err != nil {
-			return fmt.Errorf("init_bleve:"+
-				" parsing ftsMemoryQuota: %q, err: %v", v, err)
-		}
-		memQuota = uint64(fmq)
-	}
-	scorch.RegistryEventCallbacks["scorchEventCallbacks"] = NewScorchHerderOnEvent(memQuota)
+	// set scorch index's OnEvent callbacks using the app herder
+	scorch.RegistryEventCallbacks["scorchEventCallbacks"] =
+		ftsHerder.ScorchHerderOnEvent()
 
-	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] = func(err error) {
-		log.Fatalf("scorch AsyncError, treating this as fatal, err: %v", err)
-	}
+	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
+		func(err error) {
+			log.Fatalf("scorch AsyncError, treating this as fatal, err: %v", err)
+		}
 
 	return nil
 }

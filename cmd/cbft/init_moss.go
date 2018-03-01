@@ -27,21 +27,6 @@ func init() {
 	cbft.BlevePIndexAllowMoss = true
 }
 
-var defaultFTSMemoryQuotaMossFraction = 1.0 // 100%.
-
-func parseFTSMemoryQuotaMossFraction(options map[string]string) (float64, error) {
-	v, exists := options["ftsMemoryQuotaMossFraction"]
-	if exists {
-		p, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return 0, fmt.Errorf("init_moss: ParseFTSMemoryQuotaMossFraction,"+
-				" err: %v", err)
-		}
-		return p, nil
-	}
-	return defaultFTSMemoryQuotaMossFraction, nil
-}
-
 func initMossOptions(options map[string]string) (err error) {
 	if options == nil {
 		return nil
@@ -62,35 +47,6 @@ func initMossOptions(options map[string]string) (err error) {
 		return nil
 	}
 
-	var memQuota uint64
-	v, exists := options["ftsMossMemoryQuota"] // In bytes.
-	if exists {
-		var fmmq int
-		fmmq, err = strconv.Atoi(v)
-		if err != nil {
-			return fmt.Errorf("init_moss:"+
-				" parsing ftsMossMemoryQuota: %q, err: %v", v, err)
-		}
-		memQuota = uint64(fmmq)
-	} else {
-		var frac float64
-		frac, err = parseFTSMemoryQuotaMossFraction(options)
-		if err != nil {
-			return err
-		}
-
-		v, exists = options["ftsMemoryQuota"] // In bytes.
-		if exists {
-			var fmq int
-			fmq, err = strconv.Atoi(v)
-			if err != nil {
-				return fmt.Errorf("init_moss:"+
-					" parsing ftsMemoryQuota: %q, err: %v", v, err)
-			}
-			memQuota = uint64(float64(fmq) * frac)
-		}
-	}
-
 	var mossDebug int
 	mossDebugV, exists := options["ftsMossDebug"] // Higher means more debug info.
 	if exists {
@@ -107,7 +63,7 @@ func initMossOptions(options map[string]string) (err error) {
 		OnError: func(err error) {
 			log.Fatalf("moss OnError, treating this as fatal, err: %v", err)
 		},
-		OnEvent: NewMossHerderOnEvent(memQuota),
+		OnEvent: ftsHerder.MossHerderOnEvent(),
 	}
 
 	return nil

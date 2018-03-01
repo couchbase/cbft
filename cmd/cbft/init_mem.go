@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+var ftsHerder *appHerder
+
 func initMemOptions(options map[string]string) (err error) {
 	if options == nil {
 		return nil
@@ -26,10 +28,10 @@ func initMemOptions(options map[string]string) (err error) {
 	var memQuota uint64
 	v, exists := options["ftsMemoryQuota"] // In bytes.
 	if exists {
-		fmq, err := strconv.Atoi(v)
-		if err != nil {
+		fmq, err2 := strconv.Atoi(v)
+		if err2 != nil {
 			return fmt.Errorf("init_mem:"+
-				" parsing ftsMemoryQuota: %q, err: %v", v, err)
+				" parsing ftsMemoryQuota: %q, err: %v", v, err2)
 		}
 		memQuota = uint64(fmq)
 	}
@@ -37,11 +39,11 @@ func initMemOptions(options map[string]string) (err error) {
 	var memCheckInterval time.Duration
 	v, exists = options["memCheckInterval"] // In Go duration format.
 	if exists {
-		var err error
-		memCheckInterval, err = time.ParseDuration(v)
-		if err != nil {
+		var err2 error
+		memCheckInterval, err2 = time.ParseDuration(v)
+		if err2 != nil {
 			return fmt.Errorf("init_mem:"+
-				" parsing memCheckInterval: %q, err: %v", v, err)
+				" parsing memCheckInterval: %q, err: %v", v, err2)
 		}
 	}
 
@@ -50,5 +52,62 @@ func initMemOptions(options map[string]string) (err error) {
 		go g.Run()
 	}
 
+	ftsApplicationFraction, err := parseFTSMemApplicationFraction(options)
+	if err != nil {
+		return err
+	}
+	ftsIndexingFraction, err := parseFTSMemIndexingFraction(options)
+	if err != nil {
+		return err
+	}
+	ftsQueryingFraction, err := parseFTSMemQueryingFraction(options)
+	if err != nil {
+		return err
+	}
+
+	ftsHerder = newAppHerder(memQuota, ftsApplicationFraction,
+		ftsIndexingFraction, ftsQueryingFraction)
+
 	return nil
+}
+
+// defaultFTSMemIndexingFraction is the ratio of the application quota
+// to use for indexing (default 100%)
+var defaultFTSApplicationFraction = 1.0
+
+func parseFTSMemApplicationFraction(options map[string]string) (float64,
+	error) {
+	return parseFraction("memApplicationFraction", defaultFTSApplicationFraction,
+		options)
+}
+
+// defaultFTSMemIndexingFraction is the ratio of the application quota
+// to use for indexing (default 100%)
+var defaultFTSMemIndexingFraction = 1.0
+
+func parseFTSMemIndexingFraction(options map[string]string) (float64, error) {
+	return parseFraction("memIndexingFraction", defaultFTSMemIndexingFraction,
+		options)
+}
+
+// defaultFTSMemQueryingFraction is the ratio of the application quota
+// to use for querying (default 100%)
+var defaultFTSMemQueryingFraction = 1.0
+
+func parseFTSMemQueryingFraction(options map[string]string) (float64, error) {
+	return parseFraction("memQueryingFraction", defaultFTSMemQueryingFraction,
+		options)
+}
+
+func parseFraction(name string, defaultValue float64,
+	options map[string]string) (float64, error) {
+	v, exists := options[name]
+	if exists {
+		p, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("init_mem: %s, err: %v", name, err)
+		}
+		return p, nil
+	}
+	return defaultValue, nil
 }
