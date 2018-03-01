@@ -554,6 +554,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	// ------------------------------------------------
 
+	go runBleveExpvarsCooker(mgr)
+
 	return router, err
 }
 

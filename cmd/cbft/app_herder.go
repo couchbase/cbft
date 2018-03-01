@@ -14,6 +14,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/couchbase/moss"
@@ -37,6 +38,16 @@ type appHerder struct {
 
 	// Tracks the amount of memory used by running queries
 	runningQueryUsed uint64
+
+	stats appHerderStats
+}
+
+type appHerderStats struct {
+	TotWaitingIn  uint64
+	TotWaitingOut uint64
+
+	TotOnBatchExecuteStartBeg uint64
+	TotOnBatchExecuteStartEnd uint64
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
@@ -49,9 +60,18 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 	ah.indexQuota = uint64(float64(ah.appQuota) * indexRatio)
 	ah.queryQuota = uint64(float64(ah.appQuota) * queryRatio)
 	ah.waitCond = sync.NewCond(&ah.m)
-	log.Printf("app_herder: memQuota: %d, appQuota: %d, indexQutoa: %d, "+
+	log.Printf("app_herder: memQuota: %d, appQuota: %d, indexQuota: %d, "+
 		"queryQuota: %d", memQuota, ah.appQuota, ah.indexQuota, ah.queryQuota)
 	return ah
+}
+
+func (a *appHerder) Stats() map[string]interface{} {
+	return map[string]interface{}{
+		"TotWaitingIn":              atomic.LoadUint64(&a.stats.TotWaitingIn),
+		"TotWaitingOut":             atomic.LoadUint64(&a.stats.TotWaitingOut),
+		"TotOnBatchExecuteStartBeg": atomic.LoadUint64(&a.stats.TotOnBatchExecuteStartBeg),
+		"TotOnBatchExecuteStartEnd": atomic.LoadUint64(&a.stats.TotOnBatchExecuteStartEnd),
+	}
 }
 
 // *** Indexing Callbacks
@@ -69,6 +89,7 @@ func (a *appHerder) onClose(c interface{}) {
 }
 
 func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
+	atomic.AddUint64(&a.stats.TotOnBatchExecuteStartBeg, 1)
 
 	a.m.Lock()
 
@@ -79,14 +100,18 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 
 		log.Printf("app_herder: waiting for more memory to be available")
 
+		atomic.AddUint64(&a.stats.TotWaitingIn, 1)
 		a.waiting++
 		a.waitCond.Wait()
 		a.waiting--
+		atomic.AddUint64(&a.stats.TotWaitingOut, 1)
 
 		log.Printf("app_herder: resuming upon memory reduction ..")
 	}
 
 	a.m.Unlock()
+
+	atomic.AddUint64(&a.stats.TotOnBatchExecuteStartEnd, 1)
 }
 
 func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {

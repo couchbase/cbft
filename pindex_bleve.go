@@ -1208,11 +1208,13 @@ func (t *BleveDestPartition) Close() error {
 func (t *BleveDestPartition) DataUpdate(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
 	extrasType cbgt.DestExtrasType, extras []byte) error {
+	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateBeg, 1)
 
 	t.m.Lock()
 
 	if t.batch == nil {
 		t.m.Unlock()
+		atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
 		return fmt.Errorf("bleve: DataUpdate nil batch")
 	}
 
@@ -1239,6 +1241,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		t.bdest.AddError("batch.Index", partition, key, seq, val, erri)
 	}
 
+	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
 	return err
 }
 
@@ -1246,10 +1249,13 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	key []byte, seq uint64,
 	cas uint64,
 	extrasType cbgt.DestExtrasType, extras []byte) error {
+	atomic.AddUint64(&aggregateBDPStats.TotDataDeleteBeg, 1)
+
 	t.m.Lock()
 
 	if t.batch == nil {
 		t.m.Unlock()
+		atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
 		return fmt.Errorf("bleve: DataDelete nil batch")
 	}
 
@@ -1263,8 +1269,39 @@ func (t *BleveDestPartition) DataDelete(partition string,
 		t.incRev()
 	}
 
+	atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
 	return err
 }
+
+// ---------------------------------------------------------
+
+type bleveDestPartitionStats struct {
+	TotDataUpdateBeg uint64
+	TotDataUpdateEnd uint64
+
+	TotDataDeleteBeg uint64
+	TotDataDeleteEnd uint64
+
+	TotExecuteBatchBeg uint64
+	TotExecuteBatchEnd uint64
+}
+
+var aggregateBDPStats bleveDestPartitionStats
+
+func AggregateBleveDestPartitionStats() map[string]interface{} {
+	return map[string]interface{}{
+		"TotDataUpdateBeg": atomic.LoadUint64(&aggregateBDPStats.TotDataUpdateBeg),
+		"TotDataUpdateEnd": atomic.LoadUint64(&aggregateBDPStats.TotDataUpdateEnd),
+
+		"TotDataDeleteBeg": atomic.LoadUint64(&aggregateBDPStats.TotDataDeleteBeg),
+		"TotDataDeleteEnd": atomic.LoadUint64(&aggregateBDPStats.TotDataDeleteEnd),
+
+		"TotExecuteBatchBeg": atomic.LoadUint64(&aggregateBDPStats.TotExecuteBatchBeg),
+		"TotExecuteBatchEnd": atomic.LoadUint64(&aggregateBDPStats.TotExecuteBatchEnd),
+	}
+}
+
+// ---------------------------------------------------------
 
 func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
@@ -1403,6 +1440,7 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	batchReqChs := t.bdest.batchReqChs
 	stopCh := t.bdest.stopCh
 	t.m.Unlock()
+
 	// ensure that batch requests from a given partition always goes
 	// to the same worker queue so that the order of seq numbers are maintained
 	partition, err := strconv.Atoi(p)
@@ -1471,7 +1509,9 @@ func executeBatch(t *BleveDestPartition,
 	}
 
 	err := cbgt.Timer(func() error {
+		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchBeg, 1)
 		err := bindex.Batch(batch)
+		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchEnd, 1)
 		if err != nil {
 			log.Printf("pindex_bleve: executeBatch, err: %+v ", err)
 		}
@@ -1492,58 +1532,6 @@ func executeBatch(t *BleveDestPartition,
 		}
 	}
 	t.m.Unlock()
-
-	return true, nil
-}
-
-func (t *BleveDestPartition) applyBatchLOCKED() (bool, error) {
-	if t.batch == nil {
-		return false, fmt.Errorf("bleve: applyBatch batch nil")
-	}
-
-	if t.bindex == nil {
-		return false, fmt.Errorf("bleve: applyBatch bindex already closed")
-	}
-
-	err := cbgt.Timer(func() error {
-		// At this point, there should be no other concurrent batch
-		// activity on this BleveDestPartition (BDP), since a BDP
-		// represents a single vbucket.  Since we don't want to block
-		// stats gathering or readers trying to read
-		// seqMax/seqMaxBatch/lastUUID, we unlock before entering the
-		// (perhaps time consuming) t.bindex.Batch() operation.  By
-		// clearing the t.batch to nil, we can also detect concurrent
-		// mutations due to errors returned from other methods when
-		// they see a nil t.batch.
-		batch := t.batch
-		t.batch = nil
-
-		bindex := t.bindex
-		t.m.Unlock()
-		err := bindex.Batch(batch)
-		t.m.Lock()
-
-		return err
-	}, t.bdest.stats.TimerBatchStore)
-	if err != nil {
-		return false, err
-	}
-
-	t.seqMaxBatch = t.seqMax
-
-	for t.cwrQueue.Len() > 0 &&
-		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
-		cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
-		if cwr != nil && cwr.DoneCh != nil {
-			close(cwr.DoneCh)
-		}
-	}
-
-	// TODO: Would be good to reuse batch's memory; but, would need
-	// some public Reset() kind of method on bleve.Batch?
-	if t.bindex != nil {
-		t.batch = t.bindex.NewBatch()
-	}
 
 	return true, nil
 }
