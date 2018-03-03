@@ -227,11 +227,14 @@ func runBleveExpvarsCooker(mgr *cbgt.Manager) {
 			expvars.Set(k, v)
 		}
 
-		totBatches := vars["b_TotBatches"].Value()
-		if totBatches > 0 {
-			v := expvar.Int{}
-			v.Set(vars["b_TotBatchIntroTime"].Value() / totBatches)
-			expvars.Set("b_AvgBatchIntroTime", &v)
+		vb, exists := vars["b_TotBatches"]
+		if exists && vb != nil {
+			totBatches := vb.Value()
+			if totBatches > 0 {
+				v := expvar.Int{}
+				v.Set(vars["b_TotBatchIntroTime"].Value() / totBatches)
+				expvars.Set("b_AvgBatchIntroTime", &v)
+			}
 		}
 	}
 }
