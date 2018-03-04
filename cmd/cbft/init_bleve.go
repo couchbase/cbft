@@ -88,6 +88,8 @@ func initBleveOptions(options map[string]string) error {
 	return nil
 }
 
+// ---------------------------------------------------------------
+
 // bleveExpvarsAgg holds pairs of {categoryPrefix, varName}, where
 // the varName'ed stats will be aggregated across all pindexes.
 var bleveExpvarsAgg [][]string = [][]string{
@@ -106,15 +108,18 @@ var bleveExpvarsAgg [][]string = [][]string{
 	{"i", "TotIntroducedSegmentsBatch"},
 	{"i", "TotIntroducedSegmentsMerge"},
 
+	// Category "m" is for "merger".
+	{"m", "MaxFileMergeZapTime"},
+
 	// Category "p" is for "persister".
 	{"p", "CurOnDiskFiles"},
+	{"p", "MaxMemMergeZapTime"},
 }
 
-// bleveExpvarsCalculated holds tuples of {categoryPrefix, varName,
+// bleveExpvarsDeltas holds tuples of {categoryPrefix, varName,
 // sourceCounterX, sourceCounterY}, where the varName's value will be
-// calculated as "sourceCounterX - sourceCounterY", and aggregated
-// across all pindexes.
-var bleveExpvarsCalculated [][]string = [][]string{
+// calculated as "sourceCounterX - sourceCounterY".
+var bleveExpvarsDeltas [][]string = [][]string{
 	// Category "i" is for "introducer".
 	{"i", "CurIntroduceSegment", "TotIntroduceSegmentBeg", "TotIntroduceSegmentEnd"},
 	{"i", "CurIntroduceMerge", "TotIntroduceMergeBeg", "TotIntroduceMergeEnd"},
@@ -136,12 +141,38 @@ var bleveExpvarsCalculated [][]string = [][]string{
 	{"h", "CurWaiting", "TotWaitingIn", "TotWaitingOut"},
 }
 
+// bleveExpvarsRatios holds tuples of {categoryPrefix, varName,
+// sourceNumerator, sourceDenominator}, where the varName's value will
+// be calculated as "sourceNumerator / sourceDenominator".
+var bleveExpvarsRatios [][]string = [][]string{
+	{"b", "AvgBatchIntroTime", "TotBatchIntroTime", "TotBatches"},
+	{"p", "AvgMemMergeZapTime", "TotMemMergeZapTime", "TotMemMergeZapEnd"},
+	{"m", "AvgFileMergeZapTime", "TotFileMergeZapTime", "TotFileMergeZapEnd"},
+}
+
+func init() {
+	// Initialize bleveExpvarsAgg with the vars used for calculations.
+	for _, specs := range [][][]string{bleveExpvarsDeltas, bleveExpvarsRatios} {
+		for _, spec := range specs {
+		LOOP_NAMES:
+			for _, dependency := range spec[2:] {
+				for _, aggSpec := range bleveExpvarsAgg {
+					if aggSpec[1] == dependency {
+						continue LOOP_NAMES
+					}
+				}
+				bleveExpvarsAgg = append(bleveExpvarsAgg, []string{spec[0], dependency})
+			}
+		}
+	}
+}
+
 // runBleveExpvarsCooker runs a timer loop that occasionally adds
 // processed or cooked bleve-related stats to expvars.
 //
 // Example with expvarmon tool, with cbft listening on port 9200...
 //
-//   expvarmon -ports=9200 -vars="stats.a_TotUpdates,stats.a_TotDeletes,stats.b_TotBatches,stats.b_TotBatchesEmpty,stats.d_CurExecuteBatch,stats.h_CurOnBatchExecuteStart,stats.h_CurWaiting,stats.i_CurIntroduceSegment,stats.i_CurIntroduceMerge,stats.i_TotIntroducedItems,stats.i_TotIntroducedSegmentsBatch,stats.i_TotIntroducedSegmentsMerge,duration:stats.b_AvgBatchIntroTime,duration:stats.b_MaxBatchIntroTime,stats.m_CurFileMergePlanTasks,stats.p_CurMemMerge,stats.p_CurPersisterSlowMergerPaused,stats.p_CurOnDiskFiles"
+//   expvarmon -ports=9200 -vars="stats.a_TotUpdates,stats.a_TotDeletes,stats.b_TotBatches,stats.b_TotBatchesEmpty,stats.d_CurExecuteBatch,stats.h_CurOnBatchExecuteStart,stats.h_CurWaiting,stats.i_CurIntroduceSegment,stats.i_CurIntroduceMerge,stats.i_TotIntroducedItems,stats.i_TotIntroducedSegmentsBatch,stats.i_TotIntroducedSegmentsMerge,duration:stats.b_AvgBatchIntroTime,duration:stats.b_MaxBatchIntroTime,stats.p_CurPersisterSlowMergerPaused,stats.p_CurOnDiskFiles,stats.p_CurMemMerge,duration:stats.p_AvgMemMergeZapTime,duration:stats.p_MaxMemMergeZapTime,stats.m_CurFileMergePlanTasks,duration:stats.m_AvgFileMergeZapTime,duration:stats.m_MaxFileMergeZapTime"
 //
 func runBleveExpvarsCooker(mgr *cbgt.Manager) {
 	tickCh := time.Tick(5 * time.Second)
@@ -166,20 +197,6 @@ func runBleveExpvarsCooker(mgr *cbgt.Manager) {
 					} else { // Assume it's summable like "TotFooBar".
 						v.Add(int64(i.(uint64)))
 					}
-				}
-			}
-		}
-
-		addStatsCalculated := func(m map[string]interface{}) {
-			for _, cur := range bleveExpvarsCalculated {
-				if i, exists := m[cur[2]]; exists {
-					k := cur[0] + "_" + cur[1]
-					v := vars[k]
-					if v == nil {
-						v = &expvar.Int{}
-						vars[k] = v
-					}
-					v.Add(int64(i.(uint64)) - int64(m[cur[3]].(uint64)))
 				}
 			}
 		}
@@ -217,24 +234,34 @@ func runBleveExpvarsCooker(mgr *cbgt.Manager) {
 			}
 
 			addStats(m)
-			addStatsCalculated(m)
 		}
 
-		addStatsCalculated(cbft.AggregateBleveDestPartitionStats())
-		addStatsCalculated(ftsHerder.Stats())
+		addStats(cbft.AggregateBleveDestPartitionStats())
+
+		addStats(ftsHerder.Stats())
+
+		for _, spec := range bleveExpvarsDeltas {
+			a, aexists := vars[spec[0]+"_"+spec[2]]
+			b, bexists := vars[spec[0]+"_"+spec[3]]
+			if aexists && bexists {
+				delta := &expvar.Int{}
+				delta.Set(a.Value() - b.Value())
+				vars[spec[0]+"_"+spec[1]] = delta
+			}
+		}
+
+		for _, spec := range bleveExpvarsRatios {
+			n, nexists := vars[spec[0]+"_"+spec[2]] // Numerator.
+			d, dexists := vars[spec[0]+"_"+spec[3]] // Denominator.
+			if nexists && dexists && d.Value() > 0 {
+				ratio := &expvar.Int{}
+				ratio.Set(n.Value() / d.Value())
+				vars[spec[0]+"_"+spec[1]] = ratio
+			}
+		}
 
 		for k, v := range vars {
 			expvars.Set(k, v)
-		}
-
-		vb, exists := vars["b_TotBatches"]
-		if exists && vb != nil {
-			totBatches := vb.Value()
-			if totBatches > 0 {
-				v := expvar.Int{}
-				v.Set(vars["b_TotBatchIntroTime"].Value() / totBatches)
-				expvars.Set("b_AvgBatchIntroTime", &v)
-			}
 		}
 	}
 }
