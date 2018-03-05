@@ -529,8 +529,9 @@ func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
 }
 
 var scorchStats = map[string]string{
-	"/num_bytes_used_disk": "num_bytes_used_disk",
-	"/num_files_on_disk":   "num_files_on_disk",
+	"/num_bytes_used_disk":            "num_bytes_used_disk",
+	"/num_files_on_disk":              "num_files_on_disk",
+	"/total_compaction_written_bytes": "total_compaction_written_bytes",
 }
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
