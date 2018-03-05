@@ -154,6 +154,7 @@ var ftsPrefix = 'fts';
           state: 'app.admin.search.fts_list',
           plugIn: 'workbenchTab',
           index: 3,
+          responsiveHide: true,
           includedByState: 'app.admin.search',
           ngShow: 'rbac.cluster.settings.fts.read'
       });
