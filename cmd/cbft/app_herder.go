@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 
 	"github.com/blevesearch/bleve/index/scorch"
+	"github.com/couchbase/cbft"
 	"github.com/couchbase/moss"
 
 	log "github.com/couchbase/clog"
@@ -36,6 +37,8 @@ type appHerder struct {
 
 	indexes map[interface{}]sizeFunc
 
+	// Flag that is to be set to true for tracking memory used by queries
+	queryHerdingEnabled bool
 	// Tracks the amount of memory used by running queries
 	runningQueryUsed uint64
 
@@ -155,7 +158,32 @@ func (a *appHerder) onPersisterProgress() {
 
 // *** Query Interface
 
-func (a *appHerder) StartQuery(size uint64) error {
+func (a *appHerder) setQueryHerding(to bool) {
+	a.queryHerdingEnabled = to
+}
+
+func (a *appHerder) queryHerderOnEvent() func(cbft.QueryEvent, uint64) error {
+	return func(event cbft.QueryEvent, size uint64) error { return a.onQueryEvent(event, size) }
+}
+
+func (a *appHerder) onQueryEvent(event cbft.QueryEvent, size uint64) error {
+	switch event.Kind {
+	case cbft.EventQueryStart:
+		return a.onQueryStart(size)
+
+	case cbft.EventQueryEnd:
+		return a.onQueryEnd(size)
+
+	default:
+		return nil
+	}
+}
+
+func (a *appHerder) onQueryStart(size uint64) error {
+	if !a.queryHerdingEnabled {
+		return nil
+	}
+
 	a.m.Lock()
 	defer a.m.Unlock()
 	memUsed := a.runningQueryUsed + size
@@ -182,7 +210,11 @@ func (a *appHerder) StartQuery(size uint64) error {
 	return nil
 }
 
-func (a *appHerder) EndQuery(size uint64) {
+func (a *appHerder) onQueryEnd(size uint64) error {
+	if !a.queryHerdingEnabled {
+		return nil
+	}
+
 	a.m.Lock()
 	a.runningQueryUsed -= size
 
@@ -193,6 +225,7 @@ func (a *appHerder) EndQuery(size uint64) {
 	a.waitCond.Broadcast()
 
 	a.m.Unlock()
+	return nil
 }
 
 // *** Moss Wrapper

@@ -564,6 +564,13 @@ type QueryPIndexes struct {
 	PIndexNames []string `json:"pindexNames,omitempty"`
 }
 
+func fireQueryEvent(kind QueryEventKind, dur time.Duration, size uint64) error {
+	if RegistryQueryEventCallback != nil {
+		return RegistryQueryEventCallback(QueryEvent{Kind: kind, Duration: dur}, size)
+	}
+	return nil
+}
+
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
 	// phase 0 - parsing/validating query
@@ -644,6 +651,19 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			return er
 		}
 	}
+
+	// set query start/end callbacks
+	queryStartCallback := func(size uint64) error {
+		return fireQueryEvent(EventQueryStart, 0, size)
+	}
+	ctx = context.WithValue(ctx, bleve.SearchQueryStartCallbackKey,
+		bleve.SearchQueryStartCallbackFn(queryStartCallback))
+
+	queryEndCallback := func(size uint64) error {
+		return fireQueryEvent(EventQueryEnd, 0, size)
+	}
+	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
+		bleve.SearchQueryEndCallbackFn(queryEndCallback))
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
