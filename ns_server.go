@@ -424,16 +424,16 @@ func updateStat(name string, val float64, nsIndexStat map[string]interface{}) {
 func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 	// common stats across different index types
 	v := jsonpointer.Get(bpsm, "/DocCount")
-	if v, ok := v.(uint64); ok {
-		updateStat("doc_count", float64(v), nsIndexStat)
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("doc_count", float64(vuint64), nsIndexStat)
 	}
 	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
-	if v, ok := v.(uint64); ok {
-		updateStat("total_term_searchers", float64(v), nsIndexStat)
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_term_searchers", float64(vuint64), nsIndexStat)
 	}
 	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
-	if v, ok := v.(uint64); ok {
-		updateStat("total_bytes_indexed", float64(v), nsIndexStat)
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat)
 	}
 
 	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
@@ -501,8 +501,8 @@ var metricStats = map[string]string{
 func extractMetricsStats(metrics, nsIndexStat map[string]interface{}) error {
 	for path, statname := range metricStats {
 		v := jsonpointer.Get(metrics, path)
-		if v, ok := v.(int64); ok {
-			updateStat(statname, float64(v), nsIndexStat)
+		if vint64, ok := v.(int64); ok {
+			updateStat(statname, float64(vint64), nsIndexStat)
 		}
 	}
 	return nil
