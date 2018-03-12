@@ -534,7 +534,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 
 func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
-	alias, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
+	alias, _, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
 		false, nil)
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); !ok {
@@ -644,13 +644,23 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
-	alias, remoteClients, er := bleveIndexAlias(mgr, indexName, indexUUID, true,
+	alias, remoteClients, numPIndexes, er := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh, true, onlyPIndexes)
 	if er != nil {
 		if _, ok := er.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return er
 		}
 	}
+
+	// estimate memory needed for merging search results from all
+	// the pindexes
+	mergeEstimate := uint64(numPIndexes) * bleve.MemoryNeededForSearchResult(searchRequest)
+	err = fireQueryEvent(EventQueryStart, 0, mergeEstimate)
+	if err != nil {
+		return err
+	}
+
+	defer fireQueryEvent(EventQueryEnd, 0, mergeEstimate)
 
 	// set query start/end callbacks
 	queryStartCallback := func(size uint64) error {
@@ -1586,20 +1596,20 @@ var totRemoteHttp2 uint64
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool) (
-	bleve.IndexAlias, []*IndexClient, error) {
+	bleve.IndexAlias, []*IndexClient, int, error) {
 	alias := bleve.NewIndexAlias()
 
-	remoteClients, err := bleveIndexTargets(mgr, indexName, indexUUID,
+	remoteClients, numPIndexes, err := bleveIndexTargets(mgr, indexName, indexUUID,
 		ensureCanRead, consistencyParams, cancelCh,
 		groupByNode, onlyPIndexes, alias)
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); ok {
-			return alias, remoteClients, err
+			return alias, remoteClients, numPIndexes, err
 		}
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
-	return alias, remoteClients, nil
+	return alias, remoteClients, numPIndexes, nil
 }
 
 // BleveIndexCollector interface is a subset of the bleve.IndexAlias
@@ -1613,7 +1623,7 @@ type BleveIndexCollector interface {
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
-	collector BleveIndexCollector) ([]*IndexClient, error) {
+	collector BleveIndexCollector) ([]*IndexClient, int, error) {
 	planPIndexFilterName := "ok"
 	if ensureCanRead {
 		planPIndexFilterName = "canRead"
@@ -1626,8 +1636,9 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			PlanPIndexFilterName: planPIndexFilterName,
 		}, nil, false)
 	if err != nil {
-		return nil, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
+		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
+	numPIndexes := len(localPIndexesAll) + len(remotePlanPIndexes)
 
 	localPIndexes := localPIndexesAll
 	if onlyPIndexes != nil {
@@ -1710,7 +1721,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	if groupByNode {
 		remoteClients, err = GroupIndexClientsByHostPort(remoteClients)
 		if err != nil {
-			return nil, err
+			return nil, numPIndexes, err
 		}
 	}
 
@@ -1720,7 +1731,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
 
-	return remoteClients, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
+	return remoteClients, numPIndexes, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
 		func(localPIndex *cbgt.PIndex) error {
 			if !strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {

@@ -12,12 +12,12 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"
 
 	log "github.com/couchbase/clog"
@@ -191,18 +191,20 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	// first make sure querying (on it's own) doesn't exceed the
 	// query portion of the quota
 	if memUsed > a.queryQuota {
-		return fmt.Errorf("app_herder: this query %d plus running queries: %d "+
+		log.Printf("app_herder: this query %d plus running queries: %d "+
 			"would exceed query quota: %d",
 			size, a.runningQueryUsed, a.queryQuota)
+		return rest.ErrorSearchReqRejected
 	}
 
 	// second add in indexing and check combined app quota
 	indexingMem := a.indexingMemoryLOCKED()
 	memUsed += indexingMem
 	if memUsed > a.appQuota {
-		return fmt.Errorf("app_herder: this query %d plus running queries: %d "+
+		log.Printf("app_herder: this query %d plus running queries: %d "+
 			"plus indexing: %d would exceed app quota: %d",
 			size, a.runningQueryUsed, indexingMem, a.appQuota)
+		return rest.ErrorSearchReqRejected
 	}
 
 	// record the addition
