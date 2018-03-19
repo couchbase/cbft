@@ -153,7 +153,7 @@ var ftsPrefix = 'fts';
           name: 'Search',
           state: 'app.admin.search.fts_list',
           plugIn: 'workbenchTab',
-          index: 3,
+          index: 2,
           responsiveHide: true,
           includedByState: 'app.admin.search',
           ngShow: 'rbac.cluster.settings.fts.read'
