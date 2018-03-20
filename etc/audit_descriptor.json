@@ -9,7 +9,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""},
+                                                     "real_userid" : {"domain" : "", "user" : ""},
                                                      "index_name" : ""
                                                 },
                           "optional_fields" : {}
@@ -21,7 +21,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""},
+                                                     "real_userid" : {"domain" : "", "user" : ""},
                                                      "index_name" : ""
                                                 },
                           "optional_fields" : {}
@@ -33,7 +33,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""},
+                                                     "real_userid" : {"domain" : "", "user" : ""},
                                                      "control_name" : ""
                                                 },
                           "optional_fields" : {}
@@ -45,7 +45,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""}
+                                                     "real_userid" : {"domain" : "", "user" : ""}
                                                 },
                           "optional_fields" : {}
                     },
@@ -56,7 +56,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""}
+                                                     "real_userid" : {"domain" : "", "user" : ""}
                                                 },
                           "optional_fields" : {}
                     },
@@ -67,7 +67,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""}
+                                                     "real_userid" : {"domain" : "", "user" : ""}
                                                 },
                           "optional_fields" : {}
                     },
@@ -78,7 +78,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""}
+                                                     "real_userid" : {"domain" : "", "user" : ""}
                                                 },
                           "optional_fields" : {}
                     },
@@ -89,7 +89,7 @@
                            "enabled" : true,
                            "mandatory_fields" : {
                                                      "timestamp" : "",
-                                                     "real_userid" : {"source" : "", "user" : ""}
+                                                     "real_userid" : {"domain" : "", "user" : ""}
                                                 },
                           "optional_fields" : {}
                     }
