@@ -95,7 +95,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("alias: QueryAlias"+
-			" parsing queryCtlParams, req: %s, err: %v", req, err)
+			" parsing queryCtlParams, err: %v", err)
 	}
 
 	searchRequest := &bleve.SearchRequest{}
@@ -103,7 +103,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("alias: QueryAlias"+
-			" parsing searchRequest, req: %s, err: %v", req, err)
+			" parsing searchRequest, err: %v", err)
 	}
 
 	if srqv, ok := searchRequest.Query.(query.ValidatableQuery); ok {

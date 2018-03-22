@@ -583,35 +583,35 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
-			" parsing queryCtlParams, req: %s, err: %v", req, err)
+			" parsing queryCtlParams, err: %v", err)
 	}
 
 	queryPIndexes := QueryPIndexes{}
 	err = UnmarshalJSON(req, &queryPIndexes)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
-			" parsing queryPIndexes, req: %s, err: %v", req, err)
+			" parsing queryPIndexes, err: %v", err)
 	}
 
 	searchRequest := &bleve.SearchRequest{}
 	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
-			" parsing searchRequest, req: %s, err: %v", req, err)
+			" parsing searchRequest, err: %v", err)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
 			return fmt.Errorf("bleve: QueryBleve"+
-				" validating consistency, req: %s, err: %v", req, err)
+				" validating consistency, err: %v", err)
 		}
 	}
 
 	err = searchRequest.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
-			" validating request, req: %s, err: %v", req, err)
+			" validating request, err: %v", err)
 	}
 
 	v, exists := mgr.Options()["bleveMaxResultWindow"]
@@ -908,19 +908,19 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
-			" parsing queryCtlParams, req: %s, err: %v", req, err)
+			" parsing queryCtlParams, err: %v", err)
 	}
 
 	searchRequest := &bleve.SearchRequest{}
 	err = UnmarshalJSON(req, searchRequest)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
-			" parsing searchRequest, req: %s, err: %v", req, err)
+			" parsing searchRequest, err: %v", err)
 	}
 	err = searchRequest.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
-			" validating request, req: %s, err: %v", req, err)
+			" validating request, err: %v", err)
 	}
 
 	// phase 1 - set up timeouts, wait to satisfy consistency requirements
