@@ -102,7 +102,8 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 
 	perms, err := preparePerms(mgr, req, req.Method, path)
 	if err != nil {
-		rest.PropagateError(w, req, fmt.Sprintf("rest_auth: preparePerms,"+
+		requestBody, _ := ioutil.ReadAll(req.Body)
+		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: preparePerms,"+
 			" err: %v", err), http.StatusBadRequest)
 		return false
 	}
@@ -113,7 +114,8 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 
 	creds, err := CBAuthWebCreds(req)
 	if err != nil {
-		rest.PropagateError(w, req, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
+		requestBody, _ := ioutil.ReadAll(req.Body)
+		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
 			" err: %v", err), http.StatusForbidden)
 		return false
 	}
@@ -121,7 +123,8 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 	for _, perm := range perms {
 		allowed, err = CBAuthIsAllowed(creds, perm)
 		if err != nil {
-			rest.PropagateError(w, req, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
+			requestBody, _ := ioutil.ReadAll(req.Body)
+			rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
 				" err: %v", err), http.StatusForbidden)
 			return false
 		}
@@ -329,7 +332,8 @@ func (h *CBAuthBasicLogin) ServeHTTP(
 	if authType == "cbauth" {
 		creds, err := CBAuthWebCreds(req)
 		if err != nil {
-			rest.PropagateError(w, req, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
+			requestBody, _ := ioutil.ReadAll(req.Body)
+			rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
 				" err: %v", err), http.StatusForbidden)
 			return
 		}

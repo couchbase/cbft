@@ -665,7 +665,7 @@ type untrackedRouteHandler struct{}
 
 func (h *untrackedRouteHandler) ServeHTTP(w http.ResponseWriter,
 	req *http.Request) {
-	rest.PropagateError(w, req, fmt.Sprintf("Page not found"), http.StatusNotFound)
+	rest.PropagateError(w, nil, fmt.Sprintf("Page not found"), http.StatusNotFound)
 }
 
 // -------------------------------------------------------
