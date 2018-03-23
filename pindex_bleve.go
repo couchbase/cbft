@@ -675,6 +675,16 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
 		bleve.SearchQueryEndCallbackFn(queryEndCallback))
 
+	// register with the QuerySupervisor
+	id := querySupervisor.AddEntry(&QuerySupervisorContext{
+		Query:   searchRequest.Query,
+		Cancel:  cancel,
+		Size:    searchRequest.Size,
+		From:    searchRequest.From,
+		Timeout: queryCtlParams.Ctl.Timeout,
+	})
+	defer querySupervisor.DeleteEntry(id)
+
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
 		// check to see if any of the remote searches returned anything
@@ -959,6 +969,17 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 		sendSearchResultErr(searchRequest, res, []string{pindex.Name}, err)
 		return nil
 	}
+
+	// register with the QuerySupervisor
+	id := querySupervisor.AddEntry(&QuerySupervisorContext{
+		Query:   searchRequest.Query,
+		Cancel:  cancel,
+		Size:    searchRequest.Size,
+		From:    searchRequest.From,
+		Timeout: queryCtlParams.Ctl.Timeout,
+	})
+
+	defer querySupervisor.DeleteEntry(id)
 
 	searchResponse, err := bindex.SearchInContext(ctx, searchRequest)
 	if err != nil {

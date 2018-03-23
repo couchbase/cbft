@@ -459,6 +459,16 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.Handler("GET", prefix+"/api/conciseOptions",
 		cbft.NewConciseOptions(mgr))
 
+	router.Handler("GET", prefix+"/api/query",
+		cbft.NewQuerySupervisorDetails())
+
+	router.Handle("DELETE", prefix+"/api/query/:queryID",
+		func(w http.ResponseWriter, req *http.Request, p httprouter.Params) {
+			req = ContextSet(req, p)
+			handler := cbft.NewQueryKiller()
+			handler.ServeHTTP(w, req)
+		})
+
 	// Setup all debug/pprof routes
 	router.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
 	router.HandlerFunc("GET", "/debug/pprof/block", pprof.Index)
