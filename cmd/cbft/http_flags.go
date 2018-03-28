@@ -12,7 +12,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -121,24 +120,8 @@ func initHTTPOptions(options map[string]string) error {
 
 	cbft.HttpClient = &http.Client{Transport: transport}
 
-	transport2 := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   httpTransportDialContextTimeout,
-			KeepAlive: httpTransportDialContextKeepAlive,
-		}).DialContext,
-		MaxIdleConns:          httpTransportMaxIdleConns,
-		MaxIdleConnsPerHost:   httpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:       httpTransportIdleConnTimeout,
-		TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
-		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
-		TLSClientConfig:       cbft.TLSConfig,
-	}
-
-	err := http2.ConfigureTransport(transport2)
-	if err != nil {
-		return fmt.Errorf("initHTTPOptions: unable to configure"+
-			"http.Transport for http2, err: %v", err)
+	transport2 := &http2.Transport{
+		TLSClientConfig: cbft.TLSConfig,
 	}
 	cbft.Http2Client = &http.Client{Transport: transport2}
 
