@@ -116,12 +116,12 @@ func decodeConjunctionQuery(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	q := query.ConjunctionQuery{}
 	q.Conjuncts = make([]query.Query, len(tmp.Conjuncts))
 	for i, term := range tmp.Conjuncts {
-		query, err := parseQuery(term)
+		query1, err := parseQuery(term)
 		if err != nil {
 			iter.Error = err
 			return
 		}
-		q.Conjuncts[i] = query
+		q.Conjuncts[i] = query1
 	}
 	q.BoostVal = tmp.Boost
 	*((*query.ConjunctionQuery)(ptr)) = q
@@ -251,12 +251,12 @@ func decodeDisjunctionQuery(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	q := query.DisjunctionQuery{}
 	q.Disjuncts = make([]query.Query, len(tmp.Disjuncts))
 	for i, term := range tmp.Disjuncts {
-		query, err := parseQuery(term)
+		query1, err := parseQuery(term)
 		if err != nil {
 			iter.Error = err
 			return
 		}
-		q.Disjuncts[i] = query
+		q.Disjuncts[i] = query1
 	}
 	q.BoostVal = tmp.Boost
 	q.Min = tmp.Min
