@@ -31,7 +31,7 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-var VERSION = "v0.5.0" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.
+var VERSION = "v0.5.5" // IMPORTANT: Must match cbft/cmd/cbft/main.go VERSION.
 
 func categoryParse(categoryFull string) (string, string, string, string) {
 	ma := strings.Split(categoryFull, "|")

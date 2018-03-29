@@ -21,7 +21,7 @@ import (
 )
 
 // cbft product version
-const VERSION = "v0.5.0"
+const VERSION = "v0.5.5"
 
 // cbft api versions, helps in controlling the
 // service expectations during upgrades.
