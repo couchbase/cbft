@@ -957,7 +957,7 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 	}()
 
-	tickCh := time.Tick(1 * time.Minute)
+	tickCh := time.Tick(5 * time.Second)
 
 	memStatsLoggingInterval, _ := strconv.Atoi(mgr.Options()["memStatsLoggingInterval"])
 	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
