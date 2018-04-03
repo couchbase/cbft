@@ -499,6 +499,11 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                               " must only use alphanumeric or '-' or '_' characters");
                 }
 
+                if (!newSourceName) {
+                    errorFields["sourceName"] = true;
+                    errs.push("source (bucket) needs to be selected");
+                }
+
                 if (newPlanParams) {
                     try {
                         var numReplicas = $scope.numReplicas;
