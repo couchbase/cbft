@@ -213,7 +213,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		return nil, err
 	}
 
-	resultCh := make(chan *bleve.SearchResult)
+	resultCh := make(chan *bleve.SearchResult, 1)
 
 	go func() {
 		respBuf, err := r.Query(buf)
