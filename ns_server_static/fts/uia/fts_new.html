@@ -134,19 +134,35 @@
         </div>
       </div>
 
-<!-- NUMBER OF REPLICAS *********************** -->
-      <div class="margin-bottom2" ng-show="newSourceType && newSourceType != 'nil'">
-        <label for="inputNumReplicas" class="inline">Index Replicas</label>
-        <span class="fa-stack icon-info"
-              uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="right">
-          <span class="icon fa-circle-thin fa-stack-2x"></span>
-          <span class="icon fa-info fa-stack-1x"></span>
-        </span>
-        <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
-        <select ng-model="$parent.numReplicas"
-                class="narrow"
-                ng-options="item for item in replicaOptions">
-        </select>
+      <div class="row items-top formrow width-480" ng-show="newSourceType && newSourceType != 'nil'">
+        <div class="column width-6">
+          <!-- NUMBER OF REPLICAS *********************** -->
+          <label for="inputNumReplicas" class="inline">Index Replicas</label>
+          <span class="fa-stack icon-info"
+                uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="right">
+            <span class="icon fa-circle-thin fa-stack-2x"></span>
+            <span class="icon fa-info fa-stack-1x"></span>
+          </span>
+          <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
+          <select ng-model="$parent.numReplicas"
+                  class="narrow"
+                  ng-options="item for item in replicaOptions">
+          </select>
+        </div>
+        <div class"width-6">
+          <!-- STORE OPTIONS ******************************* -->
+          <label for="inputStoreOptions" class="inline">Index Type</label>
+          <span class="fa-stack icon-info"
+                uib-tooltip="Index store format." tooltip-placement="right">
+            <span class="icon fa-circle-thin fa-stack-2x"></span>
+            <span class="icon fa-info fa-stack-1x"></span>
+          </span>
+          <select ng-model="$parent.indexStoreOption"
+                  ng-change="indexStoreOptionChanged()"
+                  class="midwide"
+                  ng-options="item for item in indexStoreOptions">
+          </select>
+        </div>
       </div>
 
 <!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->

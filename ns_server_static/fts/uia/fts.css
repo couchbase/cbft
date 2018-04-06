@@ -661,8 +661,13 @@ dl dd {
   display: none;
 }
 
-/* ROB ADD-ONS *-------------------------------------- */
+/* ADD-ONS *------------------------------------------ */
 input.narrow,
 select.narrow {
   width: 120px;
+}
+
+input.midwide,
+select.midwide {
+  width: 240px;
 }

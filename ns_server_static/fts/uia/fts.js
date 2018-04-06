@@ -394,6 +394,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
 
     function initWithBuckets(buckets) {
         $scope.ftsDocConfig = {};
+        $scope.ftsStore = {};
 
         $scope.ftsNodes = [];
         mnPoolDefault.get().then(function(value){
@@ -425,6 +426,9 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
             }
         }
 
+        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 Preview (Scorch)"];
+        $scope.indexStoreOption = $scope.indexStoreOptions[0];
+
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
                        $route, $routeParams,
@@ -438,6 +442,21 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
               if ($scope.ftsDocConfig.mode == "type_field" && !$scope.ftsDocConfig.type_field) {
                 $scope.ftsDocConfig.type_field = "type";
               }
+            }
+
+            $scope.indexStoreOptionChanged = function() {
+                if ($scope.newIndexParams) {
+                    switch($scope.indexStoreOption) {
+                        case $scope.indexStoreOptions[0]:
+                            $scope.ftsStore.kvStoreName = "mossStore";
+                            $scope.ftsStore.indexType = "upside_down";
+                            break;
+                        case $scope.indexStoreOptions[1]:
+                            $scope.ftsStore.kvStoreName = "";
+                            $scope.ftsStore.indexType = "scorch";
+                            break;
+                    }
+                }
             }
 
             $scope.prepareFTSIndex = function(newIndexName,
@@ -485,6 +504,10 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                 // stringify our doc_config and set that into newIndexParams
                 try {
                     newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
+                } catch (e) {}
+
+                try {
+                    newIndexParams['fulltext-index'].store = JSON.stringify($scope.ftsStore);
                 } catch (e) {}
 
                 if (!newIndexName) {
@@ -733,6 +756,16 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     try {
         $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
+    } catch (e) {}
+
+    try {
+        $scope.ftsStore = JSON.parse($scope.newIndexParams['fulltext-index'].store);
+        if ($scope.ftsStore.kvStoreName == "mossStore" &&
+                $scope.ftsStore.indexType == "upside_down") {
+            $scope.indexStoreOption = $scope.indexStoreOptions[0];
+        } else if ($scope.ftsStore.indexType == "scorch") {
+            $scope.indexStoreOption = $scope.indexStoreOptions[1];
+        }
     } catch (e) {}
 
     if (initKind == "view") {
