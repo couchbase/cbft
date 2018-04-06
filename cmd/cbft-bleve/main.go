@@ -25,14 +25,17 @@ import (
 	"github.com/couchbase/moss"
 )
 
+func init() {
+	cmd.DefaultOpenReadOnly = true
+}
+
 func main() {
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
 
-	// add additional warnning for commands that can modify the index
+	// remove commands that can modify the index
 	for _, subCmd := range cmd.RootCmd.Commands() {
 		if cmd.CanMutateBleveIndex(subCmd) {
-			subCmd.Short += " (WARNING - can corrupt indexes if used incorrectly)"
-			subCmd.Long += " Warning, this command can corrupt the contents of the index if used incorrectly."
+			cmd.RootCmd.RemoveCommand(subCmd)
 		}
 	}
 
