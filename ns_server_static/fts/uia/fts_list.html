@@ -9,7 +9,7 @@
     <div class="row margin-bottom-half">
       <h4>Full Text Indexes</h4>
       <button ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-              ng-disabled="!permsCluster.settings.fts.write">
+              ng-disabled="!permsCluster.bucket['.'].fts.write">
         Add Index
       </button>
     </div>
@@ -156,7 +156,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
     <div class="row margin-bottom-half">
       <h4>Full Text Aliases</h4>
       <button ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
-              ng-disabled="!permsCluster.settings.fts.write">
+              ng-disabled="!permsCluster.bucket['.'].fts.write">
         Add Alias
       </button>
     </div>
