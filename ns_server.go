@@ -364,6 +364,9 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["tot_https_limitlisteners_closed"] =
 		atomic.LoadUint64(&TotHTTPSLimitListenersClosed)
 
+	topLevelStats["batch_bytes_added"] = atomic.LoadUint64(&BatchBytesAdded)
+	topLevelStats["batch_bytes_removed"] = atomic.LoadUint64(&BatchBytesRemoved)
+
 	nsIndexStats[""] = topLevelStats
 
 	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {

@@ -121,6 +121,11 @@ func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {
 	for index, indexSizeFunc := range a.indexes {
 		rv += indexSizeFunc(index)
 	}
+
+	// account for overhead from documents in batches
+	rv += atomic.LoadUint64(&cbft.BatchBytesAdded) -
+		atomic.LoadUint64(&cbft.BatchBytesRemoved)
+
 	return
 }
 

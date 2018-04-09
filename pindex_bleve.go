@@ -48,6 +48,9 @@ import (
 	"github.com/couchbase/moss"
 )
 
+var BatchBytesAdded uint64
+var BatchBytesRemoved uint64
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
@@ -1278,6 +1281,10 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 
 	erri := t.batch.Index(string(key), cbftDoc)
 
+	if erri == nil {
+		atomic.AddUint64(&BatchBytesAdded, t.batch.LastDocSize())
+	}
+
 	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
 
 	t.m.Unlock()
@@ -1566,6 +1573,7 @@ func executeBatch(t *BleveDestPartition,
 		if err != nil {
 			log.Printf("pindex_bleve: executeBatch, err: %+v ", err)
 		}
+		atomic.AddUint64(&BatchBytesRemoved, batch.TotalDocsSize())
 
 		return err
 	}, t.bdest.stats.TimerBatchStore)
