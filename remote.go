@@ -29,6 +29,7 @@ import (
 	"github.com/blevesearch/bleve/mapping"
 
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 )
 
 const RemoteRequestOverhead = 500 * time.Millisecond
@@ -326,7 +327,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Internal-Cluster-Action", "fts-scatter/gather")
+	req.Header.Add(rest.CLUSTER_ACTION, "fts/scatter-gather")
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := r.httpClient.Do(req)
