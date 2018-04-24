@@ -23,6 +23,7 @@ type Goverseer struct {
 	interval time.Duration
 	quota    uint64
 	maxRatio float64
+	minRatio float64
 }
 
 func NewGoverseer(d time.Duration, q uint64) *Goverseer {
@@ -30,6 +31,7 @@ func NewGoverseer(d time.Duration, q uint64) *Goverseer {
 		interval: d,
 		quota:    q,
 		maxRatio: 1.0, // this caps our targetGOGC at 100
+		minRatio: 0.5, // this caps our targetGOGC at 50
 	}
 }
 
@@ -49,6 +51,8 @@ func (g *Goverseer) Run() {
 			ratio := float64(spaceRemaining) / float64(memstats.HeapAlloc)
 			if ratio > g.maxRatio {
 				ratio = g.maxRatio
+			} else if ratio < g.minRatio {
+				ratio = g.minRatio
 			}
 			targetGOGC := int(ratio * 100)
 			if last != targetGOGC {
