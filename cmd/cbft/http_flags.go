@@ -120,9 +120,16 @@ func initHTTPOptions(options map[string]string) error {
 
 	cbft.HttpClient = &http.Client{Transport: transport}
 
-	transport2 := &http2.Transport{
-		TLSClientConfig: cbft.TLSConfig,
+	transport2 := &http.Transport{
+		MaxIdleConns:        httpTransportMaxIdleConns,
+		MaxIdleConnsPerHost: httpTransportMaxIdleConnsPerHost,
+		TLSClientConfig:     cbft.TLSConfig,
 	}
+	err := http2.ConfigureTransport(transport2)
+	if err != nil {
+		return err
+	}
+
 	cbft.Http2Client = &http.Client{Transport: transport2}
 
 	return nil
