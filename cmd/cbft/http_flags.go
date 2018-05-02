@@ -123,6 +123,7 @@ func initHTTPOptions(options map[string]string) error {
 	transport2 := &http.Transport{
 		MaxIdleConns:        httpTransportMaxIdleConns,
 		MaxIdleConnsPerHost: httpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:     httpTransportIdleConnTimeout,
 		TLSClientConfig:     cbft.TLSConfig,
 	}
 	err := http2.ConfigureTransport(transport2)
