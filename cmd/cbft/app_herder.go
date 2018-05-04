@@ -122,6 +122,10 @@ func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {
 		rv += indexSizeFunc(index)
 	}
 
+	return
+}
+
+func (a *appHerder) preIndexingMemoryLOCKED() (rv uint64) {
 	// account for overhead from documents in batches
 	rv += atomic.LoadUint64(&cbft.BatchBytesAdded) -
 		atomic.LoadUint64(&cbft.BatchBytesRemoved)
@@ -131,6 +135,20 @@ func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {
 
 func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	memUsed := a.indexingMemoryLOCKED()
+
+	// MB-29504 workaround to try and prevent indexing from becoming completely
+	// stuck.  The thinking is that if the indexing memUsed is 0, all data has
+	// been flushed to disk, and we should allow it to proceed (even if we're
+	// over quota in the bigger picture)
+	// For the future this is incomplete since it also means that a query load
+	// would no longer be able to completely block indexing, but since query
+	// memory qouta is still disabled we can live with it for now.
+	if memUsed == 0 {
+		return false
+	}
+
+	// now account for the overhead from documents in batches
+	memUsed += a.preIndexingMemoryLOCKED()
 
 	// first make sure indexing (on it's own) doesn't exceed the
 	// index portion of the quota
