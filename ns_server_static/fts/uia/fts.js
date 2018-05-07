@@ -1021,12 +1021,15 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 }
 
 function errorMessage(errorMessageFull, code) {
-    if (code == 403 && typeof errorMessageFull == "object") {
-      rv = errorMessageFull.message + ": ";
-      for (var x in errorMessageFull.permissions) {
-        rv += errorMessageFull.permissions[x];
-      }
-      return rv;
+    if (typeof errorMessageFull == "object") {
+        if (code == 403) {
+            rv = errorMessageFull.message + ": ";
+            for (var x in errorMessageFull.permissions) {
+                rv += errorMessageFull.permissions[x];
+            }
+            return rv;
+        }
+        errorMessageFull = errorMessageFull.error
     }
     console.log("errorMessageFull", errorMessageFull, code);
     var a = (errorMessageFull || (code + "")).split("err: ");
