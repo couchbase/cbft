@@ -323,6 +323,15 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			ResponseBody: []byte(`rest_manage: no request body found`),
 		},
 		{
+			Desc:         "Sets the given planPIndexes definitions in Cfg ",
+			Path:         "/api/cfgPlanPIndexes",
+			Method:       "PUT",
+			Params:       nil,
+			Body:         nil,
+			Status:       http.StatusBadRequest,
+			ResponseBody: []byte(`rest_manage: no request body found`),
+		},
+		{
 			Desc:   "manager kick on empty, unchanged manager",
 			Path:   "/api/managerKick",
 			Method: "POST",

@@ -606,6 +606,15 @@ Sets the given nodeDefs configurations
 
 ---
 
+PUT `/api/cfgPlanPIndexes`
+
+Sets the given planPIndexes configurations
+                       to the Cfg.
+
+**version introduced**: 5.5.0
+
+---
+
 POST `/api/cfgRefresh`
 
 Requests the node to refresh its configuration

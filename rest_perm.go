@@ -68,6 +68,10 @@ POST /api/cfgNodeDefs
 cluster.settings.fts!write
 24586
 
+POST /api/cfgPlanPIndexes
+cluster.settings.fts!write
+24587
+
 POST /api/managerKick
 cluster.settings.fts!write
 24581
