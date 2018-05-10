@@ -184,6 +184,10 @@ func main() {
 	// is used for cbgt node and Cfg registration.
 	bindHTTPList := strings.Split(flags.BindHTTP, ",")
 
+	if purgeTimeOut, ok := parseOptionsInt(options, "cfgPlanPurgeTimeout"); ok {
+		cbgt.PlanPurgeTimeout = int64(purgeTimeOut)
+	}
+
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
