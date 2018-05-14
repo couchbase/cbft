@@ -94,10 +94,8 @@ type BleveParamsStore struct {
 	// bleve.registry.RegisterIndexType().
 	IndexType string `json:"indexType"`
 
-	// The kvStoreName defaults to bleve.Config.DefaultKVStore.  It
-	// can be (and usually is in public builds) initialized to a
-	// default of "mossStore" via the mossStore_default_kvstore build
-	// tag.  See also bleve.registry.RegisterKVStore().
+	// The kvStoreName defaults to bleve.Config.DefaultKVStore.
+	// See also bleve.registry.RegisterKVStore().
 	KvStoreName string `json:"kvStoreName"`
 
 	// The kvStoreMetricsAllow flag defaults to
@@ -168,6 +166,7 @@ func NewBleveParams() *BleveParams {
 		Mapping: bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
 			"kvStoreName": bleve.Config.DefaultKVStore,
+			"indexType":   bleve.Config.DefaultIndexType,
 		},
 		DocConfig: BleveDocumentConfig{
 			Mode:      "type_field",
