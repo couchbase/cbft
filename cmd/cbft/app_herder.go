@@ -88,6 +88,8 @@ func (a *appHerder) onClose(c interface{}) {
 
 	delete(a.indexes, c)
 
+	a.waitCond.Broadcast()
+
 	a.m.Unlock()
 }
 
@@ -109,7 +111,7 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		a.waiting--
 		atomic.AddUint64(&a.stats.TotWaitingOut, 1)
 
-		log.Printf("app_herder: resuming upon memory reduction ..")
+		log.Printf("app_herder: resuming upon memory reduction")
 	}
 
 	a.m.Unlock()
