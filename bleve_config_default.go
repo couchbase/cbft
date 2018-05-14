@@ -15,11 +15,10 @@ package cbft
 
 import (
 	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/index/upsidedown"
+	"github.com/blevesearch/bleve/index/scorch"
 )
 
 func init() {
-	// install mossStore as the default kv store
-	bleve.Config.DefaultKVStore = "mossStore"
-	bleve.Config.DefaultIndexType = upsidedown.Name
+	bleve.Config.DefaultIndexType = scorch.Name
+	bleve.Config.DefaultKVStore = ""
 }

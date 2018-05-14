@@ -165,8 +165,7 @@ func NewBleveParams() *BleveParams {
 	rv := &BleveParams{
 		Mapping: bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
-			"kvStoreName": bleve.Config.DefaultKVStore,
-			"indexType":   bleve.Config.DefaultIndexType,
+			"indexType": bleve.Config.DefaultIndexType,
 		},
 		DocConfig: BleveDocumentConfig{
 			Mode:      "type_field",

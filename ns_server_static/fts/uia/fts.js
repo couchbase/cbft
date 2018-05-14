@@ -426,8 +426,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
             }
         }
 
-        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 Preview (Scorch)"];
-        $scope.indexStoreOption = $scope.indexStoreOptions[0];
+        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
+        $scope.indexStoreOption = $scope.indexStoreOptions[1];
 
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
