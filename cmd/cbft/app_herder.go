@@ -181,6 +181,18 @@ func (a *appHerder) onPersisterProgress() {
 	a.m.Unlock()
 }
 
+func (a *appHerder) onMergerProgress() {
+	a.m.Lock()
+
+	if a.waiting > 0 {
+		log.Printf("app_herder: merging progress, waiting: %d", a.waiting)
+	}
+
+	a.waitCond.Broadcast()
+
+	a.m.Unlock()
+}
+
 // *** Query Interface
 
 func (a *appHerder) setQueryHerding(to bool) {
@@ -295,6 +307,19 @@ func (a *appHerder) ScorchHerderOnEvent() func(scorch.Event) {
 }
 
 func scorchSize(s interface{}) uint64 {
+	if ss, ok := s.(*scorch.Scorch); ok {
+		if stats, ok := ss.Stats().(*scorch.Stats); ok {
+			curEpoch := atomic.LoadUint64(&stats.CurRootEpoch)
+			lastMergedEpoch := atomic.LoadUint64(&stats.LastMergedEpoch)
+			lastPersistedEpoch := atomic.LoadUint64(&stats.LastPersistedEpoch)
+
+			if curEpoch == lastMergedEpoch &&
+				lastMergedEpoch == lastPersistedEpoch {
+				return 0
+			}
+		}
+	}
+
 	return s.(*scorch.Scorch).MemoryUsed()
 }
 
@@ -308,6 +333,9 @@ func (a *appHerder) onScorchEvent(event scorch.Event) {
 
 	case scorch.EventKindPersisterProgress:
 		a.onPersisterProgress()
+
+	case scorch.EventKindMergerProgress:
+		a.onMergerProgress()
 
 	default:
 		return
