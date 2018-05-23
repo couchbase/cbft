@@ -524,7 +524,9 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
 
                 if (!newSourceName) {
                     errorFields["sourceName"] = true;
-                    errs.push("source (bucket) needs to be selected");
+                    if (newIndexType == "fulltext-index") {
+                        errs.push("source (bucket) needs to be selected");
+                    }
                 }
 
                 if (newPlanParams) {
