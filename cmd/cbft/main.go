@@ -267,7 +267,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, err
 	}
 
-	extrasMap["features"] = cbgt.NodeFeatureLeanPlan
+	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
+		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
 
@@ -416,6 +417,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	log.Printf("main: custom jsoniter json implementation enabled")
 	cbft.JSONImpl = &cbft.CustomJSONImpl{CustomJSONImplType: "jsoniter"}
 	cbft.JSONImpl.SetManager(mgr)
+
+	// set mgr for the NodeDefsFetcher, which is invoked for index type
+	// validation during creation
+	cbft.CurrentNodeDefsFetcher = &cbft.NodeDefsFetcher{}
+	cbft.CurrentNodeDefsFetcher.SetManager(mgr)
 
 	var adtSvc *audit.AuditSvc
 	if options["cbaudit"] == "true" {
