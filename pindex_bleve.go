@@ -278,7 +278,8 @@ const bleveQueryHelp = `<a href="https://developer.couchbase.com/fts/5.0/query-s
 
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
-		Validate: ValidateBleve,
+		PrepareParams: PrepareBleveIndexParams,
+		Validate:      ValidateBleve,
 
 		New:       NewBlevePIndexImpl,
 		Open:      OpenBlevePIndexImpl,
@@ -304,6 +305,39 @@ func init() {
 		},
 		AnalyzeIndexDefUpdates: RestartOnIndexDefChanges,
 	})
+}
+
+func PrepareBleveIndexParams(indexParams string) (string, error) {
+	bp := NewBleveParams()
+
+	if len(indexParams) > 0 {
+		b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
+		if err != nil {
+			return indexParams, fmt.Errorf("bleve: PrepareParams CleanseJSON,"+
+				" err: %v", err)
+		}
+
+		err = json.Unmarshal(b, bp)
+		if err != nil {
+			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
+				if typeErr.Type.String() == "map[string]json.RawMessage" {
+					return indexParams, fmt.Errorf("bleve: PrepareParams,"+
+						" JSON parse was expecting a string key/field-name"+
+						" but instead saw a %s", typeErr.Value)
+				}
+			}
+
+			return indexParams, fmt.Errorf("bleve: PrepareParams, err: %v", err)
+		}
+	}
+
+	updatedParams, err := json.Marshal(bp)
+	if err != nil {
+		return indexParams, fmt.Errorf("bleve: PrepareParams Marshal,"+
+			" err: %v", err)
+	}
+
+	return string(updatedParams), nil
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {

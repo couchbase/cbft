@@ -631,7 +631,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			ResponseMatch: map[string]bool{
 				`{"status":"ok","indexDefs":{"uuid":`:          true,
 				`"indexDefs":{"idx0":{"type":"fulltext-index"`: true,
-				`"params":null`:                                true,
+				`"params":null`:                                false,
 				`"sourceType":"nil"`:                           true,
 				`"sourceName":`:                                false,
 				`"sourceUUID":`:                                false,
