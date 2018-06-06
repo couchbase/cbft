@@ -1903,9 +1903,6 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 	mgr0.Kick("test-start-kick-again")
 	mgr1.Kick("test-start-kick-again")
 
-	var feed0 *cbgt.PrimaryFeed
-	var feed1 *cbgt.PrimaryFeed
-
 	httpGetPrev := HttpGet
 	defer func() { HttpGet = httpGetPrev }()
 
@@ -1979,8 +1976,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					t.Errorf("expected 1 pindex, got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
-					var ok bool
-					feed0, ok = f.(*cbgt.PrimaryFeed)
+					_, ok := f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -1999,8 +1995,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 					t.Errorf("expected 1 pindex, got pindexes: %+v", pindexes)
 				}
 				for _, f := range feeds {
-					var ok bool
-					feed1, ok = f.(*cbgt.PrimaryFeed)
+					_, ok := f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
@@ -2185,8 +2180,6 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 
 	mgr0.Kick("test-start-kick-again")
 
-	var feed0 *cbgt.PrimaryFeed
-
 	httpGetPrev := HttpGet
 	defer func() { HttpGet = httpGetPrev }()
 
@@ -2262,8 +2255,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 						expNumPIndexes, pindexes)
 				}
 				for _, f := range feeds {
-					var ok bool
-					feed0, ok = f.(*cbgt.PrimaryFeed)
+					_, ok := f.(*cbgt.PrimaryFeed)
 					if !ok {
 						t.Errorf("expected the 1 feed to be a PrimaryFeed")
 					}
