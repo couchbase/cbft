@@ -21,6 +21,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
+	"github.com/blevesearch/bleve/index/upsidedown"
 
 	"encoding/json"
 
@@ -68,6 +69,8 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 
 	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
 	bleve.Config.DefaultKVStore = "mossStore"
+	bleveConfigDefaultIndexTypePrev := bleve.Config.DefaultIndexType
+	bleve.Config.DefaultIndexType = upsidedown.Name
 
 	bleveMossRegistryCollectionOptionsFTSPrev := bleveMoss.RegistryCollectionOptions["fts"]
 	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
@@ -75,6 +78,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 	defer func() {
 		BlevePIndexAllowMoss = BlevePIndexAllowMossPrev
 		bleve.Config.DefaultKVStore = bleveConfigDefaultKVStorePrev
+		bleve.Config.DefaultIndexType = bleveConfigDefaultIndexTypePrev
 		bleveMoss.RegistryCollectionOptions["fts"] = bleveMossRegistryCollectionOptionsFTSPrev
 	}()
 

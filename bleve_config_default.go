@@ -1,5 +1,4 @@
-// Copyright (c) 2015 Couchbase, Inc.
-//
+// Copyright (c) 2018 Couchbase, Inc.
 // Licensed under the Apache License, Version 2.0 (the "License"); you
 // may not use this file except in compliance with the License. You
 // may obtain a copy of the License at
@@ -10,15 +9,17 @@
 // implied. See the License for the specific language governing
 // permissions and limitations under the License.
 
-// +build mossStore_default_kvstore
+// +build server
 
 package cbft
 
 import (
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/index/upsidedown"
 )
 
 func init() {
 	// install mossStore as the default kv store
 	bleve.Config.DefaultKVStore = "mossStore"
+	bleve.Config.DefaultIndexType = upsidedown.Name
 }

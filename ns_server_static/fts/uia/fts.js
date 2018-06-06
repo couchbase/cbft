@@ -452,8 +452,8 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                             $scope.ftsStore.indexType = "upside_down";
                             break;
                         case $scope.indexStoreOptions[1]:
-                            $scope.ftsStore.kvStoreName = "";
                             $scope.ftsStore.indexType = "scorch";
+                            delete $scope.ftsStore.kvStoreName;
                             break;
                     }
                 }

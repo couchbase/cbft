@@ -37,6 +37,8 @@ import (
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
 	bleveHttp "github.com/blevesearch/bleve/http"
+	"github.com/blevesearch/bleve/index/scorch"
+	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/blevesearch/bleve/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
@@ -50,6 +52,10 @@ import (
 
 var BatchBytesAdded uint64
 var BatchBytesRemoved uint64
+
+var featureIndexType = "indexType"
+var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
+var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
@@ -88,10 +94,8 @@ type BleveParamsStore struct {
 	// bleve.registry.RegisterIndexType().
 	IndexType string `json:"indexType"`
 
-	// The kvStoreName defaults to bleve.Config.DefaultKVStore.  It
-	// can be (and usually is in public builds) initialized to a
-	// default of "mossStore" via the mossStore_default_kvstore build
-	// tag.  See also bleve.registry.RegisterKVStore().
+	// The kvStoreName defaults to bleve.Config.DefaultKVStore.
+	// See also bleve.registry.RegisterKVStore().
 	KvStoreName string `json:"kvStoreName"`
 
 	// The kvStoreMetricsAllow flag defaults to
@@ -162,6 +166,7 @@ func NewBleveParams() *BleveParams {
 		Mapping: bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
 			"kvStoreName": bleve.Config.DefaultKVStore,
+			"indexType":   bleve.Config.DefaultIndexType,
 		},
 		DocConfig: BleveDocumentConfig{
 			Mode:      "type_field",
@@ -247,6 +252,25 @@ func NewBleveDest(path string, bindex bleve.Index,
 
 // ---------------------------------------------------------
 
+var CurrentNodeDefsFetcher *NodeDefsFetcher
+
+type NodeDefsFetcher struct {
+	mgr *cbgt.Manager
+}
+
+func (ndf *NodeDefsFetcher) SetManager(mgr *cbgt.Manager) {
+	ndf.mgr = mgr
+}
+
+func (ndf *NodeDefsFetcher) Get() (*cbgt.NodeDefs, error) {
+	if ndf.mgr != nil {
+		return ndf.mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, true)
+	}
+	return nil, fmt.Errorf("NodeDefsFetcher Get(): mgr is nil!")
+}
+
+// ---------------------------------------------------------
+
 const bleveQueryHelp = `<a href="https://developer.couchbase.com/fts/5.0/query-string-query"
        target="_blank">
        full text query syntax help
@@ -254,7 +278,8 @@ const bleveQueryHelp = `<a href="https://developer.couchbase.com/fts/5.0/query-s
 
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
-		Validate: ValidateBleve,
+		PrepareParams: PrepareBleveIndexParams,
+		Validate:      ValidateBleve,
 
 		New:       NewBlevePIndexImpl,
 		Open:      OpenBlevePIndexImpl,
@@ -282,8 +307,68 @@ func init() {
 	})
 }
 
+func PrepareBleveIndexParams(indexParams string) (string, error) {
+	bp := NewBleveParams()
+
+	if len(indexParams) > 0 {
+		b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
+		if err != nil {
+			return indexParams, fmt.Errorf("bleve: PrepareParams CleanseJSON,"+
+				" err: %v", err)
+		}
+
+		err = json.Unmarshal(b, bp)
+		if err != nil {
+			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
+				if typeErr.Type.String() == "map[string]json.RawMessage" {
+					return indexParams, fmt.Errorf("bleve: PrepareParams,"+
+						" JSON parse was expecting a string key/field-name"+
+						" but instead saw a %s", typeErr.Value)
+				}
+			}
+
+			return indexParams, fmt.Errorf("bleve: PrepareParams, err: %v", err)
+		}
+	}
+
+	updatedParams, err := json.Marshal(bp)
+	if err != nil {
+		return indexParams, fmt.Errorf("bleve: PrepareParams Marshal,"+
+			" err: %v", err)
+	}
+
+	return string(updatedParams), nil
+}
+
 func ValidateBleve(indexType, indexName, indexParams string) error {
 	if len(indexParams) <= 0 {
+		return nil
+	}
+
+	validateBleveIndexType := func(content interface{}) error {
+		if CurrentNodeDefsFetcher == nil {
+			return nil
+		}
+
+		nodeDefs, err := CurrentNodeDefsFetcher.Get()
+		if err != nil {
+			return fmt.Errorf("bleve: validation failed: err: %v", err)
+		}
+
+		indexType := ""
+		if entries, ok := content.(map[string]interface{}); ok {
+			indexType = entries["indexType"].(string)
+		}
+
+		if indexType != upsidedown.Name {
+			// Validate any indexType except upsidedown (to support pre-5.5)
+			if !cbgt.IsFeatureSupportedByCluster(featureIndexType+":"+indexType, nodeDefs) {
+				return fmt.Errorf("bleve: index validation failed:"+
+					" indexType: %v not supported on all nodes in"+
+					" cluster", indexType)
+			}
+		}
+
 		return nil
 	}
 
@@ -295,6 +380,14 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			// Ignore the JSON unmarshalling error, if in the case
 			// indexParams isn't JSON.
 			return nil
+		}
+
+		store, found := iParams["store"]
+		if found {
+			err = validateBleveIndexType(store)
+			if err != nil {
+				return err
+			}
 		}
 
 		mapping, found := iParams["mapping"]
@@ -327,7 +420,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			case "truncate_token":
 				if param["length"].(float64) < 0 {
 					return fmt.Errorf("bleve: token_filter validation failed"+
-						"for %v => length(%v) < 0", param["type"], param["length"])
+						" for %v => length(%v) < 0", param["type"], param["length"])
 				}
 			default:
 				break
