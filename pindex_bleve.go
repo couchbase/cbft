@@ -601,16 +601,19 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
-	buf, err = bleveMappingUI.CleanseJSON(buf)
-	if err != nil {
-		return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
-	}
-
 	bleveParams := NewBleveParams()
+	if len(buf) > 0 {
+		// It is possible that buf is empty when index params aren't set as
+		// part of the index definition.
+		buf, err = bleveMappingUI.CleanseJSON(buf)
+		if err != nil {
+			return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
+		}
 
-	err = json.Unmarshal(buf, bleveParams)
-	if err != nil {
-		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+		err = json.Unmarshal(buf, bleveParams)
+		if err != nil {
+			return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+		}
 	}
 
 	kvConfig, _, _ := bleveRuntimeConfigMap(bleveParams)
