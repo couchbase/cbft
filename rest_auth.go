@@ -289,6 +289,12 @@ func findCouchbaseSourceNames(req *http.Request, indexName string,
 		}
 	}
 
+	if indexDef.Type == "" {
+		// if indexType wasn't found in the request body, attempt reading it
+		// from the form entries.
+		indexDef.Type = req.FormValue("indexType")
+	}
+
 	if indexDef.Type == "fulltext-index" {
 		sourceType, sourceName := rest.ExtractSourceTypeName(req, &indexDef, indexName)
 		if sourceType == "couchbase" {
