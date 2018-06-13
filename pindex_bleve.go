@@ -312,7 +312,7 @@ func PrepareBleveIndexParams(indexParams string) (string, error) {
 	if len(indexParams) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 		if err != nil {
-			return indexParams, fmt.Errorf("bleve: PrepareParams CleanseJSON,"+
+			return "", fmt.Errorf("bleve: PrepareParams CleanseJSON,"+
 				" err: %v", err)
 		}
 
@@ -320,19 +320,19 @@ func PrepareBleveIndexParams(indexParams string) (string, error) {
 		if err != nil {
 			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
 				if typeErr.Type.String() == "map[string]json.RawMessage" {
-					return indexParams, fmt.Errorf("bleve: PrepareParams,"+
+					return "", fmt.Errorf("bleve: PrepareParams,"+
 						" JSON parse was expecting a string key/field-name"+
 						" but instead saw a %s", typeErr.Value)
 				}
 			}
 
-			return indexParams, fmt.Errorf("bleve: PrepareParams, err: %v", err)
+			return "", fmt.Errorf("bleve: PrepareParams, err: %v", err)
 		}
 	}
 
 	updatedParams, err := json.Marshal(bp)
 	if err != nil {
-		return indexParams, fmt.Errorf("bleve: PrepareParams Marshal,"+
+		return "", fmt.Errorf("bleve: PrepareParams Marshal,"+
 			" err: %v", err)
 	}
 
