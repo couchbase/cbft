@@ -86,6 +86,25 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
+	docIDRegexp := ""
+	if b.DocIDRegexp != nil {
+		docIDRegexp = b.DocIDRegexp.String()
+	}
+	tmp := struct {
+		Mode             string `json:"mode"`
+		TypeField        string `json:"type_field"`
+		DocIDPrefixDelim string `json:"docid_prefix_delim"`
+		DocIDRegexp      string `json:"docid_regexp"`
+	}{
+		Mode:             b.Mode,
+		TypeField:        b.TypeField,
+		DocIDPrefixDelim: b.DocIDPrefixDelim,
+		DocIDRegexp:      docIDRegexp,
+	}
+	return json.Marshal(&tmp)
+}
+
 // buildCbftDocument returns a CbftDocument for the k/v pair
 // NOTE: err may be non-nil AND a document is returned
 // this allows the error to be logged, but a stub document to be indexed
