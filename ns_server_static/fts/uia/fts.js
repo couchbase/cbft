@@ -530,16 +530,18 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                     }
                 }
 
-                if (newPlanParams) {
-                    try {
-                        var numReplicas = $scope.numReplicas;
-                        if (numReplicas >= 0 ) {
-                            var newPlanParamsObj = JSON.parse(newPlanParams);
-                            newPlanParamsObj["numReplicas"] = numReplicas;
-                            newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                if (newIndexType != "fulltext-alias") {
+                    if (newPlanParams) {
+                        try {
+                            var numReplicas = $scope.numReplicas;
+                            if (numReplicas >= 0 ) {
+                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["numReplicas"] = numReplicas;
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            }
+                        } catch (e) {
+                            errs.push("exception: " + e);
                         }
-                    } catch (e) {
-                        errs.push("exception: " + e);
                     }
                 }
 
@@ -740,15 +742,19 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 }
             }
 
-            if ($scope.newPlanParams) {
-                try {
-                    var newPlanParamsObj = JSON.parse($scope.newPlanParams);
-                    $scope.numReplicas = $scope.replicaOptions[newPlanParamsObj["numReplicas"] || 0];
-                    delete newPlanParamsObj["numReplicas"];
-                    $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
-                } catch (e) {
-                    console.log("blevePIndexInitController numReplicas", initKind, e)
+            if ($scope.newIndexType != "fulltext-alias") {
+                if ($scope.newPlanParams) {
+                    try {
+                        var newPlanParamsObj = JSON.parse($scope.newPlanParams);
+                        $scope.numReplicas = $scope.replicaOptions[newPlanParamsObj["numReplicas"] || 0];
+                        delete newPlanParamsObj["numReplicas"];
+                        $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                    } catch (e) {
+                        console.log("blevePIndexInitController numReplicas", initKind, e)
+                    }
                 }
+            } else {
+                $scope.newPlanParams = "{}"
             }
         });
     }
