@@ -412,6 +412,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
 
         $scope.indexEditorPreview = {};
         $scope.indexEditorPreview["fulltext-index"] = null;
+        $scope.indexEditorPreview["fulltext-alias"] = null;
 
         var $routeParams = $stateParams;
 
@@ -810,6 +811,20 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         if ($scope.prepareIndex &&
             $scope.prepareFTSIndex &&
             $scope.indexEditorPreview) {
+            if ($scope.newIndexType == "fulltext-alias") {
+                var aliasTargets = {};
+
+                for (var i = 0; i < $scope.selectedTargetIndexes.length; i++) {
+                    var selectedTargetIndex = $scope.selectedTargetIndexes[i];
+
+                    aliasTargets[selectedTargetIndex] = {};
+                }
+
+                $scope.newIndexParams["fulltext-alias"] = {
+                    "targets": JSON.stringify(aliasTargets)
+                };
+            }
+
             var rv = $scope.prepareFTSIndex(
                 $scope.newIndexName,
                 $scope.newIndexType, $scope.newIndexParams,
@@ -828,7 +843,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 if (rv.indexDef) {
                     var preview = JSON.stringify(rv.indexDef, null, 1);
                     if (preview != previewPrev) {
-                        $scope.indexEditorPreview["fulltext-index"] = preview;
+                        $scope.indexEditorPreview[$scope.newIndexType] = preview;
                         previewPrev = preview;
                     }
                 }

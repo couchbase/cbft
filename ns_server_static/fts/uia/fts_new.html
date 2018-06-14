@@ -35,7 +35,7 @@
         <label for="inputTargetIndexes">Target Indexes</label>
         <select id="inputTargetIndexes"
                 multiple="true"
-                ng-model="selectedTargetIndexes"
+                ng-model="$parent.selectedTargetIndexes"
                 ng-options="indexName for indexName in aliasTargets">
         </select>
       </div>
@@ -235,8 +235,7 @@
 
 <!-- definition preview sidebar ********************* -->
   <div class="index-definition-preview"
-       ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}"
-       ng-if="newIndexType != 'fulltext-alias'">
+       ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}">
     <div class="row">
       <label>Index Definition Preview</label>
       <a href=""
