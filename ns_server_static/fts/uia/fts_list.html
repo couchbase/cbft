@@ -271,14 +271,23 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 </div>
 
 <!-- display results of check for query nodes ********************  -->
-  <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="margin-top1">
+  <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="margin-top-half">
     <p>The full text search interface is only available on Couchbase nodes running the full text search service.</p>
-    <p ng-show="ftsNodes.length > 0">The full text search service was found at the following nodes:</p>
-    <ul class="nobullet">
-      <li ng-show="ftsNodes.length > 0" ng-repeat="url in ftsNodes">
+    <div ng-show="ftsNodes.length > 0">
+      <p>The full text search service was found on the following nodes:</p>
+      <div class="indent-1" ng-repeat="url in ftsNodes">
         <a href="{{url}}">{{url}}</a>
-      </li>
-    </ul>
+      </div>
+      <div class="row flex-left margin-top-1">
+        <p class="text-small fix-width-7">
+          <span class="icon fa-warning orange-3"></span>
+          Note that the above links are provided as a convenience. They may not work
+          if you are accessing the Web Console via a web proxy or if Couchbase Server
+          has been deployed in a split horizon DNS environment, with public and
+          private hostnames and IPs. In the event the links don't work, log directly into the node.
+        </p>
+      </div>
+    </div>
     <p ng-show="ftsNodes.length == 0" class="error">No full text search nodes were found on this cluster.</p>
   </div>
 
