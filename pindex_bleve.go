@@ -615,6 +615,13 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
+	// Haandle the case where indexType wasn't mentioned in
+	// the index params (only from pre 5.5 nodes)
+	if !strings.Contains(indexParams, "indexType") {
+		bleveParams.Store["indexType"] = upsidedown.Name
+		bleveParams.Store["kvStoreName"] = "mossStore"
+	}
+
 	kvConfig, _, _ := bleveRuntimeConfigMap(bleveParams)
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
 	// where perhaps there was a previous missing or race-y Close().
