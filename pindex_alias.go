@@ -29,9 +29,12 @@ func init() {
 	// Register alias with empty instantiation functions,
 	// so that "fulltext-alias" will show up in valid index types.
 	cbgt.RegisterPIndexImplType("fulltext-alias", &cbgt.PIndexImplType{
+		Prepare:  PrepareAlias,
 		Validate: ValidateAlias,
-		Count:    CountAlias,
-		Query:    QueryAlias,
+
+		Count: CountAlias,
+		Query: QueryAlias,
+
 		Description: "advanced/fulltext-alias" +
 			" - a full text index alias provides" +
 			" a naming level of indirection" +
@@ -57,6 +60,12 @@ type AliasParams struct {
 
 type AliasParamsTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
+}
+
+func PrepareAlias(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+	// Reset plan params for a full-text alias
+	indexDef.PlanParams = cbgt.PlanParams{}
+	return indexDef, nil
 }
 
 func ValidateAlias(indexType, indexName, indexParams string) error {
