@@ -519,6 +519,7 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"unsafe_batch":           true,
 		"eventCallbackName":      "scorchEventCallbacks",
 		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
+		"numSnapshotsToKeep":     3,
 	}
 	for k, v := range bleveParams.Store {
 		kvConfig[k] = v
