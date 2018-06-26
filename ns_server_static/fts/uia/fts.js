@@ -861,6 +861,42 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
 
+    $scope.indexDefChanged = function(origIndexDef) {
+        var rv = $scope.prepareFTSIndex(
+            $scope.newIndexName,
+            $scope.newIndexType, $scope.newIndexParams,
+            $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
+            $scope.newPlanParams, $scope.prevIndexUUID,
+            true);
+        if (!rv.errorFields && !rv.errorMessage) {
+            var newSourceUUID = rv.newSourceUUID;
+            var newPlanParams = rv.newPlanParams;
+            var rv = $scope.prepareIndex(
+                $scope.newIndexName,
+                $scope.newIndexType, $scope.newIndexParams,
+                $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
+                newPlanParams, $scope.prevIndexUUID);
+
+            try {
+                // Add an empty "analysis" section if no analysis elements defined.
+                if (!angular.isDefined(rv.indexDef["params"]["mapping"]["analysis"])) {
+                    rv.indexDef["params"]["mapping"]["analysis"] = {};
+                }
+                // Delete "numReplicas" if set to 0.
+                if (angular.isDefined(rv.indexDef["planParams"]["numReplicas"]) &&
+                    rv.indexDef["planParams"]["numReplicas"] == 0) {
+                    delete rv.indexDef["planParams"]["numReplicas"]
+                }
+            } catch (e) {
+            }
+
+            if (angular.equals(origIndexDef, rv.indexDef)) {
+                return false;
+            }
+        } // Else could not retrieve the index definition, permit the update.
+        return true;
+    };
+
     $scope.$on('$stateChangeStart', function() {
         done = true;
     });
@@ -936,6 +972,7 @@ function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
 function IndexNewCtrlFT($scope, $http, $route, $routeParams,
                         $location, $log, $sce, $uibModal, andThen) {
     $scope.indexDefs = null;
+    $scope.origIndexDef = null;
 
     $http.get('/api/index').
     then(function(response) {
@@ -944,7 +981,8 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
         var indexDefs = $scope.indexDefs =
             data && data.indexDefs && data.indexDefs.indexDefs;
 
-        var origIndexDef = indexDefs && indexDefs[$routeParams.indexName];
+        var origIndexDef = $scope.origIndexDef =
+            indexDefs && indexDefs[$routeParams.indexName];
 
         var isAlias =
             ($routeParams.indexType == 'fulltext-alias') ||
