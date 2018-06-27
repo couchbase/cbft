@@ -88,8 +88,8 @@ func initMemOptions(options map[string]string) (err error) {
 	return nil
 }
 
-// defaultFTSMemIndexingFraction is the ratio of the application quota
-// to use for indexing (default 100%)
+// defaultFTSApplicationFraction is default ratio for the
+// memApplicationFraction of the mem quota (default 100%)
 var defaultFTSApplicationFraction = 1.0
 
 func parseFTSMemApplicationFraction(options map[string]string) (float64,
