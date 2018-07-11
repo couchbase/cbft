@@ -194,7 +194,7 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		// that a live system replies via HTTP round-trip before we give up
 		// on the request externally
 		remaining -= RemoteRequestOverhead
-		if remaining < 0 {
+		if remaining <= 0 {
 			// not enough time left
 			return nil, context.DeadlineExceeded
 		}
