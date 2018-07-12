@@ -61,7 +61,13 @@ func initMossOptions(options map[string]string) (err error) {
 		Debug: mossDebug,
 		Log:   log.Printf,
 		OnError: func(err error) {
-			log.Fatalf("moss OnError, treating this as fatal, err: %v", err)
+			var stackDump string
+			if flags.DataDir != "" {
+				stackDump = DumpStack(flags.DataDir,
+					fmt.Sprintf("moss OnError, treating this as fatal, err: %v", err))
+			}
+			log.Fatalf("moss OnError, treating this as fatal, err: %v,"+
+				" stack dump: %s", err, stackDump)
 		},
 		OnEvent: ftsHerder.MossHerderOnEvent(),
 	}

@@ -14,6 +14,7 @@ package main
 
 import (
 	"expvar"
+	"fmt"
 	"runtime"
 	"strconv"
 	"strings"
@@ -82,7 +83,13 @@ func initBleveOptions(options map[string]string) error {
 
 	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
 		func(err error) {
-			log.Fatalf("scorch AsyncError, treating this as fatal, err: %v", err)
+			var stackDump string
+			if flags.DataDir != "" {
+				stackDump = DumpStack(flags.DataDir,
+					fmt.Sprintf("scorch AsyncError, treating this as fatal, err: %v", err))
+			}
+			log.Fatalf("scorch AsyncError, treating this as fatal, err: %v,"+
+				" stack dump: %s", err, stackDump)
 		}
 
 	return nil
