@@ -116,12 +116,12 @@ function bleveIndexMappingScrub(indexMapping, tmc) {
 
     return JSON.parse(JSON.stringify(scrub(r, "")));
 
-    // Recursively remove every entry with '$' prefix, which might be
+    // Recursively remove every entry with '$$' prefix, which might be
     // due to angularjs metadata.
     function scrub(m, path) {
         if (typeof(m) == "object") {
             for (var k in m) {
-                if (typeof(k) == "string" && k.charAt(0) == "$") {
+                if (typeof(k) === "string" && k.charAt(0) === "$" && k.charAt(1) === "$") {
                     delete m[k];
                     continue;
                 }
