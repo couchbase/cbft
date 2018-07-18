@@ -146,7 +146,8 @@
           <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
           <select ng-model="$parent.numReplicas"
                   class="narrow"
-                  ng-options="item for item in replicaOptions">
+                  ng-options="item for item in replicaOptions"
+                  ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
           </select>
         </div>
         <div class"width-6">
