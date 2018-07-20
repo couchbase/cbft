@@ -12,10 +12,8 @@
 package main
 
 import (
-	"runtime"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/couchbase/cbft"
@@ -32,8 +30,6 @@ type appHerder struct {
 	appQuota   uint64
 	indexQuota uint64
 	queryQuota uint64
-
-	memUsed uint64
 
 	m        sync.Mutex
 	waitCond *sync.Cond
@@ -70,24 +66,7 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 	log.Printf("app_herder: memQuota: %d, appQuota: %d, indexQuota: %d, "+
 		"queryQuota: %d", memQuota, ah.appQuota, ah.indexQuota, ah.queryQuota)
 
-	// initialize memUsed
-	var ms runtime.MemStats
-	runtime.ReadMemStats(&ms)
-	atomic.StoreUint64(&ah.memUsed, ms.Alloc)
-	go recordMemConsumption(ah)
-
 	return ah
-}
-
-func recordMemConsumption(ah *appHerder) {
-	// Update appHerder's memUsed every 1 second.
-	var ms runtime.MemStats
-	tickCh := time.Tick(1 * time.Second)
-
-	for range tickCh {
-		runtime.ReadMemStats(&ms)
-		atomic.StoreUint64(&ah.memUsed, ms.Alloc)
-	}
 }
 
 func (a *appHerder) Stats() map[string]interface{} {
@@ -169,7 +148,7 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	}
 
 	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&a.memUsed)
+	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsage)
 
 	// now account for the overhead from documents in batches
 	memUsed += a.preIndexingMemoryLOCKED()
@@ -240,7 +219,7 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	defer a.m.Unlock()
 
 	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&a.memUsed)
+	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsage)
 
 	// now account for overhead from the current query
 	memUsed += size

@@ -49,6 +49,10 @@ var TotHTTPLimitListenersClosed uint64
 var TotHTTPSLimitListenersOpened uint64
 var TotHTTPSLimitListenersClosed uint64
 
+// Atomic stat that tracks current memory usage, updated every
+// second.
+var CurMemoryUsage uint64
+
 // PartitionSeqsProvider represents source object that can provide
 // partition seqs, such as some pindex or dest implementations.
 type PartitionSeqsProvider interface {
@@ -961,7 +965,7 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 	}()
 
-	tickCh := time.Tick(5 * time.Second)
+	tickCh := time.Tick(1 * time.Second)
 
 	memStatsLoggingInterval, _ := strconv.Atoi(mgr.Options()["memStatsLoggingInterval"])
 	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
@@ -987,6 +991,8 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 
 		runtime.ReadMemStats(&rd.memStats)
+
+		atomic.StoreUint64(&CurMemoryUsage, rd.memStats.Alloc)
 
 		// Check memory quota if golang's GC needs to be triggered.
 		ftsMemoryQuota, _ := strconv.Atoi(mgr.Options()["ftsMemoryQuota"])
