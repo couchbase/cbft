@@ -201,11 +201,11 @@ type BleveDestPartition struct {
 	bdest           *BleveDest
 	bindex          bleve.Index
 	partition       string
+	partitionBytes  []byte
 	partitionOpaque []byte // Key used to implement OpaqueSet/OpaqueGet().
 
 	m           sync.Mutex   // Protects the fields that follow.
 	seqMax      uint64       // Max seq # we've seen for this partition.
-	seqMaxBuf   []byte       // For binary encoded seqMax uint64.
 	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
 	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
 	batch       *bleve.Batch // Batch applied when we hit seqSnapEnd.
@@ -886,8 +886,8 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 			bdest:           t,
 			bindex:          t.bindex,
 			partition:       partition,
+			partitionBytes:  []byte(partition),
 			partitionOpaque: []byte("o:" + partition),
-			seqMaxBuf:       make([]byte, 8), // Binary encoded seqMax uint64.
 			batch:           t.bindex.NewBatch(),
 			cwrQueue:        cbgt.CwrQueue{},
 		}
@@ -1502,7 +1502,7 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 	if t.seqMax <= 0 {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
-		buf, err := t.bindex.GetInternal([]byte(t.partition))
+		buf, err := t.bindex.GetInternal(t.partitionBytes)
 		if err != nil {
 			t.m.Unlock()
 			return nil, 0, err
@@ -1516,7 +1516,6 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 			return nil, 0, fmt.Errorf("bleve: unexpected size for seqMax bytes")
 		}
 		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
-		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
 
 		if t.seqMaxBatch <= 0 {
 			t.seqMaxBatch = t.seqMax
@@ -1577,9 +1576,6 @@ func (t *BleveDestPartition) Stats(w io.Writer) error {
 func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
 	if t.seqMax < seq {
 		t.seqMax = seq
-		binary.BigEndian.PutUint64(t.seqMaxBuf, t.seqMax)
-
-		t.batch.SetInternal([]byte(t.partition), t.seqMaxBuf)
 	}
 
 	if seq < t.seqSnapEnd &&
@@ -1594,6 +1590,9 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	// fetch the needed parameters and remain unlocked until requestCh
 	// is ready to accommodate this request
 	bindex := t.bindex
+	seqMaxBuf := make([]byte, 8)
+	binary.BigEndian.PutUint64(seqMaxBuf, t.seqMax)
+	t.batch.SetInternal(t.partitionBytes, seqMaxBuf)
 	batch := t.batch
 	t.batch = t.bindex.NewBatch()
 	p := t.partition
