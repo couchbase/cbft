@@ -54,7 +54,8 @@ func initMemOptions(options map[string]string) (err error) {
 		go g.Run()
 	}
 
-	var queryHerdingEnabled bool
+	// Enable query herding by default.
+	queryHerdingEnabled := true
 	v, exists = options["enableFtsQueryHerding"] // Boolean.
 	if exists {
 		var err2 error
