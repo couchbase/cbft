@@ -136,6 +136,8 @@ func (a *appHerder) preIndexingMemoryLOCKED() (rv uint64) {
 }
 
 func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
+	memUsed := a.indexingMemoryLOCKED()
+
 	// MB-29504 workaround to try and prevent indexing from becoming completely
 	// stuck.  The thinking is that if the indexing memUsed is 0, all data has
 	// been flushed to disk, and we should allow it to proceed (even if we're
@@ -143,23 +145,27 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	// For the future this is incomplete since it also means that a query load
 	// would no longer be able to completely block indexing, but since query
 	// memory qouta is still disabled we can live with it for now.
-	if a.indexingMemoryLOCKED() == 0 {
+	if memUsed == 0 {
 		return false
 	}
-
-	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsage)
 
 	// now account for the overhead from documents in batches
 	memUsed += a.preIndexingMemoryLOCKED()
 
-	// make sure indexing doesn't exceed the index portion of the quota
+	// first make sure indexing (on it's own) doesn't exceed the
+	// index portion of the quota
 	if memUsed > a.indexQuota {
-		log.Printf("app_herder: current memory usage: %d over indexing quota %d",
+		log.Printf("app_herder: indexing mem used %d over indexing quota %d",
 			memUsed, a.indexQuota)
 		return true
 	}
 
+	// second add in running queries and check combined app quota
+	memUsed += a.runningQueryUsed
+	if memUsed > a.appQuota {
+		log.Printf("app_herder: indexing mem plus query %d now over app quota %d",
+			memUsed, a.appQuota)
+	}
 	return memUsed > a.appQuota
 }
 
@@ -218,25 +224,24 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	a.m.Lock()
 	defer a.m.Unlock()
 
-	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsage)
-
-	// now account for overhead from the current query
-	memUsed += size
+	memUsed := a.runningQueryUsed + size
 
 	// first make sure querying (on it's own) doesn't exceed the
 	// query portion of the quota
 	if memUsed > a.queryQuota {
-		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
-			" current usage: %d would exceed query quota: %d",
-			size, a.runningQueryUsed, memUsed, a.queryQuota)
+		log.Printf("app_herder: this query %d plus running queries: %d "+
+			"would exceed query quota: %d",
+			size, a.runningQueryUsed, a.queryQuota)
 		return rest.ErrorSearchReqRejected
 	}
 
+	// second add in indexing and check combined app quota
+	indexingMem := a.indexingMemoryLOCKED()
+	memUsed += indexingMem
 	if memUsed > a.appQuota {
-		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
-			" current usage: %d would exceed app quota: %d",
-			size, a.runningQueryUsed, memUsed, a.appQuota)
+		log.Printf("app_herder: this query %d plus running queries: %d "+
+			"plus indexing: %d would exceed app quota: %d",
+			size, a.runningQueryUsed, indexingMem, a.appQuota)
 		return rest.ErrorSearchReqRejected
 	}
 
