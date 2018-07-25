@@ -49,6 +49,10 @@ var TotHTTPLimitListenersClosed uint64
 var TotHTTPSLimitListenersOpened uint64
 var TotHTTPSLimitListenersClosed uint64
 
+// Atomic stat that tracks current memory acquired, not including
+// HeapIdle (memory reclaimed); updated every second.
+var CurMemoryUsed uint64
+
 // PartitionSeqsProvider represents source object that can provide
 // partition seqs, such as some pindex or dest implementations.
 type PartitionSeqsProvider interface {
@@ -349,7 +353,10 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	topLevelStats := map[string]interface{}{}
 
-	topLevelStats["num_bytes_used_ram"] = rd.memStats.Alloc
+	// (Sys - HeapReleased) is the estimate the cbft process can make that
+	// best represents the process RSS; this accounts for memory that has been
+	// acquired by the process and the amount that has been released back.
+	topLevelStats["num_bytes_used_ram"] = rd.memStats.Sys - rd.memStats.HeapReleased
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
@@ -987,6 +994,12 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 
 		runtime.ReadMemStats(&rd.memStats)
+
+		// (Sys - HeapIdle) best represents the amount of memory that the go process
+		// is consuming at the moment that is not reusable; the go process has
+		// as idle memory component that it holds on to which can be reused;
+		// HeapIdle includes memory that is idle and the part that has been released.
+		atomic.StoreUint64(&CurMemoryUsed, rd.memStats.Sys-rd.memStats.HeapIdle)
 
 		// Check memory quota if golang's GC needs to be triggered.
 		ftsMemoryQuota, _ := strconv.Atoi(mgr.Options()["ftsMemoryQuota"])

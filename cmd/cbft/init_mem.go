@@ -100,8 +100,8 @@ func parseFTSMemApplicationFraction(options map[string]string) (float64,
 }
 
 // defaultFTSMemIndexingFraction is the ratio of the application quota
-// to use for indexing (default 100%)
-var defaultFTSMemIndexingFraction = 1.0
+// to use for indexing (default 65%)
+var defaultFTSMemIndexingFraction = 0.65
 
 func parseFTSMemIndexingFraction(options map[string]string) (float64, error) {
 	return parseFraction("memIndexingFraction", defaultFTSMemIndexingFraction,
@@ -109,8 +109,8 @@ func parseFTSMemIndexingFraction(options map[string]string) (float64, error) {
 }
 
 // defaultFTSMemQueryingFraction is the ratio of the application quota
-// to use for querying (default 100%)
-var defaultFTSMemQueryingFraction = 1.0
+// to use for querying (default 85%)
+var defaultFTSMemQueryingFraction = 0.85
 
 func parseFTSMemQueryingFraction(options map[string]string) (float64, error) {
 	return parseFraction("memQueryingFraction", defaultFTSMemQueryingFraction,
