@@ -51,7 +51,7 @@ import (
 
 var cmdName = "cbft"
 
-var version = "v0.5.5"
+var version = "v0.6.0"
 
 var defaultCtlVerbose = 3
 
@@ -64,6 +64,8 @@ func init() {
 	cbgt.DCPFeedPrefix = "fts:"
 
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
+
+	cbgt.CfgAppVersion = "6.0.0"
 }
 
 func main() {
@@ -186,6 +188,14 @@ func main() {
 
 	if purgeTimeOut, ok := parseOptionsInt(options, "cfgPlanPurgeTimeout"); ok {
 		cbgt.PlanPurgeTimeout = int64(purgeTimeOut)
+	}
+
+	if v, ok := options["cbftVersion"]; ok {
+		cbgt.CfgAppVersion = v
+	}
+
+	if _, ok := options["nsServerURL"]; !ok {
+		options["nsServerURL"] = flags.Server
 	}
 
 	// If cfg is down, we error, leaving it to some user-supplied
