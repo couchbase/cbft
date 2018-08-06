@@ -105,11 +105,19 @@ func TestManagerRestart(t *testing.T) {
 	}
 	m2.Kick("test2")
 	m2.PlannerNOOP("test2")
-	feeds, pindexes = m2.CurrentMaps()
-	if len(feeds) != 1 || len(pindexes) != 1 {
-		t.Errorf("expected to load 1 feed and 1 pindex,"+
-			" got feeds: %+v, pindexes: %+v",
-			feeds, pindexes)
+	attempts := 0
+	for {
+		feeds, pindexes = m2.CurrentMaps()
+		if len(feeds) == 1 && len(pindexes) == 1 {
+			break
+		}
+		attempts++
+		if attempts > 10 {
+			t.Errorf("expected to load 1 feed and 1 pindex,"+
+				" got feeds: %+v, pindexes: %+v",
+				feeds, pindexes)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
