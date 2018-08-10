@@ -492,7 +492,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
 
 	// Handle expvar route(s)
-	router.Handler("GET", "/debug/vars", expvar.Handler())
+	router.Handler("GET", "/debug/vars",
+		cbft.NewAuthVersionHandler(mgr, adtSvc, expvar.Handler()))
 
 	// Handle untracked route(s)
 	router.NotFound = &untrackedRouteHandler{}

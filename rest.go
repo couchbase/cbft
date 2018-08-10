@@ -141,6 +141,15 @@ type AuthVersionHandler struct {
 	adtSvc *audit.AuditSvc
 }
 
+func NewAuthVersionHandler(mgr *cbgt.Manager, adtSvc *audit.AuditSvc,
+	h http.Handler) *AuthVersionHandler {
+	return &AuthVersionHandler{
+		mgr:    mgr,
+		H:      h,
+		adtSvc: adtSvc,
+	}
+}
+
 func (c *AuthVersionHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	if err := CheckAPIVersion(w, req); err != nil {
