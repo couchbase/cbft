@@ -615,11 +615,13 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
-	// Haandle the case where indexType wasn't mentioned in
+	// Handle the case where indexType wasn't mentioned in
 	// the index params (only from pre 5.5 nodes)
 	if !strings.Contains(indexParams, "indexType") {
 		bleveParams.Store["indexType"] = upsidedown.Name
-		bleveParams.Store["kvStoreName"] = "mossStore"
+		if !strings.Contains(indexParams, "kvStoreName") {
+			bleveParams.Store["kvStoreName"] = "mossStore"
+		}
 	}
 
 	kvConfig, _, _ := bleveRuntimeConfigMap(bleveParams)
@@ -2093,37 +2095,44 @@ func parseStoreOptions(input string) *moss.StoreOptions {
 	return nil
 }
 
-func parseIndexType(input string) string {
-	params := make(map[string]map[string]interface{})
-	err := json.Unmarshal([]byte(input), &params)
-	if err != nil {
-		return ""
-	}
-	if v, ok := params["store"]["indexType"]; ok {
-		return v.(string)
-	}
-	return ""
-}
-
 func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	bpPrev := NewBleveParams()
+	if len(paramPrev) == 0 {
+		// make it a json unmarshal-able string
+		paramPrev = "{}"
+	}
 	err := json.Unmarshal([]byte(paramPrev), bpPrev)
 	if err != nil {
 		return false
 	}
+
 	bpCur := NewBleveParams()
+	if len(paramCur) == 0 {
+		// make it a json unmarshal-able string
+		paramCur = "{}"
+	}
 	err = json.Unmarshal([]byte(paramCur), bpCur)
 	if err != nil {
 		return false
 	}
+
+	// Handle the case where indexType wasn't mentioned in
+	// the index params (only from pre 5.5 nodes)
+	if !strings.Contains(paramPrev, "indexType") {
+		bpPrev.Store["indexType"] = upsidedown.Name
+		if !strings.Contains(paramPrev, "kvStoreName") {
+			bpPrev.Store["kvStoreName"] = "mossStore"
+		}
+	}
+
 	// check for non store parameter differences
 	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) ||
 		!reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
 		return false
 	}
 	// check for indexType updates
-	prevType := parseIndexType(paramPrev)
-	curType := parseIndexType(paramCur)
+	prevType := bpPrev.Store["indexType"]
+	curType := bpCur.Store["indexType"]
 	if prevType != curType {
 		return false
 	}
@@ -2156,6 +2165,11 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 		return true
 	}
 
+	if len(paramPrev) == 0 {
+		// make it a json unmarshal-able string
+		paramPrev = "{}"
+	}
+
 	var prevMap map[string]interface{}
 	err := json.Unmarshal([]byte(paramPrev), &prevMap)
 	if err != nil {
@@ -2163,6 +2177,11 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 			" json parse paramPrev: %s, err: %v",
 			paramPrev, err)
 		return false
+	}
+
+	if len(paramCur) == 0 {
+		// make it a json unmarshal-able string
+		paramCur = "{}"
 	}
 
 	var curMap map[string]interface{}
