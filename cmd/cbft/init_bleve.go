@@ -92,6 +92,26 @@ func initBleveOptions(options map[string]string) error {
 				" stack dump: %s", err, stackDump)
 		}
 
+	blevePersisterNapTimeMSec := options["blevePersisterNapTimeMSec"]
+	if blevePersisterNapTimeMSec != "" {
+		v, err := strconv.Atoi(blevePersisterNapTimeMSec)
+		if err != nil {
+			return err
+		}
+
+		scorch.DefaultPersisterNapTimeMSec = v
+	}
+
+	blevePersisterNapUnderNumFiles := options["blevePersisterNapUnderNumFiles"]
+	if blevePersisterNapUnderNumFiles != "" {
+		v, err := strconv.Atoi(blevePersisterNapUnderNumFiles)
+		if err != nil {
+			return err
+		}
+
+		scorch.DefaultPersisterNapUnderNumFiles = v
+	}
+
 	return nil
 }
 
