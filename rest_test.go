@@ -208,7 +208,7 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 			Body:          nil,
 			Status:        http.StatusOK,
 			ResponseMatch: map[string]bool{
-			// Actual production args are different from "go test" context.
+				// Actual production args are different from "go test" context.
 			},
 		},
 		{
