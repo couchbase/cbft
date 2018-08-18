@@ -53,6 +53,10 @@ var TotHTTPSLimitListenersClosed uint64
 // HeapIdle (memory reclaimed); updated every second.
 var CurMemoryUsed uint64
 
+// Optional callback when current memory used has dropped since the
+// last sampling.
+var OnMemoryUsedDropped func(curMemoryUsed, prevMemoryUsed uint64)
+
 // PartitionSeqsProvider represents source object that can provide
 // partition seqs, such as some pindex or dest implementations.
 type PartitionSeqsProvider interface {
@@ -973,6 +977,9 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 	memStatsLoggingInterval, _ := strconv.Atoi(mgr.Options()["memStatsLoggingInterval"])
 	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
 
+	var prevMemoryUsed uint64
+	var curMemoryUsed uint64
+
 	for {
 		var nodeDefs *cbgt.NodeDefs
 		var planPIndexes *cbgt.PlanPIndexes
@@ -999,7 +1006,15 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		// is consuming at the moment that is not reusable; the go process has
 		// as idle memory component that it holds on to which can be reused;
 		// HeapIdle includes memory that is idle and the part that has been released.
-		atomic.StoreUint64(&CurMemoryUsed, rd.memStats.Sys-rd.memStats.HeapIdle)
+		prevMemoryUsed = curMemoryUsed
+		curMemoryUsed = rd.memStats.Sys - rd.memStats.HeapIdle
+
+		atomic.StoreUint64(&CurMemoryUsed, curMemoryUsed)
+
+		if curMemoryUsed < prevMemoryUsed &&
+			OnMemoryUsedDropped != nil {
+			OnMemoryUsedDropped(curMemoryUsed, prevMemoryUsed)
+		}
 
 		// Check memory quota if golang's GC needs to be triggered.
 		ftsMemoryQuota, _ := strconv.Atoi(mgr.Options()["ftsMemoryQuota"])

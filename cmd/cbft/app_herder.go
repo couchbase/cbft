@@ -63,6 +63,7 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 	ah.indexQuota = uint64(float64(ah.appQuota) * indexRatio)
 	ah.queryQuota = uint64(float64(ah.appQuota) * queryRatio)
 	ah.waitCond = sync.NewCond(&ah.m)
+
 	log.Printf("app_herder: memQuota: %d, appQuota: %d, indexQuota: %d, "+
 		"queryQuota: %d", memQuota, ah.appQuota, ah.indexQuota, ah.queryQuota)
 
@@ -82,16 +83,27 @@ func (a *appHerder) Stats() map[string]interface{} {
 
 func (a *appHerder) onClose(c interface{}) {
 	a.m.Lock()
-
-	if a.waiting > 0 {
-		log.Printf("app_herder: close progress, waiting: %d", a.waiting)
-	}
-
 	delete(a.indexes, c)
-
-	a.waitCond.Broadcast()
-
+	a.awakeWaitersLOCKED("closing index")
 	a.m.Unlock()
+}
+
+func (a *appHerder) onMemoryUsedDropped(curMemoryUsed, prevMemoryUsed uint64) {
+	a.awakeWaiters("memory used dropped")
+}
+
+func (a *appHerder) awakeWaiters(msg string) {
+	a.m.Lock()
+	a.awakeWaitersLOCKED(msg)
+	a.m.Unlock()
+}
+
+func (a *appHerder) awakeWaitersLOCKED(msg string) {
+	if a.waiting > 0 {
+		log.Printf("app_herder: %s, waiting: %d", msg, a.waiting)
+
+		a.waitCond.Broadcast()
+	}
 }
 
 func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
@@ -102,7 +114,8 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	a.indexes[c] = s
 
 	for a.overMemQuotaForIndexingLOCKED() {
-		// If we're over the memory quota, then wait for persister progress.
+		// If we're over the memory quota, then wait for persister,
+		// query or other progress.
 		log.Printf("app_herder: waiting for more memory to be available")
 
 		atomic.AddUint64(&a.stats.TotWaitingIn, 1)
@@ -161,27 +174,11 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 }
 
 func (a *appHerder) onPersisterProgress() {
-	a.m.Lock()
-
-	if a.waiting > 0 {
-		log.Printf("app_herder: persistence progress, waiting: %d", a.waiting)
-	}
-
-	a.waitCond.Broadcast()
-
-	a.m.Unlock()
+	a.awakeWaiters("persister progress")
 }
 
 func (a *appHerder) onMergerProgress() {
-	a.m.Lock()
-
-	if a.waiting > 0 {
-		log.Printf("app_herder: merging progress, waiting: %d", a.waiting)
-	}
-
-	a.waitCond.Broadcast()
-
-	a.m.Unlock()
+	a.awakeWaiters("merger progress")
 }
 
 // *** Query Interface
@@ -213,7 +210,6 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	}
 
 	a.m.Lock()
-	defer a.m.Unlock()
 
 	// fetch memory used by process
 	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
@@ -227,6 +223,8 @@ func (a *appHerder) onQueryStart(size uint64) error {
 		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
 			" current usage: %d would exceed query quota: %d",
 			size, a.runningQueryUsed, memUsed, a.queryQuota)
+
+		a.m.Unlock()
 		return rest.ErrorSearchReqRejected
 	}
 
@@ -234,11 +232,15 @@ func (a *appHerder) onQueryStart(size uint64) error {
 		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
 			" current usage: %d would exceed app quota: %d",
 			size, a.runningQueryUsed, memUsed, a.appQuota)
+
+		a.m.Unlock()
 		return rest.ErrorSearchReqRejected
 	}
 
 	// record the addition
 	a.runningQueryUsed += size
+
+	a.m.Unlock()
 	return nil
 }
 
@@ -249,14 +251,9 @@ func (a *appHerder) onQueryEnd(size uint64) error {
 
 	a.m.Lock()
 	a.runningQueryUsed -= size
-
-	if a.waiting > 0 {
-		log.Printf("app_herder: query ended, waiting: %d", a.waiting)
-	}
-
-	a.waitCond.Broadcast()
-
+	a.awakeWaitersLOCKED("query ended")
 	a.m.Unlock()
+
 	return nil
 }
 

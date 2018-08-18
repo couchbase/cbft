@@ -85,6 +85,10 @@ func initMemOptions(options map[string]string) (err error) {
 
 	cbft.RegistryQueryEventCallback = ftsHerder.queryHerderOnEvent()
 
+	cbft.OnMemoryUsedDropped = func(curMemoryUsed, prevMemoryUsed uint64) {
+		ftsHerder.onMemoryUsedDropped(curMemoryUsed, prevMemoryUsed)
+	}
+
 	return nil
 }
 
