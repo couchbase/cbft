@@ -549,21 +549,12 @@ var scorchStats = map[string]string{
 	"/num_bytes_used_disk":            "num_bytes_used_disk",
 	"/num_files_on_disk":              "num_files_on_disk",
 	"/total_compaction_written_bytes": "total_compaction_written_bytes",
+	"/num_recs_to_persist":            "num_recs_to_persist",
 }
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
-	var numItemsIntroduced, numItemsPersisted uint64
-	v := jsonpointer.Get(sstats, "/num_items_introduced")
-	numItemsIntroduced, _ = v.(uint64)
-	v = jsonpointer.Get(sstats, "/num_items_persisted")
-	numItemsPersisted, _ = v.(uint64)
-
-	updateStat("num_recs_to_persist",
-		float64(numItemsIntroduced-numItemsPersisted),
-		nsIndexStat)
-
 	for path, statname := range scorchStats {
-		v = jsonpointer.Get(sstats, path)
+		v := jsonpointer.Get(sstats, path)
 		if vuint64, ok := v.(uint64); ok {
 			updateStat(statname, float64(vuint64), nsIndexStat)
 		}
