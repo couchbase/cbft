@@ -100,7 +100,8 @@ func (a *appHerder) awakeWaiters(msg string) {
 
 func (a *appHerder) awakeWaitersLOCKED(msg string) {
 	if a.waiting > 0 {
-		log.Printf("app_herder: %s, waiting: %d", msg, a.waiting)
+		log.Printf("app_herder: %s, indexes: %d, waiting: %d", msg,
+			len(a.indexes), a.waiting)
 
 		a.waitCond.Broadcast()
 	}
@@ -113,18 +114,31 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 
 	a.indexes[c] = s
 
+	wasWaiting := false
+
 	for a.overMemQuotaForIndexingLOCKED() {
-		// If we're over the memory quota, then wait for persister,
-		// query or other progress.
-		log.Printf("app_herder: waiting for more memory to be available")
+		wasWaiting = true
 
 		atomic.AddUint64(&a.stats.TotWaitingIn, 1)
 		a.waiting++
+
+		// If we're over the memory quota, then wait for persister,
+		// query or other progress.
+		log.Printf("app_herder: indexing over quota, indexes: %d, waiting: %d",
+			len(a.indexes), a.waiting)
+
 		a.waitCond.Wait()
+
 		a.waiting--
 		atomic.AddUint64(&a.stats.TotWaitingOut, 1)
 
-		log.Printf("app_herder: resuming upon memory reduction")
+		log.Printf("app_herder: indexing re-checking quota, indexes: %d, waiting: %d",
+			len(a.indexes), a.waiting)
+	}
+
+	if wasWaiting {
+		log.Printf("app_herder: indexing proceeding, indexes: %d, waiting: %d",
+			len(a.indexes), a.waiting)
 	}
 
 	a.m.Unlock()
@@ -160,13 +174,15 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	// fetch memory used by process
 	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
 
-	// now account for the overhead from documents in batches
-	memUsed += a.preIndexingMemoryLOCKED()
+	// now account for the overhead from documents ready in batches
+	// but not yet executed
+	preIndexingMemory := a.preIndexingMemoryLOCKED()
+	memUsed += preIndexingMemory // TODO: NOTE: this is perhaps double-counting
 
 	// make sure indexing doesn't exceed the index portion of the quota
 	if memUsed > a.indexQuota {
-		log.Printf("app_herder: current memory usage: %d over indexing quota %d",
-			memUsed, a.indexQuota)
+		log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d, preIndexingMemory: %d",
+			a.indexQuota, memUsed, preIndexingMemory)
 		return true
 	}
 
@@ -220,18 +236,18 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	// first make sure querying (on it's own) doesn't exceed the
 	// query portion of the quota
 	if memUsed > a.queryQuota {
-		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
-			" current usage: %d would exceed query quota: %d",
-			size, a.runningQueryUsed, memUsed, a.queryQuota)
+		log.Printf("app_herder: querying over queryQuota: %d,"+
+			" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
+			a.queryQuota, size, a.runningQueryUsed, memUsed)
 
 		a.m.Unlock()
 		return rest.ErrorSearchReqRejected
 	}
 
 	if memUsed > a.appQuota {
-		log.Printf("app_herder: query's estimated size: %d, other running queries: %d,"+
-			" current usage: %d would exceed app quota: %d",
-			size, a.runningQueryUsed, memUsed, a.appQuota)
+		log.Printf("app_herder: querying over appQuota: %d,"+
+			" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
+			a.appQuota, size, a.runningQueryUsed, memUsed)
 
 		a.m.Unlock()
 		return rest.ErrorSearchReqRejected
