@@ -227,30 +227,38 @@ func (a *appHerder) onQueryStart(size uint64) error {
 
 	a.m.Lock()
 
-	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
+	// MB-30954 - similar to logic for indexing / MB-29504 (see:
+	// overMemQuotaForIndexingLOCKED) -- this workaround tries to
+	// prevent querying from becoming completely stuck, on the
+	// thinking that if there aren't any size-estimated queries at all
+	// yet, then allow a single query to proceed (even if we're over
+	// quota in the bigger picture).
+	if a.runningQueryUsed > 0 {
+		// fetch memory used by process
+		memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
 
-	// now account for overhead from the current query
-	memUsed += size
+		// now account for overhead from the current query
+		memUsed += size
 
-	// first make sure querying (on it's own) doesn't exceed the
-	// query portion of the quota
-	if memUsed > a.queryQuota {
-		log.Printf("app_herder: querying over queryQuota: %d,"+
-			" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
-			a.queryQuota, size, a.runningQueryUsed, memUsed)
+		// first make sure querying (on it's own) doesn't exceed the
+		// query portion of the quota
+		if memUsed > a.queryQuota {
+			log.Printf("app_herder: querying over queryQuota: %d,"+
+				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
+				a.queryQuota, size, a.runningQueryUsed, memUsed)
 
-		a.m.Unlock()
-		return rest.ErrorSearchReqRejected
-	}
+			a.m.Unlock()
+			return rest.ErrorSearchReqRejected
+		}
 
-	if memUsed > a.appQuota {
-		log.Printf("app_herder: querying over appQuota: %d,"+
-			" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
-			a.appQuota, size, a.runningQueryUsed, memUsed)
+		if memUsed > a.appQuota {
+			log.Printf("app_herder: querying over appQuota: %d,"+
+				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
+				a.appQuota, size, a.runningQueryUsed, memUsed)
 
-		a.m.Unlock()
-		return rest.ErrorSearchReqRejected
+			a.m.Unlock()
+			return rest.ErrorSearchReqRejected
+		}
 	}
 
 	// record the addition
