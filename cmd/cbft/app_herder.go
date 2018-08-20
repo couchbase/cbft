@@ -31,6 +31,8 @@ type appHerder struct {
 	indexQuota int64
 	queryQuota int64
 
+	overQuotaCh chan struct{}
+
 	m        sync.Mutex
 	waitCond *sync.Cond
 	waiting  int
@@ -52,10 +54,11 @@ type appHerderStats struct {
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
-	queryRatio float64) *appHerder {
+	queryRatio float64, overQuotaCh chan struct{}) *appHerder {
 	ah := &appHerder{
-		memQuota: int64(memQuota),
-		indexes:  map[interface{}]sizeFunc{},
+		memQuota:    int64(memQuota),
+		overQuotaCh: overQuotaCh,
+		indexes:     map[interface{}]sizeFunc{},
 	}
 
 	ah.appQuota = int64(float64(ah.memQuota) * appRatio)
@@ -150,6 +153,10 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		// query or other progress.
 		log.Printf("app_herder: indexing over quota, indexes: %d, waiting: %d",
 			len(a.indexes), a.waiting)
+
+		if a.overQuotaCh != nil {
+			a.overQuotaCh <- struct{}{}
+		}
 
 		a.waitCond.Wait()
 
@@ -270,6 +277,11 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 				a.queryQuota, size, a.runningQueryUsed, memUsed)
 
 			a.m.Unlock()
+
+			if a.overQuotaCh != nil {
+				a.overQuotaCh <- struct{}{}
+			}
+
 			return rest.ErrorSearchReqRejected
 		}
 
@@ -279,6 +291,11 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 				a.appQuota, size, a.runningQueryUsed, memUsed)
 
 			a.m.Unlock()
+
+			if a.overQuotaCh != nil {
+				a.overQuotaCh <- struct{}{}
+			}
+
 			return rest.ErrorSearchReqRejected
 		}
 	}

@@ -21,6 +21,7 @@ import (
 
 type Goverseer struct {
 	interval time.Duration
+	kickCh   chan struct{}
 	quota    uint64
 	maxRatio float64
 	minRatio float64
@@ -29,6 +30,7 @@ type Goverseer struct {
 func NewGoverseer(d time.Duration, q uint64) *Goverseer {
 	return &Goverseer{
 		interval: d,
+		kickCh:   make(chan struct{}, 1),
 		quota:    q,
 		maxRatio: 1.0, // this caps our targetGOGC at 100
 		minRatio: 0.5, // this caps our targetGOGC at 50
@@ -36,32 +38,57 @@ func NewGoverseer(d time.Duration, q uint64) *Goverseer {
 }
 
 func (g *Goverseer) Run() {
-	log.Printf("goverseer: quota: %d, interval: %s", g.quota, g.interval)
+	log.Printf("goverseer: quota: %d, interval: %s, maxRatio: %f, minRatio: %f",
+		g.quota, g.interval, g.maxRatio, g.minRatio)
+
 	var memstats runtime.MemStats
+
 	intervalTicker := time.NewTicker(g.interval)
+
 	var last = 100 // Go's default value
-	for {
-		select {
-		case <-intervalTicker.C:
-			runtime.ReadMemStats(&memstats)
-			var spaceRemaining uint64
-			if g.quota > memstats.HeapAlloc {
-				spaceRemaining = g.quota - memstats.HeapAlloc
-			}
-			ratio := float64(spaceRemaining) / float64(memstats.HeapAlloc)
+
+	// Counts # of kicks we received in-between interval firings.
+	var kicks = 0
+
+	adjustGC := func(ratio float64, msg string) {
+		runtime.ReadMemStats(&memstats)
+		var spaceRemaining uint64
+		if g.quota > memstats.HeapAlloc {
+			spaceRemaining = g.quota - memstats.HeapAlloc
+		}
+		if ratio == 0.0 {
+			ratio = float64(spaceRemaining) / float64(memstats.HeapAlloc)
 			if ratio > g.maxRatio {
 				ratio = g.maxRatio
 			} else if ratio < g.minRatio {
 				ratio = g.minRatio
 			}
-			targetGOGC := int(ratio * 100)
-			if last != targetGOGC {
-				log.Printf("goverseer: new target: %d, previous: %d, heap alloc: %d, "+
-					"remaining: %d, ratio: %f", targetGOGC, last, memstats.HeapAlloc,
-					spaceRemaining, ratio)
-				debug.SetGCPercent(targetGOGC)
-				last = targetGOGC
-			}
+		}
+		targetGOGC := int(ratio * 100)
+		if last != targetGOGC {
+			log.Printf("goverseer: SetGCPercent on %s, targetGOGC: %d, last: %d, "+
+				"heapAlloc: %d, spaceRemaining: %d, ratio: %f, kicks: %d", msg,
+				targetGOGC, last, memstats.HeapAlloc, spaceRemaining, ratio, kicks)
+			debug.SetGCPercent(targetGOGC)
+			last = targetGOGC
+		}
+	}
+
+	for {
+		select {
+		case <-g.kickCh:
+			kicks++
+			if kicks == 1 {
+				// On the first kick in-between interval ticks, force
+				// an aggressive SetGCPercent(), which will go back to
+				// normal on the next tick.
+				adjustGC(g.minRatio, "kick")
+			} // Else swallow any more kicks in-between interval ticks.
+
+		case <-intervalTicker.C:
+			adjustGC(0.0, "interval")
+
+			kicks = 0
 		}
 	}
 }

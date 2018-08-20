@@ -49,9 +49,11 @@ func initMemOptions(options map[string]string) (err error) {
 		}
 	}
 
-	if memCheckInterval > 0 {
+	var goverseerKickCh chan struct{}
+	if memCheckInterval > 0 && memQuota > 0 {
 		g := NewGoverseer(memCheckInterval, memQuota)
 		go g.Run()
+		goverseerKickCh = g.kickCh
 	}
 
 	ftsApplicationFraction, err := parseFTSMemApplicationFraction(options)
@@ -68,7 +70,7 @@ func initMemOptions(options map[string]string) (err error) {
 	}
 
 	ftsHerder = newAppHerder(memQuota, ftsApplicationFraction,
-		ftsIndexingFraction, ftsQueryingFraction)
+		ftsIndexingFraction, ftsQueryingFraction, goverseerKickCh)
 
 	cbft.RegistryQueryEventCallback = ftsHerder.queryHerderOnEvent()
 
