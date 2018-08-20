@@ -26,10 +26,10 @@ import (
 type sizeFunc func(interface{}) uint64
 
 type appHerder struct {
-	memQuota   uint64
-	appQuota   uint64
-	indexQuota uint64
-	queryQuota uint64
+	memQuota   int64
+	appQuota   int64
+	indexQuota int64
+	queryQuota int64
 
 	m        sync.Mutex
 	waitCond *sync.Cond
@@ -37,9 +37,7 @@ type appHerder struct {
 
 	indexes map[interface{}]sizeFunc
 
-	// Flag that is to be set to true for tracking memory used by queries
-	queryHerdingEnabled bool
-	// Tracks the amount of memory used by running queries
+	// Tracks estimated memory used by running queries
 	runningQueryUsed uint64
 
 	stats appHerderStats
@@ -56,16 +54,34 @@ type appHerderStats struct {
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
 	queryRatio float64) *appHerder {
 	ah := &appHerder{
-		memQuota: memQuota,
+		memQuota: int64(memQuota),
 		indexes:  map[interface{}]sizeFunc{},
 	}
-	ah.appQuota = uint64(float64(ah.memQuota) * appRatio)
-	ah.indexQuota = uint64(float64(ah.appQuota) * indexRatio)
-	ah.queryQuota = uint64(float64(ah.appQuota) * queryRatio)
+
+	ah.appQuota = int64(float64(ah.memQuota) * appRatio)
+	ah.indexQuota = int64(float64(ah.appQuota) * indexRatio)
+	ah.queryQuota = int64(float64(ah.appQuota) * queryRatio)
+
 	ah.waitCond = sync.NewCond(&ah.m)
 
 	log.Printf("app_herder: memQuota: %d, appQuota: %d, indexQuota: %d, "+
 		"queryQuota: %d", memQuota, ah.appQuota, ah.indexQuota, ah.queryQuota)
+
+	if ah.appQuota <= 0 {
+		log.Printf("app_herder: appQuota disabled")
+	}
+	if ah.indexQuota <= 0 {
+		log.Printf("app_herder: indexQuota disabled")
+	}
+	if ah.indexQuota < 0 {
+		log.Printf("app_herder: indexing also ignores appQuota")
+	}
+	if ah.queryQuota <= 0 {
+		log.Printf("app_herder: queryQuota disabled")
+	}
+	if ah.queryQuota < 0 {
+		log.Printf("app_herder: querying also ignores appQuota")
+	}
 
 	return ah
 }
@@ -108,6 +124,14 @@ func (a *appHerder) awakeWaitersLOCKED(msg string) {
 }
 
 func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
+	// negative means ignore both appQuota and indexQuota and let the
+	// incoming batch proceed.  A zero indexQuota means ignore the
+	// indexQuota, but continue to check the appQuota for incoming
+	// batches.
+	if a.indexQuota < 0 {
+		return
+	}
+
 	atomic.AddUint64(&a.stats.TotOnBatchExecuteStartBeg, 1)
 
 	a.m.Lock()
@@ -172,21 +196,21 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	}
 
 	// fetch memory used by process
-	memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
+	memUsed := int64(atomic.LoadUint64(&cbft.CurMemoryUsed))
 
 	// now account for the overhead from documents ready in batches
 	// but not yet executed
 	preIndexingMemory := a.preIndexingMemoryLOCKED()
-	memUsed += preIndexingMemory // TODO: NOTE: this is perhaps double-counting
+	memUsed += int64(preIndexingMemory) // TODO: NOTE: this is perhaps double-counting
 
 	// make sure indexing doesn't exceed the index portion of the quota
-	if memUsed > a.indexQuota {
+	if a.indexQuota > 0 && memUsed > a.indexQuota {
 		log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d, preIndexingMemory: %d",
 			a.indexQuota, memUsed, preIndexingMemory)
 		return true
 	}
 
-	return memUsed > a.appQuota
+	return a.appQuota > 0 && memUsed > a.appQuota
 }
 
 func (a *appHerder) onPersisterProgress() {
@@ -198,10 +222,6 @@ func (a *appHerder) onMergerProgress() {
 }
 
 // *** Query Interface
-
-func (a *appHerder) setQueryHerding(to bool) {
-	a.queryHerdingEnabled = to
-}
 
 func (a *appHerder) queryHerderOnEvent() func(cbft.QueryEvent, uint64) error {
 	return func(event cbft.QueryEvent, size uint64) error { return a.onQueryEvent(event, size) }
@@ -221,7 +241,11 @@ func (a *appHerder) onQueryEvent(event cbft.QueryEvent, size uint64) error {
 }
 
 func (a *appHerder) onQueryStart(size uint64) error {
-	if !a.queryHerdingEnabled {
+	// negative queryQuota means ignore both appQuota and queryQuota
+	// and let the incoming query proceed.  A zero queryQuota means
+	// ignore the queryQuota, but continue to check the appQuota for
+	// incoming queries.
+	if a.queryQuota < 0 {
 		return nil
 	}
 
@@ -235,14 +259,14 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	// quota in the bigger picture).
 	if a.runningQueryUsed > 0 {
 		// fetch memory used by process
-		memUsed := atomic.LoadUint64(&cbft.CurMemoryUsed)
+		memUsed := int64(atomic.LoadUint64(&cbft.CurMemoryUsed))
 
 		// now account for overhead from the current query
-		memUsed += size
+		memUsed += int64(size)
 
 		// first make sure querying (on it's own) doesn't exceed the
 		// query portion of the quota
-		if memUsed > a.queryQuota {
+		if a.queryQuota > 0 && memUsed > a.queryQuota {
 			log.Printf("app_herder: querying over queryQuota: %d,"+
 				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
 				a.queryQuota, size, a.runningQueryUsed, memUsed)
@@ -251,7 +275,7 @@ func (a *appHerder) onQueryStart(size uint64) error {
 			return rest.ErrorSearchReqRejected
 		}
 
-		if memUsed > a.appQuota {
+		if a.appQuota > 0 && memUsed > a.appQuota {
 			log.Printf("app_herder: querying over appQuota: %d,"+
 				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
 				a.appQuota, size, a.runningQueryUsed, memUsed)
@@ -269,10 +293,6 @@ func (a *appHerder) onQueryStart(size uint64) error {
 }
 
 func (a *appHerder) onQueryEnd(size uint64) error {
-	if !a.queryHerdingEnabled {
-		return nil
-	}
-
 	a.m.Lock()
 	a.runningQueryUsed -= size
 	a.awakeWaitersLOCKED("query ended")

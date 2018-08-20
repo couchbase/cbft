@@ -54,17 +54,6 @@ func initMemOptions(options map[string]string) (err error) {
 		go g.Run()
 	}
 
-	queryHerdingEnabled := false
-	v, exists = options["enableFtsQueryHerding"] // Boolean.
-	if exists {
-		var err2 error
-		queryHerdingEnabled, err2 = strconv.ParseBool(v)
-		if err2 != nil {
-			return fmt.Errorf("init_mem:"+
-				" parsing enableFtsQueryHerding: %q, err: %v", v, err2)
-		}
-	}
-
 	ftsApplicationFraction, err := parseFTSMemApplicationFraction(options)
 	if err != nil {
 		return err
@@ -80,8 +69,6 @@ func initMemOptions(options map[string]string) (err error) {
 
 	ftsHerder = newAppHerder(memQuota, ftsApplicationFraction,
 		ftsIndexingFraction, ftsQueryingFraction)
-
-	ftsHerder.setQueryHerding(queryHerdingEnabled)
 
 	cbft.RegistryQueryEventCallback = ftsHerder.queryHerderOnEvent()
 
