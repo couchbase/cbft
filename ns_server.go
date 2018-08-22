@@ -365,6 +365,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
 	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttp2)
+	topLevelStats["tot_queryreject_on_memquota"] =
+		atomic.LoadUint64(&totQueryRejectOnNotEnoughQuota)
 
 	topLevelStats["tot_http_limitlisteners_opened"] =
 		atomic.LoadUint64(&TotHTTPLimitListenersOpened)

@@ -662,6 +662,12 @@ func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
 	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
 }
 
+// ---------------------------------------------------------
+
+// totQueryRejectOnNotEnoughQuota tracks the number of rejected
+// search requests on hitting the memory threshold for query
+var totQueryRejectOnNotEnoughQuota uint64
+
 // QueryPIndexes defines the part of the JSON query request that
 // allows the client to specify which pindexes the server should
 // consider during query processing.
@@ -764,6 +770,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	mergeEstimate := uint64(numPIndexes) * bleve.MemoryNeededForSearchResult(searchRequest)
 	err = fireQueryEvent(EventQueryStart, 0, mergeEstimate)
 	if err != nil {
+		atomic.AddUint64(&totQueryRejectOnNotEnoughQuota, 1)
 		return err
 	}
 
