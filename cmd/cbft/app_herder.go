@@ -223,24 +223,22 @@ func (a *appHerder) onMergerProgress() {
 
 // *** Query Interface
 
-func (a *appHerder) queryHerderOnEvent() func(cbft.QueryEvent, uint64) error {
-	return func(event cbft.QueryEvent, size uint64) error { return a.onQueryEvent(event, size) }
-}
+func (a *appHerder) queryHerderOnEvent() func(int, cbft.QueryEvent, uint64) error {
+	return func(depth int, event cbft.QueryEvent, size uint64) error {
+		switch event.Kind {
+		case cbft.EventQueryStart:
+			return a.onQueryStart(depth, size)
 
-func (a *appHerder) onQueryEvent(event cbft.QueryEvent, size uint64) error {
-	switch event.Kind {
-	case cbft.EventQueryStart:
-		return a.onQueryStart(size)
+		case cbft.EventQueryEnd:
+			return a.onQueryEnd(depth, size)
 
-	case cbft.EventQueryEnd:
-		return a.onQueryEnd(size)
-
-	default:
-		return nil
+		default:
+			return nil
+		}
 	}
 }
 
-func (a *appHerder) onQueryStart(size uint64) error {
+func (a *appHerder) onQueryStart(depth int, size uint64) error {
 	// negative queryQuota means ignore both appQuota and queryQuota
 	// and let the incoming query proceed.  A zero queryQuota means
 	// ignore the queryQuota, but continue to check the appQuota for
@@ -257,7 +255,7 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	// thinking that if there aren't any size-estimated queries at all
 	// yet, then allow a single query to proceed (even if we're over
 	// quota in the bigger picture).
-	if a.runningQueryUsed > 0 {
+	if depth == 0 && a.runningQueryUsed > 0 {
 		// fetch memory used by process
 		memUsed := int64(atomic.LoadUint64(&cbft.CurMemoryUsed))
 
@@ -292,7 +290,7 @@ func (a *appHerder) onQueryStart(size uint64) error {
 	return nil
 }
 
-func (a *appHerder) onQueryEnd(size uint64) error {
+func (a *appHerder) onQueryEnd(depth int, size uint64) error {
 	a.m.Lock()
 	a.runningQueryUsed -= size
 	a.awakeWaitersLOCKED("query ended")

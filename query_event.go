@@ -15,7 +15,7 @@ import "time"
 
 // RegistryQueryEventCallbacks should be treated as read-only after
 // process init()'ialization.
-var RegistryQueryEventCallback func(QueryEvent, uint64) error
+var RegistryQueryEventCallback func(int, QueryEvent, uint64) error
 
 type QueryEvent struct {
 	Kind     QueryEventKind

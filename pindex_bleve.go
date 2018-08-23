@@ -677,11 +677,19 @@ type QueryPIndexes struct {
 	PIndexNames []string `json:"pindexNames,omitempty"`
 }
 
-func fireQueryEvent(kind QueryEventKind, dur time.Duration, size uint64) error {
+func fireQueryEvent(depth int, kind QueryEventKind, dur time.Duration, size uint64) error {
 	if RegistryQueryEventCallback != nil {
-		return RegistryQueryEventCallback(QueryEvent{Kind: kind, Duration: dur}, size)
+		return RegistryQueryEventCallback(depth, QueryEvent{Kind: kind, Duration: dur}, size)
 	}
 	return nil
+}
+
+func bleveCtxQueryStartCallback(size uint64) error {
+	return fireQueryEvent(1, EventQueryStart, 0, size)
+}
+
+func bleveCtxQueryEndCallback(size uint64) error {
+	return fireQueryEvent(1, EventQueryEnd, 0, size)
 }
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
@@ -768,26 +776,19 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// estimate memory needed for merging search results from all
 	// the pindexes
 	mergeEstimate := uint64(numPIndexes) * bleve.MemoryNeededForSearchResult(searchRequest)
-	err = fireQueryEvent(EventQueryStart, 0, mergeEstimate)
+	err = fireQueryEvent(0, EventQueryStart, 0, mergeEstimate)
 	if err != nil {
 		atomic.AddUint64(&totQueryRejectOnNotEnoughQuota, 1)
 		return err
 	}
 
-	defer fireQueryEvent(EventQueryEnd, 0, mergeEstimate)
+	defer fireQueryEvent(0, EventQueryEnd, 0, mergeEstimate)
 
 	// set query start/end callbacks
-	queryStartCallback := func(size uint64) error {
-		return fireQueryEvent(EventQueryStart, 0, size)
-	}
 	ctx = context.WithValue(ctx, bleve.SearchQueryStartCallbackKey,
-		bleve.SearchQueryStartCallbackFn(queryStartCallback))
-
-	queryEndCallback := func(size uint64) error {
-		return fireQueryEvent(EventQueryEnd, 0, size)
-	}
+		bleveCtxQueryStartCallback)
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
-		bleve.SearchQueryEndCallbackFn(queryEndCallback))
+		bleveCtxQueryEndCallback)
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
