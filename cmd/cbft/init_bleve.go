@@ -112,6 +112,16 @@ func initBleveOptions(options map[string]string) error {
 		scorch.DefaultPersisterNapUnderNumFiles = v
 	}
 
+	bleveBatchFlushDuration := options["bleveBatchFlushDuration"]
+	if bleveBatchFlushDuration != "" {
+		v, err := time.ParseDuration(bleveBatchFlushDuration)
+		if err != nil {
+			return err
+		}
+
+		cbft.BleveBatchFlushDuration = v
+	}
+
 	return nil
 }
 

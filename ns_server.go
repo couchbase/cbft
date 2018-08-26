@@ -380,6 +380,9 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["batch_bytes_added"] = atomic.LoadUint64(&BatchBytesAdded)
 	topLevelStats["batch_bytes_removed"] = atomic.LoadUint64(&BatchBytesRemoved)
 
+	topLevelStats["tot_batches_flushed_on_maxops"] = atomic.LoadUint64(&TotBatchesFlushedOnMaxOps)
+	topLevelStats["tot_batches_flushed_on_timer"] = atomic.LoadUint64(&TotBatchesFlushedOnTimer)
+
 	nsIndexStats[""] = topLevelStats
 
 	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {

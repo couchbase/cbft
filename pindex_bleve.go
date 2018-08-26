@@ -53,11 +53,16 @@ import (
 var BatchBytesAdded uint64
 var BatchBytesRemoved uint64
 
+var TotBatchesFlushedOnMaxOps uint64
+var TotBatchesFlushedOnTimer uint64
+
 var featureIndexType = "indexType"
 var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
+
+var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
 
 var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
@@ -1646,7 +1651,29 @@ func (t *BleveDestPartition) setLastAsyncBatchErr(err error) {
 }
 
 func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
+	var targetBatch *bleve.Batch
+	var bdp *BleveDestPartition
+	var bindex bleve.Index
+	var ticker *time.Ticker
+	if BleveBatchFlushDuration > 0 {
+		ticker = time.NewTicker(BleveBatchFlushDuration)
+		defer ticker.Stop()
+	}
+	var tickerCh <-chan time.Time
+
 	for {
+		// trigger batch execution if we have enough items in batch
+		if targetBatch != nil && targetBatch.Size() >= BleveMaxOpsPerBatch {
+			executeBatch(bdp, bindex, targetBatch)
+			targetBatch = nil
+			atomic.AddUint64(&TotBatchesFlushedOnMaxOps, 1)
+		}
+
+		// wait for more mutations for a bigger target batch
+		if targetBatch != nil && ticker != nil {
+			tickerCh = ticker.C
+		}
+
 		select {
 		case batchReq := <-requestCh:
 			if batchReq == nil {
@@ -1654,22 +1681,49 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 				return
 			}
 			if batchReq.bdp == nil || batchReq.bindex == nil {
-				continue
+				break
 			}
 
-			_, err := executeBatch(batchReq.bdp, batchReq.bindex, batchReq.batch)
-			if err != nil {
-				batchReq.bdp.setLastAsyncBatchErr(err)
+			// if batch merging is disabled then execute the batch
+			if BleveBatchFlushDuration == 0 {
+				executeBatch(batchReq.bdp, batchReq.bindex, batchReq.batch)
+				break
 			}
+
+			if targetBatch == nil {
+				bdp = batchReq.bdp
+				bindex = batchReq.bindex
+				targetBatch = batchReq.batch
+				break
+			}
+
+			targetBatch.Merge(batchReq.batch)
+
+		case <-tickerCh:
+			if targetBatch != nil {
+				executeBatch(bdp, bindex, targetBatch)
+				targetBatch = nil
+				atomic.AddUint64(&TotBatchesFlushedOnTimer, 1)
+			}
+			tickerCh = nil
 
 		case <-stopCh:
 			log.Printf("pindex_bleve: batchWorker stopped ")
 			return
 		}
+
 	}
 }
 
-func executeBatch(t *BleveDestPartition,
+func executeBatch(bdp *BleveDestPartition, index bleve.Index,
+	batch *bleve.Batch) {
+	_, err := execute(bdp, index, batch)
+	if err != nil {
+		bdp.setLastAsyncBatchErr(err)
+	}
+}
+
+func execute(t *BleveDestPartition,
 	bindex bleve.Index, batch *bleve.Batch) (bool, error) {
 	if batch == nil {
 		return false, fmt.Errorf("pindex_bleve: executeBatch batch nil")
