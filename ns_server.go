@@ -140,6 +140,12 @@ var statkeys = []string{
 	"num_pindexes_actual", // per-index stat.
 	"num_pindexes_target", // per-index stat.
 
+	"num_root_memorysegments", // per-index stat.
+	"num_root_filesegments",   // per-index stat.
+
+	"num_persister_nap_pause_completed", // per-index stat.
+	"num_persister_nap_merger_break",    // per-index stat.
+
 	"total_compactions",              // per-index stat.
 	"total_compaction_written_bytes", // per-index stat.
 
@@ -551,10 +557,14 @@ func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
 }
 
 var scorchStats = map[string]string{
-	"/num_bytes_used_disk":            "num_bytes_used_disk",
-	"/num_files_on_disk":              "num_files_on_disk",
-	"/total_compaction_written_bytes": "total_compaction_written_bytes",
-	"/num_recs_to_persist":            "num_recs_to_persist",
+	"/num_bytes_used_disk":               "num_bytes_used_disk",
+	"/num_files_on_disk":                 "num_files_on_disk",
+	"/total_compaction_written_bytes":    "total_compaction_written_bytes",
+	"/num_recs_to_persist":               "num_recs_to_persist",
+	"/num_root_memorysegments":           "num_root_memorysegments",
+	"/num_root_filesegments":             "num_root_filesegments",
+	"/num_persister_nap_pause_completed": "num_persister_nap_pause_completed",
+	"/num_persister_nap_merger_break":    "num_persister_nap_merger_break",
 }
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
