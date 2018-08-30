@@ -1652,7 +1652,8 @@ func (t *BleveDestPartition) setLastAsyncBatchErr(err error) {
 
 func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 	var targetBatch *bleve.Batch
-	var bdp *BleveDestPartition
+	bdp := make([]*BleveDestPartition, 0, 50)
+	bdpMaxSeqNums := make([]uint64, 0, 50)
 	var bindex bleve.Index
 	var ticker *time.Ticker
 	if BleveBatchFlushDuration > 0 {
@@ -1664,7 +1665,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 	for {
 		// trigger batch execution if we have enough items in batch
 		if targetBatch != nil && targetBatch.Size() >= BleveMaxOpsPerBatch {
-			executeBatch(bdp, bindex, targetBatch)
+			executeBatch(bdp, bdpMaxSeqNums, bindex, targetBatch)
 			targetBatch = nil
 			atomic.AddUint64(&TotBatchesFlushedOnMaxOps, 1)
 		}
@@ -1686,22 +1687,31 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 
 			// if batch merging is disabled then execute the batch
 			if BleveBatchFlushDuration == 0 {
-				executeBatch(batchReq.bdp, batchReq.bindex, batchReq.batch)
+				bdp = bdp[:0]
+				bdpMaxSeqNums = bdpMaxSeqNums[:0]
+				bdp = append(bdp, batchReq.bdp)
+				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+				executeBatch(bdp, bdpMaxSeqNums, batchReq.bindex, batchReq.batch)
 				break
 			}
 
 			if targetBatch == nil {
-				bdp = batchReq.bdp
+				bdp = bdp[:0]
+				bdpMaxSeqNums = bdpMaxSeqNums[:0]
+				bdp = append(bdp, batchReq.bdp)
+				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
 				bindex = batchReq.bindex
 				targetBatch = batchReq.batch
 				break
 			}
 
 			targetBatch.Merge(batchReq.batch)
+			bdp = append(bdp, batchReq.bdp)
+			bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
 
 		case <-tickerCh:
 			if targetBatch != nil {
-				executeBatch(bdp, bindex, targetBatch)
+				executeBatch(bdp, bdpMaxSeqNums, bindex, targetBatch)
 				targetBatch = nil
 				atomic.AddUint64(&TotBatchesFlushedOnTimer, 1)
 			}
@@ -1715,15 +1725,15 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 	}
 }
 
-func executeBatch(bdp *BleveDestPartition, index bleve.Index,
-	batch *bleve.Batch) {
-	_, err := execute(bdp, index, batch)
+func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
+	index bleve.Index, batch *bleve.Batch) {
+	_, err := execute(bdp, bdpMaxSeqNums, index, batch)
 	if err != nil {
-		bdp.setLastAsyncBatchErr(err)
+		bdp[0].setLastAsyncBatchErr(err)
 	}
 }
 
-func execute(t *BleveDestPartition,
+func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	bindex bleve.Index, batch *bleve.Batch) (bool, error) {
 	if batch == nil {
 		return false, fmt.Errorf("pindex_bleve: executeBatch batch nil")
@@ -1744,7 +1754,7 @@ func execute(t *BleveDestPartition,
 			log.Printf("pindex_bleve: executeBatch, err: %+v ", err)
 		}
 		return err
-	}, t.bdest.stats.TimerBatchStore)
+	}, bdp[0].bdest.stats.TimerBatchStore)
 
 	atomic.AddUint64(&BatchBytesRemoved, batchTotalDocsSize)
 
@@ -1752,16 +1762,18 @@ func execute(t *BleveDestPartition,
 		return false, err
 	}
 
-	t.m.Lock()
-	t.seqMaxBatch = t.seqMax
-	for t.cwrQueue.Len() > 0 &&
-		t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
-		cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
-		if cwr != nil && cwr.DoneCh != nil {
-			close(cwr.DoneCh)
+	for i, t := range bdp {
+		t.m.Lock()
+		t.seqMaxBatch = bdpMaxSeqNums[i]
+		for t.cwrQueue.Len() > 0 &&
+			t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
+			cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
+			if cwr != nil && cwr.DoneCh != nil {
+				close(cwr.DoneCh)
+			}
 		}
+		t.m.Unlock()
 	}
-	t.m.Unlock()
 
 	return true, nil
 }
