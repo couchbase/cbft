@@ -792,9 +792,9 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	// set query start/end callbacks
 	ctx = context.WithValue(ctx, bleve.SearchQueryStartCallbackKey,
-		bleveCtxQueryStartCallback)
+		bleve.SearchQueryStartCallbackFn(bleveCtxQueryStartCallback))
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
-		bleveCtxQueryEndCallback)
+		bleve.SearchQueryEndCallbackFn(bleveCtxQueryEndCallback))
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
