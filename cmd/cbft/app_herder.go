@@ -168,8 +168,8 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	}
 
 	if wasWaiting {
-		log.Printf("app_herder: indexing proceeding, indexes: %d, waiting: %d",
-			len(a.indexes), a.waiting)
+		log.Printf("app_herder: indexing proceeding, indexes: %d, waiting: %d, usage: %v",
+			len(a.indexes), a.waiting, cbft.FetchCurMemoryUsed())
 	}
 
 	a.m.Unlock()
@@ -203,7 +203,7 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 	}
 
 	// fetch memory used by process
-	memUsed := int64(atomic.LoadUint64(&cbft.CurMemoryUsed))
+	memUsed := int64(cbft.FetchCurMemoryUsed())
 
 	// now account for the overhead from documents ready in batches
 	// but not yet executed
@@ -264,7 +264,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 	// quota in the bigger picture).
 	if depth == 0 && a.runningQueryUsed > 0 {
 		// fetch memory used by process
-		memUsed := int64(atomic.LoadUint64(&cbft.CurMemoryUsed))
+		memUsed := int64(cbft.FetchCurMemoryUsed())
 
 		// now account for overhead from the current query
 		memUsed += int64(size)

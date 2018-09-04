@@ -50,8 +50,9 @@ var TotHTTPSLimitListenersOpened uint64
 var TotHTTPSLimitListenersClosed uint64
 
 // Atomic stat that tracks current memory acquired, not including
-// HeapIdle (memory reclaimed); updated every second.
-var CurMemoryUsed uint64
+// HeapIdle (memory reclaimed); updated every second;
+// Used by the app_herder to track memory consumption by process.
+var currentMemoryUsed uint64
 
 // Optional callback when current memory used has dropped since the
 // last sampling.
@@ -948,6 +949,26 @@ type recentInfo struct {
 
 var recentInfoCh = make(chan *recentInfo)
 
+func FetchCurMemoryUsed() uint64 {
+	return atomic.LoadUint64(&currentMemoryUsed)
+}
+
+func UpdateCurMemoryUsed() uint64 {
+	var memStats *runtime.MemStats
+	runtime.ReadMemStats(memStats)
+	return setCurMemoryUsedWith(memStats)
+}
+
+func setCurMemoryUsedWith(memStats *runtime.MemStats) uint64 {
+	// (Sys - HeapIdle) best represents the amount of memory that the go process
+	// is consuming at the moment that is not reusable; the go process has
+	// as idle memory component that it holds on to which can be reused;
+	// HeapIdle includes memory that is idle and the part that has been released.
+	curMemoryUsed := memStats.Sys - memStats.HeapIdle
+	atomic.StoreUint64(&currentMemoryUsed, curMemoryUsed)
+	return curMemoryUsed
+}
+
 func RunRecentInfoCache(mgr *cbgt.Manager) {
 	cfg := mgr.Cfg()
 
@@ -1008,14 +1029,8 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 		runtime.ReadMemStats(&rd.memStats)
 
-		// (Sys - HeapIdle) best represents the amount of memory that the go process
-		// is consuming at the moment that is not reusable; the go process has
-		// as idle memory component that it holds on to which can be reused;
-		// HeapIdle includes memory that is idle and the part that has been released.
 		prevMemoryUsed = curMemoryUsed
-		curMemoryUsed = rd.memStats.Sys - rd.memStats.HeapIdle
-
-		atomic.StoreUint64(&CurMemoryUsed, curMemoryUsed)
+		curMemoryUsed = setCurMemoryUsedWith(&rd.memStats)
 
 		if curMemoryUsed < prevMemoryUsed &&
 			OnMemoryUsedDropped != nil {
