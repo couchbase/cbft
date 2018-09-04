@@ -1689,8 +1689,10 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 			if BleveBatchFlushDuration == 0 {
 				bdp = bdp[:0]
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
+				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
 				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+				batchReq.bdp.m.Unlock()
 				executeBatch(bdp, bdpMaxSeqNums, batchReq.bindex, batchReq.batch)
 				break
 			}
@@ -1698,16 +1700,20 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 			if targetBatch == nil {
 				bdp = bdp[:0]
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
+				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
 				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+				batchReq.bdp.m.Unlock()
 				bindex = batchReq.bindex
 				targetBatch = batchReq.batch
 				break
 			}
 
 			targetBatch.Merge(batchReq.batch)
+			batchReq.bdp.m.Lock()
 			bdp = append(bdp, batchReq.bdp)
 			bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+			batchReq.bdp.m.Unlock()
 
 		case <-tickerCh:
 			if targetBatch != nil {
