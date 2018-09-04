@@ -282,7 +282,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 				a.overQuotaCh <- struct{}{}
 			}
 
-			return rest.ErrorSearchReqRejected
+			return rest.ErrorQueryReqRejected
 		}
 
 		if a.appQuota > 0 && memUsed > a.appQuota {
@@ -296,7 +296,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 				a.overQuotaCh <- struct{}{}
 			}
 
-			return rest.ErrorSearchReqRejected
+			return rest.ErrorQueryReqRejected
 		}
 	}
 
