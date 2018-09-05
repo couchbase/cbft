@@ -809,13 +809,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
 		// check to see if any of the remote searches returned anything
-		// other than 0, 200, 412, 503, these are returned to the user as
+		// other than 0, 200, 412, 429, these are returned to the user as
 		// error status 400, and appear as phase 0 errors detected late.
 		// 0 means we never heard anything back, and that is dealt with
 		// in the following section
 		for _, remoteClient := range remoteClients {
 			lastStatus, lastErrBody := remoteClient.GetLast()
-			if lastStatus == http.StatusServiceUnavailable {
+			if lastStatus == http.StatusTooManyRequests {
 				log.Printf("bleve: remoteClient: %s query reject, statusCode: %d,"+
 					" err: %v", remoteClient.HostPort, lastStatus, err)
 				continue
