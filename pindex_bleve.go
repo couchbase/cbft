@@ -247,7 +247,7 @@ func NewBleveDest(path string, bindex bleve.Index,
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		bleveDest.batchReqChs[i] = make(chan *batchRequest, 1)
-		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh)
+		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh, bindex)
 		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, bindex.Name())
 	}
 
@@ -1650,14 +1650,26 @@ func (t *BleveDestPartition) setLastAsyncBatchErr(err error) {
 	t.m.Unlock()
 }
 
-func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
+func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
+	bindex bleve.Index) {
 	var targetBatch *bleve.Batch
 	bdp := make([]*BleveDestPartition, 0, 50)
 	bdpMaxSeqNums := make([]uint64, 0, 50)
-	var bindex bleve.Index
 	var ticker *time.Ticker
-	if BleveBatchFlushDuration > 0 {
-		ticker = time.NewTicker(BleveBatchFlushDuration)
+	batchFlushDuration := BleveBatchFlushDuration
+
+	index, _, err := bindex.Advanced()
+	if err != nil {
+		log.Printf("pindex_bleve: batchWorker stopped err: %v", err)
+		return
+	}
+	// batch merging disabled for upside-down index
+	if _, ok := index.(*upsidedown.UpsideDownCouch); ok {
+		batchFlushDuration = 0
+	}
+
+	if batchFlushDuration > 0 {
+		ticker = time.NewTicker(batchFlushDuration)
 		defer ticker.Stop()
 	}
 	var tickerCh <-chan time.Time
@@ -1686,7 +1698,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{}) {
 			}
 
 			// if batch merging is disabled then execute the batch
-			if BleveBatchFlushDuration == 0 {
+			if batchFlushDuration == 0 {
 				bdp = bdp[:0]
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
 				batchReq.bdp.m.Lock()
