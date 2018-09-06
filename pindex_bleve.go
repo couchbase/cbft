@@ -170,7 +170,8 @@ func NewBleveParams() *BleveParams {
 	rv := &BleveParams{
 		Mapping: bleve.NewIndexMapping(),
 		Store: map[string]interface{}{
-			"indexType": bleve.Config.DefaultIndexType,
+			"indexType":   bleve.Config.DefaultIndexType,
+			"kvStoreName": bleve.Config.DefaultKVStore,
 		},
 		DocConfig: BleveDocumentConfig{
 			Mode:      "type_field",
@@ -534,7 +535,11 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 	if bleveIndexType != "scorch" {
 		kvStoreName, ok = bleveParams.Store["kvStoreName"].(string)
 		if !ok || kvStoreName == "" {
-			kvStoreName = bleve.Config.DefaultKVStore
+			if bleveIndexType == upsidedown.Name {
+				kvStoreName = "mossStore"
+			} else {
+				kvStoreName = bleve.Config.DefaultKVStore
+			}
 		}
 
 		// Use the "moss" wrapper KVStore if it's allowed, available
@@ -555,7 +560,6 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 				kvStoreName != "moss" &&
 				bleveRegistry.KVStoreConstructorByName("moss") != nil {
 				kvConfig["mossLowerLevelStoreName"] = kvStoreName
-
 				kvStoreName = "moss"
 			}
 
