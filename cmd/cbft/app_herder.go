@@ -142,8 +142,10 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	a.indexes[c] = s
 
 	wasWaiting := false
+	var memUsedPrev, pimPrev, waitingPrev, indexesPrev int64
+	isOverQuota, preIndexingMemory, memUsed := a.overMemQuotaForIndexingLOCKED()
 
-	for a.overMemQuotaForIndexingLOCKED() {
+	for isOverQuota {
 		wasWaiting = true
 
 		atomic.AddUint64(&a.stats.TotWaitingIn, 1)
@@ -151,8 +153,14 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 
 		// If we're over the memory quota, then wait for persister,
 		// query or other progress.
-		log.Printf("app_herder: indexing over quota, indexes: %d, waiting: %d",
-			len(a.indexes), a.waiting)
+		// log only if the values change from the last time.
+		if memUsedPrev != memUsed || pimPrev != preIndexingMemory ||
+			waitingPrev != int64(a.waiting) ||
+			indexesPrev != int64(len(a.indexes)) {
+			log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d,"+
+				" preIndexingMemory: %d, indexes: %d, waiting: %d", a.indexQuota,
+				memUsed, preIndexingMemory, len(a.indexes), a.waiting)
+		}
 
 		if a.overQuotaCh != nil {
 			a.overQuotaCh <- struct{}{}
@@ -160,11 +168,16 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 
 		a.waitCond.Wait()
 
+		// remember the previous values
+		memUsedPrev = memUsed
+		pimPrev = preIndexingMemory
+		waitingPrev = int64(a.waiting)
+		indexesPrev = int64(len(a.indexes))
+
 		a.waiting--
 		atomic.AddUint64(&a.stats.TotWaitingOut, 1)
 
-		log.Printf("app_herder: indexing re-checking quota, indexes: %d, waiting: %d",
-			len(a.indexes), a.waiting)
+		isOverQuota, preIndexingMemory, memUsed = a.overMemQuotaForIndexingLOCKED()
 	}
 
 	if wasWaiting {
@@ -193,13 +206,13 @@ func (a *appHerder) preIndexingMemoryLOCKED() (rv uint64) {
 	return
 }
 
-func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
+func (a *appHerder) overMemQuotaForIndexingLOCKED() (bool, int64, int64) {
 	// MB-29504 workaround to try and prevent indexing from becoming completely
 	// stuck.  The thinking is that if the indexing memUsed is 0, all data has
 	// been flushed to disk, and we should allow it to proceed (even if we're
 	// over quota in the bigger picture)
 	if a.indexingMemoryLOCKED() == 0 {
-		return false
+		return false, 0, 0
 	}
 
 	// fetch memory used by process
@@ -207,17 +220,15 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() bool {
 
 	// now account for the overhead from documents ready in batches
 	// but not yet executed
-	preIndexingMemory := a.preIndexingMemoryLOCKED()
-	memUsed += int64(preIndexingMemory) // TODO: NOTE: this is perhaps double-counting
+	preIndexingMemory := int64(a.preIndexingMemoryLOCKED())
+	memUsed += preIndexingMemory // TODO: NOTE: this is perhaps double-counting
 
 	// make sure indexing doesn't exceed the index portion of the quota
 	if a.indexQuota > 0 && memUsed > a.indexQuota {
-		log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d, preIndexingMemory: %d",
-			a.indexQuota, memUsed, preIndexingMemory)
-		return true
+		return true, preIndexingMemory, memUsed
 	}
 
-	return a.appQuota > 0 && memUsed > a.appQuota
+	return a.appQuota > 0 && memUsed > a.appQuota, preIndexingMemory, memUsed
 }
 
 func (a *appHerder) onPersisterProgress() {
