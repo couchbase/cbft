@@ -775,11 +775,11 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
-	alias, remoteClients, numPIndexes, er := bleveIndexAlias(mgr, indexName, indexUUID, true,
+	alias, remoteClients, numPIndexes, err1 := bleveIndexAlias(mgr, indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh, true, onlyPIndexes)
-	if er != nil {
-		if _, ok := er.(*cbgt.ErrorLocalPIndexHealth); !ok {
-			return er
+	if err1 != nil {
+		if _, ok := err1.(*cbgt.ErrorLocalPIndexHealth); !ok {
+			return err1
 		}
 	}
 
@@ -870,21 +870,28 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			return &remoteConsistencyWaitError
 		}
 
-		if er != nil {
-			if err, ok := er.(*cbgt.ErrorLocalPIndexHealth); ok && len(err.IndexErrMap) > 0 {
+		if err1 != nil {
+			if err2, ok := err1.(*cbgt.ErrorLocalPIndexHealth); ok && len(err2.IndexErrMap) > 0 {
 				// populate the searchResuls with the details of
 				// pindexes not searched/covered in this query.
 				if searchResult.Status.Errors == nil {
 					searchResult.Status.Errors = make(map[string]error)
 				}
-				for pi, e := range err.IndexErrMap {
+				for pi, e := range err2.IndexErrMap {
 					searchResult.Status.Errors[pi] = e
 					searchResult.Status.Failed++
 					searchResult.Status.Total++
 				}
 			}
 		}
+
 		mustEncode(res, searchResult)
+
+		// update return error status to indicate any errors within the
+		// search result that was already propagated as response.
+		if searchResult.Status != nil && len(searchResult.Status.Errors) > 0 {
+			err = rest.ErrorAlreadyPropagated
+		}
 	}
 
 	return err
