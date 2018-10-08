@@ -268,7 +268,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 		record := httptest.NewRecorder()
 		router.ServeHTTP(record, req)
 
-		actualNames, err := sourceNamesFromReq(s, req, test.method, test.path)
+		actualNames, err := sourceNamesFromReq(s, &restRequestParser{req: req}, test.method, test.path)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
 		}
@@ -446,7 +446,7 @@ func TestPreparePerms(t *testing.T) {
 			req.Body = ioutil.NopCloser(bytes.NewBuffer(test.body))
 		}
 
-		actualPerms, err := preparePerms(s, req, test.method, test.path)
+		actualPerms, err := preparePerms(s, &restRequestParser{req: req}, test.method, test.path)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
 		}
@@ -580,7 +580,7 @@ func TestFilteredListIndexes(t *testing.T) {
 			t.Fatal(err)
 		}
 		var actualPerms []string
-		actualPerms, err = preparePerms(s, req, test.method, test.path)
+		actualPerms, err = preparePerms(s, &restRequestParser{req: req}, test.method, test.path)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
 		}
@@ -634,7 +634,7 @@ func TestPingAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualPerms, err := preparePerms(nil, req, "GET", path)
+	actualPerms, err := preparePerms(nil, &restRequestParser{req: req}, "GET", path)
 	if err != nil {
 		t.Errorf("error preparing perms: %v", err)
 	}

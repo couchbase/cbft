@@ -100,7 +100,9 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 		return false
 	}
 
-	perms, err := preparePerms(mgr, req, req.Method, path)
+	r := &restRequestParser{req: req}
+
+	perms, err := preparePerms(mgr, r, req.Method, path)
 	if err != nil {
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: preparePerms,"+
@@ -183,13 +185,79 @@ type definitionLookuper interface {
 	GetIndexDefs(refresh bool) (*cbgt.IndexDefs, map[string]*cbgt.IndexDef, error)
 }
 
+// requestParser is an interface which both the rest and rpc based
+// services to implement for eliciting the bare minimum parameters
+// needed for performing the authentication
+type requestParser interface {
+	GetIndexName() (string, error)
+	GetPIndexName() (string, error)
+	GetIndexDef() (*cbgt.IndexDef, error)
+	GetRequest() (interface{}, string)
+}
+
+var errInvalidHttpRequest = fmt.Errorf("rest_auth: invalid http request")
+
+type restRequestParser struct {
+	req *http.Request
+}
+
+func (p *restRequestParser) GetRequest() (interface{}, string) {
+	return p.req, "REST"
+}
+
+func (p *restRequestParser) GetIndexName() (string, error) {
+	return rest.IndexNameLookup(p.req), nil
+}
+
+func (p *restRequestParser) GetPIndexName() (string, error) {
+	pindexName := rest.PIndexNameLookup(p.req)
+	if pindexName != "" {
+		return pindexName, nil
+	}
+	return "", fmt.Errorf("missing pindexName")
+}
+
+func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
+	var requestBody []byte
+	var err error
+	if p.req.Body != nil {
+		requestBody, err = ioutil.ReadAll(p.req.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// reset req.Body so it can be read later by the handler
+	p.req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+
+	var indexDef cbgt.IndexDef
+	if len(requestBody) > 0 {
+		err := json.Unmarshal(requestBody, &indexDef)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if indexDef.Type == "" {
+		// if indexType wasn't found in the request body, attempt reading it
+		// from the form entries.
+		indexDef.Type = p.req.FormValue("indexType")
+	}
+
+	return &indexDef, nil
+}
+
+func (p *restRequestParser) GetSourceName() (string, error) {
+	return p.req.FormValue("sourceName"), nil
+}
+
 var errIndexNotFound = fmt.Errorf("index not found")
 var errPIndexNotFound = fmt.Errorf("pindex not found")
 var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 
-func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
+func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
-	indexName := rest.IndexNameLookup(req)
+	indexName, _ := rp.GetIndexName() //rest.IndexNameLookup(req)
 	if indexName != "" {
 		_, indexDefsByName, err := mgr.GetIndexDefs(false)
 		if err != nil {
@@ -201,7 +269,7 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 			if method == "PUT" {
 				// Special case where PUT represents an index creation
 				// when there's no indexDef.
-				return findCouchbaseSourceNames(req, indexName, indexDefsByName)
+				return findCouchbaseSourceNames(rp, indexName, indexDefsByName)
 			}
 			return nil, errIndexNotFound
 		}
@@ -222,7 +290,7 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 		}
 
 		// now also add any sources from new definition in the request
-		newSourceNames, err := findCouchbaseSourceNames(req, indexName, indexDefsByName)
+		newSourceNames, err := findCouchbaseSourceNames(rp, indexName, indexDefsByName)
 		if err != nil {
 			return nil, err
 		}
@@ -230,19 +298,20 @@ func sourceNamesFromReq(mgr definitionLookuper, req *http.Request,
 		return append(sourceNames, newSourceNames...), nil
 	}
 
-	pindexName := rest.PIndexNameLookup(req)
-	if pindexName != "" {
-		pindex := mgr.GetPIndex(pindexName)
-		if pindex == nil {
-			return nil, errPIndexNotFound
-		}
-		return []string{pindex.SourceName}, nil
+	pindexName, err := rp.GetPIndexName()
+	if pindexName == "" || err != nil {
+		return nil, fmt.Errorf("missing indexName/pindexName, err: %v", err)
 	}
 
-	return nil, fmt.Errorf("missing indexName/pindexName")
+	pindex := mgr.GetPIndex(pindexName)
+	if pindex == nil {
+		return nil, errPIndexNotFound
+	}
+
+	return []string{pindex.SourceName}, nil
 }
 
-func preparePerms(mgr definitionLookuper, req *http.Request,
+func preparePerms(mgr definitionLookuper, r requestParser,
 	method, path string) ([]string, error) {
 	perm := restPermsMap[method+":"+path]
 	if perm == "" {
@@ -252,9 +321,8 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 	} else if strings.Index(perm, "{}") >= 0 {
 		return nil, nil // Need dynamic post-filtering of REST response.
 	}
-
 	if strings.Index(perm, "<sourceName>") >= 0 {
-		sourceNames, err := sourceNamesFromReq(mgr, req, method, path)
+		sourceNames, err := sourceNamesFromReq(mgr, r, method, path)
 		if err != nil {
 			return nil, err
 		}
@@ -270,38 +338,22 @@ func preparePerms(mgr definitionLookuper, req *http.Request,
 	return []string{perm}, nil
 }
 
-func findCouchbaseSourceNames(req *http.Request, indexName string,
+func findCouchbaseSourceNames(r requestParser, indexName string,
 	indexDefsByName map[string]*cbgt.IndexDef) (rv []string, err error) {
-	var requestBody []byte
-
-	if req.Body != nil {
-		requestBody, err = ioutil.ReadAll(req.Body)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// reset req.Body so it can be read later by the handler
-	req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
-
-	var indexDef cbgt.IndexDef
-	if len(requestBody) > 0 {
-		err := json.Unmarshal(requestBody, &indexDef)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if indexDef.Type == "" {
-		// if indexType wasn't found in the request body, attempt reading it
-		// from the form entries.
-		indexDef.Type = req.FormValue("indexType")
+	indexDef, err := r.GetIndexDef()
+	if err != nil || indexDef == nil {
+		return nil, err
 	}
 
 	if indexDef.Type == "fulltext-index" {
-		sourceType, sourceName := rest.ExtractSourceTypeName(req, &indexDef, indexName)
-		if sourceType == "couchbase" {
-			return []string{sourceName}, nil
+		t, reqType := r.GetRequest()
+		req := t.(*http.Request)
+		// TODO handle this for RPCs.
+		if reqType == "REST" {
+			sourceType, sourceName := rest.ExtractSourceTypeName(req, indexDef, indexName)
+			if sourceType == "couchbase" {
+				return []string{sourceName}, nil
+			}
 		}
 	} else if indexDef.Type == "fulltext-alias" {
 		// create a copy of indexDefNames with the new one added
@@ -310,7 +362,7 @@ func findCouchbaseSourceNames(req *http.Request, indexName string,
 		for k, v := range indexDefsByName {
 			futureIndexDefsByName[k] = v
 		}
-		futureIndexDefsByName[indexName] = &indexDef
+		futureIndexDefsByName[indexName] = indexDef
 
 		return sourceNamesForAlias(indexName, futureIndexDefsByName, 0)
 	}

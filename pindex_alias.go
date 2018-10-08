@@ -233,7 +233,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 				subAlias, _, _, err = bleveIndexAlias(mgr,
 					targetName, targetSpec.IndexUUID, ensureCanRead,
 					consistencyParams, cancelCh, true, nil,
-					partitionSelection)
+					partitionSelection, addIndexClients)
 				if err != nil {
 					return err
 				}

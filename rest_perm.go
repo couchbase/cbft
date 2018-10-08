@@ -130,4 +130,7 @@ none
 
 GET /debug/vars
 cluster.settings.fts!read
+
+RPC /Search
+cluster.bucket[<sourceName>].fts!read
 `

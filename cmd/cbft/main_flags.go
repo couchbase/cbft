@@ -25,6 +25,7 @@ const defaultDataDir = "data"
 type cbftFlags struct {
 	BindHTTP   string
 	BindHTTPS  string
+	BindGRPC   string
 	CfgConnect string
 	Container  string
 	DataDir    string
@@ -95,6 +96,10 @@ func initFlags(flags *cbftFlags) map[string][]string {
 		"local address:port where this node will listen and"+
 			"\nserve HTTPS/REST API requests and the web-based"+
 			"\nadmin UI; by default, disabled; for example, ':18094'.")
+	s(&flags.BindGRPC,
+		[]string{"bindGrpc"}, "ADDR:PORT", "",
+		"local address:port where this node will listen and"+
+			"\nserve GRPC requests; for example, ':28094'.")
 	s(&flags.CfgConnect,
 		[]string{"cfgConnect", "cfg", "c"}, "CFG_CONNECT", "simple",
 		"connection string to a configuration provider/server"+

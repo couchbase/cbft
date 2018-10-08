@@ -64,7 +64,7 @@ func init() {
 
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
 
-	cbgt.CfgAppVersion = "6.0.0"
+	cbgt.CfgAppVersion = "6.5.0"
 }
 
 func main() {
@@ -209,6 +209,11 @@ func main() {
 		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
+	if flags.BindGRPC != "" {
+		bindGRPCList := strings.Split(flags.BindGRPC, ",")
+		options["bindGRPC"] = bindGRPCList[0]
+	}
+
 	routerInUse, err = mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
 		bindHTTPList[0], flags.DataDir,
@@ -281,6 +286,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return nil, fmt.Errorf("unable to read certFile, err: %v", err)
 		}
 		extrasMap["tlsCertPEM"] = string(certPEMBlock)
+	}
+
+	if _, ok := options["bindGRPC"]; ok {
+		extrasMap["bindGRPC"] = options["bindGRPC"]
 	}
 
 	extrasJSON, err := json.Marshal(extrasMap)
@@ -438,6 +447,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			log.Warnf("main: failed to start audit service with err: %v", err)
 		}
 	}
+
+	go startGrpcServer(mgr, &flags)
 
 	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)

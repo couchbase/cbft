@@ -33,7 +33,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 
 	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
@@ -661,7 +661,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
 	alias, _, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
-		false, nil, "")
+		false, nil, "", addIndexClients)
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
@@ -779,14 +779,20 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// setupContextAndCancelCh always exits
 	defer cancel()
 
+	rcAdder := addIndexClients
+	// switch to grpc for scatter gather in an advanced enough cluster
+	if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.0.0"); ok {
+		rcAdder = addGrpcClients
+	}
+
 	var onlyPIndexes map[string]bool
 	if len(queryPIndexes.PIndexNames) > 0 {
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
 	alias, remoteClients, numPIndexes, err1 := bleveIndexAlias(mgr, indexName,
-		indexUUID, true, queryCtlParams.Ctl.Consistency,
-		cancelCh, true, onlyPIndexes, queryCtlParams.Ctl.PartitionSelection)
+		indexUUID, true, queryCtlParams.Ctl.Consistency, cancelCh, true,
+		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, rcAdder)
 	if err1 != nil {
 		if _, ok := err1.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return err1
@@ -822,6 +828,24 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
+		err = processSearchResult(&queryCtlParams, searchResult,
+			remoteClients, err, err1)
+		mustEncode(res, searchResult)
+
+		// update return error status to indicate any errors within the
+		// search result that was already propagated as response.
+		if searchResult.Status != nil && len(searchResult.Status.Errors) > 0 {
+			err = rest.ErrorAlreadyPropagated
+		}
+	}
+
+	return err
+}
+
+func processSearchResult(queryCtlParams *cbgt.QueryCtlParams,
+	searchResult *bleve.SearchResult, remoteClients []RemoteClient,
+	searchErr, aliasErr error) error {
+	if searchResult != nil {
 		// check to see if any of the remote searches returned anything
 		// other than 0, 200, 412, 429, these are returned to the user as
 		// error status 400, and appear as phase 0 errors detected late.
@@ -831,7 +855,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			lastStatus, lastErrBody := remoteClient.GetLast()
 			if lastStatus == http.StatusTooManyRequests {
 				log.Printf("bleve: remoteClient: %s query reject, statusCode: %d,"+
-					" err: %v", remoteClient.HostPort, lastStatus, err)
+					" err: %v", remoteClient.GetHostPort(), lastStatus, searchErr)
 				continue
 			}
 			if lastStatus != http.StatusOK &&
@@ -858,7 +882,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				var remoteConsistencyErr = struct {
 					StartEndSeqs map[string][]uint64 `json:"startEndSeqs"`
 				}{}
-				err = UnmarshalJSON(lastErrBody, &remoteConsistencyErr)
+				err := UnmarshalJSON(lastErrBody, &remoteConsistencyErr)
 				if err == nil {
 					for k, v := range remoteConsistencyErr.StartEndSeqs {
 						remoteConsistencyWaitError.StartEndSeqs[k] = v
@@ -880,8 +904,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			return &remoteConsistencyWaitError
 		}
 
-		if err1 != nil {
-			if err2, ok := err1.(*cbgt.ErrorLocalPIndexHealth); ok && len(err2.IndexErrMap) > 0 {
+		if aliasErr != nil {
+			if err2, ok := aliasErr.(*cbgt.ErrorLocalPIndexHealth); ok && len(err2.IndexErrMap) > 0 {
 				// populate the searchResuls with the details of
 				// pindexes not searched/covered in this query.
 				if searchResult.Status.Errors == nil {
@@ -894,17 +918,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				}
 			}
 		}
-
-		mustEncode(res, searchResult)
-
-		// update return error status to indicate any errors within the
-		// search result that was already propagated as response.
-		if searchResult.Status != nil && len(searchResult.Status.Errors) > 0 {
-			err = rest.ErrorAlreadyPropagated
-		}
 	}
-
-	return err
+	return nil
 }
 
 // ---------------------------------------------------------
@@ -1897,13 +1912,14 @@ func fetchHttp2ClientForNode(uuid string, pem []byte) (*http.Client, error) {
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
-	partitionSelection string) (
-	bleve.IndexAlias, []*IndexClient, int, error) {
+	partitionSelection string, rcAdder addRemoteClients) (
+	bleve.IndexAlias, []RemoteClient, int, error) {
+
 	alias := bleve.NewIndexAlias()
 
 	remoteClients, numPIndexes, err := bleveIndexTargets(mgr, indexName, indexUUID,
 		ensureCanRead, consistencyParams, cancelCh,
-		groupByNode, onlyPIndexes, alias, partitionSelection)
+		groupByNode, onlyPIndexes, alias, partitionSelection, rcAdder)
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); ok {
 			return alias, remoteClients, numPIndexes, err
@@ -1922,71 +1938,13 @@ type BleveIndexCollector interface {
 	Add(i ...bleve.Index)
 }
 
-var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
-	planPIndexFilterName string, partitionSelection string) (
-	[]*cbgt.PIndex, []*cbgt.RemotePlanPIndex, []string, error) {
-	if mgr == nil {
-		return nil, nil, nil, fmt.Errorf("manager not defined")
-	}
-
-	return mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
-		IndexName:            indexName,
-		IndexUUID:            indexUUID,
-		PlanPIndexFilterName: planPIndexFilterName,
-	}, nil, false)
-}
-
-func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
-	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
-	collector BleveIndexCollector, partitionSelection string) (
-	[]*IndexClient, int, error) {
-	planPIndexFilterName := "ok"
-	if ensureCanRead {
-		planPIndexFilterName = "canRead"
-	}
-
-	if onlyPIndexes != nil {
-		// select all local pindexes
-		partitionSelection = "advanced-local"
-	}
-
-	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
-		FetchBleveTargets(mgr, indexName, indexUUID,
-			planPIndexFilterName, partitionSelection)
-	if err != nil {
-		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
-	}
-	if consistencyParams != nil &&
-		consistencyParams.Results == "complete" &&
-		len(missingPIndexNames) > 0 {
-		return nil, 0, fmt.Errorf("bleve: some pindexes aren't reachable,"+
-			" missing: %v", len(missingPIndexNames))
-	}
-
-	numPIndexes := len(localPIndexesAll) + len(remotePlanPIndexes)
-
-	localPIndexes := localPIndexesAll
-	if onlyPIndexes != nil {
-		localPIndexes = make([]*cbgt.PIndex, 0, len(localPIndexesAll))
-		for _, localPIndex := range localPIndexesAll {
-			if onlyPIndexes[localPIndex.Name] {
-				localPIndexes = append(localPIndexes, localPIndex)
-			}
-		}
-	}
-
-	for _, missingPIndexName := range missingPIndexNames {
-		if onlyPIndexes == nil || onlyPIndexes[missingPIndexName] {
-			collector.Add(&MissingPIndex{
-				name: missingPIndexName,
-			})
-		}
-	}
-
+func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
+	remotePlanPIndexes []*cbgt.RemotePlanPIndex, consistencyParams *cbgt.ConsistencyParams,
+	onlyPIndexes map[string]bool, collector BleveIndexCollector,
+	groupByNode bool) ([]RemoteClient, error) {
 	prefix := mgr.Options()["urlPrefix"]
-
 	remoteClients := make([]*IndexClient, 0, len(remotePlanPIndexes))
+	rv := make([]RemoteClient, 0, len(remotePlanPIndexes))
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		if onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name] {
 			continue
@@ -2036,13 +1994,13 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		if http2Enabled {
 			extrasCertPEM, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("tlsCertPEM")
 			if er != nil {
-				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets: remote CertFile, err: %v", er)
+				return nil, fmt.Errorf("bleveIndexTargets: remote CertFile, err: %v", er)
 			}
 
 			http2Client, er := fetchHttp2ClientForNode(remotePlanPIndex.NodeDef.UUID,
 				[]byte(extrasCertPEM.(string)))
 			if er != nil {
-				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets, err: %v", er)
+				return nil, fmt.Errorf("bleveIndexTargets, err: %v", er)
 			}
 
 			indexClient.httpClient = http2Client
@@ -2055,14 +2013,85 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	if groupByNode {
-		remoteClients, err = GroupIndexClientsByHostPort(remoteClients)
-		if err != nil {
-			return nil, numPIndexes, err
-		}
+		remoteClients, _ = GroupIndexClientsByHostPort(remoteClients)
 	}
 
 	for _, remoteClient := range remoteClients {
 		collector.Add(remoteClient)
+		rv = append(rv, remoteClient)
+	}
+
+	return rv, nil
+}
+
+var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
+	planPIndexFilterName string, partitionSelection string) (
+	[]*cbgt.PIndex, []*cbgt.RemotePlanPIndex, []string, error) {
+	if mgr == nil {
+		return nil, nil, nil, fmt.Errorf("manager not defined")
+	}
+
+	return mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
+		IndexName:            indexName,
+		IndexUUID:            indexUUID,
+		PlanPIndexFilterName: planPIndexFilterName,
+	}, nil, false)
+}
+
+func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
+	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
+	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
+	collector BleveIndexCollector, partitionSelection string,
+	rcAdder addRemoteClients) (
+	[]RemoteClient, int, error) {
+	planPIndexFilterName := "ok"
+	if ensureCanRead {
+		planPIndexFilterName = "canRead"
+	}
+
+	if onlyPIndexes != nil {
+		// select all local pindexes
+		partitionSelection = "advanced-local"
+	}
+
+	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
+		FetchBleveTargets(mgr, indexName, indexUUID,
+			planPIndexFilterName, partitionSelection)
+	if err != nil {
+		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
+	}
+	if consistencyParams != nil &&
+		consistencyParams.Results == "complete" &&
+		len(missingPIndexNames) > 0 {
+		return nil, 0, fmt.Errorf("bleve: some pindexes aren't reachable,"+
+			" missing: %v", len(missingPIndexNames))
+	}
+
+	numPIndexes := len(localPIndexesAll) + len(remotePlanPIndexes)
+
+	localPIndexes := localPIndexesAll
+	if onlyPIndexes != nil {
+		localPIndexes = make([]*cbgt.PIndex, 0, len(localPIndexesAll))
+		for _, localPIndex := range localPIndexesAll {
+			if onlyPIndexes[localPIndex.Name] {
+				localPIndexes = append(localPIndexes, localPIndex)
+			}
+		}
+	}
+
+	for _, missingPIndexName := range missingPIndexNames {
+		if onlyPIndexes == nil || onlyPIndexes[missingPIndexName] {
+			collector.Add(&MissingPIndex{
+				name: missingPIndexName,
+			})
+		}
+	}
+
+	remoteClients, err := rcAdder(mgr, indexName, indexUUID,
+		remotePlanPIndexes, consistencyParams, onlyPIndexes,
+		collector, groupByNode)
+	if err != nil {
+		return nil, numPIndexes, err
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.

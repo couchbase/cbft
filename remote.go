@@ -31,6 +31,21 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
+// RemoteClient represents a generic interface to be implemented
+// by all remote clients like IndexClient/GrpcClient.
+type RemoteClient interface {
+	bleve.Index
+
+	GetHostPort() string
+	GetLast() (int, []byte)
+	SetStreamHandler(streamHandler)
+}
+
+type addRemoteClients func(mgr *cbgt.Manager, indexName, indexUUID string,
+	remotePlanPIndexes []*cbgt.RemotePlanPIndex,
+	consistencyParams *cbgt.ConsistencyParams, onlyPIndexes map[string]bool,
+	collector BleveIndexCollector, groupByNode bool) ([]RemoteClient, error)
+
 const RemoteRequestOverhead = 500 * time.Millisecond
 
 var HttpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
@@ -84,6 +99,10 @@ func (r *IndexClient) GetLast() (int, []byte) {
 	r.lastMutex.RLock()
 	defer r.lastMutex.RUnlock()
 	return r.lastSearchStatus, r.lastErrBody
+}
+
+func (r *IndexClient) GetHostPort() string {
+	return r.HostPort
 }
 
 func (r *IndexClient) Name() string {
@@ -357,6 +376,10 @@ func (r *IndexClient) AuthType() string {
 		return r.mgr.Options()["authType"]
 	}
 	return ""
+}
+
+func (r *IndexClient) SetStreamHandler(s streamHandler) {
+	// PLACEHOLDER
 }
 
 // -----------------------------------------------------
