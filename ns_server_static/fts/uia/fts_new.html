@@ -134,8 +134,8 @@
         </div>
       </div>
 
-      <div class="row items-top formrow width-480" ng-show="newSourceType && newSourceType != 'nil'">
-        <div class="column width-6">
+      <div class="row items-top formrow" ng-show="newSourceType && newSourceType != 'nil'">
+        <div class="column">
           <!-- NUMBER OF REPLICAS *********************** -->
           <label for="inputNumReplicas" class="inline">Index Replicas</label>
           <span class="fa-stack icon-info"
@@ -150,7 +150,7 @@
                   ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
           </select>
         </div>
-        <div class"width-6">
+        <div class="column">
           <!-- STORE OPTIONS ******************************* -->
           <label for="inputStoreOptions" class="inline">Index Type</label>
           <span class="fa-stack icon-info"
@@ -163,6 +163,18 @@
                   class="midwide"
                   ng-options="item for item in indexStoreOptions">
           </select>
+        </div>
+        <div class="width-6">
+          <!-- NUMBER OF PINDEXES *********************** -->
+          <label for="inputNumPindexes" class="inline">Index Partitions</label>
+          <span class="fa-stack icon-info"
+                uib-tooltip="Number of index partitions to cover all vbuckets." tooltip-placement="right">
+              <span class="icon fa-circle-thin fa-stack-2x"></span>
+              <span class="icon fa-info fa-stack-1x"></span>
+          </span>
+          <input ng-model="$parent.numPIndexes"
+                 type="number"
+                 class="width-1">
         </div>
       </div>
 

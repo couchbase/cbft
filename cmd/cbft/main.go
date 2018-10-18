@@ -429,6 +429,17 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// If vbuckets is among the options provided, ensure that it holds a valid
+	// value.
+	if options["vbuckets"] != "" {
+		var vbuckets int
+		vbuckets, err = strconv.Atoi(options["vbuckets"])
+		if err != nil || vbuckets < 0 {
+			return nil, fmt.Errorf("error: invalid entry for"+
+				"vbuckets: %v", options["vbuckets"])
+		}
+	}
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,

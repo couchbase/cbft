@@ -540,6 +540,16 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
                                 newPlanParamsObj["numReplicas"] = numReplicas;
                                 newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
                             }
+
+                            var numPIndexes = $scope.numPIndexes;
+                            if (numPIndexes > 0) {
+                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["indexPartitions"] = numPIndexes;
+                                newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            } else {
+                                errs.push("Index Partitions cannot be less than 1");
+                            }
                         } catch (e) {
                             errs.push("exception: " + e);
                         }
@@ -719,6 +729,8 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     if (initKind == "edit" || initKind == "create") {
         $scope.replicaOptions = [0];
         $scope.numReplicas = $scope.replicaOptions[0];
+        $scope.vbuckets = 1024;
+        $scope.numPIndexes = 0;
         $http.get('/api/conciseOptions').
         then(function(response) {
             var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
@@ -743,15 +755,28 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 }
             }
 
+            if (response.data.vbuckets != "") {
+                $scope.vbuckets = parseInt(response.data.vbuckets)
+            }
+
             if ($scope.newIndexType != "fulltext-alias") {
                 if ($scope.newPlanParams) {
                     try {
                         var newPlanParamsObj = JSON.parse($scope.newPlanParams);
+
                         $scope.numReplicas = $scope.replicaOptions[newPlanParamsObj["numReplicas"] || 0];
                         delete newPlanParamsObj["numReplicas"];
                         $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+
+                        if (angular.isDefined(newPlanParamsObj["indexPartitions"])) {
+                            $scope.numPIndexes = newPlanParamsObj["indexPartitions"];
+                        }
+                        if ($scope.numPIndexes == 0) {
+                            var maxPartitionsPerPIndex = newPlanParamsObj["maxPartitionsPerPIndex"];
+                            $scope.numPIndexes = Math.ceil($scope.vbuckets / maxPartitionsPerPIndex);
+                        }
                     } catch (e) {
-                        console.log("blevePIndexInitController numReplicas", initKind, e)
+                        console.log("blevePIndexInitController numPlanParams", initKind, e)
                     }
                 }
             } else {
