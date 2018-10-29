@@ -19,6 +19,10 @@ processes.
 Queries on a cbft index will be scatter/gather'ed across the relevant,
 distributed cbft processes.
 
+# See also
+
+[Full-text search](https://www.couchbase.com/products/full-text-search)
+
 # Licenses
 
 * Apache 2.0.
