@@ -35,6 +35,9 @@ func initBleveOptions(options map[string]string) error {
 	bleveMapping.MappingJSONStrict = true
 	bleveSearcher.DisjunctionMaxClauseCount = 1024
 
+	scorch.DefaultPersisterNapTimeMSec = 2000 // ms
+	scorch.DefaultPersisterNapUnderNumFiles = 1000
+
 	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]
 	if bleveKVStoreMetricsAllow != "" {
 		v, err := strconv.ParseBool(bleveKVStoreMetricsAllow)
