@@ -490,16 +490,26 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		})
 
 	// Setup all debug/pprof routes
-	router.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/block", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/goroutine", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/heap", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/mutex", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/threadcreate", pprof.Index)
-	router.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
-	router.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
-	router.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
-	router.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
+	router.Handler("GET", "/debug/pprof/",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/block",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/goroutine",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/heap",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/mutex",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/threadcreate",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
+	router.Handler("GET", "/debug/pprof/cmdline",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Cmdline)))
+	router.Handler("GET", "/debug/pprof/profile",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Profile)))
+	router.Handler("GET", "/debug/pprof/symbol",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Symbol)))
+	router.Handler("GET", "/debug/pprof/trace",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Trace)))
 
 	// Handle expvar route(s)
 	router.Handler("GET", "/debug/vars",
