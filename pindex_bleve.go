@@ -1861,6 +1861,20 @@ type BleveIndexCollector interface {
 	Add(i ...bleve.Index)
 }
 
+var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
+	planPIndexFilterName string) (
+	[]*cbgt.PIndex, []*cbgt.RemotePlanPIndex, []string, error) {
+	if mgr == nil {
+		return nil, nil, nil, fmt.Errorf("manager not defined")
+	}
+
+	return mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
+		IndexName:            indexName,
+		IndexUUID:            indexUUID,
+		PlanPIndexFilterName: planPIndexFilterName,
+	}, nil, false)
+}
+
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
@@ -1871,11 +1885,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
-		mgr.CoveringPIndexesEx(cbgt.CoveringPIndexesSpec{
-			IndexName:            indexName,
-			IndexUUID:            indexUUID,
-			PlanPIndexFilterName: planPIndexFilterName,
-		}, nil, false)
+		FetchBleveTargets(mgr, indexName, indexUUID, planPIndexFilterName)
 	if err != nil {
 		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
