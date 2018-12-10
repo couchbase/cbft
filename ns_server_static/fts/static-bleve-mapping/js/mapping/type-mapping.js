@@ -30,6 +30,10 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     if (options["defaultFieldIncludeInAll"] != undefined) {
         defaultFieldIncludeInAll = options["defaultFieldIncludeInAll"];
     }
+    var defaultFieldDocValues = true;
+    if (options["defaultFieldDocValues"] != undefined) {
+        defaultFieldDocValues = options["defaultFieldDocValues"]
+    }
     var defaultFieldDateFormat = null;
     if (options["defaultFieldDateFormat"] != undefined) {
         defaultFieldDateFormat = options["defaultFieldDateFormat"];
@@ -57,6 +61,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             'index': null,
             'include_term_vectors': null,
             'include_in_all': null,
+            'docvalues': null,
             'date_format': null,
         },
         "mapping": {
@@ -102,6 +107,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             index: defaultFieldIndex,
             include_term_vectors: defaultFieldIncludeTermVectors,
             include_in_all: defaultFieldIncludeInAll,
+            docvalues: defaultFieldDocValues,
             date_format: defaultFieldDateFormat,
         };
         f._editing = function() { removeEntry(mapping.fields, f); };

@@ -146,6 +146,7 @@
               <span ng-if="field.include_term_vectors && field.type == 'text'">
                 | include term vectors
               </span>
+              <span ng-if="field.docvalues">| docvalues</span>
             </span>
           </span>
         </span>
@@ -213,6 +214,9 @@
             <label ng-if="field.type == 'text'">
                    <input type="checkbox" ng-model="field.include_term_vectors"/>
                    include term vectors
+            </label>
+            <label><input type="checkbox" ng-model="field.docvalues"/>
+                  docvalues
             </label>
           </div>
         </div>
