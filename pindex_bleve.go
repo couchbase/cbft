@@ -652,7 +652,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 	uint64, error) {
 	alias, _, _, err := bleveIndexAlias(mgr, indexName, indexUUID, false, nil, nil,
-		false, nil)
+		false, nil, "")
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return 0, fmt.Errorf("bleve: CountBleve indexAlias error,"+
@@ -775,8 +775,9 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
-	alias, remoteClients, numPIndexes, err1 := bleveIndexAlias(mgr, indexName, indexUUID, true,
-		queryCtlParams.Ctl.Consistency, cancelCh, true, onlyPIndexes)
+	alias, remoteClients, numPIndexes, err1 := bleveIndexAlias(mgr, indexName,
+		indexUUID, true, queryCtlParams.Ctl.Consistency,
+		cancelCh, true, onlyPIndexes, queryCtlParams.Ctl.PartitionSelection)
 	if err1 != nil {
 		if _, ok := err1.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return err1
@@ -1836,13 +1837,14 @@ var totRemoteHttp2 uint64
 // activities.
 func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
-	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool) (
+	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
+	partitionSelection string) (
 	bleve.IndexAlias, []*IndexClient, int, error) {
 	alias := bleve.NewIndexAlias()
 
 	remoteClients, numPIndexes, err := bleveIndexTargets(mgr, indexName, indexUUID,
 		ensureCanRead, consistencyParams, cancelCh,
-		groupByNode, onlyPIndexes, alias)
+		groupByNode, onlyPIndexes, alias, partitionSelection)
 	if err != nil {
 		if _, ok := err.(*cbgt.ErrorLocalPIndexHealth); ok {
 			return alias, remoteClients, numPIndexes, err
@@ -1862,7 +1864,7 @@ type BleveIndexCollector interface {
 }
 
 var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
-	planPIndexFilterName string) (
+	planPIndexFilterName string, partitionSelection string) (
 	[]*cbgt.PIndex, []*cbgt.RemotePlanPIndex, []string, error) {
 	if mgr == nil {
 		return nil, nil, nil, fmt.Errorf("manager not defined")
@@ -1878,14 +1880,16 @@ var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
-	collector BleveIndexCollector) ([]*IndexClient, int, error) {
+	collector BleveIndexCollector, partitionSelection string) (
+	[]*IndexClient, int, error) {
 	planPIndexFilterName := "ok"
 	if ensureCanRead {
 		planPIndexFilterName = "canRead"
 	}
 
 	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
-		FetchBleveTargets(mgr, indexName, indexUUID, planPIndexFilterName)
+		FetchBleveTargets(mgr, indexName, indexUUID,
+			planPIndexFilterName, partitionSelection)
 	if err != nil {
 		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
