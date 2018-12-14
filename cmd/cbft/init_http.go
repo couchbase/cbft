@@ -219,8 +219,13 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		if authType == "cbauth" {
 			// Set MinTLSVersion and CipherSuites to what is provided by
 			// cbauth if authType were cbauth.
-			config.MinVersion = cbauth.MinTLSVersion()
-			config.CipherSuites = cbauth.CipherSuites()
+			cbauthTLSCfg, err1 := cbauth.GetTLSConfig()
+			if err1 != nil {
+				log.Fatalf("init_http: GetTLSConfig, err: %v", err1)
+			}
+			config.MinVersion = cbauthTLSCfg.MinVersion
+			config.CipherSuites = cbauthTLSCfg.CipherSuites
+			config.PreferServerCipherSuites = cbauthTLSCfg.PreferServerCipherSuites
 
 			clientAuthType, er := cbauth.GetClientCertAuthType()
 			if er != nil {
