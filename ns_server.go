@@ -153,14 +153,15 @@ var statkeys = []string{
 	// "total_gc"   -- PROCESS-LEVEL stat.
 	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
 
-	"total_queries",             // per-index stat.
-	"avg_queries_latency",       // per-index stat.
-	"total_request_time",        // per-index stat.
-	"total_queries_slow",        // per-index stat.
-	"total_queries_timeout",     // per-index stat.
-	"total_queries_error",       // per-index stat.
-	"total_bytes_query_results", // per-index stat.
-	"total_term_searchers",      // per-index stat.
+	"total_queries",                 // per-index stat.
+	"avg_queries_latency",           // per-index stat.
+	"total_request_time",            // per-index stat.
+	"total_queries_slow",            // per-index stat.
+	"total_queries_timeout",         // per-index stat.
+	"total_queries_error",           // per-index stat.
+	"total_bytes_query_results",     // per-index stat.
+	"total_term_searchers",          // per-index stat.
+	"total_term_searchers_finished", // per-index stat.
 }
 
 // NewIndexStat ensures that all index stats
@@ -457,6 +458,10 @@ func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_term_searchers", float64(vuint64), nsIndexStat)
 	}
+	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/term_searchers_finished")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat)
+	}
 	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat)
@@ -623,6 +628,7 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 var fixedSuffixToStatNameMapping = map[string]string{
 	"compacts":                     "total_compactions",
 	"term_searchers_started":       "total_term_searchers",
+	"term_searchers_finished":      "total_term_searchers_finished",
 	"estimated_space_used":         "num_bytes_used_disk",
 	"CurDirtyOps":                  "num_recs_to_persist",
 	"num_plain_text_bytes_indexed": "total_bytes_indexed",
