@@ -115,3 +115,13 @@ To see if FTS handled a DCP rollback...
 To see which pindex a document ID is in...
 
     curl -XPOST -u<username>:<password> http://<ip>:8094/api/index/default_index/pindexLookup -d '{"docId":"emp10000847"}' | jq .
+
+To get all the source partition id's (e.g., vbucket id's) from across
+all the pindexes, so that you can see which FTS node ended up with
+which source partition (especially, when there's just a single FTS
+index)...
+
+    cat fts_diag.json | jq '.["/api/stats"]["pindexes"][]["partitions"] | keys | flatten[]'
+
+When there's multiple FTS indexes, you'll have to specify a particular
+pindex name in the above jq filter.
