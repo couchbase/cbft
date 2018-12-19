@@ -125,3 +125,8 @@ index)...
 
 When there's multiple FTS indexes, you'll have to specify a particular
 pindex name in the above jq filter.
+
+Couchbase Server: to find the active vbuckets from a KV stats.log...
+
+    grep vb_ stats.log | grep active | grep -v vb_active | grep -v pcnt | cut -d : -f 1 | sort | uniq
+
