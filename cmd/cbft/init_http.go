@@ -30,14 +30,9 @@ import (
 	"golang.org/x/net/netutil"
 )
 
-type httpsServer struct {
-	server   *http.Server
-	listener net.Listener
-}
-
 // List of active https servers
-var httpsServers []*httpsServer
 var httpsServersMutex sync.Mutex
+var httpsServers []*http.Server
 
 // AuthType used for HTTPS connections
 var authType string
@@ -81,13 +76,9 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 }
 
 // Add to HTTPS Server list serially
-func addToHTTPSServerList(server *http.Server, listener net.Listener) {
+func addToHTTPSServerList(server *http.Server) {
 	httpsServersMutex.Lock()
-	entry := &httpsServer{
-		server:   server,
-		listener: listener,
-	}
-	httpsServers = append(httpsServers, entry)
+	httpsServers = append(httpsServers, server)
 	httpsServersMutex.Unlock()
 }
 
@@ -97,10 +88,11 @@ func closeAndClearHTTPSServerList() {
 	defer httpsServersMutex.Unlock()
 
 	for _, entry := range httpsServers {
-		// Close the listener associated with the server first.
-		entry.listener.Close()
-		// Then Close the server.
-		entry.server.Close()
+		// Upon invoking Close() for a server, the blocking Serve(..) for
+		// the server will return ErrServerClosed and is also responsible
+		// for closing the listener that it's accepting incoming
+		// connections on.
+		entry.Close()
 	}
 	httpsServers = nil
 }
@@ -198,7 +190,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		}
 		atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
 	} else {
-		addToHTTPSServerList(server, listener)
+		addToHTTPSServerList(server)
 		// Initialize server.TLSConfig to the listener's TLS Config before calling
 		// server for HTTP/2 support.
 		// See: https://golang.org/pkg/net/http/#Server.Serve
