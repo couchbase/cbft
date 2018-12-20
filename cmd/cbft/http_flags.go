@@ -36,6 +36,7 @@ var httpMaxConnections = 100000
 // high defaults to avoid any backward compatibility issues.
 var httpReadTimeout = 20 * time.Second
 var httpWriteTimeout = 60 * time.Second
+var httpIdleTimeout = 60 * time.Second
 
 func initHTTPOptions(options map[string]string) error {
 	s := options["httpTransportDialContextTimeout"]
@@ -103,6 +104,10 @@ func initHTTPOptions(options map[string]string) error {
 	wt, found := parseOptionsInt(options, "httpWriteTimeout")
 	if found {
 		httpWriteTimeout = time.Duration(wt) * time.Second
+	}
+	it, found := parseOptionsInt(options, "httpIdleTimeout")
+	if found {
+		httpIdleTimeout = time.Duration(it) * time.Second
 	}
 
 	transport := &http.Transport{

@@ -176,7 +176,9 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 	server := &http.Server{Addr: bindHTTP,
 		Handler:      routerInUse,
 		ReadTimeout:  httpReadTimeout,
-		WriteTimeout: httpWriteTimeout}
+		WriteTimeout: httpWriteTimeout,
+		IdleTimeout:  httpIdleTimeout,
+	}
 
 	if proto == "http" {
 		limitListener := netutil.LimitListener(listener, httpMaxConnections)
