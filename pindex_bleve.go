@@ -1893,6 +1893,13 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	if err != nil {
 		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
+	if consistencyParams != nil &&
+		consistencyParams.Results == "complete" &&
+		len(missingPIndexNames) > 0 {
+		return nil, 0, fmt.Errorf("bleve: some pindexes aren't reachable,"+
+			" missing: %v", len(missingPIndexNames))
+	}
+
 	numPIndexes := len(localPIndexesAll) + len(remotePlanPIndexes)
 
 	localPIndexes := localPIndexesAll
