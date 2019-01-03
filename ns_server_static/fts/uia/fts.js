@@ -357,7 +357,8 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         var s = parseInt($scope.sourceDocCount);
         if (s > 0) {
             if (i >= 0) {
-                $scope.progressPct = Math.round(((1.0 * i) / s) * 10000) / 100.0;
+                var prog = ((1.0 * i) / s) * 100.0;
+                $scope.progressPct = prog.toPrecision(4);
             } else {
                 $scope.progressPct = 0.0;
             }
