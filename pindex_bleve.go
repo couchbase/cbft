@@ -71,6 +71,9 @@ var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
 // represents the number of async batch workers per pindex
 var asyncBatchWorkerCount = 4 // need to make it configurable,
 
+var TotBleveDestOpened uint64
+var TotBleveDestClosed uint64
+
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
 //     {
@@ -251,6 +254,8 @@ func NewBleveDest(path string, bindex bleve.Index,
 		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh, bindex)
 		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, bindex.Name())
 	}
+
+	atomic.AddUint64(&TotBleveDestOpened, 1)
 
 	return bleveDest
 }
@@ -945,6 +950,8 @@ func (t *BleveDest) closeLOCKED() error {
 	if t.bindex == nil {
 		return nil // Already closed.
 	}
+
+	atomic.AddUint64(&TotBleveDestClosed, 1)
 
 	close(t.stopCh)
 
