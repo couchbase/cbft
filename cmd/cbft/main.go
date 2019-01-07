@@ -18,7 +18,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -95,8 +94,6 @@ func main() {
 
 	log.Printf("main: %s started (%s/%s)",
 		os.Args[0], version, cbgt.VERSION)
-
-	rand.Seed(time.Now().UTC().UnixNano())
 
 	logFileDescriptorLimit()
 
