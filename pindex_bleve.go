@@ -1801,7 +1801,9 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 
 	for i, t := range bdp {
 		t.m.Lock()
-		t.seqMaxBatch = bdpMaxSeqNums[i]
+		if bdpMaxSeqNums[i] > t.seqMaxBatch {
+			t.seqMaxBatch = bdpMaxSeqNums[i]
+		}
 		for t.cwrQueue.Len() > 0 &&
 			t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
 			cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
