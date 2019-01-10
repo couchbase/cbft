@@ -1,6 +1,6 @@
 {
   "service": "fts",
-  "proxy-strategy": "local",
+  "proxy-strategy": "sticky",
   "rest-api-prefix": "fts",
   "version-dirs": [
     {"version": [4, 5], "dir": "."},
