@@ -167,12 +167,6 @@ func main() {
 			"authType":               flags.AuthType,
 		})
 
-	// Init TLSConfig
-	err = cbft.InitTLSConfig(flags.TLSCertFile, flags.TLSKeyFile)
-	if err != nil {
-		log.Fatalf("Error in initializing TLS Config, err: %v", err)
-	}
-
 	err = initHTTPOptions(options)
 	if err != nil {
 		log.Fatalf("main: InitHttpOptions, err: %v", err)
@@ -282,6 +276,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	s := options["http2"]
 	if s == "true" && flags.TLSCertFile != "" && flags.TLSKeyFile != "" {
 		extrasMap["bindHTTPS"] = flags.BindHTTPS
+		certPEMBlock, er := ioutil.ReadFile(flags.TLSCertFile)
+		if er != nil {
+			return nil, fmt.Errorf("unable to read certFile, err: %v", err)
+		}
+		extrasMap["tlsCertPEM"] = string(certPEMBlock)
 	}
 
 	extrasJSON, err := json.Marshal(extrasMap)

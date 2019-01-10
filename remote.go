@@ -12,7 +12,6 @@ package cbft
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -34,24 +33,15 @@ import (
 
 const RemoteRequestOverhead = 500 * time.Millisecond
 
-var HttpClient = http.DefaultClient  // Overridable for testability / advanced needs.
-var Http2Client = http.DefaultClient // Overridable for testability / advanced needs.
+var HttpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
+var HttpTransportDialContextKeepAlive = 30 * time.Second // Go's default is 30 secs.
+var HttpTransportMaxIdleConns = 300                      // Go's default is 100 (0 means no limit).
+var HttpTransportMaxIdleConnsPerHost = 100               // Go's default is 2.
+var HttpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 secs.
+var HttpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
+var HttpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
 
-// For HTTPS, HTTP2 clients
-var TLSConfig *tls.Config
-
-func InitTLSConfig(certFile, keyFile string) error {
-	if certFile != "" && keyFile != "" {
-		// Placeholder for adding x509 authentication with provided
-		// certificates for scatter gather
-
-		TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-
-	return nil
-}
+var HttpClient = http.DefaultClient // Overridable for testability / advanced needs.
 
 // Overridable for testability / advanced needs.
 var HttpPost = func(client *http.Client,

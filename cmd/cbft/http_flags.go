@@ -19,17 +19,7 @@ import (
 
 	"github.com/couchbase/cbft"
 	log "github.com/couchbase/clog"
-
-	"golang.org/x/net/http2"
 )
-
-var httpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
-var httpTransportDialContextKeepAlive = 30 * time.Second // Go's default is 30 secs.
-var httpTransportMaxIdleConns = 300                      // Go's default is 100 (0 means no limit).
-var httpTransportMaxIdleConnsPerHost = 100               // Go's default is 2.
-var httpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 secs.
-var httpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
-var httpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
 
 var httpMaxConnections = 100000
 
@@ -45,7 +35,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportDialContextTimeout = v
+		cbft.HttpTransportDialContextTimeout = v
 	}
 
 	s = options["httpTransportDialContextKeepAlive"]
@@ -54,7 +44,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportDialContextKeepAlive = v
+		cbft.HttpTransportDialContextKeepAlive = v
 	}
 
 	s = options["httpTransportIdleConnTimeout"]
@@ -63,7 +53,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportIdleConnTimeout = v
+		cbft.HttpTransportIdleConnTimeout = v
 	}
 
 	s = options["httpTransportMaxIdleConns"]
@@ -72,7 +62,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportMaxIdleConns = v
+		cbft.HttpTransportMaxIdleConns = v
 	}
 
 	s = options["httpTransportMaxIdleConnsPerHost"]
@@ -81,7 +71,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportMaxIdleConnsPerHost = v
+		cbft.HttpTransportMaxIdleConnsPerHost = v
 	}
 
 	s = options["httpTransportTLSHandshakeTimeout"]
@@ -90,7 +80,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		httpTransportTLSHandshakeTimeout = v
+		cbft.HttpTransportTLSHandshakeTimeout = v
 	}
 
 	mc, found := parseOptionsInt(options, "httpMaxConnections")
@@ -113,30 +103,17 @@ func initHTTPOptions(options map[string]string) error {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   httpTransportDialContextTimeout,
-			KeepAlive: httpTransportDialContextKeepAlive,
+			Timeout:   cbft.HttpTransportDialContextTimeout,
+			KeepAlive: cbft.HttpTransportDialContextKeepAlive,
 		}).DialContext,
-		MaxIdleConns:          httpTransportMaxIdleConns,
-		MaxIdleConnsPerHost:   httpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:       httpTransportIdleConnTimeout,
-		TLSHandshakeTimeout:   httpTransportTLSHandshakeTimeout,
-		ExpectContinueTimeout: httpTransportExpectContinueTimeout,
+		MaxIdleConns:          cbft.HttpTransportMaxIdleConns,
+		MaxIdleConnsPerHost:   cbft.HttpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:       cbft.HttpTransportIdleConnTimeout,
+		TLSHandshakeTimeout:   cbft.HttpTransportTLSHandshakeTimeout,
+		ExpectContinueTimeout: cbft.HttpTransportExpectContinueTimeout,
 	}
 
 	cbft.HttpClient = &http.Client{Transport: transport}
-
-	transport2 := &http.Transport{
-		MaxIdleConns:        httpTransportMaxIdleConns,
-		MaxIdleConnsPerHost: httpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:     httpTransportIdleConnTimeout,
-		TLSClientConfig:     cbft.TLSConfig,
-	}
-	err := http2.ConfigureTransport(transport2)
-	if err != nil {
-		return err
-	}
-
-	cbft.Http2Client = &http.Client{Transport: transport2}
 
 	return nil
 }

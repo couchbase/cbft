@@ -15,6 +15,8 @@ import (
 	"container/heap"
 	"container/list"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -48,6 +50,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 
 	"github.com/couchbase/moss"
+
+	"golang.org/x/net/http2"
 )
 
 var BatchBytesAdded uint64
@@ -1976,11 +1980,33 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
 			httpClient:  HttpClient,
-			// TODO: Propagate auth to remote client.
 		}
 
 		if http2Enabled {
-			indexClient.httpClient = Http2Client
+			// TODO: Cache Http2Clients for remote servers perhaps?
+			transport := &http.Transport{
+				MaxIdleConns:        HttpTransportMaxIdleConns,
+				MaxIdleConnsPerHost: HttpTransportMaxIdleConnsPerHost,
+				IdleConnTimeout:     HttpTransportIdleConnTimeout,
+			}
+
+			extrasCertPEM, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("tlsCertPEM")
+			if er != nil {
+				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets: remote CertFile, err: %v", er)
+			}
+
+			roots := x509.NewCertPool()
+			ok := roots.AppendCertsFromPEM([]byte(extrasCertPEM.(string)))
+			if !ok {
+				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets: error in fetching certificates")
+			}
+			transport.TLSClientConfig = &tls.Config{RootCAs: roots}
+			er = http2.ConfigureTransport(transport)
+			if er != nil {
+				return nil, numPIndexes, er
+			}
+
+			indexClient.httpClient = &http.Client{Transport: transport}
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)
