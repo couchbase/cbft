@@ -1900,6 +1900,11 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		planPIndexFilterName = "canRead"
 	}
 
+	if onlyPIndexes != nil {
+		// select all local pindexes
+		partitionSelection = "advanced-local"
+	}
+
 	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
 		FetchBleveTargets(mgr, indexName, indexUUID,
 			planPIndexFilterName, partitionSelection)
