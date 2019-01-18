@@ -1838,6 +1838,52 @@ var totRemoteHttp2 uint64
 
 // ---------------------------------------------------------
 
+var http2ClientsLock sync.RWMutex
+var http2Clients map[string]*http.Client
+
+func init() {
+	http2Clients = make(map[string]*http.Client)
+}
+
+func fetchHttp2ClientForNode(uuid string, pem []byte) (*http.Client, error) {
+	http2ClientsLock.RLock()
+	h := http2Clients[uuid]
+	http2ClientsLock.RUnlock()
+
+	if h != nil {
+		return h, nil
+	}
+
+	http2ClientsLock.Lock()
+	defer http2ClientsLock.Unlock()
+	h = http2Clients[uuid]
+	if h != nil {
+		return h, nil
+	}
+
+	transport := &http.Transport{
+		MaxIdleConns:        HttpTransportMaxIdleConns,
+		MaxIdleConnsPerHost: HttpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:     HttpTransportIdleConnTimeout,
+	}
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM(pem)
+	if !ok {
+		return nil, fmt.Errorf("bleveIndexTargets: error in fetching certificates")
+	}
+	transport.TLSClientConfig = &tls.Config{RootCAs: roots}
+	err := http2.ConfigureTransport(transport)
+	if err != nil {
+		return nil, err
+	}
+
+	http2Clients[uuid] = &http.Client{Transport: transport}
+	return http2Clients[uuid], nil
+}
+
+// ---------------------------------------------------------
+
 // Returns a bleve.IndexAlias that represents all the PIndexes for the
 // index, including perhaps bleve remote client PIndexes.
 //
@@ -1988,30 +2034,18 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 
 		if http2Enabled {
-			// TODO: Cache Http2Clients for remote servers perhaps?
-			transport := &http.Transport{
-				MaxIdleConns:        HttpTransportMaxIdleConns,
-				MaxIdleConnsPerHost: HttpTransportMaxIdleConnsPerHost,
-				IdleConnTimeout:     HttpTransportIdleConnTimeout,
-			}
-
 			extrasCertPEM, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("tlsCertPEM")
 			if er != nil {
 				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets: remote CertFile, err: %v", er)
 			}
 
-			roots := x509.NewCertPool()
-			ok := roots.AppendCertsFromPEM([]byte(extrasCertPEM.(string)))
-			if !ok {
-				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets: error in fetching certificates")
-			}
-			transport.TLSClientConfig = &tls.Config{RootCAs: roots}
-			er = http2.ConfigureTransport(transport)
+			http2Client, er := fetchHttp2ClientForNode(remotePlanPIndex.NodeDef.UUID,
+				[]byte(extrasCertPEM.(string)))
 			if er != nil {
-				return nil, numPIndexes, er
+				return nil, numPIndexes, fmt.Errorf("bleveIndexTargets, err: %v", er)
 			}
 
-			indexClient.httpClient = &http.Client{Transport: transport}
+			indexClient.httpClient = http2Client
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)
