@@ -28,11 +28,12 @@ var LogLevels map[string]uint32
 func init() {
 	LogLevels = make(map[string]uint32)
 
-	LogLevels["INFO"] = 0
-	LogLevels["CRIT"] = 3
-	LogLevels["ERRO"] = 2
-	LogLevels["FATA"] = 3
-	LogLevels["WARN"] = 1
+	LogLevels["DEBU"] = 0
+	LogLevels["INFO"] = 1
+	LogLevels["CRIT"] = 4
+	LogLevels["ERRO"] = 3
+	LogLevels["FATA"] = 4
+	LogLevels["WARN"] = 2
 }
 
 // ManagerOptionsExt is a REST handler that serves as a wrapper for

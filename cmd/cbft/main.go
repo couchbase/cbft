@@ -363,6 +363,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 				" logLevel: %v", logLevelStr)
 		}
 		log.SetLevel(log.LogLevel(logLevel))
+	} else {
+		log.SetLevel(log.LevelNormal)
 	}
 
 	// If maxReplicasAllowed is among options provided, ensure that it
