@@ -1,0 +1,222 @@
+syntax = "proto3";
+package search;
+
+import "google/protobuf/duration.proto";
+
+service SearchService {
+	// external rpcs, for rpc clients
+	rpc Search(SearchRequest) returns (stream StreamSearchResults);
+
+	rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+
+	rpc DocCount(DocCountRequest) returns (DocCountResult);
+}
+
+message HealthCheckRequest {
+	string service = 1;
+}
+
+message HealthCheckResponse {
+	enum ServingStatus {
+		UNKNOWN = 0;
+		SERVING = 1;
+		NOT_SERVING = 2;
+	}
+	ServingStatus status = 1;
+}
+
+// Key is partition or partition/partitionUUID.  Value is seq.
+// For example, a DCP data source might have the key as either
+// "vbucketId" or "vbucketId/vbucketUUID".
+message ConsistencyVectors {
+    map<string, uint64> ConsistencyVector = 1;
+}
+
+// ConsistencyParams represent the consistency requirements of a
+// client's request.
+message ConsistencyParams  {
+	// A Level value of "" means stale is ok; "at_plus" means we need
+	// consistency at least at or beyond the consistency vector but
+	// not before.
+	string Level = 1;
+
+	// Keyed by indexName.
+	map<string,ConsistencyVectors> Vectors = 2;
+
+	string Results = 3;
+}
+
+// QueryCtl defines the JSON parameters that control query execution
+// and which are independent of any specific pindex type.
+message QueryCtl  {
+	int64 Timeout = 1;
+	ConsistencyParams Consistency = 2;
+	string PartitionSelection = 3;
+}
+
+// QueryCtlParams defines the JSON that includes the "ctl" part of a
+// query request.  These "ctl" query request parameters are
+// independent of any specific pindex type.
+message QueryCtlParams {
+	QueryCtl Ctl = 1;
+}
+
+message QueryPIndexes {
+	// An empty or nil PIndexNames means the query should use all
+	// the pindexes of the index.
+	repeated string PIndexNames = 1;
+}
+
+message HighlightRequest {
+	string Style = 1;
+	repeated string Fields = 2;
+}
+
+message numericRange  {
+	string Name = 1;
+	double Min = 2;
+	double Max = 3;
+}
+
+message dateTimeRange  {
+	string Name = 1;
+	string Start = 2;
+	string End = 3;
+}
+
+message FacetRequest {
+	int64 Size = 1;
+	string Field = 2;
+	repeated numericRange NumericRanges = 3;
+	repeated dateTimeRange DateTimeRanges = 4;
+}
+
+message FacetsRequest {
+    map<string,FacetRequest> FacetsRequests = 1;
+}
+
+message HighLightRequest {
+	string Style = 1;
+	repeated string Fields = 2;
+}
+
+message SearchRequest {
+	bytes Query = 1;
+	int64 Size = 2;
+	int64 From = 3;
+	int64 StreamOffset = 4;
+	int64 StreamSize = 5;
+	string IndexName = 6;
+	string IndexUUID = 7;
+	bool Stream = 8;
+
+	repeated string Fields = 9;
+	QueryCtlParams queryCtlParams = 10;
+	QueryPIndexes queryPIndexes = 11;
+
+	string Score = 12;
+	bytes Sort = 13;
+	string Version = 14;
+	FacetsRequest Facets = 15;
+	bool IncludeLocations = 16;
+	// below fields may not be needed
+	bool Explain = 17;
+	HighLightRequest Highlight = 18;
+}
+
+message NumericRangeFacet {
+	string Name = 1;
+	double Min = 2;
+	double Max = 3;
+	int64 Count = 4;
+}
+
+message DateRangeFacet  {
+	string Name = 1;
+	string Start = 2;
+	string End = 3;
+	int64 Count = 4;
+}
+
+message TermFacet {
+	string Term = 1;
+	int64 Count = 2;
+}
+
+message FacetResult  {
+	string Field = 1;
+	int64 Total = 2;
+	int64 Missing = 3;
+	int64 Other = 4;
+	repeated TermFacet Terms = 5;
+	repeated NumericRangeFacet NumericRanges = 6;
+	repeated DateRangeFacet DateRanges = 7;
+}
+
+message ErrorMap {
+    map<string, string> Error = 1;
+}
+
+message SearchStatus {
+	int64 Total = 1;
+	int64 Failed = 2;
+	int64 Successful = 3;
+	ErrorMap Errors = 4;
+}
+
+message Explanation {
+	double Value = 1;
+	bytes Message = 2;
+	repeated Explanation Children = 3;
+}
+
+// A SearchResult describes the results of executing
+// a SearchRequest.
+message SearchResult  {
+	SearchStatus Status = 1;
+	SearchRequest Request = 2;
+	bytes Hits = 3;
+	uint64 Total = 4;
+	double MaxScore = 5;
+	google.protobuf.Duration Took = 6;
+	string Version = 7;
+	bytes Facets = 8;
+}
+
+
+message DocCountRequest {
+	string IndexName = 1;
+	string IndexUUID = 2;
+}
+
+message DocCountResult {
+	int64 DocCount = 1;
+}
+
+
+// A stream SearchResult describes the streaming results
+// of executing a SearchRequest.
+message StreamSearchResults  {
+	// a separate wrapper type is needed for hits as protobuf
+	// doesn't allow `repeated` keyword inside a oneof message
+	message SearchResult {
+		SearchRequest Request = 1;
+		SearchStatus Status = 2;
+		uint64 Total = 3;
+		double MaxScore = 4;
+		google.protobuf.Duration Took = 5;
+		bytes Hits = 6;
+		bytes Facets = 7;
+	}
+
+	message Batch {
+		bytes Bytes = 1;
+		repeated uint64 Offsets = 2;
+		uint64 Total = 3;
+	}
+
+	oneof PayLoad {
+		Batch Hits = 1;
+		SearchResult Results = 2;
+	}
+}
