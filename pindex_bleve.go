@@ -780,9 +780,12 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	defer cancel()
 
 	rcAdder := addIndexClients
-	// switch to grpc for scatter gather in an advanced enough cluster
-	if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.0.0"); ok {
-		rcAdder = addGrpcClients
+	_, exists = mgr.Options()["ScatterGatherOverGrpc"]
+	if exists {
+		// switch to grpc for scatter gather in an advanced enough cluster
+		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
+			rcAdder = addGrpcClients
+		}
 	}
 
 	var onlyPIndexes map[string]bool
