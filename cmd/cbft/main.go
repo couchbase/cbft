@@ -576,7 +576,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			FavorMinNodes:                      false,
 			WaitForMemberNodes:                 waitForMemberNodes,
 			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
-			Manager: mgr,
+			Manager:                            mgr,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
