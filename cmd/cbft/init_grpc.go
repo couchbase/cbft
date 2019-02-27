@@ -40,27 +40,61 @@ func closeAndClearGrpcServerList() {
 	grpcServersMutex.Unlock()
 }
 
-func startGrpcServer(mgr *cbgt.Manager, flags *cbftFlags) {
-	closeAndClearGrpcServerList()
+func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
+	options map[string]string) {
 
-	hostPort := mgr.BindHttp()
-	host, _, err := net.SplitHostPort(hostPort)
-	if err != nil {
-		log.Fatalf("init_grpc: mainGrpcServer, SplitHostPort: %v", err)
-	}
+	bindGRPCList := strings.Split(flags.BindGRPC, ",")
+	anyHostPorts := map[string]bool{}
+	// bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for grpc listening.
+	for _, bindGRPC := range bindGRPCList {
+		if strings.HasPrefix(bindGRPC, "0.0.0.0:") ||
+			strings.HasPrefix(bindGRPC, "[::]:") {
+			go startGrpcServer(mgr, bindGRPC, nil)
 
-	if len(flags.BindGRPC) > 0 {
-		portIndex := strings.LastIndex(flags.BindGRPC, ":") + 1
-		if portIndex > 0 && portIndex < len(flags.BindGRPC) {
-			// possibly valid port available.
-			p := flags.BindGRPC[portIndex:]
-			if _, err = strconv.Atoi(p); err == nil {
-				// valid port.
-				cbft.GrpcPort = ":" + p
-			}
+			anyHostPorts[bindGRPC] = true
 		}
 	}
 
+	for i := len(bindGRPCList) - 1; i >= 1; i-- {
+		go startGrpcServer(mgr, bindGRPCList[i], anyHostPorts)
+	}
+}
+
+func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
+	anyHostPorts map[string]bool) {
+	if bindGRPC[0] == ':' {
+		bindGRPC = "localhost" + bindGRPC
+	}
+
+	if anyHostPorts != nil && len(bindGRPC) > 0 {
+		// if we've already bound to 0.0.0.0 or [::] on the same port, then
+		// skip this hostPort.
+		portIndex := strings.LastIndex(bindGRPC, ":") + 1
+		if portIndex > 0 && portIndex < len(bindGRPC) {
+			// possibly valid port available.
+			port := bindGRPC[portIndex:]
+			if _, err := strconv.Atoi(port); err == nil {
+				// valid port.
+				host := "0.0.0.0"
+				if net.ParseIP(bindGRPC[:portIndex-1]).To4() == nil &&
+					// not an IPv4
+					ipv6 == "true" {
+					host = "[::]"
+				}
+
+				anyHostPort := host + ":" + port
+				if anyHostPorts[anyHostPort] {
+					if anyHostPort != bindGRPC {
+						log.Printf("init_grpc: GRPC is available"+
+							" (via %v): %s", host, bindGRPC)
+					}
+					return
+				}
+			}
+		} // else port not found.
+	}
+
+	var err error
 	var creds credentials.TransportCredentials
 	creds, err = credentials.NewServerTLSFromFile(flags.TLSCertFile,
 		flags.TLSKeyFile)
@@ -68,8 +102,7 @@ func startGrpcServer(mgr *cbgt.Manager, flags *cbftFlags) {
 		log.Fatalf("init_grpc: NewServerTLSFromFile, err: %v", err)
 	}
 
-	hostPort = host + cbft.GrpcPort
-	lis, err := net.Listen("tcp", hostPort)
+	lis, err := net.Listen("tcp", bindGRPC)
 	if err != nil {
 		log.Fatalf("init_grpc: mainGrpcServer, failed to listen: %v", err)
 	}
@@ -93,7 +126,7 @@ func startGrpcServer(mgr *cbgt.Manager, flags *cbftFlags) {
 
 	grpcServers = append(grpcServers, s)
 
-	log.Printf("init_grpc: GrpcServer Started at %s", hostPort)
+	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

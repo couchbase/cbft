@@ -448,7 +448,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	go startGrpcServer(mgr, &flags)
+	setUpGrpcListenersAndServ(mgr, options)
 
 	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)
