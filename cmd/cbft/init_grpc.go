@@ -42,6 +42,8 @@ func closeAndClearGrpcServerList() {
 
 func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
+	// close any previously open grpc servers
+	closeAndClearGrpcServerList()
 
 	bindGRPCList := strings.Split(flags.BindGRPC, ",")
 	anyHostPorts := map[string]bool{}
