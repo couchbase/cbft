@@ -33,8 +33,8 @@ func closeAndClearGrpcServerList() {
 	grpcServersMutex.Lock()
 
 	for _, server := range grpcServers {
-		// gracefully stop the grpc server.
-		server.GracefulStop()
+		// stop the grpc server.
+		server.Stop()
 	}
 	grpcServers = nil
 	grpcServersMutex.Unlock()
@@ -42,6 +42,7 @@ func closeAndClearGrpcServerList() {
 
 func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
+	ipv6 = options["ipv6"]
 	// close any previously open grpc servers
 	closeAndClearGrpcServerList()
 
