@@ -779,13 +779,15 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// setupContextAndCancelCh always exits
 	defer cancel()
 
-	rcAdder := addIndexClients
-	_, exists = mgr.Options()["ScatterGatherOverGrpc"]
-	if exists {
-		// switch to grpc for scatter gather in an advanced enough cluster
-		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
-			rcAdder = addGrpcClients
-		}
+	var rcAdder addRemoteClients
+	// switch to grpc for scatter gather in an advanced enough cluster
+	if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
+		rcAdder = addGrpcClients
+	}
+
+	if _, exists := mgr.Options()["SkipScatterGatherOverGrpc"]; exists ||
+		rcAdder == nil {
+		rcAdder = addIndexClients
 	}
 
 	var onlyPIndexes map[string]bool
