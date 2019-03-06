@@ -97,7 +97,8 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	queryCtlParams := cbgt.QueryCtlParams{
 		Ctl: cbgt.QueryCtl{
-			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
+			Timeout:     cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
+			Consistency: &cbgt.ConsistencyParams{},
 		},
 		// TODO default partition selector string
 	}
@@ -111,6 +112,12 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 				make(map[string]cbgt.ConsistencyVector, len(ctlParams.Ctl.Consistency.Vectors))
 			for k, v := range ctlParams.Ctl.Consistency.Vectors {
 				queryCtlParams.Ctl.Consistency.Vectors[k] = v.ConsistencyVector
+			}
+
+			err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
+			if err != nil {
+				return status.Errorf(codes.FailedPrecondition,
+					"grpc_server: validating consistency, err: %v", err)
 			}
 		}
 		if ctlParams.Ctl.PartitionSelection != "" {
