@@ -42,6 +42,9 @@ var RPCClientConn map[string][]*grpc.ClientConn
 
 var rpcConnMutex sync.Mutex
 
+// rpc.ClientConn pool size/static connections per remote host
+var connPoolSize = 5
+
 // GrpcPort represents the port used with gRPC.
 var GrpcPort = ":15000"
 
@@ -54,7 +57,7 @@ var DefaultGrpcMaxBackOffDelay = time.Duration(10) * time.Second
 var DefaultGrpcMaxRecvMsgSize = 1024 * 1024 * 20 // 20 MB
 var DefaultGrpcMaxSendMsgSize = 1024 * 1024 * 20 // 20 MB
 
-var DefaultGrpcMaxConcurrentStreams = uint32(2000)
+var DefaultGrpcMaxConcurrentStreams = uint32(5000)
 
 var rsource rand.Source
 var r1 *rand.Rand
@@ -93,6 +96,46 @@ func basicAuth(username, password string) string {
 
 func GetRpcClient(nodeUUID, hostPort string,
 	certsPEM interface{}) (pb.SearchServiceClient, error) {
+	var hostPool []*grpc.ClientConn
+	var initialised bool
+
+	key := nodeUUID + "-" + hostPort
+	index := r1.Intn(connPoolSize)
+
+	rpcConnMutex.Lock()
+	if hostPool, initialised = RPCClientConn[key]; !initialised {
+		opts, err := getGrpcOpts(hostPort, certsPEM)
+		if err != nil {
+			log.Printf("grpc_client: getGrpcOpts, err: %v", err)
+			rpcConnMutex.Unlock()
+			return nil, err
+		}
+
+		for i := 0; i < connPoolSize; i++ {
+			conn, err := grpc.Dial(hostPort, opts...)
+			if err != nil {
+				log.Printf("grpc_client: grpc.Dial, err: %v", err)
+				rpcConnMutex.Unlock()
+				return nil, err
+			}
+
+			log.Printf("grpc_client: grpc ClientConn Created %d for host: %s", i, key)
+
+			RPCClientConn[key] = append(RPCClientConn[key], conn)
+		}
+		hostPool = RPCClientConn[key]
+	}
+
+	rpcConnMutex.Unlock()
+
+	// TODO connection mgmt
+	// when to perform explicit conn.Close()?
+	cli := pb.NewSearchServiceClient(hostPool[index])
+
+	return cli, nil
+}
+
+func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, error) {
 	// create a certificate pool from the CA
 	certPool := x509.NewCertPool()
 	// append the certificates from the CA
@@ -100,6 +143,7 @@ func GetRpcClient(nodeUUID, hostPort string,
 	if !ok {
 		return nil, fmt.Errorf("grpc_util: failed to append ca certs")
 	}
+
 	creds := credentials.NewClientTLSFromCert(certPool, "")
 
 	cbUser, cbPasswd, err := cbauth.GetHTTPServiceAuth(hostPort)
@@ -133,30 +177,7 @@ func GetRpcClient(nodeUUID, hostPort string,
 		}),
 	}
 
-	var hostPool []*grpc.ClientConn
-	var initialised bool
-	if hostPool, initialised = RPCClientConn[nodeUUID]; !initialised {
-		for i := 0; i < 10; i++ {
-			conn, err := grpc.Dial(hostPort, opts...)
-			if err != nil {
-				log.Printf("grpc_client: grpc.Dial, err: %v", err)
-				return nil, err
-			}
-
-			log.Printf("grpc_client: grpc ClientConn Created %d", i)
-			rpcConnMutex.Lock()
-			RPCClientConn[nodeUUID] = append(RPCClientConn[nodeUUID], conn)
-			rpcConnMutex.Unlock()
-		}
-		hostPool = RPCClientConn[nodeUUID]
-	}
-
-	index := r1.Intn(10)
-	// TODO connection mgmt
-	// when to perform explicit conn.Close()?
-	cli := pb.NewSearchServiceClient(hostPool[index])
-
-	return cli, nil
+	return opts, nil
 }
 
 func marshalProtoResults(searchResult *bleve.SearchResult) (*pb.StreamSearchResults, error) {

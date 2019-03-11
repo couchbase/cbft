@@ -78,6 +78,9 @@ var asyncBatchWorkerCount = 4 // need to make it configurable,
 var TotBleveDestOpened uint64
 var TotBleveDestClosed uint64
 
+// local cache for the cluster compatibility
+var compatibleClusterFound int32
+
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
 //     {
@@ -780,9 +783,14 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	defer cancel()
 
 	var rcAdder addRemoteClients
-	// switch to grpc for scatter gather in an advanced enough cluster
-	if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
+	if atomic.LoadInt32(&compatibleClusterFound) == 1 {
 		rcAdder = addGrpcClients
+	} else {
+		// switch to grpc for scatter gather in an advanced enough cluster
+		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
+			rcAdder = addGrpcClients
+			atomic.StoreInt32(&compatibleClusterFound, 1)
+		}
 	}
 
 	if _, exists := mgr.Options()["SkipScatterGatherOverGrpc"]; exists ||
