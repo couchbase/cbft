@@ -12,6 +12,7 @@
 package main
 
 import (
+	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbft"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -41,6 +42,21 @@ func closeAndClearGrpcServerList() {
 }
 
 func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
+	options map[string]string) {
+	handleConfigChanges := func(v uint64) error {
+		if v == cbauth.CFG_CHANGE_CERTS_TLSCONFIG {
+			// restart the servers in case of certs change
+			setUpGrpcListenersAndServUtil(mgr, options)
+		}
+		return nil
+	}
+
+	cbauth.RegisterConfigRefreshCallback(handleConfigChanges)
+
+	setUpGrpcListenersAndServUtil(mgr, options)
+}
+
+func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager,
 	options map[string]string) {
 	ipv6 = options["ipv6"]
 	// close any previously open grpc servers
