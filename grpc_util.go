@@ -247,6 +247,7 @@ func makeSearchRequest(req *pb.SearchRequest) (*bleve.SearchRequest, error) {
 	searchRequest.From = int(req.From)
 	searchRequest.Size = int(req.Size)
 	searchRequest.IncludeLocations = req.IncludeLocations
+	searchRequest.Score = req.Score
 
 	var temp struct {
 		Sort []json.RawMessage `json:"sort"`
@@ -282,6 +283,17 @@ func makeSearchRequest(req *pb.SearchRequest) (*bleve.SearchRequest, error) {
 			}
 
 			searchRequest.Facets[k] = fr
+		}
+	}
+
+	if req.Highlight != nil {
+		searchRequest.Highlight = bleve.NewHighlight()
+		if req.Highlight.Style != "" {
+			searchRequest.Highlight.Style = &req.Highlight.Style
+		}
+
+		for _, f := range req.Highlight.Fields {
+			searchRequest.Highlight.AddField(f)
 		}
 	}
 

@@ -362,6 +362,9 @@ func (g *GrpcClient) Query(ctx context.Context,
 	scatterGatherReq.Fields = req.searchRequest.Fields
 	scatterGatherReq.From = int64(req.searchRequest.From)
 	scatterGatherReq.Size = int64(req.searchRequest.Size)
+	scatterGatherReq.Score = req.searchRequest.Score
+	scatterGatherReq.IncludeLocations = req.searchRequest.IncludeLocations
+
 	scatterGatherReq.Highlight = &pb.HighLightRequest{}
 	if req.searchRequest.Highlight != nil {
 		if req.searchRequest.Highlight.Style != nil {
@@ -371,15 +374,6 @@ func (g *GrpcClient) Query(ctx context.Context,
 			scatterGatherReq.Highlight.Fields = req.searchRequest.Highlight.Fields
 		}
 	}
-
-	if req.searchRequest.Highlight != nil {
-		scatterGatherReq.Highlight = &pb.HighLightRequest{}
-		if req.searchRequest.Highlight.Style != nil {
-			scatterGatherReq.Highlight.Style = *req.searchRequest.Highlight.Style
-			scatterGatherReq.Highlight.Fields = req.searchRequest.Highlight.Fields
-		}
-	}
-	scatterGatherReq.IncludeLocations = req.searchRequest.IncludeLocations
 
 	if req.ctlParams != nil && req.ctlParams.Ctl.Consistency != nil {
 		scatterGatherReq.QueryCtlParams.Ctl =
