@@ -243,6 +243,7 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 	pbReq *pb.SearchRequest) (*bleve.SearchResult, error) {
 	res, err := g.GrpcCli.Search(ctx, pbReq)
 	if err != nil || res == nil {
+		log.Printf("grpc_client: search err: %v", err)
 		return nil, err
 	}
 
@@ -259,6 +260,7 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 			break
 		}
 		if err != nil {
+			log.Printf("grpc_client: recv err: %v", err)
 			break
 		}
 
@@ -330,8 +332,14 @@ func (g *GrpcClient) Query(ctx context.Context,
 			bfr.Size = int64(fr.Size)
 			bfr.Field = fr.Field
 			for _, v := range fr.NumericRanges {
-				bfr.NumericRanges = append(bfr.NumericRanges,
-					&pb.NumericRange{Name: v.Name, Min: *v.Min, Max: *v.Max})
+				if v.Min != nil {
+					bfr.NumericRanges = append(bfr.NumericRanges,
+						&pb.NumericRange{Name: v.Name, Min: *v.Min})
+				}
+				if v.Max != nil {
+					bfr.NumericRanges = append(bfr.NumericRanges,
+						&pb.NumericRange{Name: v.Name, Max: *v.Max})
+				}
 			}
 
 			for _, v := range fr.DateTimeRanges {
