@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
 	pb "github.com/couchbase/cbft/protobuf"
 	log "github.com/couchbase/clog"
@@ -36,6 +37,7 @@ type streamHandler interface {
 
 type streamer struct {
 	m       sync.Mutex
+	req     *bleve.SearchRequest
 	stream  pb.SearchService_SearchServer
 	sizeSet bool
 	skipSet bool
@@ -45,16 +47,18 @@ type streamer struct {
 	curSize int
 }
 
-func newStreamHandler(size, skip int64, outStream pb.SearchService_SearchServer) *streamer {
+func newStreamHandler(req *bleve.SearchRequest,
+	outStream pb.SearchService_SearchServer) *streamer {
 	rv := &streamer{
-		curSize: int(size),
-		curSkip: int(skip),
+		curSize: int(req.Size),
+		curSkip: int(req.From),
 		stream:  outStream,
+		req:     req,
 	}
-	if size > 0 {
+	if req.Size > 0 {
 		rv.sizeSet = true
 	}
-	if skip > 0 {
+	if req.From > 0 {
 		rv.skipSet = true
 	}
 	return rv
@@ -132,6 +136,14 @@ type docMatchHandler struct {
 
 func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) error {
 	if hit != nil {
+		if dmh.s.req.IncludeLocations {
+			hit.Complete(nil)
+		}
+
+		if len(dmh.s.req.Fields) > 0 {
+			bleve.LoadAndHighlightFields(hit, dmh.s.req, "", dmh.ctx.IndexReader, nil)
+		}
+
 		b, err := MarshalJSON(hit)
 		if err != nil {
 			log.Printf("streamHandler: json marshal err: %v", err)

@@ -158,7 +158,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	var handlerMaker search.MakeDocumentMatchHandler
 	// check if the client requested streamed results/hits.
 	if req.Stream {
-		sh = newStreamHandler(req.Size, req.From, stream)
+		sh = newStreamHandler(searchRequest, stream)
 		handlerMaker = sh.MakeDocumentMatchHandler
 		ctx = context.WithValue(ctx, search.MakeDocumentMatchHandlerKey,
 			handlerMaker)
