@@ -67,7 +67,17 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 		// will be responsible for updating https listeners,
 		// whenever ssl certificates or the client cert auth settings
 		// are changed.
-		cbauth.RegisterTLSRefreshCallback(setupHTTPSListeners)
+		handleConfigChanges := func() error {
+			cfg := getTLSConfigs()
+			log.Printf("init_http: handleConfigChanges callback: %d", cfg.refreshType)
+			// time being, restart the servers always as before
+			setupHTTPSListeners()
+			return nil
+		}
+		registerTLSRefreshCallback("https", handleConfigChanges)
+
+		setupHTTPSListeners()
+
 	} else {
 		setupHTTPSListeners()
 	}

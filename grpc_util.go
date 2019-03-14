@@ -106,7 +106,8 @@ func GetRpcClient(nodeUUID, hostPort string,
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
 		opts, err := getGrpcOpts(hostPort, certsPEM)
 		if err != nil {
-			log.Printf("grpc_client: getGrpcOpts, err: %v", err)
+			log.Printf("grpc_client: getGrpcOpts, host port: %s err: %v",
+				hostPort, err)
 			rpcConnMutex.Unlock()
 			return nil, err
 		}
@@ -136,24 +137,12 @@ func GetRpcClient(nodeUUID, hostPort string,
 }
 
 func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, error) {
-	// create a certificate pool from the CA
-	certPool := x509.NewCertPool()
-	// append the certificates from the CA
-	ok := certPool.AppendCertsFromPEM([]byte(certsPEM.(string)))
-	if !ok {
-		return nil, fmt.Errorf("grpc_util: failed to append ca certs")
-	}
-
-	creds := credentials.NewClientTLSFromCert(certPool, "")
-
 	cbUser, cbPasswd, err := cbauth.GetHTTPServiceAuth(hostPort)
 	if err != nil {
 		return nil, fmt.Errorf("grpc_util: cbauth err: %v", err)
 	}
 
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(creds),
-
 		grpc.WithBackoffMaxDelay(DefaultGrpcMaxBackOffDelay),
 
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -175,6 +164,22 @@ func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, erro
 			username: cbUser,
 			password: cbPasswd,
 		}),
+	}
+
+	if certsPEM != nil {
+		// create a certificate pool from the CA
+		certPool := x509.NewCertPool()
+		// append the certificates from the CA
+		ok := certPool.AppendCertsFromPEM([]byte(certsPEM.(string)))
+		if !ok {
+			return nil, fmt.Errorf("grpc_util: failed to append ca certs")
+		}
+
+		creds := credentials.NewClientTLSFromCert(certPool, "")
+
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
 	}
 
 	return opts, nil

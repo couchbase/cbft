@@ -43,43 +43,57 @@ func closeAndClearGrpcServerList() {
 
 func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
-	handleConfigChanges := func(v uint64) error {
-		if v == cbauth.CFG_CHANGE_CERTS_TLSCONFIG {
-			// restart the servers in case of certs change
-			setUpGrpcListenersAndServUtil(mgr, options)
+
+	setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options)
+
+	authType = options["authType"]
+
+	if authType == "cbauth" {
+		handleConfigChanges := func() error {
+			cfg := getTLSConfigs()
+			log.Printf("init_grpc: handleConfigChanges callback: %d", cfg.refreshType)
+			if cfg.refreshType == cbauth.CFG_CHANGE_CERTS_TLSCONFIG {
+				// restart the servers in case of certs change
+				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+			}
+			return nil
 		}
-		return nil
+
+		registerTLSRefreshCallback("grpc-ssl", handleConfigChanges)
+
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+	} else {
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
 	}
-
-	cbauth.RegisterConfigRefreshCallback(handleConfigChanges)
-
-	setUpGrpcListenersAndServUtil(mgr, options)
 }
 
-func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager,
-	options map[string]string) {
+func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
+	secure bool, options map[string]string) {
 	ipv6 = options["ipv6"]
-	// close any previously open grpc servers
-	closeAndClearGrpcServerList()
 
-	bindGRPCList := strings.Split(flags.BindGRPC, ",")
+	if secure {
+		// close any previously open grpc servers
+		closeAndClearGrpcServerList()
+	}
+
+	bindGRPCList := strings.Split(bindPORT, ",")
 	anyHostPorts := map[string]bool{}
 	// bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for grpc listening.
 	for _, bindGRPC := range bindGRPCList {
 		if strings.HasPrefix(bindGRPC, "0.0.0.0:") ||
 			strings.HasPrefix(bindGRPC, "[::]:") {
-			go startGrpcServer(mgr, bindGRPC, nil)
+			go startGrpcServer(mgr, bindGRPC, secure, nil)
 
 			anyHostPorts[bindGRPC] = true
 		}
 	}
 
 	for i := len(bindGRPCList) - 1; i >= 1; i-- {
-		go startGrpcServer(mgr, bindGRPCList[i], anyHostPorts)
+		go startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts)
 	}
 }
 
-func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
+func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 	anyHostPorts map[string]bool) {
 	if bindGRPC[0] == ':' {
 		bindGRPC = "localhost" + bindGRPC
@@ -113,27 +127,12 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
 		} // else port not found.
 	}
 
-	var err error
-	var creds credentials.TransportCredentials
-	creds, err = credentials.NewServerTLSFromFile(flags.TLSCertFile,
-		flags.TLSKeyFile)
-	if err != nil {
-		log.Fatalf("init_grpc: NewServerTLSFromFile, err: %v", err)
-	}
-
 	lis, err := net.Listen("tcp", bindGRPC)
 	if err != nil {
 		log.Fatalf("init_grpc: mainGrpcServer, failed to listen: %v", err)
 	}
 
-	opts := []grpc.ServerOption{
-		grpc.Creds(creds),
-		cbft.AddServerInterceptor(),
-		grpc.MaxConcurrentStreams(cbft.DefaultGrpcMaxConcurrentStreams),
-		grpc.MaxSendMsgSize(cbft.DefaultGrpcMaxRecvMsgSize),
-		grpc.MaxRecvMsgSize(cbft.DefaultGrpcMaxSendMsgSize),
-		// TODO add more configurability
-	}
+	opts := getGrpcOpts(secure)
 
 	s := grpc.NewServer(opts...)
 
@@ -143,11 +142,39 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
 
 	reflection.Register(s)
 
-	grpcServers = append(grpcServers, s)
+	if secure {
+		grpcServersMutex.Lock()
+		grpcServers = append(grpcServers, s)
+		grpcServersMutex.Unlock()
+	}
 
 	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
+}
+
+func getGrpcOpts(secure bool) []grpc.ServerOption {
+	opts := []grpc.ServerOption{
+		cbft.AddServerInterceptor(),
+		grpc.MaxConcurrentStreams(cbft.DefaultGrpcMaxConcurrentStreams),
+		grpc.MaxSendMsgSize(cbft.DefaultGrpcMaxRecvMsgSize),
+		grpc.MaxRecvMsgSize(cbft.DefaultGrpcMaxSendMsgSize),
+		// TODO add more configurability
+	}
+
+	if secure {
+		var err error
+		var creds credentials.TransportCredentials
+		creds, err = credentials.NewServerTLSFromFile(flags.TLSCertFile,
+			flags.TLSKeyFile)
+		if err != nil {
+			log.Fatalf("init_grpc: NewServerTLSFromFile, err: %v", err)
+		}
+
+		opts = append(opts, grpc.Creds(creds))
+	}
+
+	return opts
 }

@@ -23,24 +23,25 @@ import (
 const defaultDataDir = "data"
 
 type cbftFlags struct {
-	BindHTTP   string
-	BindHTTPS  string
-	BindGRPC   string
-	CfgConnect string
-	Container  string
-	DataDir    string
-	Help       bool
-	Options    string
-	Register   string
-	Server     string
-	StaticDir  string
-	StaticETag string
-	Tags       string
-	UUID       string
-	Version    bool
-	Weight     int
-	Extras     string
-	AuthType   string
+	BindHTTP    string
+	BindHTTPS   string
+	BindGRPC    string
+	BindGRPCSSL string
+	CfgConnect  string
+	Container   string
+	DataDir     string
+	Help        bool
+	Options     string
+	Register    string
+	Server      string
+	StaticDir   string
+	StaticETag  string
+	Tags        string
+	UUID        string
+	Version     bool
+	Weight      int
+	Extras      string
+	AuthType    string
 
 	TLSCertFile string
 	TLSKeyFile  string
@@ -98,6 +99,10 @@ func initFlags(flags *cbftFlags) map[string][]string {
 			"\nadmin UI; by default, disabled; for example, ':18094'.")
 	s(&flags.BindGRPC,
 		[]string{"bindGrpc"}, "ADDR:PORT", "",
+		"local address:port where this node will listen and"+
+			"\nserve GRPC requests; for example, ':28094'.")
+	s(&flags.BindGRPCSSL,
+		[]string{"bindGrpcSsl"}, "ADDR:PORT", "",
 		"local address:port where this node will listen and"+
 			"\nserve GRPC requests; for example, ':28094'.")
 	s(&flags.CfgConnect,

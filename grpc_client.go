@@ -444,12 +444,14 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	rv := make([]RemoteClient, 0, len(remotePlanPIndexes))
 
 	for _, remotePlanPIndex := range remotePlanPIndexes {
-		if onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name] {
+		if onlyPIndexes != nil &&
+			!onlyPIndexes[remotePlanPIndex.PlanPIndex.Name] {
 			continue
 		}
 
 		delimiterPos := strings.LastIndex(remotePlanPIndex.NodeDef.HostPort, ":")
-		if delimiterPos < 0 || delimiterPos >= len(remotePlanPIndex.NodeDef.HostPort)-1 {
+		if delimiterPos < 0 ||
+			delimiterPos >= len(remotePlanPIndex.NodeDef.HostPort)-1 {
 			// No port available
 			log.Warnf("grpc_client: grpcClient with no possible port into: %v",
 				remotePlanPIndex.NodeDef.HostPort)
@@ -457,22 +459,37 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 		host := remotePlanPIndex.NodeDef.HostPort[:delimiterPos]
 
-		extrasBindGRPC, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindGRPC")
-		if er == nil && extrasBindGRPC != nil {
-			if bindGRPCstr, ok := extrasBindGRPC.(string); ok {
-				portPos := strings.LastIndex(bindGRPCstr, ":") + 1
-				if portPos > 0 && portPos < len(bindGRPCstr) {
-					host = host + ":" + bindGRPCstr[portPos:]
-				}
+		var port string
+		bindPort, err := getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPC")
+		if err == nil {
+			port = bindPort
+		}
+
+		var sslEnabled bool
+		bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")
+		if err == nil {
+			sslEnabled = true
+			port = bindPort
+		}
+
+		if port == "" {
+			return nil, fmt.Errorf("grpc_client: no ports found for host: %s",
+				host)
+		}
+
+		host = host + ":" + port
+
+		var extrasCertPEM interface{}
+		if sslEnabled {
+			extrasCertPEM, err = remotePlanPIndex.NodeDef.GetFromParsedExtras(
+				"tlsCertPEM")
+			if err != nil {
+				return nil, fmt.Errorf("grpc_client: remote CertFile, err: %v", err)
 			}
 		}
 
-		extrasCertPEM, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("tlsCertPEM")
-		if er != nil {
-			return nil, fmt.Errorf("grpc_client: remote CertFile, err: %v", er)
-		}
-
-		cli, err := GetRpcClient(remotePlanPIndex.NodeDef.UUID, host, extrasCertPEM)
+		cli, err := GetRpcClient(remotePlanPIndex.NodeDef.UUID, host,
+			extrasCertPEM)
 		if err != nil {
 			log.Printf("grpc_client, getRpcClient err: %v", err)
 			continue
@@ -481,7 +498,7 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		grpcClient := &GrpcClient{
 			Mgr:         mgr,
 			name:        fmt.Sprintf("grpcClient - %s", host),
-			HostPort:    host + ":" + GrpcPort,
+			HostPort:    host,
 			IndexName:   indexName,
 			IndexUUID:   indexUUID,
 			PIndexNames: []string{remotePlanPIndex.PlanPIndex.Name},
@@ -502,6 +519,20 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	return rv, nil
+}
+
+func getPortFromNodeDefs(nodeDef *cbgt.NodeDef, key string) (string, error) {
+	var bindPort string
+	bindValue, err := nodeDef.GetFromParsedExtras(key)
+	if err == nil && bindValue != nil {
+		if bindStr, ok := bindValue.(string); ok {
+			portPos := strings.LastIndex(bindStr, ":") + 1
+			if portPos > 0 && portPos < len(bindStr) {
+				bindPort = bindStr[portPos:]
+			}
+		}
+	}
+	return bindPort, err
 }
 
 // GroupGrpcClientsByHostPort groups the gRPC clients by their

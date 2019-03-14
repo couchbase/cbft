@@ -214,6 +214,11 @@ func main() {
 		options["bindGRPC"] = bindGRPCList[0]
 	}
 
+	if flags.BindGRPCSSL != "" {
+		bindGRPCList := strings.Split(flags.BindGRPCSSL, ",")
+		options["bindGRPCSSL"] = bindGRPCList[0]
+	}
+
 	routerInUse, err = mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
 		bindHTTPList[0], flags.DataDir,
@@ -290,6 +295,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	if _, ok := options["bindGRPC"]; ok {
 		extrasMap["bindGRPC"] = options["bindGRPC"]
+	}
+
+	if _, ok := options["bindGRPCSSL"]; ok {
+		extrasMap["bindGRPCSSL"] = options["bindGRPCSSL"]
 	}
 
 	extrasJSON, err := json.Marshal(extrasMap)
