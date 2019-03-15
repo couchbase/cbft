@@ -87,12 +87,16 @@ To see when rebalance REST API call went to ns-server...
 
     grep rebalance cbc*/ns_server.http_access.log | grep POST
 
-To get the goroutine dump out of our fts_diag.json in original formatting...
+To get the goroutine dump out of fts_diag.json in original formatting...
 
     cat fts_diag.json | jq -r '.["/debug/pprof/goroutine?debug=2"]'
 
     # The -r is the magic to get it back out of a json string,
     # removing quoting, and evaluate newlines again.
+
+To get the heap pprof dump out of fts_diag.json in original formatting...
+
+    cat fts_diag.json | jq -r '.["/debug/pprof/heap?debug=1"]'
 
 As another approach, to have cbft process to log or dump goroutine info (to stdout/stderr or logs)...
 
