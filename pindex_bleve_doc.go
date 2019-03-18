@@ -24,7 +24,7 @@ type BleveInterface interface{}
 
 type BleveDocument struct {
 	typ            string
-	BleveInterface `'json:""`
+	BleveInterface `json:""`
 }
 
 func (c *BleveDocument) Type() string {
