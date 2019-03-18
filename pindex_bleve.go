@@ -1451,7 +1451,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		defaultType = imi.DefaultType
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.buildDocument(key, val, defaultType)
+	cbftDoc, errv := t.bdest.bleveDocConfig.BuildDocument(key, val, defaultType)
 
 	erri := t.batch.Index(string(key), cbftDoc)
 

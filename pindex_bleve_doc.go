@@ -105,10 +105,10 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&tmp)
 }
 
-// buildCbftDocument returns a CbftDocument for the k/v pair
+// BuildDocument returns a CbftDocument for the k/v pair
 // NOTE: err may be non-nil AND a document is returned
 // this allows the error to be logged, but a stub document to be indexed
-func (b *BleveDocumentConfig) buildDocument(key, val []byte, defaultType string) (*BleveDocument, error) {
+func (b *BleveDocumentConfig) BuildDocument(key, val []byte, defaultType string) (*BleveDocument, error) {
 	var v interface{}
 
 	err := json.Unmarshal(val, &v)
