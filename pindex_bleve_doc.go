@@ -105,7 +105,7 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&tmp)
 }
 
-// BuildDocument returns a CbftDocument for the k/v pair
+// BuildDocument returns a BleveDocument for the k/v pair
 // NOTE: err may be non-nil AND a document is returned
 // this allows the error to be logged, but a stub document to be indexed
 func (b *BleveDocumentConfig) BuildDocument(key, val []byte, defaultType string) (*BleveDocument, error) {
@@ -116,17 +116,17 @@ func (b *BleveDocumentConfig) BuildDocument(key, val []byte, defaultType string)
 		v = map[string]interface{}{}
 	}
 
-	typ := b.determineType(key, v, defaultType)
-
-	doc := BleveDocument{
-		typ:            typ,
-		BleveInterface: v,
-	}
-
-	return &doc, err
+	return b.BuildDocumentFromObj(key, v, defaultType), err
 }
 
-func (b *BleveDocumentConfig) determineType(key []byte, v interface{}, defaultType string) string {
+func (b *BleveDocumentConfig) BuildDocumentFromObj(key []byte, v interface{}, defaultType string) *BleveDocument {
+	return &BleveDocument{
+		typ:            b.DetermineType(key, v, defaultType),
+		BleveInterface: v,
+	}
+}
+
+func (b *BleveDocumentConfig) DetermineType(key []byte, v interface{}, defaultType string) string {
 	switch b.Mode {
 	case "type_field":
 		typ, ok := mustString(lookupPropertyPath(v, b.TypeField))

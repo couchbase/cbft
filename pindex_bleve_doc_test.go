@@ -91,7 +91,7 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		actualType := test.config.determineType(test.key, test.val, "_default")
+		actualType := test.config.DetermineType(test.key, test.val, "_default")
 		if actualType != test.expectedType {
 			t.Fatalf("expected type: '%s', got '%s'", test.expectedType, actualType)
 		}
