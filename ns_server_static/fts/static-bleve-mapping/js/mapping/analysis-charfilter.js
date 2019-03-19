@@ -81,7 +81,7 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
         if ($scope.charFilterTypeTemplates[$scope.charfilter.type]) {
             $scope.formpath = $scope.charFilterTypeTemplates[$scope.charfilter.type];
         } else {
-            $scope.formpath = unknownCharFilterTypeTemplate;
+            $scope.formpath = $scope.unknownCharFilterTypeTemplate;
         }
     };
 
