@@ -35,6 +35,8 @@ function initBleveIndexMappingController(
         indexMapping.analysis.token_filters || {};
     indexMapping.analysis.token_maps =
         indexMapping.analysis.token_maps || {};
+    indexMapping.analysis.date_time_parsers =
+        indexMapping.analysis.date_time_parsers || {};
 
     if (indexMapping["default_mapping"]) {
         indexMapping.types[indexMapping.defaultMappingKey] = indexMapping["default_mapping"];
