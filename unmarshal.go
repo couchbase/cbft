@@ -287,6 +287,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		Explain          bool                    `json:"explain"`
 		Sort             []json.RawMessage       `json:"sort"`
 		IncludeLocations bool                    `json:"includeLocations"`
+		Score            string                  `json:"score"`
 	}
 	r := bleve.SearchRequest{}
 	iter.ReadVal(&temp)
@@ -322,6 +323,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	}
 
 	r.IncludeLocations = temp.IncludeLocations
+	r.Score = temp.Score
 	r.Query, err = parseQuery(temp.Q)
 	if err != nil {
 		iter.Error = err
