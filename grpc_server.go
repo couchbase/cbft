@@ -16,8 +16,11 @@ package cbft
 
 import (
 	"fmt"
+	"strconv"
+	"sync/atomic"
 	"time"
 
+	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -27,6 +30,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// atomic counter that keep track of the number of gRPC searches
+var totgRPCSearches uint64
+
+var totgRPCSearchDuration uint64
 
 // SearchService is an implementation for the SearchSrvServer
 // gRPC search interface
@@ -85,48 +93,77 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		return status.Error(codes.FailedPrecondition,
 			"grpc_server: empty search request found")
 	}
+
 	err := checkRPCAuth(stream.Context(), req.IndexName, req)
 	if err != nil {
 		return status.Errorf(codes.PermissionDenied, "err: %v", err)
 	}
 
-	var queryPIndexes []string
-	if req.GetQueryPIndexes() != nil {
-		queryPIndexes = req.GetQueryPIndexes().PIndexNames
-	}
-
 	queryCtlParams := cbgt.QueryCtlParams{
 		Ctl: cbgt.QueryCtl{
-			Timeout:     cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
-			Consistency: &cbgt.ConsistencyParams{},
+			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
-		// TODO default partition selector string
 	}
 
-	ctlParams := req.GetQueryCtlParams()
-	if ctlParams != nil && ctlParams.Ctl != nil {
-		if ctlParams.Ctl.Consistency != nil {
-			queryCtlParams.Ctl.Consistency.Level = ctlParams.Ctl.Consistency.Level
-			queryCtlParams.Ctl.Consistency.Results = ctlParams.Ctl.Consistency.Results
-			queryCtlParams.Ctl.Consistency.Vectors =
-				make(map[string]cbgt.ConsistencyVector, len(ctlParams.Ctl.Consistency.Vectors))
-			for k, v := range ctlParams.Ctl.Consistency.Vectors {
-				queryCtlParams.Ctl.Consistency.Vectors[k] = v.ConsistencyVector
-			}
-
-			err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
-			if err != nil {
-				return status.Errorf(codes.FailedPrecondition,
-					"grpc_server: validating consistency, err: %v", err)
-			}
+	if req.QueryCtlParams != nil {
+		err = UnmarshalJSON(req.QueryCtlParams, &queryCtlParams)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument,
+				"parsing queryCtlParams, err: %v", err)
 		}
-		if ctlParams.Ctl.PartitionSelection != "" {
-			queryCtlParams.Ctl.PartitionSelection = ctlParams.Ctl.PartitionSelection
+	}
+
+	queryPIndexes := QueryPIndexes{}
+	if req.QueryPIndexes != nil {
+		err = UnmarshalJSON(req.QueryPIndexes, &queryPIndexes)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument,
+				"parsing queryPIndexes, err: %v", err)
+		}
+	}
+
+	searchRequest := &bleve.SearchRequest{}
+	err = UnmarshalJSON(req.Contents, searchRequest)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument,
+			"parsing searchRequest, err: %v", err)
+	}
+
+	if queryCtlParams.Ctl.Consistency != nil {
+		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument,
+				"validating consistency, err: %v", err)
+		}
+	}
+
+	err = searchRequest.Validate()
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument,
+			"validating request, err: %v", err)
+	}
+
+	v, exists := s.mgr.Options()["bleveMaxResultWindow"]
+	if exists {
+		var bleveMaxResultWindow int
+		bleveMaxResultWindow, err = strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("bleve: QueryBleve"+
+				" atoi: %v, err: %v", v, err)
+		}
+
+		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
+			return status.Errorf(codes.InvalidArgument,
+				"alidating request, err: %v", fmt.Errorf(
+					"bleve: bleveMaxResultWindow exceeded,"+
+						" from: %d, size: %d, bleveMaxResultWindow: %d",
+					searchRequest.From, searchRequest.Size, bleveMaxResultWindow))
 		}
 	}
 
 	// phase 1 - set up timeouts, wait for local consistency reqiurements
 	// to be satisfied, could return err 412
+
 	// create a context with the appropriate timeout
 	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
 	// defer a call to cancel, this ensures that goroutine from
@@ -134,11 +171,11 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	defer cancel()
 
 	var onlyPIndexes map[string]bool
-	if len(queryPIndexes) > 0 {
-		onlyPIndexes = cbgt.StringsToMap(queryPIndexes)
+	if len(queryPIndexes.PIndexNames) > 0 {
+		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
-	alias, remoteClients, _, er := bleveIndexAlias(s.mgr, req.IndexName,
+	alias, remoteClients, numPIndexes, er := bleveIndexAlias(s.mgr, req.IndexName,
 		req.IndexUUID, true, queryCtlParams.Ctl.Consistency, cancelCh, true,
 		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, addGrpcClients)
 	if er != nil {
@@ -146,12 +183,6 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			return status.Errorf(codes.Unavailable,
 				"grpc_server: bleveIndexAlias, err: %v", er)
 		}
-	}
-
-	searchRequest, err := makeSearchRequest(req)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument,
-			"grpc_server: parse request, err: %v", err)
 	}
 
 	var sh *streamer
@@ -169,6 +200,34 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		}
 	}
 
+	// estimate memory needed for merging search results from all
+	// the pindexes
+	mergeEstimate := uint64(numPIndexes) * bleve.MemoryNeededForSearchResult(searchRequest)
+	err = fireQueryEvent(0, EventQueryStart, 0, mergeEstimate)
+	if err != nil {
+		atomic.AddUint64(&totQueryRejectOnNotEnoughQuota, 1)
+		return status.Errorf(codes.Internal,
+			"grpc_server: query reject on not enough quota: %v", err)
+	}
+
+	defer fireQueryEvent(0, EventQueryEnd, 0, mergeEstimate)
+
+	// set query start/end callbacks
+	ctx = context.WithValue(ctx, bleve.SearchQueryStartCallbackKey,
+		bleve.SearchQueryStartCallbackFn(bleveCtxQueryStartCallback))
+	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
+		bleve.SearchQueryEndCallbackFn(bleveCtxQueryEndCallback))
+
+	// register with the QuerySupervisor
+	id := querySupervisor.AddEntry(&QuerySupervisorContext{
+		Query:   searchRequest.Query,
+		Cancel:  cancel,
+		Size:    searchRequest.Size,
+		From:    searchRequest.From,
+		Timeout: queryCtlParams.Ctl.Timeout,
+	})
+	defer querySupervisor.DeleteEntry(id)
+
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
 		err1 := processSearchResult(&queryCtlParams, searchResult,
@@ -177,13 +236,19 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			return status.Error(codes.DeadlineExceeded,
 				fmt.Sprintf("grpc_server: searchInContext err: %v", err1))
 		}
-		response, er2 := marshalProtoResults(searchResult)
+
+		response, er2 := MarshalJSON(searchResult)
 		if er2 != nil {
 			return status.Errorf(codes.Internal,
 				"grpc_server, response marshal err: %v", er2)
 		}
 
-		if err = stream.Send(response); err != nil {
+		rv := &pb.StreamSearchResults{
+			Contents: &pb.StreamSearchResults_SearchResult{
+				SearchResult: response,
+			}}
+
+		if err = stream.Send(rv); err != nil {
 			return status.Errorf(codes.Internal,
 				"grpc_server: stream send, err: %v", err)
 		}
@@ -240,13 +305,20 @@ func serverInterceptor(
 	info *grpc.StreamServerInfo,
 	handler grpc.StreamHandler) (err error) {
 	start := time.Now()
-	var nctx context.Context
 	defer func() {
-		log.Printf("grpc_server: invoke server method: %s duration: %f sec err: %v",
-			info.FullMethod, time.Since(start).Seconds(), err)
+		atomic.AddUint64(&totgRPCSearchDuration, uint64(time.Since(start).Seconds()))
 	}()
 
-	nctx, err = wrapAuthCallbacks(req, ss.Context(), info.FullMethod)
+	// skip the authCallbacks wrapping/authentication for scatter gather calls,
+	// as the user is already authenticated at the original node.
+	if _, err = extractMetaHeader(ss.Context(), "rpcclusteractionkey"); err == nil {
+		w := wrapServerStream(ss)
+		w.wrappedContext = ss.Context()
+		return handler(req, w)
+	}
+
+	atomic.AddUint64(&totgRPCSearches, 1)
+	nctx, err := wrapAuthCallbacks(req, ss.Context(), info.FullMethod)
 	if err != nil {
 		log.Printf("grpc_server: authenticate err: %+v", err)
 		return err

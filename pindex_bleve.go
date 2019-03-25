@@ -1194,9 +1194,12 @@ func makeSearchResultErr(req *bleve.SearchRequest,
 
 // ---------------------------------------------------------
 
-func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams, parentCancelCh <-chan bool) (ctx context.Context, cancel context.CancelFunc, cancelChRv <-chan bool) {
+func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams,
+	parentCancelCh <-chan bool) (ctx context.Context, cancel context.CancelFunc,
+	cancelChRv <-chan bool) {
 	if queryCtlParams.Ctl.Timeout > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(queryCtlParams.Ctl.Timeout)*time.Millisecond)
+		ctx, cancel = context.WithTimeout(context.Background(),
+			time.Duration(queryCtlParams.Ctl.Timeout)*time.Millisecond)
 	} else {
 		ctx, cancel = context.WithCancel(context.Background())
 	}

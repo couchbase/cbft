@@ -109,7 +109,7 @@ func (s *streamer) write(b []byte, offsets []uint64, hitsCount int) error {
 	}
 
 	hitRes := &pb.StreamSearchResults{
-		PayLoad: &pb.StreamSearchResults_Hits{
+		Contents: &pb.StreamSearchResults_Hits{
 			Hits: &pb.StreamSearchResults_Batch{
 				Bytes:   b,
 				Offsets: offsets,

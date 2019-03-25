@@ -15,7 +15,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
@@ -32,6 +31,7 @@ import (
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	log "github.com/couchbase/clog"
 )
@@ -252,9 +252,9 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 		Request: req.searchRequest,
 	}
 
-	var hit *pb.StreamSearchResults
+	var response *pb.StreamSearchResults
 	for {
-		hit, err = res.Recv()
+		response, err = res.Recv()
 		if err == io.EOF {
 			err = nil
 			break
@@ -264,31 +264,19 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 			break
 		}
 
-		switch r := hit.PayLoad.(type) {
+		switch r := response.Contents.(type) {
 
 		case *pb.StreamSearchResults_Hits:
 			if sw, ok := g.sc.(streamHandler); ok {
-				//log.Printf("grpc_client: reception: %s",r.Hits.Bytes)
 				err = sw.write(r.Hits.Bytes, r.Hits.Offsets, int(r.Hits.Total))
 				if err != nil {
 					break
 				}
 			}
 
-		case *pb.StreamSearchResults_Results:
-			searchResult.Status.Failed = int(r.Results.Status.Failed)
-			searchResult.Status.Successful = int(r.Results.Status.Successful)
-			searchResult.Status.Total = int(r.Results.Status.Total)
-			searchResult.MaxScore = r.Results.MaxScore
-			searchResult.Total = r.Results.Total
-			if r.Results.Hits != nil {
-				err = UnmarshalJSON(r.Results.Hits, &searchResult.Hits)
-				if err != nil {
-					return searchResult, err
-				}
-			}
-			if r.Results.Facets != nil {
-				err = UnmarshalJSON(r.Results.Facets, &searchResult.Facets)
+		case *pb.StreamSearchResults_SearchResult:
+			if r.SearchResult != nil {
+				err = UnmarshalJSON(r.SearchResult, &searchResult)
 				if err != nil {
 					return searchResult, err
 				}
@@ -302,101 +290,27 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 func (g *GrpcClient) Query(ctx context.Context,
 	req *scatterRequest) (*bleve.SearchResult, error) {
 	scatterGatherReq := &pb.SearchRequest{
-		QueryPIndexes: &pb.QueryPIndexes{},
-		QueryCtlParams: &pb.QueryCtlParams{
-			Ctl: &pb.QueryCtl{
-				Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
-			},
-		},
+		IndexName: g.IndexName,
+		IndexUUID: g.IndexUUID,
 	}
 
-	query, err := json.Marshal(req.searchRequest.Query)
+	b, err := MarshalJSON(req.searchRequest)
 	if err != nil {
 		return nil, err
 	}
-	scatterGatherReq.Query = query
+	scatterGatherReq.Contents = b
 
-	scatterGatherReq.Sort, err = json.Marshal(req.searchRequest.Sort)
+	b, err = MarshalJSON(req.ctlParams)
 	if err != nil {
 		return nil, err
 	}
+	scatterGatherReq.QueryCtlParams = b
 
-	temp := req.searchRequest
-
-	if req.searchRequest.Facets != nil {
-		fmap := make(map[string]*pb.FacetRequest, len(req.searchRequest.Facets))
-		scatterGatherReq.Facets = &pb.FacetsRequest{}
-		scatterGatherReq.Facets.FacetsRequests = fmap
-		for k, fr := range temp.Facets {
-			bfr := &pb.FacetRequest{}
-			bfr.Size = int64(fr.Size)
-			bfr.Field = fr.Field
-			for _, v := range fr.NumericRanges {
-				if v.Min != nil {
-					bfr.NumericRanges = append(bfr.NumericRanges,
-						&pb.NumericRange{Name: v.Name, Min: *v.Min})
-				}
-				if v.Max != nil {
-					bfr.NumericRanges = append(bfr.NumericRanges,
-						&pb.NumericRange{Name: v.Name, Max: *v.Max})
-				}
-			}
-
-			for _, v := range fr.DateTimeRanges {
-				var s, e string
-				if !v.Start.IsZero() {
-					s = v.Start.String()
-				}
-				if !v.End.IsZero() {
-					e = v.End.String()
-				}
-				bfr.DateTimeRanges = append(bfr.DateTimeRanges,
-					&pb.DateTimeRange{Name: v.Name, Start: s, End: e})
-			}
-
-			scatterGatherReq.Facets.FacetsRequests[k] = bfr
-		}
+	b, err = MarshalJSON(req.onlyPIndexes)
+	if err != nil {
+		return nil, err
 	}
-
-	scatterGatherReq.Explain = req.searchRequest.Explain
-	scatterGatherReq.Fields = req.searchRequest.Fields
-	scatterGatherReq.From = int64(req.searchRequest.From)
-	scatterGatherReq.Size = int64(req.searchRequest.Size)
-	scatterGatherReq.Score = req.searchRequest.Score
-	scatterGatherReq.IncludeLocations = req.searchRequest.IncludeLocations
-
-	scatterGatherReq.Highlight = &pb.HighLightRequest{}
-	if req.searchRequest.Highlight != nil {
-		if req.searchRequest.Highlight.Style != nil {
-			scatterGatherReq.Highlight.Style = *req.searchRequest.Highlight.Style
-		}
-		if req.searchRequest.Highlight.Fields != nil {
-			scatterGatherReq.Highlight.Fields = req.searchRequest.Highlight.Fields
-		}
-	}
-
-	if req.ctlParams != nil && req.ctlParams.Ctl.Consistency != nil {
-		scatterGatherReq.QueryCtlParams.Ctl =
-			&pb.QueryCtl{
-				Consistency: &pb.ConsistencyParams{
-					Vectors: make(map[string]*pb.ConsistencyVectors,
-						len(req.ctlParams.Ctl.Consistency.Vectors)),
-				},
-			}
-		scatterGatherReq.QueryCtlParams.Ctl.Timeout = req.ctlParams.Ctl.Timeout
-		scatterGatherReq.QueryCtlParams.Ctl.Consistency.Level =
-			req.ctlParams.Ctl.Consistency.Level
-		for k, v := range req.ctlParams.Ctl.Consistency.Vectors {
-			scatterGatherReq.QueryCtlParams.Ctl.Consistency.Vectors[k] =
-				&pb.ConsistencyVectors{
-					ConsistencyVector: v,
-				}
-		}
-	}
-
-	scatterGatherReq.QueryPIndexes.PIndexNames = g.PIndexNames
-	scatterGatherReq.IndexName = g.IndexName
-	scatterGatherReq.IndexUUID = g.IndexUUID
+	scatterGatherReq.QueryPIndexes = b
 
 	// check if stream rpc is requested
 	if se := ctx.Value(search.MakeDocumentMatchHandlerKey); se != nil {
@@ -405,7 +319,11 @@ func (g *GrpcClient) Query(ctx context.Context,
 		}
 	}
 
-	return g.SearchRPC(ctx, req, scatterGatherReq)
+	// mark that its a scatter gather query
+	nctx := metadata.AppendToOutgoingContext(ctx,
+		"rpcclusteractionkey", "fts/scatter-gather")
+
+	return g.SearchRPC(nctx, req, scatterGatherReq)
 }
 
 func (g *GrpcClient) Advanced() (index.Index, store.KVStore, error) {

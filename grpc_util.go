@@ -18,18 +18,14 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search"
 	"github.com/blevesearch/bleve/search/query"
 	pb "github.com/couchbase/cbft/protobuf"
 	log "github.com/couchbase/clog"
-	"github.com/golang/protobuf/ptypes/duration"
 
 	"github.com/couchbase/cbauth"
 	"google.golang.org/grpc"
@@ -54,8 +50,8 @@ var DefaultGrpcConnectionHeartBeatInterval = time.Duration(60) * time.Second
 
 var DefaultGrpcMaxBackOffDelay = time.Duration(10) * time.Second
 
-var DefaultGrpcMaxRecvMsgSize = 1024 * 1024 * 20 // 20 MB
-var DefaultGrpcMaxSendMsgSize = 1024 * 1024 * 20 // 20 MB
+var DefaultGrpcMaxRecvMsgSize = 1024 * 1024 * 50 // 50 MB
+var DefaultGrpcMaxSendMsgSize = 1024 * 1024 * 50 // 50 MB
 
 var DefaultGrpcMaxConcurrentStreams = uint32(5000)
 
@@ -86,7 +82,7 @@ func (b *basicAuthCreds) GetRequestMetadata(context.Context,
 // RequireTransportSecurity should be true as even though the credentials
 // are base64, we want to have it encrypted over the wire.
 func (b *basicAuthCreds) RequireTransportSecurity() bool {
-	return false // TODO - make it true
+	return true
 }
 
 func basicAuth(username, password string) string {
@@ -158,8 +154,6 @@ func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, erro
 			grpc.MaxCallSendMsgSize(DefaultGrpcMaxSendMsgSize),
 		),
 
-		addClientInterceptor(),
-
 		grpc.WithPerRPCCredentials(&basicAuthCreds{
 			username: cbUser,
 			password: cbPasswd,
@@ -185,45 +179,6 @@ func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, erro
 	return opts, nil
 }
 
-func marshalProtoResults(searchResult *bleve.SearchResult) (*pb.StreamSearchResults, error) {
-	result := &pb.StreamSearchResults_SearchResult{
-		Status: &pb.SearchStatus{},
-	}
-
-	if searchResult.Status != nil {
-		result.Status.Failed = int64(searchResult.Status.Failed)
-		result.Status.Total = int64(searchResult.Status.Total)
-		result.Status.Successful = int64(searchResult.Status.Successful)
-	}
-	result.MaxScore = searchResult.MaxScore
-	result.Total = searchResult.Total
-
-	var err error
-	result.Hits, err = MarshalJSON(&searchResult.Hits)
-	if err != nil {
-		log.Printf("grpc_util, json err: %v", err)
-		return nil, err
-	}
-
-	if searchResult.Facets != nil {
-		result.Facets, err = MarshalJSON(&searchResult.Facets)
-		if err != nil {
-			log.Printf("grpc_util, json err: %v", err)
-			return nil, err
-		}
-	}
-
-	result.Took = &duration.Duration{Seconds: int64(searchResult.Took.Seconds()),
-		Nanos: int32(searchResult.Took.Nanoseconds())}
-
-	response := &pb.StreamSearchResults{
-		PayLoad: &pb.StreamSearchResults_Results{
-			Results: result,
-		}}
-
-	return response, nil
-}
-
 func parseStringTime(t string) (time.Time, error) {
 	dateTimeParser, err := cache.DateTimeParserNamed(query.QueryDateTimeParser)
 	if err != nil {
@@ -235,72 +190,4 @@ func parseStringTime(t string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return ti, nil
-}
-
-func makeSearchRequest(req *pb.SearchRequest) (*bleve.SearchRequest, error) {
-	searchRequest := &bleve.SearchRequest{
-		Sort: search.SortOrder{},
-	}
-	var err error
-	searchRequest.Query, err = query.ParseQuery(req.Query)
-	if err != nil {
-		return nil, fmt.Errorf("parseQuery, err: %v", err)
-	}
-
-	searchRequest.Explain = req.Explain
-	searchRequest.Fields = req.Fields
-	searchRequest.From = int(req.From)
-	searchRequest.Size = int(req.Size)
-	searchRequest.IncludeLocations = req.IncludeLocations
-	searchRequest.Score = req.Score
-
-	var temp struct {
-		Sort []json.RawMessage `json:"sort"`
-	}
-	if req.Sort != nil {
-		err = UnmarshalJSON(req.Sort, &temp.Sort)
-		if err != nil {
-			return nil, fmt.Errorf("parse Sort, json err: %v", err)
-		}
-	}
-
-	if temp.Sort == nil {
-		searchRequest.Sort = search.SortOrder{&search.SortScore{Desc: true}}
-	} else {
-		searchRequest.Sort, err = search.ParseSortOrderJSON(temp.Sort)
-		if err != nil {
-			return nil, fmt.Errorf("parseSortOrderJSON, err: %v", err)
-		}
-	}
-	if req.Facets != nil {
-		searchRequest.Facets = make(map[string]*bleve.FacetRequest,
-			len(req.Facets.FacetsRequests))
-		for k, v := range req.Facets.FacetsRequests {
-			fr := bleve.NewFacetRequest(v.Field, int(v.Size))
-			for _, dr := range v.DateTimeRanges {
-				s, _ := parseStringTime(dr.Start)
-				e, _ := parseStringTime(dr.End)
-				fr.AddDateTimeRange(dr.Name, s, e)
-			}
-
-			for _, nr := range v.NumericRanges {
-				fr.AddNumericRange(nr.Name, &nr.Min, &nr.Max)
-			}
-
-			searchRequest.Facets[k] = fr
-		}
-	}
-
-	if req.Highlight != nil {
-		searchRequest.Highlight = bleve.NewHighlight()
-		if req.Highlight.Style != "" {
-			searchRequest.Highlight.Style = &req.Highlight.Style
-		}
-
-		for _, f := range req.Highlight.Fields {
-			searchRequest.Highlight.AddField(f)
-		}
-	}
-
-	return searchRequest, nil
 }

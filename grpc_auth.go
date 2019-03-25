@@ -52,9 +52,10 @@ func tryBasicAuth(req interface{}, ctx context.Context,
 		return nil, fmt.Errorf("invalid request type")
 	}
 
-	auth, err := extractHeader(ctx, "authorization")
+	auth, err := extractMetaHeader(ctx, "authorization")
 	if err != nil {
-		return ctx, err
+		return ctx, status.Errorf(codes.Unauthenticated,
+			"err: %v", err)
 	}
 
 	const prefix = "Basic "
@@ -90,25 +91,22 @@ func tryBasicAuth(req interface{}, ctx context.Context,
 	return nctx, nil
 }
 
-func extractHeader(ctx context.Context, header string) (string, error) {
+func extractMetaHeader(ctx context.Context, header string) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Error(codes.Unauthenticated,
-			"no headers in request")
+		return "", fmt.Errorf("no headers in request")
 	}
 
-	authHeaders, ok := md[header]
+	headerValue, ok := md[header]
 	if !ok {
-		return "", status.Error(codes.Unauthenticated,
-			"no header in request")
+		return "", fmt.Errorf("no headers in request")
 	}
 
-	if len(authHeaders) != 1 {
-		return "", status.Error(codes.Unauthenticated,
-			"more than 1 header in request")
+	if len(headerValue) != 1 {
+		return "", fmt.Errorf("more than 1 header in request")
 	}
 
-	return authHeaders[0], nil
+	return headerValue[0], nil
 }
 
 type authWrapper struct {
@@ -177,14 +175,26 @@ func (rp *rpcRequestParser) GetPIndexName() (string, error) {
 	// TODO - placeholder implementation, improve this as more
 	// and more pindex based RPCs are introduced.
 	if r, ok := rp.request.(*pb.SearchRequest); ok {
-		if r.QueryPIndexes != nil && len(r.QueryPIndexes.PIndexNames) > 0 {
-			return r.QueryPIndexes.PIndexNames[0], nil
+		if r.QueryPIndexes != nil {
+			queryPIndexes := QueryPIndexes{}
+			err := UnmarshalJSON(r.QueryPIndexes, &queryPIndexes)
+			if err != nil {
+				return "", fmt.Errorf("missing pindexName, err: %v", err)
+			}
+
+			if len(queryPIndexes.PIndexNames) > 0 {
+				return queryPIndexes.PIndexNames[0], nil
+			}
 		}
 	}
 	return "", fmt.Errorf("missing pindexName")
 }
 
 func checkRPCAuth(ctx context.Context, indexName string, req interface{}) error {
+	if _, err := extractMetaHeader(ctx, "rpcclusteractionkey"); err == nil {
+		return nil
+	}
+
 	var authHandler gRPCAuthHandler
 	if aw := ctx.Value(gRPCAuthHandlerKey); aw != nil {
 		authHandler = aw.(gRPCAuthHandler)
