@@ -12,7 +12,6 @@
 package main
 
 import (
-	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbft"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -49,22 +48,20 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	authType = options["authType"]
 
 	if authType == "cbauth" {
+		// Registering a TLS refresh callback with cbauth, which
+		// will be responsible for updating https listeners,
+		// whenever ssl certificates or the client cert auth settings
+		// are changed.
 		handleConfigChanges := func() error {
-			cfg := getTLSConfigs()
-			log.Printf("init_grpc: handleConfigChanges callback: %d", cfg.refreshType)
-			if cfg.refreshType == cbauth.CFG_CHANGE_CERTS_TLSCONFIG {
-				// restart the servers in case of certs change
-				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
-			}
+			// restart the servers in case of a refresh
+			setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
 			return nil
 		}
 
-		registerTLSRefreshCallback("grpc-ssl", handleConfigChanges)
-
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
-	} else {
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+		cbft.RegisterConfigRefreshCallback("grpc-ssl", handleConfigChanges)
 	}
+
+	setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
 }
 
 func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,

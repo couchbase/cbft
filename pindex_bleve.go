@@ -1869,48 +1869,56 @@ var totRemoteHttp2 uint64
 
 // ---------------------------------------------------------
 
-var http2ClientsLock sync.RWMutex
-var http2Clients map[string]*http.Client
+var http2ClientLock sync.RWMutex
+var http2Client *http.Client
 
-func init() {
-	http2Clients = make(map[string]*http.Client)
+func setupHttp2Client(certInBytes []byte) {
+	http2ClientLock.Lock()
+	setupHttp2ClientLOCKED(certInBytes)
+	http2ClientLock.Unlock()
 }
 
-func fetchHttp2ClientForNode(uuid string, pem []byte) (*http.Client, error) {
-	http2ClientsLock.RLock()
-	h := http2Clients[uuid]
-	http2ClientsLock.RUnlock()
-
-	if h != nil {
-		return h, nil
-	}
-
-	http2ClientsLock.Lock()
-	defer http2ClientsLock.Unlock()
-	h = http2Clients[uuid]
-	if h != nil {
-		return h, nil
-	}
-
+func setupHttp2ClientLOCKED(certInBytes []byte) {
 	transport := &http.Transport{
 		MaxIdleConns:        HttpTransportMaxIdleConns,
 		MaxIdleConnsPerHost: HttpTransportMaxIdleConnsPerHost,
 		IdleConnTimeout:     HttpTransportIdleConnTimeout,
+		TLSClientConfig:     &tls.Config{},
 	}
 
 	roots := x509.NewCertPool()
-	ok := roots.AppendCertsFromPEM(pem)
-	if !ok {
-		return nil, fmt.Errorf("bleveIndexTargets: error in fetching certificates")
-	}
-	transport.TLSClientConfig = &tls.Config{RootCAs: roots}
-	err := http2.ConfigureTransport(transport)
-	if err != nil {
-		return nil, err
+	ok := roots.AppendCertsFromPEM(certInBytes)
+	if ok {
+		transport.TLSClientConfig.RootCAs = roots
+		err := http2.ConfigureTransport(transport)
+		if err != nil {
+			log.Warnf("error in configuring transport for http2, err: %v", err)
+		}
+	} else {
+		log.Warnf("error in appending certificates to transport's tlsConfig")
+		transport.TLSClientConfig.InsecureSkipVerify = true
 	}
 
-	http2Clients[uuid] = &http.Client{Transport: transport}
-	return http2Clients[uuid], nil
+	http2Client = &http.Client{Transport: transport}
+}
+
+func fetchHttp2Client() *http.Client {
+	http2ClientLock.RLock()
+	if http2Client != nil {
+		http2ClientLock.RUnlock()
+		return http2Client
+	}
+	http2ClientLock.RUnlock()
+
+	http2ClientLock.Lock()
+	defer http2ClientLock.Unlock()
+	if http2Client != nil {
+		return http2Client
+	}
+
+	ss := GetSecuritySetting()
+	setupHttp2ClientLOCKED(ss.CertInBytes)
+	return http2Client
 }
 
 // ---------------------------------------------------------
@@ -1979,14 +1987,17 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		proto := "http://"
 
 		http2Enabled := false
-		extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
-		if er == nil && extrasBindHTTPS != nil {
-			if bindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
-				portPos := strings.LastIndex(bindHTTPSstr, ":") + 1
-				if portPos > 0 && portPos < len(bindHTTPSstr) {
-					port = bindHTTPSstr[portPos:]
-					proto = "https://"
-					http2Enabled = true
+		ss := GetSecuritySetting()
+		if ss.EncryptionEnabled {
+			extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
+			if er == nil && extrasBindHTTPS != nil {
+				if bindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
+					portPos := strings.LastIndex(bindHTTPSstr, ":") + 1
+					if portPos > 0 && portPos < len(bindHTTPSstr) {
+						port = bindHTTPSstr[portPos:]
+						proto = "https://"
+						http2Enabled = true
+					}
 				}
 			}
 		}
@@ -2008,18 +2019,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 
 		if http2Enabled {
-			extrasCertPEM, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("tlsCertPEM")
-			if er != nil {
-				return nil, fmt.Errorf("bleveIndexTargets: remote CertFile, err: %v", er)
-			}
-
-			http2Client, er := fetchHttp2ClientForNode(remotePlanPIndex.NodeDef.UUID,
-				[]byte(extrasCertPEM.(string)))
-			if er != nil {
-				return nil, fmt.Errorf("bleveIndexTargets, err: %v", er)
-			}
-
-			indexClient.httpClient = http2Client
+			indexClient.httpClient = fetchHttp2Client()
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)

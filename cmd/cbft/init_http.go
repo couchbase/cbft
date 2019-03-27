@@ -14,7 +14,6 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -23,7 +22,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbft"
 	log "github.com/couchbase/clog"
 
@@ -50,14 +48,14 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 	for _, bindHTTP := range bindHTTPList {
 		if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
 			strings.HasPrefix(bindHTTP, "[::]:") {
-			go mainServeHTTP("http", bindHTTP, nil, "", "")
+			go mainServeHTTP("http", bindHTTP, nil)
 
 			anyHostPorts[bindHTTP] = true
 		}
 	}
 
 	for i := len(bindHTTPList) - 1; i >= 1; i-- {
-		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts, "", "")
+		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
 	}
 
 	authType = options["authType"]
@@ -68,21 +66,16 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 		// whenever ssl certificates or the client cert auth settings
 		// are changed.
 		handleConfigChanges := func() error {
-			cfg := getTLSConfigs()
-			log.Printf("init_http: handleConfigChanges callback: %d", cfg.refreshType)
-			// time being, restart the servers always as before
+			// restart the servers in case of a refresh
 			setupHTTPSListeners()
 			return nil
 		}
-		registerTLSRefreshCallback("https", handleConfigChanges)
-
-		setupHTTPSListeners()
-
-	} else {
-		setupHTTPSListeners()
+		cbft.RegisterConfigRefreshCallback("https", handleConfigChanges)
 	}
 
-	mainServeHTTP("http", bindHTTPList[0], anyHostPorts, "", "")
+	setupHTTPSListeners()
+
+	mainServeHTTP("http", bindHTTPList[0], anyHostPorts)
 }
 
 // Add to HTTPS Server list serially
@@ -120,16 +113,14 @@ func setupHTTPSListeners() error {
 		for _, bindHTTPS := range bindHTTPSList {
 			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") ||
 				strings.HasPrefix(bindHTTPS, "[::]:") {
-				go mainServeHTTP("https", bindHTTPS, nil,
-					flags.TLSCertFile, flags.TLSKeyFile)
+				go mainServeHTTP("https", bindHTTPS, nil)
 
 				anyHostPorts[bindHTTPS] = true
 			}
 		}
 
 		for _, bindHTTPS := range bindHTTPSList {
-			go mainServeHTTP("https", bindHTTPS, anyHostPorts,
-				flags.TLSCertFile, flags.TLSKeyFile)
+			go mainServeHTTP("https", bindHTTPS, anyHostPorts)
 		}
 	}
 
@@ -138,8 +129,7 @@ func setupHTTPSListeners() error {
 
 // mainServeHTTP starts the http/https servers for cbft.
 // The proto may be "http" or "https".
-func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
-	certFile, keyFile string) {
+func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 	if bindHTTP[0] == ':' && proto == "http" {
 		bindHTTP = "localhost" + bindHTTP
 	}
@@ -215,36 +205,34 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		}
 
 		config.Certificates = make([]tls.Certificate, 1)
-		config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+		config.Certificates[0], err = tls.LoadX509KeyPair(
+			cbft.TLSCertFile, cbft.TLSKeyFile)
 		if err != nil {
 			log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
 		}
 
 		if authType == "cbauth" {
-			// Set MinTLSVersion and CipherSuites to what is provided by
-			// cbauth if authType were cbauth.
-			cbauthTLSCfg, err1 := cbauth.GetTLSConfig()
-			if err1 != nil {
-				log.Fatalf("init_http: GetTLSConfig, err: %v", err1)
-			}
-			config.MinVersion = cbauthTLSCfg.MinVersion
-			config.CipherSuites = cbauthTLSCfg.CipherSuites
-			config.PreferServerCipherSuites = cbauthTLSCfg.PreferServerCipherSuites
+			ss := cbft.GetSecuritySetting()
+			if ss != nil && ss.TLSConfig != nil {
+				// Set MinTLSVersion and CipherSuites to what is provided by
+				// cbauth if authType were cbauth (cached locally).
+				config.MinVersion = ss.TLSConfig.MinVersion
+				config.CipherSuites = ss.TLSConfig.CipherSuites
+				config.PreferServerCipherSuites = ss.TLSConfig.PreferServerCipherSuites
 
-			clientAuthType, er := cbauth.GetClientCertAuthType()
-			if er != nil {
-				log.Fatalf("init_http: GetClientCertAuthType, err: %v", err)
-			}
-
-			if clientAuthType != tls.NoClientCert {
-				caCert, er := ioutil.ReadFile(certFile)
-				if er != nil {
-					log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
+				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
+					caCertPool := x509.NewCertPool()
+					ok := caCertPool.AppendCertsFromPEM(ss.CertInBytes)
+					if !ok {
+						log.Fatalf("init_http: error in appending certificates")
+					}
+					config.ClientCAs = caCertPool
+					config.ClientAuth = *ss.ClientAuthType
+				} else {
+					config.ClientAuth = tls.NoClientCert
 				}
-				caCertPool := x509.NewCertPool()
-				caCertPool.AppendCertsFromPEM(caCert)
-				config.ClientCAs = caCertPool
-				config.ClientAuth = clientAuthType
+			} else {
+				config.ClientAuth = tls.NoClientCert
 			}
 		}
 

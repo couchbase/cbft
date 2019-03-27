@@ -92,8 +92,8 @@ func basicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func GetRpcClient(nodeUUID, hostPort string,
-	certsPEM interface{}) (pb.SearchServiceClient, error) {
+func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
+	pb.SearchServiceClient, error) {
 	var hostPool []*grpc.ClientConn
 	var initialised bool
 
@@ -102,7 +102,7 @@ func GetRpcClient(nodeUUID, hostPort string,
 
 	rpcConnMutex.Lock()
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
-		opts, err := getGrpcOpts(hostPort, certsPEM)
+		opts, err := getGrpcOpts(hostPort, certInBytes)
 		if err != nil {
 			log.Printf("grpc_client: getGrpcOpts, host port: %s err: %v",
 				hostPort, err)
@@ -131,16 +131,16 @@ func GetRpcClient(nodeUUID, hostPort string,
 	// when to perform explicit conn.Close()?
 	cli := pb.NewSearchServiceClient(hostPool[index])
 
-	if certsPEM != nil {
-		atomic.AddUint64(&totRemoteGrpcSecure, 1)
-	} else {
+	if len(certInBytes) == 0 {
 		atomic.AddUint64(&totRemoteGrpc, 1)
+	} else {
+		atomic.AddUint64(&totRemoteGrpcSecure, 1)
 	}
 
 	return cli, nil
 }
 
-func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, error) {
+func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error) {
 	cbUser, cbPasswd, err := cbauth.GetHTTPServiceAuth(hostPort)
 	if err != nil {
 		return nil, fmt.Errorf("grpc_util: cbauth err: %v", err)
@@ -168,15 +168,14 @@ func getGrpcOpts(hostPort string, certsPEM interface{}) ([]grpc.DialOption, erro
 		}),
 	}
 
-	if certsPEM != nil {
+	if len(certInBytes) != 0 {
 		// create a certificate pool from the CA
 		certPool := x509.NewCertPool()
 		// append the certificates from the CA
-		ok := certPool.AppendCertsFromPEM([]byte(certsPEM.(string)))
+		ok := certPool.AppendCertsFromPEM(certInBytes)
 		if !ok {
 			return nil, fmt.Errorf("grpc_util: failed to append ca certs")
 		}
-
 		creds := credentials.NewClientTLSFromCert(certPool, "")
 
 		opts = append(opts, grpc.WithTransportCredentials(creds))

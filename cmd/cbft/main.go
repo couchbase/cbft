@@ -189,6 +189,10 @@ func main() {
 		options["nsServerURL"] = flags.Server
 	}
 
+	// Update the cached CertFile and KeyFile for TLS.
+	cbft.TLSCertFile = flags.TLSCertFile
+	cbft.TLSKeyFile = flags.TLSKeyFile
+
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
@@ -286,11 +290,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	s := options["http2"]
 	if s == "true" && flags.TLSCertFile != "" && flags.TLSKeyFile != "" {
 		extrasMap["bindHTTPS"] = flags.BindHTTPS
-		certPEMBlock, er := ioutil.ReadFile(flags.TLSCertFile)
-		if er != nil {
-			return nil, fmt.Errorf("unable to read certFile, err: %v", err)
-		}
-		extrasMap["tlsCertPEM"] = string(certPEMBlock)
 	}
 
 	if _, ok := options["bindGRPC"]; ok {

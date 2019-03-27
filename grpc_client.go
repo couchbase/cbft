@@ -383,31 +383,23 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			port = bindPort
 		}
 
-		var sslEnabled bool
-		bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")
-		if err == nil {
-			sslEnabled = true
-			port = bindPort
+		ss := GetSecuritySetting()
+		var certInBytes []byte
+		if ss.EncryptionEnabled {
+			bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")
+			if err == nil {
+				port = bindPort
+				certInBytes = ss.CertInBytes
+			}
 		}
 
 		if port == "" {
-			return nil, fmt.Errorf("grpc_client: no ports found for host: %s",
-				host)
+			return nil, fmt.Errorf("grpc_client: no ports found for host: %s", host)
 		}
 
 		host = host + ":" + port
 
-		var extrasCertPEM interface{}
-		if sslEnabled {
-			extrasCertPEM, err = remotePlanPIndex.NodeDef.GetFromParsedExtras(
-				"tlsCertPEM")
-			if err != nil {
-				return nil, fmt.Errorf("grpc_client: remote CertFile, err: %v", err)
-			}
-		}
-
-		cli, err := GetRpcClient(remotePlanPIndex.NodeDef.UUID, host,
-			extrasCertPEM)
+		cli, err := getRpcClient(remotePlanPIndex.NodeDef.UUID, host, certInBytes)
 		if err != nil {
 			log.Printf("grpc_client, getRpcClient err: %v", err)
 			continue
