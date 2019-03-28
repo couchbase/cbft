@@ -987,6 +987,8 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		ech := make(chan cbgt.CfgEvent)
 		cfg.Subscribe(cbgt.PLAN_PINDEXES_KEY, ech)
 		cfg.Subscribe(cbgt.PLAN_PINDEXES_DIRECTORY_STAMP, ech)
+		cfg.Subscribe(cbgt.INDEX_DEFS_KEY, ech)
+		cfg.Subscribe(cbgt.CfgNodeDefsKey(cbgt.NODE_DEFS_WANTED), ech)
 
 		for {
 			<-ech // First, wait for a cfg event.
@@ -1016,17 +1018,18 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 	var prevMemoryUsed uint64
 	var curMemoryUsed uint64
 
-	for {
-		var nodeDefs *cbgt.NodeDefs
-		var planPIndexes *cbgt.PlanPIndexes
+	var nodeDefs *cbgt.NodeDefs
+	var planPIndexes *cbgt.PlanPIndexes
 
-		indexDefs, indexDefsMap, err := mgr.GetIndexDefs(false)
+	indexDefs, indexDefsMap, err := mgr.GetIndexDefs(false)
+	if err == nil {
+		nodeDefs, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 		if err == nil {
-			nodeDefs, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
-			if err == nil {
-				planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
-			}
+			planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
 		}
+	}
+
+	for {
 
 		rd := &recentInfo{
 			indexDefs:    indexDefs,
@@ -1069,6 +1072,15 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		for {
 			select {
 			case <-cfgChangedCh:
+				// refresh the configs
+				indexDefs, indexDefsMap, err = mgr.GetIndexDefs(false)
+				if err == nil {
+					nodeDefs, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
+					if err == nil {
+						planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
+					}
+				}
+
 				break REUSE_CACHE
 
 			case <-tickCh:
