@@ -49,6 +49,13 @@ var TotHTTPLimitListenersClosed uint64
 var TotHTTPSLimitListenersOpened uint64
 var TotHTTPSLimitListenersClosed uint64
 
+// Atomic counters to keep track of the number of active
+// grpc and grpc-ssl listeners.
+var TotGRPCListenersOpened uint64
+var TotGRPCListenersClosed uint64
+var TotGRPCSListenersOpened uint64
+var TotGRPCSListenersClosed uint64
+
 // Atomic stat that tracks current memory acquired, not including
 // HeapIdle (memory reclaimed); updated every second;
 // Used by the app_herder to track memory consumption by process.
@@ -243,6 +250,25 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				uint64(len(indexNameToPlanPIndexes[indexName]))
 		}
 
+		rpcFocusStats := GrpcPathStats.FocusStats(indexName)
+		if rpcFocusStats != nil {
+			totalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcClientRequest)
+			nsIndexStat["total_grpc_queries"] = totalQueries
+			if totalQueries > 0 {
+				nsIndexStat["avg_grpc_queries_latency"] =
+					float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcClientRequestTimeNS) /
+						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
+			}
+			//nsIndexStat["total_request_time"] =
+			//	atomic.LoadUint64(&rpcFocusStats.TotRequestTimeNS)
+			nsIndexStat["total_grpc_queries_slow"] =
+				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestSlow)
+			nsIndexStat["total_grpc_queries_timeout"] =
+				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeout)
+			nsIndexStat["total_grpc_queries_error"] =
+				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestErr)
+		}
+
 		feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
 		if !exists || feedType == nil || feedType.PartitionSeqs == nil {
 			continue
@@ -384,6 +410,20 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		atomic.LoadUint64(&TotHTTPSLimitListenersOpened)
 	topLevelStats["tot_https_limitlisteners_closed"] =
 		atomic.LoadUint64(&TotHTTPSLimitListenersClosed)
+
+	topLevelStats["tot_remote_grpc"] = atomic.LoadUint64(&totRemoteGrpc)
+	topLevelStats["tot_remote_grpc_tls"] = atomic.LoadUint64(&totRemoteGrpcSecure)
+	topLevelStats["tot_grpc_queryreject_on_memquota"] =
+		atomic.LoadUint64(&totGrpcQueryRejectOnNotEnoughQuota)
+
+	topLevelStats["tot_grpc_listeners_opened"] =
+		atomic.LoadUint64(&TotGRPCListenersOpened)
+	topLevelStats["tot_grpc_listeners_closed"] =
+		atomic.LoadUint64(&TotGRPCListenersClosed)
+	topLevelStats["tot_grpcs_listeners_opened"] =
+		atomic.LoadUint64(&TotGRPCSListenersOpened)
+	topLevelStats["tot_grpcs_listeners_closed"] =
+		atomic.LoadUint64(&TotGRPCSListenersClosed)
 
 	topLevelStats["batch_bytes_added"] = atomic.LoadUint64(&BatchBytesAdded)
 	topLevelStats["batch_bytes_removed"] = atomic.LoadUint64(&BatchBytesRemoved)

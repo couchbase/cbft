@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/blevesearch/bleve/search/query"
 	pb "github.com/couchbase/cbft/protobuf"
+	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 
 	"github.com/couchbase/cbauth"
@@ -129,6 +131,12 @@ func GetRpcClient(nodeUUID, hostPort string,
 	// when to perform explicit conn.Close()?
 	cli := pb.NewSearchServiceClient(hostPool[index])
 
+	if certsPEM != nil {
+		atomic.AddUint64(&totRemoteGrpcSecure, 1)
+	} else {
+		atomic.AddUint64(&totRemoteGrpc, 1)
+	}
+
 	return cli, nil
 }
 
@@ -190,4 +198,90 @@ func parseStringTime(t string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return ti, nil
+}
+
+// GRPCPathStats represents the stats for a gRPC path spec.
+type GRPCPathStats struct {
+	m sync.Mutex
+
+	focusStats map[string]*RPCFocusStats
+}
+
+// FocusStats returns the RPCFocusStats for a given focus value like
+// an indexName
+func (s *GRPCPathStats) FocusStats(focusVal string) *RPCFocusStats {
+	s.m.Lock()
+	if s.focusStats == nil {
+		s.focusStats = map[string]*RPCFocusStats{}
+	}
+	rv, exists := s.focusStats[focusVal]
+	if !exists {
+		rv = &RPCFocusStats{}
+		s.focusStats[focusVal] = rv
+	}
+	s.m.Unlock()
+	return rv
+}
+
+// FocusValues returns the focus value strings
+func (s *GRPCPathStats) FocusValues() (rv []string) {
+	s.m.Lock()
+	for focusVal := range s.focusStats {
+		rv = append(rv, focusVal)
+	}
+	s.m.Unlock()
+	return rv
+}
+
+// -------------------------------------------------------
+
+// RPCFocusStats represents stats for a targeted or "focused" gRPC
+// endpoint.
+type RPCFocusStats struct {
+	TotGrpcRequest             uint64
+	TotGrpcRequestTimeNS       uint64
+	TotGrpcRequestErr          uint64 `json:"TotGrpcRequestErr,omitempty"`
+	TotGrpcRequestSlow         uint64 `json:"TotGrpcRequestSlow,omitempty"`
+	TotGrpcRequestTimeout      uint64 `json:"TotGrpcRequestTimeout,omitempty"`
+	TotGrpcResponseBytes       uint64 `json:"TotGrpcResponseBytes,omitempty"`
+	TotGrpcClientRequest       uint64
+	TotGrpcClientRequestTimeNS uint64
+}
+
+func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
+	req *pb.SearchRequest, ctx context.Context, err error) {
+	focusStats := GrpcPathStats.FocusStats(req.IndexName)
+	if focusStats != nil {
+		slowQueryLogTimeoutV := mgr.Options()["slowQueryLogTimeout"]
+		if slowQueryLogTimeoutV != "" {
+			var slowQueryLogTimeout time.Duration
+			slowQueryLogTimeout, err = time.ParseDuration(slowQueryLogTimeoutV)
+			if err == nil {
+				d := time.Since(startTime)
+				if d > slowQueryLogTimeout {
+					log.Printf("grpc_util: slow-query index: %s,"+
+						" query: %s, duration: %v, err: %v",
+						req.IndexName, string(req.Contents), d, err)
+
+					atomic.AddUint64(&focusStats.TotGrpcRequestSlow, 1)
+				}
+			}
+		}
+
+		// check whether its a client request
+		if _, err = extractMetaHeader(ctx, "rpcclusteractionkey"); err != nil {
+			atomic.AddUint64(&focusStats.TotGrpcClientRequest, 1)
+			atomic.AddUint64(&focusStats.TotGrpcClientRequestTimeNS,
+				uint64(time.Now().Sub(startTime)))
+		}
+
+		if err != nil {
+			atomic.AddUint64(&focusStats.TotGrpcRequestErr, 1)
+			if err == context.DeadlineExceeded {
+				atomic.AddUint64(&focusStats.TotGrpcRequestTimeout, 1)
+			}
+		}
+
+		atomic.AddUint64(&focusStats.TotGrpcRequest, 1)
+	}
 }

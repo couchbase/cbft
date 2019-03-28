@@ -190,7 +190,7 @@ func (rp *rpcRequestParser) GetPIndexName() (string, error) {
 	return "", fmt.Errorf("missing pindexName")
 }
 
-func checkRPCAuth(ctx context.Context, indexName string, req interface{}) error {
+func verifyRPCAuth(ctx context.Context, indexName string, req interface{}) error {
 	if _, err := extractMetaHeader(ctx, "rpcclusteractionkey"); err == nil {
 		return nil
 	}

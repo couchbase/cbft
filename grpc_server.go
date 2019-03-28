@@ -32,14 +32,23 @@ import (
 )
 
 // atomic counter that keep track of the number of gRPC searches
-var totgRPCSearches uint64
+var totRemoteGrpc uint64
 
-var totgRPCSearchDuration uint64
+var totRemoteGrpcSecure uint64
+
+// totGrpcQueryRejectOnNotEnoughQuota tracks the number of rejected
+// gRPC search requests on hitting the memory threshold for query
+var totGrpcQueryRejectOnNotEnoughQuota uint64
 
 // SearchService is an implementation for the SearchSrvServer
 // gRPC search interface
 type SearchService struct {
 	mgr *cbgt.Manager
+}
+
+// GrpcIndexQueryPath is keyed by path spec strings.
+var GrpcPathStats = GRPCPathStats{
+	focusStats: make(map[string]*RPCFocusStats, 1),
 }
 
 func (s *SearchService) SetManager(mgr *cbgt.Manager) {
@@ -88,13 +97,18 @@ func (s *SearchService) DocCount(ctx context.Context,
 }
 
 func (s *SearchService) Search(req *pb.SearchRequest,
-	stream pb.SearchService_SearchServer) error {
+	stream pb.SearchService_SearchServer) (err error) {
+	startTime := time.Now()
 	if req == nil {
 		return status.Error(codes.FailedPrecondition,
 			"grpc_server: empty search request found")
 	}
 
-	err := checkRPCAuth(stream.Context(), req.IndexName, req)
+	defer func() {
+		updateRpcFocusStats(startTime, s.mgr, req, stream.Context(), err)
+	}()
+
+	err = verifyRPCAuth(stream.Context(), req.IndexName, req)
 	if err != nil {
 		return status.Errorf(codes.PermissionDenied, "err: %v", err)
 	}
@@ -205,8 +219,8 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	mergeEstimate := uint64(numPIndexes) * bleve.MemoryNeededForSearchResult(searchRequest)
 	err = fireQueryEvent(0, EventQueryStart, 0, mergeEstimate)
 	if err != nil {
-		atomic.AddUint64(&totQueryRejectOnNotEnoughQuota, 1)
-		return status.Errorf(codes.Internal,
+		atomic.AddUint64(&totGrpcQueryRejectOnNotEnoughQuota, 1)
+		return status.Errorf(codes.ResourceExhausted,
 			"grpc_server: query reject on not enough quota: %v", err)
 	}
 
@@ -304,11 +318,6 @@ func serverInterceptor(
 	ss grpc.ServerStream,
 	info *grpc.StreamServerInfo,
 	handler grpc.StreamHandler) (err error) {
-	start := time.Now()
-	defer func() {
-		atomic.AddUint64(&totgRPCSearchDuration, uint64(time.Since(start).Seconds()))
-	}()
-
 	// skip the authCallbacks wrapping/authentication for scatter gather calls,
 	// as the user is already authenticated at the original node.
 	if _, err = extractMetaHeader(ss.Context(), "rpcclusteractionkey"); err == nil {
@@ -317,7 +326,6 @@ func serverInterceptor(
 		return handler(req, w)
 	}
 
-	atomic.AddUint64(&totgRPCSearches, 1)
 	nctx, err := wrapAuthCallbacks(req, ss.Context(), info.FullMethod)
 	if err != nil {
 		log.Printf("grpc_server: authenticate err: %+v", err)
