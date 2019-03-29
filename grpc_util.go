@@ -79,10 +79,10 @@ func (b *basicAuthCreds) GetRequestMetadata(context.Context,
 	}, nil
 }
 
-// RequireTransportSecurity should be true as even though the credentials
-// are base64, we want to have it encrypted over the wire.
+// RequireTransportSecurity should return true only when the base64
+// credentials have to be encrypted over the wire. (strictly tls)
 func (b *basicAuthCreds) RequireTransportSecurity() bool {
-	return true
+	return false // to support non-tls mode
 }
 
 func basicAuth(username, password string) string {
