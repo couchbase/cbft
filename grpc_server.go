@@ -157,21 +157,26 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			"validating request, err: %v", err)
 	}
 
-	v, exists := s.mgr.Options()["bleveMaxResultWindow"]
-	if exists {
-		var bleveMaxResultWindow int
-		bleveMaxResultWindow, err = strconv.Atoi(v)
-		if err != nil {
-			return fmt.Errorf("bleve: QueryBleve"+
-				" atoi: %v, err: %v", v, err)
-		}
+	if !req.Stream {
+		// Check for bleveMaxResultWindow only if the request does NOT have
+		// the "Stream" option set.
+		v, exists := s.mgr.Options()["bleveMaxResultWindow"]
+		if exists {
+			var bleveMaxResultWindow int
+			bleveMaxResultWindow, err = strconv.Atoi(v)
+			if err != nil {
+				return fmt.Errorf("bleve: QueryBleve"+
+					" atoi: %v, err: %v", v, err)
+			}
 
-		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
-			return status.Errorf(codes.InvalidArgument,
-				"alidating request, err: %v", fmt.Errorf(
-					"bleve: bleveMaxResultWindow exceeded,"+
+			if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
+				return status.Errorf(codes.InvalidArgument,
+					"Validating request, err: %v",
+					fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
 						" from: %d, size: %d, bleveMaxResultWindow: %d",
-					searchRequest.From, searchRequest.Size, bleveMaxResultWindow))
+						searchRequest.From, searchRequest.Size,
+						bleveMaxResultWindow))
+			}
 		}
 	}
 
