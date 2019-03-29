@@ -78,10 +78,10 @@ func (s *streamer) write(b []byte, offsets []uint64, hitsCount int) error {
 		// advance the hit bytes by the skip factor
 		loc := offsets[s.curSkip-1] + 1 // extra 1 to accommodate the glue size
 		b = b[loc:]
-		b = append(sliceStart, b...)
+		b = append(sliceStart, b...) // TODO: reuse b slice instead of alloc?
 		offsets = offsets[s.curSkip:]
 		hitsCount -= s.curSkip
-		// accouting the sliceStart offset
+		// accounting for sliceStart offset
 		loc--
 		// adjusting the offset due to slicing of b
 		for i := range offsets {
@@ -108,6 +108,7 @@ func (s *streamer) write(b []byte, offsets []uint64, hitsCount int) error {
 		}
 	}
 
+	// TODO: perf, can hitRes be reused across stream.Send() calls?
 	hitRes := &pb.StreamSearchResults{
 		Contents: &pb.StreamSearchResults_Hits{
 			Hits: &pb.StreamSearchResults_Batch{
@@ -144,6 +145,8 @@ func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) erro
 			bleve.LoadAndHighlightFields(hit, dmh.s.req, "", dmh.ctx.IndexReader, nil)
 		}
 
+		// TODO: perf, perhaps encode directly into output buffer
+		// (dmh.bits?)  instead of alloc'ing memory and copying?
 		b, err := MarshalJSON(hit)
 		if err != nil {
 			log.Printf("streamHandler: json marshal err: %v", err)
