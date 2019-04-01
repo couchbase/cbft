@@ -46,7 +46,7 @@ func updateSecuritySetting(c *SecuritySetting) {
 
 var securityCtx *SecurityContext
 
-func init() {
+func InitSecurityCtxAndRegisterWithCBAuth() {
 	securityCtx = &SecurityContext{
 		notifiers: make(map[string]configChangeNotifier),
 	}
