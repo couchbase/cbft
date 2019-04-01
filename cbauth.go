@@ -139,6 +139,10 @@ func (c *SecurityContext) refreshConfig(configs *SecuritySetting) error {
 }
 
 func (c *SecurityContext) refreshCert(configs *SecuritySetting) error {
+	if len(TLSCertFile) == 0 || len(TLSKeyFile) == 0 {
+		return nil
+	}
+
 	cert, err := tls.LoadX509KeyPair(TLSCertFile, TLSKeyFile)
 	if err != nil {
 		log.Printf("cbauth: LoadX509KeyPair err : %v", err)
