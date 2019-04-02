@@ -15,7 +15,6 @@
 package cbft
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/blevesearch/bleve"
@@ -93,7 +92,7 @@ func (s *streamer) write(b []byte, offsets []uint64, hitsCount int) error {
 	// we have already streamed the requested page
 	if s.curSize == 0 && s.sizeSet {
 		s.m.Unlock()
-		return fmt.Errorf("write: already streamed the requested hits")
+		return nil
 	}
 
 	if s.curSize > 0 && s.sizeSet {
