@@ -15,10 +15,12 @@
 package cbft
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
+	"github.com/blevesearch/bleve/search/highlight"
 	pb "github.com/couchbase/cbft/protobuf"
 	log "github.com/couchbase/clog"
 )
@@ -127,11 +129,12 @@ func (s *streamer) write(b []byte, offsets []uint64, hitsCount int) error {
 }
 
 type docMatchHandler struct {
-	bhits   []byte
-	offsets []uint64
-	ctx     *search.SearchContext
-	s       *streamer
-	n       int
+	bhits       []byte
+	offsets     []uint64
+	ctx         *search.SearchContext
+	s           *streamer
+	n           int
+	highlighter highlight.Highlighter
 }
 
 func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) error {
@@ -140,8 +143,9 @@ func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) erro
 			hit.Complete(nil)
 		}
 
-		if len(dmh.s.req.Fields) > 0 {
-			bleve.LoadAndHighlightFields(hit, dmh.s.req, "", dmh.ctx.IndexReader, nil)
+		if len(dmh.s.req.Fields) > 0 || dmh.highlighter != nil {
+			bleve.LoadAndHighlightFields(hit, dmh.s.req, "", dmh.ctx.IndexReader,
+				dmh.highlighter)
 		}
 
 		// TODO: perf, perhaps encode directly into output buffer
@@ -179,11 +183,34 @@ func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) erro
 
 func (s *streamer) MakeDocumentMatchHandler(
 	ctx *search.SearchContext) (search.DocumentMatchHandler, bool, error) {
+	var highlighter highlight.Highlighter
+	if s.req.Highlight != nil {
+		var err error
+		// get the right highlighter
+		highlighter, err = bleve.Config.Cache.HighlighterNamed(
+			bleve.Config.DefaultHighlighter)
+		if err != nil {
+			return nil, false, err
+		}
+		if s.req.Highlight.Style != nil {
+			highlighter, err = bleve.Config.Cache.HighlighterNamed(
+				*s.req.Highlight.Style)
+			if err != nil {
+				return nil, false, err
+			}
+		}
+		if highlighter == nil {
+			return nil, false, fmt.Errorf("no highlighter named `%s` registered",
+				*s.req.Highlight.Style)
+		}
+	}
+
 	dmh := docMatchHandler{
-		s:       s,
-		ctx:     ctx,
-		bhits:   make([]byte, 0, defaultStreamBatchSize*50),
-		offsets: make([]uint64, 0, defaultStreamBatchSize),
+		s:           s,
+		ctx:         ctx,
+		bhits:       make([]byte, 0, defaultStreamBatchSize*50),
+		offsets:     make([]uint64, 0, defaultStreamBatchSize),
+		highlighter: highlighter,
 	}
 	dmh.bhits = append(dmh.bhits, sliceStart...)
 
