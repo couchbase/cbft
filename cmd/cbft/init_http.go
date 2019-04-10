@@ -14,6 +14,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -222,7 +223,20 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 
 				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
 					caCertPool := x509.NewCertPool()
-					ok := caCertPool.AppendCertsFromPEM(ss.CertInBytes)
+					var certBytes []byte
+					if len(ss.CertInBytes) != 0 {
+						certBytes = ss.CertInBytes
+					} else {
+						// if no CertInBytes found in settings, then fallback
+						// to reading directly from file. Upon any certs change
+						// callbacks later, reboot of servers will ensure the
+						// latest certificates in the servers.
+						certBytes, err = ioutil.ReadFile(flags.TLSCertFile)
+						if err != nil {
+							log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
+						}
+					}
+					ok := caCertPool.AppendCertsFromPEM(certBytes)
 					if !ok {
 						log.Fatalf("init_http: error in appending certificates")
 					}
