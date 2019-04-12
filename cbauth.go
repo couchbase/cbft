@@ -20,6 +20,7 @@ import (
 
 	"github.com/couchbase/cbauth"
 	log "github.com/couchbase/clog"
+	"github.com/couchbase/go-couchbase/cbdatasource"
 )
 
 var TLSCertFile string
@@ -173,6 +174,17 @@ func (c *SecurityContext) refreshEncryption(configs *SecuritySetting) error {
 
 	configs.EncryptionEnabled = cfg.EncryptData
 	configs.DisableNonSSLPorts = cfg.DisableNonSSLPorts
+
+	err = cbdatasource.UpdateSecurityConfig(&cbdatasource.SecurityConfig{
+		EncryptData:        cfg.EncryptData,
+		DisableNonSSLPorts: cfg.DisableNonSSLPorts,
+		CertFile:           TLSCertFile,
+		KeyFile:            TLSKeyFile,
+	})
+	if err != nil {
+		log.Printf("cbauth: Error updating TLS data, err: %v", err)
+		return err
+	}
 
 	return nil
 }
