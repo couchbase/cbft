@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -651,5 +652,36 @@ func TestNewPIndexBleveBadMapping(t *testing.T) {
 		cbgt.PIndexPath(emptyDir, "fake"))
 	if pindex != nil || err == nil {
 		t.Errorf("expected NewPIndex to fail with bad json")
+	}
+}
+
+func TestSearchRequestExt(t *testing.T) {
+	reqs := [][]byte{
+		[]byte(`{"query": {"query": "california"}, "size": 4, "from": 5}`),
+		[]byte(`{"query": {"query": "california"}, "limit": 4, "offset": 5}`),
+		[]byte(`{"query": {"query": "california"}, "limit": 10, "offset":8, "size": 4, "from": 5}`),
+		[]byte(`{"query": {"query": "california"}, "size": 4, "offset": 5}`),
+		[]byte(`{"query": {"query": "california"}, "limit": 4, "from": 5}`),
+	}
+
+	expectSize := 4
+	expectFrom := 5
+
+	for i, req := range reqs {
+		var sr *SearchRequest
+		err := json.Unmarshal(req, &sr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		bsr, err := sr.ConvertToBleveSearchRequest()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bsr.Size != expectSize {
+			t.Fatalf("(%d) Expected size: %v, got size: %v", i+1, expectSize, bsr.Size)
+		}
+		if bsr.From != expectFrom {
+			t.Fatalf("(%d) Expected from: %v, got from: %v", i+1, expectFrom, bsr.From)
+		}
 	}
 }

@@ -43,6 +43,8 @@ import (
 	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/blevesearch/bleve/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
+	"github.com/blevesearch/bleve/search"
+	"github.com/blevesearch/bleve/search/query"
 
 	log "github.com/couchbase/clog"
 
@@ -190,6 +192,71 @@ func NewBleveParams() *BleveParams {
 	}
 
 	return rv
+}
+
+type SearchRequest struct {
+	Q                json.RawMessage         `json:"query"`
+	Size             *int                    `json:"size"`
+	From             *int                    `json:"from"`
+	Highlight        *bleve.HighlightRequest `json:"highlight"`
+	Fields           []string                `json:"fields"`
+	Facets           bleve.FacetsRequest     `json:"facets"`
+	Explain          bool                    `json:"explain"`
+	Sort             []json.RawMessage       `json:"sort"`
+	IncludeLocations bool                    `json:"includeLocations"`
+	Score            string                  `json:"score,omitempty"`
+	Limit            *int                    `json:"limit,omitempty"`
+	Offset           *int                    `json:"offset,omitempty"`
+}
+
+func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
+	// size/from take precedence, but if not specified, overwrite with
+	// limit/offset settings
+	r := &bleve.SearchRequest{
+		Highlight:        sr.Highlight,
+		Fields:           sr.Fields,
+		Facets:           sr.Facets,
+		Explain:          sr.Explain,
+		IncludeLocations: sr.IncludeLocations,
+		Score:            sr.Score,
+	}
+
+	var err error
+	r.Query, err = query.ParseQuery(sr.Q)
+	if err != nil {
+		return nil, err
+	}
+
+	if sr.Size == nil {
+		if sr.Limit == nil || *sr.Limit < 0 {
+			r.Size = 10
+		} else {
+			r.Size = *sr.Limit
+		}
+	} else {
+		r.Size = *sr.Size
+	}
+
+	if sr.From == nil {
+		if sr.Offset == nil || *sr.Offset < 0 {
+			r.From = 0
+		} else {
+			r.From = *sr.Offset
+		}
+	} else {
+		r.From = *sr.From
+	}
+
+	if sr.Sort == nil {
+		r.Sort = search.SortOrder{&search.SortScore{Desc: true}}
+	} else {
+		r.Sort, err = search.ParseSortOrderJSON(sr.Sort)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return r, nil
 }
 
 type BleveDest struct {
@@ -736,8 +803,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing queryPIndexes, err: %v", err)
 	}
 
-	searchRequest := &bleve.SearchRequest{}
-	err = UnmarshalJSON(req, searchRequest)
+	var sr *SearchRequest
+	err = UnmarshalJSON(req, &sr)
+	if err != nil {
+		return fmt.Errorf("bleve: QueryBleve"+
+			" parsing searchRequest, err: %v", err)
+	}
+	searchRequest, err := sr.ConvertToBleveSearchRequest()
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
@@ -1098,12 +1170,18 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 			" parsing queryCtlParams, err: %v", err)
 	}
 
-	searchRequest := &bleve.SearchRequest{}
-	err = UnmarshalJSON(req, searchRequest)
+	var sr *SearchRequest
+	err = UnmarshalJSON(req, &sr)
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing searchRequest, err: %v", err)
 	}
+	searchRequest, err := sr.ConvertToBleveSearchRequest()
+	if err != nil {
+		return fmt.Errorf("bleve: BleveDest.Query"+
+			" parsing searchRequest, err: %v", err)
+	}
+
 	err = searchRequest.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+

@@ -136,11 +136,16 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		}
 	}
 
-	searchRequest := &bleve.SearchRequest{}
-	err = UnmarshalJSON(req.Contents, searchRequest)
+	var sr *SearchRequest
+	err = UnmarshalJSON(req.Contents, &sr)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument,
 			"parsing searchRequest, err: %v", err)
+	}
+	searchRequest, err := sr.ConvertToBleveSearchRequest()
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument,
+			"processing searchRequest, err: %v", err)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
