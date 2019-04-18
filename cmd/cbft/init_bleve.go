@@ -33,10 +33,22 @@ import (
 func initBleveOptions(options map[string]string) error {
 	bleveMapping.StoreDynamic = false
 	bleveMapping.MappingJSONStrict = true
-	bleveSearcher.DisjunctionMaxClauseCount = 1024
 
 	scorch.DefaultPersisterNapTimeMSec = 2000 // ms
 	scorch.DefaultPersisterNapUnderNumFiles = 1000
+
+	bleveMaxClauseCount := options["bleveMaxClauseCount"]
+	if bleveMaxClauseCount != "" {
+		v, err := strconv.Atoi(bleveMaxClauseCount)
+		if err != nil {
+			return err
+		}
+
+		bleveSearcher.DisjunctionMaxClauseCount = v
+	} else {
+		// default to 1024
+		bleveSearcher.DisjunctionMaxClauseCount = 1024
+	}
 
 	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]
 	if bleveKVStoreMetricsAllow != "" {

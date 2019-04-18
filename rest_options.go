@@ -19,6 +19,8 @@ import (
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
+
+	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
 )
 
 // List of log levels that maps strings to integers.
@@ -98,6 +100,14 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		if options["bleveMaxClauseCount"] != "" {
+			bleveMaxClauseCount, err := strconv.Atoi(options["bleveMaxClauseCount"])
+			if err != nil || bleveMaxClauseCount < 0 {
+				return nil, fmt.Errorf("illegal value for bleveMaxClauseCount: '%v'",
+					options["bleveMaxClauseCount"])
+			}
+		}
+
 		return options, nil
 	}
 
@@ -116,6 +126,13 @@ func (h *ManagerOptionsExt) ServeHTTP(
 	if logLevelStr != "" {
 		logLevel, _ := LogLevels[logLevelStr]
 		log.SetLevel(log.LogLevel(logLevel))
+	}
+
+	// Update bleveMaxClauseCount if requested.
+	bleveMaxClauseCountStr := h.mgr.Options()["bleveMaxClauseCount"]
+	if bleveMaxClauseCountStr != "" {
+		bleveMaxClauseCount, _ := strconv.Atoi(bleveMaxClauseCountStr)
+		bleveSearcher.DisjunctionMaxClauseCount = bleveMaxClauseCount
 	}
 }
 
