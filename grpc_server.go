@@ -31,6 +31,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var FeatureGRPC = "protocol:gRPC"
+
 // atomic counter that keep track of the number of gRPC searches
 var totRemoteGrpc uint64
 
