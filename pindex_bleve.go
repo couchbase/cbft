@@ -233,6 +233,8 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		} else {
 			r.Size = *sr.Limit
 		}
+	} else if *sr.Size < 0 {
+		r.Size = 10
 	} else {
 		r.Size = *sr.Size
 	}
@@ -243,6 +245,8 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		} else {
 			r.From = *sr.Offset
 		}
+	} else if *sr.From < 0 {
+		r.From = 0
 	} else {
 		r.From = *sr.From
 	}
