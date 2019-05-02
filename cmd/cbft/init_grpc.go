@@ -43,25 +43,29 @@ func closeAndClearGrpcServerList() {
 func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
 
-	setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options)
-
-	authType = options["authType"]
-
-	if authType == "cbauth" {
-		// Registering a TLS refresh callback with cbauth, which
-		// will be responsible for updating https listeners,
-		// whenever ssl certificates or the client cert auth settings
-		// are changed.
-		handleConfigChanges := func() error {
-			// restart the servers in case of a refresh
-			setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
-			return nil
-		}
-
-		cbft.RegisterConfigRefreshCallback("grpc-ssl", handleConfigChanges)
+	if flags.BindGRPC != "" {
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options)
 	}
 
-	setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+	if flags.BindGRPCSSL != "" {
+		authType = options["authType"]
+
+		if authType == "cbauth" {
+			// Registering a TLS refresh callback with cbauth, which
+			// will be responsible for updating https listeners,
+			// whenever ssl certificates or the client cert auth settings
+			// are changed.
+			handleConfigChanges := func() error {
+				// restart the servers in case of a refresh
+				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+				return nil
+			}
+
+			cbft.RegisterConfigRefreshCallback("grpc-ssl", handleConfigChanges)
+		}
+
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+	}
 }
 
 func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
