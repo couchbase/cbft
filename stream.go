@@ -139,7 +139,7 @@ type docMatchHandler struct {
 
 func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) error {
 	if hit != nil {
-		if dmh.s.req.IncludeLocations {
+		if dmh.s.req.IncludeLocations || dmh.s.req.Highlight != nil {
 			hit.Complete(nil)
 		}
 
