@@ -13,7 +13,10 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     options = options || {};
 
     var defaultFieldType = options["defaultFieldType"] || "text";
-    var defaultFieldAnalyzer = options["defaultFieldAnalyzer"] || "";
+    var defaultFieldAnalyzer = null;
+    if (options["defaultFieldAnalyzer"] != undefined) {
+        defaultFieldAnalyzer = options["defaultFieldAnalyzer"];
+    }
     var defaultFieldStore = true;
     if (options["defaultFieldStore"] != undefined) {
         defaultFieldStore = options["defaultFieldStore"];
@@ -32,7 +35,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     }
     var defaultFieldDocValues = true;
     if (options["defaultFieldDocValues"] != undefined) {
-        defaultFieldDocValues = options["defaultFieldDocValues"]
+        defaultFieldDocValues = options["defaultFieldDocValues"];
     }
     var defaultFieldDateFormat = null;
     if (options["defaultFieldDateFormat"] != undefined) {
