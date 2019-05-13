@@ -71,7 +71,9 @@ func init() {
 // that transforms the username and password into a base64 encoded value
 // similar to HTTP Basic xxx
 type basicAuthCreds struct {
-	username, password string
+	username                 string
+	password                 string
+	requireTransportSecurity bool
 }
 
 // GetRequestMetadata sets the value for "authorization" key
@@ -82,10 +84,10 @@ func (b *basicAuthCreds) GetRequestMetadata(context.Context,
 	}, nil
 }
 
-// RequireTransportSecurity should return true only when the base64
-// credentials have to be encrypted over the wire. (strictly tls)
+// RequireTransportSecurity indicates whether the credentials requires
+// transport security.
 func (b *basicAuthCreds) RequireTransportSecurity() bool {
-	return false // to support non-tls mode
+	return b.requireTransportSecurity
 }
 
 func basicAuth(username, password string) string {
@@ -147,6 +149,15 @@ func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error)
 		return nil, fmt.Errorf("grpc_util: cbauth err: %v", err)
 	}
 
+	bac := &basicAuthCreds{
+		username: cbUser,
+		password: cbPasswd,
+	}
+
+	if len(certInBytes) != 0 {
+		bac.requireTransportSecurity = true
+	}
+
 	opts := []grpc.DialOption{
 		grpc.WithBackoffMaxDelay(DefaultGrpcMaxBackOffDelay),
 
@@ -163,10 +174,7 @@ func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error)
 			grpc.MaxCallSendMsgSize(DefaultGrpcMaxSendMsgSize),
 		),
 
-		grpc.WithPerRPCCredentials(&basicAuthCreds{
-			username: cbUser,
-			password: cbPasswd,
-		}),
+		grpc.WithPerRPCCredentials(bac),
 	}
 
 	if len(certInBytes) != 0 {
