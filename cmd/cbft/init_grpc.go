@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 var grpcServers []*grpc.Server
@@ -147,6 +148,9 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		grpcServersMutex.Lock()
 		grpcServers = append(grpcServers, s)
 		grpcServersMutex.Unlock()
+		atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
+	} else {
+		atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
 	}
 
 	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
@@ -154,6 +158,12 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		log.Fatalf("failed to serve: %v", err)
 	}
 
+	if secure {
+		atomic.AddUint64(&cbft.TotGRPCSListenersClosed, 1)
+		return
+	}
+
+	atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
 }
 
 func getGrpcOpts(secure bool) []grpc.ServerOption {

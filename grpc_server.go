@@ -176,12 +176,13 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		}
 
 		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
-			return status.Errorf(codes.InvalidArgument,
+			err = status.Errorf(codes.InvalidArgument,
 				"Validating request, err: %v",
 				fmt.Errorf("grpc_server: bleveMaxResultWindow exceeded,"+
 					" from: %d, size: %d, bleveMaxResultWindow: %d",
 					searchRequest.From, searchRequest.Size,
 					bleveMaxResultWindow))
+			return err
 		}
 	}
 
@@ -204,8 +205,9 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, addGrpcClients)
 	if er != nil {
 		if _, ok := er.(*cbgt.ErrorLocalPIndexHealth); !ok {
-			return status.Errorf(codes.Unavailable,
+			err = status.Errorf(codes.Unavailable,
 				"grpc_server: bleveIndexAlias, err: %v", er)
+			return err
 		}
 	}
 
@@ -252,19 +254,22 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	})
 	defer querySupervisor.DeleteEntry(id)
 
-	searchResult, err := alias.SearchInContext(ctx, searchRequest)
+	var searchResult *bleve.SearchResult
+	searchResult, err = alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
 		err1 := processSearchResult(&queryCtlParams, searchResult,
 			remoteClients, err, er)
 		if err1 != nil {
-			return status.Error(codes.DeadlineExceeded,
+			err = status.Error(codes.DeadlineExceeded,
 				fmt.Sprintf("grpc_server: searchInContext err: %v", err1))
+			return err
 		}
 
 		response, er2 := MarshalJSON(searchResult)
 		if er2 != nil {
-			return status.Errorf(codes.Internal,
+			err = status.Errorf(codes.Internal,
 				"grpc_server, response marshal err: %v", er2)
+			return err
 		}
 
 		rv := &pb.StreamSearchResults{

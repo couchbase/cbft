@@ -260,33 +260,34 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 	req *pb.SearchRequest, ctx context.Context, err error) {
 	focusStats := GrpcPathStats.FocusStats(req.IndexName)
 	if focusStats != nil {
-		slowQueryLogTimeoutV := mgr.Options()["slowQueryLogTimeout"]
-		if slowQueryLogTimeoutV != "" {
-			var slowQueryLogTimeout time.Duration
-			slowQueryLogTimeout, err = time.ParseDuration(slowQueryLogTimeoutV)
-			if err == nil {
-				d := time.Since(startTime)
-				if d > slowQueryLogTimeout {
-					log.Printf("grpc_util: slow-query index: %s,"+
-						" query: %s, duration: %v, err: %v",
-						req.IndexName, string(req.Contents), d, err)
-
-					atomic.AddUint64(&focusStats.TotGrpcRequestSlow, 1)
-				}
-			}
-		}
-
 		// check whether its a client request
-		if _, err = extractMetaHeader(ctx, "rpcclusteractionkey"); err != nil {
+		// and track only in the coordinating node
+		if _, er := extractMetaHeader(ctx, "rpcclusteractionkey"); er != nil {
 			atomic.AddUint64(&focusStats.TotGrpcClientRequest, 1)
 			atomic.AddUint64(&focusStats.TotGrpcClientRequestTimeNS,
 				uint64(time.Now().Sub(startTime)))
-		}
 
-		if err != nil {
-			atomic.AddUint64(&focusStats.TotGrpcRequestErr, 1)
-			if err == context.DeadlineExceeded {
-				atomic.AddUint64(&focusStats.TotGrpcRequestTimeout, 1)
+			slowQueryLogTimeoutV := mgr.Options()["slowQueryLogTimeout"]
+			if slowQueryLogTimeoutV != "" {
+				var slowQueryLogTimeout time.Duration
+				slowQueryLogTimeout, err = time.ParseDuration(slowQueryLogTimeoutV)
+				if err == nil {
+					d := time.Since(startTime)
+					if d > slowQueryLogTimeout {
+						log.Printf("grpc_util: slow-query index: %s,"+
+							" query: %s, duration: %v, err: %v",
+							req.IndexName, string(req.Contents), d, err)
+
+						atomic.AddUint64(&focusStats.TotGrpcRequestSlow, 1)
+					}
+				}
+			}
+
+			if err != nil {
+				atomic.AddUint64(&focusStats.TotGrpcRequestErr, 1)
+				if err == context.DeadlineExceeded {
+					atomic.AddUint64(&focusStats.TotGrpcRequestTimeout, 1)
+				}
 			}
 		}
 
