@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/couchbase/cbgt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	log "github.com/couchbase/clog"
 )
@@ -134,7 +136,7 @@ func (g *GrpcClient) SearchInContext(ctx context.Context,
 		// that a live system replies via HTTP round-trip before we give up
 		// on the request externally
 		remaining -= RemoteRequestOverhead
-		if remaining < 0 {
+		if remaining <= 0 {
 			// not enough time left
 			return nil, context.DeadlineExceeded
 		}
@@ -323,7 +325,19 @@ func (g *GrpcClient) Query(ctx context.Context,
 	nctx := metadata.AppendToOutgoingContext(ctx,
 		"rpcclusteractionkey", "fts/scatter-gather")
 
-	return g.SearchRPC(nctx, req, scatterGatherReq)
+	result, er := g.SearchRPC(nctx, req, scatterGatherReq)
+	if st, ok := status.FromError(er); ok {
+		g.lastSearchStatus = httpStatusCodes(st.Code())
+		if g.lastSearchStatus == http.StatusOK {
+			return result, nil
+		}
+		g.lastErrBody, _ = MarshalJSON(err)
+		return nil, fmt.Errorf("grpc_client: query got status code: %d,"+
+			" resp: %#v, err: %v",
+			g.lastSearchStatus, result, er)
+	}
+
+	return result, fmt.Errorf("grpc_client: invalid status code, err: %v", er)
 }
 
 func (g *GrpcClient) Advanced() (index.Index, store.KVStore, error) {
