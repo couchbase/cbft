@@ -2116,8 +2116,19 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	return rv, nil
 }
 
+// PartitionSelectionStrategy lets clients specify any selection
+// preferences for the query serving index partitions spread across
+// the cluster.
+// PartitionSelectionStrategy recognized options are,
+// - ""              : primary partitions are selected
+// - local           : local partitions are favored, pseudorandom selection from remote
+// - random          : pseudorandom selection from available local and remote
+// - random_balanced : pseudorandom selection from available local and remote nodes by
+//                     equally distributing the query load across all nodes.
+type PartitionSelectionStrategy string
+
 var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
-	planPIndexFilterName string, partitionSelection string) (
+	planPIndexFilterName string, partitionSelection PartitionSelectionStrategy) (
 	[]*cbgt.PIndex, []*cbgt.RemotePlanPIndex, []string, error) {
 	if mgr == nil {
 		return nil, nil, nil, fmt.Errorf("manager not defined")
@@ -2143,12 +2154,12 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	if onlyPIndexes != nil && partitionSelection != "" {
 		// select all local pindexes
-		partitionSelection = "advanced-local"
+		partitionSelection = "local"
 	}
 
 	localPIndexesAll, remotePlanPIndexes, missingPIndexNames, err :=
 		FetchBleveTargets(mgr, indexName, indexUUID,
-			planPIndexFilterName, partitionSelection)
+			planPIndexFilterName, PartitionSelectionStrategy(partitionSelection))
 	if err != nil {
 		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
