@@ -162,6 +162,8 @@ var statkeys = []string{
 
 	"total_queries",                 // per-index stat.
 	"avg_queries_latency",           // per-index stat.
+	"total_internal_queries",        // per-index stat.
+	"avg_internal_queries_latency",  // per-index stat.
 	"total_request_time",            // per-index stat.
 	"total_queries_slow",            // per-index stat.
 	"total_queries_timeout",         // per-index stat.
@@ -233,8 +235,15 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			nsIndexStat["total_queries"] = totalQueries
 			if totalQueries > 0 {
 				nsIndexStat["avg_queries_latency"] =
-					float64((atomic.LoadUint64(&focusStats.TotClientRequestTimeNS) /
-						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
+					float64(atomic.LoadUint64(&focusStats.TotClientRequestTimeNS)/
+						totalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+			}
+			totalInternalQueries := atomic.LoadUint64(&focusStats.TotInternalRequest)
+			nsIndexStat["total_internal_queries"] = totalInternalQueries
+			if totalInternalQueries > 0 {
+				nsIndexStat["avg_internal_queries_latency"] =
+					float64(atomic.LoadUint64(&focusStats.TotInternalRequestTimeNS)/
+						totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
 			}
 			nsIndexStat["total_request_time"] =
 				atomic.LoadUint64(&focusStats.TotRequestTimeNS)
@@ -259,8 +268,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcClientRequestTimeNS) /
 						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
 			}
-			//nsIndexStat["total_request_time"] =
-			//	atomic.LoadUint64(&rpcFocusStats.TotRequestTimeNS)
+			nsIndexStat["total_grpc_request_time"] =
+				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS)
 			nsIndexStat["total_grpc_queries_slow"] =
 				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestSlow)
 			nsIndexStat["total_grpc_queries_timeout"] =
