@@ -48,11 +48,6 @@ type SearchService struct {
 	mgr *cbgt.Manager
 }
 
-// GrpcIndexQueryPath is keyed by path spec strings.
-var GrpcPathStats = GRPCPathStats{
-	focusStats: make(map[string]*RPCFocusStats, 1),
-}
-
 func (s *SearchService) SetManager(mgr *cbgt.Manager) {
 	s.mgr = mgr
 }

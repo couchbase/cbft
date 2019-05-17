@@ -241,30 +241,35 @@ func (s *GRPCPathStats) FocusValues() (rv []string) {
 	return rv
 }
 
+// GrpcIndexQueryPath is keyed by path spec strings.
+var GrpcPathStats = GRPCPathStats{
+	focusStats: map[string]*RPCFocusStats{},
+}
+
 // -------------------------------------------------------
 
 // RPCFocusStats represents stats for a targeted or "focused" gRPC
 // endpoint.
 type RPCFocusStats struct {
-	TotGrpcRequest             uint64
-	TotGrpcRequestTimeNS       uint64
-	TotGrpcRequestErr          uint64 `json:"TotGrpcRequestErr,omitempty"`
-	TotGrpcRequestSlow         uint64 `json:"TotGrpcRequestSlow,omitempty"`
-	TotGrpcRequestTimeout      uint64 `json:"TotGrpcRequestTimeout,omitempty"`
-	TotGrpcResponseBytes       uint64 `json:"TotGrpcResponseBytes,omitempty"`
-	TotGrpcClientRequest       uint64
-	TotGrpcClientRequestTimeNS uint64
+	TotGrpcRequest               uint64
+	TotGrpcRequestTimeNS         uint64
+	TotGrpcRequestErr            uint64 `json:"TotGrpcRequestErr,omitempty"`
+	TotGrpcRequestSlow           uint64 `json:"TotGrpcRequestSlow,omitempty"`
+	TotGrpcRequestTimeout        uint64 `json:"TotGrpcRequestTimeout,omitempty"`
+	TotGrpcResponseBytes         uint64 `json:"TotGrpcResponseBytes,omitempty"`
+	TotGrpcInternalRequest       uint64
+	TotGrpcInternalRequestTimeNS uint64
 }
 
 func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 	req *pb.SearchRequest, ctx context.Context, err error) {
 	focusStats := GrpcPathStats.FocusStats(req.IndexName)
 	if focusStats != nil {
-		// check whether its a client request
-		// and track only in the coordinating node
+		// check whether its a client request and track only in the coordinating node
 		if _, er := extractMetaHeader(ctx, "rpcclusteractionkey"); er != nil {
-			atomic.AddUint64(&focusStats.TotGrpcClientRequest, 1)
-			atomic.AddUint64(&focusStats.TotGrpcClientRequestTimeNS,
+			// co-ordinating node
+			atomic.AddUint64(&focusStats.TotGrpcRequest, 1)
+			atomic.AddUint64(&focusStats.TotGrpcRequestTimeNS,
 				uint64(time.Now().Sub(startTime)))
 
 			slowQueryLogTimeoutV := mgr.Options()["slowQueryLogTimeout"]
@@ -289,9 +294,12 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 					atomic.AddUint64(&focusStats.TotGrpcRequestTimeout, 1)
 				}
 			}
+		} else {
+			// not a co-ordinating node
+			atomic.AddUint64(&focusStats.TotGrpcInternalRequest, 1)
+			atomic.AddUint64(&focusStats.TotGrpcInternalRequestTimeNS,
+				uint64(time.Now().Sub(startTime)))
 		}
-
-		atomic.AddUint64(&focusStats.TotGrpcRequest, 1)
 	}
 }
 

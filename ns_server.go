@@ -160,14 +160,24 @@ var statkeys = []string{
 	// "total_gc"   -- PROCESS-LEVEL stat.
 	// "pct_cpu_gc" -- PROCESS-LEVEL stat.
 
-	"total_queries",                 // per-index stat.
-	"avg_queries_latency",           // per-index stat.
-	"total_internal_queries",        // per-index stat.
-	"avg_internal_queries_latency",  // per-index stat.
-	"total_request_time",            // per-index stat.
-	"total_queries_slow",            // per-index stat.
-	"total_queries_timeout",         // per-index stat.
-	"total_queries_error",           // per-index stat.
+	"total_queries",                // per-index stat.
+	"avg_queries_latency",          // per-index stat.
+	"total_internal_queries",       // per-index stat.
+	"avg_internal_queries_latency", // per-index stat.
+	"total_request_time",           // per-index stat.
+	"total_queries_slow",           // per-index stat.
+	"total_queries_timeout",        // per-index stat.
+	"total_queries_error",          // per-index stat.
+
+	"total_grpc_queries",                // per-index stat.
+	"avg_grpc_queries_latency",          // per-index stat.
+	"total_grpc_internal_queries",       // per-index stat.
+	"avg_grpc_internal_queries_latency", // per-index stat.
+	"total_grpc_request_time",           // per-index stat.
+	"total_grpc_queries_slow",           // per-index stat.
+	"total_grpc_queries_timeout",        // per-index stat.
+	"total_grpc_queries_error",          // per-index stat.
+
 	"total_bytes_query_results",     // per-index stat.
 	"total_term_searchers",          // per-index stat.
 	"total_term_searchers_finished", // per-index stat.
@@ -261,13 +271,21 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 		rpcFocusStats := GrpcPathStats.FocusStats(indexName)
 		if rpcFocusStats != nil {
-			totalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcClientRequest)
+			totalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcRequest)
 			nsIndexStat["total_grpc_queries"] = totalQueries
 			if totalQueries > 0 {
 				nsIndexStat["avg_grpc_queries_latency"] =
-					float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcClientRequestTimeNS) /
+					float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS) /
 						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
 			}
+			totalInternalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequest)
+			nsIndexStat["total_grpc_internal_queries"] = totalInternalQueries
+			if totalInternalQueries > 0 {
+				nsIndexStat["avg_grpc_internal_queries_latency"] =
+					float64(atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequestTimeNS)/
+						totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+			}
+
 			nsIndexStat["total_grpc_request_time"] =
 				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS)
 			nsIndexStat["total_grpc_queries_slow"] =
