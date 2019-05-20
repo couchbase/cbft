@@ -1132,7 +1132,11 @@ function ftsServiceHostPort($scope, $http, $location) {
         var nodes = resp.data.nodesExt;
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i].services && nodes[i].services.fts) {
-                $scope.hostPort = $location.host() + ":" + nodes[i].services.fts;
+                var host = $location.host();
+                if (angular.isDefined(nodes[i].hostname)) {
+                    host = nodes[i].hostname;
+                }
+                $scope.hostPort = host + ":" + nodes[i].services.fts;
                 return;
             }
         }
