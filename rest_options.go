@@ -108,6 +108,14 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		if options["bleveMaxResultWindow"] != "" {
+			bleveMaxResultWindow, err := strconv.Atoi(options["bleveMaxResultWindow"])
+			if err != nil || bleveMaxResultWindow < 0 {
+				return nil, fmt.Errorf("illegal value for bleveMaxResultWindow: '%v'",
+					options["bleveMaxResultWindow"])
+			}
+		}
+
 		return options, nil
 	}
 
