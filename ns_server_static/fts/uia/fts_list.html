@@ -272,7 +272,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 
 <!-- display results of check for query nodes ********************  -->
   <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="margin-top-half">
-    <p>The full text search interface is only available on Couchbase nodes running the full text search service.</p>
+    <p>The full text search interface is only available on Couchbase clusters running the full text search service.</p>
     <div ng-show="ftsNodes.length > 0">
       <p>The full text search service was found on the following nodes:</p>
       <div class="indent-1" ng-repeat="url in ftsNodes">
