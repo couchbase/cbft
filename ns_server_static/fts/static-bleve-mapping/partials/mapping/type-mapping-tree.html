@@ -214,8 +214,9 @@
                    <input type="checkbox" ng-model="field.include_term_vectors"/>
                    include term vectors
             </label>
-            <label><input type="checkbox" ng-model="field.docvalues"/>
-                  docvalues
+            <label ng-if="field.type != 'geopoint'">
+                  <input type="checkbox" ng-model="field.docvalues"/>
+                   docvalues
             </label>
           </div>
         </div>
