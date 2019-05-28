@@ -359,10 +359,12 @@ func (ndf *NodeDefsFetcher) Get() (*cbgt.NodeDefs, error) {
 
 // ---------------------------------------------------------
 
-const bleveQueryHelp = `<a href="https://developer.couchbase.com/fts/5.0/query-string-query"
-       target="_blank">
-       full text query syntax help
-     </a>`
+const bleveQueryHelp = `
+<a href="https://docs.couchbase.com/server/6.5/fts/query-string-queries.html"
+   target="_blank">
+   full text query syntax help
+</a>
+`
 
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
