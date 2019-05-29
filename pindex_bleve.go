@@ -205,6 +205,8 @@ type SearchRequest struct {
 	Sort             []json.RawMessage       `json:"sort"`
 	IncludeLocations bool                    `json:"includeLocations"`
 	Score            string                  `json:"score,omitempty"`
+	SearchAfter      []string                `json:"search_after,omitempty"`
+	SearchBefore     []string                `json:"search_before,omitempty"`
 	Limit            *int                    `json:"limit,omitempty"`
 	Offset           *int                    `json:"offset,omitempty"`
 }
@@ -219,6 +221,8 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		Explain:          sr.Explain,
 		IncludeLocations: sr.IncludeLocations,
 		Score:            sr.Score,
+		SearchAfter:      sr.SearchAfter,
+		SearchBefore:     sr.SearchBefore,
 	}
 
 	var err error
@@ -260,7 +264,7 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		}
 	}
 
-	return r, nil
+	return r, r.Validate()
 }
 
 type BleveDest struct {
@@ -829,12 +833,6 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 	}
 
-	err = searchRequest.Validate()
-	if err != nil {
-		return fmt.Errorf("bleve: QueryBleve"+
-			" validating request, err: %v", err)
-	}
-
 	v, exists := mgr.Options()["bleveMaxResultWindow"]
 	if exists {
 		var bleveMaxResultWindow int
@@ -1186,12 +1184,6 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	if err != nil {
 		return fmt.Errorf("bleve: BleveDest.Query"+
 			" parsing searchRequest, err: %v", err)
-	}
-
-	err = searchRequest.Validate()
-	if err != nil {
-		return fmt.Errorf("bleve: BleveDest.Query"+
-			" validating request, err: %v", err)
 	}
 
 	// phase 1 - set up timeouts, wait to satisfy consistency requirements

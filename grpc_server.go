@@ -153,12 +153,6 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		}
 	}
 
-	err = searchRequest.Validate()
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument,
-			"validating request, err: %v", err)
-	}
-
 	// always check for bleveMaxResultWindow, as there is a
 	// third case of TopN and Streamed results.
 	v, exists := s.mgr.Options()["bleveMaxResultWindow"]
