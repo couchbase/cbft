@@ -29,13 +29,14 @@ import (
 	"github.com/blevesearch/bleve/index/store"
 	"github.com/blevesearch/bleve/mapping"
 	"github.com/blevesearch/bleve/search"
+
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
+	log "github.com/couchbase/clog"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
-	log "github.com/couchbase/clog"
 )
 
 // GrpcClient implements the Search() and DocCount() subset of the
@@ -154,6 +155,8 @@ func (g *GrpcClient) SearchInContext(ctx context.Context,
 	go func() {
 		rv, err := g.Query(ctx, sr)
 		if err != nil {
+			log.Warnf("grpc_client: Query() returned error from host: %v,"+
+				" err: %v", g.HostPort, err)
 			resultCh <- makeSearchResultErr(req, g.PIndexNames, err)
 			return
 		}
@@ -163,6 +166,8 @@ func (g *GrpcClient) SearchInContext(ctx context.Context,
 
 	select {
 	case <-ctx.Done():
+		log.Warnf("grpc_client: scatter-gather error while awaiting results"+
+			" from host: %v, err: %v", g.HostPort, ctx.Err())
 		return makeSearchResultErr(req, g.PIndexNames, ctx.Err()), nil
 	case rv := <-resultCh:
 		return rv, nil

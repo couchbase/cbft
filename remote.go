@@ -29,6 +29,7 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	log "github.com/couchbase/clog"
 )
 
 // RemoteClient represents a generic interface to be implemented
@@ -228,6 +229,8 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 	go func() {
 		respBuf, err := r.Query(buf)
 		if err != nil {
+			log.Warnf("remote: Query() returned error from host: %v,"+
+				" err: %v", r.HostPort, err)
 			resultCh <- makeSearchResultErr(req, r.PIndexNames, err)
 			return
 		}
@@ -250,6 +253,8 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 
 	select {
 	case <-ctx.Done():
+		log.Warnf("remote: scatter-gather error while awaiting results"+
+			" from host: %v, err: %v", r.HostPort, ctx.Err())
 		return makeSearchResultErr(req, r.PIndexNames, ctx.Err()), nil
 	case rv := <-resultCh:
 		return rv, nil
