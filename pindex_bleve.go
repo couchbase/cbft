@@ -2141,7 +2141,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		planPIndexFilterName = "canRead"
 	}
 
-	if onlyPIndexes != nil {
+	if onlyPIndexes != nil && partitionSelection != "" {
 		// select all local pindexes
 		partitionSelection = "advanced-local"
 	}
