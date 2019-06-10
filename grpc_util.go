@@ -279,7 +279,7 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 				if err == nil {
 					d := time.Since(startTime)
 					if d > slowQueryLogTimeout {
-						log.Printf("grpc_util: slow-query index: %s,"+
+						log.Warnf("grpc_util: slow-query index: %s,"+
 							" query: %s, duration: %v, err: %v",
 							req.IndexName, string(req.Contents), d, err)
 
