@@ -17,7 +17,13 @@
       <tr>
         <th>index name</th>
         <th>bucket</th>
-        <th>doc count</th>
+        <th>doc count
+            <span class="fa-stack icon-info"
+                  uib-tooltip="Number of documents examined across active index partitions." tooltip-placement="right">
+                <span class="icon fa-circle-thin fa-stack-2x"></span>
+                <span class="icon fa-info fa-stack-1x"></span>
+            </span>
+        </th>
         <th>indexing progress</th>
       </tr>
       <tbody ng-repeat="(indexName, indexDef) in indexDefs"
