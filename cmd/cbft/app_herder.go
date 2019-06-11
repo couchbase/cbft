@@ -41,16 +41,6 @@ type appHerder struct {
 
 	// Tracks estimated memory used by running queries
 	runningQueryUsed uint64
-
-	stats appHerderStats
-}
-
-type appHerderStats struct {
-	TotWaitingIn  uint64
-	TotWaitingOut uint64
-
-	TotOnBatchExecuteStartBeg uint64
-	TotOnBatchExecuteStartEnd uint64
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
@@ -91,10 +81,11 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 
 func (a *appHerder) Stats() map[string]interface{} {
 	return map[string]interface{}{
-		"TotWaitingIn":              atomic.LoadUint64(&a.stats.TotWaitingIn),
-		"TotWaitingOut":             atomic.LoadUint64(&a.stats.TotWaitingOut),
-		"TotOnBatchExecuteStartBeg": atomic.LoadUint64(&a.stats.TotOnBatchExecuteStartBeg),
-		"TotOnBatchExecuteStartEnd": atomic.LoadUint64(&a.stats.TotOnBatchExecuteStartEnd),
+		"TotWaitingIn":              atomic.LoadUint64(&cbft.TotHerderWaitingIn),
+		"TotWaitingOut":             atomic.LoadUint64(&cbft.TotHerderWaitingOut),
+		"TotOnBatchExecuteStartBeg": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartBeg),
+		"TotOnBatchExecuteStartEnd": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartEnd),
+		"TotQueriesRejected":        atomic.LoadUint64(&cbft.TotHerderQueriesRejected),
 	}
 }
 
@@ -135,7 +126,7 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		return
 	}
 
-	atomic.AddUint64(&a.stats.TotOnBatchExecuteStartBeg, 1)
+	atomic.AddUint64(&cbft.TotHerderOnBatchExecuteStartBeg, 1)
 
 	a.m.Lock()
 
@@ -148,7 +139,7 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	for isOverQuota {
 		wasWaiting = true
 
-		atomic.AddUint64(&a.stats.TotWaitingIn, 1)
+		atomic.AddUint64(&cbft.TotHerderWaitingIn, 1)
 		a.waiting++
 
 		// If we're over the memory quota, then wait for persister,
@@ -175,7 +166,7 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		indexesPrev = int64(len(a.indexes))
 
 		a.waiting--
-		atomic.AddUint64(&a.stats.TotWaitingOut, 1)
+		atomic.AddUint64(&cbft.TotHerderWaitingOut, 1)
 
 		isOverQuota, preIndexingMemory, memUsed = a.overMemQuotaForIndexingLOCKED()
 	}
@@ -187,7 +178,7 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 
 	a.m.Unlock()
 
-	atomic.AddUint64(&a.stats.TotOnBatchExecuteStartEnd, 1)
+	atomic.AddUint64(&cbft.TotHerderOnBatchExecuteStartEnd, 1)
 }
 
 func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {
@@ -293,6 +284,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 				a.overQuotaCh <- struct{}{}
 			}
 
+			atomic.AddUint64(&cbft.TotHerderQueriesRejected, 1)
 			return rest.ErrorQueryReqRejected
 		}
 

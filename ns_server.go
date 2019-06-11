@@ -57,6 +57,13 @@ var TotGRPCListenersClosed uint64
 var TotGRPCSListenersOpened uint64
 var TotGRPCSListenersClosed uint64
 
+// App-herder pertinent atomic stats.
+var TotHerderWaitingIn uint64
+var TotHerderWaitingOut uint64
+var TotHerderOnBatchExecuteStartBeg uint64
+var TotHerderOnBatchExecuteStartEnd uint64
+var TotHerderQueriesRejected uint64
+
 // Atomic stat that tracks current memory acquired, not including
 // HeapIdle (memory reclaimed); updated every second;
 // Used by the app_herder to track memory consumption by process.
@@ -182,6 +189,9 @@ var statkeys = []string{
 	"total_bytes_query_results",     // per-index stat.
 	"total_term_searchers",          // per-index stat.
 	"total_term_searchers_finished", // per-index stat.
+
+	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
+	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
 }
 
 // NewIndexStat ensures that all index stats
@@ -476,6 +486,12 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	topLevelStats["tot_bleve_dest_opened"] = atomic.LoadUint64(&TotBleveDestOpened)
 	topLevelStats["tot_bleve_dest_closed"] = atomic.LoadUint64(&TotBleveDestClosed)
+
+	topLevelStats["curr_batches_blocked_by_herder"] =
+		atomic.LoadUint64(&TotHerderOnBatchExecuteStartEnd) -
+			atomic.LoadUint64(&TotHerderOnBatchExecuteStartBeg)
+	topLevelStats["total_queries_rejected_by_herder"] =
+		atomic.LoadUint64(&TotHerderQueriesRejected)
 
 	nsIndexStats[""] = topLevelStats
 
