@@ -166,6 +166,9 @@ var bleveExpvarsAgg [][]string = [][]string{
 	// Category "p" is for "persister".
 	{"p", "CurOnDiskFiles"},
 	{"p", "MaxMemMergeZapTime"},
+
+	// Category "h" is for "herder".
+	{"h", "TotQueriesRejected"},
 }
 
 // bleveExpvarsDeltas holds tuples of {categoryPrefix, varName,
@@ -191,7 +194,6 @@ var bleveExpvarsDeltas [][]string = [][]string{
 	// Category "h" is for "herder".
 	{"h", "CurOnBatchExecuteStart", "TotOnBatchExecuteStartBeg", "TotOnBatchExecuteStartEnd"},
 	{"h", "CurWaiting", "TotWaitingIn", "TotWaitingOut"},
-	{"h", "TotQueriesRejected"},
 }
 
 // bleveExpvarsRatios holds tuples of {categoryPrefix, varName,
