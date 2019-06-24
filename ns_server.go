@@ -206,18 +206,7 @@ func NewIndexStat() map[string]interface{} {
 }
 
 func getRecentInfo() *recentInfo {
-	var rd *recentInfo
-	var timerCh <-chan time.Time
-	timerCh = nsStatsTimeoutBreaker.C
-	select {
-	case rd = <-recentInfoCh:
-
-	case <-timerCh:
-		rd = (*recentInfo)(atomic.LoadPointer(&prevRecentInfo))
-		log.Printf("ns_server: getRecentInfo fetched on timeout expiry")
-	}
-
-	return rd
+	return (*recentInfo)(atomic.LoadPointer(&lastRecentInfo))
 }
 
 func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -920,14 +909,11 @@ type SourcePartitionSeqs struct {
 var mapSourcePartitionSeqs = map[SourceSpec]*SourcePartitionSeqs{}
 var mapSourcePartitionSeqsM sync.Mutex
 var runSourcePartitionSeqsOnce sync.Once
-var nsStatsTimeoutBreaker *time.Ticker
 
 func initNsServerCaching(mgr *cbgt.Manager) {
 	runSourcePartitionSeqsOnce.Do(func() {
 		go RunSourcePartitionSeqs(mgr.Options(), nil)
 		go RunRecentInfoCache(mgr)
-
-		nsStatsTimeoutBreaker = time.NewTicker(defaultNsStatsTimeoutBreakerTicker)
 	})
 }
 
@@ -1058,15 +1044,7 @@ type recentInfo struct {
 	err          error
 }
 
-var recentInfoCh = make(chan *recentInfo)
-
-var prevRecentInfo = unsafe.Pointer(new(recentInfo))
-
-// ns server has a default 10 sec timeout for nsstats rest endpoints.
-// So to avoid this endpoint timeout due to a blocked read on
-// recentInfoCh, we set a timeout breaker for the recentInfoCh reads.
-// ref https://github.com/couchbase/ns_server/blob/master/src/service_fts.erl#L84
-var defaultNsStatsTimeoutBreakerTicker = time.Duration(7 * time.Second)
+var lastRecentInfo = unsafe.Pointer(new(recentInfo))
 
 func FetchCurMemoryUsed() uint64 {
 	return atomic.LoadUint64(&currentMemoryUsed)
@@ -1148,7 +1126,7 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 			planPIndexes: planPIndexes,
 			err:          err,
 		}
-		atomic.StorePointer(&prevRecentInfo, unsafe.Pointer(rd))
+		atomic.StorePointer(&lastRecentInfo, unsafe.Pointer(rd))
 
 		runtime.ReadMemStats(&rd.memStats)
 
@@ -1199,11 +1177,6 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 			case <-logMemStatCh:
 				logMemStatInfo(&rd.memStats)
-
-			case recentInfoCh <- rd:
-				if rd.err != nil {
-					break REUSE_CACHE
-				}
 			}
 		}
 	}
