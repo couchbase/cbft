@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 
 	"golang.org/x/net/netutil"
@@ -71,7 +72,7 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 			setupHTTPSListeners()
 			return nil
 		}
-		cbft.RegisterConfigRefreshCallback("https", handleConfigChanges)
+		cbgt.RegisterConfigRefreshCallback("https", handleConfigChanges)
 	}
 
 	setupHTTPSListeners()
@@ -207,13 +208,13 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 
 		config.Certificates = make([]tls.Certificate, 1)
 		config.Certificates[0], err = tls.LoadX509KeyPair(
-			cbft.TLSCertFile, cbft.TLSKeyFile)
+			cbgt.TLSCertFile, cbgt.TLSKeyFile)
 		if err != nil {
 			log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
 		}
 
 		if authType == "cbauth" {
-			ss := cbft.GetSecuritySetting()
+			ss := cbgt.GetSecuritySetting()
 			if ss != nil && ss.TLSConfig != nil {
 				// Set MinTLSVersion and CipherSuites to what is provided by
 				// cbauth if authType were cbauth (cached locally).

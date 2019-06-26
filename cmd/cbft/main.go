@@ -190,8 +190,8 @@ func main() {
 	}
 
 	// Update the cached CertFile and KeyFile for TLS.
-	cbft.TLSCertFile = flags.TLSCertFile
-	cbft.TLSKeyFile = flags.TLSKeyFile
+	cbgt.TLSCertFile = flags.TLSCertFile
+	cbgt.TLSKeyFile = flags.TLSKeyFile
 
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.

@@ -402,7 +402,7 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			port = bindPort
 		}
 
-		ss := GetSecuritySetting()
+		ss := cbgt.GetSecuritySetting()
 		var certInBytes []byte
 		if ss.EncryptionEnabled {
 			bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")

@@ -12,9 +12,9 @@
 package main
 
 import (
-	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt"
 )
 
 func init() {
-	cbft.InitSecurityCtxAndRegisterWithCBAuth()
+	cbgt.InitSecurityCtxAndRegisterWithCBAuth()
 }

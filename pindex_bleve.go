@@ -399,6 +399,15 @@ func init() {
 		},
 		AnalyzeIndexDefUpdates: RestartOnIndexDefChanges,
 	})
+
+	cbgt.RegisterConfigRefreshCallback("http2Client",
+		handleRefreshSecuritySettings)
+}
+
+func handleRefreshSecuritySettings() error {
+	ss := cbgt.GetSecuritySetting()
+	setupHttp2Client(ss.CertInBytes)
+	return nil
 }
 
 func PrepareBleveIndexParams(indexParams string) (string, error) {
@@ -1996,7 +2005,7 @@ func fetchHttp2Client() *http.Client {
 		return http2Client
 	}
 
-	ss := GetSecuritySetting()
+	ss := cbgt.GetSecuritySetting()
 	setupHttp2ClientLOCKED(ss.CertInBytes)
 	return http2Client
 }
@@ -2067,7 +2076,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		proto := "http://"
 
 		http2Enabled := false
-		ss := GetSecuritySetting()
+		ss := cbgt.GetSecuritySetting()
 		if ss.EncryptionEnabled {
 			extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
 			if er == nil && extrasBindHTTPS != nil {
