@@ -72,7 +72,7 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 			setupHTTPSListeners()
 			return nil
 		}
-		cbgt.RegisterConfigRefreshCallback("https", handleConfigChanges)
+		cbgt.RegisterConfigRefreshCallback("fts/https", handleConfigChanges)
 	}
 
 	setupHTTPSListeners()

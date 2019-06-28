@@ -400,14 +400,6 @@ func init() {
 		AnalyzeIndexDefUpdates: RestartOnIndexDefChanges,
 	})
 
-	cbgt.RegisterConfigRefreshCallback("http2Client",
-		handleRefreshSecuritySettings)
-}
-
-func handleRefreshSecuritySettings() error {
-	ss := cbgt.GetSecuritySetting()
-	setupHttp2Client(ss.CertInBytes)
-	return nil
 }
 
 func PrepareBleveIndexParams(indexParams string) (string, error) {

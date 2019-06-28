@@ -44,6 +44,8 @@ var rpcConnMutex sync.Mutex
 // rpc.ClientConn pool size/static connections per remote host
 var connPoolSize = 5
 
+var defaultRPCClientCacheSize = 10
+
 // GrpcPort represents the port used with gRPC.
 var GrpcPort = ":15000"
 
@@ -62,9 +64,19 @@ var rsource rand.Source
 var r1 *rand.Rand
 
 func init() {
-	RPCClientConn = make(map[string][]*grpc.ClientConn, 10)
+	RPCClientConn = make(map[string][]*grpc.ClientConn, defaultRPCClientCacheSize)
 	rsource = rand.NewSource(time.Now().UnixNano())
 	r1 = rand.New(rsource)
+}
+
+// resetGrpcClients is used to reset the existing clients so that
+// further getRpcClient calls will get newer clients with the fresh
+// and the latest configs.
+func resetGrpcClients() error {
+	rpcConnMutex.Lock()
+	RPCClientConn = make(map[string][]*grpc.ClientConn, defaultRPCClientCacheSize)
+	rpcConnMutex.Unlock()
+	return nil
 }
 
 // basicAuthCreds is an implementation of credentials.PerRPCCredentials

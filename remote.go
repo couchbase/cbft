@@ -32,6 +32,18 @@ import (
 	log "github.com/couchbase/clog"
 )
 
+func init() {
+	cbgt.RegisterConfigRefreshCallback("fts/remoteClients",
+		handleRefreshSecuritySettings)
+}
+
+func handleRefreshSecuritySettings() error {
+	ss := cbgt.GetSecuritySetting()
+	setupHttp2Client(ss.CertInBytes)
+	resetGrpcClients()
+	return nil
+}
+
 // RemoteClient represents a generic interface to be implemented
 // by all remote clients like IndexClient/GrpcClient.
 type RemoteClient interface {

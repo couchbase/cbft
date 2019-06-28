@@ -62,7 +62,7 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 				return nil
 			}
 
-			cbgt.RegisterConfigRefreshCallback("grpc-ssl", handleConfigChanges)
+			cbgt.RegisterConfigRefreshCallback("fts/grpc-ssl", handleConfigChanges)
 		}
 
 		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
