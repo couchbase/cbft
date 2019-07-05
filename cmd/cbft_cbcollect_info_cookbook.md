@@ -68,6 +68,14 @@ Another, faster way to see the what pindex updates the cbft nodes are making thr
 
     grep PUT.*PIndexes */ns_server.http_access_internal.log | sort -k4
 
+To fix a hash mismatch issue with planPIndexes Or
+    to override a metakv "planPIndexes" with a default value.
+
+    step1. curl -i http://<hostname:8091>/diag/eval -d 'metakv:set(<<"/fts/cbgt/cfg/curMetaKvPlanKey">>, <<"">>).'
+     -u<uname>:<pwd>
+
+    step2. curl -i http://<hostname:8091>/diag/eval -d 'metakv:set(<<"/fts/cbgt/cfg/planPIndexes">>, <<"\"ImplVersion\":\"5.5.0\"}">>).' -u<uname>:<pwd>
+
 To find the couchbase nodes that ns-server might know about...
 
     grep -h per_node_ets_tables */*.log | cut -f 1 -d , | sort | uniq
