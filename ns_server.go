@@ -639,6 +639,7 @@ var kvStats = map[string]string{
 	// From mossStore...
 	"/num_bytes_used_disk":            "num_bytes_used_disk",
 	"/total_compaction_written_bytes": "total_compaction_written_bytes",
+	"/num_files":                      "num_files_on_disk",
 }
 
 func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
