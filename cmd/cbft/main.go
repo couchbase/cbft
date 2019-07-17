@@ -506,6 +506,14 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
+	dhPath := prefix + "/api/index/{indexName}/analyzeDoc"
+	dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
+		rest.NewHandlerWithRESTMeta(cbft.NewAnalyzeDocHandler(mgr),
+			&rest.RESTMeta{dhPath, "POST", nil},
+			nil, dhPath))
+
+	muxrouter.Handle(dhPath, dh).Methods("POST").Name(dhPath)
+
 	router := exportMuxRoutesToHttprouter(muxrouter)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",

@@ -57,6 +57,9 @@ cluster.bucket[<sourceName>].fts!read
 POST /api/index/{indexName}/query
 cluster.bucket[<sourceName>].fts!read
 
+POST /api/index/{indexName}/analyzeDoc
+cluster.bucket[<sourceName>].fts!read
+
 GET /api/cfg
 cluster.settings.fts!read
 

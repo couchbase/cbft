@@ -38,6 +38,7 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
+	"github.com/blevesearch/bleve/document"
 	bleveHttp "github.com/blevesearch/bleve/http"
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/index/upsidedown"
@@ -790,6 +791,115 @@ func bleveCtxQueryStartCallback(size uint64) error {
 
 func bleveCtxQueryEndCallback(size uint64) error {
 	return fireQueryEvent(1, EventQueryEnd, 0, size)
+}
+
+// AnalyzeDocHandler is a REST handler for analyzing documents against
+// a given index.
+type AnalyzeDocHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewAnalyzeDocHandler(mgr *cbgt.Manager) *AnalyzeDocHandler {
+	return &AnalyzeDocHandler{mgr: mgr}
+}
+
+func (h *AnalyzeDocHandler) RESTOpts(opts map[string]string) {
+	opts["param: indexName"] =
+		"required, string, URL path parameter\n\n" +
+			"The name of the index against which the doc needs to be analyzed."
+}
+
+func (h *AnalyzeDocHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	indexName := rest.IndexNameLookup(req)
+	if indexName == "" {
+		rest.ShowError(w, req, "index name is required", http.StatusBadRequest)
+		return
+	}
+
+	indexUUID := req.FormValue("indexUUID")
+
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		rest.ShowErrorBody(w, nil, fmt.Sprintf("bleve: AnalyzeDoc,"+
+			" could not read request body, indexName: %s",
+			indexName), http.StatusBadRequest)
+		return
+	}
+
+	_, _, err = cbgt.GetIndexDef(h.mgr.Cfg(), indexName)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("bleve: AnalyzeDoc,"+
+			" no indexName: %s found, err: %v",
+			indexName, err), http.StatusBadRequest)
+	}
+
+	err = AnalyzeDoc(h.mgr, indexName, indexUUID, requestBody, w)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("bleve: AnalyzeDoc,"+
+			" indexName: %s, err: %v",
+			indexName, err), http.StatusInternalServerError)
+		return
+	}
+}
+
+func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
+	req []byte, res io.Writer) error {
+	pindexes, _, _, err := mgr.CoveringPIndexesEx(
+		cbgt.CoveringPIndexesSpec{
+			IndexName:            indexName,
+			IndexUUID:            indexUUID,
+			PlanPIndexFilterName: "canRead",
+		}, nil, false)
+
+	if err != nil {
+		return err
+	}
+
+	if len(pindexes) == 0 {
+		return fmt.Errorf("bleve: AnalyzeDoc, no local pindexes found")
+	}
+
+	bindex, bdest, _, err := bleveIndex(pindexes[0])
+	if err != nil {
+		return err
+	}
+
+	defaultType := "_default"
+	if imi, ok := bindex.Mapping().(*mapping.IndexMappingImpl); ok {
+		defaultType = imi.DefaultType
+	}
+
+	var cbftDoc *BleveDocument
+	cbftDoc, err = bdest.bleveDocConfig.BuildDocument(nil, req, defaultType)
+	if err != nil {
+		return err
+	}
+
+	idx, _, err := bindex.Advanced()
+	if err != nil {
+		return err
+	}
+
+	doc := document.NewDocument("dummy")
+	err = bindex.Mapping().MapDocument(doc, cbftDoc)
+	if err != nil {
+		return err
+	}
+
+	ar := idx.Analyze(doc)
+
+	rv := struct {
+		Status   string      `json:"status"`
+		Analyzed interface{} `json:"analyzed"`
+	}{
+		Status:   "ok",
+		Analyzed: ar.Analyzed,
+	}
+
+	mustEncode(res, rv)
+
+	return nil
 }
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
@@ -2207,31 +2317,9 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	return remoteClients, numPIndexes, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
 		func(localPIndex *cbgt.PIndex) error {
-			if !strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
-				return fmt.Errorf("bleve: bleveIndexTargets, wrong type,"+
-					" localPIndex: %s, type: %s", localPIndex.Name, localPIndex.IndexType)
-			}
-
-			destFwd, ok := localPIndex.Dest.(*cbgt.DestForwarder)
-			if !ok || destFwd == nil {
-				return fmt.Errorf("bleve: bleveIndexTargets, wrong destFwd type,"+
-					" localPIndex: %s, destFwd type: %T", localPIndex.Name, localPIndex.Dest)
-			}
-
-			bdest, ok := destFwd.DestProvider.(*BleveDest)
-			if !ok || bdest == nil {
-				return fmt.Errorf("bleve: bleveIndexTargets, wrong provider type,"+
-					" localPIndex: %s, provider type: %T", localPIndex.Name, destFwd.DestProvider)
-			}
-
-			bdest.m.Lock()
-			bindex := bdest.bindex
-			rev := bdest.rev
-			bdest.m.Unlock()
-
-			if bindex == nil {
-				return fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+
-					" localPIndex: %s", localPIndex.Name)
+			bindex, _, rev, err := bleveIndex(localPIndex)
+			if err != nil {
+				return err
 			}
 
 			collector.Add(&cacheBleveIndex{
@@ -2243,6 +2331,37 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 
 			return nil
 		})
+}
+
+func bleveIndex(localPIndex *cbgt.PIndex) (bleve.Index, *BleveDest, uint64, error) {
+	if !strings.HasPrefix(localPIndex.IndexType, "fulltext-index") {
+		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, wrong type,"+
+			" localPIndex: %s, type: %s", localPIndex.Name, localPIndex.IndexType)
+	}
+
+	destFwd, ok := localPIndex.Dest.(*cbgt.DestForwarder)
+	if !ok || destFwd == nil {
+		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, wrong destFwd type,"+
+			" localPIndex: %s, destFwd type: %T", localPIndex.Name, localPIndex.Dest)
+	}
+
+	bdest, ok := destFwd.DestProvider.(*BleveDest)
+	if !ok || bdest == nil {
+		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, wrong provider type,"+
+			" localPIndex: %s, provider type: %T", localPIndex.Name, destFwd.DestProvider)
+	}
+
+	bdest.m.Lock()
+	bindex := bdest.bindex
+	rev := bdest.rev
+	bdest.m.Unlock()
+
+	if bindex == nil {
+		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+
+			" localPIndex: %s", localPIndex.Name)
+	}
+
+	return bindex, bdest, rev, nil
 }
 
 // ---------------------------------------------------------
