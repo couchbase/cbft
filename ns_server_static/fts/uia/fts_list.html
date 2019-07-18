@@ -143,7 +143,7 @@
                      ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                      class="json-content row items-top">
 <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
-http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+-u &lt;username&gt;:&lt;password&gt; http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                     <button
                        class="outline copy-to-clipboard"
@@ -258,7 +258,7 @@ http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
                    ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                    class="json-content row items-top">
   <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
-  http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+  -u &lt;username&gt;:&lt;password&gt; http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
   '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                   <button
                      class="outline copy-to-clipboard"
