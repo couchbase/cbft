@@ -311,6 +311,9 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestErr)
 		}
 
+		nsIndexStat["last_access_time"] =
+			querySupervisor.GetLastAccessTimeForIndex(indexName)
+
 		feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
 		if !exists || feedType == nil || feedType.PartitionSeqs == nil {
 			continue

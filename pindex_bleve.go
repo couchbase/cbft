@@ -1018,11 +1018,12 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
-		Query:   searchRequest.Query,
-		Cancel:  cancel,
-		Size:    searchRequest.Size,
-		From:    searchRequest.From,
-		Timeout: queryCtlParams.Ctl.Timeout,
+		Query:     searchRequest.Query,
+		Cancel:    cancel,
+		Size:      searchRequest.Size,
+		From:      searchRequest.From,
+		Timeout:   queryCtlParams.Ctl.Timeout,
+		IndexName: indexName,
 	})
 	defer querySupervisor.DeleteEntry(id)
 

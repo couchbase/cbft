@@ -25,19 +25,21 @@ import (
 )
 
 type QuerySupervisorContext struct {
-	Query   query.Query
-	Cancel  context.CancelFunc
-	Size    int
-	From    int
-	Timeout int64
+	Query     query.Query
+	Cancel    context.CancelFunc
+	Size      int
+	From      int
+	Timeout   int64
+	IndexName string
 
 	addedAt time.Time
 }
 
 type QuerySupervisor struct {
-	m        sync.RWMutex
-	queryMap map[uint64]*QuerySupervisorContext
-	id       uint64
+	m                sync.RWMutex
+	queryMap         map[uint64]*QuerySupervisorContext
+	id               uint64
+	indexAccessTimes map[string]time.Time
 
 	added   uint64
 	removed uint64
@@ -47,7 +49,8 @@ var querySupervisor *QuerySupervisor
 
 func init() {
 	querySupervisor = &QuerySupervisor{
-		queryMap: make(map[uint64]*QuerySupervisorContext),
+		queryMap:         make(map[uint64]*QuerySupervisorContext),
+		indexAccessTimes: make(map[string]time.Time),
 	}
 }
 
@@ -59,6 +62,9 @@ func (qs *QuerySupervisor) AddEntry(qsc *QuerySupervisorContext) uint64 {
 	}
 	qsc.addedAt = time.Now()
 	qs.queryMap[id] = qsc
+	if qsc.IndexName != "" {
+		qs.indexAccessTimes[qsc.IndexName] = qsc.addedAt
+	}
 	qs.m.Unlock()
 	atomic.AddUint64(&qs.added, 1)
 	return id
@@ -77,6 +83,17 @@ func (qs *QuerySupervisor) Count() uint64 {
 	removed := atomic.LoadUint64(&qs.removed)
 	added := atomic.LoadUint64(&qs.added)
 	return (added - removed)
+}
+
+func (qs *QuerySupervisor) GetLastAccessTimeForIndex(name string) string {
+	qs.m.RLock()
+	defer qs.m.RUnlock()
+
+	if t, exists := qs.indexAccessTimes[name]; exists {
+		return t.Format("2006-01-02T15:04:05.000-07:00")
+	}
+
+	return ""
 }
 
 type RunningQueryDetails struct {

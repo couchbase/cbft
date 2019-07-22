@@ -235,11 +235,12 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
-		Query:   searchRequest.Query,
-		Cancel:  cancel,
-		Size:    searchRequest.Size,
-		From:    searchRequest.From,
-		Timeout: queryCtlParams.Ctl.Timeout,
+		Query:     searchRequest.Query,
+		Cancel:    cancel,
+		Size:      searchRequest.Size,
+		From:      searchRequest.From,
+		Timeout:   queryCtlParams.Ctl.Timeout,
+		IndexName: req.IndexName,
 	})
 	defer querySupervisor.DeleteEntry(id)
 
