@@ -408,7 +408,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: 400,
 			ResponseMatch: map[string]bool{
-				`rest_create_index: indexType is required`: true,
+				`rest_create_index: index type is required`: true,
 			},
 		},
 		{
