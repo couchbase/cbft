@@ -103,6 +103,7 @@ type RunningQueryDetails struct {
 	From          int         `json:"from"`
 	Timeout       int64       `json:"timeout"`
 	ExecutionTime string      `json:"execution_time"`
+	IndexName     string      `json:"index"`
 }
 
 func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration) map[uint64]*RunningQueryDetails {
@@ -117,6 +118,7 @@ func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration) map[uint64]*
 				From:          val.From,
 				Timeout:       val.Timeout,
 				ExecutionTime: fmt.Sprintf("%s", timeSince),
+				IndexName:     val.IndexName,
 			}
 		}
 	}
