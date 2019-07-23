@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/blevesearch/bleve/search/query"
@@ -38,11 +37,10 @@ type QuerySupervisorContext struct {
 type QuerySupervisor struct {
 	m                sync.RWMutex
 	queryMap         map[uint64]*QuerySupervisorContext
-	id               uint64
 	indexAccessTimes map[string]time.Time
-
-	added   uint64
-	removed uint64
+	id               uint64
+	added            uint64
+	removed          uint64
 }
 
 var querySupervisor *QuerySupervisor
@@ -55,8 +53,9 @@ func init() {
 }
 
 func (qs *QuerySupervisor) AddEntry(qsc *QuerySupervisorContext) uint64 {
-	id := atomic.AddUint64(&qs.id, 1)
 	qs.m.Lock()
+	qs.id++
+	id := qs.id
 	if qsc == nil {
 		qsc = &QuerySupervisorContext{}
 	}
@@ -65,8 +64,8 @@ func (qs *QuerySupervisor) AddEntry(qsc *QuerySupervisorContext) uint64 {
 	if qsc.IndexName != "" {
 		qs.indexAccessTimes[qsc.IndexName] = qsc.addedAt
 	}
+	qs.added++
 	qs.m.Unlock()
-	atomic.AddUint64(&qs.added, 1)
 	return id
 }
 
@@ -74,14 +73,16 @@ func (qs *QuerySupervisor) DeleteEntry(id uint64) {
 	qs.m.Lock()
 	if _, exists := qs.queryMap[id]; exists {
 		delete(qs.queryMap, id)
-		atomic.AddUint64(&qs.removed, 1)
+		qs.removed++
 	}
 	qs.m.Unlock()
 }
 
 func (qs *QuerySupervisor) Count() uint64 {
-	removed := atomic.LoadUint64(&qs.removed)
-	added := atomic.LoadUint64(&qs.added)
+	qs.m.RLock()
+	removed := qs.removed
+	added := qs.added
+	qs.m.RUnlock()
 	return (added - removed)
 }
 
