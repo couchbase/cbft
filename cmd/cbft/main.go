@@ -485,19 +485,27 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]
 
-	muxrouter.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
+	handle := func(path string, method string, h http.Handler) {
+		dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
+			rest.NewHandlerWithRESTMeta(h, &rest.RESTMeta{path, method, nil},
+				nil, path))
+
+		muxrouter.Handle(path, dh).Methods(method).Name(path)
+	}
+	handle(prefix+"/api/nsstats", "GET", cbft.NewNsStatsHandler(mgr))
 
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
 		return nil, err
 	}
-	muxrouter.Handle(prefix+"/api/nsstatus", nsStatusHandler)
+	handle(prefix+"/api/nsstatus", "GET", nsStatusHandler)
 
 	nsSearchResultRedirectHandler, err := cbft.NsSearchResultRedirctHandler(mgr)
 	if err != nil {
 		return nil, err
 	}
-	muxrouter.Handle(prefix+"/api/nsSearchResultRedirect/{pindexName}/{docID}",
+	handle(prefix+"/api/nsSearchResultRedirect/{pindexName}/{docID}",
+		"GET",
 		nsSearchResultRedirectHandler)
 
 	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
@@ -506,29 +514,24 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
-	dhPath := prefix + "/api/index/{indexName}/analyzeDoc"
-	dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
-		rest.NewHandlerWithRESTMeta(cbft.NewAnalyzeDocHandler(mgr),
-			&rest.RESTMeta{dhPath, "POST", nil},
-			nil, dhPath))
-
-	muxrouter.Handle(dhPath, dh).Methods("POST").Name(dhPath)
+	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
+		cbft.NewAnalyzeDocHandler(mgr))
 
 	router := exportMuxRoutesToHttprouter(muxrouter)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",
-		cbft.NewManagerOptionsExt(mgr))
+		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewManagerOptionsExt(mgr)))
 
 	router.Handler("GET", prefix+"/api/conciseOptions",
-		cbft.NewConciseOptions(mgr))
+		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewConciseOptions(mgr)))
 
 	router.Handler("GET", prefix+"/api/query",
-		cbft.NewQuerySupervisorDetails())
+		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQuerySupervisorDetails()))
 
-	router.Handle("DELETE", prefix+"/api/query/:queryID",
+	router.Handle("POST", prefix+"/api/query/:queryID/cancel",
 		func(w http.ResponseWriter, req *http.Request, p httprouter.Params) {
 			req = ContextSet(req, p)
-			handler := cbft.NewQueryKiller()
+			handler := cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQueryKiller())
 			handler.ServeHTTP(w, req)
 		})
 

@@ -38,7 +38,6 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
-	"github.com/blevesearch/bleve/document"
 	bleveHttp "github.com/blevesearch/bleve/http"
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/index/upsidedown"
@@ -793,115 +792,6 @@ func bleveCtxQueryEndCallback(size uint64) error {
 	return fireQueryEvent(1, EventQueryEnd, 0, size)
 }
 
-// AnalyzeDocHandler is a REST handler for analyzing documents against
-// a given index.
-type AnalyzeDocHandler struct {
-	mgr *cbgt.Manager
-}
-
-func NewAnalyzeDocHandler(mgr *cbgt.Manager) *AnalyzeDocHandler {
-	return &AnalyzeDocHandler{mgr: mgr}
-}
-
-func (h *AnalyzeDocHandler) RESTOpts(opts map[string]string) {
-	opts["param: indexName"] =
-		"required, string, URL path parameter\n\n" +
-			"The name of the index against which the doc needs to be analyzed."
-}
-
-func (h *AnalyzeDocHandler) ServeHTTP(
-	w http.ResponseWriter, req *http.Request) {
-	indexName := rest.IndexNameLookup(req)
-	if indexName == "" {
-		rest.ShowError(w, req, "index name is required", http.StatusBadRequest)
-		return
-	}
-
-	indexUUID := req.FormValue("indexUUID")
-
-	requestBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		rest.ShowErrorBody(w, nil, fmt.Sprintf("bleve: AnalyzeDoc,"+
-			" could not read request body, indexName: %s",
-			indexName), http.StatusBadRequest)
-		return
-	}
-
-	_, _, err = cbgt.GetIndexDef(h.mgr.Cfg(), indexName)
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("bleve: AnalyzeDoc,"+
-			" no indexName: %s found, err: %v",
-			indexName, err), http.StatusBadRequest)
-	}
-
-	err = AnalyzeDoc(h.mgr, indexName, indexUUID, requestBody, w)
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("bleve: AnalyzeDoc,"+
-			" indexName: %s, err: %v",
-			indexName, err), http.StatusInternalServerError)
-		return
-	}
-}
-
-func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
-	req []byte, res io.Writer) error {
-	pindexes, _, _, err := mgr.CoveringPIndexesEx(
-		cbgt.CoveringPIndexesSpec{
-			IndexName:            indexName,
-			IndexUUID:            indexUUID,
-			PlanPIndexFilterName: "canRead",
-		}, nil, false)
-
-	if err != nil {
-		return err
-	}
-
-	if len(pindexes) == 0 {
-		return fmt.Errorf("bleve: AnalyzeDoc, no local pindexes found")
-	}
-
-	bindex, bdest, _, err := bleveIndex(pindexes[0])
-	if err != nil {
-		return err
-	}
-
-	defaultType := "_default"
-	if imi, ok := bindex.Mapping().(*mapping.IndexMappingImpl); ok {
-		defaultType = imi.DefaultType
-	}
-
-	var cbftDoc *BleveDocument
-	cbftDoc, err = bdest.bleveDocConfig.BuildDocument(nil, req, defaultType)
-	if err != nil {
-		return err
-	}
-
-	idx, _, err := bindex.Advanced()
-	if err != nil {
-		return err
-	}
-
-	doc := document.NewDocument("dummy")
-	err = bindex.Mapping().MapDocument(doc, cbftDoc)
-	if err != nil {
-		return err
-	}
-
-	ar := idx.Analyze(doc)
-
-	rv := struct {
-		Status   string      `json:"status"`
-		Analyzed interface{} `json:"analyzed"`
-	}{
-		Status:   "ok",
-		Analyzed: ar.Analyzed,
-	}
-
-	mustEncode(res, rv)
-
-	return nil
-}
-
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
 	// phase 0 - parsing/validating query
@@ -1025,6 +915,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		Timeout:   queryCtlParams.Ctl.Timeout,
 		IndexName: indexName,
 	})
+
 	defer querySupervisor.DeleteEntry(id)
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
