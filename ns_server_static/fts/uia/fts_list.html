@@ -54,59 +54,53 @@
         <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
           <td colspan="4">
             <div class="fts-index-details">
-              <form>
-              <div class="row margin-bottom1">
-              <!--  <span>
-                  <span>
-                    <span class="semi-bold">Type Identifier:&nbsp;</span>
-                    <span ng-if="indexDef.params.doc_config.mode == 'docid_prefix'">doc ID prefix up to '{{indexDef.params.doc_config.docid_prefix_delim}}'</span>
-                    <span ng-if="indexDef.params.doc_config.mode == 'docid_regexp'">doc ID regular expression '{{indexDef.params.doc_config.docid_regexp}}'</span>
-                    <span ng-if="indexDef.params.doc_config.mode == 'type_field'">type field '{{indexDef.params.doc_config.type_field}}'</span>
-                  </span>
-
-                  <span ng-if="indexTemplates && indexTemplates[indexDef.type]">
-                    <span class="{{indexDef.type}}" data-nodrag>
-                      <span ng-include="static_base + indexTemplates[indexDef.type]"></span>
-                    </span>
-                  </span>
-                </span> -->
+              <div class="margin-bottom1">
+                <form>
+                  <div class="row" style="margin-bottom:1px;">
 
 <!-- index search controls ************************* -->
-              <div class="fts-query-bar" ng-click="$event.stopPropagation()">
-                <input id="query_bar_input_{{indexName}}"
-                     ng-model="searchInputs[indexName]"
-                     type="text"
-                     placeholder="search this index..."/>
-                <button ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
-                  Search
-                </button>
-              </div>
+                    <div class="fts-query-bar" ng-click="$event.stopPropagation()">
+                      <input id="query_bar_input_{{indexName}}"
+                             ng-model="searchInputs[indexName]"
+                             type="text"
+                             placeholder="search this index..."/>
+                      <button ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
+                          Search
+                      </button>
+                    </div>
 
 <!-- index action buttons ************************* -->
-                <span class="nowrap" ng-click="$event.stopPropagation()">
-                  <button class="outline"
-                          ng-show=showHiddenUI
-                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
-                          ui-sref="^.search.fts_details({indexName: indexName})">
-                    Details
-                  </button>
-                  <button class="outline"
-                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
-                          ng-click="deleteIndex(indexName)">
-                    Delete
-                  </button>
-                  <button class="outline"
-                          ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
-                          ui-sref="^.search.fts_clone({indexName: indexName})">
-                    Clone
-                  </button>
-                  <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
-                          ui-sref="^.search.fts_edit({indexName: indexName})">
-                    Edit
-                  </button>
-                </span>
+                    <span class="nowrap" ng-click="$event.stopPropagation()">
+                      <button class="outline"
+                              ng-show=showHiddenUI
+                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ui-sref="^.search.fts_details({indexName: indexName})">
+                          Details
+                      </button>
+                      <button class="outline"
+                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ng-click="deleteIndex(indexName)">
+                          Delete
+                      </button>
+                      <button class="outline"
+                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ui-sref="^.search.fts_clone({indexName: indexName})">
+                          Clone
+                      </button>
+                      <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ui-sref="^.search.fts_edit({indexName: indexName})">
+                          Edit
+                      </button>
+                    </span>
+                  </div>
+                </form>
+
+<!-- second row help link ************************* -->
+                <div class="row query-bar-help"
+                     ng-if="queryHelp && queryHelp.length"
+                     ng-bind-html="queryHelpSafe">
+                </div>
               </div>
-              </form>
 
 <!-- index definition ******************************* -->
               <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">

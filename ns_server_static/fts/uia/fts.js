@@ -352,6 +352,30 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         });
     }
 
+    http.get("/api/managerMeta").
+    then (function(response) {
+        var data = response.data;
+        $scope.meta = data;
+
+        if (!$scope.indexDef) {
+            $http.get('/api/index/' + $scope.indexName).then(function(response) {
+                $scope.indexDef = response.data.indexDef;
+                initQueryHelp();
+            })
+        } else {
+            initQueryHelp();
+        }
+
+        function initQueryHelp() {
+            var indexDefType = ($scope.indexDef && $scope.indexDef.type);
+
+            $scope.queryHelp = $scope.meta.indexTypes[indexDefType].queryHelp;
+            // this call to trustAsHtml is safe provided we trust
+            // the registered pindex implementations
+            $scope.queryHelpSafe = $sce.trustAsHtml($scope.queryHelp);
+        }
+    });
+
     function updateProgressPct() {
         var i = parseInt($scope.indexDocCount);
         var s = parseInt($scope.sourceDocCount);
