@@ -30,7 +30,6 @@ type AnalyzeDocHandler struct {
 }
 
 func NewAnalyzeDocHandler(mgr *cbgt.Manager) *AnalyzeDocHandler {
-	_ = http.NewServeMux()
 	return &AnalyzeDocHandler{mgr: mgr}
 }
 
