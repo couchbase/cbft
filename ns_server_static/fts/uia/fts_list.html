@@ -19,7 +19,8 @@
         <th>bucket</th>
         <th>doc count
             <span class="fa-stack icon-info"
-                  uib-tooltip="Number of documents examined across active index partitions." tooltip-placement="right">
+                  uib-tooltip="Number of documents examined across active index partitions."
+                  tooltip-placement="auto right">
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>
             </span>
@@ -35,7 +36,12 @@
                      'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                      'no-stroke': detailsOpened[node.hostname]
                      }">
-          <td class="index-name">{{indexName}}</td>
+          <td
+             class="index-name ellipsis cursor-pointer"
+             uib-tooltip="{{indexName}}"
+             tooltip-append-to-body="true"
+             tooltip-placement="auto top"
+             tooltip-trigger="'mouseenter'">{{indexName}}</td>
           <td>
             <span ng-if="indexDef.sourceType != 'couchbase'">
               {{indexDef.sourceType}}

@@ -9,8 +9,13 @@
 <div class="row items-top formrow width-480">
       <div class="column width-6">
         <label>Name</label>
-        <span class="text-small" ng-show="isEdit">
-          {{newIndexName}}
+        <span
+           class="cbui-tablerow padding-left-0 padding-right-0 cursor-pointer"
+           ng-show="isEdit"
+           uib-tooltip="{{newIndexName}}"
+           tooltip-placement="auto top"
+           tooltip-trigger="'mouseenter'">
+          <span class="cbui-table-cell text-small">{{newIndexName}}</span>
         </span>
         <input ng-show="!isEdit"
                ng-model="$parent.newIndexName"
