@@ -139,6 +139,24 @@ type docMatchHandler struct {
 
 func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) error {
 	if hit != nil {
+		/***** remove unnecessary fields *****/
+		if dmh.s.req.Highlight == nil {
+			if !dmh.s.req.IncludeLocations {
+				hit.Locations = nil
+			}
+
+			hit.Fragments = nil
+		}
+
+		if len(dmh.s.req.Fields) == 0 {
+			hit.Fields = nil
+		}
+
+		if !dmh.s.req.Explain {
+			hit.Expl = nil
+		}
+		/***** removed unnecessary fields *****/
+
 		if dmh.s.req.IncludeLocations || dmh.s.req.Highlight != nil {
 			hit.Complete(nil)
 		}
