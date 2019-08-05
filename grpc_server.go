@@ -98,7 +98,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	startTime := time.Now()
 	if req == nil {
 		return status.Error(codes.FailedPrecondition,
-			"grpc_server: empty search request found")
+			"grpc_server: Search empty search request")
 	}
 
 	defer func() {
@@ -107,7 +107,8 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	err = verifyRPCAuth(stream.Context(), req.IndexName, req)
 	if err != nil {
-		return status.Errorf(codes.PermissionDenied, "err: %v", err)
+		return status.Errorf(codes.PermissionDenied,
+			"grpc_server: Search err: %v", err)
 	}
 
 	queryCtlParams := cbgt.QueryCtlParams{
@@ -120,7 +121,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		err = UnmarshalJSON(req.QueryCtlParams, &queryCtlParams)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument,
-				"parsing queryCtlParams, err: %v", err)
+				"grpc_server: Search parsing queryCtlParams, err: %v", err)
 		}
 	}
 
@@ -129,7 +130,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		err = UnmarshalJSON(req.QueryPIndexes, &queryPIndexes)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument,
-				"parsing queryPIndexes, err: %v", err)
+				"grpc_server: Search parsing queryPIndexes, err: %v", err)
 		}
 	}
 
@@ -137,19 +138,19 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	err = UnmarshalJSON(req.Contents, &sr)
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument,
-			"parsing searchRequest, err: %v", err)
+			"grpc_server: Search parsing searchRequest, err: %v", err)
 	}
 	searchRequest, err := sr.ConvertToBleveSearchRequest()
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument,
-			"processing searchRequest, err: %v", err)
+			"grpc_server: Search processing searchRequest, err: %v", err)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument,
-				"validating consistency, err: %v", err)
+				"grpc_server: Search validating consistency, err: %v", err)
 		}
 	}
 
@@ -161,13 +162,13 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		bleveMaxResultWindow, err = strconv.Atoi(v)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument,
-				"grpc_server: QueryBleve atoi: %v, err: %v", v, err)
+				"grpc_server: Search atoi: %v, err: %v", v, err)
 		}
 
 		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
 			err = status.Errorf(codes.InvalidArgument,
 				"Validating request, err: %v",
-				fmt.Errorf("grpc_server: bleveMaxResultWindow exceeded,"+
+				fmt.Errorf("grpc_server: Search bleveMaxResultWindow exceeded,"+
 					" from: %d, size: %d, bleveMaxResultWindow: %d",
 					searchRequest.From, searchRequest.Size,
 					bleveMaxResultWindow))
@@ -195,7 +196,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	if er != nil {
 		if _, ok := er.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			err = status.Errorf(codes.Unavailable,
-				"grpc_server: bleveIndexAlias, err: %v", er)
+				"grpc_server: Search bleveIndexAlias, err: %v", er)
 			return err
 		}
 	}
@@ -222,7 +223,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	if err != nil {
 		atomic.AddUint64(&totGrpcQueryRejectOnNotEnoughQuota, 1)
 		return status.Errorf(codes.ResourceExhausted,
-			"grpc_server: query reject on not enough quota: %v", err)
+			"grpc_server: Search query reject on not enough quota: %v", err)
 	}
 
 	defer fireQueryEvent(0, EventQueryEnd, 0, mergeEstimate)
@@ -251,14 +252,14 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			remoteClients, err, er)
 		if err1 != nil {
 			err = status.Error(codes.DeadlineExceeded,
-				fmt.Sprintf("grpc_server: searchInContext err: %v", err1))
+				fmt.Sprintf("grpc_server: Search searchInContext err: %v", err1))
 			return err
 		}
 
 		response, er2 := MarshalJSON(searchResult)
 		if er2 != nil {
 			err = status.Errorf(codes.Internal,
-				"grpc_server, response marshal err: %v", er2)
+				"grpc_server: Search response marshal err: %v", er2)
 			return err
 		}
 
@@ -269,7 +270,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 		if err = stream.Send(rv); err != nil {
 			return status.Errorf(codes.Internal,
-				"grpc_server: stream send, err: %v", err)
+				"grpc_server: Search stream send, err: %v", err)
 		}
 	}
 
