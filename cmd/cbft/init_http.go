@@ -258,7 +258,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 		atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
 		err = server.Serve(tlsListener)
 		if err != nil {
-			log.Printf("init_http: Serve, err: %v;\n"+
+			log.Printf("init_http: Serve, err: %v;"+
 				" HTTPS listeners closed, likely to be re-initialized, "+
 				" -bindHttp(s) (%q)\n", err, bindHTTP)
 		}
