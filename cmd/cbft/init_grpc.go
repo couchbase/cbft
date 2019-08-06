@@ -12,6 +12,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+
 	"github.com/couchbase/cbft"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -45,7 +49,7 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
 
 	if flags.BindGRPC != "" {
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options)
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options, "")
 	}
 
 	if flags.BindGRPCSSL != "" {
@@ -58,19 +62,20 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 			// are changed.
 			handleConfigChanges := func() error {
 				// restart the servers in case of a refresh
-				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options,
+					authType)
 				return nil
 			}
 
 			cbgt.RegisterConfigRefreshCallback("fts/grpc-ssl", handleConfigChanges)
 		}
 
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options)
+		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options, authType)
 	}
 }
 
 func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
-	secure bool, options map[string]string) {
+	secure bool, options map[string]string, authType string) {
 	ipv6 = options["ipv6"]
 
 	if secure {
@@ -84,19 +89,19 @@ func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
 	for _, bindGRPC := range bindGRPCList {
 		if strings.HasPrefix(bindGRPC, "0.0.0.0:") ||
 			strings.HasPrefix(bindGRPC, "[::]:") {
-			go startGrpcServer(mgr, bindGRPC, secure, nil)
+			go startGrpcServer(mgr, bindGRPC, secure, nil, authType)
 
 			anyHostPorts[bindGRPC] = true
 		}
 	}
 
 	for i := len(bindGRPCList) - 1; i >= 1; i-- {
-		go startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts)
+		go startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts, authType)
 	}
 }
 
 func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
-	anyHostPorts map[string]bool) {
+	anyHostPorts map[string]bool, authType string) {
 	if bindGRPC[0] == ':' {
 		bindGRPC = "localhost" + bindGRPC
 	}
@@ -129,12 +134,12 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		} // else port not found.
 	}
 
-	lis, err := net.Listen("tcp", bindGRPC)
+	listener, err := net.Listen("tcp", bindGRPC)
 	if err != nil {
 		log.Fatalf("init_grpc: mainGrpcServer, failed to listen: %v", err)
 	}
 
-	opts := getGrpcOpts(secure)
+	opts := getGrpcOpts(secure, authType)
 
 	s := grpc.NewServer(opts...)
 
@@ -154,7 +159,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 	}
 
 	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
-	if err := s.Serve(lis); err != nil {
+	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 
@@ -166,7 +171,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 	atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
 }
 
-func getGrpcOpts(secure bool) []grpc.ServerOption {
+func getGrpcOpts(secure bool, authType string) []grpc.ServerOption {
 	opts := []grpc.ServerOption{
 		cbft.AddServerInterceptor(),
 		grpc.MaxConcurrentStreams(cbft.DefaultGrpcMaxConcurrentStreams),
@@ -177,12 +182,53 @@ func getGrpcOpts(secure bool) []grpc.ServerOption {
 
 	if secure {
 		var err error
-		var creds credentials.TransportCredentials
-		creds, err = credentials.NewServerTLSFromFile(flags.TLSCertFile,
-			flags.TLSKeyFile)
+		config := &tls.Config{}
+		config.Certificates = make([]tls.Certificate, 1)
+		config.Certificates[0], err = tls.LoadX509KeyPair(
+			cbgt.TLSCertFile, cbgt.TLSKeyFile)
 		if err != nil {
-			log.Fatalf("init_grpc: NewServerTLSFromFile, err: %v", err)
+			log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
 		}
+
+		if authType == "cbauth" {
+			ss := cbgt.GetSecuritySetting()
+			if ss != nil && ss.TLSConfig != nil {
+				// Set MinTLSVersion and CipherSuites to what is provided by
+				// cbauth if authType were cbauth (cached locally).
+				config.MinVersion = ss.TLSConfig.MinVersion
+				config.CipherSuites = ss.TLSConfig.CipherSuites
+				config.PreferServerCipherSuites = ss.TLSConfig.PreferServerCipherSuites
+
+				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
+					caCertPool := x509.NewCertPool()
+					var certBytes []byte
+					if len(ss.CertInBytes) != 0 {
+						certBytes = ss.CertInBytes
+					} else {
+						// if no CertInBytes found in settings, then fallback
+						// to reading directly from file. Upon any certs change
+						// callbacks later, reboot of servers will ensure the
+						// latest certificates in the servers.
+						certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
+						if err != nil {
+							log.Fatalf("init_grpc: ReadFile of cacert, err: %v", err)
+						}
+					}
+					ok := caCertPool.AppendCertsFromPEM(certBytes)
+					if !ok {
+						log.Fatalf("init_grpc: error in appending certificates")
+					}
+					config.ClientCAs = caCertPool
+					config.ClientAuth = *ss.ClientAuthType
+				} else {
+					config.ClientAuth = tls.NoClientCert
+				}
+			} else {
+				config.ClientAuth = tls.NoClientCert
+			}
+		}
+
+		creds := credentials.NewTLS(config)
 
 		opts = append(opts, grpc.Creds(creds))
 	}

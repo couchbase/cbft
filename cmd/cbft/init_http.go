@@ -232,7 +232,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 						// to reading directly from file. Upon any certs change
 						// callbacks later, reboot of servers will ensure the
 						// latest certificates in the servers.
-						certBytes, err = ioutil.ReadFile(flags.TLSCertFile)
+						certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
 						if err != nil {
 							log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
 						}
