@@ -140,7 +140,8 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		return status.Errorf(codes.InvalidArgument,
 			"grpc_server: Search parsing searchRequest, err: %v", err)
 	}
-	searchRequest, err := sr.ConvertToBleveSearchRequest()
+	var searchRequest *bleve.SearchRequest
+	searchRequest, err = sr.ConvertToBleveSearchRequest()
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument,
 			"grpc_server: Search processing searchRequest, err: %v", err)
