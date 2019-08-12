@@ -424,6 +424,14 @@ func PrepareBleveIndexParams(indexParams string) (string, error) {
 
 			return "", fmt.Errorf("bleve: PrepareParams, err: %v", err)
 		}
+
+		if indexType, ok := bp.Store["indexType"].(string); ok {
+			if indexType == "scorch" {
+				// If indexType were "scorch", the "kvStoreName" setting isn't
+				// really applicable, so drop the setting.
+				delete(bp.Store, "kvStoreName")
+			}
+		}
 	}
 
 	updatedParams, err := json.Marshal(bp)
