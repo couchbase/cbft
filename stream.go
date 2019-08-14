@@ -25,7 +25,7 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-var defaultStreamBatchSize = 100
+var DefaultStreamBatchSize = 100
 var sliceStart = []byte{'['}
 var sliceEnd = []byte{']'}
 var itemGlue = []byte{','}
@@ -182,7 +182,7 @@ func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) erro
 		// remember the ending offset position
 		dmh.offsets = append(dmh.offsets, uint64(len(dmh.bhits)))
 		dmh.n++
-		if dmh.n < defaultStreamBatchSize {
+		if dmh.n < DefaultStreamBatchSize {
 			return nil
 		}
 	}
@@ -226,8 +226,8 @@ func (s *streamer) MakeDocumentMatchHandler(
 	dmh := docMatchHandler{
 		s:           s,
 		ctx:         ctx,
-		bhits:       make([]byte, 0, defaultStreamBatchSize*50),
-		offsets:     make([]uint64, 0, defaultStreamBatchSize),
+		bhits:       make([]byte, 0, DefaultStreamBatchSize*50),
+		offsets:     make([]uint64, 0, DefaultStreamBatchSize),
 		highlighter: highlighter,
 	}
 	dmh.bhits = append(dmh.bhits, sliceStart...)
