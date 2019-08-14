@@ -114,9 +114,6 @@ func (n NSIndexStats) MarshalJSON() ([]byte, error) {
 }
 
 var statkeys = []string{
-	// manual
-	"num_pindexes",
-
 	// pindex
 	"doc_count",
 	"timer_batch_store_count",
@@ -343,11 +340,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				switch oldValue := oldValue.(type) {
 				case float64:
 					oldValue += float64(1)
-
 					nsIndexStat["num_pindexes_actual"] = oldValue
-
-					// TODO: Former name was num_pindexes, need to remove one day.
-					nsIndexStat["num_pindexes"] = oldValue
 				}
 			}
 
