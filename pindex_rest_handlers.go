@@ -101,7 +101,7 @@ func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	var cbftDoc *BleveDocument
-	cbftDoc, err = bdest.bleveDocConfig.BuildDocument(nil, req, defaultType)
+	cbftDoc, err = bdest.bleveDocConfig.BuildDocument([]byte("key"), req, defaultType)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
-	doc := document.NewDocument("dummy")
+	doc := document.NewDocument("key")
 	err = bindex.Mapping().MapDocument(doc, cbftDoc)
 	if err != nil {
 		return err
