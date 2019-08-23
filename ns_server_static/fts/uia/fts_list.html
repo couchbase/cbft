@@ -1,4 +1,4 @@
-<div ng-show="!ftsChecking && ftsAvailable" class="fts-indexes-lists indexContainer">
+<div ng-show="!ftsChecking && ftsAvailable" class="fts-indexes-lists indexContainer padding-bottom-6">
 
   <div ng-show="errorMessage" class="error ng-cloak" role="alert">
     {{errorMessage}}
@@ -18,7 +18,7 @@
         <th>index name</th>
         <th>bucket</th>
         <th>doc count
-            <span class="fa-stack icon-info"
+            <span class="fa-stack icon-info raised"
                   uib-tooltip="Number of documents examined across active index partitions."
                   tooltip-placement="auto right">
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
@@ -312,34 +312,40 @@
   </div>
 
   <footer
-     class="footer-indexes"
+     class="footer-fts"
      ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length"
      ng-controller="mnFooterStatsController as footerStatsCtl">
+    <div class="column vertical-divider">
+      <span class="width-6">RAM Used by Search</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts_num_bytes_used_ram'].slice(-1)[0]/1024/1024 | number:1}} MB</span><br>
+      <span class="width-6">Rejected Queries</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts_total_queries_rejected_by_herder'].slice(-1)[0] | number:0}}</span><br>
+      <span class="width-6">DCP Batches Blocked</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts_curr_batches_blocked_by_herder'].slice(-1)[0] | number:0}}</span>
+    </div>
+    <div class="margin-right-1">
+      <ui-select
+         class="cbui-select cbui-select-small"
+         ng-model="footerStatsCtl.currentBucket"
+         theme="selectize"
+         ng-disabled="!rbac.bucketNames['.stats!read'].length"
+         on-select="footerStatsCtl.onSelectBucket($item)">
+        <ui-select-match class="ui-select-match">{{$select.selected}} </ui-select-match>
+        <ui-select-choices
+           class="ui-select-choices"
+           repeat="name in rbac.bucketNames['.stats!read'] | filter: $select.search">
+          <span class="select-item ellipsis" ng-bind-html="name | highlight: $select.search"></span>
+        </ui-select-choices>
+      </ui-select>
+    </div>
     <div class="column">
-      <div class="row">
-        <h5>Per-Bucket Stats</h5>
-        <ui-select class="cbui-select cbui-select-small" ng-model="footerStatsCtl.currentBucket"
-                   theme="selectize" ng-disabled="!rbac.bucketNames['.stats!read'].length"
-                   on-select="footerStatsCtl.onSelectBucket($item)">
-          <ui-select-match class="ui-select-match">{{$select.selected}} </ui-select-match>
-          <ui-select-choices
-             class="ui-select-choices"
-             repeat="name in rbac.bucketNames['.stats!read'] | filter: $select.search">
-            <span class="select-item ellipsis" ng-bind-html="name | highlight: $select.search"></span>
-          </ui-select-choices>
-        </ui-select>
-      </div>
-      <div class="row">
-        <div class="column">
-          <span class="width-6">Used RAM</span>
-          <span class="text-right width-6">{{footerStatsCtl.stats['fts_num_bytes_used_ram'].slice(-1)[0]/1024/1024 | number:1}} MB</span><br>
-          <span class="width-6">Total Indexed</span>
-          <span class="text-right width-6">{{footerStatsCtl.stats['fts/total_bytes_indexed'].slice(-1)[0]/1024/1024 | number:1}} MB</span><br>
-          <span class="width-6">Used Disk</span>
-          <span class="text-right width-6">{{footerStatsCtl.stats['fts/num_bytes_used_disk'].slice(-1)[0]/1024/1024 | number:1}} MB</span><br>
-          <span class="width-6">Total Queries</span>
-          <span class="text-right width-6">{{footerStatsCtl.stats['fts/total_queries'].slice(-1)[0] | number:0}}</span><br>
-        </div>
-      </div>
+      <span class="width-6">Index Rate</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts/total_bytes_indexed'].slice(-1)[0]/1024/1024 | number:1}} MB/sec</span><br>
+      <span class="width-6">Query Rate</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts/total_queries'].slice(-1)[0] | number:0}}/sec</span><br>
+      <span class="width-6">Total Disk Files</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts/num_files_on_disk'].slice(-1)[0] | number:0}} MB</span><br>
+      <span class="width-6">Total Disk Used</span>
+      <span class="text-right width-6">{{footerStatsCtl.stats['fts/num_bytes_used_disk'].slice(-1)[0]/1024/1024 | number:1}} MB</span>
     </div>
   </footer>
