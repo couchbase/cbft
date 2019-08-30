@@ -19,6 +19,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -58,7 +59,11 @@ var DefaultGrpcMaxBackOffDelay = time.Duration(10) * time.Second
 var DefaultGrpcMaxRecvMsgSize = 1024 * 1024 * 50 // 50 MB
 var DefaultGrpcMaxSendMsgSize = 1024 * 1024 * 50 // 50 MB
 
-var DefaultGrpcMaxConcurrentStreams = uint32(5000)
+// The number of concurrent streams/requests on a client connection can only
+// be controlled by adjusting the server value. Set a very large value for the
+// server config so that we have no fixed limit on the number of concurrent
+// streams/requests on either the client or server.
+var DefaultGrpcMaxConcurrentStreams = uint32(math.MaxInt32)
 
 var rsource rand.Source
 var r1 *rand.Rand
