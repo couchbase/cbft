@@ -145,9 +145,10 @@ var statkeys = []string{
 	"total_bytes_indexed", // per-index stat.
 	"num_recs_to_persist", // per-index stat.
 
-	"num_bytes_used_disk", // per-index stat.
-	"num_files_on_disk",   // per-index stat.
-	"num_bytes_live_data", // per-index stat, not in spec
+	"num_bytes_used_disk",         // per-index stat.
+	"num_bytes_used_disk_by_root", // per-index stat.
+	"num_files_on_disk",           // per-index stat.
+	"num_bytes_live_data",         // per-index stat, not in spec
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
 	"num_pindexes_actual", // per-index stat.
@@ -652,6 +653,7 @@ func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
 
 var scorchStats = map[string]string{
 	"/num_bytes_used_disk":               "num_bytes_used_disk",
+	"/num_bytes_used_disk_by_root":       "num_bytes_used_disk_by_root",
 	"/num_files_on_disk":                 "num_files_on_disk",
 	"/total_compaction_written_bytes":    "total_compaction_written_bytes",
 	"/num_recs_to_persist":               "num_recs_to_persist",
