@@ -257,6 +257,15 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			return err
 		}
 
+		if searchResult.Status != nil &&
+			len(searchResult.Status.Errors) > 0 &&
+			queryCtlParams.Ctl.Consistency != nil &&
+			queryCtlParams.Ctl.Consistency.Results == "complete" {
+			// complete results expected, do not propagate partial results
+			return fmt.Errorf("grpc_server: results weren't retrieved from some"+
+				" index partitions: %d", len(searchResult.Status.Errors))
+		}
+
 		response, er2 := MarshalJSON(searchResult)
 		if er2 != nil {
 			err = status.Errorf(codes.Internal,

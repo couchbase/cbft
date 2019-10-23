@@ -930,6 +930,16 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	if searchResult != nil {
 		err = processSearchResult(&queryCtlParams, searchResult,
 			remoteClients, err, err1)
+
+		if searchResult.Status != nil &&
+			len(searchResult.Status.Errors) > 0 &&
+			queryCtlParams.Ctl.Consistency != nil &&
+			queryCtlParams.Ctl.Consistency.Results == "complete" {
+			// complete results expected, do not propagate partial results
+			return fmt.Errorf("bleve: results weren't retrieved from some"+
+				" index partitions: %d", len(searchResult.Status.Errors))
+		}
+
 		mustEncode(res, searchResult)
 
 		// update return error status to indicate any errors within the
@@ -2181,7 +2191,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	if consistencyParams != nil &&
 		consistencyParams.Results == "complete" &&
 		len(missingPIndexNames) > 0 {
-		return nil, 0, fmt.Errorf("bleve: some pindexes aren't reachable,"+
+		return nil, 0, fmt.Errorf("bleve: some index partitions aren't reachable,"+
 			" missing: %v", len(missingPIndexNames))
 	}
 
