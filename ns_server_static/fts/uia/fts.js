@@ -258,6 +258,9 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
             if (code == 403) {
                 // http status for FORBIDDEN
                 return false;
+            } else if (code == 400) {
+                // http status for BAD REQUEST
+                return false;
             }
             return true;
         }
