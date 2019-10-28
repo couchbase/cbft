@@ -311,6 +311,8 @@
     {{ftsCheckError}}
   </div>
 
+  <div ng-init="stats = ['fts_num_bytes_used_ram', 'fts_total_queries_rejected_by_herder', 'fts_curr_batches_blocked_by_herder',
+                'fts/total_bytes_indexed', 'fts/total_queries', 'fts/num_files_on_disk', 'fts/num_bytes_used_disk']">
   <footer
      class="footer-fts"
      ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length"
@@ -349,3 +351,4 @@
       <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts/num_bytes_used_disk')/1024/1024 | number:1}} MB</span>
     </div>
   </footer>
+  </div>
