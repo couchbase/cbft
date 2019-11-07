@@ -1845,7 +1845,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 		select {
 		case batchReq := <-requestCh:
 			if batchReq == nil {
-				log.Printf("pindex_bleve: batchWorker stopped ")
+				log.Printf("pindex_bleve: batchWorker stopped, batchReq: nil")
 				return
 			}
 			if batchReq.bdp == nil || batchReq.bindex == nil {
@@ -1891,7 +1891,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 			tickerCh = nil
 
 		case <-stopCh:
-			log.Printf("pindex_bleve: batchWorker stopped ")
+			log.Printf("pindex_bleve: batchWorker stopped")
 			return
 		}
 
