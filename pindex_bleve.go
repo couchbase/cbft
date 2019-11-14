@@ -469,6 +469,7 @@ func init() {
 			"controllerDoneName": "blevePIndexDoneController",
 		},
 		AnalyzeIndexDefUpdates: RestartOnIndexDefChanges,
+		SubmitTaskRequest:      SubmitTaskRequest,
 	})
 
 }
@@ -964,6 +965,76 @@ func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
 		return nil
 	}
 	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
+}
+
+// SubmitTaskRequest helps requesting for asynchronous tasks on
+// indexes like force merge, cancel merge etc.
+func SubmitTaskRequest(mgr *cbgt.Manager, indexName, indexUUID string,
+	requestBody []byte) (*cbgt.TaskRequestStatus, error) {
+	var reqMap map[string]interface{}
+	err := UnmarshalJSON(requestBody, &reqMap)
+	if err != nil {
+		return nil, fmt.Errorf("bleve: SubmitTaskRequest"+
+			" parsing request, err: %v", err)
+	}
+	var onlyPIndexes map[string]bool
+	var targetPIndexes []string
+	if vals, ok := reqMap["partitionNames"].([]interface{}); ok {
+		for _, v := range vals {
+			targetPIndexes = append(targetPIndexes, v.(string))
+		}
+		onlyPIndexes = cbgt.StringsToMap(targetPIndexes)
+	}
+
+	var op string
+	var ok bool
+	if op, ok = reqMap["op"].(string); !ok ||
+		(op != "merge" && op != "cancel" && op != "get") {
+		return nil, fmt.Errorf("bleve: SubmitTaskRequest"+
+			" unsupported task type: %s", op)
+	}
+
+	var uuid string
+	if uuid, ok = reqMap["uuid"].(string); !ok && op == "cancel" {
+		return nil, fmt.Errorf("bleve: SubmitTaskRequest" +
+			" missing task uuid from cancel request")
+	}
+
+	// uuid for tracking the task for cancellations or potential
+	// progress monitoring etc
+	if uuid == "" && op != "get" {
+		uuid = cbgt.NewUUID()
+		reqMap["uuid"] = uuid
+		requestBody, err = json.Marshal(reqMap)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	alias, _, _, err1 := bleveIndexAlias(mgr, indexName,
+		indexUUID, true, nil, nil, true,
+		onlyPIndexes, "", addIndexClients)
+	if err1 != nil {
+		if _, ok := err1.(*cbgt.ErrorLocalPIndexHealth); !ok {
+			return nil, err1
+		}
+	}
+
+	if bic, ok := alias.(BleveIndexCollector); ok {
+		return cbgt.ScatterTaskRequest(requestBody, indexPartitions(bic))
+	}
+
+	return nil, fmt.Errorf("bleve: no BleveIndexCollector implementation found")
+}
+
+func indexPartitions(bic BleveIndexCollector) (handlers []cbgt.TaskRequestHandler) {
+	gatherHandlers := func(i bleve.Index) {
+		if h, ok := i.(cbgt.TaskRequestHandler); ok {
+			handlers = append(handlers, h)
+		}
+	}
+	bic.VisitIndexes(gatherHandlers)
+	return handlers
 }
 
 // ---------------------------------------------------------
@@ -2343,6 +2414,7 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 // on a user defined index.
 type BleveIndexCollector interface {
 	Add(i ...bleve.Index)
+	VisitIndexes(func(bleve.Index))
 }
 
 func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,

@@ -60,6 +60,9 @@ cluster.collection[<sourceName>].fts!read
 POST /api/index/{indexName}/analyzeDoc
 cluster.collection[<sourceName>].fts!read
 
+POST /api/index/{indexName}/tasks
+cluster.bucket[<sourceName>].fts!write
+
 GET /api/cfg
 cluster.settings.fts!read
 

@@ -12,6 +12,7 @@ package cbft
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -94,16 +95,17 @@ var indexClientUnimplementedErr = errors.New("unimplemented")
 //
 // TODO: Implement propagating auth info in IndexClient.
 type IndexClient struct {
-	mgr         *cbgt.Manager
-	name        string
-	HostPort    string
-	IndexName   string
-	IndexUUID   string
-	PIndexNames []string
-	QueryURL    string
-	CountURL    string
-	Consistency *cbgt.ConsistencyParams
-	httpClient  *http.Client
+	mgr            *cbgt.Manager
+	name           string
+	HostPort       string
+	IndexName      string
+	IndexUUID      string
+	PIndexNames    []string
+	QueryURL       string
+	CountURL       string
+	TaskRequestURL string
+	Consistency    *cbgt.ConsistencyParams
+	httpClient     *http.Client
 
 	lastMutex        sync.RWMutex
 	lastSearchStatus int
@@ -429,15 +431,16 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 				prefix + "/api/index/" + client.IndexName
 
 			c = &IndexClient{
-				mgr:         client.mgr,
-				name:        groupByKey,
-				HostPort:    client.HostPort,
-				IndexName:   client.IndexName,
-				IndexUUID:   client.IndexUUID,
-				QueryURL:    baseURL + "/query",
-				CountURL:    baseURL + "/count",
-				Consistency: client.Consistency,
-				httpClient:  client.httpClient,
+				mgr:            client.mgr,
+				name:           groupByKey,
+				HostPort:       client.HostPort,
+				IndexName:      client.IndexName,
+				IndexUUID:      client.IndexUUID,
+				QueryURL:       baseURL + "/query",
+				CountURL:       baseURL + "/count",
+				TaskRequestURL: baseURL + "/tasks",
+				Consistency:    client.Consistency,
+				httpClient:     client.httpClient,
 			}
 
 			m[groupByKey] = c
@@ -449,4 +452,78 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 	}
 
 	return rv, nil
+}
+
+// HandleTask is an implementation of the cbgt.TaskRequestHandler interface
+func (r *IndexClient) HandleTask(in []byte) (*cbgt.TaskRequestStatus, error) {
+	var treq cbgt.TaskRequest
+	err := json.Unmarshal(in, &treq)
+	if err != nil {
+		return nil, err
+	}
+	// populate the target partitions
+	treq.PartitionNames = r.PIndexNames
+	buf, err := MarshalJSON(&treq)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := UrlWithAuth(r.AuthType(), r.TaskRequestURL)
+	if err != nil {
+		return nil, fmt.Errorf("remote: auth for HandleTask,"+
+			" TaskRequestURL: %s, authType: %s, err: %v",
+			r.TaskRequestURL, r.AuthType(), err)
+	}
+
+	req, err := http.NewRequest("POST", u, bytes.NewReader(buf))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("remote: HandleTask error reading resp.Body,"+
+			" TaskRequestURL: %s, resp: %#v, err: %v", r.TaskRequestURL,
+			resp, err)
+	}
+
+	r.lastMutex.Lock()
+	defer r.lastMutex.Unlock()
+
+	rv := &cbgt.TaskRequestStatus{Errors: make(map[string]error)}
+	err = json.Unmarshal(respBuf, rv)
+	if err != nil {
+		return completeTaskStatus(&treq, err, r.PIndexNames), nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return completeTaskStatus(&treq,
+			fmt.Errorf("remote: HandleTask got status code: %d,"+
+				" TaskRequestURL: %s, buf: %s, resp: %#v, err: %v",
+				resp.StatusCode, r.TaskRequestURL, buf, resp, err),
+			r.PIndexNames), nil
+	}
+
+	return rv, nil
+}
+
+func completeTaskStatus(req *cbgt.TaskRequest, err error,
+	pindexNames []string) *cbgt.TaskRequestStatus {
+	rv := &cbgt.TaskRequestStatus{
+		Request:    req,
+		Failed:     len(pindexNames),
+		Total:      len(pindexNames),
+		Successful: 0,
+		Errors:     make(map[string]error)}
+
+	for _, pindexName := range pindexNames {
+		rv.Errors[pindexName] = err
+	}
+	return rv
 }
