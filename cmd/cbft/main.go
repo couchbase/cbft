@@ -781,7 +781,7 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 		return
 	}
 
-	dcpFeed, ok := r.(*cbgt.DCPFeed)
+	dcpFeed, ok := r.(cbgt.FeedEx)
 	if !ok {
 		return
 	}
