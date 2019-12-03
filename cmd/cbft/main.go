@@ -223,6 +223,9 @@ func main() {
 		options["bindGRPCSSL"] = bindGRPCList[0]
 	}
 
+	// register for the cbauth's security callbacks
+	cbgt.RegisterSecurityNotifications()
+
 	routerInUse, err = mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
 		bindHTTPList[0], flags.DataDir,
