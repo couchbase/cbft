@@ -356,6 +356,10 @@ func (ndf *NodeDefsFetcher) SetManager(mgr *cbgt.Manager) {
 	ndf.mgr = mgr
 }
 
+func (ndf *NodeDefsFetcher) GetManager() *cbgt.Manager {
+	return ndf.mgr
+}
+
 func (ndf *NodeDefsFetcher) Get() (*cbgt.NodeDefs, error) {
 	if ndf.mgr != nil {
 		return ndf.mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, true)
@@ -374,9 +378,8 @@ const bleveQueryHelp = `
 
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
-		PrepareParams: PrepareBleveIndexParams,
-		Prepare:       PrepareIndexDef,
-		Validate:      ValidateBleve,
+		Prepare:  PrepareIndexDef,
+		Validate: ValidateBleve,
 
 		New:       NewBlevePIndexImpl,
 		Open:      OpenBlevePIndexImpl,
@@ -405,47 +408,6 @@ func init() {
 
 }
 
-func PrepareBleveIndexParams(indexParams string) (string, error) {
-	bp := NewBleveParams()
-
-	if len(indexParams) > 0 {
-		b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
-		if err != nil {
-			return "", fmt.Errorf("bleve: PrepareParams CleanseJSON,"+
-				" err: %v", err)
-		}
-
-		err = json.Unmarshal(b, bp)
-		if err != nil {
-			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
-				if typeErr.Type.String() == "map[string]json.RawMessage" {
-					return "", fmt.Errorf("bleve: PrepareParams,"+
-						" JSON parse was expecting a string key/field-name"+
-						" but instead saw a %s", typeErr.Value)
-				}
-			}
-
-			return "", fmt.Errorf("bleve: PrepareParams, err: %v", err)
-		}
-
-		if indexType, ok := bp.Store["indexType"].(string); ok {
-			if indexType == "scorch" {
-				// If indexType were "scorch", the "kvStoreName" setting isn't
-				// really applicable, so drop the setting.
-				delete(bp.Store, "kvStoreName")
-			}
-		}
-	}
-
-	updatedParams, err := json.Marshal(bp)
-	if err != nil {
-		return "", fmt.Errorf("bleve: PrepareParams Marshal,"+
-			" err: %v", err)
-	}
-
-	return string(updatedParams), nil
-}
-
 func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
@@ -464,6 +426,84 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		// Use "gocbcore" for DCP streaming if cluster is 7.0+
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
+
+	bp := NewBleveParams()
+	if len(indexDef.Params) > 0 {
+		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
+		if err != nil {
+			return nil, fmt.Errorf("bleve: Prepare, CleanseJSON,"+
+				" err: %v", err)
+		}
+
+		err = json.Unmarshal(b, bp)
+		if err != nil {
+			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
+				if typeErr.Type.String() == "map[string]json.RawMessage" {
+					return nil, fmt.Errorf("bleve: Prepare,"+
+						" JSON parse was expecting a string key/field-name"+
+						" but instead saw a %s", typeErr.Value)
+				}
+			}
+			return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
+		}
+
+		if indexType, ok := bp.Store["indexType"].(string); ok {
+			if indexType == "scorch" {
+				// If indexType were "scorch", the "kvStoreName" setting isn't
+				// really applicable, so drop the setting.
+				delete(bp.Store, "kvStoreName")
+			}
+		}
+
+		// figure out the scope/collection details from mappings
+		// and update the index params and source params
+		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeColPrefix) {
+			if am, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
+					am.TypeMapping)
+				if err != nil {
+					return nil, err
+				}
+				// if there are more than 1 collection then need to
+				// insert $scope#$collection field into the mappings
+				if len(scope.Collections) > 1 {
+					err = enhanceMappingsWithCollMetaField(am.TypeMapping)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				// update the sourceParams with the scope/collection details
+				if scope != nil && len(scope.Collections) > 0 {
+					sourceParams := cbgt.NewDCPFeedParams()
+					if indexDef.SourceParams != "" {
+						err = json.Unmarshal([]byte(indexDef.SourceParams), sourceParams)
+						if err != nil {
+							return nil, err
+						}
+					}
+					sourceParams.Scope = scope.Name
+					sourceParams.Collections = make([]string, len(scope.Collections))
+					for i, coll := range scope.Collections {
+						sourceParams.Collections[i] = coll.Name
+					}
+
+					sBytes, err := json.Marshal(sourceParams)
+					if err != nil {
+						return nil, err
+					}
+					indexDef.SourceParams = string(sBytes)
+				}
+			}
+		}
+	}
+
+	updatedParams, err := json.Marshal(bp)
+	if err != nil {
+		return nil, fmt.Errorf("bleve: Prepare Marshal,"+
+			" err: %v", err)
+	}
+	indexDef.Params = string(updatedParams)
 
 	return indexDef, nil
 }
@@ -594,6 +634,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
 	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	var ip cbgt.IndexPrepParams
+	err := json.Unmarshal([]byte(indexParams), &ip)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: new index, json marshal"+
+			" err: %v", err)
+	}
+	indexParams = ip.Params
 	bleveParams := NewBleveParams()
 
 	if len(indexParams) > 0 {
@@ -605,6 +652,25 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		err = json.Unmarshal(buf, bleveParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("bleve: parse params, err: %v", err)
+		}
+	}
+
+	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeColPrefix) {
+		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+			scope, err := validateScopeCollFromMappings(ip.SourceName, am.TypeMapping)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, col := range scope.Collections {
+				cuid, err := strconv.Atoi(col.Uid)
+				if err != nil {
+					return nil, nil, err
+				}
+				bleveParams.DocConfig.CollPrefixLookup[uint32(cuid)] = collMetaField{
+					Typ:      scope.Name + "." + col.Name + ".",
+					Contents: metaFieldContents("_" + scope.Uid + "_" + col.Uid),
+				}
+			}
 		}
 	}
 
@@ -1580,7 +1646,8 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		defaultType = imi.DefaultType
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.BuildDocument(key, val, defaultType)
+	cbftDoc, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
+		defaultType, extrasType, extras)
 
 	erri := t.batch.Index(string(key), cbftDoc)
 

@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"bytes"
 	"regexp"
 	"testing"
 )
@@ -88,6 +89,61 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 			},
 			expectedType: "_default",
 		},
+		{
+			key: []byte("beer::123"),
+			val: map[string]interface{}{
+				"type": "notbeer",
+			},
+			config: &BleveDocumentConfig{
+				Mode:             "scope.collection.docid_prefix",
+				DocIDPrefixDelim: "-",
+			},
+			expectedType: "_default",
+		},
+		{
+			key: []byte("beer-123"),
+			val: map[string]interface{}{
+				"type": "notbeer",
+			},
+			config: &BleveDocumentConfig{
+				Mode:             "scope.collection.docid_prefix",
+				DocIDPrefixDelim: "-",
+			},
+			expectedType: "beer",
+		},
+		{
+			key: []byte("anything"),
+			val: map[string]interface{}{
+				"type": "beer",
+			},
+			config: &BleveDocumentConfig{
+				Mode:      "scope.collection.type_field",
+				TypeField: "type",
+			},
+			expectedType: "beer",
+		},
+		{
+			key: []byte("beer-123"),
+			val: map[string]interface{}{
+				"type": "notbeer",
+			},
+			config: &BleveDocumentConfig{
+				Mode:        "scope.collection.docid_regexp",
+				DocIDRegexp: regexp.MustCompile(`^[^-]+`),
+			},
+			expectedType: "beer",
+		},
+		{
+			key: []byte("beer::123"),
+			val: map[string]interface{}{
+				"type": "notbeer",
+			},
+			config: &BleveDocumentConfig{
+				Mode:             "scope.collection",
+				DocIDPrefixDelim: "-",
+			},
+			expectedType: "_default",
+		},
 	}
 
 	for _, test := range tests {
@@ -97,4 +153,94 @@ func TestBleveDocConfigDetermineType(t *testing.T) {
 		}
 	}
 
+}
+
+func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
+	fieldBytes := metaFieldContents("_$scope_$collection")
+	tests := []struct {
+		json     []byte
+		fBytes   []byte
+		config   *BleveDocumentConfig
+		expected []byte
+	}{
+		{
+			json:   []byte("{ \"key\":\"value\"}"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ \"key\":\"value\",\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ \"key\":\"value\"}"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "scope.collection.type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ \"key\":\"value\",\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ { \"key\":\"value\"} }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ { \"key\":\"value\"},\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ [\"key\":\"value\"] }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ [\"key\":\"value\"],\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ \"key\":True }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ \"key\":True,\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ \"key\":45.65 }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ \"key\":45.65,\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+		{
+			json:   []byte("{ \"key\":[45.65] }"),
+			fBytes: fieldBytes,
+			config: &BleveDocumentConfig{
+				Mode:      "type_field",
+				TypeField: "type",
+			},
+			expected: []byte("{ \"key\":[45.65],\"_scope_collection\":\"_$scope_$collection\"}"),
+		},
+	}
+
+	for i, test := range tests {
+		jsonOut := test.config.extendDocument(test.json, test.fBytes)
+		if !bytes.Equal(jsonOut, test.expected) {
+			t.Fatalf("test %d failed, expected type: '%s', got '%s'", i, test.expected, jsonOut)
+		}
+	}
 }
