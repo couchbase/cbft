@@ -35,6 +35,7 @@ var httpMaxConnections = 100000
 
 // high defaults to avoid any backward compatibility issues.
 var httpReadTimeout = 20 * time.Second
+var httpReadHeaderTimeout = 5 * time.Second
 var httpWriteTimeout = 60 * time.Second
 
 func initHTTPOptions(options map[string]string) error {
@@ -104,7 +105,10 @@ func initHTTPOptions(options map[string]string) error {
 	if found {
 		httpWriteTimeout = time.Duration(wt) * time.Second
 	}
-
+	ht, found := parseOptionsInt(options, "httpReadHeaderTimeout")
+	if found {
+		httpReadHeaderTimeout = time.Duration(ht) * time.Second
+	}
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
