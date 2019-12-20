@@ -186,7 +186,6 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		ReadTimeout:       httpReadTimeout,
 		ReadHeaderTimeout: httpReadHeaderTimeout,
 		WriteTimeout:      httpWriteTimeout,
-		IdleTimeout:       httpIdleTimeout,
 	}
 
 	if proto == "http" {
