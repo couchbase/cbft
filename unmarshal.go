@@ -585,5 +585,14 @@ func parseQuery(input []byte) (query.Query, error) {
 		}
 		return &rv, nil
 	}
+	_, hasPoints := tmp["polygon_points"]
+	if hasPoints {
+		var rv query.GeoBoundingPolygonQuery
+		err := jsoniter.Unmarshal(input, &rv)
+		if err != nil {
+			return nil, err
+		}
+		return &rv, nil
+	}
 	return nil, fmt.Errorf("unknown query type")
 }
