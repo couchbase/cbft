@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/search/query"
 
 	"github.com/couchbase/cbgt"
 )
@@ -682,6 +683,84 @@ func TestSearchRequestExt(t *testing.T) {
 		}
 		if bsr.From != expectFrom {
 			t.Fatalf("(%d) Expected from: %v, got from: %v", i+1, expectFrom, bsr.From)
+		}
+	}
+}
+
+func TestCollectionSearchRequest(t *testing.T) {
+	cache := make(map[string]string)
+	cache["ftsIndexA$colA"] = "_$suid_$cuidA"
+	cache["ftsIndexB$colA"] = "_$suid_$cuidA"
+	cache["ftsIndexB$colB"] = "_$suid_$cuidB"
+	cache["ftsIndexB$colC"] = "_$suid_$cuidC"
+
+	lookUp := func(a, b string) string {
+		return cache[a+"$"+b]
+	}
+
+	tests := []struct {
+		indexName     string
+		collections   []string
+		qNumDisjuncts int
+		qField        string
+		qTerm         []string
+	}{
+		{
+			indexName:     "",
+			collections:   []string{},
+			qNumDisjuncts: 0,
+		},
+		{
+			indexName:     "ftsIndexA",
+			collections:   []string{"colA"},
+			qField:        "_$scope_$collection",
+			qTerm:         []string{"_$suid_$cuidA"},
+			qNumDisjuncts: 1,
+		},
+		{
+			indexName:     "ftsIndexB",
+			collections:   []string{"colA", "colB", "colC"},
+			qField:        "_$scope_$collection",
+			qTerm:         []string{"_$suid_$cuidA", "_$suid_$cuidB", "_$suid_$cuidC"},
+			qNumDisjuncts: 3,
+		},
+	}
+
+	var sr *SearchRequest
+	err := json.Unmarshal([]byte(`{"query": {"query": "california"}, "size": 4, "from": 5}`), &sr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range tests {
+		sr.Scope = "_default"
+		sr.Collections = test.collections
+		bsr, err := sr.ConvertToBleveSearchRequest()
+		bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, lookUp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch qq := bsr.Query.(type) {
+		case *query.ConjunctionQuery:
+			if len(qq.Conjuncts) != 2 {
+				t.Fatalf("Exception in conjunction query, number of conjunct clauses: %v",
+					len(qq.Conjuncts))
+			}
+			dqs := qq.Conjuncts[1].(*query.DisjunctionQuery)
+			if len(dqs.Disjuncts) != test.qNumDisjuncts {
+				t.Fatalf("Exception in disjunction query, number of disjunct clauses: %v",
+					len(dqs.Disjuncts))
+			}
+
+			for i, dq := range dqs.Disjuncts {
+				mq := dq.(*query.MatchQuery)
+				if mq.Match != test.qTerm[i] || mq.FieldVal != test.qField {
+					t.Fatalf("Exception in disjunction should query: %v, %v",
+						mq.Match, mq.FieldVal)
+				}
+			}
+		default:
+			t.Fatalf("No conjunction query found, query: %+v", bsr.Query)
 		}
 	}
 }

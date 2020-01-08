@@ -18,9 +18,41 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/blevesearch/bleve/mapping"
 )
+
+type collMetaFieldCache struct {
+	m     sync.RWMutex
+	cache map[string]string // indexName$collName => _$suid_$cuid
+}
+
+// metaFieldValCache holds a runtime volatile cache
+// for collection meta field look ups during the collection
+// specific query in a multi collection index.
+var metaFieldValCache *collMetaFieldCache
+
+func init() {
+	metaFieldValCache = &collMetaFieldCache{
+		cache: make(map[string]string, 1),
+	}
+}
+
+func (c *collMetaFieldCache) getValue(indexName, collName string) string {
+	c.m.RLock()
+	rv := c.cache[indexName+"$"+collName]
+	c.m.RUnlock()
+	return rv
+}
+
+func (c *collMetaFieldCache) setValue(indexName, collName string,
+	suid, cuid int64) {
+	key := indexName + "$" + collName
+	c.m.Lock()
+	c.cache[key] = "_$" + fmt.Sprintf("%d", suid) + "_$" + fmt.Sprintf("%d", cuid)
+	c.m.Unlock()
+}
 
 func scopeCollName(in string) (string, string, error) {
 	vals := strings.SplitN(in, ".", 3)

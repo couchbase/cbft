@@ -199,6 +199,31 @@ func NewBleveParams() *BleveParams {
 	return rv
 }
 
+// fieldLookup helps to retrieve the collection
+// indexed meta field value against a given index
+// and collection names.
+type fieldLookup func(string, string) string
+
+func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
+	getValue fieldLookup) query.Query {
+	if getValue == nil {
+		getValue = metaFieldValCache.getValue
+	}
+	cjnq := query.NewConjunctionQuery([]query.Query{q})
+	djnq := query.NewDisjunctionQuery(nil)
+
+	for _, col := range sr.Collections {
+		queryStr := getValue(indexName, col)
+		mq := query.NewMatchQuery(queryStr)
+		mq.Analyzer = "keyword"
+		mq.SetField(CollMetaFieldName)
+		djnq.AddQuery(mq)
+	}
+	djnq.SetMin(1)
+	cjnq.AddQuery(djnq)
+	return cjnq
+}
+
 type SearchRequest struct {
 	Q                json.RawMessage         `json:"query"`
 	Size             *int                    `json:"size"`
@@ -214,6 +239,8 @@ type SearchRequest struct {
 	SearchBefore     []string                `json:"search_before,omitempty"`
 	Limit            *int                    `json:"limit,omitempty"`
 	Offset           *int                    `json:"offset,omitempty"`
+	Scope            string                  `json:"scope,omitempty"`
+	Collections      []string                `json:"collections,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -707,6 +734,7 @@ func initBleveDocConfigs(indexName, sourceName string,
 			Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
 				"_$" + fmt.Sprintf("%d", cuid)),
 		}
+		metaFieldValCache.setValue(indexName, col.Name, suid, cuid)
 	}
 	return rv
 }
@@ -830,6 +858,28 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
+	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeColPrefix) {
+		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+			buf, err = ioutil.ReadFile(path +
+				string(os.PathSeparator) + "PINDEX_META")
+			if err != nil {
+				return nil, nil, err
+			}
+			tmp := struct {
+				SourceName string `json:"sourceName"`
+				IndexName  string `json:"indexName"`
+			}{}
+
+			err = json.Unmarshal(buf, &tmp)
+			if err != nil {
+				return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+			}
+			// populate the collection meta field look up cache.
+			bleveParams.DocConfig.CollPrefixLookup =
+				initBleveDocConfigs(tmp.IndexName, tmp.SourceName, am)
+		}
+	}
+
 	// Handle the case where indexType wasn't mentioned in
 	// the index params (only from pre 5.5 nodes)
 	if !strings.Contains(indexParams, "indexType") {
@@ -939,6 +989,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
+	}
+
+	// if the search is scoped to specific collections
+	// then enhance the query.
+	if len(sr.Collections) > 0 {
+		searchRequest.Query = sr.decorateQuery(indexName,
+			searchRequest.Query, nil)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
