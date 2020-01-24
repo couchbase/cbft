@@ -32,7 +32,7 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-func init() {
+func RegisterRemoteClientsForSecurity() {
 	cbgt.RegisterConfigRefreshCallback("fts/remoteClients",
 		handleRefreshSecuritySettings)
 }

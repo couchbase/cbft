@@ -280,6 +280,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
+	// register remote http/gRPC clients for cbauth security notifications
+	cbft.RegisterRemoteClientsForSecurity()
+
 	extrasMap, err := cbft.ParseExtras(extras)
 	if err != nil {
 		return nil, err
