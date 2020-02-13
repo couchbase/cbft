@@ -146,7 +146,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			},
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				time.Sleep(10 * time.Millisecond)

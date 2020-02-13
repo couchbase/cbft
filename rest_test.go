@@ -311,7 +311,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -340,7 +340,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -556,7 +556,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -582,7 +582,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -593,7 +593,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -751,7 +751,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: 200,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -819,7 +819,7 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -909,7 +909,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				feeds, pindexes := mgr.CurrentMaps()
@@ -1573,7 +1573,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 			Body:   nil,
 			Status: 200,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				feeds, pindexes := mgr.CurrentMaps()
@@ -1653,7 +1653,7 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				feeds, pindexes := mgr.CurrentMaps()
@@ -1965,7 +1965,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				if cfg.Refresh() != nil {
@@ -2072,7 +2072,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -2087,7 +2087,7 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				if cfg.Refresh() != nil {
@@ -2243,7 +2243,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 			After: func() {
 				if cfg.Refresh() != nil {
@@ -2769,7 +2769,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -2990,7 +2990,7 @@ func TestMultiFeedStats(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -3005,7 +3005,7 @@ func TestMultiFeedStats(t *testing.T) {
 			Body:   nil,
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -3080,7 +3080,7 @@ func TestIndexDefWithJSON(t *testing.T) {
                           }`),
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
@@ -3101,7 +3101,7 @@ func TestIndexDefWithJSON(t *testing.T) {
 			ResponseHeader: map[string]string{"Content-type": "application/json;version=" + API_MAX_VERSION},
 			Status:         http.StatusOK,
 			ResponseMatch: map[string]bool{
-				`{"status":"ok"}`: true,
+				`"status":"ok"`: true,
 			},
 		},
 		{
