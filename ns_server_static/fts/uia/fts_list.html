@@ -43,7 +43,7 @@
              tooltip-placement="auto top"
              tooltip-trigger="'mouseenter'">{{indexName}}</td>
           <td>
-            <span ng-if="indexDef.sourceType != 'couchbase'">
+            <span ng-if="indexDef.sourceType != 'couchbase' && indexDef.sourceType != 'gocbcore'">
               {{indexDef.sourceType}}
               &nbsp;/&nbsp;
             </span>
