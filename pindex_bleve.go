@@ -66,6 +66,8 @@ var featureIndexType = "indexType"
 var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
+var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
@@ -373,6 +375,7 @@ const bleveQueryHelp = `
 func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
 		PrepareParams: PrepareBleveIndexParams,
+		Prepare:       PrepareIndexDef,
 		Validate:      ValidateBleve,
 
 		New:       NewBlevePIndexImpl,
@@ -441,6 +444,28 @@ func PrepareBleveIndexParams(indexParams string) (string, error) {
 	}
 
 	return string(updatedParams), nil
+}
+
+func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+	if indexDef == nil {
+		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
+	}
+
+	if CurrentNodeDefsFetcher == nil {
+		return indexDef, nil
+	}
+
+	nodeDefs, err := CurrentNodeDefsFetcher.Get()
+	if err != nil {
+		return indexDef, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
+	}
+
+	if cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs) {
+		// Use "gocbcore" for DCP streaming if cluster is 7.0+
+		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
+	}
+
+	return indexDef, nil
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {

@@ -351,7 +351,7 @@ func findCouchbaseSourceNames(r requestParser, indexName string,
 		// TODO handle this for RPCs.
 		if reqType == "REST" {
 			sourceType, sourceName := rest.ExtractSourceTypeName(req, indexDef, indexName)
-			if sourceType == "couchbase" {
+			if sourceType == cbgt.SOURCE_GOCOUCHBASE || sourceType == cbgt.SOURCE_GOCBCORE {
 				return []string{sourceName}, nil
 			}
 		}

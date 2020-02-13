@@ -290,7 +290,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
 		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
-		"," + cbft.FeatureGRPC
+		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
