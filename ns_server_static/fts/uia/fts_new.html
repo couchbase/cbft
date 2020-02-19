@@ -68,16 +68,22 @@
       <div ng-if="newIndexType != 'fulltext-alias'" class="margin-bottom1">
         <label>Type Identifier</label>
         <div class="row width-480 margin-bottom-half">
+            <input type="checkbox" id="build-upon-collections"
+                   ng-model="$parent.$parent.docConfigCollections"
+                   ng-change="typeIdentifierChanged()">
+            <label for="build-upon-collections">Build upon scope.collection</label>
+        </div>
+        <div class="row width-480 margin-bottom-half">
           <div class="width-5">
             <input type="radio" value="type_field" id="for-type-field"
-                   ng-model="$parent.$parent.ftsDocConfig.mode"
+                   ng-model="$parent.$parent.docConfigMode"
                    ng-change="typeIdentifierChanged()">
             <label for="for-type-field">JSON type field:</label>
           </div>
           <div class="width-7" ng-if="newIndexType != 'fulltext-alias'">
             <input
                ng-model="$parent.$parent.ftsDocConfig.type_field"
-               ng-disabled="ftsDocConfig.mode != 'type_field'"
+               ng-disabled="$parent.$parent.docConfigMode != 'type_field'"
                type="text"
                placeholder="field name"
                class="input-small">
@@ -86,14 +92,14 @@
         <div class="row width-480 margin-bottom-half">
           <div class="width-5">
               <input type="radio" value="docid_prefix" id="docid_prefix"
-                     ng-model="$parent.$parent.ftsDocConfig.mode"
+                     ng-model="$parent.$parent.docConfigMode"
                      ng-change="typeIdentifierChanged()">
               <label for="docid_prefix">Doc ID up to separator:</label>
           </div>
           <div class="width-7">
             <input
                ng-model="$parent.$parent.ftsDocConfig.docid_prefix_delim"
-               ng-disabled="ftsDocConfig.mode != 'docid_prefix'"
+               ng-disabled="$parent.$parent.docConfigMode != 'docid_prefix'"
                type="text"
                placeholder="delimiter"
                class="input-small">
@@ -102,17 +108,15 @@
         <div class="row width-480">
           <div class="width-5">
             <input
-               type="radio"
-               value="docid_regexp"
-               id="docid_regexp"
-               ng-model="$parent.$parent.ftsDocConfig.mode"
+               type="radio" value="docid_regexp" id="docid_regexp"
+               ng-model="$parent.$parent.docConfigMode"
                ng-change="typeIdentifierChanged()">
             <label for="docid_regexp">Doc ID with regex:</label>
           </div>
           <div class="width-7">
             <input
                ng-model="$parent.$parent.ftsDocConfig.docid_regexp"
-               ng-disabled="ftsDocConfig.mode != 'docid_regexp'"
+               ng-disabled="$parent.$parent.docConfigMode != 'docid_regexp'"
                type="text"
                placeholder="regular expression"
                class="input-small">

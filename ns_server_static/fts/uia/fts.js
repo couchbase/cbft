@@ -477,6 +477,9 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
         $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
         $scope.indexStoreOption = $scope.indexStoreOptions[1];
 
+        $scope.docConfigCollections = false;
+        $scope.docConfigMode = "type_field";
+
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
                        $route, $routeParams,
@@ -487,9 +490,19 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
             var putIndexOrig = $scope.putIndex;
 
             $scope.typeIdentifierChanged = function() {
-              if ($scope.ftsDocConfig.mode == "type_field" && !$scope.ftsDocConfig.type_field) {
-                $scope.ftsDocConfig.type_field = "type";
-              }
+                if ($scope.docConfigMode == "type_field" ||
+                    $scope.docConfigMode == "docid_prefix" ||
+                    $scope.docConfigMode == "docid_regexp") {
+                    if ($scope.docConfigCollections) {
+                        $scope.ftsDocConfig.mode = "scope.collection." + $scope.docConfigMode;
+                    } else {
+                        $scope.ftsDocConfig.mode = $scope.docConfigMode;
+                    }
+
+                    if (!$scope.ftsDocConfig.type_field) {
+                        $scope.ftsDocConfig.type_field = "type";
+                    }
+                }
             }
 
             $scope.indexStoreOptionChanged = function() {
@@ -846,6 +859,17 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             $scope.indexStoreOption = $scope.indexStoreOptions[0];
         } else if ($scope.ftsStore.indexType == "scorch") {
             $scope.indexStoreOption = $scope.indexStoreOptions[1];
+        }
+    } catch (e) {}
+
+    try {
+        var mode = $scope.ftsDocConfig.mode.split(".")
+        $scope.docConfigMode = mode[mode.length-1];
+        if (mode.length == 3) {
+            $scope.docConfigCollections = true;
+        } else {
+            // mode.length == 1
+            $scope.docConfigCollections = false;
         }
     } catch (e) {}
 
