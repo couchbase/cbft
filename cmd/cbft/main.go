@@ -782,8 +782,8 @@ func (meh *mainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 	log.Printf("main: meh.OnFeedError, srcType: %s, err: %v", srcType, err)
 
-	if _, ok := err.(*couchbase.BucketNotFoundError); !ok ||
-		srcType != "couchbase" || r == nil {
+	if r == nil ||
+		(srcType != cbgt.SOURCE_GOCOUCHBASE && srcType != cbgt.SOURCE_GOCBCORE) {
 		return
 	}
 
