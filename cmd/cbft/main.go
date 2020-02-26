@@ -787,6 +787,12 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 		return
 	}
 
+	if srcType == cbgt.SOURCE_GOCOUCHBASE {
+		if _, ok := err.(*couchbase.BucketNotFoundError); !ok {
+			return
+		}
+	}
+
 	dcpFeed, ok := r.(cbgt.FeedEx)
 	if !ok {
 		return
