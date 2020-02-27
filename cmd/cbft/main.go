@@ -798,21 +798,30 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 		return
 	}
 
-	gone, err := dcpFeed.VerifyBucketNotExists()
-	log.Printf("main: meh.OnFeedError, VerifyBucketNotExists,"+
-		" srcType: %s, gone: %t, err: %v", srcType, gone, err)
+	gone, indexUUID, err := dcpFeed.VerifySourceNotExists()
+	log.Printf("main: meh.OnFeedError, VerifySourceNotExists,"+
+		" srcType: %s, gone: %t, indexUUID: %s, err: %v",
+		srcType, gone, indexUUID, err)
 	if !gone {
 		return
 	}
 
-	bucketName, bucketUUID := dcpFeed.GetBucketDetails()
-	if bucketName == "" {
-		return
+	if len(indexUUID) == 0 {
+		bucketName, bucketUUID := dcpFeed.GetBucketDetails()
+		if bucketName == "" {
+			return
+		}
+
+		log.Printf("main: meh.OnFeedError, DeleteAllIndexFromSource,"+
+			" srcType: %s, bucketName: %s, bucketUUID: %s",
+			srcType, bucketName, bucketUUID)
+
+		meh.mgr.DeleteAllIndexFromSource(srcType, bucketName, bucketUUID)
+	} else {
+		log.Printf("main: meh.OnFeedError, DeleteIndex,"+
+			" indexName: %s, indexUUID: %s",
+			r.IndexName(), indexUUID)
+
+		meh.mgr.DeleteIndexEx(r.IndexName(), indexUUID)
 	}
-
-	log.Printf("main: meh.OnFeedError, DeleteAllIndexFromSource,"+
-		" srcType: %s, bucketName: %s, bucketUUID: %s",
-		srcType, bucketName, bucketUUID)
-
-	meh.mgr.DeleteAllIndexFromSource(srcType, bucketName, bucketUUID)
 }
