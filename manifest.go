@@ -104,7 +104,7 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	defer resp.Body.Close()
 
 	respBuf, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	if err != nil || len(respBuf) == 0 {
 		return nil, fmt.Errorf("manifest: error reading resp.Body,"+
 			" url: %s, resp: %#v, err: %v", url, resp, err)
 	}
@@ -135,15 +135,15 @@ func (c *manifestCache) monitor() {
 			}
 
 			for bucket, old := range c.mCache {
-				new, err := c.fetchCollectionManifest(bucket)
+				curr, err := c.fetchCollectionManifest(bucket)
 				if err != nil {
-					log.Printf("manifest: manifest refresh failed for bucket %s, err: %v",
+					log.Debugf("manifest: manifest refresh failed for bucket %s, err: %v",
 						bucket, err)
 					continue
 				}
-				if old.Uid != new.Uid {
+				if old.Uid != curr.Uid {
 					c.m.Lock()
-					c.mCache[bucket] = new
+					c.mCache[bucket] = curr
 					c.m.Unlock()
 				}
 			}
