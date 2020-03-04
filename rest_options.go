@@ -159,18 +159,28 @@ func (h *ConciseOptions) ServeHTTP(
 	hideUI := h.mgr.Options()["hideUI"]
 	vbuckets, _ := strconv.Atoi(h.mgr.Options()["vbuckets"])
 
+	var collectionsSupport bool
+	if nodeDefs, _, err := cbgt.CfgGetNodeDefs(
+		h.mgr.Cfg(), cbgt.NODE_DEFS_WANTED); err == nil {
+		if cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs) {
+			collectionsSupport = true
+		}
+	}
+
 	rv := struct {
 		Status             string `json:"status"`
 		MaxReplicasAllowed int    `json:"maxReplicasAllowed"`
 		BucketTypesAllowed string `json:"bucketTypesAllowed"`
 		HideUI             string `json:"hideUI"`
 		VBuckets           int    `json:"vbuckets"`
+		CollectionsSupport bool   `json:"collectionsSupport"`
 	}{
 		Status:             "ok",
 		MaxReplicasAllowed: maxReplicasAllowed,
 		BucketTypesAllowed: bucketTypesAllowed,
 		HideUI:             hideUI,
 		VBuckets:           vbuckets,
+		CollectionsSupport: collectionsSupport,
 	}
 	rest.MustEncode(w, rv)
 }

@@ -422,7 +422,9 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		return indexDef, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
 	}
 
-	if cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs) {
+	collectionsSupported := cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+
+	if collectionsSupported {
 		// Use "gocbcore" for DCP streaming if cluster is 7.0+
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
@@ -458,6 +460,11 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		// figure out the scope/collection details from mappings
 		// and update the index params and source params
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeColPrefix) {
+			if !collectionsSupported {
+				return nil, fmt.Errorf("bleve: Prepare, collections not supported" +
+					" across all nodes in the cluster")
+			}
+
 			if am, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
 					am.TypeMapping)

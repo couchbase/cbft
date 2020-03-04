@@ -790,6 +790,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         $scope.numReplicas = $scope.replicaOptions[0];
         $scope.vbuckets = 1024;
         $scope.numPIndexes = 0;
+        $scope.collectionsSupport = false;
         $http.get('/api/conciseOptions').
         then(function(response) {
             var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
@@ -797,6 +798,8 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             for (var i = 0; i <= maxReplicasAllowed; i++) {
                 $scope.replicaOptions.push(i);
             }
+
+            $scope.collectionsSupport = response.data.collectionsSupport;
 
             if (response.data.bucketTypesAllowed != "") {
                 var bucketTypesAllowed = response.data.bucketTypesAllowed.split(":");

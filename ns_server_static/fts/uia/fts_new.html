@@ -70,6 +70,7 @@
         <div class="row width-480 margin-bottom-half">
             <input type="checkbox" id="build-upon-collections"
                    ng-model="$parent.$parent.docConfigCollections"
+                   ng-disabled="!$parent.collectionsSupport"
                    ng-change="typeIdentifierChanged()">
             <label for="build-upon-collections">Build upon scope.collection</label>
         </div>
