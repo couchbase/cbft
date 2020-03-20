@@ -3,8 +3,7 @@
   "proxy-strategy": "sticky",
   "rest-api-prefix": "fts",
   "version-dirs": [
-    {"version": [4, 5], "dir": "."},
-    {"version": [5, 0], "dir": "uia"}
+    {"version": [5, 0], "dir": "."}
   ],
   "doc-root": "@DOC_ROOT_PREFIX@fts"
 }

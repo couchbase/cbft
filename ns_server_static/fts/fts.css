@@ -1,19 +1,12 @@
-.indexContainer h2 {
-  margin-top: 10px;
-  margin-bottom: 10px;
+/* FTS plugin styles-------------------------------------------------- */
+
+.fts-index-editor {
+  flex: 1 0 0;
+  margin-bottom: 2rem;
 }
+.fts-index-mapping {
 
-.indexContainer button {
-  padding: 3px 10px 3px 10px;
 }
-
-.indexContainer .error {
-  color: red;
-  font-weight: bold;
-}
-
-/* -------------------------------------------------- */
-
 .indexContainer .form_group,
 .indexContainer .form-group,
 .bleveModal .form-group {
@@ -25,59 +18,62 @@
   align-items: left;
   flex-wrap: no-wrap;
 }
-
 .indexContainer .form_group label,
 .indexContainer .form-group label,
 .bleveModal .form-group label {
   padding-right: 1em;
   font-weight: bold;
+  white-space: nowrap;
+}
+.indexContainer .form_group > label,
+.indexContainer .form-group > label {
   text-align: right;
 }
-
 .indexContainer .form_group label,
 .indexContainer .form-group label {
-  min-width: 15em;
+  min-width: 10em;
 }
-
 .indexContainer .form_group .form_control {
   width: 100%;
 }
-
+.indexContainer .form_group .form_control.nosize {
+  min-width: 0;
+  width: 0;
+}
+.indexContainer .form_group .form_control input[type="text"] {
+  min-width: 20em;
+}
+.indexContainer .form_group .form_control select {
+  min-width: 20em;
+}
 .indexContainer .form_group .form_control textarea {
   width: 100%;
 }
-
+.indexContainer .form_group .form_controlDesc {
+  margin-left: 8px;
+}
+.indexContainer .form_group_controls {
+  margin-top: 15px;
+}
 .bleveModal .form-group label {
   min-width: 12em;
 }
-
 .bleveModal .form-group select {
   width: 15em;
+  margin-right: 5px;
 }
-
-.bleveModal .form-group ul.list-group {
-  min-width: 15em;
-  border: 1px solid #999;
-  padding: 2px 3px 2px 3px;
+ul.list-text {
+  margin-left: 0;
+  margin-bottom: .5rem;
+  list-style-type: none;
+  font-size: .875rem;
+}
+ul.list-text li {
+  padding: 0 0 .5rem .5rem;
 }
 
 /* -------------------------------------------------- */
 
-.indexContainer .indexMapping {
-  margin-bottom: 10px;
-}
-
-.indexContainer .indexMapping .form_group.form_group_indexType {
-  display: none;
-}
-
-.indexContainer .indexMapping .form_group.form_group_sourceType {
-  display: none;
-}
-
-.indexContainer .indexMapping .form_group_targetIndexes select {
-  min-width: 20em;
-}
 
 .indexContainer .indexViewer.fulltext-index .indexMapping .viewOnly {
   clear: both;
@@ -85,6 +81,38 @@
   margin-bottom: 20px;
 }
 
+/* --------------------------------------------------
+
+.indexContainer .indexTemplateContainer .indexEditor {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+}
+.indexContainer .indexTemplateContainer .indexEditor .indexEditorMain {
+  flex: 1 0 0;
+}
+*/
+
+.index-definition-preview {
+  margin-left: 2.5rem;
+  padding: 1rem .5rem;
+  width: 360px;
+  flex: 0 0 auto;
+}
+.index-definition-preview .json-content  {
+  min-height: 600px;
+  position: relative;
+}
+.json-content > .spinner {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url(/images/spinner/spinner_3.gif) center 43% no-repeat;
+}
 /* -------------------------------------------------- */
 
 .indexContainer .glyphicon,
@@ -97,52 +125,40 @@
   font-weight: normal;
   line-height: 1;
 }
-
 .indexContainer .glyphicon-ok:before,
 .bleveModal .glyphicon-ok:before {
   content: "ok";
 }
-
 .indexContainer .mapping .glyphicon-minus:before,
 .bleveModal .glyphicon-minus:before {
   content: "-";
 }
-
 .indexContainer .glyphicon-pencil:before,
 .bleveModal .glyphicon-pencil:before {
+  font-size: 15px;
   content: "edit";
 }
-
 .indexContainer .glyphicon-plus:before,
 .bleveModal .glyphicon-plus:before {
+  font-size: 15px;
   content: "+";
 }
-
 .indexContainer .glyphicon-remove:before,
 .bleveModal .glyphicon-remove:before {
   content: "cancel";
 }
-
-.indexContainer .glyphicon-trash:before,
-.bleveModal .glyphicon-trash:before {
-  content: "X";
-}
-
 .indexContainer .glyphicon-chevron-right:before,
 .bleveModal .glyphicon-chevron-right:before {
   content: "▶";
 }
-
 .indexContainer .glyphicon-chevron-down:before,
 .bleveModal .glyphicon-chevron-down:before {
   content: "▼";
 }
-
 .indexContainer .glyphicon-refresh:before,
 .bleveModal .glyphicon-refresh:before {
   content: "▶";
 }
-
 .indexContainer .glyphicon-file:before,
 .bleveModal .glyphicon-file:before {
   content: "#";
@@ -154,145 +170,165 @@
 .bleveModal .glyphicon {
   padding: 2px 5px 2px 5px;
 }
-
 .indexContainer .btn.pull-right {
   margin-right: 10px;
   float: right;
 }
-
-/* -------------------------------------------------- */
-
-.indexContainer .query_bar {
-  padding: .4rem 0;
-  display: flex;
-  min-height: 1.5rem;
-  -webkit-box-align: center;
-  -webkit-align-items: center;
-  align-items: left;
-  flex-wrap: no-wrap;
-}
-
-.indexContainer .query_bar .query_bar_index {
-  margin-right: 5px;
-}
-
-.indexContainer .query_bar .query_bar_input input {
-  min-width: 15em;
-}
-
-.indexContainer .query_bar .query_bar_input button {
-  padding: 3px 10px 3px 10px;
-}
-
-.indexContainer .query_bar .query_bar_advanced {
-  margin-left: 5px;
-}
-
-.indexContainer .query_advanced {
-  padding-top: 5px;
-}
-
-.indexContainer .query_advanced .form_group_jsonQuery {
-  display: block;
-  margin-top: 10px;
-  margin-left: 10px;
-  background-color: #eee;
-  padding: 5px 5px 5px 5px;
-}
-
-.indexContainer .query_advanced .form_group_jsonQuery pre{
-  padding: 5px 10px 5px 10px;
-}
-
-.indexContainer .query_results_area {
-  padding-top: 20px;
-}
-
-.indexContainer .query_results_area .resultsTop {
-  font-size: 10pt;
-  margin-bottom: 10px;
-}
-
-.indexContainer .query_results_area .pull-right {
+.indexContainer button.pull-right {
+  margin-right: 10px;
   float: right;
 }
 
-.indexContainer .query_results_area .resultsContainer ol li {
-  margin: 3px 5px 5px 5px;
-  padding: 3px 0 3px 0;
+/* ---- search index input and advanced search options ---- */
+.indexContainer .fts-query-bar {
+  display: flex;
+  margin-right: 1rem;
+  width: 50%;
+}
+.indexContainer .fts-query-bar input {
+  width: 100%;
+}
+.indexContainer .query-advanced-settings {
+  margin: .5rem 0 2.5rem 1.5rem;
+}
+.indexContainer .query-advanced-settings label.checkbox {
+  display: inline-block;
+  width: 150px;
+}
+.indexContainer .query-bar-help {
+  font-size: .75rem;
 }
 
-.indexContainer .query_results_area .resultsContainer ol li .badge {
+/* ---- query results ----------------------- */
+.fts-query-results-area {
+  padding: 0 2rem;
+  margin: 0;
+  max-width: 1280px;
+}
+.fts-query-results-title {
+  margin: 1rem 0 .5rem 0;
+}
+.fts-query-results h5.resultsTop {
+  font-weight: 400;
+  color: #333;
+  width: 100%;
+  text-align: right;
+  margin: 0;
+  text-transform: lowercase;
+}
+.roundTook {
+  color: #555;
+}
+.fts-query-results-area .pull-right {
+  float: none;
+  display:inline-block;
+  position: relative;
+  font-size: .875rem;
+  top: -1.5rem;
+  margin: 0;
+}
+.fts-query-results {
+  margin: 0 0 0 -1.5rem !important;
+}
+.fts-query-results input[type="checkbox"] {
+  display: inline-block;
+}
+.fts-query-results ol {
+  margin-top: -1.5rem;
+}
+.fts-query-results ol li {
+  margin: 0;
+  padding: .5rem 0;
+  border-bottom: 1px solid #ececec;
+}
+.fts-query-results ol li .badge {
   display: none;
 }
-
-.indexContainer .query_results_area .resultsContainer ol li .well {
-  margin: 5px 10px 5px 10px;
-  background-color: #eee;
-  padding: 5px 10px 5px 10px;
+.fts-query-results ol li .well {
+  margin: .25rem 0 -.5rem 0;
+  background-color: #ececec;
+  padding: .5rem 1rem;
+  font-size: .961rem;
+}
+.fts-query-results pre {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.42857143;
+  color: #333;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.fts-query-results table {
+  display: block;
+  overflow-x: auto;
 }
 
-.indexContainer .query_results_area .resultsContainer ul.pagination li {
+ul.pagination {
+  float: right;
+}
+ul.pagination li {
   display: inline-block;
   margin: 5px 5px 5px 5px;
 }
-
-.indexContainer .query_results_area .resultsContainer ul.pagination li span {
-  background-color: #ddd;
+ul.pagination li span {
+  background-color: #ececec;
   padding-right: 4px;
   padding-left: 4px;
   color: #333;
 }
-
-/* -------------------------------------------------- */
-
-.indexContainer .indexes_list {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
+.fts-query-results mark {
+ padding: 0 0;
+ background-color: yellow;
 }
 
-.indexContainer .indexes_list .indexes_header {
-  display: flex;
-  min-height: 1.5rem;
-  -webkit-box-align: center;
-  -webkit-align-items: center;
-  align-items: center;
-  flex-wrap: no-wrap;
-  justify-content: space-between;
-}
-
-.indexContainer .indexes_body {
-  padding: 10px 10px 10px 15px;
-}
+/* ---- indexes list & aliases list tables  --------------------------------- */
 
 .indexContainer table {
   width: 100%;
   text-align: left;
-  white-space: nowrap;
+  table-layout: fixed;
+  margin-bottom: 2.5rem;
 }
-
-.indexContainer table tr {
-  margin: .5rem 2rem .5rem 2rem;
+.fts-index-mapping table {
+  margin-bottom: 1.5rem;
 }
-
 .indexContainer table tr th {
-  min-width: 200px;
-  padding-left: 5px;
-  background-color: #eee;
+  padding-left: 1rem;
+  background-color: #ececec;
 }
-
 .indexContainer table tr td {
-  min-width: 200px;
-  padding-left: 5px;
+  padding: .5rem 1rem .5rem 1rem;
 }
-
-.indexContainer .indexes_list table tr td+td {
-  width: 90%;
+.indexContainer table tr th {
+  padding: .5rem .5rem .5rem 1rem;
 }
-
-.indexContainer .indexes_list table tr td.controls {
+.indexContainer table tr td.index-name,
+.indexContainer table tr td.alias-name,
+.indexContainer table tr td.alias-targets {
+  overflow: hidden;
+}
+td.controls {
   text-align: right;
+}
+td.controls a:first-child {
+  margin-right: 1rem;
+}
+.indexContainer table.fts-indexes-list tr.detailsOpened td {
+  border-bottom: 0px;
+}
+.json-content {
+  margin: .5rem 0 0 0;
+  padding: 1rem 1rem 0 0;
+  background-color: #ececec;
+}
+.json-content pre {
+  padding-left: 1rem;
+  padding-bottom: .5rem;
 }
 
 /* -------------------------------------------------- */
@@ -301,141 +337,154 @@
   min-width: 500px;
   padding: 10px 10px 10px 10px;
 }
-
 .bleveModal .modal-body {
   padding: 20px 20px 20px 20px;
   font-size: 12px;
 }
-
 .bleveModal .modal-footer {
   text-align: right;
 }
-
 .bleveModal .modal-footer .btn {
-  height: 31px;
   margin-top: 20px;
-  border: 0;
-  line-height: 1;
-  background: url("/images/devider_line_1.gif") repeat-x scroll 0 -1px #DFE0E0;
-  padding: 10px;
-  clear: both;
-}
-
-.bleveModal .modal-footer .btn-primary {
-  text-align: center;
-  width: 121px;
-  background: url(/images/button_blue.gif) 0 0 no-repeat;
-}
-
-.bleveModal button {
-  padding: 3px 5px 3px 5px;
 }
 
 /* -------------------------------------------------- */
 
+/*
 .indexContainer .section {
   border: none;
 }
-
 .indexContainer .section .sectionHeader {
   margin-top: 10px;
 }
-
 .indexContainer .section .sectionHeader label {
   cursor: pointer;
 }
-
+.indexContainer .section .sectionHeader div * {
+  display: inline;
+}
 .indexContainer .section .sectionBody {
+  min-width: 30em;
   margin-top: 15px;
   margin-bottom: 30px;
 }
+.indexContainer .section .sectionBody .row .col-sm-12 {
+  width: 100%;
+}
+.indexContainer .section .sectionBody.analyzersSection table td.controls,
+.indexContainer .section .sectionBody.filtersSection table td.controls {
+  text-align: right;
+}
+.indexContainer .section .sectionBody.analyzersSection table tfoot td,
+.indexContainer .section .sectionBody.filtersSection table tfoot td {
+  text-align: right;
+  padding-right: 0;
+} */
 
-/* -------------------------------------------------- */
+/* MORE MAPPING STYLES -------------------------- */
 
 .indexContainer .mapping .btn-trash {
   margin-right: 25px;
 }
-
 .indexContainer .mapping .btn-trash:hover {
   color: #fff;
   background-color: #d9534f;
   border-color: #d43f3a;
 }
-
-/* -------------------------------------------------- */
-
 .indexContainer .mapping label {
   font-weight: normal;
-  margin-left: 10px;
+  margin-left: 8px;
+  font-size: 14px;
 }
-
+.indexContainer .mapping input[type="checkbox"] {
+  display: inline;
+}
 .indexContainer .mapping .attrs {
   font-weight: normal;
   font-size: 9pt;
 }
-
 .indexContainer .mapping .mappingHandle {
+  display: flex;
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
-  background-color: #eee;
+  background-color: #ececec;
   cursor: pointer;
+  white-space: nowrap;
 }
-
 .indexContainer .mapping .mappingHandle::after {
   clear: both;
 }
-
+.indexContainer .mapping .mappingHandle_main {
+  flex-grow: 2;
+}
 .indexContainer .mapping .mappingHandle .attrControls {
   visibility: hidden;
 }
-
 .indexContainer .mapping .mappingHandle:hover .attrControls,
 .indexContainer .mapping.editing .mappingHandle .attrControls {
   visibility: inherit;
 }
-
-.indexContainer .mapping .mappingHandle .attrControls .glyphicon-trash:before {
-  content: "delete";
-}
-
 .indexContainer .mapping .field .fieldHandle .attrControls {
-  visibility: hidden;
+  display: none;
 }
-
 .indexContainer .mapping .field .fieldHandle:hover .attrControls,
 .indexContainer .mapping .field.editing .fieldHandle .attrControls {
-  visibility: inherit;
+  display: inherit;
 }
-
 .indexContainer .mapping .fieldHandle {
+  display: flex;
   border-top: 1px solid white;
   padding: 4px 0 4px 4px;
   background-color: #eee;
   cursor: pointer;
 }
+.indexContainer .mapping .fieldHandle_main {
+  flex-grow: 2;
+}
 
-.indexContainer .mapping .fieldHandle .attrControls .glyphicon-trash:before {
+/* SAVE/CANCEL CONTROLS PER TYPE MAP ------------------------- */
+.indexContainer .mapping .field .fieldHandle .attrControls {
+  display: none;
+}
+.indexContainer .mapping .field .fieldHandle:hover .attrControls,
+.indexContainer .mapping .field.editing .fieldHandle .attrControls {
+  display: inherit;
+}
+.indexContainer .mapping .attrControls > * {
+  min-width: 8em;
+  white-space: nowrap;
+}
+.indexContainer .mapping .attrControls a {
+  margin: 0px 10px 0px 10px;
+}
+.indexContainer .mapping .attrControls a.btn-trash {
+  margin-top: 15px;
+}
+.indexContainer .mapping .attrControls .glyphicon-trash:before {
   content: "delete";
 }
-
-.indexContainer .mapping .mappingHandle .editArea {
-  padding-left: 30px;
+.indexContainer .mapping .attrControlsVertical a {
+  display: block;
+  margin-bottom: 8px;
 }
-
+.indexContainer .mapping .mappingHandle .editArea { /* checkboxes under menus */
+  padding-left: 2rem;
+  font-size: 14px;
+}
 .indexContainer .mapping .field label > span {
   display: inline-block;
   text-align: right;
   min-width: 8em;
 }
+.indexContainer .mapping .field label input[type=checkbox] {
 
-.indexContainer .mapping .field label:first-child input[type=checkbox] {
-  margin-left: 9em;
 }
-
+.indexContainer .editAreaFieldCheckboxes {
+  margin-left: 7.5em;
+}
 .indexContainer .mapping.editing > *, .field.editing > * {
   background: #f4f6f7;
 }
-
 .indexContainer .mapping input[type=text] {
   width: 14em;
 }
@@ -443,8 +492,12 @@
 .indexContainer .typeMappingsSection ol {
   margin-left: 20px;
 }
+.indexContainer .typeMappingsSection select.mapping_default_analyzer {
+  margin-left: 10px;
+  min-width: 10em;
+}
 
-/* -------------------------------------------------- */
+/* TYPE MAPPING POPUP MENU ------------------------------- */
 
 .indexContainer .mapping .popupContainer {
   position: relative;
@@ -453,17 +506,15 @@
   left: 0px;
   overflow: visible;
 }
-
 .indexContainer .mapping .popupContainer.pull-right {
   float: right;
 }
-
 .indexContainer .mapping .popup {
   position: absolute;
   display: block;
   margin: 0 0 0 0;
   top: 1.2em;
-  right: -2em;
+  right: -4em;
   border: 1px solid #666;
   background: white;
   padding: 5px 10px 5px 10px;
@@ -472,59 +523,51 @@
   z-index: 100;
 }
 
-/* -------------------------------------------------- */
+/* VIEW ONLY STYLES ??  -------------------------------- */
 
+.indexContainer .indexMapping .viewOnly {
+  display: none;
+}
 .indexContainer .viewOnly .editable {
   display: none;
 }
-
 .indexContainer .viewOnly button {
   visibility: hidden !important;
 }
 
 /* -------------------------------------------------- */
 
-.indexContainer dl {
+dl {
   clear: both;
   margin-top: 30px;
 }
-
-.indexContainer dl dt {
+dl dt {
   clear: both;
   float: left;
   display: block;
   min-width: 100px;
 }
-
-.indexContainer dl dd {
+dl dd {
   margin-bottom: 10px;
   width: 100%;
 }
 
-.indexContainer hr {
-  clear: both;
-  margin: 10px 0 20px 0;
-}
-
-/* -------------------------------------------------- */
+/* DRAGGABLE TYPE MAP BODY ------------------------------ */
 
 .indexContainer .section .angular-ui-tree-handle {
   cursor: auto;
 }
-
 .indexContainer .angular-ui-tree-handle {
   background: #f8faff;
   border: 1px solid #dae2ea;
   color: #7c9eb2;
   padding: 10px 10px;
 }
-
 .indexContainer .angular-ui-tree-handle:hover {
   color: #438eb9;
   background: #f4f6f7;
   border-color: #dce2e8;
 }
-
 .indexContainer .angular-ui-tree-placeholder {
   background: #f0f9ff;
   border: 2px dashed #bed2db;
@@ -533,18 +576,98 @@
   box-sizing: border-box;
 }
 
-/* -------------------------------------------------- */
+/* INDEX SUMMARY ------------------------------------- */
 
 .indexContainer .index-summary pre {
   margin: 12px 0 0 40px;
   overflow: auto;
 }
-
+.indexContainer .index-summary .btn-xs {
+  min-width: 5.5rem;
+  margin-left: 10px;
+  padding: 0 0 0 0;
+  font-size: 11px;
+  font-family: OpenSans, sans-serif;
+}
 .indexContainer .index-summary input[type=checkbox] {
   margin-left: 10px;
   margin-bottom: 5px;
 }
+.indexContainer .index-summary dt {
+  min-width: 8em;
+  margin-right: 5px;
+}
+.indexContainer .index-summary {
+  margin-bottom: 2rem;
+}
 
-#bleve-mapping-ui-type-field-row {
+/* -------------------------------------------------- */
+
+.indexContainer .form_group_typeIdentifierParam label {
+  margin-right: 0;
+  padding-right: 0;
+  min-width: 12em;
+}
+.indexContainer .form_group_typeIdentifierParam > * {
+  display: inline-block;
+}
+.indexContainer .form_group_advanced_fts {
+  margin-top: 15px;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .btn-xs {
+  padding: 0px 5px 0px 5px;
+  height: 1.4rem;
+  line-height: 1.4rem;
+  font-size: 10px;
+  font-family: OpenSans, sans-serif;
+}
+.indexContainer .btn-xs:hover {
+  color: white;
+}
+
+/* --------------------------------------------------
+
+.panel.dialog .modal-close {
+  border: none;
+}
+*/
+/* -------------------------------------------------- */
+
+.indexContainer .sectionBody.propertiesSection label {
+  min-width: 17em;
+}
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] {
+  margin-top: .6rem;
+}
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] + label:before {
+  margin-right: .3rem;
+}
+.indexContainer .sectionBody.propertiesSection input[type="checkbox"] + label {
+  margin-left: 10rem;
+  text-align: left;
+}
+
+/* -------------------------------------------------- */
+
+.indexContainer .analyzersSection .btn-xs,
+.indexContainer .filtersSection .btn-xs {
+  min-width: 8em;
+}
+.indexContainer .analyzersSection .btn-xs span,
+.indexContainer .filtersSection .btn-xs span {
   display: none;
+}
+
+/* ADD-ONS *------------------------------------------ */
+input.narrow,
+select.narrow {
+  width: 120px;
+}
+
+input.midwide,
+select.midwide {
+  width: 240px;
 }

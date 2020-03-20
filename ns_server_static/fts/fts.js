@@ -19,45 +19,155 @@ var ftsPrefix = 'fts';
 
   angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree"])
-    .config(function($stateProvider, mnPluggableUiRegistryProvider) {
-      $stateProvider
-            .state('app.admin.indexes.fts_list', {
-                url: '/fts_list',
-                controller: 'IndexesCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_list.html'
-            })
-            .state('app.admin.indexes.fts_view', {
-                url: '/fts_view/:indexName?tabName',
-                controller: 'IndexCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_view.html'
-            })
-            .state('app.admin.indexes.fts_new', {
-                url: '/fts_new/?indexType&sourceType',
-                controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_edit', {
-                url: '/fts_edit/:indexName/_edit',
-                controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_clone', {
-                url: '/fts_clone/:indexName/_clone',
-                controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_new.html'
-            })
-            .state('app.admin.indexes.fts_search', {
-                url: '/fts_search/:indexName/_search?query',
-                controller: 'IndexSearchCtrlFT_NS',
-                templateUrl: '/_p/ui/fts/fts_search.html'
-            });
+            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard", "mnPermissions", "ng-sortable", "mnDetailStats"])
+    .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
+      addFtsStates("app.admin.search");
 
-        mnPluggableUiRegistryProvider.registerConfig({
-            name: 'Full Text',
-            state: 'app.admin.indexes.fts_list',
-            plugIn: 'indexesTab'
-        });
+      function addFtsStates(parent) {
+        $stateProvider
+          .state(parent, {
+            abstract: true,
+            views: {
+              "main@app.admin": {
+                controller: "IndexesCtrlFT_NS",
+                templateUrl: '../_p/ui/fts/fts_list.html'
+              }
+            },
+            data: {
+              title: "Full Text Search"
+            }
+          })
+          .state(parent + '.fts_list', {
+            url: '/fts_list?open',
+            controller: 'IndexesCtrlFT_NS',
+            templateUrl: '../_p/ui/fts/fts_list.html'
+          })
+          .state(parent + '.fts_new', {
+            url: '/fts_new/?indexType&sourceType',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Add Index",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_new_alias', {
+            url: '/fts_new_alias/?indexType&sourceType',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Add Alias",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_edit', {
+            url: '/fts_edit/:indexName/_edit',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Edit Index",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_edit_alias', {
+            url: '/fts_edit_alias/:indexName/_edit',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Edit Alias",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_clone', {
+            url: '/fts_clone/:indexName/_clone',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Clone Index",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_clone_alias', {
+            url: '/fts_clone_alias/:indexName/_clone',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_new.html'
+              }
+            },
+            data: {
+              title: "Clone Alias",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_search', {
+            url: '/fts_search/:indexName/_search?q&p',
+            reloadOnSearch: false,
+            views: {
+              "main@app.admin": {
+                controller: 'IndexSearchCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_search.html'
+              }
+            },
+            data: {
+              title: "Search Results",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_details', {
+            url: '/fts_details/:indexName',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexDetailsCtrlFT_NS',
+                templateUrl: '../_p/ui/fts/fts_details.html'
+              }
+            },
+            data: {
+              title: "Index Details",
+              child: parent + '.fts_list'
+            }
+          });
+      }
+
+      mnPluggableUiRegistryProvider.registerConfig({
+          name: 'Search',
+          state: 'app.admin.search.fts_list',
+          plugIn: 'workbenchTab',
+          index: 2,
+          responsiveHide: true,
+          includedByState: 'app.admin.search',
+          ngShow: 'rbac.cluster.settings.fts.read'
+      });
+
+      (["cluster.settings.fts!read", "cluster.settings.fts!write"])
+        .forEach(mnPermissionsProvider.set);
+
+      mnPermissionsProvider.setBucketSpecific(function(name) {
+        return [
+          "cluster.bucket[" + name + "].fts!write",
+          "cluster.bucket[" + name + "].data!read"
+        ];
+      });
     });
 
   angular.module('mnAdmin').requires.push('fts');
@@ -66,19 +176,32 @@ var ftsPrefix = 'fts';
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
-        controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS);
+        controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
+        controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS);
 }());
 
 // ----------------------------------------------
 
-function IndexesCtrlFT_NS($scope, $http, $stateParams,
-                          $log, $sce, $location, mnPoolDefault) {
+var updateDocCountIntervalMS = 5000;
+
+function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
+                          $log, $sce, $location, mnPoolDefault, mnPermissions) {
     var $routeParams = $stateParams;
-    var http = prefixedHttp($http, '/_p/' + ftsPrefix);
+
+    var http = prefixedHttp($http, '../_p/' + ftsPrefix);
+
     $scope.ftsChecking = true;
     $scope.ftsAvailable = false;
     $scope.ftsCheckError = "";
     $scope.ftsNodes = [];
+
+    mnPermissions.check()
+
+    try {
+        $scope.permsCluster = mnPermissions.export.cluster;
+    } catch (e) {
+    }
+
     http.get("/api/runtime").
     then(function(response) {
       $scope.ftsAvailable = true;
@@ -98,21 +221,120 @@ function IndexesCtrlFT_NS($scope, $http, $stateParams,
       }
     });
 
-    return IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
+    $scope.detailsOpened = {};
+    if ($state.params && $state.params.open) {
+        $scope.detailsOpened[$state.params.open] = true;
+    }
+
+    $scope.detailsOpenedJSON = {};
+    $scope.detailsOpenedJSONCurl = {};
+
+    $scope.escapeCmdLineParam = function(s) {
+        // Transform single quotes (') into '"'"', so...
+        //   curl http://foo -d '{{escapeCmdLineParam(stringWithQuotes)}}'
+        // where...
+        //   stringWithQuotes == "he said 'hi' twice"
+        // will result in...
+        //   curl http://foo -d 'he said '"'"'hi'"'"' twice'
+        return s.replace(/\'/g, '\'"\'"\'');
+    }
+
+    $scope.searchInputs = {};
+
+    var done = false;
+
+    $scope.indexViewController = function($scope, $route, $state, $uibModal) {
+        var stateParams = {indexName: $scope.indexName};
+
+        $scope.jsonDetails = false;
+        $scope.curlDetails = false;
+
+        var rv = IndexCtrlFT_NS($scope, $http, $route, stateParams, $state,
+                                $location, $log, $sce, $uibModal);
+
+        var loadDocCount = $scope.loadDocCount;
+
+        function checkRetStatus(code) {
+            if (code == 403) {
+                // http status for FORBIDDEN
+                return false;
+            } else if (code == 400) {
+                // http status for BAD REQUEST
+                return false;
+            }
+            return true;
+        }
+
+        function updateDocCount() {
+            if (!done) {
+                if (loadDocCount(checkRetStatus)) {
+                    setTimeout(updateDocCount, updateDocCountIntervalMS);
+                }
+            }
+        }
+
+        setTimeout(updateDocCount, updateDocCountIntervalMS);
+
+        if ($scope.indexDef.sourceName) {
+            mnPermissions.check()
+        }
+
+        return rv;
+    }
+
+    var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
+
+    $scope.$on('$stateChangeStart', function() {
+        done = true;
+    });
+
+    $scope.expando = function(indexName) {
+        $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
+
+        // The timeout gives angular some time to create the input control.
+        if ($scope.detailsOpened[indexName]) {
+            setTimeout(function() {
+                document.getElementById('query_bar_input_' + indexName).focus()
+            }, 100);
+        }
+    }
+
+    return rv;
 }
 
-function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
+// -------------------------------------------------------
+
+function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
-    var http = prefixedHttp($http, '/_p/' + ftsPrefix);
+    var http = prefixedHttp($http, '../_p/' + ftsPrefix);
 
     $scope.progressPct = "";
+    $scope.numMutationsToIndex = "";
     $scope.sourceDocCount = "";
+    $scope.httpStatus = 200;    // OK
+    $scope.showHiddenUI = false;
 
-    $scope.loadDocCount = function() {
+    $scope.loadDocCount = function(callback) {
         $scope.loadIndexDocCount();
+        $scope.loadNumMutationsToIndex();
         $scope.loadSourceDocCount();
+        if (callback) {
+            return callback($scope.httpStatus);
+        }
+        return true;
+    }
+
+    $scope.loadNumMutationsToIndex = function() {
+        http.get('/api/nsstats').
+        then(function(response) {
+            var data = response.data;
+            if (data) {
+                $scope.numMutationsToIndex =
+                    data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":num_mutations_to_index"];
+            }
+        });
     }
 
     $scope.loadSourceDocCount = function() {
@@ -120,7 +342,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        http.get('/api/stats/sourceStats/' + $scope.indexName).
+        http.get('/api/stats/sourceStats/' + $scope.indexName + '?statsKind=collections').
         then(function(response) {
             var data = response.data;
             if (data) {
@@ -128,17 +350,63 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
                 updateProgressPct();
             }
         }, function(response) {
-            $scope.sourceDocCount = "error"
+            $scope.sourceDocCount = "error";
+            $scope.httpStatus = response.status;
             updateProgressPct();
         });
     }
 
+    $scope.checkHiddenUI = function() {
+        $scope.showHiddenUI = false;
+
+        http.get('/api/conciseOptions').
+        then(function(response) {
+            hideUI = response.data.hideUI;
+            if (hideUI === "false") {
+                $scope.showHiddenUI = true;
+            }
+        });
+    }
+
+    http.get("/api/managerMeta").
+    then (function(response) {
+        var data = response.data;
+        $scope.meta = data;
+
+        if (!$scope.indexDef) {
+            $http.get('/api/index/' + $scope.indexName).then(function(response) {
+                $scope.indexDef = response.data.indexDef;
+                initQueryHelp();
+            })
+        } else {
+            initQueryHelp();
+        }
+
+        function initQueryHelp() {
+            var indexDefType = ($scope.indexDef && $scope.indexDef.type);
+
+            $scope.queryHelp = $scope.meta.indexTypes[indexDefType].queryHelp;
+            // this call to trustAsHtml is safe provided we trust
+            // the registered pindex implementations
+            $scope.queryHelpSafe = $sce.trustAsHtml($scope.queryHelp);
+        }
+    });
+
     function updateProgressPct() {
         var i = parseInt($scope.indexDocCount);
         var s = parseInt($scope.sourceDocCount);
-        if (s > 0) {
+        var x = parseInt($scope.numMutationsToIndex);
+
+        if (i == 0 && (s == 0 || x == 0)) {
+            $scope.progressPct = 100.0;
+        } else if (x >= 0 && i >= 0) {
+            var prog = ((1.0 * i) / (i + x)) * 100.0;
+            $scope.progressPct = prog.toPrecision(4);
+        } else if (s > 0) {
+            // if num_mutations_to_index isn't available
             if (i >= 0) {
-                $scope.progressPct = Math.round(((1.0 * i) / s) * 10000) / 100.0;
+                var prog = ((1.0 * i) / s) * 100.0;
+                $scope.progressPct = prog.toPrecision(4);
             } else {
                 $scope.progressPct = 0.0;
             }
@@ -152,22 +420,46 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams,
 
     if ($scope.tab === "summary") {
         $scope.loadDocCount();
+        $scope.checkHiddenUI();
     }
 
     ftsServiceHostPort($scope, $http, $location);
 }
 
-function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
-                           $location, $log, $sce, $uibModal,
-                           $q, mnBucketsService) {
-    mnBucketsService.getBucketsByType(true).then(function(buckets) {
+// -------------------------------------------------------
 
-        $scope.ftsDocConfig = {}
+function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
+                           $location, $log, $sce, $uibModal,
+                           $q, mnBucketsService, mnPoolDefault) {
+    mnBucketsService.getBucketsByType(true).
+        then(initWithBuckets,
+             function(err) {
+                 // Possible RBAC issue listing buckets or other error.
+                 console.log("mnBucketsService.getBucketsByType failed", err);
+                 initWithBuckets([]);
+             });
+
+    function initWithBuckets(buckets) {
+        $scope.ftsDocConfig = {};
+        $scope.ftsStore = {};
+
+        $scope.ftsNodes = [];
+        mnPoolDefault.get().then(function(value){
+          $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
+        });
+
         $scope.buckets = buckets;
         $scope.bucketNames = [];
         for (var i = 0; i < buckets.length; i++) {
-            $scope.bucketNames.push(buckets[i].name);
+            // Add membase buckets only to list of index-able buckets
+            if (buckets[i].bucketType === "membase") {
+                $scope.bucketNames.push(buckets[i].name);
+            }
         }
+
+        $scope.indexEditorPreview = {};
+        $scope.indexEditorPreview["fulltext-index"] = null;
+        $scope.indexEditorPreview["fulltext-alias"] = null;
 
         var $routeParams = $stateParams;
 
@@ -177,82 +469,159 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                 if (!p) {
                     return $location.path();
                 }
-                return $location.path(p.replace(/^\/indexes\//, "/fts_view/"))
+                var newIndexName = p.replace(/^\/indexes\//, "");
+                $state.go("app.admin.search.fts_list", { open: newIndexName });
             }
         }
 
+        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
+        $scope.indexStoreOption = $scope.indexStoreOptions[1];
+
+        $scope.docConfigCollections = false;
+        $scope.docConfigMode = "type_field";
+
         IndexNewCtrlFT($scope,
-                       prefixedHttp($http, '/_p/' + ftsPrefix),
+                       prefixedHttp($http, '../_p/' + ftsPrefix),
                        $route, $routeParams,
                        $locationRewrite, $log, $sce, $uibModal,
-                       finishIndexNewCtrlFTInit)
+                       finishIndexNewCtrlFTInit);
 
         function finishIndexNewCtrlFTInit() {
             var putIndexOrig = $scope.putIndex;
 
             $scope.typeIdentifierChanged = function() {
-              if ($scope.ftsDocConfig.mode == "type_field" && !$scope.ftsDocConfig.type_field) {
-                $scope.ftsDocConfig.type_field = "type";
-              }
+                if ($scope.docConfigMode == "type_field" ||
+                    $scope.docConfigMode == "docid_prefix" ||
+                    $scope.docConfigMode == "docid_regexp") {
+                    if ($scope.docConfigCollections) {
+                        $scope.ftsDocConfig.mode = "scope.collection." + $scope.docConfigMode;
+                    } else {
+                        $scope.ftsDocConfig.mode = $scope.docConfigMode;
+                    }
+
+                    if (!$scope.ftsDocConfig.type_field) {
+                        $scope.ftsDocConfig.type_field = "type";
+                    }
+                }
             }
 
-            $scope.putIndex = function(newIndexName,
-                                       newIndexType, newIndexParams,
-                                       newSourceType, newSourceName,
-                                       newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID) {
-                $scope.errorFields = {};
-                $scope.errorMessage = null;
-                $scope.errorMessageFull = null;
+            $scope.indexStoreOptionChanged = function() {
+                if ($scope.newIndexParams) {
+                    switch($scope.indexStoreOption) {
+                        case $scope.indexStoreOptions[0]:
+                            $scope.ftsStore.kvStoreName = "mossStore";
+                            $scope.ftsStore.indexType = "upside_down";
+                            break;
+                        case $scope.indexStoreOptions[1]:
+                            $scope.ftsStore.indexType = "scorch";
+                            delete $scope.ftsStore.kvStoreName;
+                            break;
+                    }
+                }
+            }
+
+            $scope.prepareFTSIndex = function(newIndexName,
+                                              newIndexType, newIndexParams,
+                                              newSourceType, newSourceName,
+                                              newSourceUUID, newSourceParams,
+                                              newPlanParams, prevIndexUUID,
+                                              readOnly) {
+                var errorFields = {};
                 var errs = [];
 
                 // type identifier validation/cleanup
                 switch ($scope.ftsDocConfig.mode) {
                   case "type_field":
                     if (!$scope.ftsDocConfig.type_field) {
-                      errs.push("type field is required");
+                        errs.push("type field is required");
                     }
-                    delete $scope.ftsDocConfig.docid_prefix_delim;
-                    delete $scope.ftsDocConfig.docid_regexp;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.docid_prefix_delim;
+                        delete $scope.ftsDocConfig.docid_regexp;
+                    }
                   break;
 
                   case "docid_prefix":
                     if (!$scope.ftsDocConfig.docid_prefix_delim) {
-                      errs.push("Doc ID separator is required");
+                        errs.push("Doc ID separator is required");
                     }
-                    delete $scope.ftsDocConfig.type_field;
-                    delete $scope.ftsDocConfig.docid_regexp;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.type_field;
+                        delete $scope.ftsDocConfig.docid_regexp;
+                    }
                   break;
 
                   case "docid_regexp":
                     if (!$scope.ftsDocConfig.docid_regexp) {
-                      errs.push("Doc ID regexp is required");
+                        errs.push("Doc ID regexp is required");
                     }
-                    delete $scope.ftsDocConfig.type_field;
-                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.type_field;
+                        delete $scope.ftsDocConfig.docid_prefix_delim;
+                    }
                   break;
-
                 }
 
                 // stringify our doc_config and set that into newIndexParams
-                newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig)
+                try {
+                    newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
+                } catch (e) {}
+
+                try {
+                    newIndexParams['fulltext-index'].store = JSON.stringify($scope.ftsStore);
+                } catch (e) {}
 
                 if (!newIndexName) {
-                    $scope.errorFields["indexName"] = true;
+                    errorFields["indexName"] = true;
                     errs.push("index name is required");
                 } else if ($scope.meta &&
                            $scope.meta.indexNameRE &&
                            !newIndexName.match($scope.meta.indexNameRE)) {
-                    $scope.errorFields["indexName"] = true;
+                    errorFields["indexName"] = true;
                     errs.push("index name '" + newIndexName + "'" +
                               " must start with an alphabetic character, and" +
                               " must only use alphanumeric or '-' or '_' characters");
                 }
 
+                if (!newSourceName) {
+                    errorFields["sourceName"] = true;
+                    if (newIndexType == "fulltext-index") {
+                        errs.push("source (bucket) needs to be selected");
+                    }
+                }
+
+                if (newIndexType != "fulltext-alias") {
+                    if (newPlanParams) {
+                        try {
+                            var numReplicas = $scope.numReplicas;
+                            if (numReplicas >= 0 ) {
+                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["numReplicas"] = numReplicas;
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            }
+
+                            var numPIndexes = $scope.numPIndexes;
+                            if (numPIndexes > 0) {
+                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["indexPartitions"] = numPIndexes;
+                                newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            } else {
+                                errs.push("Index Partitions cannot be less than 1");
+                            }
+                        } catch (e) {
+                            errs.push("exception: " + e);
+                        }
+                    }
+                }
+
                 if (errs.length > 0) {
-                    $scope.errorMessage =
+                    var errorMessage =
                         (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
-                    return
+                    return {
+                        errorFields: errorFields,
+                        errorMessage: errorMessage,
+                    }
                 }
 
                 if (!newSourceUUID) {
@@ -263,6 +632,35 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                     }
                 }
 
+                return {
+                    newSourceUUID: newSourceUUID,
+                    newPlanParams: newPlanParams
+                }
+            }
+
+            $scope.putIndex = function(newIndexName,
+                                       newIndexType, newIndexParams,
+                                       newSourceType, newSourceName,
+                                       newSourceUUID, newSourceParams,
+                                       newPlanParams, prevIndexUUID) {
+                $scope.errorFields = {};
+                $scope.errorMessage = null;
+                $scope.errorMessageFull = null;
+
+                var rv = $scope.prepareFTSIndex(newIndexName,
+                                                newIndexType, newIndexParams,
+                                                newSourceType, newSourceName,
+                                                newSourceUUID, newSourceParams,
+                                                newPlanParams, prevIndexUUID)
+                if (rv.errorFields || rv.errorMessage) {
+                    $scope.errorFields = rv.errorFields;
+                    $scope.errorMessage = rv.errorMessage;
+                    return
+                }
+
+                newSourceUUID = rv.newSourceUUID;
+                newPlanParams = rv.newPlanParams;
+
                 return putIndexOrig(newIndexName,
                                     newIndexType, newIndexParams,
                                     newSourceType, newSourceName,
@@ -270,35 +668,92 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $stateParams,
                                     newPlanParams, prevIndexUUID);
             };
         }
-    });
+    }
 }
 
-function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce, $location) {
-    var $routeParams = $stateParams;
+// -------------------------------------------------------
 
-    $scope.indexName = $stateParams.indexName;
+function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
+                              $location, mnPermissions) {
+  var $httpPrefixed = prefixedHttp($http, '../_p/' + ftsPrefix, true);
+
+  var $routeParams = $stateParams;
+
+  $scope.indexName = $stateParams.indexName;
+
+  $httpPrefixed.get('/api/index/' + $scope.indexName).then(function(response) {
+    $scope.indexDef = response.data.indexDef;
+    if ($scope.indexDef &&
+        $scope.indexDef.sourceType == "couchbase") {
+      mnPermissions.check()
+    }
+
+    try {
+        $scope.permsCluster = mnPermissions.export.cluster;
+    } catch (e) {
+    }
 
     $scope.decorateSearchHit = function(hit) {
-      hit.docIDLink = "/_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+      hit.docIDLink = null;
+      try {
+        if (($scope.indexDef &&
+             $scope.indexDef.sourceType == "couchbase" &&
+             $scope.permsCluster.bucket[$scope.indexDef.sourceName] &&
+             ($scope.permsCluster.bucket[$scope.indexDef.sourceName].data.read ||
+              $scope.permsCluster.bucket[$scope.indexDef.sourceName].data.docs.read)) ||
+            $scope.permsCluster.bucket["*"].data.read) {
+          hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+        }
+      } catch (e) {}
     };
 
-    $scope.static_base = "/_p/ui/fts";
+    $scope.static_base = "../_p/ui/fts";
 
-    $scope.query = $routeParams.query || "";
-    $scope.page = $routeParams.page || 1;
+    $scope.query = $routeParams.q || "";
+    $scope.page = $routeParams.p || 1;
 
     if (!$location.search().q) {
         $location.search("q", $scope.query);
     }
-    if (!$location.search().page) {
+    if (!$location.search().p) {
         $location.search("p", $scope.page);
     }
 
-    QueryCtrl($scope,
-              prefixedHttp($http, '/_p/' + ftsPrefix, true),
-              $routeParams, $log, $sce, $location);
+    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location);
 
     ftsServiceHostPort($scope, $http, $location);
+
+    setTimeout(function() {
+        document.getElementById("query_bar_input").focus();
+    }, 100);
+  })
+}
+
+// -------------------------------------------------------
+
+function IndexDetailsCtrlFT_NS($scope, $http, $route, $stateParams,
+                               $location, $log, $sce, $uibModal) {
+    var $routeParams = $stateParams;
+
+    var http = prefixedHttp($http, '/../_p/' + ftsPrefix);
+
+    $scope.indexName = $stateParams.indexName;
+
+    $scope.jsonDetails = false;
+    $scope.curlDetails = false;
+
+    $scope.indexTab = 1;
+
+    $scope.setIndexTab = function(newTab) {
+        $scope.indexTab = newTab;
+    }
+
+    $scope.isIndexTab = function(tabNum) {
+        return $scope.indexTab === tabNum
+    }
+
+    IndexCtrl($scope, http, $route, $routeParams,
+              $location, $log, $sce, $uibModal);
 }
 
 // -------------------------------------------------------
@@ -310,7 +765,6 @@ function bleveNewIndexMapping() {
             "enabled": true,
             "dynamic": true
         },
-        "type_field": "type",
         "default_type": "_default",
         "default_analyzer": "standard",
         "default_datetime_parser": "dateTimeOptional",
@@ -330,16 +784,103 @@ function bleveNewIndexMapping() {
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
-      if ($scope.newIndexParams) {
-        $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
-      }
 
+    if (initKind == "edit" || initKind == "create") {
+        $scope.replicaOptions = [0];
+        $scope.numReplicas = $scope.replicaOptions[0];
+        $scope.vbuckets = 1024;
+        $scope.numPIndexes = 0;
+        $scope.collectionsSupport = false;
+        $http.get('/api/conciseOptions').
+        then(function(response) {
+            var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
+            $scope.replicaOptions = [];
+            for (var i = 0; i <= maxReplicasAllowed; i++) {
+                $scope.replicaOptions.push(i);
+            }
+
+            $scope.collectionsSupport = response.data.collectionsSupport;
+
+            if (response.data.bucketTypesAllowed != "") {
+                var bucketTypesAllowed = response.data.bucketTypesAllowed.split(":");
+                var bucketNamesAllowed = [];
+                for (var i = 0; i < $scope.buckets.length; i++) {
+                    if (bucketTypesAllowed.includes($scope.buckets[i].bucketType)) {
+                        bucketNamesAllowed.push($scope.buckets[i].name);
+                    }
+                }
+                // Update bucketNames based on what's supported.
+                $scope.bucketNames = bucketNamesAllowed;
+
+                if ($scope.bucketNames.length == 0) {
+                    $scope.errorMessage = "No buckets available to access!";
+                }
+            }
+
+            if (response.data.vbuckets != "") {
+                $scope.vbuckets = parseInt(response.data.vbuckets)
+            }
+
+            if ($scope.newIndexType != "fulltext-alias") {
+                if ($scope.newPlanParams) {
+                    try {
+                        var newPlanParamsObj = JSON.parse($scope.newPlanParams);
+
+                        $scope.numReplicas = $scope.replicaOptions[newPlanParamsObj["numReplicas"] || 0];
+                        delete newPlanParamsObj["numReplicas"];
+                        $scope.newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+
+                        if (angular.isDefined(newPlanParamsObj["indexPartitions"])) {
+                            $scope.numPIndexes = newPlanParamsObj["indexPartitions"];
+                        }
+                        if ($scope.numPIndexes == 0) {
+                            var maxPartitionsPerPIndex = newPlanParamsObj["maxPartitionsPerPIndex"];
+                            $scope.numPIndexes = Math.ceil($scope.vbuckets / maxPartitionsPerPIndex);
+                        }
+                    } catch (e) {
+                        console.log("blevePIndexInitController numPlanParams", initKind, e)
+                    }
+                }
+            } else {
+                $scope.newPlanParams = "{}"
+            }
+        });
+    }
+
+    try {
+        $scope.ftsDocConfig = JSON.parse(JSON.stringify($scope.meta.sourceTypes["fulltext-index"].startSample.doc_config))
+    } catch (e) {}
+
+    try {
+        $scope.ftsDocConfig = JSON.parse($scope.newIndexParams['fulltext-index'].doc_config)
+    } catch (e) {}
+
+    try {
+        $scope.ftsStore = JSON.parse($scope.newIndexParams['fulltext-index'].store);
+        if ($scope.ftsStore.kvStoreName == "mossStore" &&
+                $scope.ftsStore.indexType == "upside_down") {
+            $scope.indexStoreOption = $scope.indexStoreOptions[0];
+        } else if ($scope.ftsStore.indexType == "scorch") {
+            $scope.indexStoreOption = $scope.indexStoreOptions[1];
+        }
+    } catch (e) {}
+
+    try {
+        var mode = $scope.ftsDocConfig.mode.split(".")
+        $scope.docConfigMode = mode[mode.length-1];
+        if (mode.length == 3) {
+            $scope.docConfigCollections = true;
+        } else {
+            // mode.length == 1
+            $scope.docConfigCollections = false;
+        }
+    } catch (e) {}
 
     if (initKind == "view") {
         $scope.viewOnly = true;
     }
 
-    $scope.static_prefix = "/_p/ui/fts/static-bleve-mapping";
+    $scope.static_prefix = "../_p/ui/fts/static-bleve-mapping";
 
     $scope.indexTemplates = $scope.indexTemplates || {};
     $scope.indexTemplates["fulltext-index"] =
@@ -363,7 +904,104 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope.bleveIndexMapping = function() {
         return imc.indexMapping();
     }
+
+    var done = false;
+    var previewPrev = "";
+
+    function updatePreview() {
+        if (done) {
+            return;
+        }
+
+        if ($scope.prepareIndex &&
+            $scope.prepareFTSIndex &&
+            $scope.indexEditorPreview) {
+            if ($scope.newIndexType == "fulltext-alias") {
+                var aliasTargets = {};
+
+                for (var i = 0; i < $scope.selectedTargetIndexes.length; i++) {
+                    var selectedTargetIndex = $scope.selectedTargetIndexes[i];
+
+                    aliasTargets[selectedTargetIndex] = {};
+                }
+
+                $scope.newIndexParams["fulltext-alias"] = {
+                    "targets": JSON.stringify(aliasTargets)
+                };
+            }
+
+            var rv = $scope.prepareFTSIndex(
+                $scope.newIndexName,
+                $scope.newIndexType, $scope.newIndexParams,
+                $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
+                $scope.newPlanParams, $scope.prevIndexUUID,
+                true);
+            if (!rv.errorFields && !rv.errorMessage) {
+                var newSourceUUID = rv.newSourceUUID;
+                var newPlanParams = rv.newPlanParams;
+
+                var rv = $scope.prepareIndex(
+                    $scope.newIndexName,
+                    $scope.newIndexType, $scope.newIndexParams,
+                    $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
+                    newPlanParams, $scope.prevIndexUUID);
+                if (rv.indexDef) {
+                    var preview = JSON.stringify(rv.indexDef, null, 1);
+                    if (preview != previewPrev) {
+                        $scope.indexEditorPreview[$scope.newIndexType] = preview;
+                        previewPrev = preview;
+                    }
+                }
+            }
+
+            setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
+        }
+    }
+
+    setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
+
+    $scope.indexDefChanged = function(origIndexDef) {
+        var rv = $scope.prepareFTSIndex(
+            $scope.newIndexName,
+            $scope.newIndexType, $scope.newIndexParams,
+            $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
+            $scope.newPlanParams, $scope.prevIndexUUID,
+            true);
+        if (!rv.errorFields && !rv.errorMessage) {
+            var newSourceUUID = rv.newSourceUUID;
+            var newPlanParams = rv.newPlanParams;
+            var rv = $scope.prepareIndex(
+                $scope.newIndexName,
+                $scope.newIndexType, $scope.newIndexParams,
+                $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
+                newPlanParams, $scope.prevIndexUUID);
+
+            try {
+                // Add an empty "analysis" section if no analysis elements defined.
+                if (!angular.isDefined(rv.indexDef["params"]["mapping"]["analysis"])) {
+                    rv.indexDef["params"]["mapping"]["analysis"] = {};
+                }
+                // Delete "numReplicas" if set to 0.
+                if (angular.isDefined(rv.indexDef["planParams"]["numReplicas"]) &&
+                    rv.indexDef["planParams"]["numReplicas"] == 0) {
+                    delete rv.indexDef["planParams"]["numReplicas"]
+                }
+            } catch (e) {
+            }
+
+            if (angular.equals(origIndexDef, rv.indexDef)) {
+                return false;
+            }
+        } // Else could not retrieve the index definition, permit the update.
+        return true;
+    };
+
+    $scope.$on('$stateChangeStart', function() {
+        done = true;
+    });
 }
+
+var bleveUpdatePreviewTimeoutMS = 1000;
 
 function blevePIndexDoneController(doneKind, indexParams, indexUI,
     $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
@@ -391,28 +1029,28 @@ angular.module(ftsAppName).
 function BleveAnalyzerModalCtrl_NS($scope, $uibModalInstance, $http,
                                    name, value, mapping, static_prefix) {
     return BleveAnalyzerModalCtrl($scope, $uibModalInstance,
-                                  prefixedHttp($http, '/_p/' + ftsPrefix),
+                                  prefixedHttp($http, '../_p/' + ftsPrefix),
                                   name, value, mapping, static_prefix);
 }
 
 function BleveCharFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                      name, value, mapping, static_prefix) {
     return BleveCharFilterModalCtrl($scope, $uibModalInstance,
-                                    prefixedHttp($http, '/_p/' + ftsPrefix),
+                                    prefixedHttp($http, '../_p/' + ftsPrefix),
                                     name, value, mapping, static_prefix);
 }
 
 function BleveTokenFilterModalCtrl_NS($scope, $uibModalInstance, $http,
                                       name, value, mapping, static_prefix) {
     return BleveTokenFilterModalCtrl($scope, $uibModalInstance,
-                                     prefixedHttp($http, '/_p/' + ftsPrefix),
+                                     prefixedHttp($http, '../_p/' + ftsPrefix),
                                      name, value, mapping, static_prefix);
 }
 
 function BleveTokenizerModalCtrl_NS($scope, $uibModalInstance, $http,
                                     name, value, mapping, static_prefix) {
     return BleveTokenizerModalCtrl($scope, $uibModalInstance,
-                                   prefixedHttp($http, '/_p/' + ftsPrefix),
+                                   prefixedHttp($http, '../_p/' + ftsPrefix),
                                    name, value, mapping, static_prefix);
 }
 
@@ -433,27 +1071,33 @@ function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
 function IndexNewCtrlFT($scope, $http, $route, $routeParams,
                         $location, $log, $sce, $uibModal, andThen) {
     $scope.indexDefs = null;
+    $scope.origIndexDef = null;
 
     $http.get('/api/index').
-    then (function(response) {
+    then(function(response) {
         var data = response.data;
 
         var indexDefs = $scope.indexDefs =
             data && data.indexDefs && data.indexDefs.indexDefs;
 
-        var origIndexDef = indexDefs && indexDefs[$routeParams.indexName];
+        var origIndexDef = $scope.origIndexDef =
+            indexDefs && indexDefs[$routeParams.indexName];
 
         var isAlias =
             ($routeParams.indexType == 'fulltext-alias') ||
             (origIndexDef && origIndexDef.type == 'fulltext-alias');
         if (isAlias) {
+            var isEdit = $location.path().match(/_edit$/);
+
             // The aliasTargets will be the union of currently available
             // indexes (and aliases) and the existing targets of the alias.
             // Note that existing targets may have been deleted, but we
             // we will still offer them as options.
             $scope.aliasTargets = [];
             for (var indexName in indexDefs) {
-                $scope.aliasTargets.push(indexName);
+                if (!isEdit || indexName != $routeParams.indexName) {
+                    $scope.aliasTargets.push(indexName);
+                }
             }
 
             $scope.selectedTargetIndexes = [];
@@ -501,6 +1145,9 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
         if (andThen) {
             andThen();
         }
+    }, function(response) {
+        $scope.errorMessage = errorMessage(response.data, response.code);
+        $scope.errorMessageFull = response.data;
     });
 }
 
@@ -534,13 +1181,15 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 }
 
 function errorMessage(errorMessageFull, code) {
-
-    if (code == 403 && typeof errorMessageFull == "object") {
-      rv = errorMessageFull.message + ": ";
-      for (var x in errorMessageFull.permissions) {
-        rv += errorMessageFull.permissions[x];
-      }
-      return rv;
+    if (typeof errorMessageFull == "object") {
+        if (code == 403) {
+            rv = errorMessageFull.message + ": ";
+            for (var x in errorMessageFull.permissions) {
+                rv += errorMessageFull.permissions[x];
+            }
+            return rv;
+        }
+        errorMessageFull = errorMessageFull.error
     }
     console.log("errorMessageFull", errorMessageFull, code);
     var a = (errorMessageFull || (code + "")).split("err: ");
@@ -556,7 +1205,11 @@ function ftsServiceHostPort($scope, $http, $location) {
         var nodes = resp.data.nodesExt;
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i].services && nodes[i].services.fts) {
-                $scope.hostPort = $location.host() + ":" + nodes[i].services.fts;
+                var host = $location.host();
+                if (angular.isDefined(nodes[i].hostname)) {
+                    host = nodes[i].hostname;
+                }
+                $scope.hostPort = host + ":" + nodes[i].services.fts;
                 return;
             }
         }
