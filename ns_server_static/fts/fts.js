@@ -13,13 +13,30 @@ var ftsAppName = 'fts';
 var ftsPrefix = 'fts';
 
 // -------------------------------------------------------
+import angular from "/ui/web_modules/angular.js";
+import uiRouter from "/ui/web_modules/@uirouter/angularjs.js";
+import mnPluggableUiRegistry from "/ui/app/components/mn_pluggable_ui_registry.js";
+import ngClipboard from "/ui/libs/ngclipboard.js";
+import ngSortable from "/ui/libs/angular-legacy-sortable.js";
+import mnPermissions from "/ui/app/components/mn_permissions.js";
 
-(function () {
-  "use strict";
+import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
+import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
+import BleveDatetimeParserModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-datetimeparser.js";
+import BleveTokenFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
+import BleveTokenizerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-tokenizer.js";
+import BleveWordListModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-wordlist.js";
+import initBleveIndexMappingController from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
 
-  angular
+import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "/_p/ui/fts/static/index.js";
+import QueryCtrl from "/_p/ui/fts/static/query.js";
+import uiTree from "/ui/web_modules/angular-ui-tree.js";
+
+export default ftsAppName;
+
+angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "ui.tree", "ngclipboard", "mnPermissions", "ng-sortable"])
+            [uiRouter, mnPluggableUiRegistry, ngClipboard, mnPermissions, uiTree, ngSortable])
     .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
       addFtsStates("app.admin.search");
 
@@ -170,15 +187,12 @@ var ftsPrefix = 'fts';
       });
     });
 
-  angular.module('mnAdmin').requires.push('fts');
-
   angular.module(ftsAppName).
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
         controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
         controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS);
-}());
 
 // ----------------------------------------------
 

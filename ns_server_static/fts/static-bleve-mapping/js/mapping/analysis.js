@@ -10,6 +10,7 @@
 //  governing permissions and limitations under the License.
 
 // controller responsible for building custom analysis components
+export default BleveAnalysisCtrl;
 function BleveAnalysisCtrl($scope, $http, $log, $modal) {
     var viewOnly = $scope.viewOnly;
 

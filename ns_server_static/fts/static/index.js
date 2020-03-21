@@ -8,13 +8,15 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
 var indexStatsPrevs = {};
 var indexStatsAggsPrevs = {};
+var origIndexName;
 
 var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
-}
+};
 
 function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.data = null;
@@ -411,6 +413,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
 
     $http.get('/api/managerMeta').
     then(function(response) {
+
         var data = response.data;
         var meta = $scope.meta = data;
 
