@@ -82,7 +82,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.refreshIndexNames();
 }
 
-function IndexCtrl($scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
 
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
@@ -219,7 +219,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $location, $log, $sce, $
                     typeof(window[indexUI.controllerInitName]) == "function") {
                     window[indexUI.controllerInitName](
                         "view", data.indexDef.params, indexUI,
-                        $scope, $http, $route, $routeParams,
+                        $scope, $http, $routeParams,
                         $location, $log, $sce, $uibModal);
                 }
             }, function(response) {
@@ -382,7 +382,7 @@ function IndexCtrl($scope, $http, $route, $routeParams, $location, $log, $sce, $
     };
 }
 
-function IndexNewCtrl($scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
     $scope.advancedFields = {
         "store": true
     };
@@ -459,7 +459,7 @@ function IndexNewCtrl($scope, $http, $route, $routeParams, $location, $log, $sce
                 typeof(window[indexUI.controllerInitName]) == "function") {
                 window[indexUI.controllerInitName](
                     "create", null, indexUI,
-                    $scope, $http, $route, $routeParams,
+                    $scope, $http, $routeParams,
                     $location, $log, $sce, $uibModal);
             }
         }
@@ -512,7 +512,7 @@ function IndexNewCtrl($scope, $http, $route, $routeParams, $location, $log, $sce
                     typeof(window[indexUI.controllerInitName]) == "function") {
                     window[indexUI.controllerInitName](
                         "edit", data.indexDef.params, indexUI,
-                        $scope, $http, $route, $routeParams,
+                        $scope, $http, $routeParams,
                         $location, $log, $sce, $uibModal);
                 }
             }, function(response) {
@@ -588,7 +588,7 @@ function IndexNewCtrl($scope, $http, $route, $routeParams, $location, $log, $sce
             typeof(window[indexUI.controllerDoneName]) == "function") {
             if (window[indexUI.controllerDoneName](
                 "done", indexParamsObj, indexUI,
-                $scope, $http, $route, $routeParams,
+                $scope, $http, $routeParams,
                 $location, $log, $sce, $uibModal)) {
                 return errorResult() // Possibly due to validation error.
             }

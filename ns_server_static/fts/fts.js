@@ -19,7 +19,7 @@ var ftsPrefix = 'fts';
 
   angular
     .module(ftsAppName,
-            ["ui.router", "mnPluggableUiRegistry", "mnJquery", "ngRoute", "ui.tree", "ngclipboard", "mnPermissions", "ng-sortable", "mnDetailStats"])
+            ["ui.router", "mnPluggableUiRegistry", "ui.tree", "ngclipboard", "mnPermissions", "ng-sortable"])
     .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
       addFtsStates("app.admin.search");
 
@@ -243,13 +243,13 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
     var done = false;
 
-    $scope.indexViewController = function($scope, $route, $state, $uibModal) {
+    $scope.indexViewController = function($scope, $state, $uibModal) {
         var stateParams = {indexName: $scope.indexName};
 
         $scope.jsonDetails = false;
         $scope.curlDetails = false;
 
-        var rv = IndexCtrlFT_NS($scope, $http, $route, stateParams, $state,
+        var rv = IndexCtrlFT_NS($scope, $http, stateParams, $state,
                                 $location, $log, $sce, $uibModal);
 
         var loadDocCount = $scope.loadDocCount;
@@ -304,7 +304,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
 // -------------------------------------------------------
 
-function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
+function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                         $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
@@ -415,7 +415,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         }
     }
 
-    IndexCtrl($scope, http, $route, $routeParams,
+    IndexCtrl($scope, http, $routeParams,
               $location, $log, $sce, $uibModal);
 
     if ($scope.tab === "summary") {
@@ -428,7 +428,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 
 // -------------------------------------------------------
 
-function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
+function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                            $location, $log, $sce, $uibModal,
                            $q, mnBucketsService, mnPoolDefault) {
     mnBucketsService.getBucketsByType(true).
@@ -482,7 +482,7 @@ function IndexNewCtrlFT_NS($scope, $http, $route, $state, $stateParams,
 
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
-                       $route, $routeParams,
+                       $routeParams,
                        $locationRewrite, $log, $sce, $uibModal,
                        finishIndexNewCtrlFTInit);
 
@@ -731,7 +731,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
 
 // -------------------------------------------------------
 
-function IndexDetailsCtrlFT_NS($scope, $http, $route, $stateParams,
+function IndexDetailsCtrlFT_NS($scope, $http, $stateParams,
                                $location, $log, $sce, $uibModal) {
     var $routeParams = $stateParams;
 
@@ -752,7 +752,7 @@ function IndexDetailsCtrlFT_NS($scope, $http, $route, $stateParams,
         return $scope.indexTab === tabNum
     }
 
-    IndexCtrl($scope, http, $route, $routeParams,
+    IndexCtrl($scope, http, $routeParams,
               $location, $log, $sce, $uibModal);
 }
 
@@ -783,7 +783,7 @@ function bleveNewIndexMapping() {
 };
 
 function blevePIndexInitController(initKind, indexParams, indexUI,
-    $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+    $scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
 
     if (initKind == "edit" || initKind == "create") {
         $scope.replicaOptions = [0];
@@ -1004,7 +1004,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 var bleveUpdatePreviewTimeoutMS = 1000;
 
 function blevePIndexDoneController(doneKind, indexParams, indexUI,
-    $scope, $http, $route, $routeParams, $location, $log, $sce, $uibModal) {
+    $scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
     if (indexParams) {
         indexParams.mapping = $scope.bleveIndexMapping();
     }
@@ -1068,7 +1068,7 @@ function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
 
 // ----------------------------------------------
 
-function IndexNewCtrlFT($scope, $http, $route, $routeParams,
+function IndexNewCtrlFT($scope, $http, $routeParams,
                         $location, $log, $sce, $uibModal, andThen) {
     $scope.indexDefs = null;
     $scope.origIndexDef = null;
@@ -1139,7 +1139,7 @@ function IndexNewCtrlFT($scope, $http, $route, $routeParams,
                 };
         }
 
-        IndexNewCtrl($scope, $http, $route, $routeParams,
+        IndexNewCtrl($scope, $http, $routeParams,
                      $location, $log, $sce, $uibModal);
 
         if (andThen) {
