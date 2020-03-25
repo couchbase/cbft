@@ -342,7 +342,7 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        http.get('/api/stats/sourceStats/' + $scope.indexName).
+        http.get('/api/stats/sourceStats/' + $scope.indexName + '?statsKind=collections').
         then(function(response) {
             var data = response.data;
             if (data) {
