@@ -8,9 +8,11 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {bleveIndexMappingScrub} from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
 export default BleveTokenizerModalCtrl;
 function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
                                  name, value, mapping, static_prefix) {
+
     $scope.origName = name;
     $scope.name = name;
     $scope.errorMessage = "";
@@ -26,7 +28,7 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
 
     $scope.tokenizerNames = [];
 
-    $scope.loadTokenizerNames = function() {
+  $scope.loadTokenizerNames = function() {
         $http.post('/api/_tokenizerNames', bleveIndexMappingScrub(mapping)).
         then(function(response) {
             var data = response.data;
@@ -65,7 +67,7 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
 
     $scope.tokenizerTypes = [];
 
-    updateTokenizerTypes = function() {
+    let updateTokenizerTypes = function() {
         $http.get('/api/_tokenizerTypes').
         then(function(response) {
             var data = response.data;
@@ -79,7 +81,7 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
     updateTokenizerTypes();
 
     if (!$scope.tokenizer.type) {
-        defaultType = "regexp";
+        let defaultType = "regexp";
         if ($scope.tokenizerTypeDefaults[defaultType]) {
             $scope.tokenizer = $scope.tokenizerTypeDefaults[defaultType]();
         }
@@ -91,7 +93,7 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
     $scope.formpath = $scope.tokenizerTypeTemplates[$scope.tokenizer.type];
 
     $scope.tokenizerTypeChange = function() {
-        newType = $scope.tokenizer.type;
+        let newType = $scope.tokenizer.type;
         if ($scope.tokenizerTypeDefaults[$scope.tokenizer.type]) {
             $scope.tokenizer = $scope.tokenizerTypeDefaults[$scope.tokenizer.type]();
         } else {
@@ -134,23 +136,23 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
         }
 
         // ensure that this new mapping component is valid
-        tokenizers = {};
+        let tokenizers = {};
         tokenizers[name] = $scope.tokenizer;
         // add in all the existing tokenizers, since we might be referencing them
         for (var t in $scope.mapping.analysis.tokenizers) {
             tokenizers[t] = $scope.mapping.analysis.tokenizers[t];
         }
 
-        testMapping = {
+        let testMapping = {
             "analysis": {
                 "tokenizers": tokenizers
             }
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        then(function(response) {
+        then(function() {
             // if its valid return it
-            result = {};
+            let result = {};
             result[name] = $scope.tokenizer;
             $modalInstance.close(result);
         }, function(response) {
@@ -159,4 +161,4 @@ function BleveTokenizerModalCtrl($scope, $modalInstance, $http,
             $scope.errorMessage = data;
         });
     };
-};
+}

@@ -1,0 +1,5 @@
+{{explanation.value | number : 3}} - {{explanation.message}}
+  <ul>
+    <li ng-repeat="explanation in explanation.children" ng-include
+           src="static_base + '/static/partials/index/query-result-expl.html'"></li>
+  </ul>

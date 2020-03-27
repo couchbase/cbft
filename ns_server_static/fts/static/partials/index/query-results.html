@@ -1,0 +1,68 @@
+<div class="resultsContainer">
+
+<div ng-show="results.total_hits">
+  <h5 class="resultsTop">
+    <span ng-show="resultsSuccessPct && resultsSuccessPct < 100"
+          ng-style="{color:'red'}"> [partial ({{resultsSuccessPct}}%)] </span>
+    <span ng-hide="page < 2">Page {{page}} of </span>
+    {{results.total_hits}} results
+    <span class="roundTook">({{results.roundTook}} server-side)</span>
+  </h5>
+  <div class="pull-right" ng-show="results.hits">
+    <input type="checkbox" ng-model="explainScoring"> Show Scoring
+  </div>
+
+  <ol start="{{firstResult}}">
+    <li ng-repeat="hit in results.hits">
+      <b ng-show="hit.docIDLink"><a href="{{hit.docIDLink}}">{{hit.id}}</a></b>
+      <b ng-hide="hit.docIDLink">{{hit.id}}</b>
+      <span class="badge" ng-show="explainScoring">{{hit.score | number : 3}}</span>
+      <div class="well" ng-show="explainScoring">
+        Scoring
+        <ul>
+          <li ng-include
+               src="static_base + '/static/partials/index/query-result-expl.html'"
+               ng-init="explanation=hit.explanation"></li>
+        </ul>
+      </div>
+      <div class="well">
+        <div ng-repeat="(fieldName, fragments) in hit.fragments">
+          <div ng-show="fragments.length > 0">{{fieldName}}</div>
+          <ul>
+            <li ng-repeat="fragment in fragments" ng-bind-html="fragment"></li>
+          </ul>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <div ng-show="numPages > 1" class="col-lg-12 col-lg-offset-5">
+    <ul class="pagination">
+      <li ng-show="page > 1">
+        <a ng-click="jumpToPage(page-1, $event)" href="">
+          &laquo;
+        </a>
+      </li>
+      <li ng-repeat="i in validPages" ng-attr-class="{{i == page && 'active' || '' }}">
+        <a ng-show="i != page" href="" ng-click="jumpToPage(i, $event)">{{i}}</a>
+        <span ng-hide="i != page">{{i}}</span>
+      </li>
+      <li>
+        <a ng-show="page < numPages" ng-click="jumpToPage(page+1, $event)" href="">
+          &raquo;
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<style>
+.resultsContainer {
+  margin-left: 30px;
+}
+.roundTook {
+  color: #999;
+}
+</style>

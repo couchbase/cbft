@@ -45,7 +45,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
         // then check the default documnt mapping
         var dm = $scope.indexMapping.default_mapping;
-        var used = $scope.isAnalyzerUsedInDocMapping(name, dm, "");
+        let used = $scope.isAnalyzerUsedInDocMapping(name, dm, "");
         if (used) {
             return "default document mapping " + used;
         }
@@ -53,7 +53,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
         // then check the document mapping for each type
         for (var docType in $scope.indexMapping.types) {
             var docMapping = $scope.indexMapping.types[docType];
-            var used = $scope.isAnalyzerUsedInDocMapping(name, docMapping, "");
+            let used = $scope.isAnalyzerUsedInDocMapping(name, docMapping, "");
             if (used) {
                 return "document mapping type '" + docType + "' ";
             }
@@ -171,7 +171,8 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
 
     $scope.isWordListUsed = function(name) {
         // word lists are only used by token filters
-        for (var tokenFilterName in $scope.indexMapping.analysis.token_filters) {
+        let tokenFilterName;
+        for (tokenFilterName in $scope.indexMapping.analysis.token_filters) {
             var tokenFilter =
                 $scope.indexMapping.analysis.token_filters[tokenFilterName];
             // word lists are embeded in a variety of different field names
@@ -409,7 +410,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $modal) {
         for (var analyzerName in $scope.indexMapping.analysis.analyzers) {
             var analyzer = $scope.indexMapping.analysis.analyzers[analyzerName];
             for (var tokenFilterIndex in analyzer.token_filters) {
-                tokenFilterName = analyzer.token_filters[tokenFilterIndex];
+                let tokenFilterName = analyzer.token_filters[tokenFilterIndex];
                 if (tokenFilterName == name) {
                     return "analyzer named '" + analyzerName + "'";
                 }

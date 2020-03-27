@@ -1,0 +1,56 @@
+<div class="logEvents clearfix">
+  <h2 id="events">Events</h2>
+
+  <table ng-if="events.length">
+    <tr>
+      <th>Event</th>
+      <th>Name</th>
+      <th>Time</th>
+    </tr>
+    <tr ng-repeat="e in events">
+      <td>{{e.event}}</td>
+      <td>{{e.name}}</td>
+      <td>{{e.time}}</td>
+    </tr>
+  </table>
+
+  <div ng-if="!events.length" class="logEventsEmpty">
+    no events
+  </div>
+
+  <button type="button" class="btn btn-default pull-right" ng-click="updateLogs()">
+    <span class="glyphicon glyphicon-refresh"></span> Refresh
+  </button>
+</div>
+
+<div class="logMessages clearfix">
+  <h2 id="logs">Logs</h2>
+
+  <div ng-show="errorMessage" class="alert alert-danger ng-cloak"
+    role="alert"> {{errorMessage}}
+  </div>
+
+  <pre class="logs">{{logMessages}}</pre>
+
+  <button type="button" class="btn btn-default pull-right" ng-click="updateLogs()">
+    <span class="glyphicon glyphicon-refresh"></span> Refresh
+  </button>
+</div>
+
+<style>
+.logEvents {
+  margin-bottom: 10px;
+}
+.logEvents table {
+  margin-left: 20px;
+  margin-bottom: 10px;
+}
+.logEvents table td {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.logEventsEmpty {
+  font-style: italic;
+  padding-left: 10px;
+}
+</style>

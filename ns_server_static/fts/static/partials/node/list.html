@@ -1,0 +1,57 @@
+<ol class="breadcrumb">
+  <li><span class="glyphicon glyphicon-align-left"></li>
+  <li><a href="#">Nodes</a></li>
+</ol>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<table class="table table-striped nodes">
+  <tr>
+    <th width="90%" colspan="2">Node</th>
+    <th></th>
+  </tr>
+  <tr ng-repeat="nodeDef in nodeDefsKnownArrOrderByHostPort">
+    <td>
+      <i class="glyphicon glyphicon-hdd"></i>
+      <i class="glyphicon glyphicon-check"
+         ng-if="resultCfg.nodeDefsWanted.nodeDefs[nodeDef.uuid]"></i>
+      <i class="glyphicon glyphicon-unchecked"
+         ng-if="!resultCfg.nodeDefsWanted.nodeDefs[nodeDef.uuid]"></i>
+      <a href="{{static_base}}/nodes/{{nodeDef.uuid}}">{{nodeDef.hostPort}}</a> ({{nodeDef.uuid}})
+    </td>
+    <td>
+      <ul class="nodeDefContainer">
+        <li ng-repeat="nodeDefContainerPart in nodeDef.containerArr"
+            class="nodeDefContainerPart">
+          <div ng-attr-style="border-left: 8px solid {{containerPartColor(nodeDefContainerPart)}}">
+            {{nodeDefContainerPart}}
+          </div>
+        </li>
+      </ul>
+    </td>
+    <td>
+      <a href="http://{{nodeDef.hostPort}}{{static_base}}">
+        <i class="glyphicon glyphicon-link"></i>&nbsp;http://{{nodeDef.hostPort}}{{static_base}}
+      </a>
+    </td>
+  </tr>
+</table>
+
+<style>
+table.nodes td {
+  white-space: nowrap;
+}
+ul.nodeDefContainer {
+  display: inline-block;
+}
+ul.nodeDefContainer li {
+  display: inline-block;
+}
+ul.nodeDefContainer li div {
+  display: inline-block;
+  padding: 0 5px 0 5px;
+}
+</style>
+

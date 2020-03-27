@@ -1,0 +1,175 @@
+<div class="indexStats" ng-if="indexStatsFlat.length > 0">
+  <h3>Stats</h3>
+
+  <h5>Stats for index partitions assigned to the current node</h5>
+
+  <input ng-model="allStats" type="checkbox">
+    Show all stats
+  </input>
+
+  <input ng-model="details" type="checkbox">
+    Show details and timings for each index partition
+  </input>
+
+  <table ng-show="!details">
+    <tr>
+      <th class="statName">Stat</th>
+      <th>Count</th>
+    </tr>
+    <tr ng-repeat="(s, ss) in indexStatsAgg"
+        ng-show="!ss.advanced || allStats">
+      <td class="statName">{{ss.label}}</td>
+      <td ng-class="{changed: ss.prev.count != ss.count}">
+        {{ss.count | number:0}}
+      </td>
+    </tr>
+  </table>
+
+  <table ng-show="details">
+    <tr>
+      <th class="statName">Stat</th>
+      <th>Count</th>
+      <th>Max ns</th>
+      <th>99.9%tile ns</th>
+      <th>99%tile ns</th>
+      <th>95%tile ns</th>
+      <th>75%tile ns</th>
+      <th>Median ns</th>
+      <th>Mean ns</th>
+      <th>Min ns</th>
+      <th>Stddev ns</th>
+      <th>Rate 1-min</th>
+      <th>Rate 5-min</th>
+      <th>Rate 15-min</th>
+      <th>Rate Mean</th>
+      <th class="statKind">Kind</th>
+      <th class="sourceName">Source</th>
+    </tr>
+    <tr ng-repeat="(s, ss) in indexStatsFlat"
+        ng-show="!ss.advanced || allStats">
+      <td class="statName">{{ss.label}}</td>
+      <td ng-class="{changed: ss.prev.count != ss.count}">
+        {{ss.count}}</td>
+      <td ng-class="{changed: ss.prev.max != ss.max}">
+        {{ss.max | number:0}}</td>
+      <td ng-class="{changed: ss.prev.percentiles['99.9%'] != ss.percentiles['99.9%']}">
+        {{ss.percentiles["99.9%"] | number:0}}</td>
+      <td ng-class="{changed: ss.prev.percentiles['99%'] != ss.percentiles['99%']}">
+        {{ss.percentiles["99%"] | number:0}}</td>
+      <td ng-class="{changed: ss.prev.percentiles['95%'] != ss.percentiles['95%']}">
+        {{ss.percentiles["95%"] | number:0}}</td>
+      <td ng-class="{changed: ss.prev.percentiles['75%'] != ss.percentiles['75%']}">
+        {{ss.percentiles["75%"] | number:0}}</td>
+      <td ng-class="{changed: ss.prev.percentiles.median != ss.percentiles.median}">
+        {{ss.percentiles.median | number:0}}</td>
+      <td ng-class="{changed: ss.prev.mean != ss.mean}">
+        {{ss.mean | number:0}}</td>
+      <td ng-class="{changed: ss.prev.min != ss.min}">
+        {{ss.min | number:0}}</td>
+      <td ng-class="{changed: ss.prev.stddev != ss.stddev}">
+        {{ss.stddev | number:0}}</td>
+      <td ng-class="{changed: ss.prev.rates['1-min'] != ss.rates['1-min']}">
+        {{ss.rates["1-min"] | number:1}}</td>
+      <td ng-class="{changed: ss.prev.rates['5-min'] != ss.rates['5-min']}">
+        {{ss.rates["5-min"] | number:1}}</td>
+      <td ng-class="{changed: ss.prev.rates['15-min'] != ss.rates['15-min']}">
+        {{ss.rates["15-min"] | number:1}}</td>
+      <td ng-class="{changed: ss.prev.rates.mean != ss.rates.mean}">
+        {{ss.rates["mean"] | number:1}}</td>
+      <td class="statKind">{{ss.statKind}}</td>
+      <td class="sourceName">{{ss.sourceName}}</td>
+    </tr>
+  </table>
+
+</div>
+
+<div class="indexErrors">
+  <h3>Errors</h3>
+
+  <h5>Errors for index partitions assigned to the current node</h5>
+
+  <table ng-show="indexErrors.length">
+    <tr>
+      <th>Op</th>
+      <th>Error</th>
+      <th>Partition</th>
+      <th>Key</th>
+      <th>Val</th>
+      <th>Time</th>
+    </tr>
+    <tr ng-repeat="e in indexErrors">
+      <td>{{e.Op}}</td>
+      <td class="err">{{e.Err}}</td>
+      <td>{{e.Partition}}</td>
+      <td>{{e.Key}}</td>
+      <td class="val">{{e.Val}}</td>
+      <td>{{e.Time}}</td>
+      {{e}}
+    </tr>
+  </table>
+
+  <div ng-show="!indexErrors.length" class="indexErrorsEmpty">
+    no errors
+  </div>
+
+  <button ng-click="loadIndexStats()" class="indexMonitorRefresh">
+    <span class="glyphicon glyphicon-refresh"></span>
+    Refresh
+  </button>
+  <span class="statsRefresh"
+        ng-if="statsRefresh">{{statsRefresh}}</span>
+</div>
+
+<style>
+h5 {
+  margin-left: 5px;
+}
+.indexStats {
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+.indexStats table {
+  margin-left: 10px;
+}
+.indexStats td {
+  vertical-align: bottom;
+}
+.indexStats td, .indexStats th, .indexErrors td, .indexErrors th {
+  padding-left: 5px;
+  padding-right: 5px;
+  white-space: nowrap;
+  margin-right: 5px;
+}
+.indexStats td, .indexStats th {
+  text-align: right;
+}
+.indexStats .statKind, .indexStats .statName, .indexStats .sourceName {
+  text-align: left;
+}
+.indexStats td.changed {
+  background-color: #ddd;
+}
+.indexStats input[type=checkbox] {
+  margin-left: 20px;
+}
+.indexErrors {
+  margin-left: 20px;
+}
+.indexErrors table {
+  margin-left: 10px;
+}
+.indexErrors td.err, .indexErrors td.val{
+  white-space: normal;
+}
+.indexErrorsEmpty {
+  font-style: italic;
+  padding-left: 8px;
+}
+.indexMonitorRefresh {
+  margin: 10px 10px 10px 10px;
+}
+.statsRefresh {
+  font-size: 8pt;
+  padding-right: 20px;
+}
+</style>

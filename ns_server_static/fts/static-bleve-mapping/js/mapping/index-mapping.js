@@ -8,9 +8,10 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
-import BleveAnalysisCtrl from "/../_p/ui/fts/static-bleve-mapping/js/mapping/analysis.js";
-import initBleveTypeMappingController from "/../_p/ui/fts/static-bleve-mapping/js/mapping/type-mapping.js";
+import BleveAnalysisCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis.js";
+import initBleveTypeMappingController from "/_p/ui/fts/static-bleve-mapping/js/mapping/type-mapping.js";
 export default initBleveIndexMappingController;
+export {bleveIndexMappingScrub};
 function initBleveIndexMappingController(
     $scope, $http, $log, $uibModal, indexMappingIn, options) {
     options = options || {};
@@ -108,7 +109,7 @@ function initBleveIndexMappingController(
 }
 
 function bleveIndexMappingScrub(indexMapping, tmc) {
-    var r = JSON.parse(JSON.stringify(indexMapping));
+   var r = JSON.parse(JSON.stringify(indexMapping));
 
     if (tmc) {
         r.types = tmc.typeMapping();
@@ -116,7 +117,7 @@ function bleveIndexMappingScrub(indexMapping, tmc) {
         delete r.types[indexMapping.defaultMappingKey];
     }
 
-    delete r["defaultMappingKey"]
+   delete r["defaultMappingKey"]
 
     return JSON.parse(JSON.stringify(scrub(r, "")));
 

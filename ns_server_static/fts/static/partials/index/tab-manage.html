@@ -1,0 +1,135 @@
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<div ng-show="warnings" class="alert alert-warning ng-cloak" role="alert">
+  <ul>
+    <li ng-repeat="warning in warnings">
+      {{warning}}
+    </li>
+  </ul>
+</div>
+
+<table class="indexControls">
+  <tr>
+    <th>Index Ingest</th>
+    <td>
+      <span ng-if="indexCanWrite">enabled</span>
+      <span ng-if="!indexCanWrite">disabled</span>
+    </td>
+    <td>
+      <button ng-if="indexCanWrite"
+              type="button" class="btn btn-warning"
+              ng-click="indexControl(indexDef.name, 'ingest', 'pause')">
+        <span class="glyphicon glyphicon-stop"></span> Disable Ingest
+      </button>
+      <button ng-if="!indexCanWrite"
+              type="button" class="btn btn-default"
+              ng-click="indexControl(indexDef.name, 'ingest', 'resume')">
+        <span class="glyphicon glyphicon-play"></span> Enable Ingest
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <th>Index Queries</th>
+    <td>
+      <span ng-if="indexCanRead">enabled</span>
+      <span ng-if="!indexCanRead">disabled</span>
+    </td>
+    <td>
+      <button ng-if="indexCanRead"
+              type="button" class="btn btn-warning"
+              ng-click="indexControl(indexDef.name, 'query', 'disallow')">
+        <span class="glyphicon glyphicon-stop"></span> Disable Queries
+      </button>
+      <button ng-if="!indexCanRead"
+              type="button" class="btn btn-default"
+              ng-click="indexControl(indexDef.name, 'query', 'allow')">
+        <span class="glyphicon glyphicon-play"></span> Enable Queries
+      </button>
+    </td>
+  </tr>
+  <tr>
+    <th>Index Partition Reassignments</th>
+    <td>
+      <span ng-if="indexPlanFrozen">disabled</span>
+      <span ng-if="!indexPlanFrozen">enabled</span>
+    </td>
+    <td>
+      <button ng-if="indexPlanFrozen"
+              type="button" class="btn btn-default"
+              ng-click="indexControl(indexDef.name, 'planFreeze', 'unfreeze')">
+        <span class="glyphicon glyphicon-play"></span> Enable Reassignments
+      </button>
+      <button ng-if="!indexPlanFrozen"
+              type="button" class="btn btn-warning"
+              ng-click="indexControl(indexDef.name, 'planFreeze', 'freeze')">
+        <span class="glyphicon glyphicon-stop"></span> Disable Reassignments
+      </button>
+    </td>
+  </tr>
+</table>
+
+<table class="table">
+  <tr>
+    <th>Index Partition</th>
+    <th>Source Partitions</th>
+    <th ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
+      {{nodeAddr}}
+    </th>
+  </tr>
+  <tr ng-repeat="planPIndex in planPIndexes" class="planPIndex">
+    <td>{{planPIndex.name}}</td>
+    <td>{{planPIndex.sourcePartitionsStr}}</td>
+    <td ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr">
+      <div ng-if="planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid]"
+           class="nodeSpec nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
+        {{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canRead && 'r') || '&nbsp;'}}{{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canWrite && 'w') || '&nbsp;'}}
+      </div>
+    </td>
+  </tr>
+</table>
+
+<style>
+tr.planPIndex td {
+  white-space: nowrap;
+}
+
+th.nodeAddr {
+  position: relative;
+}
+th.nodeAddr a {
+  display: block;
+  position: absolute;
+  background: white;
+
+  -ms-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+  -webkit-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+  transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+}
+td.nodeAddr div {
+  white-space: collapse;
+}
+th.nodeAddr div, td.nodeAddr div {
+  font-family: monospace;
+  padding: 3px 4px 3px 4px;
+  border-left: 8px solid white;
+}
+td.nodeAddr div {
+  border-left: 8px solid #adadad;
+}
+.nodeSpec {
+  background-color: #9DEE9D;
+}
+.nodeSpecPriority-0 {
+  background-color: #61C661;
+}
+.indexControls {
+  margin-bottom: 50px;
+  padding: 20px 20px 20px 20px;
+  border: 1px solid #eeeeee;
+}
+.indexControls td, .indexControls th {
+  padding: 5px 10px 5px 10px;
+}
+</style>

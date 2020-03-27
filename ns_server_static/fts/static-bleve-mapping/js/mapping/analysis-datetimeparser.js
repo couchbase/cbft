@@ -60,7 +60,7 @@ function BleveDatetimeParserModalCtrl($scope, $modalInstance,
             return;
         }
 
-        result = {};
+        let result = {};
         result[name] = {
             "type": "flexiblego",
             "layouts": $scope.layouts
@@ -68,4 +68,4 @@ function BleveDatetimeParserModalCtrl($scope, $modalInstance,
 
         $modalInstance.close(result);
     };
-};
+}

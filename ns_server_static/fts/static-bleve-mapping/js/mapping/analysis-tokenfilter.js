@@ -8,6 +8,7 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {bleveIndexMappingScrub} from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
 export default BleveTokenFilterModalCtrl;
 function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
                                    name, value, mapping, static_prefix) {
@@ -120,7 +121,7 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
 
     $scope.tokenFilterTypes = [];
 
-    updateTokenFilterTypes = function() {
+    let updateTokenFilterTypes = function() {
         $http.get('/api/_tokenFilterTypes').
         then(function(response) {
             var data = response.data;
@@ -134,7 +135,7 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
     updateTokenFilterTypes();
 
     if (!$scope.tokenfilter.type) {
-        defaultType = "length";
+        let defaultType = "length";
         if ($scope.tokenFilterTypeDefaults[defaultType]) {
             $scope.tokenfilter = $scope.tokenFilterTypeDefaults[defaultType]();
         }
@@ -146,7 +147,7 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
     $scope.formpath = $scope.tokenFilterTypeTemplates[$scope.tokenfilter.type];
 
     $scope.tokenFilterTypeChange = function() {
-        newType = $scope.tokenfilter.type;
+        let newType = $scope.tokenfilter.type;
         if ($scope.tokenFilterTypeDefaults[$scope.tokenfilter.type]) {
             $scope.tokenfilter = $scope.tokenFilterTypeDefaults[$scope.tokenfilter.type]();
         } else {
@@ -193,10 +194,10 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
         }
 
         // ensure that this new mapping component is valid
-        tokenfilters = {};
+        let tokenfilters = {};
         tokenfilters[name] = $scope.tokenfilter;
 
-        testMapping = {
+        let testMapping = {
             "analysis": {
                 "token_filters": tokenfilters,
                 "token_maps": $scope.mapping.analysis.token_maps
@@ -204,9 +205,9 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        then(function(response) {
+        then(function() {
             // if its valid return it
-            result = {};
+            let result = {};
             result[name] = $scope.tokenfilter;
             $modalInstance.close(result);
         }, function(response) {
@@ -215,4 +216,4 @@ function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
             $scope.errorMessage = data;
         });
     };
-};
+}

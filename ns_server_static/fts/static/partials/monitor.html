@@ -1,0 +1,22 @@
+<h2 id="monitor">Monitor</h2>
+
+<h3 id="processStats" class="processStats">Process Stats</h3>
+
+<div id="chartend"></div>
+
+<h3 id="indexMonitor" class="indexMonitor">Process Index Stats</h3>
+
+<select ng-model="currIndexName" class="monitorIndexChoices">
+  <option ng-repeat="n in indexNames">{{n}}</option>
+</select>
+
+<div id="indexchartend"></div>
+
+<style>
+.indexMonitor {
+  margin-top: 30px;
+}
+.monitorIndexChoices {
+  margin-bottom: 30px;
+}
+</style>

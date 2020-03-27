@@ -33,6 +33,7 @@ import QueryCtrl from "/_p/ui/fts/static/query.js";
 import uiTree from "/ui/web_modules/angular-ui-tree.js";
 
 export default ftsAppName;
+export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
 
 angular
     .module(ftsAppName,
@@ -375,7 +376,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
         http.get('/api/conciseOptions').
         then(function(response) {
-            hideUI = response.data.hideUI;
+            let hideUI = response.data.hideUI;
             if (hideUI === "false") {
                 $scope.showHiddenUI = true;
             }
@@ -414,12 +415,12 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
         if (i == 0 && (s == 0 || x == 0)) {
             $scope.progressPct = 100.0;
         } else if (x >= 0 && i >= 0) {
-            var prog = ((1.0 * i) / (i + x)) * 100.0;
+            let  prog = ((1.0 * i) / (i + x)) * 100.0;
             $scope.progressPct = prog.toPrecision(4);
         } else if (s > 0) {
             // if num_mutations_to_index isn't available
             if (i >= 0) {
-                var prog = ((1.0 * i) / s) * 100.0;
+                let prog = ((1.0 * i) / s) * 100.0;
                 $scope.progressPct = prog.toPrecision(4);
             } else {
                 $scope.progressPct = 0.0;
@@ -609,14 +610,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         try {
                             var numReplicas = $scope.numReplicas;
                             if (numReplicas >= 0 ) {
-                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                let newPlanParamsObj = JSON.parse(newPlanParams);
                                 newPlanParamsObj["numReplicas"] = numReplicas;
                                 newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
                             }
 
                             var numPIndexes = $scope.numPIndexes;
                             if (numPIndexes > 0) {
-                                var newPlanParamsObj = JSON.parse(newPlanParams);
+                                let newPlanParamsObj = JSON.parse(newPlanParams);
                                 newPlanParamsObj["indexPartitions"] = numPIndexes;
                                 newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
                                 newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
@@ -818,7 +819,8 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             if (response.data.bucketTypesAllowed != "") {
                 var bucketTypesAllowed = response.data.bucketTypesAllowed.split(":");
                 var bucketNamesAllowed = [];
-                for (var i = 0; i < $scope.buckets.length; i++) {
+                let i;
+                for (i = 0; i < $scope.buckets.length; i++) {
                     if (bucketTypesAllowed.includes($scope.buckets[i].bucketType)) {
                         bucketNamesAllowed.push($scope.buckets[i].name);
                     }
@@ -954,7 +956,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 var newSourceUUID = rv.newSourceUUID;
                 var newPlanParams = rv.newPlanParams;
 
-                var rv = $scope.prepareIndex(
+                rv = $scope.prepareIndex(
                     $scope.newIndexName,
                     $scope.newIndexType, $scope.newIndexParams,
                     $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
@@ -975,7 +977,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
 
     $scope.indexDefChanged = function(origIndexDef) {
-        var rv = $scope.prepareFTSIndex(
+        let rv = $scope.prepareFTSIndex(
             $scope.newIndexName,
             $scope.newIndexType, $scope.newIndexParams,
             $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
@@ -984,7 +986,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         if (!rv.errorFields && !rv.errorMessage) {
             var newSourceUUID = rv.newSourceUUID;
             var newPlanParams = rv.newPlanParams;
-            var rv = $scope.prepareIndex(
+            rv = $scope.prepareIndex(
                 $scope.newIndexName,
                 $scope.newIndexType, $scope.newIndexParams,
                 $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
@@ -1197,7 +1199,7 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 function errorMessage(errorMessageFull, code) {
     if (typeof errorMessageFull == "object") {
         if (code == 403) {
-            rv = errorMessageFull.message + ": ";
+            let rv = errorMessageFull.message + ": ";
             for (var x in errorMessageFull.permissions) {
                 rv += errorMessageFull.permissions[x];
             }

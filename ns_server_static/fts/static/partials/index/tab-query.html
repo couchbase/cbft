@@ -1,0 +1,112 @@
+<div ng-controller="QueryCtrl">
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<form class="navbar-form" role="query">
+  <div class="input-group col-lg-12">
+    <input ng-model="query"
+           ng-change="queryChanged()"
+           type="text" class="form-control"
+           placeholder="please enter a query"/>
+    <div class="input-group-btn">
+      <button class="btn btn-primary" type="submit"
+              ng-click="runNewQuery()">
+        <i class="glyphicon glyphicon-search"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="querySub">
+    <div class="col-lg-9">
+      <span ng-if="queryHelp && queryHelp.length"
+            ng-bind-html="queryHelpSafe">
+      </span>
+    </div>
+    <div class="col-lg-3">
+      <label>
+        <input ng-click="queryChanged()"
+               ng-model="queryAdvancedToggle"
+               type="checkbox"/>
+        Advanced
+      </label>
+    </div>
+  </div>
+</form>
+
+<div ng-show="queryAdvancedToggle">
+  <div class="queryAdvanced row clearfix">
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>Timeout (msecs):</label>
+      <input ng-model="timeout" id="timeout"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>Consistency Level:</label>
+      <input ng-model="consistencyLevel" id="consistencyLevel"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8">
+      <label>Consistency Vectors:</label>
+      <input ng-model="consistencyVectors" id="consistencyVectors"
+             ng-change="queryChanged()"
+             class="form-control col-lg-8"/>
+    </div>
+    <div class="col-lg-offset-2 col-lg-8 jsonQuery">
+      <label>JSON for query request:
+        <span class="curlToggle">
+          ( command-line curl example:
+            <input ng-model="curlToggle" type="checkbox"/> )
+        </span>
+      </label>
+      <pre ng-show="!curlToggle">{{jsonQuery}}</pre>
+      <pre ng-show="curlToggle">curl -XPOST -H "Content-Type: application/json" \
+ http://{{hostPort}}/api/index/{{indexName}}/query \
+ -d '{{jsonQuery}}'</pre>
+    </div>
+  </div>
+</div>
+
+<div ng-show="results && !results.total_hits"
+     class="queryNoResults">
+  <h5>no results for your query</h5>
+</div>
+
+<div ng-show="results && results.hits && results.hits.length > 0"
+     ng-include
+     src="static_base + '/static/partials/index/query-results.html'"
+     class="clearfix">
+</div>
+
+<div ng-show="results && results.results" class="clearfix">
+  <ul>
+    <li ng-repeat="result in results.results">
+      <div class="well">
+        {{result}}
+      </div>
+    </li>
+  </ul>
+</div>
+
+</div>
+
+<style>
+.querySub {
+  margin-top: 10px;
+}
+.queryAdvanced {
+  margin-top: 10px;
+}
+.queryAdvanced label {
+  margin-top: 10px;
+}
+.queryAdvanced .curlToggle {
+  font-weight: normal;
+}
+.queryNoResults {
+  margin-left: 30px;
+}
+</style>

@@ -8,6 +8,7 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {bleveIndexMappingScrub} from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
 export default BleveAnalyzerModalCtrl;
 
 function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
@@ -24,13 +25,13 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     for (var k in value) {
         // need deeper copy of nested arrays
         if (k == "char_filters") {
-            newcharfilters = [];
+            let newcharfilters = [];
             for (var cfi in value.char_filters) {
                 newcharfilters.push(value.char_filters[cfi]);
             }
             $scope.analyzer.char_filters = newcharfilters;
         } else if (k == "token_filters") {
-            newtokenfilters = [];
+            let newtokenfilters = [];
             for (var tfi in value.token_filters) {
                 newtokenfilters.push(value.token_filters[tfi]);
             }
@@ -71,7 +72,7 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.loadCharFilterNames();
 
     $scope.addCharFilter = function(scope) {
-        filter = scope.addCharacterFilterName;
+        let filter = scope.addCharacterFilterName;
         if (filter !== undefined && filter !== "") {
             $scope.selectedAnalyzer.char_filters.push(filter);
         }
@@ -97,7 +98,7 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.loadTokenFilterNames();
 
     $scope.addCharFilter = function(scope) {
-        filter = scope.addCharacterFilterName;
+        let filter = scope.addCharacterFilterName;
         if (filter !== undefined && filter !== "") {
             $scope.analyzer.char_filters.push(filter);
         }
@@ -108,7 +109,7 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     };
 
     $scope.addTokenFilter = function(scope) {
-        filter = scope.addTokenFilterName;
+        let filter = scope.addTokenFilterName;
         if (filter !== undefined && filter !== "") {
             $scope.analyzer.token_filters.push(filter);
         }
@@ -136,22 +137,22 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
         }
 
         // ensure that this new mapping component is valid
-        analysis = {};
+        let analysis = {};
         for (var ak in $scope.mapping.analysis) {
             analysis[ak] = $scope.mapping.analysis[ak];
         }
-        analyzers = {};
+        let analyzers = {};
         analyzers[name] = $scope.analyzer;
         analysis["analyzers"] = analyzers;
 
-        testMapping = {
+        let testMapping = {
             "analysis": analysis
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        then(function(response) {
+        then(function() {
             // if its valid return it
-            result = {};
+            let result = {};
             result[name] = $scope.analyzer;
             $modalInstance.close(result);
         }, function(response) {
@@ -160,4 +161,4 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
             $scope.errorMessage = data;
         });
     };
-};
+}

@@ -8,11 +8,14 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {errorMessage,
+        blevePIndexInitController, blevePIndexDoneController} from "/_p/ui/fts/fts.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
 var indexStatsPrevs = {};
 var indexStatsAggsPrevs = {};
 var origIndexName;
+var ctrlKeeper = {blevePIndexInitController, blevePIndexDoneController};
 
 var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
@@ -218,8 +221,8 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
                      meta.indexTypes[data.indexDef.type].ui);
                 if (indexUI &&
                     indexUI.controllerInitName &&
-                    typeof(window[indexUI.controllerInitName]) == "function") {
-                    window[indexUI.controllerInitName](
+                    typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
+                    ctrlKeeper[indexUI.controllerInitName](
                         "view", data.indexDef.params, indexUI,
                         $scope, $http, $routeParams,
                         $location, $log, $sce, $uibModal);
@@ -422,11 +425,12 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
         $scope.paramNumLines["planParams"] =
             $scope.newPlanParams.split("\n").length + 1;
 
-        var sourceTypesArr = []
-        for (var k in data.sourceTypes) {
+        var sourceTypesArr = [];
+        let k;
+        for (k in data.sourceTypes) {
             sourceTypesArr.push(data.sourceTypes[k]);
 
-            var parts = data.sourceTypes[k].description.split("/");
+            let parts = data.sourceTypes[k].description.split("/");
             data.sourceTypes[k].category = parts.length > 1 ? parts[0] : "";
             data.sourceTypes[k].label = parts[parts.length - 1];
             data.sourceTypes[k].sourceType = k;
@@ -440,10 +444,11 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
         $scope.sourceTypesArr = sourceTypesArr;
 
         var indexTypesArr = [];
-        for (var k in data.indexTypes) {
+
+        for (k in data.indexTypes) {
             indexTypesArr.push(data.indexTypes[k]);
 
-            var parts = data.indexTypes[k].description.split("/");
+            let parts = data.indexTypes[k].description.split("/");
             data.indexTypes[k].category = parts.length > 1 ? parts[0] : "";
             data.indexTypes[k].label = parts[parts.length - 1];
             data.indexTypes[k].indexType = k;
@@ -459,8 +464,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             var indexUI = data.indexTypes[k].ui;
             if (indexUI &&
                 indexUI.controllerInitName &&
-                typeof(window[indexUI.controllerInitName]) == "function") {
-                window[indexUI.controllerInitName](
+                typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
+                ctrlKeeper[indexUI.controllerInitName](
                     "create", null, indexUI,
                     $scope, $http, $routeParams,
                     $location, $log, $sce, $uibModal);
@@ -512,8 +517,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                     meta.indexTypes[data.indexDef.type].ui;
                 if (indexUI &&
                     indexUI.controllerInitName &&
-                    typeof(window[indexUI.controllerInitName]) == "function") {
-                    window[indexUI.controllerInitName](
+                    typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
+                    ctrlKeeper[indexUI.controllerInitName](
                         "edit", data.indexDef.params, indexUI,
                         $scope, $http, $routeParams,
                         $location, $log, $sce, $uibModal);
@@ -588,8 +593,8 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             $scope.meta.indexTypes[indexType].ui;
         if (indexUI &&
             indexUI.controllerDoneName &&
-            typeof(window[indexUI.controllerDoneName]) == "function") {
-            if (window[indexUI.controllerDoneName](
+            typeof(ctrlKeeper[indexUI.controllerDoneName]) == "function") {
+            if (ctrlKeeper[indexUI.controllerDoneName](
                 "done", indexParamsObj, indexUI,
                 $scope, $http, $routeParams,
                 $location, $log, $sce, $uibModal)) {
@@ -672,7 +677,7 @@ function collapseNeighbors(arr) {
     var r = [];
     for (var i = 0; i < arr.length; i++) {
         var v = parseInt(arr[i]);
-        if (v == NaN) {
+        if (isNaN(v)) {
             return arr;
         }
         if (prevEnd != null && prevEnd + 1 == v) {

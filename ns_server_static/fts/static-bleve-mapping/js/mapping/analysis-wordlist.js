@@ -60,7 +60,7 @@ function BleveWordListModalCtrl($scope, $modalInstance,
             return;
         }
 
-        result = {};
+        let result = {};
         result[name] = {
             "type": "custom",
             "tokens": $scope.words
@@ -68,4 +68,4 @@ function BleveWordListModalCtrl($scope, $modalInstance,
 
         $modalInstance.close(result);
     };
-};
+}

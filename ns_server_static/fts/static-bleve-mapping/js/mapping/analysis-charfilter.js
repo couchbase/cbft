@@ -8,6 +8,7 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {bleveIndexMappingScrub} from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
 export default BleveCharFilterModalCtrl;
 function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
                                   name, value, mapping, static_prefix) {
@@ -44,7 +45,7 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
 
     $scope.charFilterTypes = [];
 
-    updateCharFilterTypes = function() {
+    var updateCharFilterTypes = function() {
         $http.get('/api/_charFilterTypes').
         then(function(response) {
             var data = response.data;
@@ -58,7 +59,7 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
     updateCharFilterTypes();
 
     if (!$scope.charfilter.type) {
-        defaultType = "regexp";
+        let defaultType = "regexp";
         if ($scope.charFilterTypeDefaults[defaultType]) {
             $scope.charfilter = $scope.charFilterTypeDefaults[defaultType]();
         }
@@ -71,7 +72,7 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
     $scope.formpath = $scope.charFilterTypeTemplates[$scope.charfilter.type];
 
     $scope.charFilterTypeChange = function() {
-        newType = $scope.charfilter.type;
+        let newType = $scope.charfilter.type;
         if ($scope.charFilterTypeDefaults[$scope.charfilter.type]) {
             $scope.charfilter = $scope.charFilterTypeDefaults[$scope.charfilter.type]();
         } else {
@@ -103,19 +104,19 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
         }
 
         // ensure that this new mapping component is valid
-        charFilters = {};
+        let charFilters = {};
         charFilters[name] = $scope.charfilter;
 
-        testMapping = {
+        let testMapping = {
             "analysis": {
                 "char_filters": charFilters
             }
         };
 
         $http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
-        then(function(response) {
+        then(function() {
             // if its valid return it
-            result = {};
+            let result = {};
             result[name] = $scope.charfilter;
             $modalInstance.close(result);
         }, function(response) {
@@ -124,4 +125,4 @@ function BleveCharFilterModalCtrl($scope, $modalInstance, $http,
             $scope.errorMessage = data;
         });
     };
-};
+}

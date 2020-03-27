@@ -8,6 +8,7 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
+import {errorMessage} from "/_p/ui/fts/fts.js";
 export default QueryCtrl;
 
 var lastQueryIndex = null;
@@ -15,7 +16,7 @@ var lastQueryReq = null;
 var lastQueryRes = null;
 
 function PrepQueryRequest(scope) {
-    qr = {
+    let qr = {
         "explain": true,
         "fields": ["*"],
         "highlight": {},
@@ -26,7 +27,7 @@ function PrepQueryRequest(scope) {
     if (scope.resultsPerPage != 10) {
       qr["size"] = scope.resultsPerPage;
     }
-    from = (scope.page-1) * scope.resultsPerPage;
+    let from = (scope.page-1) * scope.resultsPerPage;
     if (from != 0) {
       qr["from"] = from
     }
@@ -96,7 +97,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         } finally {
         }
 
-        timeout = parseInt($scope.timeout) || 0;
+        let timeout = parseInt($scope.timeout) || 0;
         if ($scope.consistencyLevel != "" || Object.keys(v).length > 0 || timeout != 0) {
             req.ctl = {}
             if ($scope.consistencyLevel != "") {
@@ -179,14 +180,14 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
         } else if (took < 1000 * 1000 * 1000) {
             return "" + Math.round(took / (1000*1000)) + "ms";
         } else {
-            roundMs = Math.round(took / (1000*1000));
+            let roundMs = Math.round(took / (1000*1000));
             return "" + roundMs/1000 + "s";
         }
     };
 
   $scope.manualEscapeHtmlExceptHighlighting = function(orig) {
     // escape HTML tags
-    updated = orig.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+    let updated = orig.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
     // find escaped <mark> and </mark> and put them back
     updated = updated.replace(/&lt;mark&gt;/g, "<mark>").replace(/&lt;\/mark&gt;/g, "</mark>")
     return updated

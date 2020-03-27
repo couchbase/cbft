@@ -1,0 +1,156 @@
+<div ng-if="meta">
+
+<ol class="breadcrumb">
+  <li><span class="glyphicon glyphicon-book"></li>
+  <li><a href="{{static_base}}/indexes">Indexes</a></li>
+  <li ng-show="isEdit">{{newIndexName}}</li>
+  <li ng-show="!isEdit">New Index</li>
+</ol>
+
+<div ng-show="errorMessage" class="alert alert-danger ng-cloak" role="alert">
+  {{errorMessage}}
+</div>
+
+<form class="form form-horizontal" role="form">
+  <div class="form-group formGroupIndexName">
+    <label for="inputIndexName"
+           class="col-sm-2 control-label">Index Name</label>
+    <div class="col-sm-10"
+         ng-class="{'has-error': errorFields.indexName}">
+      <div ng-show="isEdit"
+           class="indexName">{{newIndexName}}</div>
+      <input ng-show="!isEdit" ng-model="newIndexName"
+             type="text" class="form-control"
+             id="inputIndexName" placeholder="please enter an index-name"/>
+    </div>
+  </div>
+  <div class="form-group formGroupIndexType">
+    <label for="inputIndexType"
+           class="col-sm-2 control-label">Index Type</label>
+    <div class="col-sm-10">
+      <select ng-model="newIndexType"
+        ng-options="t.indexType as t.label group by t.category for t in indexTypesArr">
+        <option value="">-- choose index type --</option>
+      </select>
+    </div>
+  </div>
+  <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]"
+       class="form-group formGroupIndexTypeTemplate">
+    <label class="col-sm-2 control-label"></label>
+    <div class="col-sm-8">
+      <div class="indexEditor {{newIndexType}}">
+        <div ng-include="static_base + indexTemplates[newIndexType]"/>
+      </div>
+    </div>
+  </div>
+  <div ng-show="newIndexType && newIndexType != 'blackhole' && (!indexTemplates || !indexTemplates[newIndexType])"
+       ng-repeat="(indexType, p) in newIndexParams">
+    <div class="form-group formGroupIndexParams"
+         ng-repeat="(k, v) in p"
+         ng-show="newIndexType == indexType && (advanced || !advancedFields[k])"
+         ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
+      <label class="col-sm-4 control-label indexParam">{{labelize(k)}}</label>
+      <div class="col-sm-8">
+        <textarea ng-model="newIndexParams[indexType][k]"
+                  rows="{{paramNumLines[k]}}"
+                  class="form-control"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceType">
+    <label for="inputSourceType"
+           class="col-sm-2 control-label">Source Type</label>
+    <div class="col-sm-10">
+      <select ng-model="newSourceType"
+        ng-options="t.sourceType as t.label group by t.category for t in sourceTypesArr">
+        <option value="">-- choose source type --</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceName"
+       ng-show="newSourceType && newSourceType != 'nil'">
+    <label for="inputSourceName"
+           class="col-sm-4 control-label">Source Name</label>
+    <div class="col-sm-8">
+      <input ng-model="newSourceName"
+             type="text" class="form-control" id="inputSourceName"
+             placeholder="bucket-name"/>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceParams"
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+    <label for="inputSourceParams"
+           class="col-sm-4 control-label">Source Params</label>
+    <div class="col-sm-8"
+         ng-repeat="(sourceType, p) in newSourceParams"
+         ng-class="{'has-error': errorFields.sourceParams[sourceType]}">
+      <textarea ng-model="newSourceParams[sourceType]"
+                rows="{{paramNumLines[sourceType]}}"
+                class="form-control"
+                ng-show="newSourceType == sourceType"></textarea>
+    </div>
+  </div>
+  <div class="form-group formGroupSourceUUID"
+       ng-show="newSourceType && newSourceType != 'nil' && advanced">
+    <label for="inputSourceUUID"
+           class="col-sm-4 control-label">Source UUID</label>
+    <div class="col-sm-8">
+      <input ng-model="newSourceUUID"
+             type="text" class="form-control" id="inputSourceUUID"
+             placeholder="(optional bucket-uuid)"/>
+    </div>
+  </div>
+  <div class="form-group formGroupPlanParams">
+    <label for="inputPlanParams"
+           ng-show="advanced"
+           class="col-sm-2 control-label">Plan Params</label>
+    <div class="col-sm-8">
+      <textarea ng-show="advanced"
+                ng-model="newPlanParams" rows="{{paramNumLines['planParams']}}"
+                class="form-control" id="inputPlanParams"></textarea>
+    </div>
+  </div>
+  <div class="form-group newIndexSubmit">
+    <div class="col-sm-offset-2 col-sm-10">
+      <input ng-model="advanced" type="checkbox" class="advanced">
+        Show advanced settings
+      </input>
+      <br/>
+      <a href="{{static_base}}/indexes/">
+        <button class="btn btn-cancel">Cancel</button>
+      </a>
+      <button ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+              type="submit" class="btn btn-default">
+        <span ng-show="!isEdit">
+          Create Index
+        </span>
+        <span ng-show="isEdit">
+          Update Index
+        </span>
+      </button>
+    </div>
+  </div>
+</form>
+
+</div>
+
+<style>
+form .form-group {
+  clear: both;
+}
+form .form-group div.indexName {
+  padding-top: 7px;
+}
+form .form-group select {
+  margin-top: 7px;
+}
+form .form-group label.indexParam {
+  text-transform: capitalize;
+}
+form input.advanced {
+  margin-bottom: 30px;
+}
+form .newIndexSubmit {
+  margin-top: 20px;
+}
+</style>

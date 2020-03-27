@@ -50,7 +50,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         defaultMappingDynamic = options["defaultMappingDynamic"];
     }
 
-    mappings = bleveConvertFromTypeMapping(typeMappingIn)
+    var mappings = bleveConvertFromTypeMapping(typeMappingIn);
+
 
     $scope.fieldTypes = ['text', 'number', 'datetime', 'boolean', 'disabled', 'geopoint'];
 
@@ -150,7 +151,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
 
     $scope.editAttrs = function(obj) {
         var attrs = kindAttrs[obj._kind];
-        for (var attr in attrs) {
+        let attr;
+        for (attr in attrs) {
             obj["_" + attr + "_ERR"] = null;
             obj["_" + attr + "_PREV"] = obj[attr];
         }
@@ -163,7 +165,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         var valid = true;
 
         var attrs = kindAttrs[obj._kind];
-        for (var attr in attrs) {
+        let attr;
+        for (attr in attrs) {
             var attrValidator = attrs[attr];
 
             if (ok) {
@@ -178,8 +181,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         if (!valid) {
             return;
         }
-
-        for (var attr in attrs) {
+        for (attr in attrs) {
             delete obj["_" + attr + "_ERR"];
             delete obj["_" + attr + "_PREV"];
         }
@@ -203,7 +205,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     $scope.validateField = function(field, mapping) {
         if (mapping) {
             var taken = false;
-            for (var i in mapping.fields) {
+            let i;
+            for (i in mapping.fields) {
                 if (mapping.fields[i] != field &&
                     mapping.fields[i].name == field.name &&
                     mapping.fields[i].property == field.property) {
@@ -221,7 +224,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     $scope.validateMapping = function(mapping, mappings) {
         if (mappings) {
             var taken = false;
-            for (var i in mappings) {
+            let i
+            for (i in mappings) {
                 if (mappings[i] != mapping &&
                     mappings[i].name == mapping.name) {
                     taken = true;
@@ -236,7 +240,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     }
 
     $scope.options = {
-        accept: function(sourceAccept, destAccept, destIndex) {
+        accept: function(sourceAccept, destAccept) {
             if ($scope.editing) {
                 return false;
             }
@@ -249,7 +253,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     }
 
     function removeEntry(arr, entry) {
-        for (var i = 0; i < arr.length; i++) {
+        let i;
+        for (i = 0; i < arr.length; i++) {
             if (arr[i] === entry) {
                 arr.splice(i, 1);
             }
@@ -309,7 +314,8 @@ function bleveConvertFromTypeMapping(typeMapping) {
             var m = mapping.properties[property];
             if (isEmpty(m.properties) && !isEmpty(m.fields)) {
                 // Promote m's fields into to propertied fields.
-                for (var i in m.fields) {
+                let i;
+                for (i in m.fields) {
                     var field = m.fields[i];
                     field.property = property;
                     fields.push(field);
@@ -322,8 +328,8 @@ function bleveConvertFromTypeMapping(typeMapping) {
                 convert(m);
             }
         }
-
-        for (var i in fields) {
+        let i;
+        for (i in fields) {
             fields[i]._kind = 'field';
         }
 
@@ -343,7 +349,8 @@ function bleveConvertToTypeMapping(mappings) {
     var typeMapping = {};
 
     mappings = scrub(JSON.parse(JSON.stringify(mappings)));
-    for (var i in mappings) {
+    let i;
+    for (i in mappings) {
         var mapping = mappings[i];
 
         typeMapping[mapping.name || ""] = mapping;
@@ -376,8 +383,8 @@ function bleveConvertToTypeMapping(mappings) {
     function convertPropertiedFields(m) {
         var properties = {};
         var fields = [];
-
-        for (var i in m.mappings) {
+        let i;
+        for (i in m.mappings) {
             var mapping = m.mappings[i];
 
             properties[mapping.name] = mapping;
@@ -388,13 +395,13 @@ function bleveConvertToTypeMapping(mappings) {
             convertPropertiedFields(mapping);
         }
 
-        for (var i in m.fields) {
+        for (i in m.fields) {
             var field = m.fields[i];
 
             if (field.date_format == null ||
                 field.date_format == "") {
                 delete field["date_format"];
-	        }
+            }
 
             if (field.property != null) { // "" is allowed.
                 var property = properties[field.property];
