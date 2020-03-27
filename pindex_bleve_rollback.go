@@ -14,6 +14,7 @@ package cbft
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/index/upsidedown"
@@ -41,7 +42,10 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 	}
 
 	if !wasPartial {
+		atomic.AddUint64(&TotRollbackFull, 1)
 		os.RemoveAll(t.path) // Full rollback to zero.
+	} else {
+		atomic.AddUint64(&TotRollbackPartial, 1)
 	}
 
 	// Whether partial or full rollback, restart the BleveDest so that

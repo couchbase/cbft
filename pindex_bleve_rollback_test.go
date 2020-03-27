@@ -30,27 +30,27 @@ import (
 )
 
 func TestPartialRollbackMossNoOp(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t, 100,
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 100,
 		"Rollback to after all the snapshots, so it should be a no-op",
-		map[string]bool{`{"status":"ok","count":4}`: true})
+		map[string]bool{`{"status":"ok","count":4}`: true}, "upside_down")
 }
 
 func TestPartialRollbackMossSeq11(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t, 11,
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 11,
 		"Rollback to seq 11 in the middle of the stream of snapshots",
-		map[string]bool{`{"status":"ok","count":3}`: true})
+		map[string]bool{`{"status":"ok","count":3}`: true}, "upside_down")
 }
 
 func TestPartialRollbackMossSeq10(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t, 10,
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 10,
 		"Rollback to seq 10 in the middle of the stream of snapshots",
-		map[string]bool{`{"status":"ok","count":2}`: true})
+		map[string]bool{`{"status":"ok","count":2}`: true}, "upside_down")
 }
 
 func TestPartialRollbackMossSeq0(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t, 0,
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 0,
 		"Rollback to seq number 0",
-		map[string]bool{`{"status":"ok","count":0}`: true})
+		map[string]bool{`{"status":"ok","count":0}`: true}, "upside_down")
 }
 
 func setVBucketFailoverLog(feed *cbgt.PrimaryFeed, partition string) {
@@ -60,20 +60,49 @@ func setVBucketFailoverLog(feed *cbgt.PrimaryFeed, partition string) {
 	feed.OpaqueSet(partition, buf)
 }
 
-func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
+func TestPartialRollbackScorchNoOp(t *testing.T) {
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 100,
+		"Rollback to after all the snapshots, so it should be a no-op",
+		map[string]bool{`{"status":"ok","count":4}`: true}, "scorch")
+}
+
+func TestPartialRollbackScorchSeq11(t *testing.T) {
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 11,
+		"Rollback to seq 11 in the middle of the stream of snapshots",
+		map[string]bool{`{"status":"ok","count":3}`: true}, "scorch")
+}
+
+func TestPartialRollbackScorchSeq10(t *testing.T) {
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 10,
+		"Rollback to seq 10 in the middle of the stream of snapshots",
+		map[string]bool{`{"status":"ok","count":2}`: true}, "scorch")
+}
+
+func TestPartialRollbackScorchSeq0(t *testing.T) {
+	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 0,
+		"Rollback to seq number 0",
+		map[string]bool{`{"status":"ok","count":0}`: true}, "scorch")
+}
+
+func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 	rollbackToSeq uint64,
 	rollbackDesc string,
-	afterRollbackCountResponseMatch map[string]bool) {
+	afterRollbackCountResponseMatch map[string]bool, indexType string) {
 	BlevePIndexAllowMossPrev := BlevePIndexAllowMoss
-	BlevePIndexAllowMoss = true
-
 	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
-	bleve.Config.DefaultKVStore = "mossStore"
 	bleveConfigDefaultIndexTypePrev := bleve.Config.DefaultIndexType
-	bleve.Config.DefaultIndexType = upsidedown.Name
-
 	bleveMossRegistryCollectionOptionsFTSPrev := bleveMoss.RegistryCollectionOptions["fts"]
-	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
+
+	if indexType == "upside_down" {
+		BlevePIndexAllowMoss = true
+		bleve.Config.DefaultKVStore = "mossStore"
+		bleve.Config.DefaultIndexType = upsidedown.Name
+		bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
+	} else {
+		bleve.Config.DefaultKVStore = ""
+		bleve.Config.DefaultIndexType = "scorch"
+		bleve.Config.DefaultKVStore = ""
+	}
 
 	defer func() {
 		BlevePIndexAllowMoss = BlevePIndexAllowMossPrev
@@ -139,7 +168,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollbackMoss(t *testing.T,
 			Params: url.Values{
 				"indexType": []string{"fulltext-index"},
 				"indexParams": []string{
-					`{"store":{"mossStoreOptions":{"CompactionLevelMaxSegments":100000}}}`,
+					`{"store": {"numSnapshotsToKeep": 10,"mossStoreOptions":{"CompactionLevelMaxSegments":100000}}}`,
 				}, // Never compact during this test.
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},

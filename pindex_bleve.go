@@ -62,6 +62,9 @@ var BatchBytesRemoved uint64
 var TotBatchesFlushedOnMaxOps uint64
 var TotBatchesFlushedOnTimer uint64
 
+var TotRollbackPartial uint64
+var TotRollbackFull uint64
+
 var featureIndexType = "indexType"
 var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name

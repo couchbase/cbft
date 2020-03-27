@@ -14,6 +14,7 @@ package cbft
 import (
 	"encoding/binary"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/blevesearch/bleve/index/scorch"
@@ -43,7 +44,14 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 			t.path, totSnapshotsExamined)
 	}()
 
-	rollbackPoints, err := sh.RollbackPoints()
+	// close the scorch index as rollback works in offline.
+	err := t.closeLOCKED()
+	if err != nil {
+		return false, false, err
+	}
+
+	idxPath := t.path + string(os.PathSeparator) + "store"
+	rollbackPoints, err := scorch.RollbackPoints(idxPath)
 	if err != nil {
 		return false, false, err
 	}
@@ -61,10 +69,10 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 		if tryRevert {
 			log.Printf("pindex_bleve_scorch_rollback: trying revert, path: %s", t.path)
 
-			// Close the bleve index.
-			t.closeLOCKED()
-
-			err = sh.Rollback(rollbackPoint)
+			err = scorch.Rollback(idxPath, rollbackPoint)
+			if err != nil {
+				log.Printf("pindex_bleve_scorch_rollback: Rollback failed, err: %v", err)
+			}
 
 			return true, err == nil, err
 		}
