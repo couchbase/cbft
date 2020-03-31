@@ -224,7 +224,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     $scope.validateMapping = function(mapping, mappings) {
         if (mappings) {
             var taken = false;
-            let i
+            let i;
             for (i in mappings) {
                 if (mappings[i] != mapping &&
                     mappings[i].name == mapping.name) {
