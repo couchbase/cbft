@@ -415,7 +415,20 @@ td.controls a:first-child {
   clear: both;
 }
 .indexContainer .mapping .mappingHandle_main {
+  background:#ececec;
+  color:#7c9eb2;
+  font-weight:700;
   flex-grow: 2;
+}
+.indexContainer .mapping .mappingHandle:hover,
+.indexContainer .mapping .mappingHandle .mappingHandle_main:hover{
+  color: #438eb9;
+  background: #f4f6f7;
+  border-color: #dce2e8;
+}
+.indexContainer .mapping .mappingHandle_main .btn.pull-right {
+  margin-right: 10px;
+  float: right;
 }
 .indexContainer .mapping .mappingHandle .attrControls {
   visibility: hidden;
