@@ -53,7 +53,7 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 	idxPath := t.path + string(os.PathSeparator) + "store"
 	rollbackPoints, err := scorch.RollbackPoints(idxPath)
 	if err != nil {
-		return false, false, err
+		return true, false, err
 	}
 
 	for _, rollbackPoint := range rollbackPoints {
@@ -63,7 +63,7 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 		tryRevert, err = scorchSnapshotAtOrBeforeSeq(t.path, rollbackPoint, seqMaxKey,
 			vBucketMapKey, rollbackSeq, vBucketUUID)
 		if err != nil {
-			return false, false, err
+			return true, false, err
 		}
 
 		if tryRevert {
@@ -78,7 +78,7 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 		}
 	}
 
-	return false, false, err
+	return true, false, err
 }
 
 // scorchSnapshotAtOrBeforeSeq returns true if the snapshot represents a seq
