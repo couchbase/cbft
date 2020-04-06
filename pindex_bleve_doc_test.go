@@ -170,7 +170,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ \"key\":\"value\",\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ \"key\":\"value\",\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ \"key\":\"value\"}"),
@@ -179,7 +179,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "scope.collection.type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ \"key\":\"value\",\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ \"key\":\"value\",\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ }"),
@@ -188,7 +188,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ { \"key\":\"value\"} }"),
@@ -197,7 +197,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ { \"key\":\"value\"},\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ { \"key\":\"value\"},\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ [\"key\":\"value\"] }"),
@@ -206,7 +206,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ [\"key\":\"value\"],\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ [\"key\":\"value\"],\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ \"key\":True }"),
@@ -215,7 +215,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ \"key\":True,\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ \"key\":True,\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ \"key\":45.65 }"),
@@ -224,7 +224,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ \"key\":45.65,\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ \"key\":45.65,\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 		{
 			json:   []byte("{ \"key\":[45.65] }"),
@@ -233,7 +233,7 @@ func TestBleveDocConfigExtendDocumentWithMetaField(t *testing.T) {
 				Mode:      "type_field",
 				TypeField: "type",
 			},
-			expected: []byte("{ \"key\":[45.65],\"_scope_collection\":\"_$scope_$collection\"}"),
+			expected: []byte("{ \"key\":[45.65],\"_$scope_$collection\":\"_$scope_$collection\"}"),
 		},
 	}
 

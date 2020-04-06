@@ -25,6 +25,8 @@ import (
 
 var ConfigModeColPrefix = "scope.collection"
 
+var CollMetaFieldName = "_$scope_$collection"
+
 var ConfigModeColPrefixLen = len(ConfigModeColPrefix)
 
 type BleveInterface interface{}
@@ -38,7 +40,7 @@ func (c *BleveDocument) Type() string {
 	return c.typ
 }
 
-func (c *BleveDocument) ExtendType(nTyp string) {
+func (c *BleveDocument) setType(nTyp string) {
 	c.typ = nTyp
 }
 
@@ -140,20 +142,25 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
 	extras []byte) (*BleveDocument, error) {
-	var v interface{}
+	var cmf collMetaField
+	// more than 1 collection indexed
+	if len(b.CollPrefixLookup) > 1 && len(extras) >= 8 {
+		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
+		val = b.extendDocument(val, cmf.Contents)
+	}
 
+	var v interface{}
 	err := json.Unmarshal(val, &v)
 	if err != nil {
 		v = map[string]interface{}{}
 	}
 
 	bdoc := b.BuildDocumentFromObj(key, v, defaultType)
-	if !b.legacyMode {
-		// update the typ with `$scope.$collection.` prefix
-		typ := bdoc.Type()
-		cmf := b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
-		typ = cmf.Typ + typ
-		bdoc.ExtendType(typ)
+	if b.Mode == ConfigModeColPrefix {
+		bdoc.setType(cmf.Typ)
+	} else if !b.legacyMode {
+		typ := cmf.Typ + "." + bdoc.Type()
+		bdoc.setType(typ)
 	}
 	return bdoc, err
 }

@@ -672,13 +672,20 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 				return nil, nil, err
 			}
 			for _, col := range scope.Collections {
-				cuid, err := strconv.Atoi(col.Uid)
+				cuid, err := strconv.ParseInt(col.Uid, 16, 32)
 				if err != nil {
 					return nil, nil, err
 				}
+
+				suid, err := strconv.ParseInt(scope.Uid, 16, 32)
+				if err != nil {
+					return nil, nil, err
+				}
+
 				bleveParams.DocConfig.CollPrefixLookup[uint32(cuid)] = collMetaField{
-					Typ:      scope.Name + "." + col.Name + ".",
-					Contents: metaFieldContents("_" + scope.Uid + "_" + col.Uid),
+					Typ: scope.Name + "." + col.Name,
+					Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
+						"_$" + fmt.Sprintf("%d", cuid)),
 				}
 			}
 		}

@@ -105,30 +105,25 @@ func validateScopeCollFromMappings(bucket string,
 
 func enhanceMappingsWithCollMetaField(tm map[string]*mapping.DocumentMapping) error {
 OUTER:
-	for typ, mp := range tm {
-		fm := fieldMapping()
-		sName, cName, err := scopeCollName(typ)
-		if err != nil {
-			// TODO err handling
-			continue
-		}
-		name := "_" + sName + "_" + cName
-		for k := range mp.Properties {
-			if name == k {
+	for _, mp := range tm {
+		fm := metaFieldMapping()
+		for fname := range mp.Properties {
+			if fname == CollMetaFieldName {
 				continue OUTER
 			}
 		}
-		mp.AddFieldMappingsAt(name, fm)
+		mp.AddFieldMappingsAt(CollMetaFieldName, fm)
 	}
 	return nil
 }
 
-func fieldMapping() *mapping.FieldMapping {
+func metaFieldMapping() *mapping.FieldMapping {
 	fm := mapping.NewTextFieldMapping()
 	fm.Store = false
 	fm.DocValues = false
 	fm.IncludeInAll = false
 	fm.IncludeTermVectors = false
+	fm.Name = CollMetaFieldName
 	fm.Analyzer = "keyword"
 	return fm
 }
@@ -153,5 +148,5 @@ func metaFieldPosition(input []byte) int {
 }
 
 func metaFieldContents(value string) []byte {
-	return []byte(fmt.Sprintf(",\"_scope_collection\":\"%s\"}", value))
+	return []byte(fmt.Sprintf(",\"_$scope_$collection\":\"%s\"}", value))
 }
