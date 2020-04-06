@@ -412,18 +412,57 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				continue
 			}
 
+			// fetch scope, collection(s) information for the index
+			// from the SourceParams within its index definition
+			scope := "_default"
+			collections := []string{"_default"}
+			params := cbgt.NewDCPFeedParams()
+			if len(indexDef.SourceParams) > 0 {
+				err := json.Unmarshal([]byte(indexDef.SourceParams), params)
+				if err == nil {
+					if len(params.Scope) > 0 {
+						scope = params.Scope
+					}
+					if len(params.Collections) > 0 {
+						collections = params.Collections
+					}
+				}
+			}
+
 			var totSeq uint64
 			var curSeq uint64
 
 			for partitionId, dstUUIDSeq := range dst {
-				srcUUIDSeq, exists := src[partitionId]
-				if exists {
-					totSeq += srcUUIDSeq.Seq
+				var srcSeq uint64
+				for i := range collections {
+					uuidHighSeq, exists :=
+						src[partitionId+":"+scope+":"+collections[i]+":high_seqno"]
+					if !exists {
+						continue
+					}
+
+					uuidStartSeq, exists :=
+						src[partitionId+":"+scope+":"+collections[i]+":start_seqno"]
+					if !exists {
+						continue
+					}
+
+					if uuidHighSeq.Seq > uuidStartSeq.Seq {
+						// account for this only if this collection holds any items
+						srcSeq += uuidHighSeq.Seq
+					}
+				}
+
+				if srcSeq > 0 {
+					totSeq += srcSeq
 					curSeq += dstUUIDSeq.Seq
 				}
 			}
+
 			if totSeq >= curSeq {
 				nsIndexStat["num_mutations_to_index"] = totSeq - curSeq
+			} else {
+				nsIndexStat["num_mutations_to_index"] = 0
 			}
 		}
 	}
