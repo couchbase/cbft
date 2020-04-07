@@ -606,7 +606,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
 
         // NOTE: Special case to auto-fill-in authUser with bucket name.
         // TODO: Doesn't handle bucket password, though.
-        if (sourceType == "couchbase" &&
+        if ((sourceType == "couchbase" || sourceType == "gocbcore") &&
             sourceParamsObj &&
             sourceParamsObj.authUser == "" &&
             sourceParamsObj.authPassword == "") {

@@ -51,7 +51,7 @@
         ng-if="indexDef.type != 'fulltext-alias'">
         <td nowrap><a href="/indexes/{{indexName}}">{{indexName}}</a></td>
         <td nowrap>
-          <span ng-if="indexDef.sourceType != 'couchbase'">
+          <span ng-if="indexDef.sourceType != 'couchbase' || indexDef.sourceType != 'gocbcore'">
             {{indexDef.sourceType}}
             &nbsp;/&nbsp;
           </span>

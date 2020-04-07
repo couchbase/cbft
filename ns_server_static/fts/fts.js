@@ -699,7 +699,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
   $httpPrefixed.get('/api/index/' + $scope.indexName).then(function(response) {
     $scope.indexDef = response.data.indexDef;
     if ($scope.indexDef &&
-        $scope.indexDef.sourceType == "couchbase") {
+        ($scope.indexDef.sourceType == "couchbase" || $scope.indexDef.sourceType == "gocbcore")) {
       mnPermissions.check()
     }
 
@@ -712,7 +712,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
       hit.docIDLink = null;
       try {
         if (($scope.indexDef &&
-             $scope.indexDef.sourceType == "couchbase" &&
+             ($scope.indexDef.sourceType == "couchbase" || $scope.indexDef.sourceType == "gocbcore") &&
              $scope.permsCluster.bucket[$scope.indexDef.sourceName] &&
              ($scope.permsCluster.bucket[$scope.indexDef.sourceName].data.read ||
               $scope.permsCluster.bucket[$scope.indexDef.sourceName].data.docs.read)) ||
