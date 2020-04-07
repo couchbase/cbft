@@ -86,8 +86,7 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 	b.Mode = tmp.Mode
 	switch tmp.Mode {
 	case "scope.collection":
-		// TODO handle this aptly
-		fallthrough
+		return nil
 	case "scope.collection.type_field":
 		fallthrough
 	case "type_field":

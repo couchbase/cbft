@@ -26,7 +26,8 @@ func scopeCollName(in string) (string, string, error) {
 	vals := strings.SplitN(in, ".", 3)
 	if len(vals) < 2 {
 		return "", "",
-			fmt.Errorf("collection_utils: invalid type_mod with scope.collection")
+			fmt.Errorf("collection_utils: invalid mappings with " +
+				"doc_config.mode: scope.collection*")
 	}
 	return vals[0], vals[1], nil
 }
@@ -34,7 +35,10 @@ func scopeCollName(in string) (string, string, error) {
 func getScopeCollNames(tm map[string]*mapping.DocumentMapping) (scope string,
 	cols []string, err error) {
 	hash := make(map[string]struct{}, len(tm))
-	for tp := range tm {
+	for tp, dm := range tm {
+		if !dm.Enabled {
+			continue
+		}
 		s, c, err := scopeCollName(tp)
 		if err != nil {
 			return "", nil, err
