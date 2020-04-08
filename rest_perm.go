@@ -20,45 +20,45 @@ GET /api/index
 cluster.bucket{}.fts!read
 
 GET /api/index/{indexName}
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 PUT /api/index/{indexName}
-cluster.bucket[<sourceName>].fts!write
+cluster.collection[<sourceName>].fts!write
 24577
 
 DELETE /api/index/{indexName}
-cluster.bucket[<sourceName>].fts!write
+cluster.collection[<sourceName>].fts!write
 24576
 
 POST /api/index/{indexName}/ingestControl/{op}
-cluster.bucket[<sourceName>].fts!manage
+cluster.collection[<sourceName>].fts!manage
 24579
 
 POST /api/index/{indexName}/planFreezeControl/{op}
-cluster.bucket[<sourceName>].fts!manage
+cluster.collection[<sourceName>].fts!manage
 24579
 
 POST /api/index/{indexName}/queryControl/{op}
-cluster.bucket[<sourceName>].fts!manage
+cluster.collection[<sourceName>].fts!manage
 24579
 
 GET /api/stats
 cluster.bucket[].stats.fts!read
 
 GET /api/stats/index/{indexName}
-cluster.bucket[<sourceName>].stats.fts!read
+cluster.collection[<sourceName>].stats.fts!read
 
 GET /api/stats/sourceStats/{indexName}
-cluster.bucket[<sourceName>].stats.fts!read
+cluster.collection[<sourceName>].stats.fts!read
 
 GET /api/index/{indexName}/count
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/query
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/analyzeDoc
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/cfg
 cluster.settings.fts!read
@@ -120,13 +120,13 @@ GET /api/pindex
 cluster.bucket[].fts!read
 
 GET /api/pindex/{pindexName}
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/pindex/{pindexName}/count
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/pindex/{pindexName}/query
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/ping
 none
@@ -141,5 +141,5 @@ GET /_prometheusMetricsHigh
 cluster.admin.internal.stats!read
 
 RPC /Search
-cluster.bucket[<sourceName>].fts!read
+cluster.collection[<sourceName>].fts!read
 `

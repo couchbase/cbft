@@ -39,6 +39,26 @@ var testIndexDefsByName = map[string]*cbgt.IndexDef{
 		Type:       "fulltext-index",
 		SourceName: "s2",
 	},
+	"i3": {
+		Type:       "fulltext-index",
+		SourceName: "bucket1",
+		Params: `{"mapping": {"default_mapping": {"dynamic": true,"enabled": false}, 
+		"types": {"scope1.collection1.brewery": {"enabled": true, "dynamic": false}}},
+		"doc_config": {"mode": "scope.collection.type_field", "type_field": "type"}}`,
+	},
+	"i4": {
+		Type:       "fulltext-index",
+		SourceName: "bucket2",
+		Params: `{"mapping": {"default_mapping": {"dynamic": true,"enabled": false}, 
+		"types": { "scope1.collection1.brewery": {"enabled": true, "dynamic": false},
+		"scope1.collection2.beer": {"enabled": true, "dynamic": false}, "scope1.collection3.airport":
+		{"enabled": true, "dynamic": false}}}, "doc_config":
+		{"mode": "scope.collection.type_field", "type_field": "type"}}`,
+	},
+	"i5": {
+		Type:       "fulltext-index",
+		SourceName: "s3",
+	},
 	"a1": {
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"i1":{}}}`,
@@ -55,11 +75,28 @@ var testIndexDefsByName = map[string]*cbgt.IndexDef{
 		Type:   "fulltext-alias",
 		Params: `{"targets":{"a4":{},"i2":{}}}`,
 	},
+	"a5": {
+		Type:   "fulltext-alias",
+		Params: `{"targets":{"i3":{}}}`,
+	},
+	"a6": {
+		Type:   "fulltext-alias",
+		Params: `{"targets":{"i4":{}}}`,
+	},
+	"a7": {
+		Type:   "fulltext-alias",
+		Params: `{"targets":{"a3":{},"i4":{}}}`,
+	},
 }
 
 var testPIndexesByName = map[string]*cbgt.PIndex{
 	"p1": {
 		SourceName: "s3",
+		IndexName:  "i5",
+	},
+	"p2": {
+		SourceName: "bucket1",
+		IndexName:  "i3",
 	},
 }
 
@@ -98,6 +135,23 @@ func TestSourceNamesForAlias(t *testing.T) {
 		{
 			alias: "a4",
 			err:   errAliasExpansionTooDeep,
+		},
+		// alias to a single index
+		{
+			alias:   "a5",
+			sources: []string{"bucket1:scope1:collection1"},
+		},
+		// alias to a single multi-collection index
+		{
+			alias: "a6",
+			sources: []string{"bucket2:scope1:collection1", "bucket2:scope1:collection2",
+				"bucket2:scope1:collection3"},
+		},
+		// alias to a single multi-collection index and nested alias
+		{
+			alias: "a7",
+			sources: []string{"bucket2:scope1:collection1", "bucket2:scope1:collection2",
+				"bucket2:scope1:collection3", "s1", "s2"},
 		},
 	}
 
@@ -242,6 +296,28 @@ func TestSourceNamesFromReq(t *testing.T) {
 			vars:    map[string]string{"indexName": "a3"},
 			sources: []string{"s1", "s2"},
 		},
+		{
+			method:  http.MethodGet,
+			uri:     "/api/index/i3",
+			path:    "/api/index/{indexName}",
+			vars:    map[string]string{"indexName": "i3"},
+			sources: []string{"bucket1:scope1:collection1"},
+		},
+		{
+			method: http.MethodGet,
+			uri:    "/api/index/a7",
+			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "a7"},
+			sources: []string{"bucket2:scope1:collection1", "bucket2:scope1:collection2",
+				"bucket2:scope1:collection3", "s1", "s2"},
+		},
+		{
+			method:  http.MethodGet,
+			uri:     "/api/index/i3/count",
+			path:    "/api/index/{indexName}/count",
+			vars:    map[string]string{"indexName": "i3"},
+			sources: []string{"bucket1:scope1:collection1"},
+		},
 	}
 
 	requestVariableLookupOrig := rest.RequestVariableLookup
@@ -329,6 +405,14 @@ func TestPreparePerms(t *testing.T) {
 			vars:   map[string]string{"indexName": "i1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
+		// case with valid index name on collection
+		{
+			method: http.MethodGet,
+			uri:    "/api/index/i3",
+			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "i3"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
+		},
 		// case with invalid index name
 		{
 			method: http.MethodGet,
@@ -352,6 +436,14 @@ func TestPreparePerms(t *testing.T) {
 			path:   "/api/pindex/{pindexName}",
 			vars:   map[string]string{"pindexName": "p1"},
 			perms:  []string{"cluster.bucket[s3].fts!read"},
+		},
+		// case with valid pindex name on a collection index
+		{
+			method: http.MethodGet,
+			uri:    "/api/pindex/p2",
+			path:   "/api/pindex/{pindexName}",
+			vars:   map[string]string{"pindexName": "p2"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
 		},
 		// case with invalid pindex name
 		{
@@ -377,6 +469,14 @@ func TestPreparePerms(t *testing.T) {
 			vars:   map[string]string{"indexName": "a1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
+		// case with valid alias, with operation that expands alias
+		{
+			method: http.MethodGet,
+			uri:    "/api/index/a5",
+			path:   "/api/index/{indexName}",
+			vars:   map[string]string{"indexName": "a5"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
+		},
 		// case with valid alias, and this operation DOES expand alias
 		{
 			method: http.MethodGet,
@@ -385,6 +485,14 @@ func TestPreparePerms(t *testing.T) {
 			vars:   map[string]string{"indexName": "a1"},
 			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
+		// case with valid alias, and this operation DOES expand alias
+		{
+			method: http.MethodGet,
+			uri:    "/api/index/a5/count",
+			path:   "/api/index/{indexName}/count",
+			vars:   map[string]string{"indexName": "a5"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
+		},
 		// case with valid alias (multi), and this operation DOES expand alias
 		{
 			method: http.MethodGet,
@@ -392,6 +500,18 @@ func TestPreparePerms(t *testing.T) {
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a2"},
 			perms:  []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read"},
+		},
+		// case with valid alias (containing another alias),
+		// and this operation DOES expand alias
+		{
+			method: http.MethodGet,
+			uri:    "/api/index/a7/count",
+			path:   "/api/index/{indexName}/count",
+			vars:   map[string]string{"indexName": "a7"},
+			perms: []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read",
+				"cluster.collection[bucket2:scope1:collection1].fts!read",
+				"cluster.collection[bucket2:scope1:collection2].fts!read",
+				"cluster.collection[bucket2:scope1:collection3].fts!read"},
 		},
 		// case with valid alias (containing another alias),
 		// and this operation DOES expand alias

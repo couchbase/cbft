@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blevesearch/bleve/mapping"
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -169,13 +170,43 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 					}
 					rv = append(rv, nestedSources...)
 				} else {
-					rv = append(rv, aliasIndexDef.SourceName)
+					sourceNames, err := getSourceNamesFromIndexDef(aliasIndexDef)
+					if err != nil {
+						return nil, err
+					}
+					rv = append(rv, sourceNames...)
 				}
 			}
 		}
 	}
 
 	return rv, nil
+}
+
+func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
+	if len(indexDef.Params) > 0 {
+		bleveParams := NewBleveParams()
+		err := json.Unmarshal([]byte(indexDef.Params), bleveParams)
+		if err != nil {
+			return nil, fmt.Errorf("rest_auth: parse params, err: %v", err)
+		}
+
+		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
+			if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+				sName, colNames, _, err := getScopeCollTypeMappings(im)
+				if err != nil {
+					return nil, err
+				}
+
+				sourceNames := make([]string, len(colNames))
+				for i, colName := range colNames {
+					sourceNames[i] = indexDef.SourceName + ":" + sName + ":" + colName
+				}
+				return sourceNames, nil
+			}
+		}
+	}
+	return []string{indexDef.SourceName}, nil
 }
 
 // an interface to abstract the bare minimum aspect of a cbgt.Manager
@@ -257,13 +288,12 @@ var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 
 func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
-	indexName, _ := rp.GetIndexName() //rest.IndexNameLookup(req)
+	indexName, _ := rp.GetIndexName()
+	_, indexDefsByName, err := mgr.GetIndexDefs(false)
+	if err != nil {
+		return nil, err
+	}
 	if indexName != "" {
-		_, indexDefsByName, err := mgr.GetIndexDefs(false)
-		if err != nil {
-			return nil, err
-		}
-
 		indexDef, exists := indexDefsByName[indexName]
 		if !exists || indexDef == nil {
 			if method == "PUT" {
@@ -275,10 +305,9 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 		}
 
 		var sourceNames []string
-
+		var currSourceNames []string
 		if indexDef.Type == "fulltext-alias" {
 			// this finds the sources in current definition
-			var currSourceNames []string
 			currSourceNames, err = sourceNamesForAlias(indexName, indexDefsByName, 0)
 			if err != nil {
 				return nil, err
@@ -286,7 +315,11 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 			sourceNames = append(sourceNames, currSourceNames...)
 		} else {
 			// first use the source in current definition
-			sourceNames = append(sourceNames, indexDef.SourceName)
+			currSourceNames, err = getSourceNamesFromIndexDef(indexDef)
+			if err != nil {
+				return nil, err
+			}
+			sourceNames = append(sourceNames, currSourceNames...)
 		}
 
 		// now also add any sources from new definition in the request
@@ -308,7 +341,12 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 		return nil, errPIndexNotFound
 	}
 
-	return []string{pindex.SourceName}, nil
+	indexDef, _ := indexDefsByName[pindex.IndexName]
+	if indexDef != nil {
+		return getSourceNamesFromIndexDef(indexDef)
+	}
+
+	return nil, fmt.Errorf("invalid pindexName: %s", pindexName)
 }
 
 func preparePerms(mgr definitionLookuper, r requestParser,
@@ -329,8 +367,31 @@ func preparePerms(mgr definitionLookuper, r requestParser,
 
 		perms := make([]string, 0, len(sourceNames))
 		for _, sourceName := range sourceNames {
+			p := perm
+			// If the RBAC settings are done at the scope or collection
+			// level, then update the perm placeholder strings (refer rest_perm.go)
+			// accordingly before decorating it with the source details.
+			// This source enriched perm strings are further sent for
+			// authentications.
+			/*
+				Perm string for RBAC at bucket level “test”:
+				cluster.bucket[test].data.docs!read
+
+				Perm string for RBAC at bucket “test”, scope “s”:
+				cluster.scope[test:s].data.docs!read
+
+				Perm string for RBAC at bucket “test”, scope “s”, collection “c”:
+				cluster.collection[test:s:c].data.docs!read
+			*/
+
+			rbacLevel := strings.Count(sourceName, ":")
+			if rbacLevel == 0 {
+				p = strings.ReplaceAll(perm, "collection", "bucket")
+			} else if rbacLevel == 1 {
+				p = strings.ReplaceAll(perm, "collection", "scope")
+			}
 			perms = append(perms,
-				strings.Replace(perm, "<sourceName>", sourceName, -1))
+				strings.ReplaceAll(p, "<sourceName>", sourceName))
 		}
 		return perms, nil
 	}
@@ -350,9 +411,9 @@ func findCouchbaseSourceNames(r requestParser, indexName string,
 		req := t.(*http.Request)
 		// TODO handle this for RPCs.
 		if reqType == "REST" {
-			sourceType, sourceName := rest.ExtractSourceTypeName(req, indexDef, indexName)
+			sourceType, _ := rest.ExtractSourceTypeName(req, indexDef, indexName)
 			if sourceType == cbgt.SOURCE_GOCOUCHBASE || sourceType == cbgt.SOURCE_GOCBCORE {
-				return []string{sourceName}, nil
+				return getSourceNamesFromIndexDef(indexDef)
 			}
 		}
 	} else if indexDef.Type == "fulltext-alias" {
