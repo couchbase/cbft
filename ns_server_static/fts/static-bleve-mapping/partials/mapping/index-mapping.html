@@ -44,20 +44,10 @@
     </label>
   </div>
   <div ng-show="showFilters" class="indent-1 margin-bottom1">
-    <uib-tabset>
-      <uib-tab heading="Character Filters">
-        <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
-      </uib-tab>
-      <uib-tab heading="Tokenizers">
-        <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
-      </uib-tab>
-      <uib-tab heading="Token Filters">
-        <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
-      </uib-tab>
-      <uib-tab heading="Word Lists">
-        <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
-      </uib-tab>
-    </uib-tabset>
+      <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
+      <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
+      <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
+      <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
   </div>
 
 <!-- DATE TIME PARSERS *********************************** -->
