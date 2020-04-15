@@ -1,9 +1,14 @@
 {
   "service": "fts",
   "proxy-strategy": "sticky",
-  "rest-api-prefix": "fts",
+  "rest-api-prefixes": {
+    "fts": {
+      "portName": "fts_http_port"
+    }
+  },
   "version-dirs": [
     {"version": [5, 0], "dir": "."}
   ],
-  "doc-root": "@DOC_ROOT_PREFIX@fts"
+  "doc-root": "@DOC_ROOT_PREFIX@fts",
+  "module": "main.js"
 }

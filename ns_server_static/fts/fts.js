@@ -15,10 +15,10 @@ var ftsPrefix = 'fts';
 // -------------------------------------------------------
 import angular from "/ui/web_modules/angular.js";
 import uiRouter from "/ui/web_modules/@uirouter/angularjs.js";
-import mnPluggableUiRegistry from "/ui/app/components/mn_pluggable_ui_registry.js";
 import ngClipboard from "/ui/libs/ngclipboard.js";
 import ngSortable from "/ui/libs/angular-legacy-sortable.js";
 import mnPermissions from "/ui/app/components/mn_permissions.js";
+import mnFooterStatsController from "/ui/app/mn_admin/mn_footer_stats_controller.js";
 
 import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
 import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
@@ -37,13 +37,14 @@ export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
 
 angular
     .module(ftsAppName,
-            [uiRouter, mnPluggableUiRegistry, ngClipboard, mnPermissions, uiTree, ngSortable])
-    .config(function($stateProvider, mnPluggableUiRegistryProvider, mnPermissionsProvider) {
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable])
+    .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
       function addFtsStates(parent) {
         $stateProvider
           .state(parent, {
+            url: '/fts',
             abstract: true,
             views: {
               "main@app.admin": {
@@ -166,29 +167,10 @@ angular
             }
           });
       }
-
-      mnPluggableUiRegistryProvider.registerConfig({
-          name: 'Search',
-          state: 'app.admin.search.fts_list',
-          plugIn: 'workbenchTab',
-          index: 2,
-          responsiveHide: true,
-          includedByState: 'app.admin.search',
-          ngShow: 'rbac.cluster.settings.fts.read'
-      });
-
-      (["cluster.settings.fts!read", "cluster.settings.fts!write"])
-        .forEach(mnPermissionsProvider.set);
-
-      mnPermissionsProvider.setBucketSpecific(function(name) {
-        return [
-          "cluster.bucket[" + name + "].fts!write",
-          "cluster.bucket[" + name + "].data!read"
-        ];
-      });
     });
 
   angular.module(ftsAppName).
+        controller('mnFooterStatsController', mnFooterStatsController).
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
