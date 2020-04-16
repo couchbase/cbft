@@ -682,7 +682,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 					return nil, nil, err
 				}
 
-				bleveParams.DocConfig.CollPrefixLookup[uint32(cuid)] = collMetaField{
+				bleveParams.DocConfig.CollPrefixLookup[uint32(cuid)] = &collMetaField{
 					Typ: scope.Name + "." + col.Name,
 					Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
 						"_$" + fmt.Sprintf("%d", cuid)),

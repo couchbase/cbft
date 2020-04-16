@@ -54,7 +54,7 @@ type BleveDocumentConfig struct {
 	TypeField        string         `json:"type_field"`
 	DocIDPrefixDelim string         `json:"docid_prefix_delim"`
 	DocIDRegexp      *regexp.Regexp `json:"docid_regexp"`
-	CollPrefixLookup map[uint32]collMetaField
+	CollPrefixLookup map[uint32]*collMetaField
 	legacyMode       bool
 }
 
@@ -64,14 +64,14 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		docIDRegexp = b.DocIDRegexp.String()
 	}
 	if b.CollPrefixLookup == nil {
-		b.CollPrefixLookup = make(map[uint32]collMetaField, 1)
+		b.CollPrefixLookup = make(map[uint32]*collMetaField, 1)
 	}
 	tmp := struct {
 		Mode             string `json:"mode"`
 		TypeField        string `json:"type_field"`
 		DocIDPrefixDelim string `json:"docid_prefix_delim"`
 		DocIDRegexp      string `json:"docid_regexp"`
-		CollPrefixLookup map[uint32]collMetaField
+		CollPrefixLookup map[uint32]*collMetaField
 	}{
 		Mode:             b.Mode,
 		TypeField:        b.TypeField,
@@ -141,11 +141,13 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
 	extras []byte) (*BleveDocument, error) {
-	var cmf collMetaField
-	// more than 1 collection indexed
-	if len(b.CollPrefixLookup) > 1 && len(extras) >= 8 {
+	var cmf *collMetaField
+	if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
-		val = b.extendDocument(val, cmf.Contents)
+		// more than 1 collection indexed
+		if len(b.CollPrefixLookup) > 1 {
+			val = b.extendDocument(val, cmf.Contents)
+		}
 	}
 
 	var v interface{}
@@ -155,12 +157,15 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	}
 
 	bdoc := b.BuildDocumentFromObj(key, v, defaultType)
-	if b.Mode == ConfigModeColPrefix {
-		bdoc.setType(cmf.Typ)
-	} else if !b.legacyMode {
-		typ := cmf.Typ + "." + bdoc.Type()
-		bdoc.setType(typ)
+	if cmf != nil {
+		if b.Mode == ConfigModeColPrefix {
+			bdoc.setType(cmf.Typ)
+		} else if !b.legacyMode {
+			typ := cmf.Typ + "." + bdoc.Type()
+			bdoc.setType(typ)
+		}
 	}
+
 	return bdoc, err
 }
 
