@@ -65,7 +65,7 @@ func getScopeCollNames(tm map[string]*mapping.DocumentMapping) (scope string,
 // - single scope validation across collections
 // - verity of scope to collection mapping against the kv
 func validateScopeCollFromMappings(bucket string,
-	tm map[string]*mapping.DocumentMapping) (*Scope, error) {
+	tm map[string]*mapping.DocumentMapping, ignoreCollNotFoundErrs bool) (*Scope, error) {
 	sName, colNames, err := getScopeCollNames(tm)
 	if err != nil {
 		return nil, err
@@ -90,9 +90,11 @@ func validateScopeCollFromMappings(bucket string,
 						continue OUTER
 					}
 				}
-				return nil, fmt.Errorf("collection_utils: collection: "+
-					" %s doesn't belong to scope: %s in bucket: %s",
-					colName, sName, bucket)
+				if !ignoreCollNotFoundErrs {
+					return nil, fmt.Errorf("collection_utils: collection: "+
+						" %s doesn't belong to scope: %s in bucket: %s",
+						colName, sName, bucket)
+				}
 			}
 			break
 		}

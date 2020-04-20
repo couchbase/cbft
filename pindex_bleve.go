@@ -461,7 +461,7 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		}
 
 		// figure out the scope/collection details from mappings
-		// and update the index params and source params
+		// and perform the validation checks.
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeColPrefix) {
 			if !collectionsSupported {
 				return nil, fmt.Errorf("bleve: Prepare, collections not supported" +
@@ -469,40 +469,10 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 			}
 
 			if am, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
-				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
-					am.TypeMapping)
+				_, err := validateScopeCollFromMappings(indexDef.SourceName,
+					am.TypeMapping, false)
 				if err != nil {
 					return nil, err
-				}
-				// if there are more than 1 collection then need to
-				// insert $scope#$collection field into the mappings
-				if len(scope.Collections) > 1 {
-					err = enhanceMappingsWithCollMetaField(am.TypeMapping)
-					if err != nil {
-						return nil, err
-					}
-				}
-
-				// update the sourceParams with the scope/collection details
-				if scope != nil && len(scope.Collections) > 0 {
-					sourceParams := cbgt.NewDCPFeedParams()
-					if indexDef.SourceParams != "" {
-						err = json.Unmarshal([]byte(indexDef.SourceParams), sourceParams)
-						if err != nil {
-							return nil, err
-						}
-					}
-					sourceParams.Scope = scope.Name
-					sourceParams.Collections = make([]string, len(scope.Collections))
-					for i, coll := range scope.Collections {
-						sourceParams.Collections[i] = coll.Name
-					}
-
-					sBytes, err := json.Marshal(sourceParams)
-					if err != nil {
-						return nil, err
-					}
-					indexDef.SourceParams = string(sBytes)
 				}
 			}
 		}
@@ -667,27 +637,28 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 
 	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeColPrefix) {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
-			scope, err := validateScopeCollFromMappings(ip.SourceName, am.TypeMapping)
+			scope, err := validateScopeCollFromMappings(ip.SourceName,
+				am.TypeMapping, false)
 			if err != nil {
 				return nil, nil, err
 			}
-			for _, col := range scope.Collections {
-				cuid, err := strconv.ParseInt(col.Uid, 16, 32)
+			// if there are more than 1 collection then need to
+			// insert $scope#$collection field into the mappings
+			if len(scope.Collections) > 1 {
+				err = enhanceMappingsWithCollMetaField(am.TypeMapping)
 				if err != nil {
 					return nil, nil, err
 				}
-
-				suid, err := strconv.ParseInt(scope.Uid, 16, 32)
+				ipBytes, err := json.Marshal(bleveParams)
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, fmt.Errorf("bleve: new , json marshal,"+
+						" err: %v", err)
 				}
-
-				bleveParams.DocConfig.CollPrefixLookup[uint32(cuid)] = &collMetaField{
-					Typ: scope.Name + "." + col.Name,
-					Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
-						"_$" + fmt.Sprintf("%d", cuid)),
-				}
+				indexParams = string(ipBytes)
 			}
+
+			bleveParams.DocConfig.CollPrefixLookup =
+				initBleveDocConfigs(ip.IndexName, ip.SourceName, am)
 		}
 	}
 
@@ -710,6 +681,34 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
 	}, nil
+}
+
+func initBleveDocConfigs(indexName, sourceName string,
+	im *mapping.IndexMappingImpl) map[uint32]*collMetaField {
+	if im == nil {
+		return nil
+	}
+	scope, err := validateScopeCollFromMappings(sourceName, im.TypeMapping, false)
+	if err != nil {
+		return nil
+	}
+	rv := make(map[uint32]*collMetaField, 1)
+	for _, col := range scope.Collections {
+		cuid, err := strconv.ParseInt(col.Uid, 16, 32)
+		if err != nil {
+			return nil
+		}
+		suid, err := strconv.ParseInt(scope.Uid, 16, 32)
+		if err != nil {
+			return nil
+		}
+		rv[uint32(cuid)] = &collMetaField{
+			Typ: scope.Name + "." + col.Name,
+			Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
+				"_$" + fmt.Sprintf("%d", cuid)),
+		}
+	}
+	return rv
 }
 
 func OpenBlevePIndexImpl(indexType, path string,
@@ -1643,6 +1642,63 @@ func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 
 func (t *BleveDestPartition) Close() error {
 	return t.bdest.Close()
+}
+
+func (t *BleveDestPartition) PrepareFeedParams(partition string,
+	params *cbgt.DCPFeedParams) error {
+	// nothing to be done for bucket based indexes.
+	if !strings.HasPrefix(t.bdest.bleveDocConfig.Mode, ConfigModeColPrefix) {
+		return nil
+	}
+	// if already set, then return early.
+	if params != nil && params.Scope != "" && len(params.Collections) > 0 {
+		return nil
+	}
+
+	buf, err := ioutil.ReadFile(t.bdest.path +
+		string(os.PathSeparator) + "PINDEX_META")
+	if err != nil {
+		return err
+	}
+	if len(buf) == 0 {
+		return fmt.Errorf("bleve: empty PINDEX_META contents")
+	}
+
+	in := struct {
+		IndexParams string `json:"indexParams"`
+		SourceName  string `json:"sourceName"`
+	}{}
+	err = json.Unmarshal(buf, &in)
+	if err != nil {
+		return fmt.Errorf("bleve: parse params: %v", err)
+	}
+
+	tmp := struct {
+		Mapping mapping.IndexMapping `json:"mapping"`
+	}{Mapping: bleve.NewIndexMapping()}
+
+	err = json.Unmarshal([]byte(in.IndexParams), &tmp)
+	if err != nil {
+		return fmt.Errorf("bleve: parse params: %v", err)
+	}
+
+	if am, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
+		scope, err := validateScopeCollFromMappings(in.SourceName,
+			am.TypeMapping, true)
+		if err != nil {
+			return err
+		}
+
+		if scope != nil && len(scope.Collections) > 0 {
+			params.Scope = scope.Name
+			params.Collections = make([]string, len(scope.Collections))
+			for i, coll := range scope.Collections {
+				params.Collections[i] = coll.Name
+			}
+		}
+	}
+
+	return nil
 }
 
 func (t *BleveDestPartition) DataUpdate(partition string,
