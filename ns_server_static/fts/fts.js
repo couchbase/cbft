@@ -19,6 +19,7 @@ import ngClipboard from "/ui/libs/ngclipboard.js";
 import ngSortable from "/ui/libs/angular-legacy-sortable.js";
 import mnPermissions from "/ui/app/components/mn_permissions.js";
 import mnFooterStatsController from "/ui/app/mn_admin/mn_footer_stats_controller.js";
+import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
 
 import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
 import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
@@ -37,7 +38,7 @@ export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
 
 angular
     .module(ftsAppName,
-            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable])
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
