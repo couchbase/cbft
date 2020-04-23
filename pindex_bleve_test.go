@@ -694,9 +694,23 @@ func TestCollectionSearchRequest(t *testing.T) {
 	cache["ftsIndexB$colB"] = "_$suid_$cuidB"
 	cache["ftsIndexB$colC"] = "_$suid_$cuidC"
 
-	lookUp := func(a, b string) string {
-		return cache[a+"$"+b]
+	indexCache := make(map[string]map[uint32]string)
+	cmap := make(map[uint32]string)
+	cmap[1] = "colA"
+	cmap[2] = "colB"
+	indexCache["ftsIndexA"] = cmap
+	cmap = make(map[uint32]string)
+	cmap[1] = "colA"
+	cmap[2] = "colB"
+	cmap[3] = "colC"
+	indexCache["ftsIndexB"] = cmap
+
+	testCache := &collMetaFieldCache{
+		cache:            make(map[string]string),
+		collUIDNameCache: make(map[string]map[uint32]string),
 	}
+	testCache.cache = cache
+	testCache.collUIDNameCache = indexCache
 
 	tests := []struct {
 		indexName     string
@@ -705,11 +719,6 @@ func TestCollectionSearchRequest(t *testing.T) {
 		qField        string
 		qTerm         []string
 	}{
-		{
-			indexName:     "",
-			collections:   []string{},
-			qNumDisjuncts: 0,
-		},
 		{
 			indexName:     "ftsIndexA",
 			collections:   []string{"colA"},
@@ -736,7 +745,7 @@ func TestCollectionSearchRequest(t *testing.T) {
 		sr.Scope = "_default"
 		sr.Collections = test.collections
 		bsr, err := sr.ConvertToBleveSearchRequest()
-		bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, lookUp)
+		bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, testCache)
 		if err != nil {
 			t.Fatal(err)
 		}

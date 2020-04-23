@@ -283,7 +283,7 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 	focusStats := GrpcPathStats.FocusStats(req.IndexName)
 	if focusStats != nil {
 		// check whether its a client request and track only in the coordinating node
-		if _, er := extractMetaHeader(ctx, "rpcclusteractionkey"); er != nil {
+		if _, er := extractMetaHeader(ctx, rpcClusterActionKey); er != nil {
 			// co-ordinating node
 			atomic.AddUint64(&focusStats.TotGrpcRequest, 1)
 			atomic.AddUint64(&focusStats.TotGrpcRequestTimeNS,

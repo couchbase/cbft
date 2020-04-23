@@ -39,6 +39,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const rpcClusterActionKey = "rpcclusteractionkey"
+
 // GrpcClient implements the Search() and DocCount() subset of the
 // bleve.Index interface by accessing a remote cbft server via grpc
 // protocol.  This allows callers to add a GrpcClient as a target of
@@ -328,7 +330,7 @@ func (g *GrpcClient) Query(ctx context.Context,
 
 	// mark that its a scatter gather query
 	nctx := metadata.AppendToOutgoingContext(ctx,
-		"rpcclusteractionkey", "fts/scatter-gather")
+		rpcClusterActionKey, clusterActionScatterGather)
 
 	result, er := g.SearchRPC(nctx, req, scatterGatherReq)
 	if st, ok := status.FromError(er); ok {

@@ -140,13 +140,14 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
-	extras []byte) (*BleveDocument, error) {
+	extras []byte) (*BleveDocument, []byte, error) {
 	var cmf *collMetaField
 	if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
 		// more than 1 collection indexed
 		if len(b.CollPrefixLookup) > 1 {
 			val = b.extendDocument(val, cmf.Contents)
+			key = append(extras[4:8], key...)
 		}
 	}
 
@@ -166,7 +167,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 		}
 	}
 
-	return bdoc, err
+	return bdoc, key, err
 }
 
 // BuildDocument returns a BleveDocument for the k/v pair

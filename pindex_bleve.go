@@ -199,21 +199,57 @@ func NewBleveParams() *BleveParams {
 	return rv
 }
 
-// fieldLookup helps to retrieve the collection
-// indexed meta field value against a given index
-// and collection names.
-type fieldLookup func(string, string) string
-
 func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
-	getValue fieldLookup) query.Query {
-	if getValue == nil {
-		getValue = metaFieldValCache.getValue
+	cache *collMetaFieldCache) query.Query {
+	var dq *query.DocIDQuery
+	var ok bool
+	// bail out early if the query is not a docID one and there are
+	// no target collections requested in search request.
+	if dq, ok = q.(*query.DocIDQuery); !ok && len(sr.Collections) == 0 {
+		return q
 	}
+	if cache == nil {
+		cache = metaFieldValCache
+	}
+	// bail out early if the index is a single collection index as there
+	// won't be any docID decorations done during indexing as well as the
+	// collection scoping during the querying also redundant.
+	var collUIDNameMap map[uint32]string
+	if collUIDNameMap, ok = cache.getCollUIDNameMap(indexName); !ok ||
+		len(collUIDNameMap) <= 1 {
+		return q
+	}
+
+	// if this is a multi collection index and the query is for docID,
+	// then decorate the target docIDs with cuid prefixes.
+	if dq != nil {
+		hash := make(map[string]struct{})
+		for _, cname := range sr.Collections {
+			hash[cname] = struct{}{}
+		}
+		newIDs := make([]string, 0, len(dq.IDs))
+		for cuid, cname := range collUIDNameMap {
+			if _, ok := hash[cname]; !ok && len(hash) > 0 {
+				continue
+			}
+			cBytes := make([]byte, 4)
+			binary.LittleEndian.PutUint32(cBytes, cuid)
+			for _, docID := range dq.IDs {
+				newIDs = append(newIDs, string(append(cBytes,
+					[]byte(docID)...)))
+			}
+		}
+		dq.IDs = newIDs
+		return dq
+	}
+
+	// if the search is scoped to specific collections then add
+	// collection specific conjunctions with multi collection indexes.
 	cjnq := query.NewConjunctionQuery([]query.Query{q})
 	djnq := query.NewDisjunctionQuery(nil)
 
 	for _, col := range sr.Collections {
-		queryStr := getValue(indexName, col)
+		queryStr := cache.getValue(indexName, col)
 		mq := query.NewMatchQuery(queryStr)
 		mq.Analyzer = "keyword"
 		mq.SetField(CollMetaFieldName)
@@ -720,6 +756,7 @@ func initBleveDocConfigs(indexName, sourceName string,
 		return nil
 	}
 	rv := make(map[uint32]*collMetaField, 1)
+	multiCollIndex := len(scope.Collections) > 1
 	for _, col := range scope.Collections {
 		cuid, err := strconv.ParseInt(col.Uid, 16, 32)
 		if err != nil {
@@ -730,11 +767,10 @@ func initBleveDocConfigs(indexName, sourceName string,
 			return nil
 		}
 		rv[uint32(cuid)] = &collMetaField{
-			Typ: scope.Name + "." + col.Name,
-			Contents: metaFieldContents("_$" + fmt.Sprintf("%d", suid) +
-				"_$" + fmt.Sprintf("%d", cuid)),
+			Typ:      scope.Name + "." + col.Name,
+			Contents: metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
 		}
-		metaFieldValCache.setValue(indexName, col.Name, suid, cuid)
+		metaFieldValCache.setValue(indexName, col.Name, suid, cuid, multiCollIndex)
 	}
 	return rv
 }
@@ -991,11 +1027,9 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing searchRequest, err: %v", err)
 	}
 
-	// if the search is scoped to specific collections
-	// then enhance the query.
-	if len(sr.Collections) > 0 {
-		searchRequest.Query = sr.decorateQuery(indexName,
-			searchRequest.Query, nil)
+	// pre process the query with collections if applicable.
+	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
+		searchRequest.Query = sr.decorateQuery(indexName, searchRequest.Query, nil)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
@@ -1092,7 +1126,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
-		err = processSearchResult(&queryCtlParams, searchResult,
+		err = processSearchResult(&queryCtlParams, indexName, searchResult,
 			remoteClients, err, err1)
 
 		if searchResult.Status != nil &&
@@ -1116,10 +1150,32 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	return err
 }
 
-func processSearchResult(queryCtlParams *cbgt.QueryCtlParams,
+func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 	searchResult *bleve.SearchResult, remoteClients []RemoteClient,
 	searchErr, aliasErr error) error {
 	if searchResult != nil {
+		if len(searchResult.Hits) > 0 {
+			// if this is a multi collection index, then fill the details of
+			// source collection.
+			if collNameMap, multiCollIndex :=
+				metaFieldValCache.getCollUIDNameMap(indexName); multiCollIndex {
+				for _, hit := range searchResult.Hits {
+					if hit.Fields != nil && hit.Fields["_$c"] != "" {
+						continue
+					}
+					idBytes := []byte(hit.ID)
+					cuid := binary.LittleEndian.Uint32(idBytes[:4])
+					hit.ID = string(idBytes[4:])
+					if collName, ok := collNameMap[cuid]; ok {
+						if hit.Fields == nil {
+							hit.Fields = make(map[string]interface{})
+						}
+						hit.Fields["_$c"] = collName
+					}
+				}
+			}
+		}
+
 		// check to see if any of the remote searches returned anything
 		// other than 0, 200, 412, 429, these are returned to the user as
 		// error status 400, and appear as phase 0 errors detected late.
@@ -1776,7 +1832,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		defaultType = imi.DefaultType
 	}
 
-	cbftDoc, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
+	cbftDoc, key, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
 		defaultType, extrasType, extras)
 
 	erri := t.batch.Index(string(key), cbftDoc)

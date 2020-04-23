@@ -32,6 +32,8 @@ import (
 	log "github.com/couchbase/clog"
 )
 
+const clusterActionScatterGather = "fts/scatter-gather"
+
 func RegisterRemoteClientsForSecurity() {
 	cbgt.RegisterConfigRefreshCallback("fts/remoteClients",
 		handleRefreshSecuritySettings)
@@ -353,7 +355,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(rest.CLUSTER_ACTION, "fts/scatter-gather")
+	req.Header.Add(rest.CLUSTER_ACTION, clusterActionScatterGather)
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := r.httpClient.Do(req)

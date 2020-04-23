@@ -17,6 +17,7 @@ package cbft
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -147,6 +148,14 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			"grpc_server: Search processing searchRequest, err: %v", err)
 	}
 
+	// pre process the query if applicable
+	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
+		hv, _ := extractMetaHeader(stream.Context(), rpcClusterActionKey)
+		if hv != clusterActionScatterGather {
+			searchRequest.Query = sr.decorateQuery(req.IndexName, searchRequest.Query, nil)
+		}
+	}
+
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
@@ -249,7 +258,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	var searchResult *bleve.SearchResult
 	searchResult, err = alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
-		err1 := processSearchResult(&queryCtlParams, searchResult,
+		err1 := processSearchResult(&queryCtlParams, req.IndexName, searchResult,
 			remoteClients, err, er)
 		if err1 != nil {
 			err = status.Error(codes.DeadlineExceeded,
@@ -336,7 +345,7 @@ func serverInterceptor(
 	handler grpc.StreamHandler) (err error) {
 	// skip the authCallbacks wrapping/authentication for scatter gather calls,
 	// as the user is already authenticated at the original node.
-	if _, err = extractMetaHeader(ss.Context(), "rpcclusteractionkey"); err == nil {
+	if _, err = extractMetaHeader(ss.Context(), rpcClusterActionKey); err == nil {
 		w := wrapServerStream(ss)
 		w.wrappedContext = ss.Context()
 		return handler(req, w)

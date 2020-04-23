@@ -24,8 +24,9 @@ import (
 )
 
 type collMetaFieldCache struct {
-	m     sync.RWMutex
-	cache map[string]string // indexName$collName => _$suid_$cuid
+	m                sync.RWMutex
+	cache            map[string]string            // indexName$collName => _$suid_$cuid
+	collUIDNameCache map[string]map[uint32]string // indexName => coll uid => coll name
 }
 
 // metaFieldValCache holds a runtime volatile cache
@@ -35,7 +36,8 @@ var metaFieldValCache *collMetaFieldCache
 
 func init() {
 	metaFieldValCache = &collMetaFieldCache{
-		cache: make(map[string]string, 1),
+		cache:            make(map[string]string),
+		collUIDNameCache: make(map[string]map[uint32]string),
 	}
 }
 
@@ -46,12 +48,33 @@ func (c *collMetaFieldCache) getValue(indexName, collName string) string {
 	return rv
 }
 
+func encodeCollMetaFieldValue(suid, cuid int64) string {
+	return "_$" + fmt.Sprintf("%d", suid) + "_$" + fmt.Sprintf("%d", cuid)
+}
+
 func (c *collMetaFieldCache) setValue(indexName, collName string,
-	suid, cuid int64) {
+	suid, cuid int64, multiCollIndex bool) {
 	key := indexName + "$" + collName
 	c.m.Lock()
-	c.cache[key] = "_$" + fmt.Sprintf("%d", suid) + "_$" + fmt.Sprintf("%d", cuid)
+	c.cache[key] = encodeCollMetaFieldValue(suid, cuid)
+	if multiCollIndex {
+		var indexMap map[uint32]string
+		var ok bool
+		if indexMap, ok = c.collUIDNameCache[indexName]; !ok {
+			indexMap = make(map[uint32]string)
+			c.collUIDNameCache[indexName] = indexMap
+		}
+		indexMap[uint32(cuid)] = collName
+	}
 	c.m.Unlock()
+}
+
+func (c *collMetaFieldCache) getCollUIDNameMap(indexName string) (
+	collUIDNameCache map[uint32]string, multiCollIndex bool) {
+	c.m.RLock()
+	collUIDNameCache, multiCollIndex = c.collUIDNameCache[indexName]
+	c.m.RUnlock()
+	return
 }
 
 func scopeCollName(in string) (string, string, error) {

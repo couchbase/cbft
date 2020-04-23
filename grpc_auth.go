@@ -191,7 +191,7 @@ func (rp *rpcRequestParser) GetPIndexName() (string, error) {
 }
 
 func verifyRPCAuth(ctx context.Context, indexName string, req interface{}) error {
-	if _, err := extractMetaHeader(ctx, "rpcclusteractionkey"); err == nil {
+	if _, err := extractMetaHeader(ctx, rpcClusterActionKey); err == nil {
 		return nil
 	}
 
