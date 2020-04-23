@@ -1885,6 +1885,20 @@ func (t *BleveDestPartition) DataDelete(partition string,
 
 // ---------------------------------------------------------
 
+func (t *BleveDestPartition) SeqNoAdvanced(partition string,
+	seq uint64) error {
+	t.m.Lock()
+	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
+	t.m.Unlock()
+	if err == nil && revNeedsUpdate {
+		t.incRev()
+	}
+
+	return err
+}
+
+// ---------------------------------------------------------
+
 type bleveDestPartitionStats struct {
 	TotDataUpdateBeg uint64
 	TotDataUpdateEnd uint64
