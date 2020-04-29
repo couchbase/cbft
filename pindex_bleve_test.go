@@ -742,7 +742,6 @@ func TestCollectionSearchRequest(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		sr.Scope = "_default"
 		sr.Collections = test.collections
 		bsr, err := sr.ConvertToBleveSearchRequest()
 		bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, testCache)

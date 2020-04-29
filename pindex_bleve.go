@@ -275,7 +275,6 @@ type SearchRequest struct {
 	SearchBefore     []string                `json:"search_before,omitempty"`
 	Limit            *int                    `json:"limit,omitempty"`
 	Offset           *int                    `json:"offset,omitempty"`
-	Scope            string                  `json:"scope,omitempty"`
 	Collections      []string                `json:"collections,omitempty"`
 }
 
