@@ -207,21 +207,15 @@ func getRecentInfo() *recentInfo {
 	return (*recentInfo)(atomic.LoadPointer(&lastRecentInfo))
 }
 
-func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
-	initNsServerCaching(h.mgr)
-
-	rd := getRecentInfo()
-	if rd.err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
-			http.StatusInternalServerError)
-		return
+func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
+	collAware bool) (NSIndexStats, error) {
+	if rd == nil || mgr == nil {
+		return nil, nil
 	}
 
 	indexDefsMap := rd.indexDefsMap
 	planPIndexes := rd.planPIndexes
-
-	nodeUUID := h.mgr.UUID()
+	nodeUUID := mgr.UUID()
 
 	nsIndexStats := make(NSIndexStats, len(indexDefsMap))
 
@@ -251,9 +245,14 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	for indexName, indexDef := range indexDefsMap {
 		nsIndexStat := NewIndexStat()
-		nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
-
-		indexNameToSourceName[indexName] = indexDef.SourceName
+		if collAware {
+			key := getNsIndexStatsKey(indexName, indexDef.SourceName, indexDef.Params)
+			nsIndexStats[key] = nsIndexStat
+			indexNameToSourceName[indexName] = key
+		} else {
+			nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
+			indexNameToSourceName[indexName] = indexDef.SourceName + ":" + indexName
+		}
 
 		focusStats := indexQueryPathStats.FocusStats(indexName)
 		if focusStats != nil {
@@ -325,17 +324,18 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			SourceName:   indexDef.SourceName,
 			SourceUUID:   indexDef.SourceUUID,
 			SourceParams: indexDef.SourceParams,
-			Server:       h.mgr.Server(),
+			Server:       mgr.Server(),
 		})
 		if partitionSeqs != nil {
 			indexNameToSourcePartitionSeqs[indexName] = partitionSeqs
 		}
 	}
 
-	feeds, pindexes := h.mgr.CurrentMaps()
+	feeds, pindexes := mgr.CurrentMaps()
 
+	var nsIndexName string
 	for _, pindex := range pindexes {
-		nsIndexName := pindex.SourceName + ":" + pindex.IndexName
+		nsIndexName = indexNameToSourceName[pindex.IndexName]
 		nsIndexStat, ok := nsIndexStats[nsIndexName]
 		if ok {
 			// manually track num pindexes
@@ -351,10 +351,7 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// automatically process all the pindex dest stats
 			err := addPIndexStats(pindex, nsIndexStat)
 			if err != nil {
-				rest.ShowError(w, req,
-					fmt.Sprintf("error processing PIndex stats: %v", err),
-					http.StatusInternalServerError)
-				return
+				return nil, fmt.Errorf("error processing PIndex stats: %v", err)
 			}
 
 			dest := pindex.Dest
@@ -408,17 +405,13 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, feed := range feeds {
-		sourceName := indexNameToSourceName[feed.IndexName()]
-		nsIndexName := sourceName + ":" + feed.IndexName()
+		nsIndexName := indexNameToSourceName[feed.IndexName()]
 		nsIndexStat, ok := nsIndexStats[nsIndexName]
 		if ok {
 			// automatically process all the feed stats
 			err := addFeedStats(feed, nsIndexStat)
 			if err != nil {
-				rest.ShowError(w, req,
-					fmt.Sprintf("error processing Feed stats: %v", err),
-					http.StatusInternalServerError)
-				return
+				return nil, fmt.Errorf("error processing Feed stats: %v", err)
 			}
 		}
 	}
@@ -481,8 +474,15 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	topLevelStats := map[string]interface{}{}
+	if !collAware {
+		nsIndexStats[""] = gatherTopLevelStats(rd)
+	}
 
+	return nsIndexStats, nil
+}
+
+func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
+	topLevelStats := map[string]interface{}{}
 	// (Sys - HeapReleased) is the estimate the cbft process can make that
 	// best represents the process RSS; this accounts for memory that has been
 	// acquired by the process and the amount that has been released back.
@@ -532,7 +532,26 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	topLevelStats["total_queries_rejected_by_herder"] =
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
-	nsIndexStats[""] = topLevelStats
+	return topLevelStats
+}
+
+func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
+	initNsServerCaching(h.mgr)
+
+	rd := getRecentInfo()
+	if rd.err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	nsIndexStats, err := gatherIndexStats(h.mgr, rd, false)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("error in retrieving defs: %v", err),
+			http.StatusInternalServerError)
+		return
+	}
 
 	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {
 		go func() {

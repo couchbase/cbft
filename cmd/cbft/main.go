@@ -44,7 +44,7 @@ import (
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/go-couchbase"
-	"github.com/couchbase/goutils/go-cbaudit"
+	audit "github.com/couchbase/goutils/go-cbaudit"
 	"github.com/couchbase/goutils/platform"
 )
 
@@ -498,6 +498,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 		muxrouter.Handle(path, dh).Methods(method).Name(path)
 	}
+	handle(prefix+"/_prometheusMetricsHigh", "GET",
+		cbft.NewPrometheusHighMetricsHandler(mgr))
+
+	handle(prefix+"/_prometheusMetrics", "GET",
+		cbft.NewPrometheusMetricsHandler(mgr))
+
 	handle(prefix+"/api/nsstats", "GET", cbft.NewNsStatsHandler(mgr))
 
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
