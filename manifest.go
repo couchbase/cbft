@@ -33,8 +33,9 @@ func init() {
 }
 
 type Collection struct {
-	Uid  string `json:"uid"`
-	Name string `json:"name"`
+	Uid         string `json:"uid"`
+	Name        string `json:"name"`
+	typeMapping string
 }
 
 type Scope struct {

@@ -524,7 +524,7 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 
 		// figure out the scope/collection details from mappings
 		// and perform the validation checks.
-		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeColPrefix) {
+		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if !collectionsSupported {
 				return nil, fmt.Errorf("bleve: Prepare, collections not supported" +
 					" across all nodes in the cluster")
@@ -697,7 +697,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeColPrefix) {
+	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 			scope, err := validateScopeCollFromMappings(ip.SourceName,
 				am.TypeMapping, false)
@@ -756,8 +756,8 @@ func initBleveDocConfigs(indexName, sourceName string,
 	}
 	rv := make(map[uint32]*collMetaField, 1)
 	multiCollIndex := len(scope.Collections) > 1
-	for _, col := range scope.Collections {
-		cuid, err := strconv.ParseInt(col.Uid, 16, 32)
+	for _, coll := range scope.Collections {
+		cuid, err := strconv.ParseInt(coll.Uid, 16, 32)
 		if err != nil {
 			return nil
 		}
@@ -766,10 +766,11 @@ func initBleveDocConfigs(indexName, sourceName string,
 			return nil
 		}
 		rv[uint32(cuid)] = &collMetaField{
-			Typ:      scope.Name + "." + col.Name,
-			Contents: metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
+			scopeDotColl: scope.Name + "." + coll.Name,
+			typeMapping:  coll.typeMapping,
+			contents:     metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
 		}
-		metaFieldValCache.setValue(indexName, col.Name, suid, cuid, multiCollIndex)
+		metaFieldValCache.setValue(indexName, coll.Name, suid, cuid, multiCollIndex)
 	}
 	return rv
 }
@@ -893,7 +894,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
-	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeColPrefix) {
+	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 			buf, err = ioutil.ReadFile(path +
 				string(os.PathSeparator) + "PINDEX_META")
@@ -1759,7 +1760,7 @@ func (t *BleveDestPartition) Close() error {
 func (t *BleveDestPartition) PrepareFeedParams(partition string,
 	params *cbgt.DCPFeedParams) error {
 	// nothing to be done for bucket based indexes.
-	if !strings.HasPrefix(t.bdest.bleveDocConfig.Mode, ConfigModeColPrefix) {
+	if !strings.HasPrefix(t.bdest.bleveDocConfig.Mode, ConfigModeCollPrefix) {
 		return nil
 	}
 	// if already set, then return early.

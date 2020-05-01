@@ -23,11 +23,11 @@ import (
 	"github.com/couchbase/cbgt"
 )
 
-var ConfigModeColPrefix = "scope.collection"
+var ConfigModeCollPrefix = "scope.collection"
 
 var CollMetaFieldName = "_$scope_$collection"
 
-var ConfigModeColPrefixLen = len(ConfigModeColPrefix)
+var ConfigModeCollPrefixLen = len(ConfigModeCollPrefix)
 
 type BleveInterface interface{}
 
@@ -45,8 +45,9 @@ func (c *BleveDocument) setType(nTyp string) {
 }
 
 type collMetaField struct {
-	Typ      string
-	Contents []byte
+	scopeDotColl string
+	typeMapping  string
+	contents     []byte
 }
 
 type BleveDocumentConfig struct {
@@ -146,7 +147,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
 		// more than 1 collection indexed
 		if len(b.CollPrefixLookup) > 1 {
-			val = b.extendDocument(val, cmf.Contents)
+			val = b.extendDocument(val, cmf.contents)
 			key = append(extras[4:8], key...)
 		}
 	}
@@ -158,13 +159,14 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	}
 
 	bdoc := b.BuildDocumentFromObj(key, v, defaultType)
-	if cmf != nil {
-		if b.Mode == ConfigModeColPrefix {
-			bdoc.setType(cmf.Typ)
-		} else if !b.legacyMode {
-			typ := cmf.Typ + "." + bdoc.Type()
-			bdoc.setType(typ)
+	if !b.legacyMode && cmf != nil {
+		typ := cmf.scopeDotColl
+		if len(cmf.typeMapping) > 0 && bdoc.Type() == cmf.typeMapping {
+			// append type information only if the type mapping specifies a
+			// 'type' and the document's matches it.
+			typ += "." + cmf.typeMapping
 		}
+		bdoc.setType(typ)
 	}
 
 	return bdoc, key, err
@@ -194,15 +196,16 @@ func (b *BleveDocumentConfig) BuildDocumentFromObj(key []byte, v interface{},
 }
 
 func (b *BleveDocumentConfig) DetermineType(key []byte, v interface{}, defaultType string) string {
-	i := strings.LastIndex(b.Mode, ConfigModeColPrefix)
+	i := strings.LastIndex(b.Mode, ConfigModeCollPrefix)
 	if i == -1 {
 		i = 0
 		b.legacyMode = true
 	} else {
-		if len(b.Mode) > ConfigModeColPrefixLen {
+		i += ConfigModeCollPrefixLen
+		if len(b.Mode) > ConfigModeCollPrefixLen {
+			// consider the "." that follows scope.collection
 			i++
 		}
-		i += ConfigModeColPrefixLen
 	}
 
 	return b.findTypeUtil(key, v, defaultType, b.Mode[i:])

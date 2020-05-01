@@ -77,51 +77,57 @@ func (c *collMetaFieldCache) getCollUIDNameMap(indexName string) (
 	return
 }
 
-func scopeCollName(in string) (string, string, error) {
+func scopeCollTypeMapping(in string) (string, string, string, error) {
 	vals := strings.SplitN(in, ".", 3)
 	if len(vals) < 2 {
-		return "", "",
+		return "", "", "",
 			fmt.Errorf("collection_utils: invalid mappings with " +
 				"doc_config.mode: scope.collection*")
 	}
-	return vals[0], vals[1], nil
+	typeMapping := ""
+	if len(vals) == 3 {
+		typeMapping = vals[2]
+	}
+
+	return vals[0], vals[1], typeMapping, nil
 }
 
-func getScopeCollNames(tm map[string]*mapping.DocumentMapping) (scope string,
-	cols []string, err error) {
+func getScopeCollTypeMappings(tm map[string]*mapping.DocumentMapping) (scope string,
+	cols []string, typeMappings []string, err error) {
 	hash := make(map[string]struct{}, len(tm))
 	for tp, dm := range tm {
 		if !dm.Enabled {
 			continue
 		}
-		s, c, err := scopeCollName(tp)
+		s, c, t, err := scopeCollTypeMapping(tp)
 		if err != nil {
-			return "", nil, err
+			return "", nil, nil, err
 		}
-		if _, exists := hash[c]; !exists {
-			hash[c] = struct{}{}
+		if _, exists := hash[c+t]; !exists {
+			hash[c+t] = struct{}{}
 			cols = append(cols, c)
+			typeMappings = append(typeMappings, t)
 		}
 		if scope == "" {
 			scope = s
 			continue
 		}
 		if scope != s {
-			return "", nil, fmt.Errorf("collection_utils: multiple scopes"+
+			return "", nil, nil, fmt.Errorf("collection_utils: multiple scopes"+
 				" found: %s , %s, index can only span collections on a single"+
 				"scope", scope, s)
 		}
 	}
-	return scope, cols, nil
+	return scope, cols, typeMappings, nil
 }
 
 // validateScopeCollFromMappings performs the $scope.$collection
 // validations in the type mappings defined. It also performs
 // - single scope validation across collections
-// - verity of scope to collection mapping against the kv
+// - verify scope to collection mapping with kv manifest
 func validateScopeCollFromMappings(bucket string,
 	tm map[string]*mapping.DocumentMapping, ignoreCollNotFoundErrs bool) (*Scope, error) {
-	sName, colNames, err := getScopeCollNames(tm)
+	sName, collNames, typeMappings, err := getScopeCollTypeMappings(tm)
 	if err != nil {
 		return nil, err
 	}
@@ -131,24 +137,27 @@ func validateScopeCollFromMappings(bucket string,
 		return nil, err
 	}
 
-	rv := &Scope{Collections: make([]Collection, 0, len(colNames))}
+	rv := &Scope{Collections: make([]Collection, 0, len(collNames))}
 	for _, scope := range manifest.Scopes {
 		if scope.Name == sName {
 			rv.Name = scope.Name
 			rv.Uid = scope.Uid
 		OUTER:
-			for _, colName := range colNames {
+			for i := range collNames {
 				for _, collection := range scope.Collections {
-					if collection.Name == colName {
-						rv.Collections = append(rv.Collections,
-							Collection{Uid: collection.Uid, Name: collection.Name})
+					if collection.Name == collNames[i] {
+						rv.Collections = append(rv.Collections, Collection{
+							Uid:         collection.Uid,
+							Name:        collection.Name,
+							typeMapping: typeMappings[i],
+						})
 						continue OUTER
 					}
 				}
 				if !ignoreCollNotFoundErrs {
 					return nil, fmt.Errorf("collection_utils: collection: "+
 						" %s doesn't belong to scope: %s in bucket: %s",
-						colName, sName, bucket)
+						collNames[i], sName, bucket)
 				}
 			}
 			break
