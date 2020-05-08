@@ -50,14 +50,14 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 	for _, bindHTTP := range bindHTTPList {
 		if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
 			strings.HasPrefix(bindHTTP, "[::]:") {
-			go mainServeHTTP("http", bindHTTP, nil)
+			mainServeHTTP("http", bindHTTP, nil)
 
 			anyHostPorts[bindHTTP] = true
 		}
 	}
 
 	for i := len(bindHTTPList) - 1; i >= 1; i-- {
-		go mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
+		mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
 	}
 
 	authType = options["authType"]
@@ -76,8 +76,6 @@ func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
 	}
 
 	setupHTTPSListeners()
-
-	mainServeHTTP("http", bindHTTPList[0], anyHostPorts)
 }
 
 // Add to HTTPS Server list serially
@@ -115,14 +113,14 @@ func setupHTTPSListeners() error {
 		for _, bindHTTPS := range bindHTTPSList {
 			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") ||
 				strings.HasPrefix(bindHTTPS, "[::]:") {
-				go mainServeHTTP("https", bindHTTPS, nil)
+				mainServeHTTP("https", bindHTTPS, nil)
 
 				anyHostPorts[bindHTTPS] = true
 			}
 		}
 
 		for _, bindHTTPS := range bindHTTPSList {
-			go mainServeHTTP("https", bindHTTPS, anyHostPorts)
+			mainServeHTTP("https", bindHTTPS, anyHostPorts)
 		}
 	}
 
@@ -171,99 +169,133 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 	log.Printf("init_http: web UI / REST API is available: %s://%s", proto, bindHTTP)
 	log.Printf(bar)
 
-	listener, err := net.Listen("tcp", bindHTTP)
-	if err != nil {
-		log.Fatalf("init_http: listen, err: %v", err)
-	}
-	server := &http.Server{Addr: bindHTTP,
-		Handler:           routerInUse,
-		ReadTimeout:       httpReadTimeout,
-		ReadHeaderTimeout: httpReadHeaderTimeout,
-		WriteTimeout:      httpWriteTimeout,
-		IdleTimeout:       httpIdleTimeout,
-	}
-
-	if proto == "http" {
-		limitListener := netutil.LimitListener(listener, httpMaxConnections)
-		log.Printf("init_http: Setting up a http limit listener over %q", bindHTTP)
-		atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
-		err = server.Serve(limitListener)
+	nwps := getNetworkProtocols()
+	for p, nwp := range nwps {
+		listener, err := getListener(bindHTTP, nwp)
+		if listener == nil && err == nil {
+			continue
+		}
 		if err != nil {
-			log.Fatalf("init_http: Serve, err: %v;\n"+
-				"  Please check that your -bindHttp(s) parameter (%q)\n"+
-				"  is correct and available.", err, bindHTTP)
-		}
-		atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
-	} else {
-		addToHTTPSServerList(server)
-		// Initialize server.TLSConfig to the listener's TLS Config before calling
-		// server for HTTP/2 support.
-		// See: https://golang.org/pkg/net/http/#Server.Serve
-		config := cloneTLSConfig(server.TLSConfig)
-		if !strSliceContains(config.NextProtos, "http/1.1") {
-			config.NextProtos = append(config.NextProtos, "http/1.1")
-		}
-		if !strSliceContains(config.NextProtos, "h2") {
-			config.NextProtos = append(config.NextProtos, "h2")
+			if p == 0 {
+				// Fail the service as the listen failed on the primary protocol.
+				// If ipv6=true,
+				//	-start listening to ipv6 - fail service if listen fails
+				//	-try to listen to ipv4 - don't fail service even if listen fails.
+				// If ipv6=false,
+				//	-start listening to ipv4 - fail service if listen fails
+				//	-try to listen to ipv6 - don't fail service even if listen fails.
+				log.Fatalf("init_http: listen, err: %v", err)
+			}
+			log.Errorf("init_http: listen, err: %v", err)
+			continue
 		}
 
-		config.Certificates = make([]tls.Certificate, 1)
-		config.Certificates[0], err = tls.LoadX509KeyPair(
-			cbgt.TLSCertFile, cbgt.TLSKeyFile)
-		if err != nil {
-			log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
+		server := &http.Server{Addr: bindHTTP,
+			Handler:           routerInUse,
+			ReadTimeout:       httpReadTimeout,
+			ReadHeaderTimeout: httpReadHeaderTimeout,
+			WriteTimeout:      httpWriteTimeout,
+			IdleTimeout:       httpIdleTimeout,
 		}
 
-		if authType == "cbauth" {
-			ss := cbgt.GetSecuritySetting()
-			if ss != nil && ss.TLSConfig != nil {
-				// Set MinTLSVersion and CipherSuites to what is provided by
-				// cbauth if authType were cbauth (cached locally).
-				config.MinVersion = ss.TLSConfig.MinVersion
-				config.CipherSuites = ss.TLSConfig.CipherSuites
-				config.PreferServerCipherSuites = ss.TLSConfig.PreferServerCipherSuites
+		if proto == "http" {
+			limitListener := netutil.LimitListener(listener, httpMaxConnections)
+			go func(nwp string, listener net.Listener, primary bool) {
+				log.Printf("init_http: Setting up a http limit listener at %q,"+
+					" proto: %q", bindHTTP, nwp)
+				atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
+				err = server.Serve(limitListener)
+				if err != nil {
+					if primary {
+						log.Fatalf("init_http: Serve, err: %v;\n"+
+							"  Please check that your -bindHttp(s) parameter (%q)\n"+
+							"  is correct and available.", err, bindHTTP)
+					}
+					log.Printf("init_http: Serve, err: %v;\n"+
+						"  Please check that your -bindHttp(s) parameter (%q)\n"+
+						"  is correct and available.", err, bindHTTP)
+				}
+				atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
+			}(nwp, limitListener, p == 0)
+		} else {
+			addToHTTPSServerList(server)
+			// Initialize server.TLSConfig to the listener's TLS Config before calling
+			// server for HTTP/2 support.
+			// See: https://golang.org/pkg/net/http/#Server.Serve
+			config := cloneTLSConfig(server.TLSConfig)
+			if !strSliceContains(config.NextProtos, "http/1.1") {
+				config.NextProtos = append(config.NextProtos, "http/1.1")
+			}
+			if !strSliceContains(config.NextProtos, "h2") {
+				config.NextProtos = append(config.NextProtos, "h2")
+			}
 
-				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
-					caCertPool := x509.NewCertPool()
-					var certBytes []byte
-					if len(ss.CertInBytes) != 0 {
-						certBytes = ss.CertInBytes
-					} else {
-						// if no CertInBytes found in settings, then fallback
-						// to reading directly from file. Upon any certs change
-						// callbacks later, reboot of servers will ensure the
-						// latest certificates in the servers.
-						certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
-						if err != nil {
-							log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
+			config.Certificates = make([]tls.Certificate, 1)
+			config.Certificates[0], err = tls.LoadX509KeyPair(
+				cbgt.TLSCertFile, cbgt.TLSKeyFile)
+			if err != nil {
+				log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
+			}
+
+			if authType == "cbauth" {
+				ss := cbgt.GetSecuritySetting()
+				if ss != nil && ss.TLSConfig != nil {
+					// Set MinTLSVersion and CipherSuites to what is provided by
+					// cbauth if authType were cbauth (cached locally).
+					config.MinVersion = ss.TLSConfig.MinVersion
+					config.CipherSuites = ss.TLSConfig.CipherSuites
+					config.PreferServerCipherSuites = ss.TLSConfig.PreferServerCipherSuites
+
+					if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
+						caCertPool := x509.NewCertPool()
+						var certBytes []byte
+						if len(ss.CertInBytes) != 0 {
+							certBytes = ss.CertInBytes
+						} else {
+							// if no CertInBytes found in settings, then fallback
+							// to reading directly from file. Upon any certs change
+							// callbacks later, reboot of servers will ensure the
+							// latest certificates in the servers.
+							certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
+							if err != nil {
+								log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
+							}
 						}
+						ok := caCertPool.AppendCertsFromPEM(certBytes)
+						if !ok {
+							log.Fatalf("init_http: error in appending certificates")
+						}
+						config.ClientCAs = caCertPool
+						config.ClientAuth = *ss.ClientAuthType
+					} else {
+						config.ClientAuth = tls.NoClientCert
 					}
-					ok := caCertPool.AppendCertsFromPEM(certBytes)
-					if !ok {
-						log.Fatalf("init_http: error in appending certificates")
-					}
-					config.ClientCAs = caCertPool
-					config.ClientAuth = *ss.ClientAuthType
 				} else {
 					config.ClientAuth = tls.NoClientCert
 				}
-			} else {
-				config.ClientAuth = tls.NoClientCert
 			}
-		}
 
-		keepAliveListener := tcpKeepAliveListener{listener.(*net.TCPListener)}
-		limitListener := netutil.LimitListener(keepAliveListener, httpMaxConnections)
-		tlsListener := tls.NewListener(limitListener, config)
-		log.Printf("init_http: Setting up a https limit listener over %q", bindHTTP)
-		atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
-		err = server.Serve(tlsListener)
-		if err != nil {
-			log.Printf("init_http: Serve, err: %v;"+
-				" HTTPS listeners closed, likely to be re-initialized, "+
-				" -bindHttp(s) (%q)\n", err, bindHTTP)
+			keepAliveListener := tcpKeepAliveListener{listener.(*net.TCPListener)}
+			limitListener := netutil.LimitListener(keepAliveListener, httpMaxConnections)
+			tlsListener := tls.NewListener(limitListener, config)
+			go func(nwp string, tlsListener net.Listener, primary bool) {
+				log.Printf("init_http: Setting up a https limit listener at %q,"+
+					" proto: %q", bindHTTP, nwp)
+				atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
+				err = server.Serve(tlsListener)
+				if err != nil {
+					if primary {
+						log.Fatalf("init_http: Serve, err: %v;"+
+							" HTTPS listeners closed, likely to be re-initialized, "+
+							" -bindHttp(s) (%q) on nwp: %s\n", err, bindHTTP, nwp)
+					}
+					log.Printf("init_http: Serve, err: %v;"+
+						" HTTPS listeners closed, likely to be re-initialized, "+
+						" -bindHttp(s) (%q) on nwp: %s\n", err, bindHTTP, nwp)
+				}
+				atomic.AddUint64(&cbft.TotHTTPSLimitListenersClosed, 1)
+			}(nwp, tlsListener, p == 0)
 		}
-		atomic.AddUint64(&cbft.TotHTTPSLimitListenersClosed, 1)
 	}
 }
 
@@ -302,4 +334,19 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
+}
+
+func getNetworkProtocols() []string {
+	if ipv6 == "true" {
+		return []string{"tcp6", "tcp4"}
+	}
+	return []string{"tcp4", "tcp6"}
+}
+
+func getListener(bindAddr, nwp string) (net.Listener, error) {
+	if (strings.HasPrefix(bindAddr, "0.0.0.0:") && nwp == "tcp6") ||
+		(strings.HasPrefix(bindAddr, "[::1]:") && nwp == "tcp4") {
+		return nil, nil
+	}
+	return net.Listen(nwp, bindAddr)
 }

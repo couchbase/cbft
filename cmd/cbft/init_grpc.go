@@ -16,6 +16,12 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 
+	"net"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+
 	"github.com/couchbase/cbft"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -23,11 +29,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
-	"net"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
 )
 
 var grpcServers []*grpc.Server
@@ -89,14 +90,14 @@ func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
 	for _, bindGRPC := range bindGRPCList {
 		if strings.HasPrefix(bindGRPC, "0.0.0.0:") ||
 			strings.HasPrefix(bindGRPC, "[::]:") {
-			go startGrpcServer(mgr, bindGRPC, secure, nil, authType)
+			startGrpcServer(mgr, bindGRPC, secure, nil, authType)
 
 			anyHostPorts[bindGRPC] = true
 		}
 	}
 
 	for i := len(bindGRPCList) - 1; i >= 1; i-- {
-		go startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts, authType)
+		startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts, authType)
 	}
 }
 
@@ -134,41 +135,66 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		} // else port not found.
 	}
 
-	listener, err := net.Listen("tcp", bindGRPC)
-	if err != nil {
-		log.Fatalf("init_grpc: mainGrpcServer, failed to listen: %v", err)
+	nwps := getNetworkProtocols()
+	for p, nwp := range nwps {
+		listener, err := getListener(bindGRPC, nwp)
+		if listener == nil && err == nil {
+			continue
+		}
+		if err != nil {
+			if p == 0 {
+				// Fail the service as the listen failed on the primary protocol.
+				// If ipv6=true,
+				//	-start listening to ipv6 - fail service if listen fails
+				//	-try to listen to ipv4 - don't fail service even if listen fails.
+				// If ipv6=false,
+				//	-start listening to ipv4 - fail service if listen fails
+				//	-try to listen to ipv6 - don't fail service even if listen fails.
+				log.Fatalf("init_grpc: listen, err: %v", err)
+			}
+			log.Errorf("init_grpc: listen, err: %v", err)
+			continue
+		}
+
+		go func(nwp string, listener net.Listener, primary bool) {
+			opts := getGrpcOpts(secure, authType)
+
+			s := grpc.NewServer(opts...)
+
+			searchSrv := &cbft.SearchService{}
+			searchSrv.SetManager(mgr)
+			pb.RegisterSearchServiceServer(s, searchSrv)
+
+			reflection.Register(s)
+
+			grpcServersMutex.Lock()
+			grpcServers = append(grpcServers, s)
+			grpcServersMutex.Unlock()
+
+			if secure {
+				atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
+			} else {
+				atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
+			}
+			log.Printf("init_grpc: GrpcServer Started at %q, proto: %q", bindGRPC, nwp)
+			if err := s.Serve(listener); err != nil {
+				if primary {
+					log.Fatalf("init_grpc: Serve, err: %v;"+
+						" gRPC listeners closed, likely to be re-initialized, "+
+						" -bindGRPC(s) (%q) on nwp: %s\n", err, bindGRPC, nwp)
+				}
+				log.Printf("init_grpc: Serve, err: %v;"+
+					" gRPC listeners closed, likely to be re-initialized, "+
+					" -bindGRPC(s) (%q) on nwp: %s\n", err, bindGRPC, nwp)
+			}
+
+			if secure {
+				atomic.AddUint64(&cbft.TotGRPCSListenersClosed, 1)
+				return
+			}
+			atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
+		}(nwp, listener, p == 0)
 	}
-
-	opts := getGrpcOpts(secure, authType)
-
-	s := grpc.NewServer(opts...)
-
-	searchSrv := &cbft.SearchService{}
-	searchSrv.SetManager(mgr)
-	pb.RegisterSearchServiceServer(s, searchSrv)
-
-	reflection.Register(s)
-
-	if secure {
-		grpcServersMutex.Lock()
-		grpcServers = append(grpcServers, s)
-		grpcServersMutex.Unlock()
-		atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
-	} else {
-		atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
-	}
-
-	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
-	if err := s.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-
-	if secure {
-		atomic.AddUint64(&cbft.TotGRPCSListenersClosed, 1)
-		return
-	}
-
-	atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
 }
 
 func getGrpcOpts(secure bool, authType string) []grpc.ServerOption {
