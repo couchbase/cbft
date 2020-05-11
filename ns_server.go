@@ -246,6 +246,9 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Keyed by indexName, sub-key is source partition id.
 	indexNameToDestPartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
+	// Keyed by indexName, carries scope, collection details
+	indexNameToScopeCollections := map[string]map[string]interface{}{}
+
 	for indexName, indexDef := range indexDefsMap {
 		nsIndexStat := NewIndexStat()
 		nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
@@ -367,6 +370,10 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					continue
 				}
 
+				// obtain the first (non-empty) partition id here to be used in the next step
+				// to fetch the feed params, note that the feed params are common across all
+				// partitions
+				var firstPartitionId string
 				partitionSeqs, err := partitionSeqsProvider.PartitionSeqs()
 				if err == nil {
 					m := indexNameToDestPartitionSeqs[pindex.IndexName]
@@ -376,7 +383,24 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					}
 
 					for partitionId, uuidSeq := range partitionSeqs {
+						if firstPartitionId == "" {
+							firstPartitionId = partitionId
+						}
+
 						m[partitionId] = uuidSeq
+					}
+				}
+
+				// obtain feed params only if the indexNameToScopeCollections map doesn't
+				// have an entry for the indexName, note that the feed params are common
+				// across all pindexes
+				if _, exists := indexNameToScopeCollections[pindex.IndexName]; !exists {
+					params := cbgt.NewDCPFeedParams()
+					if err := destForwarder.PrepareFeedParams(firstPartitionId, params); err == nil {
+						indexNameToScopeCollections[pindex.IndexName] = map[string]interface{}{
+							"scope":       params.Scope,
+							"collections": params.Collections,
+						}
 					}
 				}
 			}
@@ -412,21 +436,11 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				continue
 			}
 
-			// fetch scope, collection(s) information for the index
-			// from the SourceParams within its index definition
 			scope := "_default"
 			collections := []string{"_default"}
-			params := cbgt.NewDCPFeedParams()
-			if len(indexDef.SourceParams) > 0 {
-				err := json.Unmarshal([]byte(indexDef.SourceParams), params)
-				if err == nil {
-					if len(params.Scope) > 0 {
-						scope = params.Scope
-					}
-					if len(params.Collections) > 0 {
-						collections = params.Collections
-					}
-				}
+			if scopeColl, exists := indexNameToScopeCollections[indexName]; exists {
+				scope = scopeColl["scope"].(string)
+				collections = scopeColl["collections"].([]string)
 			}
 
 			var totSeq uint64
