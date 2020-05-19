@@ -14,6 +14,7 @@ var ftsPrefix = 'fts';
 
 // -------------------------------------------------------
 import angular from "/ui/web_modules/angular.js";
+
 import uiRouter from "/ui/web_modules/@uirouter/angularjs.js";
 import ngClipboard from "/ui/libs/ngclipboard.js";
 import ngSortable from "/ui/libs/angular-legacy-sortable.js";
@@ -33,12 +34,15 @@ import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "/_p/ui/fts/static/index.js";
 import QueryCtrl from "/_p/ui/fts/static/query.js";
 import uiTree from "/ui/web_modules/angular-ui-tree.js";
 
+import qwDocEditorService from "/_p/ui/query/qw_doc_editor_service.js";
+
+
 export default ftsAppName;
 export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
 
 angular
     .module(ftsAppName,
-            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService])
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
@@ -652,7 +656,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 // -------------------------------------------------------
 
 function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
-                              $location, mnPermissions) {
+                              $location, mnPermissions, qwDocEditorService) {
   var $httpPrefixed = prefixedHttp($http, '../_p/' + ftsPrefix, true);
 
   var $routeParams = $stateParams;
@@ -697,7 +701,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
         $location.search("p", $scope.page);
     }
 
-    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location);
+    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location, qwDocEditorService);
 
     ftsServiceHostPort($scope, $http, $location);
 

@@ -34,7 +34,7 @@ function PrepQueryRequest(scope) {
     return qr
 }
 
-function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditorService) {
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
     $scope.query = null;
@@ -225,6 +225,10 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.validPages.splice(0, frontPagesToRemove);
         }
         $scope.firstResult = (($scope.page-1) * $scope.resultsPerPage) + 1;
+    };
+
+    $scope.showDocument = function(hit) {
+      docEditorService.getAndShowDocument($scope.indexDef.sourceName,hit.id);
     };
 
     $scope.processResults = function(data) {
