@@ -16,11 +16,13 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/blevesearch/bleve/mapping"
+	"github.com/couchbase/cbgt"
 )
 
 const defaultScopeName = "_default"
@@ -245,4 +247,35 @@ func metaFieldPosition(input []byte) int {
 
 func metaFieldContents(value string) []byte {
 	return []byte(fmt.Sprintf(",\"_$scope_$collection\":\"%s\"}", value))
+}
+
+// -----------------------------------------------------------------------------
+
+// API to retrieve the scope & collection names from the provided
+// index definition.
+func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
+	scope string, collections []string, err error) {
+	if indexDef == nil {
+		err = fmt.Errorf("no index-def provided")
+		return
+	}
+
+	scope = "_default"
+	collections = []string{"_default"}
+
+	bp := NewBleveParams()
+	if len(indexDef.Params) > 0 {
+		if err = json.Unmarshal([]byte(indexDef.Params), bp); err != nil {
+			return
+		}
+
+		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
+			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+				scope, collections, _, err = getScopeCollTypeMappings(im)
+				return
+			}
+		}
+	}
+
+	return
 }
