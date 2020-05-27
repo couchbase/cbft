@@ -23,6 +23,10 @@ import (
 	"github.com/blevesearch/bleve/mapping"
 )
 
+const defaultScopeName = "_default"
+
+const defaultCollName = "_default"
+
 type collMetaFieldCache struct {
 	m                sync.RWMutex
 	cache            map[string]string            // indexName$collName => _$suid_$cuid
@@ -92,10 +96,18 @@ func scopeCollTypeMapping(in string) (string, string, string, error) {
 	return vals[0], vals[1], typeMapping, nil
 }
 
-func getScopeCollTypeMappings(tm map[string]*mapping.DocumentMapping) (scope string,
+func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
 	cols []string, typeMappings []string, err error) {
-	hash := make(map[string]struct{}, len(tm))
-	for tp, dm := range tm {
+	// index the _default/_default scope and collection when
+	// default mapping is enabled.
+	if im.DefaultMapping.Enabled {
+		scope = defaultScopeName
+		cols = []string{defaultCollName}
+		typeMappings = []string{""}
+	}
+
+	hash := make(map[string]struct{}, len(im.TypeMapping))
+	for tp, dm := range im.TypeMapping {
 		if !dm.Enabled {
 			continue
 		}
@@ -115,7 +127,7 @@ func getScopeCollTypeMappings(tm map[string]*mapping.DocumentMapping) (scope str
 		if scope != s {
 			return "", nil, nil, fmt.Errorf("collection_utils: multiple scopes"+
 				" found: %s , %s, index can only span collections on a single"+
-				"scope", scope, s)
+				" scope", scope, s)
 		}
 	}
 	return scope, cols, typeMappings, nil
@@ -126,8 +138,8 @@ func getScopeCollTypeMappings(tm map[string]*mapping.DocumentMapping) (scope str
 // - single scope validation across collections
 // - verify scope to collection mapping with kv manifest
 func validateScopeCollFromMappings(bucket string,
-	tm map[string]*mapping.DocumentMapping, ignoreCollNotFoundErrs bool) (*Scope, error) {
-	sName, collNames, typeMappings, err := getScopeCollTypeMappings(tm)
+	im *mapping.IndexMappingImpl, ignoreCollNotFoundErrs bool) (*Scope, error) {
+	sName, collNames, typeMappings, err := getScopeCollTypeMappings(im)
 	if err != nil {
 		return nil, err
 	}

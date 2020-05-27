@@ -530,9 +530,9 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 					" across all nodes in the cluster")
 			}
 
-			if am, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				_, err := validateScopeCollFromMappings(indexDef.SourceName,
-					am.TypeMapping, false)
+					im, false)
 				if err != nil {
 					return nil, err
 				}
@@ -698,16 +698,16 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
-		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+		if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 			scope, err := validateScopeCollFromMappings(ip.SourceName,
-				am.TypeMapping, false)
+				im, false)
 			if err != nil {
 				return nil, nil, err
 			}
 			// if there are more than 1 collection then need to
 			// insert $scope#$collection field into the mappings
 			if len(scope.Collections) > 1 {
-				err = enhanceMappingsWithCollMetaField(am.TypeMapping)
+				err = enhanceMappingsWithCollMetaField(im.TypeMapping)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -720,7 +720,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			}
 
 			bleveParams.DocConfig.CollPrefixLookup =
-				initBleveDocConfigs(ip.IndexName, ip.SourceName, am)
+				initBleveDocConfigs(ip.IndexName, ip.SourceName, im)
 		}
 	}
 
@@ -750,7 +750,7 @@ func initBleveDocConfigs(indexName, sourceName string,
 	if im == nil {
 		return nil
 	}
-	scope, err := validateScopeCollFromMappings(sourceName, im.TypeMapping, false)
+	scope, err := validateScopeCollFromMappings(sourceName, im, false)
 	if err != nil {
 		return nil
 	}
@@ -1795,9 +1795,9 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		return fmt.Errorf("bleve: parse params: %v", err)
 	}
 
-	if am, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
+	if im, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
 		scope, err := validateScopeCollFromMappings(in.SourceName,
-			am.TypeMapping, true)
+			im, true)
 		if err != nil {
 			return err
 		}

@@ -146,9 +146,9 @@ func scopeCollNames(params, sourceName string) (string, []string) {
 		return "", nil
 	}
 
-	if am, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
+	if im, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
 		scope, err := validateScopeCollFromMappings(sourceName,
-			am.TypeMapping, true)
+			im, true)
 		if err != nil {
 			return "", nil
 		}
