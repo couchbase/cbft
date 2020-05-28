@@ -60,6 +60,7 @@ func (c *collMetaFieldCache) setValue(indexName, collName string,
 	suid, cuid int64, multiCollIndex bool) {
 	key := indexName + "$" + collName
 	c.m.Lock()
+
 	c.cache[key] = encodeCollMetaFieldValue(suid, cuid)
 	if multiCollIndex {
 		var indexMap map[uint32]string
@@ -69,6 +70,19 @@ func (c *collMetaFieldCache) setValue(indexName, collName string,
 			c.collUIDNameCache[indexName] = indexMap
 		}
 		indexMap[uint32(cuid)] = collName
+	}
+
+	c.m.Unlock()
+}
+
+func (c *collMetaFieldCache) reset(indexName string) {
+	prefix := indexName + "$"
+	c.m.Lock()
+	delete(c.collUIDNameCache, indexName)
+	for k := range c.cache {
+		if strings.HasPrefix(k, prefix) {
+			delete(c.cache, k)
+		}
 	}
 	c.m.Unlock()
 }

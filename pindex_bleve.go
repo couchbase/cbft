@@ -755,6 +755,9 @@ func initBleveDocConfigs(indexName, sourceName string,
 		return nil
 	}
 	rv := make(map[uint32]*collMetaField, 1)
+	// clean up any old data
+	metaFieldValCache.reset(indexName)
+
 	multiCollIndex := len(scope.Collections) > 1
 	for _, coll := range scope.Collections {
 		cuid, err := strconv.ParseInt(coll.Uid, 16, 32)
