@@ -134,6 +134,12 @@ none
 GET /debug/vars
 cluster.settings.fts!read
 
+GET /_prometheusMetrics
+cluster.admin.internal.stats!read
+
+GET /_prometheusMetricsHigh
+cluster.admin.internal.stats!read
+
 RPC /Search
 cluster.bucket[<sourceName>].fts!read
 `
