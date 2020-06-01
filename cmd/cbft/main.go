@@ -807,9 +807,12 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 
 	gone, indexUUID, err := dcpFeed.VerifySourceNotExists()
 	log.Printf("main: meh.OnFeedError, VerifySourceNotExists,"+
-		" srcType: %s, gone: %t, indexUUID: %s, err: %v",
-		srcType, gone, indexUUID, err)
+		" srcType: %s, gone: %t, indexUUID: %s",
+		srcType, gone, indexUUID)
 	if !gone {
+		if err != nil {
+			log.Warnf("main: meh.OnFeedError, VerifySourceNotExists err: %v", err)
+		}
 		return
 	}
 
