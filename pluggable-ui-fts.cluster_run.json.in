@@ -7,7 +7,6 @@
     }
   },
   "version-dirs": [
-    {"version": [5, 0], "dir": "."},
     {"version": [7, 0], "dir": "."}
   ],
   "doc-root": [
