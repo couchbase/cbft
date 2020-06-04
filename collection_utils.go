@@ -97,19 +97,23 @@ func (c *collMetaFieldCache) getCollUIDNameMap(indexName string) (
 	return
 }
 
-func scopeCollTypeMapping(in string) (string, string, string, error) {
+func scopeCollTypeMapping(in string) (string, string, string) {
 	vals := strings.SplitN(in, ".", 3)
-	if len(vals) < 2 {
-		return "", "", "",
-			fmt.Errorf("collection_utils: invalid mappings with " +
-				"doc_config.mode: scope.collection*")
-	}
+	scope := "_default"
+	collection := "_default"
 	typeMapping := ""
-	if len(vals) == 3 {
+	if len(vals) == 1 {
+		typeMapping = vals[0]
+	} else if len(vals) == 2 {
+		scope = vals[0]
+		collection = vals[1]
+	} else {
+		scope = vals[0]
+		collection = vals[1]
 		typeMapping = vals[2]
 	}
 
-	return vals[0], vals[1], typeMapping, nil
+	return scope, collection, typeMapping
 }
 
 func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
@@ -127,10 +131,7 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
 		if !dm.Enabled {
 			continue
 		}
-		s, c, t, err := scopeCollTypeMapping(tp)
-		if err != nil {
-			return "", nil, nil, err
-		}
+		s, c, t := scopeCollTypeMapping(tp)
 		if _, exists := hash[c+t]; !exists {
 			hash[c+t] = struct{}{}
 			cols = append(cols, c)
@@ -251,8 +252,8 @@ func metaFieldContents(value string) []byte {
 
 // -----------------------------------------------------------------------------
 
-// API to retrieve the scope & collection names from the provided
-// index definition.
+// API to retrieve the scope & unique list of collection names from the
+// provided index definition.
 func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 	scope string, collections []string, err error) {
 	if indexDef == nil {
@@ -271,7 +272,20 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
-				scope, collections, _, err = getScopeCollTypeMappings(im)
+				var collectionNames []string
+				scope, collectionNames, _, err = getScopeCollTypeMappings(im)
+				if err != nil {
+					return
+				}
+
+				uniqueCollections := map[string]struct{}{}
+				for _, coll := range collectionNames {
+					if _, exists := uniqueCollections[coll]; !exists {
+						uniqueCollections[coll] = struct{}{}
+						collections = append(collections, coll)
+					}
+				}
+
 				return
 			}
 		}

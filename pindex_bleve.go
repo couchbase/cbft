@@ -1807,9 +1807,12 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 
 		if scope != nil && len(scope.Collections) > 0 {
 			params.Scope = scope.Name
-			params.Collections = make([]string, len(scope.Collections))
-			for i, coll := range scope.Collections {
-				params.Collections[i] = coll.Name
+			uniqueCollections := map[string]struct{}{}
+			for _, coll := range scope.Collections {
+				if _, exists := uniqueCollections[coll.Name]; !exists {
+					uniqueCollections[coll.Name] = struct{}{}
+					params.Collections = append(params.Collections, coll.Name)
+				}
 			}
 		}
 	}

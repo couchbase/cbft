@@ -240,9 +240,6 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	// Keyed by indexName, sub-key is source partition id.
 	indexNameToDestPartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
-	// Keyed by indexName, carries scope, collection details
-	indexNameToScopeCollections := map[string]map[string]interface{}{}
-
 	for indexName, indexDef := range indexDefsMap {
 		nsIndexStat := NewIndexStat()
 		if collAware {
@@ -387,19 +384,6 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 						m[partitionId] = uuidSeq
 					}
 				}
-
-				// obtain feed params only if the indexNameToScopeCollections map doesn't
-				// have an entry for the indexName, note that the feed params are common
-				// across all pindexes
-				if _, exists := indexNameToScopeCollections[pindex.IndexName]; !exists {
-					params := cbgt.NewDCPFeedParams()
-					if err := destForwarder.PrepareFeedParams(firstPartitionId, params); err == nil {
-						indexNameToScopeCollections[pindex.IndexName] = map[string]interface{}{
-							"scope":       params.Scope,
-							"collections": params.Collections,
-						}
-					}
-				}
 			}
 		}
 	}
@@ -429,11 +413,9 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 				continue
 			}
 
-			scope := "_default"
-			collections := []string{"_default"}
-			if scopeColl, exists := indexNameToScopeCollections[indexName]; exists {
-				scope = scopeColl["scope"].(string)
-				collections = scopeColl["collections"].([]string)
+			scope, collections, err := GetScopeCollectionsFromIndexDef(indexDef)
+			if err != nil {
+				continue
 			}
 
 			var totSeq uint64
