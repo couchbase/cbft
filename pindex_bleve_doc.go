@@ -40,7 +40,7 @@ func (c *BleveDocument) Type() string {
 	return c.typ
 }
 
-func (c *BleveDocument) setType(nTyp string) {
+func (c *BleveDocument) SetType(nTyp string) {
 	c.typ = nTyp
 }
 
@@ -166,7 +166,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 			// 'type' and the document's matches it.
 			typ += "." + cmf.typeMapping
 		}
-		bdoc.setType(typ)
+		bdoc.SetType(typ)
 	}
 
 	return bdoc, key, err
