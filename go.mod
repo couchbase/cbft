@@ -6,9 +6,11 @@ require (
 	github.com/blevesearch/bleve v1.0.7
 	github.com/blevesearch/bleve-mapping-ui v0.3.0
 	github.com/couchbase/cbauth v0.0.0-20190926094514-82614adbe4d4
-	github.com/couchbase/cbgt v0.0.0-20200423161529-c90634528388
+	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
+	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc
 	github.com/couchbase/go-couchbase v0.0.0-20200406141124-ccd08288787d
+	github.com/couchbase/gomemcached v0.0.0-20200526233749-ec430f949808 // indirect
 	github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85
 	github.com/couchbase/moss v0.1.0
 	github.com/dustin/go-jsonpointer v0.0.0-20160814072949-ba0abeacc3dc
@@ -23,3 +25,10 @@ require (
 	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
 	google.golang.org/grpc v1.29.0
 )
+
+replace github.com/couchbase/cbftx => ../cbftx
+
+replace github.com/couchbase/cbgt => ../cbgt
+
+replace github.com/couchbase/cbft => ../cbft
+

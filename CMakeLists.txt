@@ -23,16 +23,14 @@ IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "cbftx")
 ENDIF(BUILD_ENTERPRISE)
 
-GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
-  GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
+GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.13.7)
 
-GoInstall (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
-  GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
+GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
-  INSTALL_PATH bin OUTPUT cbft-bleve
+  INSTALL_PATH bin
   GOVERSION 1.13.7)
 
 # Generate pluggable-ui-fts.json file.
@@ -81,7 +79,7 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-
 SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
 configure_file (pluggable-ui-fts.cluster_run.json.in
-                ${PROJECT_BINARY_DIR}/../../../../../cluster_run_ui_plugins/pluggable-ui-fts.cluster_run.json)
+                ${PROJECT_BINARY_DIR}/../cluster_run_ui_plugins/pluggable-ui-fts.cluster_run.json)
 
 GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope
