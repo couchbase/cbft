@@ -2629,7 +2629,7 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 
 func TestNodePlanParams(t *testing.T) {
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
-		[]string{`{"maxPartitionsPerPIndex":1,"numReplicas":1,"nodePlanParams":{"":{"":{"canRead":false,"canWrite":false}}}}`},
+		[]string{`{"maxPartitionsPerPIndex":1,"numReplicas":0,"nodePlanParams":{"":{"":{"canRead":false,"canWrite":false}}}}`},
 		2, 0)
 
 	tests := []*RESTHandlerTest{
