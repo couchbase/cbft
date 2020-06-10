@@ -3,7 +3,7 @@ module github.com/couchbase/cbft
 go 1.13
 
 require (
-	github.com/blevesearch/bleve v1.0.7
+	github.com/blevesearch/bleve v1.0.9
 	github.com/blevesearch/bleve-mapping-ui v0.3.0
 	github.com/couchbase/cbauth v0.0.0-20190926094514-82614adbe4d4
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
@@ -31,4 +31,3 @@ replace github.com/couchbase/cbftx => ../cbftx
 replace github.com/couchbase/cbgt => ../cbgt
 
 replace github.com/couchbase/cbft => ../cbft
-
