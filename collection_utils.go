@@ -257,25 +257,21 @@ func metaFieldContents(value string) []byte {
 func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 	scope string, collections []string, err error) {
 	if indexDef == nil {
-		err = fmt.Errorf("no index-def provided")
-		return
+		return "", nil, fmt.Errorf("no index-def provided")
 	}
-
-	scope = "_default"
-	collections = []string{"_default"}
 
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		if err = json.Unmarshal([]byte(indexDef.Params), bp); err != nil {
-			return
+			return "", nil, err
 		}
 
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				var collectionNames []string
-				scope, collectionNames, _, err = getScopeCollTypeMappings(im)
+				scope, collectionNames, _, err := getScopeCollTypeMappings(im)
 				if err != nil {
-					return
+					return "", nil, err
 				}
 
 				uniqueCollections := map[string]struct{}{}
@@ -286,10 +282,10 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 					}
 				}
 
-				return
+				return scope, collections, nil
 			}
 		}
 	}
 
-	return
+	return "_default", []string{"_default"}, nil
 }
