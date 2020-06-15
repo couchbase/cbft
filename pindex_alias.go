@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync/atomic"
 
 	"github.com/blevesearch/bleve"
 
@@ -118,7 +119,10 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing searchRequest, err: %v", err)
 	}
 
-	cancelCh := cbgt.TimeoutCancelChan(queryCtlParams.Ctl.Timeout)
+	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
+	// defer a call to cancel, this ensures that goroutine from
+	// setupContextAndCancelCh always exits
+	defer cancel()
 
 	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, true,
@@ -128,7 +132,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
-	searchResponse, err := alias.Search(searchRequest)
+	searchResponse, err := alias.SearchInContext(ctx, searchRequest)
 	if err != nil {
 		return err
 	}
@@ -145,6 +149,26 @@ func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 		return nil, err
 	}
 	return &params, nil
+}
+
+func getRemoteClients(mgr *cbgt.Manager) addRemoteClients {
+	var addRemClients addRemoteClients
+	if atomic.LoadInt32(&compatibleClusterFound) == 1 {
+		addRemClients = addGrpcClients
+	} else {
+		// switch to grpc for scatter gather in an advanced enough cluster
+		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
+			addRemClients = addGrpcClients
+			atomic.StoreInt32(&compatibleClusterFound, 1)
+		}
+	}
+
+	if _, ok := mgr.Options()["SkipScatterGatherOverGrpc"]; ok ||
+		addRemClients == nil {
+		addRemClients = addIndexClients
+	}
+
+	return addRemClients
 }
 
 // The indexName/indexUUID is for a user-defined index alias.
@@ -229,7 +253,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 				subAlias, _, _, err = bleveIndexAlias(mgr,
 					targetName, targetSpec.IndexUUID, ensureCanRead,
 					consistencyParams, cancelCh, true, nil,
-					partitionSelection, addIndexClients)
+					partitionSelection, getRemoteClients(mgr))
 				if err != nil {
 					return err
 				}

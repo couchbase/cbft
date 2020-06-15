@@ -1068,22 +1068,6 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// setupContextAndCancelCh always exits
 	defer cancel()
 
-	var rcAdder addRemoteClients
-	if atomic.LoadInt32(&compatibleClusterFound) == 1 {
-		rcAdder = addGrpcClients
-	} else {
-		// switch to grpc for scatter gather in an advanced enough cluster
-		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
-			rcAdder = addGrpcClients
-			atomic.StoreInt32(&compatibleClusterFound, 1)
-		}
-	}
-
-	if _, exists := mgr.Options()["SkipScatterGatherOverGrpc"]; exists ||
-		rcAdder == nil {
-		rcAdder = addIndexClients
-	}
-
 	var onlyPIndexes map[string]bool
 	if len(queryPIndexes.PIndexNames) > 0 {
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
@@ -1091,7 +1075,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	alias, remoteClients, numPIndexes, err1 := bleveIndexAlias(mgr, indexName,
 		indexUUID, true, queryCtlParams.Ctl.Consistency, cancelCh, true,
-		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, rcAdder)
+		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, getRemoteClients(mgr))
 	if err1 != nil {
 		if _, ok := err1.(*cbgt.ErrorLocalPIndexHealth); !ok {
 			return err1
