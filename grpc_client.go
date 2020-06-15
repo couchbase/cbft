@@ -255,7 +255,8 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 	}
 
 	searchResult := &bleve.SearchResult{
-		Status:  &bleve.SearchStatus{},
+		Status: &bleve.SearchStatus{
+			Errors: make(map[string]error)},
 		Request: req.searchRequest,
 	}
 
