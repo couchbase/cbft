@@ -124,17 +124,17 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
 		opts, err := getGrpcOpts(hostPort, certInBytes)
 		if err != nil {
-			log.Printf("grpc_client: getGrpcOpts, host port: %s err: %v",
-				hostPort, err)
 			rpcConnMutex.Unlock()
+			log.Errorf("grpc_client: getGrpcOpts, host port: %s, err: %v",
+				hostPort, err)
 			return nil, err
 		}
 
 		for i := 0; i < connPoolSize; i++ {
 			conn, err := grpc.Dial(hostPort, opts...)
 			if err != nil {
-				log.Printf("grpc_client: grpc.Dial, err: %v", err)
 				rpcConnMutex.Unlock()
+				log.Errorf("grpc_client: grpc.Dial, err: %v", err)
 				return nil, err
 			}
 

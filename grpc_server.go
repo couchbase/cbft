@@ -353,7 +353,7 @@ func serverInterceptor(
 
 	nctx, err := wrapAuthCallbacks(req, ss.Context(), info.FullMethod)
 	if err != nil {
-		log.Printf("grpc_server: authenticate err: %+v", err)
+		log.Errorf("grpc_server: authenticate err: %+v", err)
 		return err
 	}
 

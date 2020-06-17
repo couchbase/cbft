@@ -130,7 +130,7 @@ func parseOptionsInt(options map[string]string, configKey string) (int, bool) {
 			log.Printf("parseOptionsInt: %s set to %d", configKey, n)
 			return n, exists
 		}
-		log.Printf("parseOptionsInt: %s parse, err: %v", configKey, err)
+		log.Warnf("parseOptionsInt: %s parse, err: %v", configKey, err)
 	}
 	return 0, false
 }

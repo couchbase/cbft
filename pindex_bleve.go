@@ -2058,7 +2058,7 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	// to the same worker queue so that the order of seq numbers are maintained
 	partition, err := strconv.Atoi(p)
 	if err != nil {
-		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED, err: %v", err)
+		log.Errorf("pindex_bleve: submitAsyncBatchRequestLOCKED, err: %v", err)
 		t.m.Lock()
 		return false, err
 	}
@@ -2206,7 +2206,7 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		err := bindex.Batch(batch)
 		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchEnd, 1)
 		if err != nil {
-			log.Printf("pindex_bleve: executeBatch, err: %+v ", err)
+			log.Errorf("pindex_bleve: executeBatch, err: %+v ", err)
 		}
 		return err
 	}, bdp[0].bdest.stats.TimerBatchStore)

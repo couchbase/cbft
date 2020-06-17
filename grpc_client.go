@@ -252,7 +252,7 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 	pbReq *pb.SearchRequest) (*bleve.SearchResult, error) {
 	res, err := g.GrpcCli.Search(ctx, pbReq)
 	if err != nil || res == nil {
-		log.Printf("grpc_client: search err: %v", err)
+		log.Errorf("grpc_client: search err: %v", err)
 		return nil, err
 	}
 
@@ -270,7 +270,7 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 			break
 		}
 		if err != nil {
-			log.Printf("grpc_client: recv err: %v", err)
+			log.Errorf("grpc_client: recv err: %v", err)
 			break
 		}
 
@@ -423,7 +423,7 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 
 		cli, err := getRpcClient(remotePlanPIndex.NodeDef.UUID, host, certInBytes)
 		if err != nil {
-			log.Printf("grpc_client, getRpcClient err: %v", err)
+			log.Errorf("grpc_client: getRpcClient err: %v", err)
 			continue
 		}
 
