@@ -26,12 +26,12 @@ ENDIF(BUILD_ENTERPRISE)
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.13.7)
+  GOVERSION 1.14.4)
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
-  GOVERSION 1.13.7)
+  GOVERSION 1.14.4)
 
 # Generate pluggable-ui-fts.json file.
 SET (DOC_ROOT_PREFIX "")
