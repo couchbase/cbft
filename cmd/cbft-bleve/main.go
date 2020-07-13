@@ -16,6 +16,11 @@ package main
 
 import (
 	"github.com/blevesearch/bleve/cmd/bleve/cmd"
+	zapv11cmd "github.com/blevesearch/zap/v11/cmd/zap/cmd"
+	zapv12cmd "github.com/blevesearch/zap/v12/cmd/zap/cmd"
+	zapv13cmd "github.com/blevesearch/zap/v13/cmd/zap/cmd"
+	zapv14cmd "github.com/blevesearch/zap/v14/cmd/zap/cmd"
+	"github.com/spf13/cobra"
 
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
 
@@ -27,6 +32,12 @@ import (
 
 func init() {
 	cmd.DefaultOpenReadOnly = true
+
+	updateCommandAndAdd(zapv11cmd.RootCmd, "v11")
+	updateCommandAndAdd(zapv12cmd.RootCmd, "v12")
+	updateCommandAndAdd(zapv13cmd.RootCmd, "v13")
+	updateCommandAndAdd(zapv14cmd.RootCmd, "v14")
+	cmd.RootCmd.AddCommand(zapCmd)
 }
 
 func main() {
@@ -40,4 +51,17 @@ func main() {
 	}
 
 	cmd.Execute()
+}
+
+var zapCmd = &cobra.Command{
+	Use:   "zap",
+	Short: "zap lets you to interact with a zap file",
+	Long:  `The zap command lets you interact with a zap file.`,
+}
+
+func updateCommandAndAdd(cmd *cobra.Command, ver string) {
+	cmd.Use = ver
+	cmd.Short = ver + " lets you to interact with a " + ver + " zap file"
+	cmd.Long = "The " + ver + " command lets you interact with a " + ver + " zap file."
+	zapCmd.AddCommand(cmd)
 }

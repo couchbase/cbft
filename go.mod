@@ -5,6 +5,10 @@ go 1.13
 require (
 	github.com/blevesearch/bleve v1.0.9
 	github.com/blevesearch/bleve-mapping-ui v0.3.0
+	github.com/blevesearch/zap/v11 v11.0.9
+	github.com/blevesearch/zap/v12 v12.0.9
+	github.com/blevesearch/zap/v13 v13.0.1
+	github.com/blevesearch/zap/v14 v14.0.0
 	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
 	github.com/couchbase/cbftx v0.0.0-20200609070956-8ef1a129827f
 	github.com/couchbase/cbgt v0.0.0-20200618221912-e3703fe55bc8
@@ -21,6 +25,7 @@ require (
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 	github.com/julienschmidt/httprouter v1.1.1-0.20170430222011-975b5c4c7c21
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563
+	github.com/spf13/cobra v0.0.5
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
 	google.golang.org/genproto v0.0.0-20180831171423-11092d34479b // indirect
