@@ -10,8 +10,8 @@ require (
 	github.com/blevesearch/zap/v13 v13.0.1
 	github.com/blevesearch/zap/v14 v14.0.0
 	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
-	github.com/couchbase/cbftx v0.0.0-20200609070956-8ef1a129827f
-	github.com/couchbase/cbgt v0.0.0-20200618221912-e3703fe55bc8
+	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
+	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc
 	github.com/couchbase/go-couchbase v0.0.0-20200618135536-fe11fe60aa9d
 	github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85
