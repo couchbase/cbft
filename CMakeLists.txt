@@ -23,6 +23,8 @@ IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "cbftx")
 ENDIF(BUILD_ENTERPRISE)
 
+GoPrivateMod(MODULE cbftx)
+
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
