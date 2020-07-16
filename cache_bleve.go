@@ -15,21 +15,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"
 	"github.com/blevesearch/bleve/index"
-	"github.com/blevesearch/bleve/index/scorch"
-	"github.com/blevesearch/bleve/index/scorch/mergeplan"
 	"github.com/blevesearch/bleve/index/store"
 	"github.com/blevesearch/bleve/mapping"
 
 	"github.com/couchbase/cbgt"
-	log "github.com/couchbase/clog"
 )
 
 // Only cache a bleve result whose size in number of hits isn't too
@@ -202,136 +196,4 @@ func (m *cacheBleveIndex) DeleteInternal(key []byte) error {
 
 func (m *cacheBleveIndex) Advanced() (index.Index, store.KVStore, error) {
 	return nil, nil, cacheBleveIndexUnimplementedErr
-}
-
-func (m *cacheBleveIndex) getLiveTasks(req *cbgt.TaskRequest) (
-	*cbgt.TaskRequestStatus, error) {
-	if req == nil {
-		return nil, nil
-	}
-	rv := &cbgt.TaskRequestStatus{Request: req, Total: 1,
-		Successful: 1}
-
-	for _, tname := range backgroundTasks() {
-		if strings.HasPrefix(tname, m.bindex.Name()) {
-			if rv.Status == nil {
-				rv.Status = make(map[string]string)
-			}
-			rv.Status[tname] = "In progress"
-		}
-	}
-
-	return rv, nil
-}
-
-func (m *cacheBleveIndex) cancelTask(req *cbgt.TaskRequest) (
-	*cbgt.TaskRequestStatus, error) {
-	if req == nil {
-		return nil, nil
-	}
-	if req.UUID == "" {
-		return nil, fmt.Errorf("bleve: missing uuid for cancel task")
-	}
-
-	rv := &cbgt.TaskRequestStatus{Request: req, Total: 1, Successful: 1}
-	var tkey string
-	for _, tname := range backgroundTasks() {
-		if strings.HasSuffix(tname, req.UUID) &&
-			strings.HasPrefix(tname, m.bindex.Name()) {
-			tkey = tname
-			break
-		}
-	}
-
-	err := cancelTask(tkey)
-	if err != nil {
-		rv.Successful = 0
-		rv.Failed = 1
-		rv.Errors = make(map[string]error, 1)
-		rv.Errors[m.bindex.Name()] = err
-	} else {
-		log.Printf("bleve: cancelled the task: %s on partition: %s",
-			req.UUID, m.bindex.Name())
-	}
-
-	return rv, nil
-}
-
-func (m *cacheBleveIndex) forceMerge(req *cbgt.TaskRequest) (
-	*cbgt.TaskRequestStatus, error) {
-	if req == nil {
-		return nil, nil
-	}
-
-	mpo := mergeplan.SingleSegmentMergePlanOptions
-	if v, ok := req.Contents["scorchMergePlanOptions"]; ok {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(b, &mpo)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	index, _, err := m.bindex.Advanced()
-	if err != nil {
-		return nil, err
-	}
-
-	rv := &cbgt.TaskRequestStatus{Request: req, Total: 1, Successful: 1}
-	if si, ok := index.(*scorch.Scorch); ok {
-		go func() {
-			// track the running tasks with a cancel knob
-			ctx, cancel := context.WithCancel(context.Background())
-			tkey := m.bindex.Name() + ":merge:" + req.UUID
-			updateTaskStart(tkey, cancel)
-
-			log.Printf("bleve: triggering merge operations on index: %s", m.bindex.Name())
-			st := time.Now()
-			err = si.ForceMerge(ctx, &mpo)
-			et := time.Since(st).Seconds()
-
-			// mark the completion
-			updateTaskFinish(tkey)
-			log.Printf("bleve: force merge finished on index: %s, "+
-				" time took: %f secs", m.bindex.Name(), et)
-		}()
-	} else {
-		err = fmt.Errorf("bleve: compaction not supported in non scorch index %s",
-			m.bindex.Name())
-	}
-
-	if err != nil {
-		rv.Successful = 0
-		rv.Failed = 1
-		rv.Errors = make(map[string]error, 1)
-		rv.Errors[m.bindex.Name()] = err
-	}
-	return rv, err
-}
-
-// HandleTask is an implementation of the cbgt.TaskRequestHandler interface
-func (m *cacheBleveIndex) HandleTask(req []byte) (
-	*cbgt.TaskRequestStatus, error) {
-	var task cbgt.TaskRequest
-	err := json.Unmarshal(req, &task)
-	if err != nil {
-		return nil, err
-	}
-
-	if task.Op == "merge" {
-		return m.forceMerge(&task)
-	}
-
-	if task.Op == "cancel" {
-		return m.cancelTask(&task)
-	}
-
-	if task.Op == "get" {
-		return m.getLiveTasks(&task)
-	}
-
-	return nil, fmt.Errorf("bleve: unknown task op: %s", task.Op)
 }

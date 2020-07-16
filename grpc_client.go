@@ -16,13 +16,12 @@ package cbft
 
 import (
 	"fmt"
+	"golang.org/x/net/context"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/document"
@@ -360,12 +359,6 @@ func (g *GrpcClient) AuthType() string {
 		return g.Mgr.Options()["authType"]
 	}
 	return ""
-}
-
-// HandleTask is an implementation of the cbgt.TaskRequestHandler interface
-func (g *GrpcClient) HandleTask(in []byte) (*cbgt.TaskRequestStatus, error) {
-	// placeholder implementation
-	return nil, nil
 }
 
 func clientInterceptor(ctx context.Context, method string,

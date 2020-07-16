@@ -354,7 +354,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 				}
 				// need to revisit this sleep part, ideally
 				// waitForPersistence should have sufficed
-				time.Sleep(200 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				waitForPersistence(float64(4))
 			},
 			Desc:   "count idx0 4 when 3rd snapshot ended, pre-rollback",
