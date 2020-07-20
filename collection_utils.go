@@ -289,3 +289,13 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 
 	return "_default", []string{"_default"}, nil
 }
+
+func multiCollection(colls []Collection) bool {
+	hash := make(map[string]struct{}, 1)
+	for _, c := range colls {
+		if _, ok := hash[c.Name]; !ok {
+			hash[c.Name] = struct{}{}
+		}
+	}
+	return len(hash) > 1
+}

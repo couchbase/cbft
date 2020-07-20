@@ -706,7 +706,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			}
 			// if there are more than 1 collection then need to
 			// insert $scope#$collection field into the mappings
-			if len(scope.Collections) > 1 {
+			if multiCollection(scope.Collections) {
 				err = enhanceMappingsWithCollMetaField(im.TypeMapping)
 				if err != nil {
 					return nil, nil, err
@@ -758,7 +758,7 @@ func initBleveDocConfigs(indexName, sourceName string,
 	// clean up any old data
 	metaFieldValCache.reset(indexName)
 
-	multiCollIndex := len(scope.Collections) > 1
+	multiCollIndex := multiCollection(scope.Collections)
 	for _, coll := range scope.Collections {
 		cuid, err := strconv.ParseInt(coll.Uid, 16, 32)
 		if err != nil {
@@ -768,11 +768,16 @@ func initBleveDocConfigs(indexName, sourceName string,
 		if err != nil {
 			return nil
 		}
-		rv[uint32(cuid)] = &collMetaField{
-			scopeDotColl: scope.Name + "." + coll.Name,
-			typeMapping:  coll.typeMapping,
-			contents:     metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
+		if cmf, ok := rv[uint32(cuid)]; !ok {
+			rv[uint32(cuid)] = &collMetaField{
+				scopeDotColl: scope.Name + "." + coll.Name,
+				typeMappings: []string{coll.typeMapping},
+				contents:     metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
+			}
+		} else {
+			cmf.typeMappings = append(cmf.typeMappings, coll.typeMapping)
 		}
+
 		metaFieldValCache.setValue(indexName, coll.Name, suid, cuid, multiCollIndex)
 	}
 	return rv

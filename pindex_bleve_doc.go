@@ -46,7 +46,7 @@ func (c *BleveDocument) SetType(nTyp string) {
 
 type collMetaField struct {
 	scopeDotColl string
-	typeMapping  string
+	typeMappings []string // for multiple mappings for a collection
 	contents     []byte
 }
 
@@ -161,10 +161,14 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	bdoc := b.BuildDocumentFromObj(key, v, defaultType)
 	if !b.legacyMode && cmf != nil {
 		typ := cmf.scopeDotColl
-		if len(cmf.typeMapping) > 0 && bdoc.Type() == cmf.typeMapping {
-			// append type information only if the type mapping specifies a
-			// 'type' and the document's matches it.
-			typ += "." + cmf.typeMapping
+		// there could be multiple type mappings under a single collection.
+		for _, t := range cmf.typeMappings {
+			if bdoc.Type() == t {
+				// append type information only if the type mapping specifies a
+				// 'type' and the document's matches it.
+				typ += "." + t
+				break
+			}
 		}
 		bdoc.SetType(typ)
 	}
