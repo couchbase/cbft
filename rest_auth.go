@@ -20,7 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve"
+	"github.com/buger/jsonparser"
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -185,25 +186,38 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 
 func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 	if len(indexDef.Params) > 0 {
-		bleveParams := NewBleveParams()
-		err := json.Unmarshal([]byte(indexDef.Params), bleveParams)
+		bleveParamBytes := []byte(indexDef.Params)
+		docConfig, _, _, err := jsonparser.Get(bleveParamBytes, "doc_config")
 		if err != nil {
-			return nil, fmt.Errorf("rest_auth: parse params, err: %v", err)
+			return nil, fmt.Errorf("rest_auth: doc_config parse, err: %v", err)
+		}
+		docConfigMode, _, _, err := jsonparser.Get(docConfig, "mode")
+		if err != nil {
+			return nil, fmt.Errorf("rest_auth: config mode parse, err: %v", err)
 		}
 
-		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
-			if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
-				sName, colNames, _, err := getScopeCollTypeMappings(im)
-				if err != nil {
-					return nil, err
-				}
-
-				sourceNames := make([]string, len(colNames))
-				for i, colName := range colNames {
-					sourceNames[i] = indexDef.SourceName + ":" + sName + ":" + colName
-				}
-				return sourceNames, nil
+		if strings.HasPrefix(string(docConfigMode), ConfigModeCollPrefix) {
+			bmappings, _, _, err := jsonparser.Get(bleveParamBytes, "mapping")
+			if err != nil {
+				return nil, fmt.Errorf("rest_auth: mapping parse, err: %v", err)
 			}
+
+			mappings := bleve.NewIndexMapping()
+			err = UnmarshalJSON(bmappings, mappings)
+			if err != nil {
+				return nil, fmt.Errorf("rest_auth: mappings unmarshal, err: %v", err)
+			}
+
+			sName, colNames, _, err := getScopeCollTypeMappings(mappings, true)
+			if err != nil {
+				return nil, err
+			}
+
+			sourceNames := make([]string, len(colNames))
+			for i, colName := range colNames {
+				sourceNames[i] = indexDef.SourceName + ":" + sName + ":" + colName
+			}
+			return sourceNames, nil
 		}
 	}
 	return []string{indexDef.SourceName}, nil

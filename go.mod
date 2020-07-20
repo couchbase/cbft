@@ -9,6 +9,7 @@ require (
 	github.com/blevesearch/zap/v12 v12.0.9
 	github.com/blevesearch/zap/v13 v13.0.1
 	github.com/blevesearch/zap/v14 v14.0.0
+	github.com/buger/jsonparser v1.0.0
 	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000

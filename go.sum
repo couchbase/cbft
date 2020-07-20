@@ -32,6 +32,8 @@ github.com/blevesearch/zap/v13 v13.0.1 h1:NSCM6uKu77Vn/x9nlPp4pE1o/bftqcOWZEHSyZ
 github.com/blevesearch/zap/v13 v13.0.1/go.mod h1:XmyNLMvMf8Z5FjLANXwUeDW3e1+o77TTGUWrth7T9WI=
 github.com/blevesearch/zap/v14 v14.0.0 h1:HF8Ysjm13qxB0jTGaKLlatNXmJbQD8bY+PrPxm5v4hE=
 github.com/blevesearch/zap/v14 v14.0.0/go.mod h1:sUc/gPGJlFbSQ2ZUh/wGRYwkKx+Dg/5p+dd+eq6QMXk=
+github.com/buger/jsonparser v1.0.0 h1:etJTGF5ESxjI0Ic2UaLQs2LQQpa8G9ykQScukbh4L8A=
+github.com/buger/jsonparser v1.0.0/go.mod h1:tgcrVJ81GPSF0mz+0nu1Xaz0fazGPrmmJfJtxjbHhUQ=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=

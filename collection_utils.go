@@ -116,7 +116,10 @@ func scopeCollTypeMapping(in string) (string, string, string) {
 	return scope, collection, typeMapping
 }
 
-func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
+// getScopeCollTypeMappings will return a deduplicated
+// list of collection names when skipMappings is enabled.
+func getScopeCollTypeMappings(im *mapping.IndexMappingImpl,
+	skipMappings bool) (scope string,
 	cols []string, typeMappings []string, err error) {
 	// index the _default/_default scope and collection when
 	// default mapping is enabled.
@@ -132,10 +135,16 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
 			continue
 		}
 		s, c, t := scopeCollTypeMapping(tp)
-		if _, exists := hash[c+t]; !exists {
-			hash[c+t] = struct{}{}
+		key := c
+		if !skipMappings {
+			key += t
+		}
+		if _, exists := hash[key]; !exists {
+			hash[key] = struct{}{}
 			cols = append(cols, c)
-			typeMappings = append(typeMappings, t)
+			if !skipMappings {
+				typeMappings = append(typeMappings, t)
+			}
 		}
 		if scope == "" {
 			scope = s
@@ -147,6 +156,7 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
 				" scope", scope, s)
 		}
 	}
+
 	return scope, cols, typeMappings, nil
 }
 
@@ -156,7 +166,7 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl) (scope string,
 // - verify scope to collection mapping with kv manifest
 func validateScopeCollFromMappings(bucket string,
 	im *mapping.IndexMappingImpl, ignoreCollNotFoundErrs bool) (*Scope, error) {
-	sName, collNames, typeMappings, err := getScopeCollTypeMappings(im)
+	sName, collNames, typeMappings, err := getScopeCollTypeMappings(im, false)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +279,7 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				var collectionNames []string
-				scope, collectionNames, _, err := getScopeCollTypeMappings(im)
+				scope, collectionNames, _, err := getScopeCollTypeMappings(im, false)
 				if err != nil {
 					return "", nil, err
 				}
