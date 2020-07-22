@@ -189,26 +189,24 @@ func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 		bleveParamBytes := []byte(indexDef.Params)
 		docConfig, _, _, err := jsonparser.Get(bleveParamBytes, "doc_config")
 		if err != nil {
-			return nil, fmt.Errorf("rest_auth: doc_config parse, err: %v", err)
-		}
-		docConfigMode, _, _, err := jsonparser.Get(docConfig, "mode")
-		if err != nil {
-			return nil, fmt.Errorf("rest_auth: config mode parse, err: %v", err)
+			// couldn't find doc_config to detect the mode
+			return []string{indexDef.SourceName}, nil
 		}
 
+		docConfigMode, _, _, _ := jsonparser.Get(docConfig, "mode")
 		if strings.HasPrefix(string(docConfigMode), ConfigModeCollPrefix) {
-			bmappings, _, _, err := jsonparser.Get(bleveParamBytes, "mapping")
+			bmapping, _, _, err := jsonparser.Get(bleveParamBytes, "mapping")
 			if err != nil {
-				return nil, fmt.Errorf("rest_auth: mapping parse, err: %v", err)
+				return nil, err
 			}
 
-			mappings := bleve.NewIndexMapping()
-			err = UnmarshalJSON(bmappings, mappings)
+			mapping := bleve.NewIndexMapping()
+			err = UnmarshalJSON(bmapping, mapping)
 			if err != nil {
-				return nil, fmt.Errorf("rest_auth: mappings unmarshal, err: %v", err)
+				return nil, err
 			}
 
-			sName, colNames, _, err := getScopeCollTypeMappings(mappings, true)
+			sName, colNames, _, err := getScopeCollTypeMappings(mapping, true)
 			if err != nil {
 				return nil, err
 			}
@@ -220,6 +218,7 @@ func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 			return sourceNames, nil
 		}
 	}
+
 	return []string{indexDef.SourceName}, nil
 }
 
