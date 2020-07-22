@@ -15,7 +15,6 @@
 package cbft
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -55,7 +54,7 @@ func (c *collMetaFieldCache) getValue(indexName, collName string) string {
 }
 
 func encodeCollMetaFieldValue(suid, cuid int64) string {
-	return "_$" + fmt.Sprintf("%d", suid) + "_$" + fmt.Sprintf("%d", cuid)
+	return fmt.Sprintf("_$%d_$%d", suid, cuid)
 }
 
 func (c *collMetaFieldCache) setValue(indexName, collName string,
@@ -235,29 +234,6 @@ func metaFieldMapping() *mapping.FieldMapping {
 	fm.Name = CollMetaFieldName
 	fm.Analyzer = "keyword"
 	return fm
-}
-
-const bQuotes = byte('"')
-const bSliceEnd = byte(']')
-const bCurlyBraceStart = byte('{')
-const bCurlyBraceEnd = byte('}')
-const bBooleanEnd = byte('e')
-const bNumericStart = byte('0')
-const bNumericEnd = byte('9')
-
-func metaFieldPosition(input []byte) int {
-	for i := bytes.LastIndex(input, []byte("}")) - 1; i > 0; i-- {
-		if input[i] == bQuotes || input[i] == bSliceEnd ||
-			input[i] == bCurlyBraceEnd || input[i] == bBooleanEnd ||
-			(input[i] >= bNumericStart && input[i] <= bNumericEnd) {
-			return i + 1
-		}
-	}
-	return -1
-}
-
-func metaFieldContents(value string) []byte {
-	return []byte(fmt.Sprintf(",\"_$scope_$collection\":\"%s\"}", value))
 }
 
 // -----------------------------------------------------------------------------

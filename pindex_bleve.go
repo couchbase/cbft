@@ -772,7 +772,7 @@ func initBleveDocConfigs(indexName, sourceName string,
 			rv[uint32(cuid)] = &collMetaField{
 				scopeDotColl: scope.Name + "." + coll.Name,
 				typeMappings: []string{coll.typeMapping},
-				contents:     metaFieldContents(encodeCollMetaFieldValue(suid, cuid)),
+				value:        encodeCollMetaFieldValue(suid, cuid),
 			}
 		} else {
 			cmf.typeMappings = append(cmf.typeMappings, coll.typeMapping)

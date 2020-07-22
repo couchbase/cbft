@@ -24,10 +24,9 @@ import (
 )
 
 var ConfigModeCollPrefix = "scope.collection"
+var ConfigModeCollPrefixLen = len(ConfigModeCollPrefix)
 
 var CollMetaFieldName = "_$scope_$collection"
-
-var ConfigModeCollPrefixLen = len(ConfigModeCollPrefix)
 
 type BleveInterface interface{}
 
@@ -47,7 +46,7 @@ func (c *BleveDocument) SetType(nTyp string) {
 type collMetaField struct {
 	scopeDotColl string
 	typeMappings []string // for multiple mappings for a collection
-	contents     []byte
+	value        string   // _$<scope_id>_$<collection_id>
 }
 
 type BleveDocumentConfig struct {
@@ -145,17 +144,18 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	var cmf *collMetaField
 	if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
-		// more than 1 collection indexed
-		if len(b.CollPrefixLookup) > 1 {
-			val = b.extendDocument(val, cmf.contents)
-			key = append(extras[4:8], key...)
-		}
 	}
 
-	var v interface{}
+	var v map[string]interface{}
 	err := json.Unmarshal(val, &v)
 	if err != nil {
 		v = map[string]interface{}{}
+	}
+
+	if cmf != nil && len(b.CollPrefixLookup) > 1 {
+		// more than 1 collection indexed
+		key = append(extras[4:8], key...)
+		v[CollMetaFieldName] = cmf.value
 	}
 
 	bdoc := b.BuildDocumentFromObj(key, v, defaultType)
@@ -182,7 +182,6 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 func (b *BleveDocumentConfig) BuildDocument(key, val []byte,
 	defaultType string) (*BleveDocument, error) {
 	var v interface{}
-
 	err := json.Unmarshal(val, &v)
 	if err != nil {
 		v = map[string]interface{}{}
@@ -235,19 +234,6 @@ func (b *BleveDocumentConfig) findTypeUtil(key []byte, v interface{},
 		}
 	}
 	return defaultType
-}
-
-func (b *BleveDocumentConfig) extendDocument(body []byte, fieldVal []byte) []byte {
-	i := metaFieldPosition(body)
-	if i == -1 { // no members found in json body
-		i = 0
-		if body[i] == bCurlyBraceStart {
-			i++
-		}
-
-		fieldVal = fieldVal[1:] // skip `,` character in field bytes to embedd
-	}
-	return append(body[:i], fieldVal...)
 }
 
 // utility functions copied from bleve/reflect.go
