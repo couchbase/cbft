@@ -436,9 +436,10 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 						continue
 					}
 
-					if uuidHighSeq.Seq > uuidStartSeq.Seq {
-						// account for this only if this collection holds any items
-						srcSeq += uuidHighSeq.Seq
+					// account this collection's high seq only if it actually holds
+					// any items and is greater than the last accounted value
+					if uuidHighSeq.Seq > uuidStartSeq.Seq && uuidHighSeq.Seq > srcSeq {
+						srcSeq = uuidHighSeq.Seq
 					}
 				}
 
