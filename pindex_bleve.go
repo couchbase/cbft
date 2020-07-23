@@ -200,13 +200,13 @@ func NewBleveParams() *BleveParams {
 }
 
 func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
-	cache *collMetaFieldCache) query.Query {
-	var dq *query.DocIDQuery
+	cache *collMetaFieldCache) (query.Query, query.Query) {
+	var docIDQuery *query.DocIDQuery
 	var ok bool
 	// bail out early if the query is not a docID one and there are
 	// no target collections requested in search request.
-	if dq, ok = q.(*query.DocIDQuery); !ok && len(sr.Collections) == 0 {
-		return q
+	if docIDQuery, ok = q.(*query.DocIDQuery); !ok && len(sr.Collections) == 0 {
+		return nil, q
 	}
 	if cache == nil {
 		cache = metaFieldValCache
@@ -217,30 +217,32 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 	var collUIDNameMap map[uint32]string
 	if collUIDNameMap, ok = cache.getCollUIDNameMap(indexName); !ok ||
 		len(collUIDNameMap) <= 1 {
-		return q
+		return nil, q
 	}
 
 	// if this is a multi collection index and the query is for docID,
 	// then decorate the target docIDs with cuid prefixes.
-	if dq != nil {
+	if docIDQuery != nil {
+		decoratedQuery := *docIDQuery
+
 		hash := make(map[string]struct{})
 		for _, cname := range sr.Collections {
 			hash[cname] = struct{}{}
 		}
-		newIDs := make([]string, 0, len(dq.IDs))
+		newIDs := make([]string, 0, len(decoratedQuery.IDs))
 		for cuid, cname := range collUIDNameMap {
 			if _, ok := hash[cname]; !ok && len(hash) > 0 {
 				continue
 			}
 			cBytes := make([]byte, 4)
 			binary.LittleEndian.PutUint32(cBytes, cuid)
-			for _, docID := range dq.IDs {
+			for _, docID := range decoratedQuery.IDs {
 				newIDs = append(newIDs, string(append(cBytes,
 					[]byte(docID)...)))
 			}
 		}
-		dq.IDs = newIDs
-		return dq
+		decoratedQuery.IDs = newIDs
+		return q, &decoratedQuery
 	}
 
 	// if the search is scoped to specific collections then add
@@ -257,7 +259,7 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 	}
 	djnq.SetMin(1)
 	cjnq.AddQuery(djnq)
-	return cjnq
+	return q, cjnq
 }
 
 type SearchRequest struct {
@@ -1035,9 +1037,11 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing searchRequest, err: %v", err)
 	}
 
+	var undecoratedQuery query.Query
 	// pre process the query with collections if applicable.
 	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
-		searchRequest.Query = sr.decorateQuery(indexName, searchRequest.Query, nil)
+		undecoratedQuery, searchRequest.Query = sr.decorateQuery(indexName,
+			searchRequest.Query, nil)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
@@ -1118,6 +1122,12 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
+		// if the query decoration happens for collection targetted or docID
+		// queries for multi collection indexes, then restore the original
+		// user query in the search response.
+		if undecoratedQuery != nil {
+			searchResult.Request.Query = undecoratedQuery
+		}
 		err = processSearchResult(&queryCtlParams, indexName, searchResult,
 			remoteClients, err, err1)
 

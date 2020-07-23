@@ -23,6 +23,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
+	"github.com/blevesearch/bleve/search/query"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -149,10 +150,12 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	}
 
 	// pre process the query if applicable
+	var undecoratedQuery query.Query
 	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
 		hv, _ := extractMetaHeader(stream.Context(), rpcClusterActionKey)
 		if hv != clusterActionScatterGather {
-			searchRequest.Query = sr.decorateQuery(req.IndexName, searchRequest.Query, nil)
+			undecoratedQuery, searchRequest.Query = sr.decorateQuery(req.IndexName,
+				searchRequest.Query, nil)
 		}
 	}
 
@@ -258,6 +261,12 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	var searchResult *bleve.SearchResult
 	searchResult, err = alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
+		// if the query decoration happens for collection targetted or docID
+		// queries for multi collection indexes, then restore the original
+		// user query in the search response.
+		if undecoratedQuery != nil {
+			searchResult.Request.Query = undecoratedQuery
+		}
 		err1 := processSearchResult(&queryCtlParams, req.IndexName, searchResult,
 			remoteClients, err, er)
 		if err1 != nil {

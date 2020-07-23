@@ -687,7 +687,7 @@ func TestSearchRequestExt(t *testing.T) {
 	}
 }
 
-func TestCollectionSearchRequest(t *testing.T) {
+func getTestCache() *collMetaFieldCache {
 	cache := make(map[string]string)
 	cache["ftsIndexA$colA"] = "_$suid_$cuidA"
 	cache["ftsIndexB$colA"] = "_$suid_$cuidA"
@@ -711,7 +711,11 @@ func TestCollectionSearchRequest(t *testing.T) {
 	}
 	testCache.cache = cache
 	testCache.collUIDNameCache = indexCache
+	return testCache
+}
 
+func TestCollectionSearchRequest(t *testing.T) {
+	testCache := getTestCache()
 	tests := []struct {
 		indexName     string
 		collections   []string
@@ -744,7 +748,7 @@ func TestCollectionSearchRequest(t *testing.T) {
 	for _, test := range tests {
 		sr.Collections = test.collections
 		bsr, err := sr.ConvertToBleveSearchRequest()
-		bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, testCache)
+		_, bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, testCache)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -770,5 +774,99 @@ func TestCollectionSearchRequest(t *testing.T) {
 		default:
 			t.Fatalf("No conjunction query found, query: %+v", bsr.Query)
 		}
+	}
+}
+
+func TestCollectionSearchRequestDocIDQuery(t *testing.T) {
+	testCache := getTestCache()
+	tests := []struct {
+		indexName        string
+		collections      []string
+		targetDocIDCount int
+		queryParams      string
+		docIDs           []string
+	}{
+		{
+			indexName:        "ftsIndexA",
+			collections:      []string{"colA"},
+			targetDocIDCount: 1,
+			queryParams:      "{\"ids\": [\"beer-100\"]}",
+			docIDs:           []string{"beer-100"},
+		},
+		{
+			indexName:        "ftsIndexA",
+			collections:      nil,
+			targetDocIDCount: 2,
+			queryParams:      "{\"ids\": [\"beer-100\"]}",
+			docIDs:           []string{"beer-100"},
+		},
+		{
+			indexName:        "ftsIndexB",
+			collections:      nil,
+			targetDocIDCount: 3,
+			queryParams:      "{\"ids\": [\"beer-100\"]}",
+			docIDs:           []string{"beer-100"},
+		},
+		{
+			indexName:        "ftsIndexB",
+			collections:      nil,
+			targetDocIDCount: 6,
+			queryParams:      "{\"ids\": [\"beer-100\", \"beer-101\"]}",
+			docIDs:           []string{"beer-100", "beer-101"},
+		},
+		{
+			indexName:        "ftsIndexB",
+			collections:      []string{"colA"},
+			targetDocIDCount: 2,
+			queryParams:      "{\"ids\": [\"beer-100\", \"beer-101\"]}",
+			docIDs:           []string{"beer-100", "beer-101"},
+		},
+	}
+
+	equal := func(a, b []string) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i, val := range a {
+			if val != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+
+	var origQuery query.Query
+	var decoratedQuery *query.DocIDQuery
+	var ok bool
+
+	for _, test := range tests {
+		var sr *SearchRequest
+		queryStr := fmt.Sprintf("{\"query\": %s, \"size\": 4, \"from\": 5}", test.queryParams)
+		err := json.Unmarshal([]byte(queryStr), &sr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sr.Collections = test.collections
+		bsr, err := sr.ConvertToBleveSearchRequest()
+		origQuery, bsr.Query = sr.decorateQuery(test.indexName, bsr.Query, testCache)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// verify that the original query remains intact
+		if decoratedQuery, ok = origQuery.(*query.DocIDQuery); !ok {
+			t.Errorf("Original query should remain intact, but got: %+v", origQuery)
+		} else if !equal(decoratedQuery.IDs, test.docIDs) {
+			t.Errorf("Expected docIDs in query %+v, but got: %+v", test.docIDs, decoratedQuery.IDs)
+		}
+
+		if decoratedQuery, ok = bsr.Query.(*query.DocIDQuery); !ok {
+			t.Errorf("Collection decorated query expected, but got: %+v", bsr.Query)
+		}
+		// docID query gets targetted for all the source collections
+		// in the index unless it is a collection targetted query.
+		if len(decoratedQuery.IDs) != test.targetDocIDCount {
+			t.Errorf("Expected %d docIDs after decoration, but got: %+v", test.targetDocIDCount, bsr.Query)
+		}
+
 	}
 }
