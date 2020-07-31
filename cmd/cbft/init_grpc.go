@@ -156,7 +156,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 			continue
 		}
 
-		go func(nwp string, listener net.Listener, primary bool) {
+		go func(nwp string, listener net.Listener) {
 			opts := getGrpcOpts(secure, authType)
 
 			s := grpc.NewServer(opts...)
@@ -178,11 +178,6 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 			}
 			log.Printf("init_grpc: GrpcServer Started at %q, proto: %q", bindGRPC, nwp)
 			if err := s.Serve(listener); err != nil {
-				if primary {
-					log.Fatalf("init_grpc: Serve, err: %v;"+
-						" gRPC listeners closed, likely to be re-initialized, "+
-						" -bindGRPC(s) (%q) on nwp: %s\n", err, bindGRPC, nwp)
-				}
 				log.Printf("init_grpc: Serve, err: %v;"+
 					" gRPC listeners closed, likely to be re-initialized, "+
 					" -bindGRPC(s) (%q) on nwp: %s\n", err, bindGRPC, nwp)
@@ -193,7 +188,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 				return
 			}
 			atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
-		}(nwp, listener, p == 0)
+		}(nwp, listener)
 	}
 }
 

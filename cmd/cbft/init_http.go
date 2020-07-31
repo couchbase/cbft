@@ -200,23 +200,18 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 
 		if proto == "http" {
 			limitListener := netutil.LimitListener(listener, httpMaxConnections)
-			go func(nwp string, listener net.Listener, primary bool) {
+			go func(nwp string, listener net.Listener) {
 				log.Printf("init_http: Setting up a http limit listener at %q,"+
 					" proto: %q", bindHTTP, nwp)
 				atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
 				err = server.Serve(limitListener)
 				if err != nil {
-					if primary {
-						log.Fatalf("init_http: Serve, err: %v;\n"+
-							"  Please check that your -bindHttp(s) parameter (%q)\n"+
-							"  is correct and available.", err, bindHTTP)
-					}
 					log.Printf("init_http: Serve, err: %v;\n"+
-						"  Please check that your -bindHttp(s) parameter (%q)\n"+
+						"  Please check that your -bindHttp parameter (%q)\n"+
 						"  is correct and available.", err, bindHTTP)
 				}
 				atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
-			}(nwp, limitListener, p == 0)
+			}(nwp, limitListener)
 		} else {
 			addToHTTPSServerList(server)
 			// Initialize server.TLSConfig to the listener's TLS Config before calling
@@ -278,23 +273,18 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 			keepAliveListener := tcpKeepAliveListener{listener.(*net.TCPListener)}
 			limitListener := netutil.LimitListener(keepAliveListener, httpMaxConnections)
 			tlsListener := tls.NewListener(limitListener, config)
-			go func(nwp string, tlsListener net.Listener, primary bool) {
+			go func(nwp string, tlsListener net.Listener) {
 				log.Printf("init_http: Setting up a https limit listener at %q,"+
 					" proto: %q", bindHTTP, nwp)
 				atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
 				err = server.Serve(tlsListener)
 				if err != nil {
-					if primary {
-						log.Fatalf("init_http: Serve, err: %v;"+
-							" HTTPS listeners closed, likely to be re-initialized, "+
-							" -bindHttp(s) (%q) on nwp: %s\n", err, bindHTTP, nwp)
-					}
 					log.Printf("init_http: Serve, err: %v;"+
 						" HTTPS listeners closed, likely to be re-initialized, "+
 						" -bindHttp(s) (%q) on nwp: %s\n", err, bindHTTP, nwp)
 				}
 				atomic.AddUint64(&cbft.TotHTTPSLimitListenersClosed, 1)
-			}(nwp, tlsListener, p == 0)
+			}(nwp, tlsListener)
 		}
 	}
 }
