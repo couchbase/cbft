@@ -71,6 +71,8 @@ var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
 var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
 
+var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
@@ -87,6 +89,18 @@ var TotBleveDestClosed uint64
 
 // local cache for the cluster compatibility
 var compatibleClusterFound int32
+
+// BleveDefaultZapVersion represents the default zap version.
+// This version is expected to remain a constant as all the
+// future indexes are going to have a default segment version.
+// Only pre CC indexes are expected to have an empty segment version
+// which would be treated like the default zap version.
+const BleveDefaultZapVersion = int(11)
+
+// BlevePreferredZapVersion is the recommended zap version for newer indexes.
+// This version needs to be bumped to reflect the latest recommended zap
+// version in any given release.
+var BlevePreferredZapVersion = int(14)
 
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
@@ -542,6 +556,36 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		}
 	}
 
+	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
+		FeatureBlevePreferredSegmentVersion, nodeDefs)
+	// if segment version is specified then perform the validations.
+	if v, ok := bp.Store["segmentVersion"]; ok {
+		if zv, ok := v.(float64); ok {
+			if !segmentVersionSupported && int(zv) == BlevePreferredZapVersion {
+				// if the cluster isn't advanced enough then err out
+				// on latest zap version request for new indexes.
+				return nil, fmt.Errorf("bleve: Prepare, err: zap version %d isn't "+
+					"supported in mixed version cluster", int(zv))
+			}
+			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
+				return nil, fmt.Errorf("bleve: Prepare, err: zap version %d isn't "+
+					"supported", int(zv))
+			}
+		} else {
+			return nil, fmt.Errorf("bleve: Prepare, err: segmentVersion %v "+
+				"should be a numeric value", v)
+		}
+	} else {
+		// if no zap version is specified then assume the preferred
+		// zap version for newer indexes in a sufficiently advanced
+		// cluster, else consider the default zap version.
+		if segmentVersionSupported {
+			bp.Store["segmentVersion"] = BlevePreferredZapVersion
+		} else {
+			bp.Store["segmentVersion"] = BleveDefaultZapVersion
+		}
+	}
+
 	updatedParams, err := json.Marshal(bp)
 	if err != nil {
 		return nil, fmt.Errorf("bleve: Prepare Marshal,"+
@@ -820,8 +864,13 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"eventCallbackName":      "scorchEventCallbacks",
 		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
 		"numSnapshotsToKeep":     3,
+		"forceSegmentType":       "zap",
 	}
 	for k, v := range bleveParams.Store {
+		if k == "segmentVersion" {
+			kvConfig["forceSegmentVersion"] = v
+			continue
+		}
 		kvConfig[k] = v
 	}
 
