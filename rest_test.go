@@ -676,6 +676,18 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 			ResponseBody: []byte(`page not found`),
 		},
 		{
+			Desc:   "try tasks against a nonexistent index",
+			Path:   "/api/index/NOT-AN-INDEX/tasks",
+			Method: "POST",
+			Params: nil,
+			Body:   nil,
+			Status: 400,
+			ResponseMatch: map[string]bool{
+				`err`:                                  true,
+				`no indexDef, indexName: NOT-AN-INDEX`: true,
+			},
+		},
+		{
 			Desc:   "try to count a nonexistent index on a 1 index manager",
 			Path:   "/api/index/NOT-AN-INDEX/count",
 			Method: "GET",
