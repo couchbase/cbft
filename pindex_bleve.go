@@ -1637,6 +1637,13 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		}
 	}
 
+	if w1, ok := w.(rest.StatsWriter); ok {
+		if !w1.VerboseLogging() {
+			_, _ = w.Write(cbgt.JsonCloseBrace)
+			return
+		}
+	}
+
 	_, err = w.Write([]byte(`,"partitions":{`))
 	if err != nil {
 		return
