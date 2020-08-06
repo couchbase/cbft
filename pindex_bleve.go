@@ -668,6 +668,21 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 		return fmt.Errorf("bleve: validate params, err: %v", err)
 	}
 
+	// err out if there are no active type mapping.
+	if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+		var found bool
+		for tp, dm := range im.TypeMapping {
+			if !dm.Enabled || len(tp) == 0 {
+				continue
+			}
+			found = true
+			break
+		}
+		if !im.DefaultMapping.Enabled && !found {
+			return fmt.Errorf("bleve: validate params, no valid type mappings found")
+		}
+	}
+
 	err = bp.Mapping.Validate()
 	if err != nil {
 		return fmt.Errorf("bleve: validate mapping, err: %v", err)
