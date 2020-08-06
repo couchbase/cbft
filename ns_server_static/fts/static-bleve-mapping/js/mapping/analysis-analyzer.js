@@ -100,7 +100,9 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.addCharFilter = function(scope) {
         let filter = scope.addCharacterFilterName;
         if (filter !== undefined && filter !== "") {
-            $scope.analyzer.char_filters.push(filter);
+            $scope.analyzer.char_filters.indexOf(filter) === -1 ?
+            $scope.analyzer.char_filters.push(filter):
+            $scope.errorMessage = "Character Filter '" + filter + "' already exists";
         }
     };
 
@@ -111,7 +113,9 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.addTokenFilter = function(scope) {
         let filter = scope.addTokenFilterName;
         if (filter !== undefined && filter !== "") {
-            $scope.analyzer.token_filters.push(filter);
+            $scope.analyzer.token_filters.indexOf(filter) === -1 ?
+            $scope.analyzer.token_filters.push(filter):
+            $scope.errorMessage = "Tokenfilter '" + filter + "' already exists";
         }
     };
 
