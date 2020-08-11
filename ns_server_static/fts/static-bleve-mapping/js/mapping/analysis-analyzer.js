@@ -21,6 +21,8 @@ function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
     $scope.static_prefix = static_prefix;
 
     $scope.analyzer = {};
+    $scope.analyzer.token_filters = [];
+    $scope.analyzer.char_filters = [];
     // copy in value for editing
     for (var k in value) {
         // need deeper copy of nested arrays
