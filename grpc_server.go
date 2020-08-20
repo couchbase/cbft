@@ -178,7 +178,9 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 				"grpc_server: Search atoi: %v, err: %v", v, err)
 		}
 
-		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
+		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow ||
+			(searchRequest.Size > bleveMaxResultWindow &&
+				(searchRequest.SearchAfter != nil || searchRequest.SearchBefore != nil)) {
 			err = status.Errorf(codes.InvalidArgument,
 				"Validating request, err: %v",
 				fmt.Errorf("grpc_server: Search bleveMaxResultWindow exceeded,"+

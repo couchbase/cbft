@@ -1125,7 +1125,9 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				" atoi: %v, err: %v", v, err)
 		}
 
-		if searchRequest.From+searchRequest.Size > bleveMaxResultWindow {
+		if (searchRequest.From+searchRequest.Size > bleveMaxResultWindow) ||
+			(searchRequest.Size > bleveMaxResultWindow &&
+				(searchRequest.SearchAfter != nil || searchRequest.SearchBefore != nil)) {
 			return fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
 				" from: %d, size: %d, bleveMaxResultWindow: %d",
 				searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
