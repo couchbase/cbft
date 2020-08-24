@@ -3,12 +3,12 @@ module github.com/couchbase/cbft
 go 1.13
 
 require (
-	github.com/blevesearch/bleve v1.0.10-0.20200819180949-ed463b9d0285
+	github.com/blevesearch/bleve v1.0.10
 	github.com/blevesearch/bleve-mapping-ui v0.3.0
-	github.com/blevesearch/zap/v11 v11.0.9
-	github.com/blevesearch/zap/v12 v12.0.9
-	github.com/blevesearch/zap/v13 v13.0.1
-	github.com/blevesearch/zap/v14 v14.0.0
+	github.com/blevesearch/zap/v11 v11.0.10
+	github.com/blevesearch/zap/v12 v12.0.10
+	github.com/blevesearch/zap/v13 v13.0.2
+	github.com/blevesearch/zap/v14 v14.0.1
 	github.com/buger/jsonparser v1.0.0
 	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
