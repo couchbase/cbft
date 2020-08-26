@@ -20,7 +20,7 @@ require (
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.0
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.0
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
