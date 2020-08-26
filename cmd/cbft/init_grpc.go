@@ -34,8 +34,15 @@ import (
 var grpcServers []*grpc.Server
 var grpcServersMutex sync.Mutex
 
-// Close all Grpc Servers
-func closeAndClearGrpcServerList() {
+// Add to gRPC SSL Server list serially
+func addToGRPCSSLServerList(server *grpc.Server) {
+	grpcServersMutex.Lock()
+	grpcServers = append(grpcServers, server)
+	grpcServersMutex.Unlock()
+}
+
+// Close all gRPC SSL Servers and clear the gRPC Server list
+func closeAndClearGRPCSSLServerList() {
 	grpcServersMutex.Lock()
 
 	for _, server := range grpcServers {
@@ -46,11 +53,11 @@ func closeAndClearGrpcServerList() {
 	grpcServersMutex.Unlock()
 }
 
-func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
+func setupGRPCListenersAndServ(mgr *cbgt.Manager,
 	options map[string]string) {
 
 	if flags.BindGRPC != "" {
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options, "")
+		setupGRPCListenersAndServUtil(mgr, flags.BindGRPC, false, options, "")
 	}
 
 	if flags.BindGRPCSSL != "" {
@@ -63,7 +70,7 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 			// are changed.
 			handleConfigChanges := func() error {
 				// restart the servers in case of a refresh
-				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options,
+				setupGRPCListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options,
 					authType)
 				return nil
 			}
@@ -71,17 +78,17 @@ func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
 			cbgt.RegisterConfigRefreshCallback("fts/grpc-ssl", handleConfigChanges)
 		}
 
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options, authType)
+		setupGRPCListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options, authType)
 	}
 }
 
-func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
+func setupGRPCListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
 	secure bool, options map[string]string, authType string) {
 	ipv6 = options["ipv6"]
 
 	if secure {
 		// close any previously open grpc servers
-		closeAndClearGrpcServerList()
+		closeAndClearGRPCSSLServerList()
 	}
 
 	bindGRPCList := strings.Split(bindPORT, ",")
@@ -167,11 +174,8 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 
 			reflection.Register(s)
 
-			grpcServersMutex.Lock()
-			grpcServers = append(grpcServers, s)
-			grpcServersMutex.Unlock()
-
 			if secure {
+				addToGRPCSSLServerList(s)
 				atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
 			} else {
 				atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)

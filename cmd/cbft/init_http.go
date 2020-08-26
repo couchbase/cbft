@@ -335,7 +335,7 @@ func getNetworkProtocols() []string {
 
 func getListener(bindAddr, nwp string) (net.Listener, error) {
 	if (strings.HasPrefix(bindAddr, "0.0.0.0:") && nwp == "tcp6") ||
-		(strings.HasPrefix(bindAddr, "[::1]:") && nwp == "tcp4") {
+		(strings.HasPrefix(bindAddr, "[::]:") && nwp == "tcp4") {
 		return nil, nil
 	}
 	return net.Listen(nwp, bindAddr)
