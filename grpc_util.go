@@ -248,6 +248,16 @@ func (s *GRPCPathStats) FocusStats(focusVal string) *RPCFocusStats {
 	return rv
 }
 
+func (s *GRPCPathStats) ResetFocusStats(focusVal string) {
+	s.m.Lock()
+	if s.focusStats != nil {
+		if _, exists := s.focusStats[focusVal]; exists {
+			s.focusStats[focusVal] = &RPCFocusStats{}
+		}
+	}
+	s.m.Unlock()
+}
+
 // FocusValues returns the focus value strings
 func (s *GRPCPathStats) FocusValues() (rv []string) {
 	s.m.Lock()

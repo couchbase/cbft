@@ -466,6 +466,7 @@ func init() {
 	cbgt.RegisterPIndexImplType("fulltext-index", &cbgt.PIndexImplType{
 		Prepare:  PrepareIndexDef,
 		Validate: ValidateBleve,
+		OnDelete: OnDeleteIndex,
 
 		New:       NewBlevePIndexImpl,
 		Open:      OpenBlevePIndexImpl,
@@ -739,6 +740,19 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 	}
 
 	return nil
+}
+
+func OnDeleteIndex(indexDef *cbgt.IndexDef) {
+	if indexDef == nil {
+		return
+	}
+
+	// Reset focusStats of the index
+	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
+	indexQueryPathStats.ResetFocusStats(indexDef.Name)
+
+	// Reset gRPC focusStats of the index
+	GrpcPathStats.ResetFocusStats(indexDef.Name)
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
