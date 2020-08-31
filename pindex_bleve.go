@@ -378,11 +378,14 @@ type BleveDestPartition struct {
 	partitionBytes  []byte
 	partitionOpaque []byte // Key used to implement OpaqueSet/OpaqueGet().
 
-	m           sync.Mutex   // Protects the fields that follow.
-	seqMax      uint64       // Max seq # we've seen for this partition.
-	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
-	seqSnapEnd  uint64       // To track snapshot end seq # for this partition.
-	batch       *bleve.Batch // Batch applied when we hit seqSnapEnd.
+	m           sync.Mutex // Protects the fields that follow.
+	seqMax      uint64     // Max seq # we've seen for this partition.
+	seqMaxBatch uint64     // Max seq # that got through batch apply/commit.
+	seqSnapEnd  uint64     // To track snapshot end seq # for this partition.
+	osoSnapshot bool       // Flag to track if current seq # is within an OSO Snapshot.
+	osoSeqMax   uint64     // Max seq # received within an OSO Snapshot.
+
+	batch *bleve.Batch // Batch applied when we hit seqSnapEnd.
 
 	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
 	lastUUID   string // Cache most recent partition UUID from lastOpaque.
@@ -1963,6 +1966,37 @@ func (t *BleveDestPartition) DataDelete(partition string,
 
 // ---------------------------------------------------------
 
+func (t *BleveDestPartition) OSOSnapshot(partition string,
+	snapshotType uint32) error {
+	if snapshotType == 1 {
+		// Begin OSO Snapshot
+		t.m.Lock()
+		t.osoSnapshot = true
+		t.osoSeqMax = t.seqMax
+		revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
+		t.m.Unlock()
+		if err == nil && revNeedsUpdate {
+			t.incRev()
+		}
+
+		return err
+	} else if snapshotType == 2 {
+		// END OSO Snapshot
+		t.m.Lock()
+		t.osoSnapshot = false
+		revNeedsUpdate, err := t.updateSeqLOCKED(t.osoSeqMax)
+		t.m.Unlock()
+		if err == nil && revNeedsUpdate {
+			t.incRev()
+		}
+
+		return err
+	}
+
+	return fmt.Errorf("bleve: OSOSnapshot unknown snapshotType: %v",
+		snapshotType)
+}
+
 func (t *BleveDestPartition) SeqNoAdvanced(partition string,
 	seq uint64) error {
 	t.m.Lock()
@@ -2008,7 +2042,7 @@ func AggregateBleveDestPartitionStats() map[string]interface{} {
 func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
-
+	t.osoSnapshot = false
 	revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 	if err != nil {
 		t.m.Unlock()
@@ -2116,11 +2150,15 @@ func (t *BleveDestPartition) Stats(w io.Writer) error {
 // ---------------------------------------------------------
 
 func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
-	if t.seqMax < seq {
+	if t.osoSnapshot {
+		if t.osoSeqMax < seq {
+			t.osoSeqMax = seq
+		}
+	} else if t.seqMax < seq {
 		t.seqMax = seq
 	}
 
-	if seq < t.seqSnapEnd &&
+	if (!t.osoSnapshot && seq < t.seqSnapEnd) &&
 		(BleveMaxOpsPerBatch <= 0 || BleveMaxOpsPerBatch > t.batch.Size()) {
 		return false, t.lastAsyncBatchErr
 	}
