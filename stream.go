@@ -15,6 +15,7 @@
 package cbft
 
 import (
+	"encoding/binary"
 	"fmt"
 	"sync"
 
@@ -37,6 +38,8 @@ type streamHandler interface {
 }
 
 type streamer struct {
+	index string
+
 	m       sync.Mutex
 	req     *bleve.SearchRequest
 	stream  pb.SearchService_SearchServer
@@ -48,9 +51,10 @@ type streamer struct {
 	curSize int
 }
 
-func newStreamHandler(req *bleve.SearchRequest,
+func newStreamHandler(index string, req *bleve.SearchRequest,
 	outStream pb.SearchService_SearchServer) *streamer {
 	rv := &streamer{
+		index:   index,
 		curSize: int(req.Size),
 		curSkip: int(req.From),
 		stream:  outStream,
@@ -135,6 +139,7 @@ type docMatchHandler struct {
 	s           *streamer
 	n           int
 	highlighter highlight.Highlighter
+	collNameMap map[uint32]string
 }
 
 func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) error {
@@ -164,6 +169,20 @@ func (dmh *docMatchHandler) documentMatchHandler(hit *search.DocumentMatch) erro
 		if len(dmh.s.req.Fields) > 0 || dmh.highlighter != nil {
 			bleve.LoadAndHighlightFields(hit, dmh.s.req, "", dmh.ctx.IndexReader,
 				dmh.highlighter)
+		}
+
+		// If this is a multi collection index, then strip the colelction UID
+		// from the hit ID.
+		if dmh.collNameMap != nil {
+			idBytes := []byte(hit.ID)
+			cuid := binary.LittleEndian.Uint32(idBytes[:4])
+			if collName, ok := dmh.collNameMap[cuid]; ok {
+				hit.ID = string(idBytes[4:])
+				if hit.Fields == nil {
+					hit.Fields = make(map[string]interface{})
+				}
+				hit.Fields["_$c"] = collName
+			}
 		}
 
 		// TODO: perf, perhaps encode directly into output buffer
@@ -231,6 +250,11 @@ func (s *streamer) MakeDocumentMatchHandler(
 		highlighter: highlighter,
 	}
 	dmh.bhits = append(dmh.bhits, sliceStart...)
+
+	if collNameMap, multiCollIndex :=
+		metaFieldValCache.getCollUIDNameMap(s.index); multiCollIndex {
+		dmh.collNameMap = collNameMap
+	}
 
 	return dmh.documentMatchHandler, true, nil
 }

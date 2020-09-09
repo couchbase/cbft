@@ -1191,7 +1191,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
-		// if the query decoration happens for collection targetted or docID
+		// if the query decoration happens for collection targeted or docID
 		// queries for multi collection indexes, then restore the original
 		// user query in the search response.
 		if undecoratedQuery != nil {
@@ -1226,8 +1226,8 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 	searchErr, aliasErr error) error {
 	if searchResult != nil {
 		if len(searchResult.Hits) > 0 {
-			// if this is a multi collection index, then fill the details of
-			// source collection.
+			// if this is a multi collection index, then strip the collection UID
+			// from the hit ID and fill the details of source collection
 			if collNameMap, multiCollIndex :=
 				metaFieldValCache.getCollUIDNameMap(indexName); multiCollIndex {
 				for _, hit := range searchResult.Hits {
@@ -1236,8 +1236,8 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 					}
 					idBytes := []byte(hit.ID)
 					cuid := binary.LittleEndian.Uint32(idBytes[:4])
-					hit.ID = string(idBytes[4:])
 					if collName, ok := collNameMap[cuid]; ok {
+						hit.ID = string(idBytes[4:])
 						if hit.Fields == nil {
 							hit.Fields = make(map[string]interface{})
 						}

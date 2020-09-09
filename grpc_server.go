@@ -220,7 +220,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	var handlerMaker search.MakeDocumentMatchHandler
 	// check if the client requested streamed results/hits.
 	if req.Stream {
-		sh = newStreamHandler(searchRequest, stream)
+		sh = newStreamHandler(req.IndexName, searchRequest, stream)
 		handlerMaker = sh.MakeDocumentMatchHandler
 		ctx = context.WithValue(ctx, search.MakeDocumentMatchHandlerKey,
 			handlerMaker)
@@ -263,7 +263,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	var searchResult *bleve.SearchResult
 	searchResult, err = alias.SearchInContext(ctx, searchRequest)
 	if searchResult != nil {
-		// if the query decoration happens for collection targetted or docID
+		// if the query decoration happens for collection targeted or docID
 		// queries for multi collection indexes, then restore the original
 		// user query in the search response.
 		if undecoratedQuery != nil {
