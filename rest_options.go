@@ -116,6 +116,14 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		if options["maxFeedsPerDCPAgent"] != "" {
+			maxFeedsPerDCPAgent, err := strconv.Atoi(options["maxFeedsPerDCPAgent"])
+			if err != nil || uint32(maxFeedsPerDCPAgent) < 0 {
+				return nil, fmt.Errorf("illegal value for maxFeedsPerDCPAgent: '%v'",
+					options["maxFeedsPerDCPAgent"])
+			}
+		}
+
 		return options, nil
 	}
 
