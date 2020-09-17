@@ -531,6 +531,18 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
 
+	handle(prefix+"/api/v1/backup", "GET",
+		cbft.NewBackupIndexHandler(mgr))
+
+	handle(prefix+"/api/v1/backup", "POST",
+		cbft.NewRestoreIndexHandler(mgr))
+
+	handle(prefix+"/api/v1/bucket/{bucketName}/backup", "GET",
+		cbft.NewBucketBackupIndexHandler(mgr))
+
+	handle(prefix+"/api/v1/bucket/{bucketName}/backup", "POST",
+		cbft.NewBucketRestoreIndexHandler(mgr))
+
 	router := exportMuxRoutesToHttprouter(muxrouter)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",
