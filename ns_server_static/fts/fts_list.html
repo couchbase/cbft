@@ -8,10 +8,16 @@
   <span ng-show="indexNamesReady">
     <div class="row margin-bottom-half">
       <h4>Full Text Indexes</h4>
-      <button ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-              ng-disabled="!permsCluster.bucket['.'].fts.write">
-        Add Index
-      </button>
+        <div>
+          <button ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+                  ng-disabled="!permsCluster.bucket['.'].fts.write">
+            Add Index
+          </button>
+                  <button ui-sref="^.search.fts_new_easy({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+                          ng-disabled="!permsCluster.bucket['.'].fts.write">
+            Add Index (easy)
+          </button>
+        </div>
     </div>
     <table class="fts-indexes-list table-stroked">
       <tr>
@@ -96,6 +102,11 @@
                       <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_edit({indexName: indexName})">
                           Edit
+                      </button>
+                      <button ng-if="showEasyMode(indexName, indexDef.params.easy_mode_hash, indexDef.params.mapping)"
+                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                                                    ui-sref="^.search.fts_edit_easy({indexName: indexName})">
+                          Edit (easy)
                       </button>
                     </span>
                   </div>

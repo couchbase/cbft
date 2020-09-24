@@ -16,11 +16,15 @@ var ftsPrefix = 'fts';
 import angular from "/ui/web_modules/angular.js";
 
 import uiRouter from "/ui/web_modules/@uirouter/angularjs.js";
+import uiCodemirror from "/ui/libs/angular-ui-codemirror.js";
+import CodeMirror from "/ui/web_modules/codemirror.js";
 import ngClipboard from "/ui/libs/ngclipboard.js";
 import ngSortable from "/ui/libs/angular-legacy-sortable.js";
 import mnPermissions from "/ui/app/components/mn_permissions.js";
 import mnFooterStatsController from "/ui/app/mn_admin/mn_footer_stats_controller.js";
 import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
+import mnDocumentsEditingService from "/ui/app/mn_admin/mn_documents_editing_service.js";
+import mnDocumentsListService from "/ui/app/mn_admin/mn_documents_list_service.js";
 
 import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
 import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
@@ -36,13 +40,18 @@ import uiTree from "/ui/web_modules/angular-ui-tree.js";
 
 import qwDocEditorService from "/_p/ui/query/qw_doc_editor_service.js";
 
+import {initCodeMirrorActiveLine} from "/_p/ui/fts/codemirror-active-line.js";
+import {newParsedDocs} from "/_p/ui/fts/fts_easy_parse.js";
+import {newEditFields, newEditField} from "/_p/ui/fts/fts_easy_field.js";
+import {newEasyMappings, newEasyMapping} from "/_p/ui/fts/fts_easy_mapping.js";
 
 export default ftsAppName;
 export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
 
 angular
     .module(ftsAppName,
-            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService])
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService,
+                uiCodemirror, mnDocumentsEditingService, mnDocumentsListService])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
@@ -79,6 +88,19 @@ angular
               child: parent + '.fts_list'
             }
           })
+            .state(parent + '.fts_new_easy', {
+                url: '/fts_new_easy/?indexType&sourceType',
+                views: {
+                    "main@app.admin": {
+                        controller: 'IndexNewCtrlFTEasy_NS',
+                        templateUrl: '../_p/ui/fts/fts_new_easy.html'
+                    }
+                },
+                data: {
+                    title: "Add Index (easy)",
+                    child: parent + '.fts_list'
+                }
+            })
           .state(parent + '.fts_new_alias', {
             url: '/fts_new_alias/?indexType&sourceType',
             views: {
@@ -102,6 +124,19 @@ angular
             },
             data: {
               title: "Edit Index",
+              child: parent + '.fts_list'
+            }
+          })
+          .state(parent + '.fts_edit_easy', {
+            url: '/fts_edit_easy/:indexName/_edit',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFTEasy_NS',
+                templateUrl: '../_p/ui/fts/fts_new_easy.html'
+              }
+            },
+            data: {
+              title: "Edit Index (easy)",
               child: parent + '.fts_list'
             }
           })
@@ -179,6 +214,7 @@ angular
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
+        controller('IndexNewCtrlFTEasy_NS', IndexNewCtrlFTEasy_NS).
         controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
         controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS);
 
@@ -289,6 +325,11 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.$on('$stateChangeStart', function() {
         done = true;
     });
+
+    $scope.showEasyMode = function(name, prevHash, mapping) {
+        let newHash = hashMapping(mapping);
+        return prevHash == newHash;
+    }
 
     $scope.expando = function(indexName) {
         $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
@@ -884,6 +925,24 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             defaultFieldStore: false
         });
 
+    // set up editor state for easy mode in edit scenario
+    if ($scope.easyMappings) {
+        $scope.easyMappings.loadFromMapping(mapping);
+        let newScopeName = getBucketScopeFromMapping(mapping);
+        if (newScopeName) {
+            $scope.newScopeName = newScopeName;
+            $scope.listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
+                $scope.collectionNames = collections;
+                if (collections.length > 0) {
+                    $scope.expando(collections[0]);
+                }
+            }, function (err) {
+                $scope.errorMessage = "Error listing collections for scope.";
+                console.log("error listings collections for scope", err);
+            });
+        }
+    }
+
     $scope.bleveIndexMapping = function() {
         return imc.indexMapping();
     }
@@ -989,7 +1048,12 @@ var bleveUpdatePreviewTimeoutMS = 1000;
 function blevePIndexDoneController(doneKind, indexParams, indexUI,
     $scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
     if (indexParams) {
-        indexParams.mapping = $scope.bleveIndexMapping();
+        if ($scope.easyMappings) {
+            indexParams.mapping = $scope.easyMappings.getIndexMapping($scope.newScopeName);
+            indexParams.easy_mode_hash = hashMapping(indexParams.mapping);
+        } else {
+            indexParams.mapping = $scope.bleveIndexMapping();
+        }
     }
 }
 
@@ -1197,4 +1261,592 @@ function ftsServiceHostPort($scope, $http, $location) {
             }
         }
     });
+}
+
+// -------------------------------------------------------
+
+// getBucketScopeFromMapping determines the scope from an index mapping
+// it is assumed that this mapping has types of the form scope.collection
+// no attempt is made to validate that the same scope is set for all types
+// if no scope can be determined, empty string is returned
+function getBucketScopeFromMapping(mapping) {
+    for (var typeName in mapping.types) {
+        let scopeCollType = typeName.split(".", 2)
+        return scopeCollType[0];
+    }
+    return "";
+}
+
+// -------------------------------------------------------
+
+// IndexNewCtrlFTEasy_NS is the controller for the create/edit easy mode
+function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
+                               $location, $log, $sce, $uibModal,
+                               $q, mnBucketsService, mnPoolDefault, mnDocumentsEditingService, mnDocumentsListService) {
+    mnBucketsService.getBucketsByType(true).
+    then(initWithBuckets,
+        function(err) {
+            // Possible RBAC issue listing buckets or other error.
+            console.log("mnBucketsService.getBucketsByType failed", err);
+            initWithBuckets([]);
+        });
+
+    function getRandomKeyBucketScopeCollection(bucket, scope, collection) {
+        return $http({
+            method: "GET",
+            url: "/pools/default/buckets/" + encodeURIComponent(bucket)
+                + "/scopes/" + encodeURIComponent(scope)
+                + "/collections/" + encodeURIComponent(collection)
+                + "/localRandomKey"
+        });
+    }
+
+    function getCollections(bucket) {
+        return $http({
+            method: "GET",
+            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/collections"
+        });
+    }
+
+    function listScopesForBucket(bucket) {
+        return getCollections(bucket).then(function (resp) {
+            var scopes = [];
+            for (var scopeI in resp.data.scopes) {
+                let scope = resp.data.scopes[scopeI];
+                scopes.push(scope.name);
+            }
+            return scopes;
+        }, function (resp) {
+            $scope.errorMessage = "Error listing scopes for bucket.";
+            console.log("error listing scopes for bucket", resp);
+        });
+    }
+
+    $scope.listCollectionsForBucketScope = function (bucket, scopeName) {
+        return getCollections(bucket).then(function (resp) {
+            var collections = [];
+            for (var scopeI in resp.data.scopes) {
+                let scope = resp.data.scopes[scopeI];
+                if (scope.name == scopeName) {
+                    for ( var collI in scope.collections) {
+                        let collection = scope.collections[collI];
+                        collections.push(collection.name);
+                    }
+                }
+            }
+            return collections;
+        }, function (resp) {
+            $scope.errorMessage = "Error listing collections for bucket/scope.";
+            console.log("error listing collections for bucket/scope", resp);
+        });
+    }
+
+    function prepareDocForCodeMirror(doc) {
+        $scope.parsedDocs.setDocForCollection($scope.collectionOpened, doc.json);
+        var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+        return parsedDoc.getDocument();
+    }
+
+    function getSampleDocument(params) {
+        return mnDocumentsEditingService.getDocument(params).then(function (sampleDocument) {
+            return prepareDocForCodeMirror(sampleDocument.data);
+        }, function (resp) {
+            switch(resp.status) {
+                case 404:
+                    $scope.errorMessage = "Error retrieving document.";
+                    return prepareDocForCodeMirror({
+                        json: '{}'
+                    });
+            }
+        });
+    }
+
+    function prepareRandomDocument(params) {
+        return params.sampleDocumentId ? getSampleDocument({
+            documentId: params.sampleDocumentId,
+            bucket: params.bucket
+        }) : getRandomKeyBucketScopeCollection(params.bucket, params.scope, params.collection).then(function (resp) {
+            return getSampleDocument({
+                documentId: resp.data.key,
+                bucket: params.bucket,
+                scope: params.scope,
+                collection: params.collection
+            });
+        }, function (resp) {
+            switch(resp.status) {
+                case 404:
+                    if (resp.data.error === "fallback_to_all_docs") {
+                        return mnDocumentsListService.getDocuments({
+                            bucket: params.bucket,
+                            scope: params.scope,
+                            collection: params.collection,
+                            pageNumber: 0,
+                            pageLimit: 1
+                        }).then(function (resp) {
+                            if (resp.data.rows[0]) {
+                                return prepareDocForCodeMirror(resp.data.rows[0].doc);
+                            } else {
+                                $scope.errorMessage = "No documents available in this collection.";
+                                return prepareDocForCodeMirror({
+                                    json: '{}'
+                                });
+                            }
+                        }, function (resp) {
+                            console.log("error retrieving document list", resp);
+                            $scope.errorMessage = "Error retrieving document list.";
+                            return prepareDocForCodeMirror({
+                                json: '{}'
+                            });
+                        });
+                    } else {
+                        $scope.errorMessage = "No documents available in this collection.";
+                        return prepareDocForCodeMirror({
+                            json: '{}'
+                        });
+                    }
+            }
+        });
+    }
+
+    function initWithBuckets(buckets) {
+        $scope.ftsDocConfig = {};
+        $scope.ftsStore = {};
+
+        $scope.ftsNodes = [];
+        mnPoolDefault.get().then(function(value){
+            $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
+        });
+
+        $scope.buckets = buckets;
+        $scope.bucketNames = [];
+        for (var i = 0; i < buckets.length; i++) {
+            // Add membase buckets only to list of index-able buckets
+            if (buckets[i].bucketType === "membase") {
+                $scope.bucketNames.push(buckets[i].name);
+            }
+        }
+        $scope.scopeNames = [];
+        $scope.collectionNames = [];
+        $scope.collectionOpened = "";
+
+        $scope.indexEditorPreview = {};
+        $scope.indexEditorPreview["fulltext-index"] = null;
+        $scope.indexEditorPreview["fulltext-alias"] = null;
+
+        var $routeParams = $stateParams;
+
+        var $locationRewrite = {
+            host: $location.host,
+            path: function(p) {
+                if (!p) {
+                    return $location.path();
+                }
+                var newIndexName = p.replace(/^\/indexes\//, "");
+                $state.go("app.admin.search.fts_list", { open: newIndexName });
+            }
+        }
+
+        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
+        $scope.indexStoreOption = $scope.indexStoreOptions[1];
+
+        $scope.docConfigCollections = false;
+        $scope.docConfigMode = "type_field";
+
+        $scope.easyMappings = newEasyMappings();
+        $scope.editFields = newEditFields();
+        $scope.parsedDocs = newParsedDocs();
+        $scope.easyLanguages = [
+            {
+                label: "Unknown/Various",
+                id: "standard"
+            },
+            {
+                label: "English",
+                id: "en"
+            },
+            {
+                label: "Arabic",
+                id: "ar"
+            },
+            {
+                label: "Chinese, Japanese, and Korean",
+                id: "cjk"
+            },
+            {
+                label: "Danish",
+                id: "da"
+            },
+            {
+                label: "Dutch",
+                id: "nl"
+            },
+            {
+                label: "Finnish",
+                id: "fi"
+            },
+            {
+                label: "French",
+                id: "fr"
+            },
+            {
+                label: "German",
+                id: "de"
+            },
+            {
+                label: "Hindi",
+                id: "hi"
+            },
+            {
+                label: "Hungarian",
+                id: "hu"
+            },
+            {
+                label: "Italian",
+                id: "it"
+            },
+            {
+                label: "Norwegian",
+                id: "fo"
+            },
+            {
+                label: "Persian",
+                id: "fa"
+            },
+            {
+                label: "Portuguese",
+                id: "pt"
+            },
+            {
+                label: "Romanian",
+                id: "ro"
+            },
+            {
+                label: "Russian",
+                id: "ru"
+            },
+            {
+                label: "Sorani Kurdish",
+                id: "ckb"
+            },
+            {
+                label: "Spanish",
+                id: "es"
+            },
+            {
+                label: "Swedish",
+                id: "sv"
+            },
+            {
+                label: "Turkish",
+                id: "tr"
+            },
+            {
+                label: "Web (text including url, email, hashtags)",
+                id: "web"
+            },
+        ];
+
+
+
+        $scope.userSelectedField = function(path, valType) {
+            var cursor = $scope.editor.getCursor();
+            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+            var newRow = parsedDoc.getRow(path);
+            if (newRow != cursor.line) {
+                $scope.editor.focus();
+                $scope.editor.setCursor({line: newRow, ch: 0})
+            }
+
+
+            if ($scope.easyMapping.hasFieldAtPath(path)) {
+                $scope.editField = Object.assign({}, $scope.easyMapping.getFieldAtPath(path));
+            } else {
+                $scope.editField.path = path;
+                // set defaults for new field
+                $scope.editField.new = true;
+                $scope.editField.name = path;
+                $scope.editField.store = false;
+                $scope.editField.highlight = false;
+                $scope.editField.phrase = false;
+                $scope.editField.sortFacet = false;
+                $scope.editField.date_format = "dateTimeOptional";
+                if (valType === "number") {
+                    $scope.editField.type = "number";
+                } else  {
+                    // default to text if we aren't sure
+                    $scope.editField.type = "text";
+                    $scope.editField.analyzer = "en";
+                }
+            }
+        }
+
+        $scope.addField = function() {
+            $scope.editField.new = false;
+            $scope.easyMapping.addField($scope.editField)
+        }
+
+        $scope.deleteField = function(path) {
+            var result = confirm("Are you sure you want to delete the field at path '" + path + "' ?");
+            if (result) {
+                $scope.easyMapping.deleteField(path);
+            }
+            $scope.editField.path = "";
+        }
+
+        $scope.loadAnotherDocument = function(bucket, scope, collection) {
+            $scope.errorMessage = "";
+            var params = {};
+            params.bucket = bucket;
+            params.scope = scope;
+            params.collection = collection;
+            prepareRandomDocument(params).then(function (randomDoc) {
+                $scope.sampleDocument = randomDoc;
+            });
+        }
+
+        $scope.cursorMove = function(editor) {
+            var cursor = editor.getCursor();
+            if (cursor.line == 0) {
+                $scope.editField.path = "";
+                return;
+            }
+            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+            $scope.userSelectedField(parsedDoc.getPath(cursor.line), parsedDoc.getType(cursor.line));
+        };
+
+        $scope.bucketChanged = function(orig) {
+            if (orig) {
+                var result = confirm("Changing the bucket will lose all configuration made with the current bucket, are you sure?");
+                if (!result) {
+                    $scope.newSourceName = orig;
+                    return;
+                }
+            }
+            listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                $scope.scopeNames = scopes;
+                $scope.scopeChanged();
+            });
+
+            $scope.easyMappings = newEasyMappings();
+            $scope.editFields = newEditFields();
+            $scope.parsedDocs = newParsedDocs();
+        };
+
+        $scope.scopeChanged = function(orig) {
+            if (orig) {
+                var result = confirm("Changing the scope will lose all configuration made with the current bucket and scope, are you sure?");
+                if (!result) {
+                    $scope.newScopeName = orig;
+                    return;
+                }
+            }
+            $scope.listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
+                $scope.collectionNames = collections;
+                if (collections.length > 0) {
+                    $scope.expando(collections[0]);
+                }
+            });
+
+            $scope.easyMappings = newEasyMappings();
+            $scope.editFields = newEditFields();
+            $scope.parsedDocs = newParsedDocs();
+        };
+
+        $scope.expando = function(collectionName) {
+            $scope.errorMessage = "";
+            if ( $scope.collectionOpened == collectionName) {
+                $scope.collectionOpened = "";
+            } else {
+                $scope.collectionOpened = collectionName;
+                var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName).getDocument();
+                if (sampleDocument == '{}') {
+                    $scope.loadAnotherDocument($scope.newSourceName, $scope.newScopeName, collectionName);
+                } else {
+                    $scope.sampleDocument = sampleDocument;
+                }
+
+                $scope.editField = $scope.editFields.getFieldForCollection(collectionName);
+                $scope.easyMapping = $scope.easyMappings.getMappingForCollection(collectionName);
+            }
+        };
+
+        $scope.codemirrorLoaded = function(_editor){
+            $scope.editor = _editor;
+            initCodeMirrorActiveLine(CodeMirror);
+
+            // Options
+            _editor.setOption('readOnly', true);
+            _editor.setOption('lineWrapping', true);
+            _editor.setOption('styleActiveLine', true);
+
+            // Events
+            _editor.on("cursorActivity", $scope.cursorMove);
+        };
+
+        IndexNewCtrlFT($scope,
+            prefixedHttp($http, '../_p/' + ftsPrefix),
+            $routeParams,
+            $locationRewrite, $log, $sce, $uibModal,
+            finishIndexNewCtrlFTInit);
+
+        function finishIndexNewCtrlFTInit() {
+            var putIndexOrig = $scope.putIndex;
+
+            $scope.prepareFTSIndex = function(newIndexName,
+                                              newIndexType, newIndexParams,
+                                              newSourceType, newSourceName,
+                                              newSourceUUID, newSourceParams,
+                                              newPlanParams, prevIndexUUID,
+                                              readOnly) {
+                var errorFields = {};
+                var errs = [];
+
+                // easy mode is hard-coded to this doc config
+                $scope.ftsDocConfig.mode = "scope.collection.type_field";
+
+                // stringify our doc_config and set that into newIndexParams
+                try {
+                    newIndexParams['fulltext-index'].doc_config = JSON.stringify($scope.ftsDocConfig);
+                } catch (e) {}
+
+                try {
+                    newIndexParams['fulltext-index'].store = JSON.stringify($scope.ftsStore);
+                } catch (e) {}
+
+                if (!newIndexName) {
+                    errorFields["indexName"] = true;
+                    errs.push("index name is required");
+                } else if ($scope.meta &&
+                    $scope.meta.indexNameRE &&
+                    !newIndexName.match($scope.meta.indexNameRE)) {
+                    errorFields["indexName"] = true;
+                    errs.push("index name '" + newIndexName + "'" +
+                        " must start with an alphabetic character, and" +
+                        " must only use alphanumeric or '-' or '_' characters");
+                }
+
+                if (!newSourceName) {
+                    errorFields["sourceName"] = true;
+                    if (newIndexType == "fulltext-index") {
+                        errs.push("source (bucket) needs to be selected");
+                    }
+                }
+
+                if (newIndexType != "fulltext-alias") {
+                    if (newPlanParams) {
+                        try {
+                            var numReplicas = $scope.numReplicas;
+                            if (numReplicas >= 0 ) {
+                                let newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["numReplicas"] = numReplicas;
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            }
+
+                            var numPIndexes = $scope.numPIndexes;
+                            if (numPIndexes > 0) {
+                                let newPlanParamsObj = JSON.parse(newPlanParams);
+                                newPlanParamsObj["indexPartitions"] = numPIndexes;
+                                newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
+                                newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
+                            } else {
+                                errs.push("Index Partitions cannot be less than 1");
+                            }
+                        } catch (e) {
+                            errs.push("exception: " + e);
+                        }
+                    }
+                }
+
+                if (errs.length > 0) {
+                    var errorMessage =
+                        (errs.length > 1 ? "errors: " : "error: ") + errs.join("; ");
+                    return {
+                        errorFields: errorFields,
+                        errorMessage: errorMessage,
+                    }
+                }
+
+                if (!newSourceUUID) {
+                    for (var i = 0; i < buckets.length; i++) {
+                        if (newSourceName == buckets[i].name) {
+                            newSourceUUID = buckets[i].uuid;
+                        }
+                    }
+                }
+
+                return {
+                    newSourceUUID: newSourceUUID,
+                    newPlanParams: newPlanParams
+                }
+            }
+
+            $scope.putIndex = function(newIndexName,
+                                       newIndexType, newIndexParams,
+                                       newSourceType, newSourceName,
+                                       newSourceUUID, newSourceParams,
+                                       newPlanParams, prevIndexUUID) {
+                $scope.errorFields = {};
+                $scope.errorMessage = null;
+                $scope.errorMessageFull = null;
+
+                var rv = $scope.prepareFTSIndex(newIndexName,
+                    newIndexType, newIndexParams,
+                    newSourceType, newSourceName,
+                    newSourceUUID, newSourceParams,
+                    newPlanParams, prevIndexUUID)
+                if (rv.errorFields || rv.errorMessage) {
+                    $scope.errorFields = rv.errorFields;
+                    $scope.errorMessage = rv.errorMessage;
+                    return
+                }
+
+                newSourceUUID = rv.newSourceUUID;
+                newPlanParams = rv.newPlanParams;
+
+                return putIndexOrig(newIndexName,
+                    newIndexType, newIndexParams,
+                    newSourceType, newSourceName,
+                    newSourceUUID, newSourceParams,
+                    newPlanParams, prevIndexUUID);
+            };
+        }
+    }
+}
+
+// Utility functions to compute attempt to compute a stable hash on a mapping
+
+function sortObjByKey(value) {
+    return (typeof value === 'object') ?
+        (Array.isArray(value) ?
+                value.map(sortObjByKey) :
+                Object.keys(value).sort().reduce(
+                    (o, key) => {
+                        const v = value[key];
+                        o[key] = sortObjByKey(v);
+                        return o;
+                    }, {})
+        ) :
+        value;
+}
+
+
+function orderedJsonStringify(obj) {
+    return JSON.stringify(sortObjByKey(obj));
+}
+
+function hashCode(str) {
+    var hash = 0;
+    if (str.length == 0) {
+        return hash;
+    }
+    for (var i = 0; i < str.length; i++) {
+        var char = str.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+}
+
+function hashMapping(mapping) {
+    return hashCode(orderedJsonStringify(mapping)).toString();
 }

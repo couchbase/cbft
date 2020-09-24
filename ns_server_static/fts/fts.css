@@ -286,6 +286,11 @@ ul.pagination li span {
  background-color: yellow;
 }
 
+/* -- easy mode editor -- */
+.fts-sample-doc div {
+  width: 720px;
+}
+
 /* ---- indexes list & aliases list tables  --------------------------------- */
 
 .indexContainer table {
@@ -683,4 +688,12 @@ select.narrow {
 input.midwide,
 select.midwide {
   width: 240px;
+}
+
+.selected-field-row {
+  background-color: #ff0;
+}
+
+.CodeMirror-activeline-background {
+  background-color: #ff0;
 }
