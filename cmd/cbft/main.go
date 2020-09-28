@@ -492,6 +492,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]
 
+	// no auth for /api/nsstats endpoint so search_admin and search_reader
+	// can access these stats
+	muxrouter.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
+
 	handle := func(path string, method string, h http.Handler) {
 		dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
 			rest.NewHandlerWithRESTMeta(h, &rest.RESTMeta{path, method,
@@ -500,13 +504,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 		muxrouter.Handle(path, dh).Methods(method).Name(path)
 	}
+
 	handle(prefix+"/_prometheusMetricsHigh", "GET",
 		cbft.NewPrometheusHighMetricsHandler(mgr))
 
 	handle(prefix+"/_prometheusMetrics", "GET",
 		cbft.NewPrometheusMetricsHandler(mgr))
-
-	handle(prefix+"/api/nsstats", "GET", cbft.NewNsStatsHandler(mgr))
 
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
