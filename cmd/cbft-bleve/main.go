@@ -20,6 +20,7 @@ import (
 	zapv12cmd "github.com/blevesearch/zap/v12/cmd/zap/cmd"
 	zapv13cmd "github.com/blevesearch/zap/v13/cmd/zap/cmd"
 	zapv14cmd "github.com/blevesearch/zap/v14/cmd/zap/cmd"
+	zapv15cmd "github.com/blevesearch/zap/v15/cmd/zap/cmd"
 	"github.com/spf13/cobra"
 
 	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
@@ -37,6 +38,7 @@ func init() {
 	updateCommandAndAdd(zapv12cmd.RootCmd, "v12")
 	updateCommandAndAdd(zapv13cmd.RootCmd, "v13")
 	updateCommandAndAdd(zapv14cmd.RootCmd, "v14")
+	updateCommandAndAdd(zapv15cmd.RootCmd, "v15")
 	cmd.RootCmd.AddCommand(zapCmd)
 }
 
