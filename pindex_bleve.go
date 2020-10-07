@@ -100,7 +100,7 @@ const BleveDefaultZapVersion = int(11)
 // BlevePreferredZapVersion is the recommended zap version for newer indexes.
 // This version needs to be bumped to reflect the latest recommended zap
 // version in any given release.
-var BlevePreferredZapVersion = int(14)
+var BlevePreferredZapVersion = int(15)
 
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
