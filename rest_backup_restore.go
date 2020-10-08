@@ -427,14 +427,8 @@ func (h *BucketBackupIndexHandler) ServeHTTP(
 		return
 	}
 
-	for indexName, indexDef := range indexDefs.IndexDefs {
-		if indexDef.SourceName != bucketName {
-			delete(indexDefs.IndexDefs, indexName)
-		}
-	}
-
 	// filter index definitions for the given buckets/scopes/collections.
-	indexDefs = filterIndexDefinitions(indexDefs, nil,
+	indexDefs = filterIndexDefinitions(indexDefs, []string{bucketName},
 		scopeFilters, colFilters, include, true)
 
 	rv := struct {
@@ -534,10 +528,17 @@ func checkSourceNameMatchesFilters(sourceNames,
 func filterIndexDefinitions(indexDefs *cbgt.IndexDefs,
 	bucketRules, scopeRules, colRules []string,
 	include, bucketLevel bool) *cbgt.IndexDefs {
+	if indexDefs == nil || len(indexDefs.IndexDefs) == 0 {
+		return indexDefs
+	}
+
 	rv := make(map[string]*cbgt.IndexDef, 1)
 	for _, indexDef := range indexDefs.IndexDefs {
-		if indexDef.Type == "fulltext-alias" && !bucketLevel {
-			rv[indexDef.Name] = indexDef
+		// include index-aliases only for cluster level invocations.
+		if indexDef.Type == "fulltext-alias" {
+			if !bucketLevel {
+				rv[indexDef.Name] = indexDef
+			}
 			continue
 		}
 		// fetch all the sourceNames for the index definition.
