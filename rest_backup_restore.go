@@ -366,9 +366,7 @@ func (h *BackupIndexHandler) ServeHTTP(
 	params := queryParams.Get("exclude")
 	if params == "" {
 		params = queryParams.Get("include")
-		if len(params) > 1 {
-			include = true
-		}
+		include = true
 	}
 
 	bucketFilters, scopeFilters, colFilters := parseBackupFilters(params, "")
@@ -418,9 +416,7 @@ func (h *BucketBackupIndexHandler) ServeHTTP(
 	params := queryParams.Get("exclude")
 	if params == "" {
 		params = queryParams.Get("include")
-		if len(params) > 1 {
-			include = true
-		}
+		include = true
 	}
 
 	_, scopeFilters, colFilters := parseBackupFilters(params, bucketName)
