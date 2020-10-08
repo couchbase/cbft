@@ -177,7 +177,7 @@ func main() {
 	// is used for cbgt node and Cfg registration.
 	bindHTTPList := strings.Split(flags.BindHTTP, ",")
 
-	if purgeTimeOut, ok := parseOptionsInt(options, "cfgPlanPurgeTimeout"); ok {
+	if purgeTimeOut, ok := cbgt.ParseOptionsInt(options, "cfgPlanPurgeTimeout"); ok {
 		cbgt.PlanPurgeTimeout = int64(purgeTimeOut)
 	}
 
@@ -625,7 +625,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		maxConcurrentPartitionMovesPerNode := 1
-		v, found := parseOptionsInt(mgr.Options(), "maxConcurrentPartitionMovesPerNode")
+		v, found := cbgt.ParseOptionsInt(mgr.Options(), "maxConcurrentPartitionMovesPerNode")
 		if found {
 			maxConcurrentPartitionMovesPerNode = v
 		}
