@@ -3,7 +3,7 @@ module github.com/couchbase/cbft
 go 1.13
 
 require (
-	github.com/blevesearch/bleve v1.0.12
+	github.com/blevesearch/bleve v1.0.13-0.20201009151838-c67bc71f5a3f
 	github.com/blevesearch/bleve-mapping-ui v0.3.0
 	github.com/blevesearch/zap/v11 v11.0.12
 	github.com/blevesearch/zap/v12 v12.0.12
