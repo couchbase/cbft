@@ -353,9 +353,10 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
 
-    $scope.progressPct = "";
+    $scope.progressPct = "--";
     $scope.numMutationsToIndex = "";
-    $scope.sourceDocCount = "";
+    $scope.currSeqReceived = "";
+    $scope.lastCurrSeqReceived = "";
     $scope.httpStatus = 200;    // OK
     $scope.showHiddenUI = false;
 
@@ -379,6 +380,8 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             if (data) {
                 $scope.numMutationsToIndex =
                     data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":num_mutations_to_index"];
+                $scope.currSeqReceived =
+                    data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":curr_seq_received"];
                 updateProgressPct();
             }
         }, function(response) {
@@ -430,12 +433,23 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
         if (i == 0 && x == 0) {
             $scope.progressPct = 100.0;
-        } else if (x >= 0 && i >= 0) {
+        } else if (x > 0 && i >= 0) {
             let  prog = ((1.0 * i) / (i + x)) * 100.0;
             $scope.progressPct = prog.toPrecision(4);
         } else {
-            $scope.progressPct = "--";
+            // num_mutations_to_index either zero or unavailable!
+            var lastS = parseInt($scope.lastCurrSeqReceived);
+            if (lastS >= 0) {
+                // determine progressPct relative to the current
+                // currSeqReceived and the lastCurrSeqReceived.
+                var currS = parseInt($scope.currSeqReceived);
+                if (currS > 0) {
+                    var prog = ((1.0 * lastS) / currS) * 100.0;
+                    $scope.progressPct = prog.toPrecision(4);
+                }
+            }
         }
+        $scope.lastCurrSeqReceived = $scope.currSeqReceived
     }
 
     IndexCtrl($scope, http, $routeParams,

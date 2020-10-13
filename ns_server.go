@@ -450,6 +450,7 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 				}
 			}
 
+			nsIndexStat["curr_seq_received"] = curSeq
 			if totSeq >= curSeq {
 				nsIndexStat["num_mutations_to_index"] = totSeq - curSeq
 			} else {
