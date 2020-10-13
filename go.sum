@@ -35,8 +35,9 @@ github.com/blevesearch/zap/v13 v13.0.4 h1:eoRvJmLeIQUs1mAF+fAFALg1dPHOI1e1KFuXL0
 github.com/blevesearch/zap/v13 v13.0.4/go.mod h1:YdB7UuG7TBWu/1dz9e2SaLp1RKfFfdJx+ulIK5HR1bA=
 github.com/blevesearch/zap/v14 v14.0.3 h1:ccEv296u6DEUHFF9U4W2E/6/WkbuDrS9/1VJM34SCzA=
 github.com/blevesearch/zap/v14 v14.0.3/go.mod h1:oObAhcDHw7p1ahiTCqhRkdxdl7UA8qpvX10pSgrTMHc=
-github.com/blevesearch/zap/v15 v15.0.1 h1:jEism63eY+qdcvwXH0K8MiKhv5tb10T1k7SNx6fauCM=
 github.com/blevesearch/zap/v15 v15.0.1/go.mod h1:ho0frqAex2ktT9cYFAxQpoQXsxb/KEfdjpx4s49rf/M=
+github.com/blevesearch/zap/v15 v15.0.2-0.20201013183514-dbfed402cb76 h1:U8PHwY+trUODJjYl5qwdU0Bj7w5vf8QVAQPMZC7bfgQ=
+github.com/blevesearch/zap/v15 v15.0.2-0.20201013183514-dbfed402cb76/go.mod h1:ho0frqAex2ktT9cYFAxQpoQXsxb/KEfdjpx4s49rf/M=
 github.com/buger/jsonparser v1.0.0 h1:etJTGF5ESxjI0Ic2UaLQs2LQQpa8G9ykQScukbh4L8A=
 github.com/buger/jsonparser v1.0.0/go.mod h1:tgcrVJ81GPSF0mz+0nu1Xaz0fazGPrmmJfJtxjbHhUQ=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
