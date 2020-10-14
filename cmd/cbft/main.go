@@ -546,6 +546,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/v1/bucket/{bucketName}/backup", "POST",
 		cbft.NewBucketRestoreIndexHandler(mgr))
 
+	handle(prefix+"/api/query/index/{indexName}", "GET",
+		cbft.NewQuerySupervisorDetails())
+
 	router := exportMuxRoutesToHttprouter(muxrouter)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",

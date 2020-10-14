@@ -106,12 +106,14 @@ type RunningQueryDetails struct {
 	IndexName     string      `json:"index"`
 }
 
-func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration) map[uint64]*RunningQueryDetails {
+func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration,
+	indexName string) map[uint64]*RunningQueryDetails {
 	qs.m.RLock()
-	queryMap := map[uint64]*RunningQueryDetails{}
+	queryMap := make(map[uint64]*RunningQueryDetails, len(qs.queryMap))
 	for key, val := range qs.queryMap {
 		timeSince := time.Since(val.addedAt)
-		if timeSince > longerThan {
+		if timeSince > longerThan &&
+			(indexName == "" || indexName == val.IndexName) {
 			queryMap[key] = &RunningQueryDetails{
 				Query:         val.Query,
 				Size:          val.Size,
@@ -156,18 +158,41 @@ func NewQuerySupervisorDetails() *QuerySupervisorDetails {
 
 func (qss *QuerySupervisorDetails) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
+	indexName := rest.RequestVariableLookup(req, "indexName")
+	queryParams := req.URL.Query()
+	params := queryParams.Get("longerThan")
+	var longerThan time.Duration
+	if len(params) > 1 {
+		duration, err := time.ParseDuration(params)
+		if err != nil {
+			rest.PropagateError(w, nil,
+				fmt.Sprintf("query details: duration parse err: %v", err),
+				http.StatusBadRequest)
+			return
+		}
+		longerThan = duration
+	}
+
 	queryCount := querySupervisor.Count()
-	queryMap := querySupervisor.ListLongerThan(0)
+	queryMap := querySupervisor.ListLongerThan(longerThan, indexName)
 
 	rv := struct {
-		Status           string                          `json:"status"`
-		ActiveQueryCount uint64                          `json:"activeQueryCount"`
-		ActiveQueryMap   map[uint64]*RunningQueryDetails `json:"activeQueryMap"`
+		Status                      string                          `json:"status"`
+		ActiveQueryCount            uint64                          `json:"activeQueryCount"`
+		ActiveLongRunningQueryCount *int                            `json:"activeLongRunningQueryCount,omitempty"`
+		ActiveQueryMap              map[uint64]*RunningQueryDetails `json:"activeQueryMap"`
 	}{
 		Status:           "ok",
 		ActiveQueryCount: queryCount,
 		ActiveQueryMap:   queryMap,
 	}
+
+	var count int
+	if longerThan.Seconds() > 0 {
+		count = len(queryMap)
+		rv.ActiveLongRunningQueryCount = &count
+	}
+
 	rest.MustEncode(w, rv)
 }
 
