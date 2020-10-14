@@ -319,7 +319,6 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
     $scope.loadDocCount = function(callback) {
         $scope.loadIndexDocCount();
         $scope.loadNumMutationsToIndex();
-        $scope.loadSourceDocCount();
         if (callback) {
             return callback($scope.httpStatus);
         }
@@ -327,31 +326,21 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
     }
 
     $scope.loadNumMutationsToIndex = function() {
+        $scope.numMutationsToIndex = "...";
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+
         http.get('/api/nsstats').
         then(function(response) {
             var data = response.data;
             if (data) {
                 $scope.numMutationsToIndex =
                     data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":num_mutations_to_index"];
-            }
-        });
-    }
-
-    $scope.loadSourceDocCount = function() {
-        $scope.sourceDocCount = "...";
-        $scope.errorMessage = null;
-        $scope.errorMessageFull = null;
-
-        http.get('/api/stats/sourceStats/' + $scope.indexName).
-        then(function(response) {
-            var data = response.data;
-            if (data) {
-                $scope.sourceDocCount = data.docCount;
                 updateProgressPct();
             }
         }, function(response) {
-            $scope.sourceDocCount = "error";
-            $scope.httpStatus = response.status;
+            $scope.numMutationsToIndex = "error"
+            $scope.httpStatus = response.Status;
             updateProgressPct();
         });
     }
@@ -394,22 +383,13 @@ function IndexCtrlFT_NS($scope, $http, $route, $stateParams, $state,
 
     function updateProgressPct() {
         var i = parseInt($scope.indexDocCount);
-        var s = parseInt($scope.sourceDocCount);
         var x = parseInt($scope.numMutationsToIndex);
 
-        if (i == 0 && (s == 0 || x == 0)) {
+        if (i == 0 && x == 0) {
             $scope.progressPct = 100.0;
         } else if (x >= 0 && i >= 0) {
             var prog = ((1.0 * i) / (i + x)) * 100.0;
             $scope.progressPct = prog.toPrecision(4);
-        } else if (s > 0) {
-            // if num_mutations_to_index isn't available
-            if (i >= 0) {
-                var prog = ((1.0 * i) / s) * 100.0;
-                $scope.progressPct = prog.toPrecision(4);
-            } else {
-                $scope.progressPct = 0.0;
-            }
         } else {
             $scope.progressPct = "--";
         }
