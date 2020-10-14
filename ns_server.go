@@ -422,6 +422,8 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					curSeq += dstUUIDSeq.Seq
 				}
 			}
+
+			nsIndexStat["curr_seq_received"] = curSeq
 			if totSeq >= curSeq {
 				nsIndexStat["num_mutations_to_index"] = totSeq - curSeq
 			}
