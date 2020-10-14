@@ -326,8 +326,9 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         done = true;
     });
 
-    $scope.showEasyMode = function(name, prevHash, mapping) {
-        let newHash = hashMapping(mapping);
+    $scope.showEasyMode = function(name, params) {
+        let prevHash = params.easy_mode_hash;
+        let newHash = hashParams(params);
         return prevHash == newHash;
     }
 
@@ -1064,7 +1065,7 @@ function blevePIndexDoneController(doneKind, indexParams, indexUI,
     if (indexParams) {
         if ($scope.easyMappings) {
             indexParams.mapping = $scope.easyMappings.getIndexMapping($scope.newScopeName);
-            indexParams.easy_mode_hash = hashMapping(indexParams.mapping);
+            indexParams.easy_mode_hash = hashParams(indexParams);
         } else {
             indexParams.mapping = $scope.bleveIndexMapping();
         }
@@ -1861,6 +1862,11 @@ function hashCode(str) {
     return hash;
 }
 
-function hashMapping(mapping) {
-    return hashCode(orderedJsonStringify(mapping)).toString();
+function hashParams(params) {
+    // hash an object, with doc_config AND mapping from params
+    let objToHash = {
+        "doc_config": params.doc_config,
+        "mapping": params.mapping
+    };
+    return hashCode(orderedJsonStringify(objToHash)).toString();
 }

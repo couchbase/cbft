@@ -103,7 +103,7 @@
                               ui-sref="^.search.fts_edit({indexName: indexName})">
                           Edit
                       </button>
-                      <button ng-if="showEasyMode(indexName, indexDef.params.easy_mode_hash, indexDef.params.mapping)"
+                      <button ng-if="showEasyMode(indexName, indexDef.params)"
                               ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                                                     ui-sref="^.search.fts_edit_easy({indexName: indexName})">
                           Edit (easy)
