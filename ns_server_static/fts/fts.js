@@ -1689,13 +1689,40 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             $scope.editor = _editor;
             initCodeMirrorActiveLine(CodeMirror);
 
+            // NOTE: this event must be registered before we configure
+            // the styleActiveLine setting below, as it's event must
+            // fire AFTER our event handler
+            _editor.on("beforeSelectionChange", function(cm, obj) {
+                // changes to selection must be made with the provided update
+                // method, here we always update to a single element array
+                // (we don't ever want multiple selections), further we
+                // update the anchor and head to be the same (no multiple lines)
+                // further, we use the head, not the anchor, we should get the
+                // end of the selection if they attempted a multi-line selection
+                if (obj.ranges && obj.ranges[0]) {
+                    obj.update([
+                        {
+                            anchor: obj.ranges[0].head,
+                            head: obj.ranges[0].head
+                        }
+                    ])
+                }
+            });
+
             // Options
             _editor.setOption('readOnly', true);
             _editor.setOption('lineWrapping', true);
             _editor.setOption('styleActiveLine', true);
+            _editor.setOption('configureMouse', function(cm, repeat, event) {
+                return {
+                    addNew : false, // disables ctrl(win)/meta(mac) multiple-select
+                    extend: false // disables shift extend select
+                };
+            });
 
             // Events
             _editor.on("cursorActivity", $scope.cursorMove);
+
         };
 
         IndexNewCtrlFT($scope,
