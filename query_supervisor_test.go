@@ -13,6 +13,8 @@ package cbft
 
 import (
 	"testing"
+
+	"github.com/blevesearch/bleve"
 )
 
 func TestQuerySupervisor(t *testing.T) {
@@ -52,5 +54,50 @@ func TestQuerySupervisor(t *testing.T) {
 
 	if _, ok := querySupervisor.ExecutionTime(querySupervisor.id); !ok {
 		t.Errorf("Expected id: %v to exist!", querySupervisor.id)
+	}
+}
+
+func BenchmarkListLongerThan(b *testing.B) {
+	for i := 0; i < 100; i++ {
+		querySupervisor.AddEntry(&QuerySupervisorContext{
+			Query:     bleve.NewMatchQuery("test"),
+			Cancel:    nil,
+			Size:      10,
+			From:      0,
+			Timeout:   10,
+			IndexName: "dummy",
+		})
+	}
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		done := make(chan struct{})
+
+		// reads' routine
+		go func() {
+			for i := 0; i < 50; i++ {
+				_ = querySupervisor.ListLongerThan(0, "")
+			}
+			done <- struct{}{}
+		}()
+
+		// inserts' routine
+		go func() {
+			for i := 0; i < 100; i++ {
+				querySupervisor.AddEntry(&QuerySupervisorContext{
+					Query:     bleve.NewMatchQuery("test"),
+					Cancel:    nil,
+					Size:      10,
+					From:      0,
+					Timeout:   10,
+					IndexName: "dummy",
+				})
+			}
+			done <- struct{}{}
+		}()
+
+		<-done
+		<-done
 	}
 }
