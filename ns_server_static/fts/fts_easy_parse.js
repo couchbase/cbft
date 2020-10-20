@@ -40,11 +40,11 @@ function parseDocument(doc) {
             parseStack.pop();
             keysStack.pop();
 
-            if (valsSincePop != 1) {
+            if (valsSincePop > 1) {
                 rowPaths.push(rowPaths[rowPaths.length - 1]);
                 rowTypes.push(rowTypes[rowTypes.length - 1]);
+                valsSincePop--;
             }
-            valsSincePop = 0;
         }
         var ks = keysStack;
         var keysCopy = [];
