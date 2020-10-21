@@ -24,12 +24,12 @@ import (
 )
 
 type QuerySupervisorContext struct {
-	Query     query.Query
-	Cancel    context.CancelFunc
-	Size      int
-	From      int
-	Timeout   int64
-	IndexName string
+	Query     query.Query        `json:"query"`
+	Cancel    context.CancelFunc `json:"-"`
+	Size      int                `json:"size"`
+	From      int                `json:"from"`
+	Timeout   int64              `json:"timeout"`
+	IndexName string             `json:"index"`
 
 	addedAt time.Time
 }
@@ -39,7 +39,6 @@ type QuerySupervisor struct {
 	queryMap         map[uint64]*QuerySupervisorContext
 	indexAccessTimes map[string]time.Time
 	id               uint64
-	added            uint64
 	removed          uint64
 }
 
@@ -53,18 +52,17 @@ func init() {
 }
 
 func (qs *QuerySupervisor) AddEntry(qsc *QuerySupervisorContext) uint64 {
-	qs.m.Lock()
-	qs.id++
-	id := qs.id
 	if qsc == nil {
 		qsc = &QuerySupervisorContext{}
 	}
 	qsc.addedAt = time.Now()
+	qs.m.Lock()
+	qs.id++
+	id := qs.id
 	qs.queryMap[id] = qsc
 	if qsc.IndexName != "" {
 		qs.indexAccessTimes[qsc.IndexName] = qsc.addedAt
 	}
-	qs.added++
 	qs.m.Unlock()
 	return id
 }
@@ -81,7 +79,7 @@ func (qs *QuerySupervisor) DeleteEntry(id uint64) {
 func (qs *QuerySupervisor) Count() uint64 {
 	qs.m.RLock()
 	removed := qs.removed
-	added := qs.added
+	added := qs.id
 	qs.m.RUnlock()
 	return (added - removed)
 }
@@ -98,30 +96,30 @@ func (qs *QuerySupervisor) GetLastAccessTimeForIndex(name string) string {
 }
 
 type RunningQueryDetails struct {
-	Query         query.Query `json:"query"`
-	Size          int         `json:"size"`
-	From          int         `json:"from"`
-	Timeout       int64       `json:"timeout"`
-	ExecutionTime string      `json:"execution_time"`
-	IndexName     string      `json:"index"`
+	QueryContext  *QuerySupervisorContext
+	ExecutionTime string `json:"executionTime"`
 }
 
+// ListLongerThan filters the active running queries against the
+// given duration and the index name.
+// TODO - Incoming queries shouldn't get blocked due to lock deprivations
+// from the frequent read operations.
 func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration,
-	indexName string) map[uint64]*RunningQueryDetails {
+	indexName string) (queryMap map[uint64]*RunningQueryDetails) {
+	var i int
 	qs.m.RLock()
-	queryMap := make(map[uint64]*RunningQueryDetails, len(qs.queryMap))
+	// upfront initialisations to save frequent allocator trips.
+	queryMap = make(map[uint64]*RunningQueryDetails, len(qs.queryMap))
+	pool := make([]RunningQueryDetails, len(qs.queryMap))
+
 	for key, val := range qs.queryMap {
 		timeSince := time.Since(val.addedAt)
 		if timeSince > longerThan &&
 			(indexName == "" || indexName == val.IndexName) {
-			queryMap[key] = &RunningQueryDetails{
-				Query:         val.Query,
-				Size:          val.Size,
-				From:          val.From,
-				Timeout:       val.Timeout,
-				ExecutionTime: fmt.Sprintf("%s", timeSince),
-				IndexName:     val.IndexName,
-			}
+			pool[i].QueryContext = val
+			pool[i].ExecutionTime = fmt.Sprintf("%s", timeSince)
+			queryMap[key] = &pool[i]
+			i++
 		}
 	}
 	qs.m.RUnlock()

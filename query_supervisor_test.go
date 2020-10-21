@@ -58,7 +58,7 @@ func TestQuerySupervisor(t *testing.T) {
 }
 
 func BenchmarkListLongerThan(b *testing.B) {
-	b.ReportAllocs()
+
 	for i := 0; i < 100; i++ {
 		querySupervisor.AddEntry(&QuerySupervisorContext{
 			Query:     bleve.NewMatchQuery("test"),
