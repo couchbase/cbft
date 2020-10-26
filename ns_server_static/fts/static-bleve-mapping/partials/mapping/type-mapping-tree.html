@@ -31,12 +31,31 @@
       </span>
       <span ng-if="mapping._editing && mapping.name != indexMapping.defaultMappingKey"
             data-nodrag>
-        <input ng-if="mapping._kind == 'mappingType'"
-               type="text" placeholder="please enter a type name"
-                           ng-model="mapping.name"
-                           ng-change="validateMapping(mapping, mappings)"
-                           ng-class="{'invalid': mapping._invalid}"
-                           style="min-width:240px;">
+        <span ng-if="mapping._kind == 'mappingType'">
+          <span ng-if="$parent.docConfigCollections && !mapping.name">
+            <label>Collection:</label>
+            <select ng-show="collectionNames && collectionNames.length >= 0"
+                    ng-model="$parent.newCollectionName"
+                    ng-options="t for t in collectionNames"
+                    ng-change="mapping.name=buildMappingName(newScopeName,newCollectionName)">
+              <option value="" selected hidden></option>
+            </select>
+          </span>
+          <input ng-if="!$parent.docConfigCollections || mapping.name"
+                 type="text"
+                 placeholder="please enter a type name"
+                 ng-model="mapping.name"
+                 ng-change="validateMapping(mapping, mappings)"
+                 ng-class="{'invalid': mapping._invalid}"
+                 style="min-width:240px;">
+          <span ng-if="$parent.docConfigCollections"
+                class="fa-stack icon-info"
+                uib-tooltip="Optional: Append '.<type>' after collection."
+                tooltip-placement="auto right">
+            <span class="icon fa-circle-thin fa-stack-2x"></span>
+            <span class="icon fa-info fa-stack-1x"></span>
+          </span>
+        </span>
         <input ng-if="mapping._kind == 'mapping'"
                type="text" placeholder="please enter a property name"
                            ng-model="mapping.name"
@@ -45,6 +64,7 @@
                            style="min-width:240px;">
       </span>
       <span ng-if="mapping.enabled && mapping._editing">
+        <label>Analyzer:</label>
         <select class="mapping_default_analyzer"
                 ng-model="mapping.default_analyzer"
                 ng-options="t as t for t in analyzerNames">

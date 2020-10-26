@@ -477,6 +477,40 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                  initWithBuckets([]);
              });
 
+    function getCollections(bucket) {
+        return $http({
+            method: "GET",
+            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/collections"
+        });
+    }
+
+    function listScopesForBucket(bucket) {
+        return getCollections(bucket).then(function (resp) {
+            var scopes = [];
+            for (var scopeI in resp.data.scopes) {
+                let scope = resp.data.scopes[scopeI];
+                scopes.push(scope.name);
+            }
+            return scopes;
+        });
+    }
+
+    function listCollectionsForBucketScope(bucket, scopeName) {
+        return getCollections(bucket).then(function (resp) {
+            var collections = [];
+            for (var scopeI in resp.data.scopes) {
+                let scope = resp.data.scopes[scopeI];
+                if (scope.name == scopeName) {
+                    for ( var collI in scope.collections) {
+                        let collection = scope.collections[collI];
+                        collections.push(collection.name);
+                    }
+                }
+            }
+            return collections;
+        });
+    }
+
     function initWithBuckets(buckets) {
         $scope.ftsDocConfig = {};
         $scope.ftsStore = {};
@@ -494,6 +528,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 $scope.bucketNames.push(buckets[i].name);
             }
         }
+        $scope.scopeNames = [];
+        $scope.collectionNames = [];
 
         $scope.indexEditorPreview = {};
         $scope.indexEditorPreview["fulltext-index"] = null;
@@ -518,6 +554,31 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.docConfigCollections = false;
         $scope.docConfigMode = "type_field";
 
+        $scope.updateBucketDetails = function() {
+            listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                $scope.scopeNames = scopes;
+                $scope.updateScopeDetails($scope.newScopeName);
+            });
+        };
+
+        $scope.updateScopeDetails = function(newScopeName) {
+            if (!angular.isDefined(newScopeName) ||
+                newScopeName == "" ||
+                newScopeName == null) {
+                $scope.newScopeName = "";
+                $scope.collectionNames = [];
+                $scope.docConfigCollections = false;
+                $scope.typeIdentifierChanged()
+                return;
+            }
+            $scope.docConfigCollections = true;
+            $scope.typeIdentifierChanged()
+            $scope.newScopeName = newScopeName;
+            listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
+                $scope.collectionNames = collections;
+            });
+        };
+
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
                        $routeParams,
@@ -540,6 +601,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     if (!$scope.ftsDocConfig.type_field) {
                         $scope.ftsDocConfig.type_field = "type";
                     }
+                } else if ($scope.docConfigMode == "scope.collection.type_field" ||
+                    $scope.docConfigMode == "scope.collection.docid_prefix" ||
+                    $scope.docConfigMode == "scope.collection.docid_regexp") {
+                    $scope.ftsDocConfig.mode = $scope.docConfigMode;
                 }
             }
 
@@ -570,6 +635,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 // type identifier validation/cleanup
                 switch ($scope.ftsDocConfig.mode) {
                   case "type_field":
+                  case "scope.collection.type_field":
                     if (!$scope.ftsDocConfig.type_field) {
                         errs.push("type field is required");
                     }
@@ -580,6 +646,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                   break;
 
                   case "docid_prefix":
+                  case "scope.collection.docid_prefix":
                     if (!$scope.ftsDocConfig.docid_prefix_delim) {
                         errs.push("Doc ID separator is required");
                     }
@@ -590,6 +657,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                   break;
 
                   case "docid_regexp":
+                  case "scope.collection.docid_regexp":
                     if (!$scope.ftsDocConfig.docid_regexp) {
                         errs.push("Doc ID regexp is required");
                     }

@@ -402,6 +402,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
     $scope.newSourceType = $routeParams.sourceType || "";
     $scope.newSourceName = "";
     $scope.newSourceUUID = "";
+    $scope.newScopeName = "";
     $scope.newSourceParams = {};
     $scope.newPlanParams = "";
     $scope.prevIndexUUID = "";
@@ -474,6 +475,22 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
         indexTypesArr.sort(compareCategoryLabel);
         $scope.indexTypesArr = indexTypesArr;
 
+        function updateScopeName(docConfigMode, mapping) {
+            var scopeName = "";
+            if (docConfigMode.startsWith("scope.collection.")) {
+                if (mapping.default_mapping.enabled) {
+                    scopeName = "_default";
+                } else {
+                    for (let [key, value] of Object.entries(mapping.types)) {
+                        scopeName = key.split(".")[0];
+                        break;
+                    }
+                }
+            }
+            $scope.newScopeName = scopeName;
+            $scope.updateBucketDetails();
+        };
+
         if (origIndexName &&
             origIndexName.length > 0) {
             $http.get('/api/index/' + origIndexName).
@@ -496,6 +513,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 $scope.newSourceType = data.indexDef.sourceType;
                 $scope.newSourceName = data.indexDef.sourceName;
                 $scope.newSourceUUID = "";
+
+                updateScopeName(data.indexDef.params.doc_config.mode,
+                    data.indexDef.params.mapping);
+
                 $scope.newSourceParams[data.indexDef.sourceType] =
                     JSON.stringify(data.indexDef.sourceParams,
                                    undefined, 2);

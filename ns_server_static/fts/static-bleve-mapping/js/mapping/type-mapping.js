@@ -80,6 +80,20 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
 
     // -------------------------------------------------------
 
+    $scope.buildMappingName = function(scopeName, collectionName) {
+        if (scopeName == "") {
+            return "";
+        }
+
+        if (collectionName == "") {
+            return "";
+        }
+
+        return scopeName + "." + collectionName;
+    };
+
+    // -------------------------------------------------------
+
     $scope.mappings = mappings;
 
     $scope.editing = null;

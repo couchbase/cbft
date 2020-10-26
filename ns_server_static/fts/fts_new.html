@@ -28,8 +28,33 @@
             <label for="inputSourceName">Bucket</label>
             <select ng-show="bucketNames && bucketNames.length >= 0"
                     ng-model="$parent.newSourceName"
-                    ng-options="t for t in bucketNames">
+                    ng-options="t for t in bucketNames"
+                    ng-change="updateBucketDetails()">
               <option value="" selected hidden></option>
+            </select>
+          </div>
+        </div>
+        <div class="items-top formrow width-480">
+          <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport">
+            <input type="checkbox" id="subscribe-to-collections"
+                   ng-model="$parent.$parent.docConfigCollections"
+                   ng-change="typeIdentifierChanged()">
+            <label for="subscribe-to-collections">Use non-default scope/collection(s)</label>
+            <span class="fa-stack icon-info"
+                  uib-tooltip="Check this option should you want the index to stream data from a non-default scope and/or non-default collection(s) on the source bucket."
+                  tooltip-placement="auto right">
+              <span class="icon fa-circle-thin fa-stack-2x"></span>
+              <span class="icon fa-info fa-stack-1x"></span>
+            </span>
+          </div>
+        </div>
+        <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport && $parent.docConfigCollections"
+             class="row items-top formrow width-480">
+          <div class="column width-12">
+            <label for"inputSourceName">Scope</label>
+            <select ng-model="$parent.newScopeName"
+                    ng-options="t for t in scopeNames"
+                    ng-change="updateScopeDetails(newScopeName)">
             </select>
           </div>
         </div>
@@ -63,24 +88,10 @@
             <option value="">-- choose source type --</option>
           </select>
         </div>
+        <hr>
 
         <!-- type identifier details/controls for a full text index *********** -->
         <div ng-if="newIndexType != 'fulltext-alias'" class="margin-bottom1">
-           <div class="margin-bottom-half">
-              <input type="checkbox" id="subscribe-to-collections"
-                     ng-model="$parent.$parent.docConfigCollections"
-                     ng-true-value="false"
-                     ng-false-value="true"
-                     ng-disabled="!$parent.collectionsSupport"
-                     ng-change="typeIdentifierChanged()">
-              <label for="subscribe-to-collections">Use scope:_default and collection:_default only</label>
-              <span class="fa-stack icon-info"
-                    uib-tooltip="Un-check this option should you want the index to stream data from a non-default scope and/or non-default collection(s) on the source bucket." tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-          </div>
-          <hr>
           <label class="margin-bottom-half">Type Identifier</label>
           <div class="row width-480 margin-bottom-half">
             <div class="width-5">
@@ -126,11 +137,11 @@
               <label for="docid_regexp">Doc ID with regex:</label>
             </div>
             <div class="width-7">
-                <input ng-model="$parent.$parent.ftsDocConfig.docid_regexp"
-                       ng-disabled="$parent.$parent.docConfigMode != 'docid_regexp'"
-                       type="text"
-                       placeholder="regular expression"
-                       class="input-small">
+              <input ng-model="$parent.$parent.ftsDocConfig.docid_regexp"
+                     ng-disabled="$parent.$parent.docConfigMode != 'docid_regexp'"
+                     type="text"
+                     placeholder="regular expression"
+                     class="input-small">
             </div>
           </div>
         </div>
