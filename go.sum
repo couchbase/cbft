@@ -5,7 +5,6 @@ github.com/RoaringBitmap/roaring v0.4.23 h1:gpyfd12QohbqhFO4NVDUdoPOCXsyahYRQhIN
 github.com/RoaringBitmap/roaring v0.4.23/go.mod h1:D0gp8kJQgE1A4LQ5wFLggQEyvDi06Mq5mKs52e1TwOo=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/blevesearch/bleve v1.0.5/go.mod h1:uqxkEnBeamb5fZVU8+QMNLrLvN5TPJTwwRLUOeg5PUA=
-github.com/blevesearch/bleve v1.0.12 h1:2qJUSBpU/h1z8x3ERRB5WwpmEpJwoivPqmDpHzv4tuk=
 github.com/blevesearch/bleve v1.0.12/go.mod h1:G0ErXWdIrUSYZLPoMpS9Z3saTnTsk4ebhPsVv/+0nxk=
 github.com/blevesearch/bleve v1.0.13-0.20201009151838-c67bc71f5a3f h1:vqDXb2c+MuW4w+/XRO+gqI+gNYYbIqy4LxTTUCcevBU=
 github.com/blevesearch/bleve v1.0.13-0.20201009151838-c67bc71f5a3f/go.mod h1:G0ErXWdIrUSYZLPoMpS9Z3saTnTsk4ebhPsVv/+0nxk=
@@ -46,14 +45,10 @@ github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8Nz
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/couchbase/blance v0.0.0-20170402154611-5cd1345cca3e h1:HcZ94SunDRSgDIRgujlC/O8JCu+SC7IK6D+WLdYOXaI=
 github.com/couchbase/blance v0.0.0-20170402154611-5cd1345cca3e/go.mod h1:ELsp57vDmExnh14H7S9dvm5+NJpSfNhNeac9hhOLGZk=
-github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19 h1:VK5KSzc93gSlzvp82ysoQ4khKp8bQOVvudth4FdvIQs=
-github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19/go.mod h1:j0qCQux2//KfCPemLUAcIKiMsQqWV9rdHQf055nb7Zc=
 github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc h1:raV5sJWF+axK2Nv6Zrn/pOlYfbHHlLQ2LsRowsmGABE=
 github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc/go.mod h1:7tzUpEOsE+fgU81yfcjy5N1H6XtbVC8SgOz/3mCjmd4=
 github.com/couchbase/ghistogram v0.1.0 h1:b95QcQTCzjTUocDXp/uMgSNQi8oj1tGwnJ4bODWZnps=
 github.com/couchbase/ghistogram v0.1.0/go.mod h1:s1Jhy76zqfEecpNWJfWUiKZookAFaiGOEoyzgHt9i7k=
-github.com/couchbase/go-couchbase v0.0.0-20200618135536-fe11fe60aa9d h1:NS8t/9FNSChd5QkQTMUGCSSjzOA4GZHUSwml5qvEiXQ=
-github.com/couchbase/go-couchbase v0.0.0-20200618135536-fe11fe60aa9d/go.mod h1:TWI8EKQMs5u5jLKW/tsb9VwauIrMIxQG1r5fMsswK5U=
 github.com/couchbase/gocbcore/v9 v9.0.6 h1:aqLGIpoCfP0iFKO+ql2v4rfP9a5attKbLHN39mNuplA=
 github.com/couchbase/gocbcore/v9 v9.0.6/go.mod h1:jOSQeBSECyNvD7aS4lfuaw+pD5t6ciTOf8hrDP/4Nus=
 github.com/couchbase/gomemcached v0.0.0-20200618124739-5bac349aff71 h1:US05Q5sol/DaQcqf59TKOFGhZBNPuF0qZlr2LpD2cSE=

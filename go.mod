@@ -34,8 +34,12 @@ require (
 	google.golang.org/grpc v1.17.0
 )
 
+replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
+
 replace github.com/couchbase/cbftx => ../cbftx
 
 replace github.com/couchbase/cbgt => ../cbgt
 
 replace github.com/couchbase/cbft => ./empty
+
+replace github.com/couchbase/go-couchbase => ../goproj/src/github.com/couchbase/go-couchbase
