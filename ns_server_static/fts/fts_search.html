@@ -4,69 +4,69 @@
     {{errorMessage}}
   </div>
 
-<form>
+  <form>
 
-<!-- row with search controls and advanced settings toggle -->
-  <div class="row flex-left">
-    <div class="fts-query-bar fts-query-bar-results">
-      <input
-         id="query_bar_input"
-         ng-model="query"
-         ng-change="queryChanged()"
-         type="text"
-         placeholder="search again...">
-      <button ng-click="runNewQuery(query)">
-        Search
-      </button>
+    <!-- row with search controls and advanced settings toggle -->
+    <div class="row flex-left">
+      <div class="fts-query-bar fts-query-bar-results">
+        <input
+          id="query_bar_input"
+          ng-model="query"
+          ng-change="queryChanged()"
+          type="text"
+          placeholder="search again...">
+        <button ng-click="runNewQuery(query)">
+          Search
+        </button>
+      </div>
+      <div>
+        <input
+          ng-model="query_advanced_toggle"
+          ng-change="queryChanged()"
+          type="checkbox"
+          id="for-search-advanced-fts">
+        <label for="for-search-advanced-fts">
+          show advanced query settings
+        </label>
+      </div>
     </div>
-    <div>
-      <input
-         ng-model="query_advanced_toggle"
-         ng-change="queryChanged()"
-         type="checkbox"
-         id="for-search-advanced-fts">
-      <label for="for-search-advanced-fts">
-        show advanced query settings
-      </label>
-    </div>
-  </div>
-</form>
+  </form>
 
-<!-- second row help link **************** -->
+  <!-- second row help link **************** -->
   <div
-     class="query-bar-help"
-     ng-if="queryHelp && queryHelp.length"
-     ng-bind-html="queryHelpSafe">
+    class="query-bar-help"
+    ng-if="queryHelp && queryHelp.length"
+    ng-bind-html="queryHelpSafe">
   </div>
 
-<!-- hidden advanced query settings **************** -->
+  <!-- hidden advanced query settings **************** -->
   <div ng-show="query_advanced_toggle" class="forms query-advanced-settings">
     <div class="formrow form-inline">
       <label class="checkbox">Timeout (msecs)</label>
       <input
-         type="number" min=0
-         oninput="validity.valid||(value='');"
-         ng-model="timeout" id="timeout"
-         ng-change="queryChanged()">
+        type="number" min=0
+        oninput="validity.valid||(value='');"
+        ng-model="timeout" id="timeout"
+                           ng-change="queryChanged()">
     </div>
     <div class="formrow form-inline">
       <label class="checkbox">Consistency Level</label>
       <input ng-model="consistencyLevel" id="consistencyLevel"
-             ng-change="queryChanged()"
-             type="text">
+                                         ng-change="queryChanged()"
+                                         type="text">
     </div>
     <div class="formrow form-inline margin-bottom2">
       <label class="checkbox">Consistency Vectors</label>
       <input ng-model="consistencyVectors" id="consistencyVectors"
-             ng-change="queryChanged()"
-             type="text">
+                                           ng-change="queryChanged()"
+                                           type="text">
     </div>
     <label class="inline">JSON for Query Request</label> &nbsp;
     <span class="curl_example_toggle">
       <input ng-model="curl_example_toggle"
              ng-change="queryChanged()"
              type="checkbox"
-            id="for-search-curl-fts">
+             id="for-search-curl-fts">
       <label for="for-search-curl-fts">
         show command-line curl example
       </label>
@@ -87,7 +87,7 @@
     </div>
   </div>
 
-<!-- results title, no-results msg, and results **************** -->
+  <!-- results title, no-results msg, and results **************** -->
   <h3 class="fts-query-results-title">Results for {{indexName}}</h3>
   <div ng-show="results && !results.total_hits">
     <p>No results found for your query.<br>Please check your search term(s) and/or use the syntax help link under the search field.</p>

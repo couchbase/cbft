@@ -1,276 +1,276 @@
 <div class="indexContainer">
-<form class="forms">
-<div ng-show="errorMessage" class="error error-form indent-3  ng-cloak" role="alert">
-  {{errorMessage}}
-</div>
-<!-- fts_new.html has 4 USE CASES: #1 Creating a new index, #2 Editing a full text index, #3 Creating an index alias, #4 Editing an index alias -->
-  <div ng-if="meta" class="row items-top">
-    <div class="fts-index-editor indent-3">
-<div class="row items-top formrow width-480">
-      <div class="column width-6">
-        <label>Name</label>
-        <span
-           class="cbui-tablerow padding-left-0 padding-right-0 cursor-pointer"
-           ng-show="isEdit"
-           uib-tooltip="{{newIndexName}}"
-           tooltip-placement="auto top"
-           tooltip-trigger="'mouseenter'">
-          <span class="cbui-table-cell text-small">{{newIndexName}}</span>
-        </span>
-        <input ng-show="!isEdit"
-               ng-model="$parent.newIndexName"
-               id="inputIndexName"
-               type="text"
-               autofocus>
-<!-- <div ng-class="{'has-error': errorFields.indexName}"></div> -->
-      </div>
-      <div class="width-6" ng-show="newSourceType && newSourceType != 'nil'">
-        <label for="inputSourceName">Bucket</label>
-        <select ng-show="bucketNames && bucketNames.length >= 0"
-                ng-model="$parent.newSourceName"
-                ng-options="t for t in bucketNames">
-            <option value="" selected hidden></option>
-        </select>
-      </div>
+  <form class="forms">
+    <div ng-show="errorMessage" class="error error-form indent-3  ng-cloak" role="alert">
+      {{errorMessage}}
     </div>
+    <!-- fts_new.html has 4 USE CASES: #1 Creating a new index, #2 Editing a full text index, #3 Creating an index alias, #4 Editing an index alias -->
+    <div ng-if="meta" class="row items-top">
+      <div class="fts-index-editor indent-3">
+        <div class="row items-top formrow width-480">
+          <div class="column width-6">
+            <label>Name</label>
+            <span
+              class="cbui-tablerow padding-left-0 padding-right-0 cursor-pointer"
+              ng-show="isEdit"
+              uib-tooltip="{{newIndexName}}"
+              tooltip-placement="auto top"
+              tooltip-trigger="'mouseenter'">
+              <span class="cbui-table-cell text-small">{{newIndexName}}</span>
+            </span>
+            <input ng-show="!isEdit"
+                   ng-model="$parent.newIndexName"
+                   id="inputIndexName"
+                   type="text"
+                   autofocus>
+            <!-- <div ng-class="{'has-error': errorFields.indexName}"></div> -->
+          </div>
+          <div class="width-6" ng-show="newSourceType && newSourceType != 'nil'">
+            <label for="inputSourceName">Bucket</label>
+            <select ng-show="bucketNames && bucketNames.length >= 0"
+                    ng-model="$parent.newSourceName"
+                    ng-options="t for t in bucketNames">
+              <option value="" selected hidden></option>
+            </select>
+          </div>
+        </div>
 
-<!-- IF INDEX ALIAS > this instead of type identifiers/mapping/analyzers/advanced/etc.  -->
-      <div class="formrow width-480 margin-bottom2"
-           ng-show="newIndexType && newIndexType == 'fulltext-alias' && aliasTargets">
-        <label for="inputTargetIndexes">Target Indexes</label>
-        <select id="inputTargetIndexes"
-                multiple="true"
-                ng-model="$parent.selectedTargetIndexes"
-                ng-options="indexName for indexName in aliasTargets">
-        </select>
-      </div>
-
-<!-- hidden index type & source type fields -->
-      <div class="formrow width-480" style="display:none">
-        <label for="inputIndexType">Index Type</label>
-        <div class="form_control">
-          <select ng-model="newIndexType"
-                  ng-options="t.indexType as t.label group by t.category for t in indexTypesArr">
-            <option value="">-- choose index type --</option>
+        <!-- IF INDEX ALIAS > this instead of type identifiers/mapping/analyzers/advanced/etc.  -->
+        <div class="formrow width-480 margin-bottom2"
+             ng-show="newIndexType && newIndexType == 'fulltext-alias' && aliasTargets">
+          <label for="inputTargetIndexes">Target Indexes</label>
+          <select id="inputTargetIndexes"
+                  multiple="true"
+                  ng-model="$parent.selectedTargetIndexes"
+                  ng-options="indexName for indexName in aliasTargets">
           </select>
         </div>
-      </div>
 
-      <div class="formrow width-480" style="display:none">
-        <label for="inputSourceType">Source Type</label>
+        <!-- hidden index type & source type fields -->
+        <div class="formrow width-480" style="display:none">
+          <label for="inputIndexType">Index Type</label>
+          <div class="form_control">
+            <select ng-model="newIndexType"
+                    ng-options="t.indexType as t.label group by t.category for t in indexTypesArr">
+              <option value="">-- choose index type --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="formrow width-480" style="display:none">
+          <label for="inputSourceType">Source Type</label>
           <select ng-model="newSourceType"
                   ng-options="t.sourceType as t.label group by t.category for t in sourceTypesArr">
             <option value="">-- choose source type --</option>
           </select>
-      </div>
+        </div>
 
-<!-- type identifier details/controls for a full text index *********** -->
-      <div ng-if="newIndexType != 'fulltext-alias'" class="margin-bottom1">
-        <label>Type Identifier</label>
-        <div class="row width-480 margin-bottom-half">
+        <!-- type identifier details/controls for a full text index *********** -->
+        <div ng-if="newIndexType != 'fulltext-alias'" class="margin-bottom1">
+          <label>Type Identifier</label>
+          <div class="row width-480 margin-bottom-half">
             <input type="checkbox" id="build-upon-collections"
-                   ng-model="$parent.$parent.docConfigCollections"
-                   ng-disabled="!$parent.collectionsSupport"
-                   ng-change="typeIdentifierChanged()">
+                                   ng-model="$parent.$parent.docConfigCollections"
+                                   ng-disabled="!$parent.collectionsSupport"
+                                   ng-change="typeIdentifierChanged()">
             <label for="build-upon-collections">Build upon scope.collection</label>
-        </div>
-        <div class="row width-480 margin-bottom-half">
-          <div class="width-5">
-            <input type="radio" value="type_field" id="for-type-field"
-                   ng-model="$parent.$parent.docConfigMode"
-                   ng-change="typeIdentifierChanged()">
-            <label for="for-type-field">JSON type field:</label>
           </div>
-          <div class="width-7" ng-if="newIndexType != 'fulltext-alias'">
-            <input
-               ng-model="$parent.$parent.ftsDocConfig.type_field"
-               ng-disabled="$parent.$parent.docConfigMode != 'type_field'"
-               type="text"
-               placeholder="field name"
-               class="input-small">
+          <div class="row width-480 margin-bottom-half">
+            <div class="width-5">
+              <input type="radio" value="type_field" id="for-type-field"
+                                                     ng-model="$parent.$parent.docConfigMode"
+                                                     ng-change="typeIdentifierChanged()">
+              <label for="for-type-field">JSON type field:</label>
+            </div>
+            <div class="width-7" ng-if="newIndexType != 'fulltext-alias'">
+              <input
+                ng-model="$parent.$parent.ftsDocConfig.type_field"
+                ng-disabled="$parent.$parent.docConfigMode != 'type_field'"
+                type="text"
+                placeholder="field name"
+                class="input-small">
+            </div>
           </div>
-        </div>
-        <div class="row width-480 margin-bottom-half">
-          <div class="width-5">
+          <div class="row width-480 margin-bottom-half">
+            <div class="width-5">
               <input type="radio" value="docid_prefix" id="docid_prefix"
-                     ng-model="$parent.$parent.docConfigMode"
-                     ng-change="typeIdentifierChanged()">
+                                                       ng-model="$parent.$parent.docConfigMode"
+                                                       ng-change="typeIdentifierChanged()">
               <label for="docid_prefix">Doc ID up to separator:</label>
+            </div>
+            <div class="width-7">
+              <input
+                ng-model="$parent.$parent.ftsDocConfig.docid_prefix_delim"
+                ng-disabled="$parent.$parent.docConfigMode != 'docid_prefix'"
+                type="text"
+                placeholder="delimiter"
+                class="input-small">
+            </div>
           </div>
-          <div class="width-7">
-            <input
-               ng-model="$parent.$parent.ftsDocConfig.docid_prefix_delim"
-               ng-disabled="$parent.$parent.docConfigMode != 'docid_prefix'"
-               type="text"
-               placeholder="delimiter"
-               class="input-small">
+          <div class="row width-480">
+            <div class="width-5">
+              <input
+                type="radio" value="docid_regexp" id="docid_regexp"
+                                                  ng-model="$parent.$parent.docConfigMode"
+                                                  ng-change="typeIdentifierChanged()">
+              <label for="docid_regexp">Doc ID with regex:</label>
+            </div>
+            <div class="width-7">
+              <input
+                ng-model="$parent.$parent.ftsDocConfig.docid_regexp"
+                ng-disabled="$parent.$parent.docConfigMode != 'docid_regexp'"
+                type="text"
+                placeholder="regular expression"
+                class="input-small">
+            </div>
           </div>
         </div>
-        <div class="row width-480">
-          <div class="width-5">
-            <input
-               type="radio" value="docid_regexp" id="docid_regexp"
-               ng-model="$parent.$parent.docConfigMode"
-               ng-change="typeIdentifierChanged()">
-            <label for="docid_regexp">Doc ID with regex:</label>
-          </div>
-          <div class="width-7">
-            <input
-               ng-model="$parent.$parent.ftsDocConfig.docid_regexp"
-               ng-disabled="$parent.$parent.docConfigMode != 'docid_regexp'"
-               type="text"
-               placeholder="regular expression"
-               class="input-small">
-          </div>
-        </div>
-      </div>
 
-<!-- TYPE MAPPING, ANALYZERS, CUSTOM FILTERS ***************************** -->
-      <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]">
-        <div ng-include="indexTemplates[newIndexType]"></div>
-      </div>
+        <!-- TYPE MAPPING, ANALYZERS, CUSTOM FILTERS ***************************** -->
+        <div ng-if="newIndexType && indexTemplates && indexTemplates[newIndexType]">
+          <div ng-include="indexTemplates[newIndexType]"></div>
+        </div>
 
-      <div ng-show="newIndexType && newIndexType != 'blackhole' && newIndexType != 'fulltext-alias' && (!indexTemplates || !indexTemplates[newIndexType])"
-           ng-repeat="(indexType, p) in newIndexParams">
-        <div class="form_group form_group_indexParams"
-             ng-repeat="(k, v) in p"
-             ng-show="newIndexType == indexType && (advanced || !advancedFields[k])"
-             ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
-          <label>{{labelize(k)}}</label>
-          <div class="form_control form_control_main">
-            <textarea ng-model="newIndexParams[indexType][k]"
-                      rows="{{paramNumLines[k]}}"></textarea>
+        <div ng-show="newIndexType && newIndexType != 'blackhole' && newIndexType != 'fulltext-alias' && (!indexTemplates || !indexTemplates[newIndexType])"
+             ng-repeat="(indexType, p) in newIndexParams">
+          <div class="form_group form_group_indexParams"
+               ng-repeat="(k, v) in p"
+               ng-show="newIndexType == indexType && (advanced || !advancedFields[k])"
+               ng-class="{'has-error': errorFields.indexParams[indexType][k]}">
+            <label>{{labelize(k)}}</label>
+            <div class="form_control form_control_main">
+              <textarea ng-model="newIndexParams[indexType][k]"
+                        rows="{{paramNumLines[k]}}"></textarea>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="row items-top formrow" ng-show="newSourceType && newSourceType != 'nil'">
-        <div class="column">
-          <!-- NUMBER OF REPLICAS *********************** -->
-          <label for="inputNumReplicas" class="inline">Index Replicas</label>
-          <span class="fa-stack icon-info"
-                uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
-            <span class="icon fa-circle-thin fa-stack-2x"></span>
-            <span class="icon fa-info fa-stack-1x"></span>
-          </span>
-          <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
-          <select ng-model="$parent.numReplicas"
-                  class="narrow"
-                  ng-options="item for item in replicaOptions"
-                  ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
-          </select>
-        </div>
-        <div class="column">
-          <!-- STORE OPTIONS ******************************* -->
-          <label for="inputStoreOptions" class="inline">Index Type</label>
-          <span class="fa-stack icon-info"
-                uib-tooltip="Index store format." tooltip-placement="auto right">
-            <span class="icon fa-circle-thin fa-stack-2x"></span>
-            <span class="icon fa-info fa-stack-1x"></span>
-          </span>
-          <select ng-model="$parent.indexStoreOption"
-                  ng-change="indexStoreOptionChanged()"
-                  class="midwide"
-                  ng-options="item for item in indexStoreOptions">
-          </select>
-        </div>
-        <div class="width-6">
-          <!-- NUMBER OF PINDEXES *********************** -->
-          <label for="inputNumPindexes" class="inline">Index Partitions</label>
-          <span class="fa-stack icon-info"
-                uib-tooltip="Number of index partitions to cover all vbuckets." tooltip-placement="auto right">
+        <div class="row items-top formrow" ng-show="newSourceType && newSourceType != 'nil'">
+          <div class="column">
+            <!-- NUMBER OF REPLICAS *********************** -->
+            <label for="inputNumReplicas" class="inline">Index Replicas</label>
+            <span class="fa-stack icon-info"
+                  uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
               <span class="icon fa-circle-thin fa-stack-2x"></span>
               <span class="icon fa-info fa-stack-1x"></span>
-          </span>
-          <input ng-model="$parent.numPIndexes"
-                 type="number"
-                 class="width-1">
+            </span>
+            <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
+            <select ng-model="$parent.numReplicas"
+                    class="narrow"
+                    ng-options="item for item in replicaOptions"
+                    ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
+            </select>
+          </div>
+          <div class="column">
+            <!-- STORE OPTIONS ******************************* -->
+            <label for="inputStoreOptions" class="inline">Index Type</label>
+            <span class="fa-stack icon-info"
+                  uib-tooltip="Index store format." tooltip-placement="auto right">
+              <span class="icon fa-circle-thin fa-stack-2x"></span>
+              <span class="icon fa-info fa-stack-1x"></span>
+            </span>
+            <select ng-model="$parent.indexStoreOption"
+                    ng-change="indexStoreOptionChanged()"
+                    class="midwide"
+                    ng-options="item for item in indexStoreOptions">
+            </select>
+          </div>
+          <div class="width-6">
+            <!-- NUMBER OF PINDEXES *********************** -->
+            <label for="inputNumPindexes" class="inline">Index Partitions</label>
+            <span class="fa-stack icon-info"
+                  uib-tooltip="Number of index partitions to cover all vbuckets." tooltip-placement="auto right">
+              <span class="icon fa-circle-thin fa-stack-2x"></span>
+              <span class="icon fa-info fa-stack-1x"></span>
+            </span>
+            <input ng-model="$parent.numPIndexes"
+                   type="number"
+                   class="width-1">
+          </div>
+        </div>
+
+        <!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->
+        <div ng-show="newIndexType && newIndexType != 'fulltext-alias'" class="width-480 margin-bottom1" style="display:none;">
+          <label
+            class="disclosure"
+            ng-class="{disclosed : showAdditional}"
+            ng-click="showAdditional = !showAdditional">
+            Additional Options
+          </label>
+          <div class="formrow indent-1" ng-show="newSourceType && newSourceType != 'nil' && showAdditional">
+            <label>Source Params</label>
+            <div
+              ng-repeat="(sourceType, p) in newSourceParams"
+              ng-class="{'has-error': errorFields.sourceParams[sourceType], 'nosize': newSourceType != sourceType}">
+              <textarea
+                ng-model="newSourceParams[sourceType]"
+                rows="{{paramNumLines[sourceType]}}"
+                ng-show="newSourceType == sourceType">
+              </textarea>
+            </div>
+          </div>
+          <div class="formrow indent-1" ng-show="newSourceType && newSourceType != 'nil' && showAdditional">
+            <label>Source UUID</label>
+            <input
+              ng-model="newSourceUUID"
+              type="text"
+              id="inputSourceUUID"
+              placeholder="(optional bucket-uuid)">
+          </div>
+          <div class="formrow indent-1" ng-show="newIndexType && newIndexType != 'fulltext-alias' && showAdditional">
+            <label>Plan Params</label>
+            <textarea
+              ng-model="newPlanParams"
+              rows="{{paramNumLines['planParams']}}"
+              id="inputPlanParams">
+            </textarea>
+          </div>
+        </div>
+
+        <!-- BUTTONS FOR SAVING / CANCELING ********************* -->
+        <hr>
+        <div class="row flex-left">
+          <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
+                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+                  ng-disabled="isEdit && !indexDefChanged(origIndexDef)"
+                  type="submit">
+            <span ng-show="!isEdit">
+              Create Index
+            </span>
+            <span ng-show="isEdit">
+              Update Index
+            </span>
+          </button>
+          <button ng-if="newIndexType && newIndexType == 'fulltext-alias'"
+                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
+                  type="submit">
+            <span ng-show="!isEdit">
+              Create Index Alias
+            </span>
+            <span ng-show="isEdit">
+              Update Index Alias
+            </span>
+          </button>
+          <a ui-sref="^.fts_list" class="indent-1">
+            Cancel
+          </a>
         </div>
       </div>
 
-<!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->
-    <div ng-show="newIndexType && newIndexType != 'fulltext-alias'" class="width-480 margin-bottom1" style="display:none;">
-      <label
-         class="disclosure"
-         ng-class="{disclosed : showAdditional}"
-         ng-click="showAdditional = !showAdditional">
-        Additional Options
-      </label>
-      <div class="formrow indent-1" ng-show="newSourceType && newSourceType != 'nil' && showAdditional">
-        <label>Source Params</label>
-        <div
-           ng-repeat="(sourceType, p) in newSourceParams"
-           ng-class="{'has-error': errorFields.sourceParams[sourceType], 'nosize': newSourceType != sourceType}">
-          <textarea
-             ng-model="newSourceParams[sourceType]"
-             rows="{{paramNumLines[sourceType]}}"
-             ng-show="newSourceType == sourceType">
-           </textarea>
+      <!-- definition preview sidebar ********************* -->
+      <div class="index-definition-preview"
+           ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}">
+        <div class="row">
+          <label>Index Definition Preview</label>
+          <a href=""
+             class="text-smaller"
+             ngclipboard data-clipboard-target="#index_def_preview">
+            copy to clipboard
+          </a>
+        </div>
+        <div class="json-content">
+          <pre id="index_def_preview">{{indexEditorPreview[newIndexType]}}</pre>
         </div>
       </div>
-      <div class="formrow indent-1" ng-show="newSourceType && newSourceType != 'nil' && showAdditional">
-        <label>Source UUID</label>
-        <input
-           ng-model="newSourceUUID"
-           type="text"
-           id="inputSourceUUID"
-           placeholder="(optional bucket-uuid)">
-      </div>
-      <div class="formrow indent-1" ng-show="newIndexType && newIndexType != 'fulltext-alias' && showAdditional">
-        <label>Plan Params</label>
-        <textarea
-           ng-model="newPlanParams"
-           rows="{{paramNumLines['planParams']}}"
-           id="inputPlanParams">
-        </textarea>
-      </div>
     </div>
-
-<!-- BUTTONS FOR SAVING / CANCELING ********************* -->
-      <hr>
-      <div class="row flex-left">
-      <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-              ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
-              ng-disabled="isEdit && !indexDefChanged(origIndexDef)"
-              type="submit">
-        <span ng-show="!isEdit">
-          Create Index
-        </span>
-        <span ng-show="isEdit">
-          Update Index
-        </span>
-      </button>
-      <button ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-              ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
-              type="submit">
-        <span ng-show="!isEdit">
-          Create Index Alias
-        </span>
-        <span ng-show="isEdit">
-          Update Index Alias
-        </span>
-      </button>
-      <a ui-sref="^.fts_list" class="indent-1">
-        Cancel
-      </a>
-    </div>
-    </form>
-  </div>
-
-<!-- definition preview sidebar ********************* -->
-  <div class="index-definition-preview"
-       ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}">
-    <div class="row">
-      <label>Index Definition Preview</label>
-      <a href=""
-         class="text-smaller"
-         ngclipboard data-clipboard-target="#index_def_preview">
-        copy to clipboard
-      </a>
-    </div>
-    <div class="json-content">
-      <pre id="index_def_preview">{{indexEditorPreview[newIndexType]}}</pre>
-    </div>
-  </div>
-</div>
+  </form>
 </div>
