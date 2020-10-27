@@ -61,6 +61,8 @@ var BatchBytesRemoved uint64
 
 var TotBatchesFlushedOnMaxOps uint64
 var TotBatchesFlushedOnTimer uint64
+var TotBatchesNew uint64
+var TotBatchesMerged uint64
 
 var TotRollbackPartial uint64
 var TotRollbackFull uint64
@@ -2354,10 +2356,12 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 				batchReq.bdp.m.Unlock()
 				bindex = batchReq.bindex
 				targetBatch = batchReq.batch
+				atomic.AddUint64(&TotBatchesNew, 1)
 				break
 			}
 
 			targetBatch.Merge(batchReq.batch)
+			atomic.AddUint64(&TotBatchesMerged, 1)
 			batchReq.bdp.m.Lock()
 			bdp = append(bdp, batchReq.bdp)
 			bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)

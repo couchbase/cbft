@@ -507,6 +507,8 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 
 	topLevelStats["tot_batches_flushed_on_maxops"] = atomic.LoadUint64(&TotBatchesFlushedOnMaxOps)
 	topLevelStats["tot_batches_flushed_on_timer"] = atomic.LoadUint64(&TotBatchesFlushedOnTimer)
+	topLevelStats["tot_batches_new"] = atomic.LoadUint64(&TotBatchesNew)
+	topLevelStats["tot_batches_merged"] = atomic.LoadUint64(&TotBatchesMerged)
 
 	topLevelStats["tot_bleve_dest_opened"] = atomic.LoadUint64(&TotBleveDestOpened)
 	topLevelStats["tot_bleve_dest_closed"] = atomic.LoadUint64(&TotBleveDestClosed)
