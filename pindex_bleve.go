@@ -2041,10 +2041,12 @@ func (t *BleveDestPartition) DataDelete(partition string,
 
 // ---------------------------------------------------------
 
+const osoSnapshotStart = uint32(1)
+const osoSnapshotEnd = uint32(2)
+
 func (t *BleveDestPartition) OSOSnapshot(partition string,
 	snapshotType uint32) error {
-	if snapshotType == 1 {
-		// Begin OSO Snapshot
+	if snapshotType == osoSnapshotStart {
 		t.m.Lock()
 		t.osoSnapshot = true
 		t.osoSeqMax = t.seqMax
@@ -2055,11 +2057,15 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 		}
 
 		return err
-	} else if snapshotType == 2 {
-		// END OSO Snapshot
+	} else if snapshotType == osoSnapshotEnd {
 		t.m.Lock()
 		t.osoSnapshot = false
-		revNeedsUpdate, err := t.updateSeqLOCKED(t.osoSeqMax)
+		// When the OSO snapshot end message is received, update seqMax with
+		// the max seq received while in the OSO snapshot and flush the batch.
+		if t.seqMax < t.osoSeqMax {
+			t.seqMax = t.osoSeqMax
+		}
+		revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 		t.m.Unlock()
 		if err == nil && revNeedsUpdate {
 			t.incRev()
@@ -2233,7 +2239,7 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
 		t.seqMax = seq
 	}
 
-	if (!t.osoSnapshot && seq < t.seqSnapEnd) &&
+	if (t.osoSnapshot || seq < t.seqSnapEnd) &&
 		(BleveMaxOpsPerBatch <= 0 || BleveMaxOpsPerBatch > t.batch.Size()) {
 		return false, t.lastAsyncBatchErr
 	}
