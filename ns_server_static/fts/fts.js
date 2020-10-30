@@ -433,9 +433,10 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
         var x = parseInt($scope.numMutationsToIndex);
 
         if (i == 0 && x == 0) {
-            $scope.progressPct = 100.0;
+            let prog = 100.0;
+            $scope.progressPct = prog.toPrecision(4);
         } else if (x > 0 && i >= 0) {
-            let  prog = ((1.0 * i) / (i + x)) * 100.0;
+            let prog = ((1.0 * i) / (i + x)) * 100.0;
             $scope.progressPct = prog.toPrecision(4);
         } else {
             // num_mutations_to_index either zero or unavailable!
@@ -445,7 +446,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 // currSeqReceived and the lastCurrSeqReceived.
                 var currS = parseInt($scope.currSeqReceived);
                 if (currS > 0) {
-                    var prog = ((1.0 * lastS) / currS) * 100.0;
+                    let prog = ((1.0 * lastS) / currS) * 100.0;
                     $scope.progressPct = prog.toPrecision(4);
                 }
             }
