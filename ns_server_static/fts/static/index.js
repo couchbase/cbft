@@ -488,7 +488,9 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 }
             }
             $scope.newScopeName = scopeName;
-            $scope.updateBucketDetails();
+            if (angular.isDefined($scope.updateBucketDetails)) {
+                $scope.updateBucketDetails();
+            }
         };
 
         if (origIndexName &&
