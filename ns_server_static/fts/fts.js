@@ -97,7 +97,7 @@ angular
                     }
                 },
                 data: {
-                    title: "Add Index (easy)",
+                    title: "Quick Index",
                     child: parent + '.fts_list'
                 }
             })
@@ -136,7 +136,7 @@ angular
               }
             },
             data: {
-              title: "Edit Index (easy)",
+              title: "Edit Quick Index",
               child: parent + '.fts_list'
             }
           })

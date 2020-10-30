@@ -1,5 +1,6 @@
 import angular from "/ui/web_modules/angular.js";
 import app from "/ui/app/app.js";
+import mnElementCrane from "/ui/app/components/directives/mn_element_crane/mn_element_crane.js";
 
 import { NgModule } from '/ui/web_modules/@angular/core.js';
 import { UIRouterUpgradeModule } from '/ui/web_modules/@uirouter/angular-hybrid.js';

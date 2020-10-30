@@ -1,9 +1,20 @@
+<mn-element-cargo depot="actions">
+  <div class="header-controls resp-sml">
+    <a
+       ui-sref="app.admin.search.fts_list"
+       class="resp-hide-sml">
+      <span class="icon fa-arrow-left"></span> BACK
+    </a>
+  </div>
+</mn-element-cargo>
+
 <div class="indexContainer">
   <form class="forms">
     <div ng-show="errorMessage" class="error error-form indent-3  ng-cloak" role="alert">
       {{errorMessage}}
     </div>
-    <!-- fts_new.html has 4 USE CASES: #1 Creating a new index, #2 Editing a full text index, #3 Creating an index alias, #4 Editing an index alias -->
+
+<!-- fts_new.html has 4 USE CASES: #1 Creating a new index, #2 Editing a full text index, #3 Creating an index alias, #4 Editing an index alias -->
     <div ng-if="meta" class="row items-top">
       <div class="fts-index-editor indent-3">
         <div class="row items-top formrow width-480">
@@ -293,5 +304,5 @@
         </div>
       </div>
     </div>
-  </form>
-</div>
+    </form>
+  </div>

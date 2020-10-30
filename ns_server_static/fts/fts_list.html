@@ -1,24 +1,29 @@
-<div ng-show="!ftsChecking && ftsAvailable" class="fts-indexes-lists indexContainer padding-bottom-6">
+<mn-element-cargo depot="actions">
+  <div class="header-controls resp-sml">
+    <a
+       ui-sref="app.admin.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+       ng-disabled="!permsCluster.bucket['.'].fts.write"
+       class="resp-hide-sml">
+      ADD INDEX
+    </a>
+    <a
+       ui-sref="app.admin.search.fts_new_easy({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+       ng-disabled="!permsCluster.bucket['.'].fts.write"
+       class="resp-hide-sml">
+      QUICK INDEX
+    </a>
+  </div>
+</mn-element-cargo>
 
-  <div ng-show="errorMessage" class="error ng-cloak" role="alert">
+<div ng-if="!ftsChecking && ftsAvailable" class="fts-indexes-lists indexContainer padding-bottom-6">
+
+  <div ng-if="errorMessage" class="error ng-cloak" role="alert">
     {{errorMessage}}
   </div>
 
-  <!-- table of indexes  ******************** -->
-  <span ng-show="indexNamesReady">
-    <div class="row margin-bottom-half">
-      <h4>Full Text Indexes</h4>
-      <div>
-        <button ui-sref="^.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-                ng-disabled="!permsCluster.bucket['.'].fts.write">
-          Add Index
-        </button>
-        <button ui-sref="^.search.fts_new_easy({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-                ng-disabled="!permsCluster.bucket['.'].fts.write">
-          Add Index (easy)
-        </button>
-      </div>
-    </div>
+<!-- table of indexes  ******************** -->
+  <span ng-if="indexNamesReady">
+    <h4 class="margin-bottom-half">Full Text Indexes</h4>
     <table class="fts-indexes-list table-stroked">
       <tr>
         <th>index name</th>
@@ -43,7 +48,7 @@
                       'no-stroke': detailsOpened[node.hostname]
                       }">
           <td
-            class="index-name ellipsis cursor-pointer"
+            class="cbui-tablerow-title ellipsis"
             uib-tooltip="{{indexName}}"
             tooltip-append-to-body="true"
             tooltip-placement="auto top"
@@ -67,8 +72,8 @@
           <td colspan="4">
             <div class="fts-index-details">
               <div class="margin-bottom1">
-                <form>
-                  <div class="row" style="margin-bottom:1px;">
+                <form class="forms">
+                  <div class="row">
 
                     <!-- index search controls ************************* -->
                     <div class="fts-query-bar" ng-click="$event.stopPropagation()">
@@ -102,11 +107,19 @@
                       <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_edit({indexName: indexName})">
                         Edit
+                        <span ng-if="showEasyMode(indexName, indexDef.params)">
+                          <span class="icon fa-warning raised padding-half"
+                                uib-tooltip="Warning: If you edit and save this index in the standard editor, it cannot be edited subsequently in the quick editor."
+                                tooltip-trigger="mouseenter"
+                                tooltip-placement="auto top"
+                                tooltip-append-to-body="true">
+                          </span>
+                        </span>
                       </button>
                       <button ng-if="showEasyMode(indexName, indexDef.params)"
                               ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_edit_easy({indexName: indexName})">
-                        Edit (easy)
+                        Quick Edit
                       </button>
                     </span>
                   </div>
@@ -121,11 +134,13 @@
 
               <!-- index definition ******************************* -->
               <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
-                <div
-                  class="disclosure margin-bottom-half"
-                  ng-class="{disclosed: showJSON[indexName]}"
-                  ng-click="showJSON[indexName] = !showJSON[indexName]">
-                  {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
+                <div class="formrow">
+                  <span
+                    class="disclosure inline text-small"
+                    ng-class="{disclosed: showJSON[indexName]}"
+                    ng-click="showJSON[indexName] = !showJSON[indexName]">
+                    {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
+                  </span>
                 </div>
                 <div class="indent-1" ng-show="showJSON[indexName]">
                   <input
@@ -181,9 +196,11 @@
     <!-- table of aliases  ******************** -->
     <div class="row margin-bottom-half">
       <h4>Full Text Aliases</h4>
-      <button ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
-              ng-disabled="!permsCluster.bucket['.'].fts.write">
-        Add Alias
+      <button
+         ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
+         ng-disabled="!permsCluster.bucket['.'].fts.write"
+         class="outline tight">
+        + Add Alias
       </button>
     </div>
     <table class="fts-indexes-list table-stroked">
@@ -199,7 +216,7 @@
                       'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                       'no-stroke': detailsOpened[node.hostname]
                       }">
-          <td class="alias-name">{{indexName}}</td>
+          <td class="cbui-tablerow-title ellipsis">{{indexName}}</td>
           <td class="alias-targets">
             <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
               {{targetName}}<span ng-show="!$last">, </span>
@@ -211,7 +228,7 @@
           <td colspan="2">
             <div class="fts-index-details">
               <form>
-                <div class="row margin-bottom1">
+                <div class="row margin-bottom-1">
 
                   <!-- search controls **************************** -->
                   <div class="fts-query-bar" ng-click="$event.stopPropagation()">
@@ -245,11 +262,13 @@
               <!-- alias index definition ******************************* -->
               <div ng-controller="indexViewController">
                 <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
-                  <div
-                    class="disclosure margin-bottom-half"
-                    ng-class="{disclosed: showJSON[indexName]}"
-                    ng-click="showJSON[indexName] = !showJSON[indexName]">
-                    {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+                  <div class="formrow">
+                    <span
+                       class="disclosure inline text-small"
+                       ng-class="{disclosed: showJSON[indexName]}"
+                       ng-click="showJSON[indexName] = !showJSON[indexName]">
+                      {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+                    </span>
                   </div>
                   <div class="indent-1" ng-show="showJSON[indexName]">
                     <input
