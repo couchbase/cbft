@@ -337,48 +337,49 @@
 </div>
 
 <div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"
-     class="error ng-cloak ftsCheck" role="alert">
+   class="error ng-cloak ftsCheck" role="alert">
   {{ftsCheckError}}
 </div>
 
-<div ng-init="stats = ['fts_num_bytes_used_ram', 'fts_total_queries_rejected_by_herder', 'fts_curr_batches_blocked_by_herder',
-                 'fts/total_bytes_indexed', 'fts/total_queries', 'fts/num_files_on_disk', 'fts/num_bytes_used_disk']">
+<div ng-init="stats = (adminCtl.poolDefault.compat.atLeast70 ? [
+              '@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts_total_bytes_indexed', '@fts-.fts_total_queries', '@fts-.fts_num_files_on_disk', '@fts-.fts_num_bytes_used_disk'] :
+              ['@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts/total_bytes_indexed', '@fts-.fts/total_queries', '@fts-.fts/num_files_on_disk', '@fts-.fts/num_bytes_used_disk']);">
   <footer
-    class="footer-fts"
-    ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length"
-    ng-controller="mnFooterStatsController as footerStatsCtl">
+     class="footer-fts"
+     ng-controller="mnFooterStatsController as footerStatsCtl"
+     ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length  && !selfDestroy">
     <div class="column vertical-divider">
       <span class="width-6">RAM Used by Search</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts_num_bytes_used_ram')/1024/1024 | number:1}} MB</span><br>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts.fts_num_bytes_used_ram')/1024/1024 | number:1}} MB</span><br>
       <span class="width-6">Rejected Queries</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts_total_queries_rejected_by_herder') | number:0}}</span><br>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts.fts_total_queries_rejected_by_herder') | number:0}}</span><br>
       <span class="width-6">DCP Batches Blocked</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStatExponent('fts_curr_batches_blocked_by_herder',2)}}</span>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStatExponent('@fts.fts_curr_batches_blocked_by_herder',2)}}</span>
     </div>
     <div class="margin-right-1">
       <ui-select
-        class="cbui-select cbui-select-small"
-        ng-model="footerStatsCtl.currentBucket"
-        theme="selectize"
-        ng-disabled="!rbac.bucketNames['.stats!read'].length"
-        on-select="footerStatsCtl.onSelectBucket($item)">
+         class="cbui-select cbui-select-small"
+         ng-model="footerStatsCtl.currentBucket"
+         theme="selectize"
+         ng-disabled="!rbac.bucketNames['.stats!read'].length"
+         on-select="footerStatsCtl.onSelectBucket($item)">
         <ui-select-match class="ui-select-match">{{$select.selected}} </ui-select-match>
         <ui-select-choices
-          class="ui-select-choices"
-          repeat="name in rbac.bucketNames['.stats!read'] | filter: $select.search">
+           class="ui-select-choices"
+           repeat="name in rbac.bucketNames['.stats!read'] | filter: $select.search">
           <span class="select-item ellipsis" ng-bind-html="name | highlight: $select.search"></span>
         </ui-select-choices>
       </ui-select>
     </div>
     <div class="column">
       <span class="width-6">Index Rate</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts/total_bytes_indexed')/1024/1024 | number:1}} MB/sec</span><br>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts-.fts/total_bytes_indexed')/1024/1024 | number:1}} MB/sec</span><br>
       <span class="width-6">Query Rate</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts/total_queries') | number:0}}/sec</span><br>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts-.fts/total_queries') | number:0}}/sec</span><br>
       <span class="width-6">Total Disk Files</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts/num_files_on_disk') | number:0}}</span><br>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts-.fts/num_files_on_disk') | number:0}}</span><br>
       <span class="width-6">Total Disk Used</span>
-      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('fts/num_bytes_used_disk')/1024/1024 | number:1}} MB</span>
+      <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts-.fts/num_bytes_used_disk')/1024/1024 | number:1}} MB</span>
     </div>
   </footer>
 </div>

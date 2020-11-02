@@ -21,7 +21,7 @@ import CodeMirror from "/ui/web_modules/codemirror.js";
 import ngClipboard from "/ui/libs/ngclipboard.js";
 import ngSortable from "/ui/libs/angular-legacy-sortable.js";
 import mnPermissions from "/ui/app/components/mn_permissions.js";
-import mnFooterStatsController from "/ui/app/mn_admin/mn_footer_stats_controller.js";
+import mnFooterStatsController from "/ui/app/mn_admin/mn_gsi_footer_controller.js";
 import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
 import mnDocumentsEditingService from "/ui/app/mn_admin/mn_documents_editing_service.js";
 import mnDocumentsListService from "/ui/app/mn_admin/mn_documents_list_service.js";
@@ -64,6 +64,12 @@ angular
               "main@app.admin": {
                 controller: "IndexesCtrlFT_NS",
                 templateUrl: '../_p/ui/fts/fts_list.html'
+              }
+            },
+            params: {
+              footerBucket: {
+                value: null,
+                dynamic: true
               }
             },
             data: {
