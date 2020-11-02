@@ -48,9 +48,9 @@
                  ng-change="validateMapping(mapping, mappings)"
                  ng-class="{'invalid': mapping._invalid}"
                  style="min-width:240px;">
-          <span ng-if="$parent.docConfigCollections"
+          <span ng-if="$parent.docConfigCollections && mapping.name"
                 class="fa-stack icon-info"
-                uib-tooltip="Optional: Append '.<type>' after collection."
+                uib-tooltip="Format: scope.collection[.type]"
                 tooltip-placement="auto right">
             <span class="icon fa-circle-thin fa-stack-2x"></span>
             <span class="icon fa-info fa-stack-1x"></span>
