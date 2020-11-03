@@ -15,6 +15,16 @@ function newEasyMappings() {
     var mappings = {};
 
     return {
+        collectionNamedInMapping: function() {
+            let collectionNames = Object.keys(mappings);
+            for (var collectionNameI in collectionNames) {
+                let collectionName = collectionNames[collectionNameI];
+                if (mappings[collectionName].numFields() > 0) {
+                    return collectionName;
+                }
+            }
+            return "";
+        },
         getMappingForCollection: function(collectionName) {
             if (!(collectionName in mappings)) {
                 mappings[collectionName] = newEasyMapping();

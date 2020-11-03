@@ -1018,7 +1018,12 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             $scope.listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
                 $scope.collectionNames = collections;
                 if (collections.length > 0) {
-                    $scope.expando(collections[0]);
+                    let aCollectionNamedInMapping = $scope.easyMappings.collectionNamedInMapping();
+                    if (aCollectionNamedInMapping) {
+                        $scope.expando(aCollectionNamedInMapping);
+                    } else {
+                        $scope.expando(collections[0]);
+                    }
                 }
             }, function (err) {
                 $scope.errorMessage = "Error listing collections for scope.";
