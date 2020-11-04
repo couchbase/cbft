@@ -151,7 +151,7 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl,
 		}
 		if scope != s {
 			return "", nil, nil, fmt.Errorf("collection_utils: multiple scopes"+
-				" found: %s , %s, index can only span collections on a single"+
+				" found: '%s', '%s'; index can only span collections on a single"+
 				" scope", scope, s)
 		}
 	}
@@ -193,8 +193,8 @@ func validateScopeCollFromMappings(bucket string,
 					}
 				}
 				if !ignoreCollNotFoundErrs {
-					return nil, fmt.Errorf("collection_utils: collection: "+
-						" %s doesn't belong to scope: %s in bucket: %s",
+					return nil, fmt.Errorf("collection_utils: collection:"+
+						" '%s' doesn't belong to scope: '%s' in bucket: '%s'",
 						collNames[i], sName, bucket)
 				}
 			}
@@ -203,8 +203,8 @@ func validateScopeCollFromMappings(bucket string,
 	}
 
 	if rv.Name == "" {
-		return nil, fmt.Errorf("collection_utils: scope: "+
-			" %s not found in bucket: %s ",
+		return nil, fmt.Errorf("collection_utils: scope:"+
+			" '%s' not found in bucket: '%s' ",
 			sName, bucket)
 	}
 
