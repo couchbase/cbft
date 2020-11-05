@@ -1,97 +1,193 @@
 {
-        "version" : 1,
-        "module" : "fts",
-        "events" : [
-                    {  "id" : 24576,
-                           "name" : "Delete index",
-                           "description" : "FTS index was deleted",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""},
-                                                     "index_name" : ""
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24577,
-                           "name" : "Create/Update index",
-                           "description" : "FTS index was created/Updated",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""},
-                                                     "index_name" : ""
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24579,
-                           "name" : "Control index",
-                           "description" : "FTS index control command was issued",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""},
-                                                     "control_name" : ""
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24580,
-                           "name" : "Config refresh",
-                           "description" : "FTS config was refreshed",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""}
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24581,
-                           "name" : "Config replan",
-                           "description" : "FTS config was replanned",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""}
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24582,
-                           "name" : "GC run",
-                           "description" : "GC run was triggered",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""}
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24583,
-                           "name" : "CPU profile",
-                           "description" : "CPU profiling was started",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""}
-                                                },
-                          "optional_fields" : {}
-                    },
-                    {  "id" : 24584,
-                           "name" : "Memory profile",
-                           "description" : "Memory profiling was started",
-                           "sync" : false,
-                           "enabled" : true,
-                           "mandatory_fields" : {
-                                                     "timestamp" : "",
-                                                     "real_userid" : {"domain" : "", "user" : ""}
-                                                },
-                          "optional_fields" : {}
-                    }
-        ]
+      "version": 1,
+      "module": "fts",
+      "events": [
+            {
+                  "id": 24576,
+                  "name": "Delete index",
+                  "description": "FTS index was deleted",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "index_name": ""
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24577,
+                  "name": "Create/Update index",
+                  "description": "FTS index was created/Updated",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "index_name": ""
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24579,
+                  "name": "Control index",
+                  "description": "FTS index control command was issued",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "control_name": ""
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24580,
+                  "name": "Config refresh",
+                  "description": "FTS config was refreshed",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24581,
+                  "name": "Config replan",
+                  "description": "FTS config was replanned",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24582,
+                  "name": "GC run",
+                  "description": "GC run was triggered",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24583,
+                  "name": "CPU profile",
+                  "description": "CPU profiling was started",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
+            },
+            {
+                  "id": 24584,
+                  "name": "Memory profile",
+                  "description": "Memory profiling was started",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
+            }
+      ]
 }

@@ -12,6 +12,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
@@ -196,6 +197,9 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 			ReadHeaderTimeout: httpReadHeaderTimeout,
 			WriteTimeout:      httpWriteTimeout,
 			IdleTimeout:       httpIdleTimeout,
+			ConnContext: func(ctx context.Context, conn net.Conn) context.Context {
+				return context.WithValue(ctx, "conn", conn)
+			},
 		}
 
 		if proto == "http" {

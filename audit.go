@@ -29,13 +29,13 @@ const (
 )
 
 type IndexControlAuditLog struct {
-	audit.GenericFields
+	audit.CommonAuditFields
 	IndexName string `json:"index_name"`
 	Control   string `json:"control_name"`
 }
 
 type IndexAuditLog struct {
-	audit.GenericFields
+	audit.CommonAuditFields
 	IndexName string `json:"index_name"`
 }
 
@@ -44,19 +44,19 @@ func GetAuditEventData(eventId uint32, req *http.Request) interface{} {
 	case AuditDeleteIndexEvent, AuditCreateUpdateIndexEvent:
 		indexName := rest.IndexNameLookup(req)
 		d := IndexAuditLog{
-			GenericFields: audit.GetAuditBasicFields(req),
-			IndexName:     indexName,
+			CommonAuditFields: audit.GetCommonAuditFields(req),
+			IndexName:         indexName,
 		}
 		return d
 	case AuditConfigReplanEvent, AuditRunGCEvent,
 		AuditProfileCPUEvent, AuditProfileMemoryEvent:
-		return audit.GetAuditBasicFields(req)
+		return audit.GetCommonAuditFields(req)
 	case AuditControlEvent:
 		indexName := rest.IndexNameLookup(req)
 		d := IndexControlAuditLog{
-			GenericFields: audit.GetAuditBasicFields(req),
-			IndexName:     indexName,
-			Control:       rest.RequestVariableLookup(req, "op"),
+			CommonAuditFields: audit.GetCommonAuditFields(req),
+			IndexName:         indexName,
+			Control:           rest.RequestVariableLookup(req, "op"),
 		}
 		return d
 	}

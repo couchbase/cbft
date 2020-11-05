@@ -55,6 +55,8 @@ github.com/couchbase/gomemcached v0.0.0-20200618124739-5bac349aff71 h1:US05Q5sol
 github.com/couchbase/gomemcached v0.0.0-20200618124739-5bac349aff71/go.mod h1:srVSlQLB8iXBVXHgnqemxUXqN6FCvClgCMPCsjBDR7c=
 github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85 h1:0WMIDtuXCKEm4wtAJgAAXa/qtM5O9MariLwgHaRlYmk=
 github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85/go.mod h1:BQwMFlJzDjFDG3DJUdU0KORxn88UlsOULuxLExMh3Hs=
+github.com/couchbase/goutils v0.0.0-20201030094643-5e82bb967e67 h1:NCqJ6fwen6YP0WlV/IyibaT0kPt3JEI1rA62V/UPKT4=
+github.com/couchbase/goutils v0.0.0-20201030094643-5e82bb967e67/go.mod h1:BQwMFlJzDjFDG3DJUdU0KORxn88UlsOULuxLExMh3Hs=
 github.com/couchbase/moss v0.0.0-20190322010551-a0cae174c498/go.mod h1:mGI1GcdgmlL3Imff7Z+OjkkQ8qSKr443BuZ+qFgWbPQ=
 github.com/couchbase/moss v0.1.0 h1:HCL+xxHUwmOaL44kMM/gU08OW6QGCui1WVFO58bjhNI=
 github.com/couchbase/moss v0.1.0/go.mod h1:9MaHIaRuy9pvLPUJxB8sh8OrLfyDczECVL37grCIubs=
