@@ -20,12 +20,12 @@
     <td>
       <button ng-if="indexCanWrite"
               type="button" class="btn btn-warning"
-              ng-click="indexControl(indexDef.name, 'ingest', 'pause')">
+                            ng-click="indexControl(indexDef.name, 'ingest', 'pause')">
         <span class="glyphicon glyphicon-stop"></span> Disable Ingest
       </button>
       <button ng-if="!indexCanWrite"
               type="button" class="btn btn-default"
-              ng-click="indexControl(indexDef.name, 'ingest', 'resume')">
+                            ng-click="indexControl(indexDef.name, 'ingest', 'resume')">
         <span class="glyphicon glyphicon-play"></span> Enable Ingest
       </button>
     </td>
@@ -39,12 +39,12 @@
     <td>
       <button ng-if="indexCanRead"
               type="button" class="btn btn-warning"
-              ng-click="indexControl(indexDef.name, 'query', 'disallow')">
+                            ng-click="indexControl(indexDef.name, 'query', 'disallow')">
         <span class="glyphicon glyphicon-stop"></span> Disable Queries
       </button>
       <button ng-if="!indexCanRead"
               type="button" class="btn btn-default"
-              ng-click="indexControl(indexDef.name, 'query', 'allow')">
+                            ng-click="indexControl(indexDef.name, 'query', 'allow')">
         <span class="glyphicon glyphicon-play"></span> Enable Queries
       </button>
     </td>
@@ -58,12 +58,12 @@
     <td>
       <button ng-if="indexPlanFrozen"
               type="button" class="btn btn-default"
-              ng-click="indexControl(indexDef.name, 'planFreeze', 'unfreeze')">
+                            ng-click="indexControl(indexDef.name, 'planFreeze', 'unfreeze')">
         <span class="glyphicon glyphicon-play"></span> Enable Reassignments
       </button>
       <button ng-if="!indexPlanFrozen"
               type="button" class="btn btn-warning"
-              ng-click="indexControl(indexDef.name, 'planFreeze', 'freeze')">
+                            ng-click="indexControl(indexDef.name, 'planFreeze', 'freeze')">
         <span class="glyphicon glyphicon-stop"></span> Disable Reassignments
       </button>
     </td>

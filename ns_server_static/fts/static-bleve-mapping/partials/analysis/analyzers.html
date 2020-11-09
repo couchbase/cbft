@@ -4,11 +4,11 @@
       <th>analyzer name</th>
       <th class="text-right">
         <button
-           ng-if="!viewOnlyModal && showAnalyzer"
-           ng-click="newAnalyzer()" type="button"
-           ng-show="showAnalyzer"
-           class="outline"
-           style="width:200px;">
+          ng-if="!viewOnlyModal && showAnalyzer"
+          ng-click="newAnalyzer()" type="button"
+                                   ng-show="showAnalyzer"
+                                   class="outline"
+                                   style="width:200px;">
           + Add Analyzer
         </button>
       </th>
@@ -19,15 +19,15 @@
       <td><a ng-click="editAnalyzer(aname, aval, true)">{{aname}}</a></td>
       <td class="controls">
         <a
-           href=""
-           ng-if="!viewOnlyModal"
-           ng-click="editAnalyzer(aname, aval)">
+          href=""
+          ng-if="!viewOnlyModal"
+          ng-click="editAnalyzer(aname, aval)">
           Edit
         </a>
         <a
-           href=""
-           ng-if="!viewOnlyModal"
-           ng-click="deleteAnalyzer(aname)">
+          href=""
+          ng-if="!viewOnlyModal"
+          ng-click="deleteAnalyzer(aname)">
           Delete
         </a>
       </td>

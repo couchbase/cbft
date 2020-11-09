@@ -5,7 +5,7 @@
       ng-sortable
       ng-model="tokenizer.exceptions">
     <li
-        ng-repeat="e in tokenizer.exceptions track by $index">
+      ng-repeat="e in tokenizer.exceptions track by $index">
       <div class="row">
         {{ e }}
         <a ng-if="!viewOnlyModal"
@@ -17,13 +17,13 @@
     </li>
   </ul>
 
-<div ng-if="!viewOnlyModal" class="row input-append">
-  <input ng-model="newregexp" type="text"
-             id="exceptionRegexp">
-      <button ng-click="addException(this)" type="button"
-              class="outline">+ Add</button>
-    </div>
+  <div ng-if="!viewOnlyModal" class="row input-append">
+    <input ng-model="newregexp" type="text"
+                                id="exceptionRegexp">
+    <button ng-click="addException(this)" type="button"
+                                          class="outline">+ Add</button>
   </div>
+</div>
 
 <div class="formrow">
   <label>Tokenizer for Remaining Input</label>

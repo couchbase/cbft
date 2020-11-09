@@ -5,10 +5,10 @@
       <th>type</th>
       <th class="text-right">
         <button
-           ng-if="!viewOnlyModal"
-           ng-click="newTokenFilter()" type="button"
-           class="outline"
-           style="width:200px;">
+          ng-if="!viewOnlyModal"
+          ng-click="newTokenFilter()" type="button"
+                                      class="outline"
+                                      style="width:200px;">
           + Add Token Filter
         </button>
       </th>
@@ -20,15 +20,15 @@
       <td>{{tfval.type}}</td>
       <td class="controls">
         <a
-           href=""
-           ng-if="!viewOnlyModal"
-           ng-click="editTokenFilter(tfname, tfval)">
+          href=""
+          ng-if="!viewOnlyModal"
+          ng-click="editTokenFilter(tfname, tfval)">
           Edit
         </a>
         <a
-           href=""
-           ng-if="!viewOnlyModal"
-           ng-click="deleteTokenFilter(tfname)">
+          href=""
+          ng-if="!viewOnlyModal"
+          ng-click="deleteTokenFilter(tfname)">
           Delete
         </a>
       </td>

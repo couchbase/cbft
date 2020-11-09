@@ -10,27 +10,27 @@
 
 <table ng-if="indexNames.length"
        class="table table-striped">
-	<tr>
-		<th width="99%">Name</th>
-		<th></th>
-	</tr>
-	<tr ng-repeat="indexName in indexNames">
-		<td><a href="{{static_base}}/indexes/{{indexName}}">{{indexName}}</a></td>
-		<td style="white-space: nowrap;">
-			<button ng-click="editIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-edit"></span> edit
-			</button>
-			<button ng-click="cloneIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-plus-sign"></span> clone
-			</button>
-			<button ng-click="deleteIndex(indexName)"
-			         type="button" class="btn btn-default btn-sm">
-				<span class="glyphicon glyphicon-trash"></span>
-			</button>
-		</td>
-	</tr>
+  <tr>
+    <th width="99%">Name</th>
+    <th></th>
+  </tr>
+  <tr ng-repeat="indexName in indexNames">
+    <td><a href="{{static_base}}/indexes/{{indexName}}">{{indexName}}</a></td>
+    <td style="white-space: nowrap;">
+      <button ng-click="editIndex(indexName)"
+              type="button" class="btn btn-default btn-sm">
+        <span class="glyphicon glyphicon-edit"></span> edit
+      </button>
+      <button ng-click="cloneIndex(indexName)"
+              type="button" class="btn btn-default btn-sm">
+        <span class="glyphicon glyphicon-plus-sign"></span> clone
+      </button>
+      <button ng-click="deleteIndex(indexName)"
+              type="button" class="btn btn-default btn-sm">
+        <span class="glyphicon glyphicon-trash"></span>
+      </button>
+    </td>
+  </tr>
 </table>
 
 <div ng-if="!indexNames.length"

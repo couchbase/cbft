@@ -5,10 +5,10 @@
       <th>type</th>
       <th class="text-right">
         <button
-           ng-if="!viewOnlyModal"
-           ng-click="newCharFilter()" type="button"
-           class="outline"
-           style="width:200px;">
+          ng-if="!viewOnlyModal"
+          ng-click="newCharFilter()" type="button"
+                                     class="outline"
+                                     style="width:200px;">
           + Add Character Filter
         </button>
       </th>
@@ -19,15 +19,15 @@
       <td><a ng-click="editCharFilter(cfname, cfval, true)">{{cfname}}</a></td>
       <td>{{cfval.type}}</td>
       <td class="controls">
-          <a href=""
-              ng-if="!viewOnlyModal"
-                  ng-click="editCharFilter(cfname, cfval)">
-                  Edit
-          </a>
-          <a href="" ng-if="!viewOnlyModal"
-                  ng-click="deleteCharFilter(cfname)">
-Delete
-          </a>
+        <a href=""
+           ng-if="!viewOnlyModal"
+           ng-click="editCharFilter(cfname, cfval)">
+          Edit
+        </a>
+        <a href="" ng-if="!viewOnlyModal"
+                   ng-click="deleteCharFilter(cfname)">
+          Delete
+        </a>
       </td>
     </tr>
     <tr ng-show="Utils.keys(indexMapping.analysis.char_filters).length < 1">

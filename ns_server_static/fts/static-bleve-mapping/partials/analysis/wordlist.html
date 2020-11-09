@@ -4,60 +4,61 @@
   </div>
 
   <form role="form" class="forms">
-  <div class="panel-content">
-    <div
-       ng-show="errorMessage"
-       class="error error-form ng-cloak"
-       role="alert"> {{errorMessage}}
+    <div class="panel-content">
+      <div
+        ng-show="errorMessage"
+        class="error error-form ng-cloak"
+        role="alert"> {{errorMessage}}
+      </div>
+
+      <form class="form" role="form">
+        <div class="formrow">
+          <label>Name</label>
+          <input
+            ng-disabled="viewOnlyModal"
+            ng-model="name"
+            type="text"
+            id="tname">
+        </div>
+
+        <div class="formrow">
+          <label for="words">Words</label>
+          <select ng-disabled="viewOnlyModal"
+                  ng-model="selectedWords" multiple ng-multiple="true"
+                                                    id="words" size="4"
+                                                               ng-options="idx as word for (idx, word) in words">
+          </select>
+        </div>
+        <div ng-if="!viewOnlyModal" class="formrow">
+          <input ng-model="formdata.newWord" type="text"
+                                             id="newWord" placeholder="word to be added">
+        </div>
+        <div class="formrow row flex-right">
+          <span>
+            <button ng-click="removeWords(selectedWords)"
+                    ng-disabled="selectedWords.length < 1"
+                    type="button"
+                    class="outline">Remove</button>
+            <button ng-click="addWord()"
+                    ng-disabled="formdata.newWord.length < 1"
+                    type="submit"
+                    class="outline">+ Add</button>
+          </span>
+        </div>
+      </form>
     </div>
 
-    <form class="form" role="form">
-    <div class="formrow">
-      <label>Name</label>
-      <input
-         ng-disabled="viewOnlyModal"
-         ng-model="name"
-         type="text"
-         id="tname">
+    <div class="panel-footer">
+      <a href=""
+         ng-if="viewOnlyModal"
+         ng-click="cancel()">Cancel</a>
+      <a href=""
+         ng-if="!viewOnlyModal"
+         ng-click="cancel()">Cancel</a>
+      <button
+        ng-if="!viewOnlyModal"
+        ng-click="build(name)"
+        type="button">Save</button>
     </div>
-
-    <div class="formrow">
-      <label for="words">Words</label>
-      <select ng-disabled="viewOnlyModal"
-              ng-model="selectedWords" multiple ng-multiple="true"
-              id="words" size="4"
-              ng-options="idx as word for (idx, word) in words">
-      </select>
-    </div>
-    <div ng-if="!viewOnlyModal" class="formrow">
-      <input ng-model="formdata.newWord" type="text"
-             id="newWord" placeholder="word to be added">
-    </div>
-    <div class="formrow row flex-right">
-      <span>
-        <button ng-click="removeWords(selectedWords)"
-                ng-disabled="selectedWords.length < 1"
-                type="button"
-                class="outline">Remove</button>
-        <button ng-click="addWord()"
-                ng-disabled="formdata.newWord.length < 1"
-                type="submit"
-                class="outline">+ Add</button>
-      </span>
-    </div>
-  </div>
-
-  <div class="panel-footer">
-    <a href=""
-       ng-if="viewOnlyModal"
-       ng-click="cancel()">Cancel</a>
-    <a href=""
-       ng-if="!viewOnlyModal"
-       ng-click="cancel()">Cancel</a>
-    <button
-       ng-if="!viewOnlyModal"
-       ng-click="build(name)"
-       type="button">Save</button>
-  </div>
   </form>
 </div>
