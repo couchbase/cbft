@@ -885,7 +885,8 @@ function bleveNewIndexMapping() {
             "date_time_parsers": {}
         },
         "store_dynamic": false,
-        "index_dynamic": true
+        "index_dynamic": true,
+        "docvalues_dynamic": false
     }
 };
 
