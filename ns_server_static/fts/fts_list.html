@@ -89,37 +89,34 @@
                     <!-- index action buttons ************************* -->
                     <span class="nowrap" ng-click="$event.stopPropagation()">
                       <button class="outline"
+                              ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
                               ng-show=showHiddenUI
-                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_details({indexName: indexName})">
                         Details
                       </button>
                       <button class="outline"
-                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
                               ng-click="deleteIndex(indexName)">
                         Delete
                       </button>
                       <button class="outline"
-                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                              ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_clone({indexName: indexName})">
                         Clone
                       </button>
-                      <button ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                      <button ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
                               ui-sref="^.search.fts_edit({indexName: indexName})">
                         Edit
-                        <span ng-if="showEasyMode(indexName, indexDef.params)">
-                          <span class="icon fa-warning raised padding-half"
-                                uib-tooltip="Warning: If you edit and save this index in the standard editor, it cannot be edited subsequently in the quick editor."
-                                tooltip-trigger="mouseenter"
-                                tooltip-placement="auto top"
-                                tooltip-append-to-body="true">
-                          </span>
-                        </span>
                       </button>
-                      <button ng-if="showEasyMode(indexName, indexDef.params)"
-                              ng-disabled="!permsCluster.bucket[indexDef.sourceName].fts.write && !permsCluster.bucket['.'].fts.write"
+                      <button ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
+                              ng-disabled="!showEasyMode(indexDef)"
                               ui-sref="^.search.fts_edit_easy({indexName: indexName})">
-                        Quick Edit
+                        <span uib-tooltip="{{ showEasyMode(indexDef) ? 'To edit the index definition with limited options.' : 'Index definition has certain elements set which are not supported within the quick editor.' }}"
+                              tooltip-trigger="mouseenter"
+                              tooltip-placement="auto right"
+                              tooltip-append-to-body="true">
+                            Quick Edit
+                        </span>
                       </button>
                     </span>
                   </div>

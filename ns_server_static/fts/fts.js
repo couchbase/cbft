@@ -332,7 +332,8 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         done = true;
     });
 
-    $scope.showEasyMode = function(name, params) {
+    $scope.showEasyMode = function(indexDef) {
+        let params = indexDef.params;
         let prevHash = params.easy_mode_hash;
         let newHash = hashParams(params);
         return prevHash == newHash;
