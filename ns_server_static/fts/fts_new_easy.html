@@ -240,12 +240,15 @@
 
             <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
               <label for="searchable-as">Searchable As</label>
-              <input
-                 id="searchable-as"
-                 type="text"
-                 placeholder="please enter a name"
-                 ng-model="editField.name"
-                 ng-change="validateField(field, mapping)">
+              <div class="row">
+                {{editField.pathPrefix()}}
+                <input
+                   id="searchable-as"
+                   type="text"
+                   placeholder="please enter a name"
+                   ng-model="editField.name"
+                   ng-change="validateField(field, mapping)">
+              </div>
             </div>
 
 <!-- save new field mapping or update changes to an existing mapping ------- -->
@@ -280,7 +283,7 @@
              class="cbui-tablerow padding-left"
              ng-click="userSelectedField(fieldDef.path, '')"
              ng-class="{'selected-field-row' : fieldDef.path == editField.path}">
-              <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.name}}</span>
+              <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
               <span class="cbui-table-cell">{{fieldDef.path}}</span>
               <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
               <span class="cbui-table-cell text-right">

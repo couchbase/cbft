@@ -1654,7 +1654,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.path = path;
                 // set defaults for new field
                 $scope.editField.new = true;
-                $scope.editField.name = path;
+                $scope.editField.name = $scope.editField.splitPathPrefixAndField()[1];
                 $scope.editField.store = false;
                 $scope.editField.highlight = false;
                 $scope.editField.phrase = false;

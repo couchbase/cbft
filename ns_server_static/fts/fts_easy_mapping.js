@@ -221,8 +221,8 @@ function newEasyMapping() {
         for (var fieldI in property.fields) {
             let field = property.fields[fieldI];
             let editField = newEditField()
-            editField.name = fullPath;
-            editField.path = editField.name;
+            editField.path = fullPath;
+            editField.name = field.name;
 
             // set up defaults
             editField.new = false;
@@ -261,7 +261,7 @@ function newEasyMapping() {
                 editField.sortFacet = true;
             }
 
-            mapping[editField.name] = editField;
+            mapping[editField.path] = editField;
         }
     }
 

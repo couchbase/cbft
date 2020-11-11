@@ -24,6 +24,16 @@ function newEditFields() {
 
 function newEditField() {
     return {
+        splitPathPrefixAndField: function() {
+            let n = this.path.lastIndexOf(".");
+            if (n < 0) {
+                return ["", this.path];
+            }
+            return [this.path.substring(0, n+1), this.path.substring(n+1)];
+        },
+        pathPrefix: function(path) {
+            return this.splitPathPrefixAndField(path)[0];
+        },
         description: function() {
             var rv = "";
             if (this.type == "text") {
