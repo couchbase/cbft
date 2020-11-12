@@ -1724,6 +1724,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             }
             listScopesForBucket($scope.newSourceName).then(function (scopes) {
                 $scope.scopeNames = scopes;
+                if (scopes.length > 0) {
+                    $scope.newScopeName = scopes[0];
+                }
                 $scope.scopeChanged();
             });
 
@@ -1754,20 +1757,16 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
 
         $scope.expando = function(collectionName) {
             $scope.errorMessage = "";
-            if ( $scope.collectionOpened == collectionName) {
-                $scope.collectionOpened = "";
+            $scope.collectionOpened = collectionName;
+            var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName).getDocument();
+            if (sampleDocument == '{}') {
+                $scope.loadAnotherDocument($scope.newSourceName, $scope.newScopeName, collectionName);
             } else {
-                $scope.collectionOpened = collectionName;
-                var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName).getDocument();
-                if (sampleDocument == '{}') {
-                    $scope.loadAnotherDocument($scope.newSourceName, $scope.newScopeName, collectionName);
-                } else {
-                    $scope.sampleDocument = sampleDocument;
-                }
-
-                $scope.editField = $scope.editFields.getFieldForCollection(collectionName);
-                $scope.easyMapping = $scope.easyMappings.getMappingForCollection(collectionName);
+                $scope.sampleDocument = sampleDocument;
             }
+
+            $scope.editField = $scope.editFields.getFieldForCollection(collectionName);
+            $scope.easyMapping = $scope.easyMappings.getMappingForCollection(collectionName);
         };
 
         $scope.codemirrorLoaded = function(_editor){

@@ -79,7 +79,7 @@
 
             <select
                ng-show="collectionNames && collectionNames.length >= 0"
-               ng-model="collectionOpened"
+               ng-model="$parent.collectionOpened"
                ng-options="t for t in collectionNames"
                ng-change="expando(collectionOpened)">
               <option value="" selected hidden></option>
