@@ -564,6 +564,11 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.updateBucketDetails = function() {
             listScopesForBucket($scope.newSourceName).then(function (scopes) {
                 $scope.scopeNames = scopes;
+                if ($scope.newScopeName == "") {
+                    if ($scope.scopeNames.length > 0) {
+                        $scope.newScopeName = $scope.scopeNames[0];
+                    }
+                }
                 $scope.updateScopeDetails($scope.newScopeName);
             });
         };
@@ -578,7 +583,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 $scope.typeIdentifierChanged()
                 return;
             }
-            $scope.docConfigCollections = true;
             $scope.typeIdentifierChanged()
             $scope.newScopeName = newScopeName;
             listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
