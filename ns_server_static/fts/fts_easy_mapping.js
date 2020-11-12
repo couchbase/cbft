@@ -109,7 +109,7 @@ function newEasyMapping() {
         }
         fieldMapping.include_in_all = true;
         if (field.sortFacet) {
-            fieldMapping.docvalues = true
+            fieldMapping.docvalues = true;
         }
         return fieldMapping;
     };
@@ -126,7 +126,7 @@ function newEasyMapping() {
             fieldMapping.include_term_vectors = true;
         }
         if (field.sortFacet) {
-            fieldMapping.docvalues = true
+            fieldMapping.docvalues = true;
         }
         return fieldMapping;
     };
@@ -143,7 +143,7 @@ function newEasyMapping() {
             fieldMapping.include_term_vectors = true;
         }
         if (field.sortFacet) {
-            fieldMapping.docvalues = true
+            fieldMapping.docvalues = true;
         }
         fieldMapping.date_format = field.date_format;
         return fieldMapping;
@@ -161,7 +161,21 @@ function newEasyMapping() {
             fieldMapping.include_term_vectors = true;
         }
         if (field.sortFacet) {
-            fieldMapping.docvalues = true
+            fieldMapping.docvalues = true;
+        }
+        return fieldMapping;
+    };
+
+    var newBooleanField = function(field) {
+        var fieldMapping = {};
+        fieldMapping.name = field.name;
+        fieldMapping.type = "boolean";
+        if (field.store) {
+            fieldMapping.store = true;
+        }
+        fieldMapping.index = true;
+        if (field.sortFacet) {
+            fieldMapping.docValues = true;
         }
         return fieldMapping;
     };
@@ -197,6 +211,8 @@ function newEasyMapping() {
             mapping.fields.push(newDateTimeField(field));
         } else if (field.type == "geopoint") {
             mapping.fields.push(newGeoPointField(field));
+        } else if (field.type == "boolean") {
+            mapping.fields.push(newBooleanField(field));
         }
     };
 
@@ -247,6 +263,8 @@ function newEasyMapping() {
                 editField.date_format = field.date_format;
             } else if (field.type == "geopoint") {
                 editField.type = "geopoint";
+            } else if (field.type == "boolean") {
+                editField.type = "boolean";
             }
 
             // finish some common settings

@@ -1667,7 +1667,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.phrase = false;
                 $scope.editField.sortFacet = false;
                 $scope.editField.date_format = "dateTimeOptional";
-                if (valType === "number") {
+                if (valType === "boolean") {
+                    $scope.editField.type = "boolean";
+                } else if (valType === "number") {
                     $scope.editField.type = "number";
                 } else  {
                     // default to text if we aren't sure
