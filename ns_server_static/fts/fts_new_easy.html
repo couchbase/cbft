@@ -149,7 +149,8 @@
                  ng-options="t as t for t in fieldTypes">
               </select>
             </div>
-            <div class="formrow">
+            <div ng-if="editField.type == 'text'"
+                 class="formrow">
               <input
                  type="checkbox"
                  id="field-is-identifier"
