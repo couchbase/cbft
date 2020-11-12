@@ -227,8 +227,32 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
         $scope.firstResult = (($scope.page-1) * $scope.resultsPerPage) + 1;
     };
 
+    function getScopeAndCollection(docConfigMode, mapping) {
+        if (docConfigMode.startsWith("scope.collection.")) {
+            if (mapping.default_mapping.enabled) {
+                return ["_default", "_default"]
+            } else {
+                for (let [key, value] of Object.entries(mapping.types)) {
+                    let mappingName = key.split(".");
+                    return [mappingName[0], mappingName[1]];
+                }
+            }
+        }
+        return ["_default", "_default"]
+    }
+
     $scope.showDocument = function(hit) {
-      docEditorService.getAndShowDocument($scope.indexDef.sourceName,hit.id);
+        let scopeCollection =
+            getScopeAndCollection($scope.indexDef.params.doc_config.mode,
+            $scope.indexDef.params.mapping);
+        if (angular.isDefined(hit.fields) && angular.isDefined(hit.fields["_$c"])) {
+            // in case of an index that's subscribed to multiple collections,
+            // the collection that the document belongs to is available within
+            // the fields section
+            scopeCollection[1] = hit.fields["_$c"];
+        }
+      docEditorService.getAndShowDocumentWithinCollection(
+          $scope.indexDef.sourceName, scopeCollection[0], scopeCollection[1], hit.id);
     };
 
     $scope.processResults = function(data) {
