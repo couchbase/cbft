@@ -138,6 +138,10 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&tmp)
 }
 
+func (b *BleveDocumentConfig) multiCollection() bool {
+	return len(b.CollPrefixLookup) > 1
+}
+
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
 	extras []byte) (*BleveDocument, []byte, error) {

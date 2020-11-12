@@ -2025,6 +2025,11 @@ func (t *BleveDestPartition) DataDelete(partition string,
 		return fmt.Errorf("bleve: DataDelete nil batch")
 	}
 
+	// need to apply the key decoration with multicollection indexes.
+	if t.bdest.bleveDocConfig.multiCollection() {
+		key = append(extras[4:8], key...)
+	}
+
 	t.batch.Delete(string(key)) // TODO: string(key) makes garbage?
 
 	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
