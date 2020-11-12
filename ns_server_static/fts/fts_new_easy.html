@@ -306,7 +306,7 @@
            ng-if="newIndexType && newIndexType != 'fulltext-alias'"
            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
            type="submit"
-           ng-disabled="(!easyMappings.numFieldsInAllCollections() > 0) || (!isEdit && !$parent.newIndexName)">
+           ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef))">
           <span ng-show="!isEdit">
             Create Index
           </span>
