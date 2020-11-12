@@ -579,11 +579,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 newScopeName == null) {
                 $scope.newScopeName = "";
                 $scope.collectionNames = [];
-                $scope.docConfigCollections = false;
-                $scope.typeIdentifierChanged()
                 return;
             }
-            $scope.typeIdentifierChanged()
             $scope.newScopeName = newScopeName;
             listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
                 $scope.collectionNames = collections;
