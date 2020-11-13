@@ -174,7 +174,8 @@
             <div>
               <input
                  type="checkbox" id="field-is-stored"
-                 ng-model="editField.store">
+                 ng-model="editField.store"
+                 ng-change="storeOptionChanged()">
               <label for="field-is-stored" class="margin-right-0">
                 Include in search results
               </label>
@@ -192,13 +193,14 @@
               <input
                  type="checkbox"
                  id="field-is-highlight"
+                 ng-disabled="!editField.store"
                  ng-model="editField.highlight">
               <label for="field-is-highlight" class="margin-right-0">
                 Support highlighting
               </label>
               <span
                  class="fa-stack icon-info"
-                 uib-tooltip="Highlighting matches requires storing additional position information and will make the index larger."
+                 uib-tooltip="Highlighting matches requires storing additional position information and will make the index larger (needs field to be included in search results)."
                  tooltip-placement="auto right">
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>

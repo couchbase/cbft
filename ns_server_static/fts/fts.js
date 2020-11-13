@@ -1679,6 +1679,12 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             }
         }
 
+        $scope.storeOptionChanged = function() {
+            if (!$scope.editField.store) {
+                $scope.editField.highlight = false;
+            }
+        }
+
         $scope.addField = function() {
             $scope.editField.new = false;
             $scope.easyMapping.addField($scope.editField)
