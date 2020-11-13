@@ -516,8 +516,10 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 $scope.newSourceName = data.indexDef.sourceName;
                 $scope.newSourceUUID = "";
 
-                updateScopeName(data.indexDef.params.doc_config.mode,
-                    data.indexDef.params.mapping);
+                if (data.indexDef.type == "fulltext-index") {
+                    updateScopeName(data.indexDef.params.doc_config.mode,
+                        data.indexDef.params.mapping);
+                }
 
                 $scope.newSourceParams[data.indexDef.sourceType] =
                     JSON.stringify(data.indexDef.sourceParams,
