@@ -824,14 +824,30 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 		return
 	}
 
-	gone, indexUUID, err := dcpFeed.VerifySourceNotExists()
+	gone, indexUUID, er := dcpFeed.VerifySourceNotExists()
 	log.Printf("main: meh.OnFeedError, VerifySourceNotExists,"+
 		" srcType: %s, gone: %t, indexUUID: %s",
 		srcType, gone, indexUUID)
 	if !gone {
-		if err != nil {
-			log.Warnf("main: meh.OnFeedError, VerifySourceNotExists err: %v", err)
+		if er != nil {
+			log.Warnf("main: meh.OnFeedError, VerifySourceNotExists err: %v", er)
 		}
+
+		// If we get an EOF error from the feeds and the bucket is still alive,
+		// then there could at the least two potential error scenarios.
+		//
+		// 1. Faulty kv node is failed over.
+		// 2. Ephemeral network connection issues with the host.
+		//
+		// In either case, the current feed instance turns dangling.
+		// Hence we can close the feeds so that they get refreshed to fix
+		// the connectivity problems either during the next rebalance
+		// (new kv node after failover-recovery rebalance) or
+		// on the next janitor work cycle(ephemeral network issue to the same node).
+		if strings.Contains(err.Error(), "EOF") {
+			dcpFeed.NotifyMgrOnClose()
+		}
+
 		return
 	}
 
