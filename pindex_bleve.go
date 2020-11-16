@@ -1306,7 +1306,9 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 			if collNameMap, multiCollIndex :=
 				metaFieldValCache.getCollUIDNameMap(indexName); multiCollIndex {
 				for _, hit := range searchResult.Hits {
-					if hit.Fields != nil && hit.Fields["_$c"] != "" {
+					if _, exists := hit.Fields["_$c"]; exists {
+						// collection name has already been retrieved for this hit;
+						// on the non-coordinating node (scatter-gather)
 						continue
 					}
 					idBytes := []byte(hit.ID)
