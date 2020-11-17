@@ -54,7 +54,9 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 
 		if indexDefs != nil && indexDefsByName != nil {
 			allowSourceName := func(sourceName string) bool {
-				perm := "cluster.bucket[" + sourceName + "].fts!read"
+				perm := decoratePermStrings(
+					"cluster.collection["+sourceName+"].fts!read",
+					sourceName)
 
 				allowed, err := CBAuthIsAllowed(creds, perm)
 
@@ -64,11 +66,11 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 			// Copy fields, but start a separate, filtered IndexDefs map.
 			out := *indexDefs
 			out.IndexDefs = map[string]*cbgt.IndexDef{}
-
+			var sourceNames []string
 		OUTER:
 			for indexName, indexDef := range indexDefsByName {
 				if indexDef.Type == "fulltext-alias" {
-					sourceNames, err :=
+					sourceNames, err =
 						sourceNamesForAlias(indexName, indexDefsByName, 0)
 					if err != nil {
 						rest.PropagateError(w, nil,
@@ -76,14 +78,19 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 								" err: %v", err), http.StatusInternalServerError)
 						return
 					}
-
-					for _, sourceName := range sourceNames {
-						if !allowSourceName(sourceName) {
-							continue OUTER
-						}
+				} else {
+					sourceNames, err = getSourceNamesFromIndexDef(indexDef)
+					if err != nil {
+						rest.PropagateError(w, nil,
+							fmt.Sprintf("rest_list: filteredListIndex, getSourceNamesFromIndexDef,"+
+								" err: %v", err), http.StatusInternalServerError)
 					}
-				} else if !allowSourceName(indexDef.SourceName) {
-					continue OUTER
+				}
+
+				for _, sourceName := range sourceNames {
+					if !allowSourceName(sourceName) {
+						continue OUTER
+					}
 				}
 
 				out.IndexDefs[indexName] = indexDef

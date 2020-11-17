@@ -380,36 +380,39 @@ func preparePerms(mgr definitionLookuper, r requestParser,
 
 		perms := make([]string, 0, len(sourceNames))
 		for _, sourceName := range sourceNames {
-			p := perm
-			// If the RBAC settings are done at the scope or collection
-			// level, then update the perm placeholder strings (refer rest_perm.go)
-			// accordingly before decorating it with the source details.
-			// This source enriched perm strings are further sent for
-			// authentications.
-			/*
-				Perm string for RBAC at bucket level “test”:
-				cluster.bucket[test].data.docs!read
-
-				Perm string for RBAC at bucket “test”, scope “s”:
-				cluster.scope[test:s].data.docs!read
-
-				Perm string for RBAC at bucket “test”, scope “s”, collection “c”:
-				cluster.collection[test:s:c].data.docs!read
-			*/
-
-			rbacLevel := strings.Count(sourceName, ":")
-			if rbacLevel == 0 {
-				p = strings.ReplaceAll(perm, "collection", "bucket")
-			} else if rbacLevel == 1 {
-				p = strings.ReplaceAll(perm, "collection", "scope")
-			}
 			perms = append(perms,
-				strings.ReplaceAll(p, "<sourceName>", sourceName))
+				decoratePermStrings(perm, sourceName))
 		}
 		return perms, nil
 	}
 
 	return []string{perm}, nil
+}
+
+func decoratePermStrings(perm, sourceName string) string {
+	// If the RBAC settings are done at the scope or collection
+	// level, then update the perm placeholder strings (refer rest_perm.go)
+	// accordingly before decorating it with the source details.
+	// This source enriched perm strings are further sent for
+	// authentications.
+	/*
+		Perm string for RBAC at bucket level “test”:
+		cluster.bucket[test].data.docs!read
+
+		Perm string for RBAC at bucket “test”, scope “s”:
+		cluster.scope[test:s].data.docs!read
+
+		Perm string for RBAC at bucket “test”, scope “s”, collection “c”:
+		cluster.collection[test:s:c].data.docs!read
+	*/
+	rbacLevel := strings.Count(sourceName, ":")
+	if rbacLevel == 0 {
+		perm = strings.ReplaceAll(perm, "collection", "bucket")
+	} else if rbacLevel == 1 {
+		perm = strings.ReplaceAll(perm, "collection", "scope")
+	}
+
+	return strings.ReplaceAll(perm, "<sourceName>", sourceName)
 }
 
 func findCouchbaseSourceNames(r requestParser, indexName string,
