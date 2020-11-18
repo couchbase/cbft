@@ -28,10 +28,9 @@ require (
 	github.com/julienschmidt/httprouter v1.1.1-0.20170430222011-975b5c4c7c21
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
-	google.golang.org/genproto v0.0.0-20180831171423-11092d34479b // indirect
-	google.golang.org/grpc v1.17.0
+	google.golang.org/grpc v1.24.0
 )
 
 replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
