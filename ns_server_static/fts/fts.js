@@ -487,7 +487,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
     function getCollections(bucket) {
         return $http({
             method: "GET",
-            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/collections"
+            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/scopes"
         });
     }
 
@@ -1401,7 +1401,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
     function getCollections(bucket) {
         return $http({
             method: "GET",
-            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/collections"
+            url: "/pools/default/buckets/" + encodeURIComponent(bucket) + "/scopes"
         });
     }
 

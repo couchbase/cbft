@@ -84,7 +84,7 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	if CurrentNodeDefsFetcher == nil || bucket == "" {
 		return nil, fmt.Errorf("invalid input")
 	}
-	url := fmt.Sprintf("/pools/default/buckets/%s/collections", bucket)
+	url := fmt.Sprintf("/pools/default/buckets/%s/scopes", bucket)
 	url = CurrentNodeDefsFetcher.GetManager().Server() + url
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
