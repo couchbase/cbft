@@ -1643,6 +1643,21 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             },
         ];
 
+        $scope.collectionLabel = function(collectionName) {
+            if ($scope.easyMappings.hasNonEmptyMapping(collectionName)) {
+                return collectionName + " *";
+            }
+            return collectionName;
+        }
+
+        $scope.userSelectedFieldInCollection = function(collection, path, valType) {
+            if (collection != $scope.collectionOpened) {
+                $scope.expando(collection);
+            }
+            setTimeout(function() {
+                $scope.userSelectedField(path, valType)
+            }, 300);
+        }
 
 
         $scope.userSelectedField = function(path, valType) {
@@ -1652,8 +1667,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             if (newRow != cursor.line) {
                 $scope.editor.focus();
                 $scope.editor.setCursor({line: newRow, ch: 0})
+                return;
             }
-
 
             if ($scope.easyMapping.hasFieldAtPath(path)) {
                 $scope.editField = Object.assign({}, $scope.easyMapping.getFieldAtPath(path));
@@ -1690,10 +1705,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             $scope.easyMapping.addField($scope.editField)
         }
 
-        $scope.deleteField = function(path) {
-            var result = confirm("Are you sure you want to delete the field at path '" + path + "' ?");
+        $scope.deleteFieldInCollection = function(collection, path) {
+            var result = confirm("Are you sure you want to delete the field at path '" + path + "' in the '" + collection + "' collection?");
             if (result) {
-                $scope.easyMapping.deleteField(path);
+                $scope.easyMappings.deleteFieldFromCollection(collection, path);
             }
             $scope.editField.path = "";
         }

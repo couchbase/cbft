@@ -25,6 +25,19 @@ function newEasyMappings() {
             }
             return "";
         },
+        hasNonEmptyMapping: function(collectionName) {
+            if (collectionName in mappings) {
+                if (mappings[collectionName].numFields() > 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        deleteFieldFromCollection: function(collectionName, path) {
+            if (collectionName in mappings) {
+                mappings[collectionName].deleteField(path);
+            }
+        },
         getMappingForCollection: function(collectionName) {
             if (!(collectionName in mappings)) {
                 mappings[collectionName] = newEasyMapping();
@@ -41,6 +54,20 @@ function newEasyMappings() {
         },
         numCollections: function() {
             return Object.keys(mappings).length;
+        },
+        collectionNames: function() {
+            return Object.keys(mappings);
+        },
+        collectionNamesNotEmpty: function() {
+            let rv = new Array();
+            let collectionNames = Object.keys(mappings);
+            for (var collectionNameI in collectionNames) {
+                let collectionName = collectionNames[collectionNameI];
+                if (mappings[collectionName].numFields() > 0) {
+                    rv.push(collectionName);
+                }
+            }
+            return rv;
         },
         numFieldsInAllCollections: function() {
             let result = 0;

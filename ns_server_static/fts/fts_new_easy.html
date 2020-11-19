@@ -80,10 +80,18 @@
             <select
                ng-show="collectionNames && collectionNames.length >= 0"
                ng-model="$parent.collectionOpened"
-               ng-options="t for t in collectionNames"
+               ng-options="collectionLabel(t) for t in collectionNames"
                ng-change="expando(collectionOpened)">
               <option value="" selected hidden></option>
             </select>
+
+            <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="* indicates this colleciton has fields mapped in the index defintion."
+                    tooltip-placement="auto right">
+              <span class="icon fa-circle-thin fa-stack-2x"></span>
+              <span class="icon fa-info fa-stack-1x"></span>
+            </span>
 
           </div>
         </div>
@@ -272,34 +280,51 @@
     </div>
 
 <!-- index definition ------------------------------------------------------ -->
-    <div ng-if="easyMapping.numFields() > 0 || isEdit">
+    <div class="overflow-auto max-height-500">
       <h4>Mapped Fields</h4>
       <div class="cbui-table">
         <div class="cbui-table-header padding-left">
-          <span class="cbui-table-cell">searchable as</span>
-          <span class="cbui-table-cell">source JSON path</span>
-          <span class="cbui-table-cell flex-grow-2">field mapping details</span>
-          <span class="cbui-table-cell text-right"></span>
+          <span class="cbui-table-cell">collection</span>
+          <span class="cbui-table-cell flex-grow-3"></span>
         </div>
-        <section class="has-hover" ng-repeat="(i, fieldDef) in easyMapping.fields() track by fieldDef.path">
-          <div
-             class="cbui-tablerow padding-left"
-             ng-click="userSelectedField(fieldDef.path, '')"
-             ng-class="{'selected-field-row' : fieldDef.path == editField.path}">
-              <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
-              <span class="cbui-table-cell">{{fieldDef.path}}</span>
-              <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
-              <span class="cbui-table-cell text-right">
-                <a ng-click="deleteField(fieldDef.path)">
-                  Delete
-                </a>
-              </span>
+        <section class="has-hover" ng-repeat="(i, collectionName) in easyMappings.collectionNamesNotEmpty()">
+          <div class="cbui-tablerow padding-left">
+            <span class="cbui-table-cell">{{collectionName}}</span>
+            <span class="cbui-table-cell cbui-tablerow-title flex-grow-3">
+
+                    <div class="cbui-table">
+                      <div class="cbui-table-header padding-left">
+                        <span class="cbui-table-cell">searchable as</span>
+                        <span class="cbui-table-cell">source JSON path</span>
+                        <span class="cbui-table-cell flex-grow-2">field mapping details</span>
+                        <span class="cbui-table-cell text-right"></span>
+                      </div>
+                      <section class="has-hover" ng-repeat="(i, fieldDef) in easyMappings.getMappingForCollection(collectionName).fields() track by fieldDef.path">
+                        <div
+                                class="cbui-tablerow padding-left"
+                                ng-click="userSelectedFieldInCollection(collectionName, fieldDef.path, '')"
+                                ng-class="{'selected-field-row' : fieldDef.path == editField.path && collectionName == collectionOpened}">
+                            <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
+                            <span class="cbui-table-cell">{{fieldDef.path}}</span>
+                            <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
+                            <span class="cbui-table-cell text-right">
+                              <a ng-click="deleteFieldInCollection(collectionName, fieldDef.path)">
+                                Delete
+                              </a>
+                            </span>
+                        </div>
+                      </section>
+                    </div>
+
+            </span>
           </div>
         </section>
-        <div ng-if="isEdit && !easyMapping.numFields() > 0" class="zero-content">
-          Select the collections above with mapped fields to see their mapping details here.
+        <div ng-if="easyMapping.numFields() < 1" class="zero-content">
+          Select a field and configure the details above to map a field in this collection.
         </div>
       </div>
+
+
     </div>
 
 <!-- save & cancel buttons ------------------------------------------------- -->
