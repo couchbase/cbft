@@ -513,6 +513,9 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 	topLevelStats["tot_bleve_dest_opened"] = atomic.LoadUint64(&TotBleveDestOpened)
 	topLevelStats["tot_bleve_dest_closed"] = atomic.LoadUint64(&TotBleveDestClosed)
 
+	topLevelStats["tot_rollback_full"] = atomic.LoadUint64(&TotRollbackFull)
+	topLevelStats["tot_rollback_partial"] = atomic.LoadUint64(&TotRollbackPartial)
+
 	topLevelStats["curr_batches_blocked_by_herder"] =
 		atomic.LoadUint64(&TotHerderOnBatchExecuteStartEnd) -
 			atomic.LoadUint64(&TotHerderOnBatchExecuteStartBeg)
