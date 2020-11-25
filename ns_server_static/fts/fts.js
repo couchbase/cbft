@@ -332,12 +332,108 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         done = true;
     });
 
+    function isMappingIncompatibleWithQuickEditor(mapping) {
+        if (!mapping.enabled ||
+            mapping.dynamic ||
+            (angular.isDefined(mapping.default_analyzer) && mapping.default_analyzer != "")) {
+            // mapping is either disabled and/or dynamic and/or has default_analyzer
+            // explicitly defined
+            return true;
+        }
+
+        if ((!angular.isDefined(mapping.properties) || mapping.properties.length == 0) &&
+            (!angular.isDefined(mapping.fields) || mapping.fields.length == 0)) {
+            // mapping has no child mappings or fields defined within it
+            return true;
+        }
+
+        for (var name in mapping.properties) {
+            if (isMappingIncompatibleWithQuickEditor(mapping.properties[name])) {
+                return true;
+            }
+        }
+
+        if (angular.isDefined(mapping.fields)) {
+            if (mapping.fields.length > 1) {
+                // a field was mapped multiple times
+                return true;
+            }
+
+            if (mapping.fields.length == 1) {
+                if (!mapping.fields[0].index) {
+                    // un-indexed field
+                    return true;
+                }
+
+                if (mapping.fields[0].type == "text") {
+                    if (!mapping.fields[0].include_in_all ||
+                        !angular.isDefined(mapping.fields[0].analyzer) ||
+                        mapping.fields[0].analyzer == "") {
+                        // text field has include_in_all disabled and/or no analyzer specified
+                        return true;
+                    }
+                } else {
+                    if (mapping.fields[0].include_in_all ||
+                        (angular.isDefined(mapping.fields[0].analyzer) &&
+                        mapping.fields[0].analyzer != "")) {
+                        // fields of other types have include_in_all enabled or
+                        // an analyzer set
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     $scope.showEasyMode = function(indexDef) {
         let params = indexDef.params;
-        let prevHash = params.easy_mode_hash;
-        let newHash = hashParams(params);
-        return prevHash == newHash;
-    }
+        if (params.doc_config.mode != "scope.collection.type_field" ||
+            params.doc_config.type_field != "type") {
+            // quick (easy) editor works in scope.collection.type_field mode only
+            return false;
+        }
+
+        if (params.mapping.index_dynamic ||
+            params.mapping.store_dynamic ||
+            params.mapping.docvalues_dynamic ||
+            params.mapping.default_analyzer != "standard" ||
+            params.mapping.default_datetime_parser != "dateTimeOptional" ||
+            params.mapping.default_field != "_all" ||
+            params.mapping.default_type != "_default" ||
+            params.mapping.type_field != "_type") {
+            // advanced settings' violation for quick (easy) editor
+            return false;
+        }
+
+        let analysis = params.mapping.analysis;
+        if (angular.isDefined(analysis) &&
+            Object.keys(analysis).length > 0) {
+            // custom analysis elements aren't supported with quick (easy) editor
+            return false;
+        }
+
+        if (params.mapping.default_mapping.enabled) {
+            // default mapping not supported with quick (easy) editor
+            return false;
+        }
+
+        for (var name in params.mapping.types) {
+            let scopeCollection = name.split(".");
+            if (scopeCollection.length != 2) {
+                // type names can only be of format "scope.collection" to
+                // work with the quick (easy) editor
+                return false
+            }
+
+            if (isMappingIncompatibleWithQuickEditor(params.mapping.types[name])) {
+                return false;
+            }
+        }
+
+        return true;
+    };
 
     $scope.expando = function(indexName) {
         $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
@@ -348,7 +444,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
                 document.getElementById('query_bar_input_' + indexName).focus()
             }, 100);
         }
-    }
+    };
 
     return rv;
 }
@@ -1148,7 +1244,6 @@ function blevePIndexDoneController(doneKind, indexParams, indexUI,
     if (indexParams) {
         if ($scope.easyMappings) {
             indexParams.mapping = $scope.easyMappings.getIndexMapping($scope.newScopeName);
-            indexParams.easy_mode_hash = hashParams(indexParams);
         } else {
             indexParams.mapping = $scope.bleveIndexMapping();
         }
@@ -1958,47 +2053,4 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             };
         }
     }
-}
-
-// Utility functions to compute attempt to compute a stable hash on a mapping
-
-function sortObjByKey(value) {
-    return (typeof value === 'object') ?
-        (Array.isArray(value) ?
-                value.map(sortObjByKey) :
-                Object.keys(value).sort().reduce(
-                    (o, key) => {
-                        const v = value[key];
-                        o[key] = sortObjByKey(v);
-                        return o;
-                    }, {})
-        ) :
-        value;
-}
-
-
-function orderedJsonStringify(obj) {
-    return JSON.stringify(sortObjByKey(obj));
-}
-
-function hashCode(str) {
-    var hash = 0;
-    if (str.length == 0) {
-        return hash;
-    }
-    for (var i = 0; i < str.length; i++) {
-        var char = str.charCodeAt(i);
-        hash = ((hash<<5)-hash)+char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash;
-}
-
-function hashParams(params) {
-    // hash an object, with doc_config AND mapping from params
-    let objToHash = {
-        "doc_config": params.doc_config,
-        "mapping": params.mapping
-    };
-    return hashCode(orderedJsonStringify(objToHash)).toString();
 }

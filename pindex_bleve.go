@@ -115,14 +115,12 @@ var BlevePreferredZapVersion = int(15)
 //        },
 //        "doc_config": {
 //           // See BleveDocumentConfig.
-//        },
-//        "easy_mode_hash": // hash verification for easy-mode (string)
+//        }
 //     }
 type BleveParams struct {
 	Mapping      mapping.IndexMapping   `json:"mapping"`
 	Store        map[string]interface{} `json:"store"`
 	DocConfig    BleveDocumentConfig    `json:"doc_config"`
-	EasyModeHash string                 `json:"easy_mode_hash,omitempty"`
 }
 
 // BleveParamsStore represents some of the publically available
