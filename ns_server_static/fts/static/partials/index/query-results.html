@@ -9,13 +9,19 @@
       <span class="roundTook">({{results.roundTook}} server-side)</span>
     </h5>
     <div class="pull-right" ng-show="results.hits">
-      <input type="checkbox" ng-model="explainScoring"> Show Scoring
+      <input type="checkbox" ng-model="explainScoring"> Explain Scoring
     </div>
 
     <ol start="{{firstResult}}">
       <li ng-repeat="hit in results.hits">
-        <b ng-show="hit.docIDLink"><a ng-click="showDocument(hit)">{{hit.id}}</a></b>
-        <b ng-hide="hit.docIDLink">{{hit.id}}</b>
+        <div class="row">
+          <span ng-show="hit.docIDLink">
+            <a ng-click="showDocument(hit)">{{hit.id}}</a>
+          </span>
+          <h5 class="roundTook"
+              ng-show="hit.docIDLink && hit.score != 0">[{{hit.score}}]
+          </h5>
+        </div>
         <span class="badge" ng-show="explainScoring">{{hit.score | number : 3}}</span>
         <div class="well" ng-show="explainScoring">
           Scoring
