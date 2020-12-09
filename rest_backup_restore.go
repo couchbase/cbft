@@ -150,6 +150,10 @@ func processRemapRequest(req *http.Request, bucketName string) (
 		}
 	}
 
+	if len(indexDefs.IndexDefs) == 0 {
+		return nil, fmt.Errorf("no index definitions interpreted")
+	}
+
 	if bucketName != "" {
 		for _, indexDef := range indexDefs.IndexDefs {
 			if indexDef.SourceName != bucketName {
