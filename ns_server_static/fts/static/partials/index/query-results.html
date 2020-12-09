@@ -41,7 +41,17 @@
         </div>
       </li>
     </ol>
+  </div>
 
+  <br>
+  <hr>
+  <div class="row pagination">
+    <div class="simple-select">
+      <select ng-model="$parent.resultsPerPage"
+              ng-options="item for item in [5,10,20,50]"
+              ng-change="runNewQuery()">
+      </select>
+    </div>
     <div ng-show="numPages > 1" class="col-lg-12 col-lg-offset-5">
       <ul class="pagination">
         <li ng-show="page > 1">
