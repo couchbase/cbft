@@ -793,6 +793,13 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 
 	kvConfig, bleveIndexType, kvStoreName := bleveRuntimeConfigMap(bleveParams)
 
+	if bleveIndexType == "upside_down" {
+		log.Printf("bleve: new index, path: %s," +
+			" uses index type upside_down which is now deprecated.  For more information, see:" +
+			" https://docs.couchbase.com/server/7.0/release-notes/relnotes.html#deprecated-and-removed-features",
+			path)
+	}
+
 	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
 		bleveIndexType, kvStoreName, kvConfig)
 	if err != nil {

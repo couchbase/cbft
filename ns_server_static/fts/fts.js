@@ -652,7 +652,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             }
         }
 
-        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
+        $scope.indexStoreOptions = ["Version 5.0 (Moss) (deprecated)", "Version 6.0 (Scorch)"];
         $scope.indexStoreOption = $scope.indexStoreOptions[1];
 
         $scope.docConfigCollections = false;
