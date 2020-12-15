@@ -40,5 +40,3 @@ replace github.com/couchbase/cbftx => ../cbftx
 replace github.com/couchbase/cbgt => ../cbgt
 
 replace github.com/couchbase/cbft => ./empty
-
-replace github.com/couchbase/go-couchbase => ../goproj/src/github.com/couchbase/go-couchbase
