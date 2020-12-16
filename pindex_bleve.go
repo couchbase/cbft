@@ -2520,7 +2520,7 @@ func setupHttp2ClientLOCKED(certInBytes []byte) {
 	http2Client = &http.Client{Transport: transport}
 }
 
-func fetchHttp2Client() *http.Client {
+func FetchHttp2Client() *http.Client {
 	http2ClientLock.RLock()
 	if http2Client != nil {
 		http2ClientLock.RUnlock()
@@ -2638,7 +2638,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 
 		if http2Enabled {
-			indexClient.httpClient = fetchHttp2Client()
+			indexClient.httpClient = FetchHttp2Client()
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)
