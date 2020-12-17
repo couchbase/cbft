@@ -242,17 +242,35 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
     }
 
     $scope.showDocument = function(hit) {
-        let scopeCollection =
-            getScopeAndCollection($scope.indexDef.params.doc_config.mode,
-            $scope.indexDef.params.mapping);
-        if (angular.isDefined(hit.fields) && angular.isDefined(hit.fields["_$c"])) {
-            // in case of an index that's subscribed to multiple collections,
-            // the collection that the document belongs to is available within
-            // the fields section
-            scopeCollection[1] = hit.fields["_$c"];
-        }
-      docEditorService.getAndShowDocumentWithinCollection(
-          $scope.indexDef.sourceName, scopeCollection[0], scopeCollection[1], hit.id);
+        try {
+            let iDef = {};
+            if ($scope.indexDef.type == "fulltext-index") {
+                iDef = $scope.indexDef;
+            } else if ($scope.indexDef.type == "fulltext-alias") {
+                if (hit.index.length > 0) {
+                    // hit.index is the pindex name of format .. <index_name>_<hash>_<hash>
+                    var n = hit.index.substring(0, hit.index.lastIndexOf("_")).lastIndexOf("_");
+                    let ix = hit.index.substring(0, n); // this is the index name
+                    for (var indexName in $scope.indexDefs) {
+                        if (indexName == ix) {
+                            iDef = $scope.indexDefs[ix];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            let scopeCollection =
+                getScopeAndCollection(iDef.params.doc_config.mode, iDef.params.mapping);
+            if (angular.isDefined(hit.fields) && angular.isDefined(hit.fields["_$c"])) {
+                // in case of an index that's subscribed to multiple collections,
+                // the collection that the document belongs to is available within
+                // the fields section
+                scopeCollection[1] = hit.fields["_$c"];
+            }
+            docEditorService.getAndShowDocumentWithinCollection(
+                iDef.sourceName, scopeCollection[0], scopeCollection[1], hit.id);
+        } catch(e) {}
     };
 
     $scope.processResults = function(data) {

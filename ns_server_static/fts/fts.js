@@ -892,6 +892,12 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
 
   $scope.indexName = $stateParams.indexName;
 
+  $scope.indexDefs = null;
+  $httpPrefixed.get('/api/index').then(function(rsp) {
+        var data = rsp.data;
+        $scope.indexDefs = data && data.indexDefs && data.indexDefs.indexDefs;
+  });
+
   $httpPrefixed.get('/api/index/' + $scope.indexName).then(function(response) {
     $scope.indexDef = response.data.indexDef;
     if ($scope.indexDef &&
@@ -904,18 +910,45 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
     } catch (e) {
     }
 
+    function fetchSourceNameForHit(hit) {
+        try {
+            if ($scope.indexDef.type == "fulltext-index" &&
+                ($scope.indexDef.sourceType == "couchbase" || $scope.indexDef.sourceType == "gocbcore")) {
+                return $scope.indexDef.sourceName;
+            } else if ($scope.indexDef.type == "fulltext-alias") {
+                if (hit.index.length > 0) {
+                    // hit.index is the pindex name of format .. <index_name>_<hash>_<hash>
+                    var n = hit.index.substring(0, hit.index.lastIndexOf("_")).lastIndexOf("_");
+                    let ix = hit.index.substring(0, n); // this is the index name
+                    for (var indexName in $scope.indexDefs) {
+                        if (indexName == ix) {
+                            return $scope.indexDefs[ix].sourceName;
+                        }
+                    }
+                }
+            }
+        } catch (e) {}
+
+        return "";
+    };
+
     $scope.decorateSearchHit = function(hit) {
-      hit.docIDLink = null;
-      try {
-        if (($scope.indexDef &&
-             ($scope.indexDef.sourceType == "couchbase" || $scope.indexDef.sourceType == "gocbcore") &&
-             $scope.permsCluster.bucket[$scope.indexDef.sourceName] &&
-             ($scope.permsCluster.bucket[$scope.indexDef.sourceName].data.read ||
-              $scope.permsCluster.bucket[$scope.indexDef.sourceName].data.docs.read)) ||
-            $scope.permsCluster.bucket["*"].data.read) {
-          hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+        hit.docIDLink = null;
+        if (!$scope.indexDef) {
+            return;
         }
-      } catch (e) {}
+        let sourceName = fetchSourceNameForHit(hit)
+        if (sourceName.length == 0) {
+            return;
+        }
+        try {
+            if (($scope.permsCluster.bucket[sourceName] &&
+                    ($scope.permsCluster.bucket[sourceName].data.read ||
+                        $scope.permsCluster.bucket[sourceName].data.docs.read)) ||
+                    $scope.permsCluster.bucket["*"].data.read) {
+                hit.docIDLink = "../_p/fts/api/nsSearchResultRedirect/" + hit.index + "/" + hit.id;
+            }
+        } catch (e) {}
     };
 
     $scope.static_base = "../_p/ui/fts";
