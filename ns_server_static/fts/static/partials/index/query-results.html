@@ -18,8 +18,11 @@
           <span ng-show="hit.docIDLink">
             <a ng-click="showDocument(hit)">{{hit.id}}</a>
           </span>
+          <span ng-hide="hit.docIDLink">
+            {{hit.id}}
+          </span>
           <h5 class="roundTook"
-              ng-show="hit.docIDLink && hit.score != 0">[{{hit.score}}]
+              ng-show="hit.score != 0">[{{hit.score}}]
           </h5>
         </div>
         <span class="badge" ng-show="explainScoring">{{hit.score | number : 3}}</span>
