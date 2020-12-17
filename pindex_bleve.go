@@ -38,7 +38,7 @@ import (
 	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	_ "github.com/blevesearch/bleve/config"
-	bleveHttp "github.com/blevesearch/bleve/http"
+	ftsHttp "github.com/couchbase/cbft/http"
 	"github.com/blevesearch/bleve/index/scorch"
 	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/blevesearch/bleve/mapping"
@@ -482,7 +482,7 @@ func init() {
 		QueryHelp:    bleveQueryHelp,
 		InitRouter:   BleveInitRouter,
 		DiagHandlers: []cbgt.DiagHandler{
-			{Name: "/api/pindex-bleve", Handler: bleveHttp.NewListIndexesHandler(),
+			{Name: "/api/pindex-bleve", Handler: ftsHttp.NewListIndexesHandler(),
 				HandlerFunc: nil},
 		},
 		MetaExtra: BleveMetaExtra,
@@ -2831,46 +2831,44 @@ func BleveInitRouter(r *mux.Router, phase string,
 	if phase == "manager.after" {
 		bleveMappingUI.RegisterHandlers(r, prefix+"/api")
 
-		// Using standard bleveHttp handlers for /api/pindex-bleve endpoints.
-		//
-		listIndexesHandler := bleveHttp.NewListIndexesHandler()
+		listIndexesHandler := ftsHttp.NewListIndexesHandler()
 		r.Handle(prefix+"/api/pindex-bleve",
 			listIndexesHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve"] = "GET"
 
-		getIndexHandler := bleveHttp.NewGetIndexHandler()
+		getIndexHandler := ftsHttp.NewGetIndexHandler()
 		getIndexHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}",
 			getIndexHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}"] = "GET"
 
-		docCountHandler := bleveHttp.NewDocCountHandler("")
+		docCountHandler := ftsHttp.NewDocCountHandler("")
 		docCountHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/count",
 			docCountHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/count"] = "GET"
 
-		searchHandler := bleveHttp.NewSearchHandler("")
+		searchHandler := ftsHttp.NewSearchHandler("")
 		searchHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/query",
 			searchHandler).Methods("POST")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/query"] = "POST"
 
-		docGetHandler := bleveHttp.NewDocGetHandler("")
+		docGetHandler := ftsHttp.NewDocGetHandler("")
 		docGetHandler.IndexNameLookup = rest.PIndexNameLookup
 		docGetHandler.DocIDLookup = rest.DocIDLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/doc/{docID}",
 			docGetHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/doc/{docID}"] = "GET"
 
-		debugDocHandler := bleveHttp.NewDebugDocumentHandler("")
+		debugDocHandler := ftsHttp.NewDebugDocumentHandler("")
 		debugDocHandler.IndexNameLookup = rest.PIndexNameLookup
 		debugDocHandler.DocIDLookup = rest.DocIDLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/docDebug/{docID}",
 			debugDocHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/docDebug/{docID}"] = "GET"
 
-		listFieldsHandler := bleveHttp.NewListFieldsHandler("")
+		listFieldsHandler := ftsHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/fields",
 			listFieldsHandler).Methods("GET")

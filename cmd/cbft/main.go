@@ -33,7 +33,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/blevesearch/bleve"
-	bleveHttp "github.com/blevesearch/bleve/http"
+	ftsHttp "github.com/couchbase/cbft/http"
 	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	"github.com/couchbase/cbauth/service"
@@ -797,13 +797,13 @@ type mainHandlers struct {
 func (meh *mainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
-		bleveHttp.RegisterIndexName(pindex.Name, bindex)
+		ftsHttp.RegisterIndexName(pindex.Name, bindex)
 		bindex.SetName(pindex.Name)
 	}
 }
 
 func (meh *mainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
-	bleveHttp.UnregisterIndexByName(pindex.Name)
+	ftsHttp.UnregisterIndexByName(pindex.Name)
 }
 
 func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
