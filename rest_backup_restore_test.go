@@ -59,6 +59,13 @@ func TestCheckSourceNameMatchesFilters(t *testing.T) {
 			expSourceNames:   []string{"beer-sample._default._default"},
 			expBucketFilters: nil, expScopeFilters: []string{"beer-sample._default"},
 			expColFilters: nil, match: true},
+		// non-matching $bucket.$scope.$collection filter for index definition.
+		{indexDef: testIndexDefn(t, "beer-sample", "scope1", true, []string{"collection1"}, nil),
+			bucketLevel:      true,
+			filterRules:      "scope1.collection2",
+			expSourceNames:   []string{"beer-sample.scope1.collection1"},
+			expBucketFilters: nil, expScopeFilters: nil,
+			expColFilters: []string{"beer-sample.scope1.collection2"}, match: false},
 		// matching $bucket filter for multi collection index definition.
 		{indexDef: testIndexDefn(t, "beer-sample", "scope1", true, []string{"collection1", "collection2"}, []string{"beer", "brewery"}),
 			filterRules:      "beer-sample",
@@ -219,7 +226,11 @@ func testIndexDefn(t *testing.T, bucketName, scopeName string, colMode bool,
 	}
 
 	for i, cn := range collName {
-		typ := scopeName + "." + cn + "." + typs[i]
+		typ := scopeName + "." + cn
+		if i < len(typs) {
+			typ = typ + "." + typs[i]
+		}
+
 		im.TypeMapping[typ] = bleve.NewDocumentMapping()
 	}
 

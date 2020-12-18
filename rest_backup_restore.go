@@ -432,7 +432,7 @@ func (h *BucketBackupIndexHandler) ServeHTTP(
 	}
 
 	// filter index definitions for the given buckets/scopes/collections.
-	indexDefs = filterIndexDefinitions(indexDefs, []string{bucketName},
+	indexDefs = filterIndexDefinitions(indexDefs, nil,
 		scopeFilters, colFilters, include, true)
 
 	rv := struct {
