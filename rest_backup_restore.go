@@ -151,54 +151,54 @@ func processRemapRequest(req *http.Request, bucketName string) (
 	}
 
 	if len(indexDefs.IndexDefs) == 0 {
-		return nil, fmt.Errorf("no index definitions interpreted")
-	}
-
-	if bucketName != "" {
-		for _, indexDef := range indexDefs.IndexDefs {
-			if indexDef.SourceName != bucketName {
-				return nil, fmt.Errorf("index definition: %v, "+
-					"doesn't belong bucket: %v ", indexDef, bucketName)
-			}
-		}
+		return nil, fmt.Errorf("requestBody: no index definitions parsed")
 	}
 
 	queryParams := req.URL.Query()
 	params := queryParams.Get("remap")
-	if len(params) > 1 {
-		mapingRules, err := parseMappingParams(params)
-		if err != nil {
-			return nil, err
-		}
-		indexDefs, err = remapIndexDefinitions(indexDefs, mapingRules, true)
-		if err != nil {
-			return nil, fmt.Errorf("index remapping error: %v", err)
-		}
+	mapingRules, err := parseMappingParams(params)
+	if err != nil {
+		return nil, err
 	}
+	indexDefs, err = remapIndexDefinitions(indexDefs, mapingRules, bucketName)
+	if err != nil {
+		return nil, fmt.Errorf("index remapping error: %v", err)
+	}
+
 	return indexDefs, nil
 }
 
 func parseMappingParams(params string) (map[string]string, error) {
-	rv := make(map[string]string, 1)
+	rv := make(map[string]string)
 	mappings := strings.Split(params, ",")
 	for _, mapping := range mappings {
-		parts := strings.SplitN(mapping, ":", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("rest_backup_restore: "+
-				"invalid mapping params found: %v", mapping)
+		if len(mapping) >= 3 {
+			parts := strings.SplitN(mapping, ":", 2)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("rest_backup_restore: "+
+					"invalid mapping params found: %v", mapping)
+			}
+			rv[parts[0]] = parts[1]
 		}
-		rv[parts[0]] = parts[1]
 	}
 	return rv, nil
 }
 
 func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
-	mappingRules map[string]string, bucketLevel bool) (*cbgt.IndexDefs, error) {
+	mappingRules map[string]string, bucketName string) (*cbgt.IndexDefs, error) {
 	for _, indexDef := range indexDefs.IndexDefs {
 		// skip the index aliases from remapping.
 		if indexDef.Type == "fulltext-alias" {
 			continue
 		}
+		// there are no explicit mapping rules other than the bucketName from the URL.
+		if len(mappingRules) == 0 && bucketName != "" {
+			if indexDef.SourceName != bucketName {
+				indexDef.SourceName = bucketName
+			}
+			continue
+		}
+
 		if len(indexDef.Params) > 0 {
 			bleveParams := NewBleveParams()
 			buf, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -217,7 +217,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 				if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 					remappedTypeMapping, newBucketName, err := remapTypeMappings(
 						im.TypeMapping, mappingRules, indexDef.Name,
-						indexDef.SourceName, bucketLevel)
+						indexDef.SourceName, bucketName != "")
 					if err != nil {
 						return nil, err
 					}
@@ -244,6 +244,8 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 			} else {
 				if bname, ok := mappingRules[indexDef.SourceName]; ok {
 					indexDef.SourceName = bname
+				} else if bucketName != indexDef.SourceName {
+					indexDef.SourceName = bucketName
 				}
 			}
 		}
