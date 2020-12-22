@@ -222,7 +222,8 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 						return nil, err
 					}
 
-					if indexDef.SourceName != newBucketName {
+					if newBucketName != "" &&
+						indexDef.SourceName != newBucketName {
 						indexDef.SourceName = newBucketName
 					}
 
@@ -244,7 +245,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 			} else {
 				if bname, ok := mappingRules[indexDef.SourceName]; ok {
 					indexDef.SourceName = bname
-				} else if bucketName != indexDef.SourceName {
+				} else if bucketName != "" && bucketName != indexDef.SourceName {
 					indexDef.SourceName = bucketName
 				}
 			}
