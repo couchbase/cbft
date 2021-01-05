@@ -187,6 +187,9 @@ func parseMappingParams(params string) (map[string]string, error) {
 func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 	mappingRules map[string]string, bucketName string) (*cbgt.IndexDefs, error) {
 	for _, indexDef := range indexDefs.IndexDefs {
+		// override the UUID during restore.
+		indexDef.UUID = cbgt.NewUUID()
+
 		// skip the index aliases from remapping.
 		if indexDef.Type == "fulltext-alias" {
 			continue
