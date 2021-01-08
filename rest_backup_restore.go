@@ -303,8 +303,8 @@ func remapTypeMappings(typeMappings map[string]*mapping.DocumentMapping,
 					newBucketName = newBucket
 				}
 				// throw error if the newType already matches an existing
-				// mapping
-				if _, exists := typeMappings[newTyp]; exists {
+				// mapping within the same source bucket.
+				if _, exists := typeMappings[newTyp]; exists && bucketName == newBucketName {
 					return nil, "", fmt.Errorf("rest_backup_restore: indexName: %s, "+
 						"remap=%s:%s conflicts the existing type mappings for: %s",
 						indexName, curMapping, newMapping, newTyp)
