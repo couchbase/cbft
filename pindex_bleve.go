@@ -2440,8 +2440,9 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchBeg, 1)
 		err := bindex.Batch(batch)
 		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchEnd, 1)
-		if err != nil {
-			log.Errorf("pindex_bleve: executeBatch, err: %+v ", err)
+		if err != nil && err != bleve.ErrorIndexClosed {
+			log.Errorf("pindex_bleve: executeBatch over `%v`, err: %+v ",
+				bindex.Name(), err)
 		}
 		return err
 	}, bdp[0].bdest.stats.TimerBatchStore)
