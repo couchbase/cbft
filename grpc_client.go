@@ -271,7 +271,6 @@ func (g *GrpcClient) SearchRPC(ctx context.Context, req *scatterRequest,
 			break
 		}
 		if err != nil {
-			log.Errorf("grpc_client: recv err: %v", err)
 			break
 		}
 
