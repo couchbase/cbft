@@ -1753,41 +1753,52 @@ var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var c uint64
+	var vbstats, verbose bool
+	if w, ok := w.(rest.PartitionStatsWriter); ok {
+		vbstats = w.VbStats()
+		verbose = w.Verbose()
+	}
 
-	_, err = w.Write(prefixPIndexStoreStats)
-	if err != nil {
+	// exit early if all details are disabled.
+	if !verbose && !vbstats {
 		return
 	}
 
-	t.m.Lock()
-	defer t.m.Unlock()
-
-	t.stats.WriteJSON(w)
-
-	if t.bindex != nil {
-		_, err = w.Write([]byte(`,"bleveIndexStats":`))
-		if err != nil {
-			return
-		}
-		idxStats := t.bindex.StatsMap()
-		var idxStatsJSON []byte
-		idxStatsJSON, err = MarshalJSON(idxStats)
-		if err != nil {
-			log.Errorf("json failed to marshal was: %#v", idxStats)
-			return
-		}
-		_, err = w.Write(idxStatsJSON)
+	// if verbose stats is requested then send most of the index stats.
+	if verbose {
+		_, err = w.Write(prefixPIndexStoreStats)
 		if err != nil {
 			return
 		}
 
-		c, err = t.bindex.DocCount()
-		if err != nil {
-			return
-		}
-	}
+		t.m.Lock()
+		defer t.m.Unlock()
 
-	if err == nil {
+		t.stats.WriteJSON(w)
+
+		if t.bindex != nil {
+			_, err = w.Write([]byte(`,"bleveIndexStats":`))
+			if err != nil {
+				return
+			}
+			idxStats := t.bindex.StatsMap()
+			var idxStatsJSON []byte
+			idxStatsJSON, err = MarshalJSON(idxStats)
+			if err != nil {
+				log.Errorf("json failed to marshal was: %#v", idxStats)
+				return
+			}
+			_, err = w.Write(idxStatsJSON)
+			if err != nil {
+				return
+			}
+
+			c, err = t.bindex.DocCount()
+			if err != nil {
+				return
+			}
+		}
+
 		_, err = w.Write([]byte(`,"basic":{"DocCount":`))
 		if err != nil {
 			return
@@ -1800,16 +1811,26 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		if err != nil {
 			return
 		}
-	}
 
-	if w1, ok := w.(rest.StatsWriter); ok {
-		if !w1.VerboseLogging() {
+		// skip the vbucket stats if vbstats is not requested.
+		if !vbstats {
 			_, _ = w.Write(cbgt.JsonCloseBrace)
+			return
+		}
+
+		_, err = w.Write([]byte(`,`))
+		if err != nil {
+			return
+		}
+	} else {
+		// in case only vbstats are requested.
+		_, err = w.Write(cbgt.JsonOpenBrace)
+		if err != nil {
 			return
 		}
 	}
 
-	_, err = w.Write([]byte(`,"partitions":{`))
+	_, err = w.Write([]byte(`"partitions":{`))
 	if err != nil {
 		return
 	}

@@ -45,6 +45,9 @@ cluster.collection[<sourceName>].fts!manage
 GET /api/stats
 cluster.bucket[].stats.fts!read
 
+GET /api/stats/partitions
+cluster.bucket[].stats.fts!read
+
 GET /api/stats/index/{indexName}
 cluster.collection[<sourceName>].stats.fts!read
 
