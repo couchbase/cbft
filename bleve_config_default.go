@@ -14,11 +14,11 @@
 package cbft
 
 import (
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/analysis"
-	"github.com/blevesearch/bleve/analysis/datetime/flexible"
-	"github.com/blevesearch/bleve/index/scorch"
-	"github.com/blevesearch/bleve/registry"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/analysis"
+	"github.com/blevesearch/bleve/v2/analysis/datetime/flexible"
+	"github.com/blevesearch/bleve/v2/index/scorch"
+	"github.com/blevesearch/bleve/v2/registry"
 )
 
 func init() {

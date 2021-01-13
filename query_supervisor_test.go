@@ -14,7 +14,7 @@ package cbft
 import (
 	"testing"
 
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 )
 
 func TestQuerySupervisor(t *testing.T) {

@@ -14,11 +14,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/index"
-	"github.com/blevesearch/bleve/index/store"
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
+	index "github.com/blevesearch/bleve_index_api"
 )
 
 var missingPIndexUnimplementedErr = errors.New("unimplemented")
@@ -47,7 +45,7 @@ func (m *MissingPIndex) Batch(b *bleve.Batch) error {
 	return missingPIndexUnimplementedErr
 }
 
-func (m *MissingPIndex) Document(id string) (*document.Document, error) {
+func (m *MissingPIndex) Document(id string) (index.Document, error) {
 	return nil, missingPIndexUnimplementedErr
 }
 
@@ -127,6 +125,6 @@ func (m *MissingPIndex) DeleteInternal(key []byte) error {
 	return missingPIndexUnimplementedErr
 }
 
-func (m *MissingPIndex) Advanced() (index.Index, store.KVStore, error) {
-	return nil, nil, missingPIndexUnimplementedErr
+func (m *MissingPIndex) Advanced() (index.Index, error) {
+	return nil, missingPIndexUnimplementedErr
 }

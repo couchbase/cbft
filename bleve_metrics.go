@@ -13,5 +13,5 @@
 package cbft
 
 import (
-	_ "github.com/blevesearch/bleve/index/store/metrics"
+	_ "github.com/blevesearch/bleve/v2/index/upsidedown/store/metrics"
 )

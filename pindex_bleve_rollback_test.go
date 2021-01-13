@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
-	"github.com/blevesearch/bleve/index/upsidedown"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/index/upsidedown"
+	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
 
 	"encoding/json"
 

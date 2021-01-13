@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/couchbase/cbgt"
 )
 

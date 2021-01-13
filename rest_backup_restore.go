@@ -19,9 +19,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/buger/jsonparser"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"

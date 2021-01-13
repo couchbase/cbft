@@ -20,7 +20,7 @@ import (
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 
-	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
+	bleveSearcher "github.com/blevesearch/bleve/v2/search/searcher"
 )
 
 // List of log levels that maps strings to integers.

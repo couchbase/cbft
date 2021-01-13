@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search"
-	"github.com/blevesearch/bleve/search/query"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/search"
+	"github.com/blevesearch/bleve/v2/search/query"
 )
 
 var deleteBatchSize = int(5000)

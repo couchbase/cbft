@@ -35,16 +35,16 @@ import (
 
 	metrics "github.com/rcrowley/go-metrics"
 
-	"github.com/blevesearch/bleve"
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
-	_ "github.com/blevesearch/bleve/config"
+	"github.com/blevesearch/bleve/v2"
+	_ "github.com/blevesearch/bleve/v2/config"
+	"github.com/blevesearch/bleve/v2/index/scorch"
+	"github.com/blevesearch/bleve/v2/index/upsidedown"
+	"github.com/blevesearch/bleve/v2/mapping"
+	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
+	"github.com/blevesearch/bleve/v2/search"
+	"github.com/blevesearch/bleve/v2/search/query"
 	ftsHttp "github.com/couchbase/cbft/http"
-	"github.com/blevesearch/bleve/index/scorch"
-	"github.com/blevesearch/bleve/index/upsidedown"
-	"github.com/blevesearch/bleve/mapping"
-	bleveRegistry "github.com/blevesearch/bleve/registry"
-	"github.com/blevesearch/bleve/search"
-	"github.com/blevesearch/bleve/search/query"
 
 	log "github.com/couchbase/clog"
 
@@ -118,9 +118,9 @@ var BlevePreferredZapVersion = int(15)
 //        }
 //     }
 type BleveParams struct {
-	Mapping      mapping.IndexMapping   `json:"mapping"`
-	Store        map[string]interface{} `json:"store"`
-	DocConfig    BleveDocumentConfig    `json:"doc_config"`
+	Mapping   mapping.IndexMapping   `json:"mapping"`
+	Store     map[string]interface{} `json:"store"`
+	DocConfig BleveDocumentConfig    `json:"doc_config"`
 }
 
 // BleveParamsStore represents some of the publically available
@@ -808,8 +808,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	kvConfig, bleveIndexType, kvStoreName := bleveRuntimeConfigMap(bleveParams)
 
 	if bleveIndexType == "upside_down" {
-		log.Printf("bleve: new index, path: %s," +
-			" uses index type upside_down which is now deprecated.  For more information, see:" +
+		log.Printf("bleve: new index, path: %s,"+
+			" uses index type upside_down which is now deprecated.  For more information, see:"+
 			" https://docs.couchbase.com/server/7.0/release-notes/relnotes.html#deprecated-and-removed-features",
 			path)
 	}
@@ -2328,7 +2328,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 	var ticker *time.Ticker
 	batchFlushDuration := BleveBatchFlushDuration
 
-	index, _, err := bindex.Advanced()
+	index, err := bindex.Advanced()
 	if err != nil {
 		log.Printf("pindex_bleve: batchWorker stopped err: %v", err)
 		return

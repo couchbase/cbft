@@ -15,15 +15,15 @@
 package main
 
 import (
-	"github.com/blevesearch/bleve/cmd/bleve/cmd"
-	zapv11cmd "github.com/blevesearch/zap/v11/cmd/zap/cmd"
-	zapv12cmd "github.com/blevesearch/zap/v12/cmd/zap/cmd"
-	zapv13cmd "github.com/blevesearch/zap/v13/cmd/zap/cmd"
-	zapv14cmd "github.com/blevesearch/zap/v14/cmd/zap/cmd"
-	zapv15cmd "github.com/blevesearch/zap/v15/cmd/zap/cmd"
+	"github.com/blevesearch/bleve/v2/cmd/bleve/cmd"
+	zapv11cmd "github.com/blevesearch/zapx/v11/cmd/zap/cmd"
+	zapv12cmd "github.com/blevesearch/zapx/v12/cmd/zap/cmd"
+	zapv13cmd "github.com/blevesearch/zapx/v13/cmd/zap/cmd"
+	zapv14cmd "github.com/blevesearch/zapx/v14/cmd/zap/cmd"
+	zapv15cmd "github.com/blevesearch/zapx/v15/cmd/zap/cmd"
 	"github.com/spf13/cobra"
 
-	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
+	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
 
 	// to support cbft's flavor of bleve build tags & flags
 	_ "github.com/couchbase/cbft"

@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blevesearch/bleve/search/query"
+	"github.com/blevesearch/bleve/v2/search/query"
 	"github.com/couchbase/cbgt/rest"
 )
 

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"

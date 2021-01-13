@@ -17,8 +17,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2/document"
+	"github.com/blevesearch/bleve/v2/index/scorch"
+	"github.com/blevesearch/bleve/v2/mapping"
+	index "github.com/blevesearch/bleve_index_api"
+
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 )
@@ -106,9 +109,14 @@ func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
-	idx, _, err := bindex.Advanced()
+	idx, err := bindex.Advanced()
 	if err != nil {
 		return err
+	}
+
+	sh, ok := idx.(*scorch.Scorch)
+	if !ok {
+		return fmt.Errorf("Method only supported for scorch index type")
 	}
 
 	doc := document.NewDocument("key")
@@ -117,14 +125,21 @@ func AnalyzeDoc(mgr *cbgt.Manager, indexName, indexUUID string,
 		return err
 	}
 
-	ar := idx.Analyze(doc)
+	sh.Analyze(doc)
+
+	analyzed := []index.TokenFrequencies{}
+	doc.VisitFields(func(field index.Field) {
+		if field.Options().IsIndexed() {
+			analyzed = append(analyzed, field.AnalyzedTokenFrequencies())
+		}
+	})
 
 	rv := struct {
 		Status   string      `json:"status"`
 		Analyzed interface{} `json:"analyzed"`
 	}{
 		Status:   "ok",
-		Analyzed: ar.Analyzed,
+		Analyzed: analyzed,
 	}
 
 	mustEncode(res, rv)

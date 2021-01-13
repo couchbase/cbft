@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2/mapping"
 )
 
 func buildMapping(mappings []string, defaultMapping bool) *mapping.IndexMappingImpl {

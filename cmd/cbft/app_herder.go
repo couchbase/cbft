@@ -15,7 +15,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/blevesearch/bleve/index/scorch"
+	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"

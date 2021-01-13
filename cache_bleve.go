@@ -20,13 +20,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/index"
-	"github.com/blevesearch/bleve/index/scorch"
-	"github.com/blevesearch/bleve/index/scorch/mergeplan"
-	"github.com/blevesearch/bleve/index/store"
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/index/scorch"
+	"github.com/blevesearch/bleve/v2/index/scorch/mergeplan"
+	"github.com/blevesearch/bleve/v2/mapping"
+	index "github.com/blevesearch/bleve_index_api"
 
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -97,7 +95,7 @@ func (m *cacheBleveIndex) Batch(b *bleve.Batch) error {
 	return cacheBleveIndexUnimplementedErr
 }
 
-func (m *cacheBleveIndex) Document(id string) (*document.Document, error) {
+func (m *cacheBleveIndex) Document(id string) (index.Document, error) {
 	return m.bindex.Document(id)
 }
 
@@ -200,8 +198,8 @@ func (m *cacheBleveIndex) DeleteInternal(key []byte) error {
 	return cacheBleveIndexUnimplementedErr
 }
 
-func (m *cacheBleveIndex) Advanced() (index.Index, store.KVStore, error) {
-	return nil, nil, cacheBleveIndexUnimplementedErr
+func (m *cacheBleveIndex) Advanced() (index.Index, error) {
+	return nil, cacheBleveIndexUnimplementedErr
 }
 
 func (m *cacheBleveIndex) getLiveTasks(req *cbgt.TaskRequest) (
@@ -275,7 +273,7 @@ func (m *cacheBleveIndex) forceMerge(req *cbgt.TaskRequest) (
 		}
 	}
 
-	index, _, err := m.bindex.Advanced()
+	index, err := m.bindex.Advanced()
 	if err != nil {
 		return nil, err
 	}

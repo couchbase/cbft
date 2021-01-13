@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/blevesearch/bleve/index/store"
-	"github.com/blevesearch/bleve/index/upsidedown"
+	"github.com/blevesearch/bleve/v2/index/upsidedown"
+	store "github.com/blevesearch/upsidedown_store_api"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/moss"

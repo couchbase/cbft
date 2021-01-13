@@ -19,7 +19,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/blevesearch/bleve/document"
+	"github.com/blevesearch/bleve/v2/document"
+	index "github.com/blevesearch/bleve_index_api"
 )
 
 type DocGetHandler struct {
@@ -43,8 +44,8 @@ func (h *DocGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if indexName == "" {
 		indexName = h.defaultIndexName
 	}
-	index := IndexByName(indexName)
-	if index == nil {
+	idx := IndexByName(indexName)
+	if idx == nil {
 		showError(w, req, fmt.Sprintf("no such index '%s'", indexName), 404)
 		return
 	}
@@ -59,7 +60,7 @@ func (h *DocGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	doc, err := index.Document(docID)
+	doc, err := idx.Document(docID)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error deleting document '%s': %v", docID, err), 500)
 		return
@@ -76,7 +77,8 @@ func (h *DocGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		ID:     docID,
 		Fields: map[string]interface{}{},
 	}
-	for _, field := range doc.Fields {
+
+	doc.VisitFields(func(field index.Field) {
 		var newval interface{}
 		switch field := field.(type) {
 		case *document.TextField:
@@ -106,7 +108,7 @@ func (h *DocGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		} else {
 			rv.Fields[field.Name()] = newval
 		}
-	}
+	})
 
 	mustEncode(w, rv)
 }

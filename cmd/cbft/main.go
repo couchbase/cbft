@@ -32,9 +32,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
+	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	ftsHttp "github.com/couchbase/cbft/http"
-	bleveRegistry "github.com/blevesearch/bleve/registry"
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"

@@ -24,12 +24,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/index"
-	"github.com/blevesearch/bleve/index/store"
-	"github.com/blevesearch/bleve/mapping"
-	"github.com/blevesearch/bleve/search"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
+	"github.com/blevesearch/bleve/v2/search"
+	index "github.com/blevesearch/bleve_index_api"
 
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -98,7 +96,7 @@ func (g *GrpcClient) Batch(b *bleve.Batch) error {
 	return indexClientUnimplementedErr
 }
 
-func (g *GrpcClient) Document(id string) (*document.Document, error) {
+func (g *GrpcClient) Document(id string) (index.Document, error) {
 	return nil, indexClientUnimplementedErr
 }
 
@@ -348,8 +346,8 @@ func (g *GrpcClient) Query(ctx context.Context,
 	return result, fmt.Errorf("grpc_client: invalid status code, err: %v", er)
 }
 
-func (g *GrpcClient) Advanced() (index.Index, store.KVStore, error) {
-	return nil, nil, indexClientUnimplementedErr
+func (g *GrpcClient) Advanced() (index.Index, error) {
+	return nil, indexClientUnimplementedErr
 }
 
 // -----------------------------------------------------

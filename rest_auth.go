@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 	"github.com/buger/jsonparser"
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"

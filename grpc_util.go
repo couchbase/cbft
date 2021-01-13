@@ -25,7 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/blevesearch/bleve/search/query"
+	"github.com/blevesearch/bleve/v2/search/query"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"

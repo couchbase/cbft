@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search"
-	"github.com/blevesearch/bleve/search/highlight"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/search"
+	"github.com/blevesearch/bleve/v2/search/highlight"
 	pb "github.com/couchbase/cbft/protobuf"
 	log "github.com/couchbase/clog"
 )

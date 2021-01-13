@@ -17,7 +17,7 @@ import (
 
 	log "github.com/couchbase/clog"
 
-	bleveMoss "github.com/blevesearch/bleve/index/store/moss"
+	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/moss"

@@ -22,11 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/index"
-	"github.com/blevesearch/bleve/index/store"
-	"github.com/blevesearch/bleve/mapping"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
+	index "github.com/blevesearch/bleve_index_api"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -142,7 +140,7 @@ func (r *IndexClient) Batch(b *bleve.Batch) error {
 	return indexClientUnimplementedErr
 }
 
-func (r *IndexClient) Document(id string) (*document.Document, error) {
+func (r *IndexClient) Document(id string) (index.Document, error) {
 	return nil, indexClientUnimplementedErr
 }
 
@@ -386,8 +384,8 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	return respBuf, err
 }
 
-func (r *IndexClient) Advanced() (index.Index, store.KVStore, error) {
-	return nil, nil, indexClientUnimplementedErr
+func (r *IndexClient) Advanced() (index.Index, error) {
+	return nil, indexClientUnimplementedErr
 }
 
 // -----------------------------------------------------

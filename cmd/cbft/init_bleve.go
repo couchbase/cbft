@@ -20,10 +20,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/index/scorch"
-	bleveMapping "github.com/blevesearch/bleve/mapping"
-	bleveSearcher "github.com/blevesearch/bleve/search/searcher"
+	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/index/scorch"
+	bleveMapping "github.com/blevesearch/bleve/v2/mapping"
+	bleveSearcher "github.com/blevesearch/bleve/v2/search/searcher"
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
