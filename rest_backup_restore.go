@@ -174,7 +174,9 @@ func parseMappingParams(params string) (map[string]string, error) {
 	for _, mapping := range mappings {
 		if len(mapping) >= 3 {
 			parts := strings.SplitN(mapping, ":", 2)
-			if len(parts) != 2 {
+			// remap rule should be of a format r1:r2 at a minimum.
+			// for example: b1:b2 or b1.s1:b2.s2 or b1.s1.c1:b2.s2.c2
+			if len(parts) != 2 || len(parts[0]) < 1 || len(parts[1]) < 1 {
 				return nil, fmt.Errorf("rest_backup_restore: "+
 					"invalid mapping params found: %v", mapping)
 			}
