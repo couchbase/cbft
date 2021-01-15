@@ -2291,7 +2291,8 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	// to the same worker queue so that the order of seq numbers are maintained
 	partition, err := strconv.Atoi(p)
 	if err != nil {
-		log.Errorf("pindex_bleve: submitAsyncBatchRequestLOCKED, err: %v", err)
+		log.Errorf("pindex_bleve: submitAsyncBatchRequestLOCKED over `%v`, err: %v",
+			bindex.Name(), err)
 		t.m.Lock()
 		return false, err
 	}
@@ -2302,7 +2303,8 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	}
 	select {
 	case <-stopCh:
-		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED stopped")
+		log.Printf("pindex_bleve: submitAsyncBatchRequestLOCKED stopped for `%v`",
+			bindex.Name())
 		t.m.Lock()
 		return false, t.lastAsyncBatchErr
 
@@ -2330,7 +2332,8 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 
 	index, err := bindex.Advanced()
 	if err != nil {
-		log.Printf("pindex_bleve: batchWorker stopped err: %v", err)
+		log.Printf("pindex_bleve: batchWorker stopped for `%v`, err: %v",
+			bindex.Name(), err)
 		return
 	}
 	// batch merging disabled for upside-down index
@@ -2408,7 +2411,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 			tickerCh = nil
 
 		case <-stopCh:
-			log.Printf("pindex_bleve: batchWorker stopped")
+			log.Printf("pindex_bleve: batchWorker stopped for `%v`", bindex.Name())
 			return
 		}
 
