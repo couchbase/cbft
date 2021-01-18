@@ -123,7 +123,7 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 	// indexDefs could be nil on a new cluster.
 	if curIndexDefs == nil {
 		curIndexDefs = &cbgt.IndexDefs{
-			IndexDefs:make(map[string]*cbgt.IndexDef)}
+			IndexDefs: make(map[string]*cbgt.IndexDef)}
 	}
 
 	// update the remapped index definitions.

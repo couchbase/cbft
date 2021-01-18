@@ -492,9 +492,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// register handlers needed by ns_server
 	prefix := mgr.Options()["urlPrefix"]
 
-	// no auth for /api/nsstats endpoint so search_admin and search_reader
-	// can access these stats
+	// For roles: search_admin and search_reader to access certain stats,
+	// no auth needed for these endpoints:
+	//     - /api/nsstats
+	//     - /api/stats/index/{indexName}/progress
 	muxrouter.Handle(prefix+"/api/nsstats", cbft.NewNsStatsHandler(mgr))
+	muxrouter.Handle(prefix+"/api/stats/index/{indexName}/progress",
+		cbft.NewProgressStatsHandler(mgr))
 
 	handle := func(path string, method string, h http.Handler) {
 		dh := cbft.NewAuthVersionHandler(mgr, adtSvc,

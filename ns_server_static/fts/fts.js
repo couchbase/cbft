@@ -296,7 +296,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         var rv = IndexCtrlFT_NS($scope, $http, stateParams, $state,
                                 $location, $log, $sce, $uibModal);
 
-        var loadDocCount = $scope.loadDocCount;
+        var loadProgressStats = $scope.loadProgressStats;
 
         function checkRetStatus(code) {
             if (code == 403) {
@@ -311,7 +311,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
         function updateDocCount() {
             if (!done) {
-                if (loadDocCount(checkRetStatus)) {
+                if (loadProgressStats(checkRetStatus)) {
                     setTimeout(updateDocCount, updateDocCountIntervalMS);
                 }
             }
@@ -458,34 +458,28 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
 
     $scope.progressPct = "--";
+    $scope.docCount = "";
     $scope.numMutationsToIndex = "";
     $scope.currSeqReceived = "";
     $scope.lastCurrSeqReceived = "";
     $scope.httpStatus = 200;    // OK
     $scope.showHiddenUI = false;
 
-    $scope.loadDocCount = function(callback) {
-        $scope.loadIndexDocCount();
-        $scope.loadNumMutationsToIndex();
-        if (callback) {
-            return callback($scope.httpStatus);
+    $scope.loadProgressStats = function(callback) {
+        if ($scope.indexDef.type != "fulltext-index") {
+            return;
         }
-        return true;
-    }
-
-    $scope.loadNumMutationsToIndex = function() {
         $scope.numMutationsToIndex = "...";
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        http.get('/api/nsstats').
+        http.get('/api/stats/index/'+$scope.indexName+'/progress').
         then(function(response) {
             var data = response.data;
             if (data) {
-                $scope.numMutationsToIndex =
-                    data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":num_mutations_to_index"];
-                $scope.currSeqReceived =
-                    data[$scope.indexDef.sourceName + ":" + $scope.indexName + ":curr_seq_received"];
+                $scope.docCount = data["doc_count"];
+                $scope.numMutationsToIndex = data["num_mutations_to_index"];
+                $scope.currSeqReceived = data["curr_seq_received"];
                 updateProgressPct();
             }
         }, function(response) {
@@ -493,6 +487,10 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             $scope.httpStatus = response.Status;
             updateProgressPct();
         });
+
+        if (callback) {
+            return callback($scope.httpStatus);
+        }
     }
 
     $scope.checkHiddenUI = function() {
@@ -570,7 +568,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     });
 
     function updateProgressPct() {
-        var i = parseInt($scope.indexDocCount);
+        var i = parseInt($scope.docCount);
         var x = parseInt($scope.numMutationsToIndex);
 
         if (i == 0 && x == 0) {
@@ -599,7 +597,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
               $location, $log, $sce, $uibModal);
 
     if ($scope.tab === "summary") {
-        $scope.loadDocCount();
+        $scope.loadProgressStats();
         $scope.checkHiddenUI();
     }
 

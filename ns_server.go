@@ -414,48 +414,14 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 				continue
 			}
 
-			scope, collections, err := GetScopeCollectionsFromIndexDef(indexDef)
+			currSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
+				indexDef, src, dst)
 			if err != nil {
 				continue
 			}
 
-			var totSeq uint64
-			var curSeq uint64
-
-			for partitionId, dstUUIDSeq := range dst {
-				var srcSeq uint64
-				for i := range collections {
-					uuidHighSeq, exists :=
-						src[partitionId+":"+scope+":"+collections[i]+":high_seqno"]
-					if !exists {
-						continue
-					}
-
-					uuidStartSeq, exists :=
-						src[partitionId+":"+scope+":"+collections[i]+":start_seqno"]
-					if !exists {
-						continue
-					}
-
-					// account this collection's high seq only if it actually holds
-					// any items and is greater than the last accounted value
-					if uuidHighSeq.Seq > uuidStartSeq.Seq && uuidHighSeq.Seq > srcSeq {
-						srcSeq = uuidHighSeq.Seq
-					}
-				}
-
-				if srcSeq > 0 {
-					totSeq += srcSeq
-					curSeq += dstUUIDSeq.Seq
-				}
-			}
-
-			nsIndexStat["curr_seq_received"] = curSeq
-			if totSeq >= curSeq {
-				nsIndexStat["num_mutations_to_index"] = totSeq - curSeq
-			} else {
-				nsIndexStat["num_mutations_to_index"] = 0
-			}
+			nsIndexStat["curr_seq_received"] = currSeqReceived
+			nsIndexStat["num_mutations_to_index"] = numMutationsToIndex
 		}
 	}
 
@@ -464,6 +430,54 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	}
 
 	return nsIndexStats, nil
+}
+
+// Utility function obtains the following for an index definition from
+// it's source's and destination stats:
+//   - curr_seq_received
+//   - num_mutations_to_index
+func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
+	srcPartitionSeqs map[string]cbgt.UUIDSeq,
+	destPartitionSeqs map[string]cbgt.UUIDSeq) (uint64, uint64, error) {
+	scope, collections, err := GetScopeCollectionsFromIndexDef(indexDef)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var currSeq, totSeq uint64
+	for partitionId, dstUUIDSeq := range destPartitionSeqs {
+		var srcSeq uint64
+		for i := range collections {
+			uuidHighSeq, exists :=
+				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]+":high_seqno"]
+			if !exists {
+				continue
+			}
+
+			uuidStartSeq, exists :=
+				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]+":start_seqno"]
+			if !exists {
+				continue
+			}
+
+			// account this collection's high seq only if it actually holds
+			// any items and is greater than the last accounted value
+			if uuidHighSeq.Seq > uuidStartSeq.Seq && uuidHighSeq.Seq > srcSeq {
+				srcSeq = uuidHighSeq.Seq
+			}
+		}
+
+		if srcSeq > 0 {
+			totSeq += srcSeq
+			currSeq += dstUUIDSeq.Seq
+		}
+	}
+
+	if totSeq >= currSeq {
+		return currSeq, totSeq - currSeq, nil
+	}
+
+	return currSeq, 0, nil
 }
 
 func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
