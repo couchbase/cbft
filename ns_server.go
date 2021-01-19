@@ -522,6 +522,8 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 	topLevelStats["total_queries_rejected_by_herder"] =
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
+	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
+
 	return topLevelStats
 }
 
