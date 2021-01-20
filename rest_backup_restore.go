@@ -120,6 +120,12 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 		return fmt.Errorf("CfgGetIndexDefs error: %v", err)
 	}
 
+	// indexDefs could be nil on a new cluster.
+	if curIndexDefs == nil {
+		curIndexDefs = &cbgt.IndexDefs{
+			IndexDefs:make(map[string]*cbgt.IndexDef)}
+	}
+
 	// update the remapped index definitions.
 	for indexName, remappedIndexDef := range indexDefs.IndexDefs {
 		delete(curIndexDefs.IndexDefs, indexName)
