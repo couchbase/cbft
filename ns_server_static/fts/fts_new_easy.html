@@ -24,10 +24,10 @@
 <!-- first row of input controls for name and keyspace --------------------- -->
       <div class="row width-8 items-top margin-bottom-2">
         <div class="column" ng-if="isEdit">
-          <label class="margin-bottom-half">Index Name</label>
-          <p class="text-small width-12">
+          <label class="margin-bottom-quarter">Index Name</label>
+          <div class="text-small width-12">
             {{newIndexName}}
-          </p>
+          </div>
         </div>
         <div class="column" ng-if="!isEdit">
           <label>Index Name</label>
@@ -61,9 +61,9 @@
                 <option value="" selected hidden></option>
             </select>
 
-            <p class="text-small nowrap margin-bottom-half" ng-if="isEdit">
+            <div class="text-small nowrap" ng-if="isEdit">
               {{newSourceName}}.
-            </p>
+            </div>
 
             <select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
                     ng-model="$parent.newScopeName"
@@ -73,24 +73,26 @@
               <option value="" selected hidden></option>
             </select>
 
-            <p class="text-small nowrap margin-bottom-half" ng-if="isEdit">
+            <div class="text-small nowrap" ng-if="isEdit">
               {{newScopeName}}.
-            </p>
+            </div>
 
             <select
                ng-show="collectionNames && collectionNames.length >= 0"
                ng-model="$parent.collectionOpened"
                ng-options="collectionLabel(t) for t in collectionNames"
-               ng-change="expando(collectionOpened)">
+               ng-change="expando(collectionOpened)"
+               class="margin-right-half">
               <option value="" selected hidden></option>
             </select>
-
-            <span
-                    class="fa-stack icon-info"
-                    uib-tooltip="* indicates this colleciton has fields mapped in the index defintion."
-                    tooltip-placement="auto right">
-              <span class="icon fa-circle-thin fa-stack-2x"></span>
-              <span class="icon fa-info fa-stack-1x"></span>
+            <span>
+              <span
+                 class="fa-stack icon-info"
+                 uib-tooltip="* indicates this colleciton has fields mapped in the index defintion."
+                 tooltip-placement="auto right">
+                <span class="icon fa-circle-thin fa-stack-2x"></span>
+                <span class="icon fa-info fa-stack-1x"></span>
+              </span>
             </span>
 
           </div>
