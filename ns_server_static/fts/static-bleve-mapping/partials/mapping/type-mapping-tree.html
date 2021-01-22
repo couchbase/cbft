@@ -5,8 +5,8 @@
          type="checkbox"
          ng-disabled="viewOnly || mapping._editing"
          ng-model="mapping.enabled"
-         id="mapping-enabled">
-      <label class="checkbox margin-right-0" for="mapping-enabled"></label> <!-- this insanity is because the CSS expects to see an input paired with a label -->
+         id="{{mapping.name}}">
+      <label class="checkbox margin-right-0" for="{{mapping.name}}"></label> <!-- this insanity is because the CSS expects to see an input paired with a label -->
       <span ng-if="mapping._kind == 'mappingType'">
         <i class="glyphicon glyphicon-file"></i></span>
       <span ng-if="mapping._kind != 'mappingType'">
