@@ -91,7 +91,7 @@ angular
             },
             data: {
               title: "Add Index",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
             .state(parent + '.fts_new_easy', {
@@ -103,8 +103,8 @@ angular
                     }
                 },
                 data: {
-                    title: "Quick Index",
-                    child: parent + '.fts_list'
+                  title: "Quick Index",
+                  parent: {name: 'Full Text Search', link: parent + '.fts_list'}
                 }
             })
           .state(parent + '.fts_new_alias', {
@@ -117,7 +117,7 @@ angular
             },
             data: {
               title: "Add Alias",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit', {
@@ -130,7 +130,7 @@ angular
             },
             data: {
               title: "Edit Index",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit_easy', {
@@ -143,7 +143,7 @@ angular
             },
             data: {
               title: "Edit Quick Index",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit_alias', {
@@ -156,7 +156,7 @@ angular
             },
             data: {
               title: "Edit Alias",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_clone', {
@@ -169,7 +169,7 @@ angular
             },
             data: {
               title: "Clone Index",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_clone_alias', {
@@ -182,7 +182,7 @@ angular
             },
             data: {
               title: "Clone Alias",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_search', {
@@ -196,7 +196,7 @@ angular
             },
             data: {
               title: "Search Results",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_details', {
@@ -209,7 +209,7 @@ angular
             },
             data: {
               title: "Index Details",
-              child: parent + '.fts_list'
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           });
       }
