@@ -120,10 +120,10 @@ ul.list-text li {
   position: relative;
   top: 1px;
   display: inline-block;
-  font-family: 'Courier';
   font-style: normal;
   font-weight: normal;
   line-height: 1;
+  font-size: .925rem;
 }
 .indexContainer .glyphicon-ok:before,
 .bleveModal .glyphicon-ok:before {

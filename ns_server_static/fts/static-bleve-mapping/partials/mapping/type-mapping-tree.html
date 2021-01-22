@@ -1,10 +1,12 @@
 <div>
   <div class="mappingHandle">
     <div class="mappingHandle_main">
-      <input type="checkbox"
-             ng-disabled="viewOnly || mapping._editing"
-             ng-model="mapping.enabled"/>
-
+      <input
+         type="checkbox"
+         ng-disabled="viewOnly || mapping._editing"
+         ng-model="mapping.enabled"
+         id="mapping-enabled">
+      <label class="checkbox margin-right-0" for="mapping-enabled"></label> <!-- this insanity is because the CSS expects to see an input paired with a label -->
       <span ng-if="mapping._kind == 'mappingType'">
         <i class="glyphicon glyphicon-file"></i></span>
       <span ng-if="mapping._kind != 'mappingType'">
@@ -72,16 +74,21 @@
         </select>
       </span>
 
-      <div ng-if="mapping._editing"
-           class="editArea editAreaMapping"
-           data-nodrag>
-        <label ng-if="mapping.enabled">
-          <input type="checkbox"
-                 ng-init="mapping._specifiedChecked = !mapping.dynamic"
-                 ng-model="mapping._specifiedChecked"
-                 ng-change="mapping.dynamic = !mapping._specifiedChecked"/>
-          only index specified fields
-        </label>
+      <div
+         ng-if="mapping._editing"
+         class="editArea editAreaMapping"
+         data-nodrag>
+        <span ng-if="mapping.enabled">
+          <input
+             type="checkbox"
+             ng-init="mapping._specifiedChecked = !mapping.dynamic"
+             ng-model="mapping._specifiedChecked"
+             ng-change="mapping.dynamic = !mapping._specifiedChecked"
+             id="specified">
+          <label for="specified" class="checkbox">
+            only index specified fields
+          </label>
+        </span>
       </div>
     </div>
 
@@ -218,25 +225,23 @@
                 </select>
               </label>
             </div>
-            <div ng-if="field.type != 'disabled'"
-                 class="editAreaFieldCheckboxes">
-              <label><input type="checkbox" ng-model="field.index"/>
-                index
-              </label>
-              <label><input type="checkbox" ng-model="field.store"/>
-                store
-              </label>
-              <label><input type="checkbox" ng-model="field.include_in_all"/>
-                include in <i>_all</i> field
-              </label>
-              <label ng-if="field.type == 'text'">
-                <input type="checkbox" ng-model="field.include_term_vectors"/>
-                include term vectors
-              </label>
-              <label ng-if="field.type != 'geopoint'">
-                <input type="checkbox" ng-model="field.docvalues"/>
-                docvalues
-              </label>
+            <div
+               ng-if="field.type != 'disabled'"
+               class="editAreaFieldCheckboxes">
+              <input type="checkbox" ng-model="field.index" id="field-index">
+              <label for="field-index">index</label>
+              <input type="checkbox" ng-model="field.store" id="field-store">
+              <label for="field-store">store</label>
+              <input type="checkbox" ng-model="field.include_in_all" id="field-includeall">
+              <label for="field-includeall">include in <i>_all</i> field</label>
+              <span ng-if="field.type == 'text'">
+                <input type="checkbox" ng-model="field.include_term_vectors" id="field-term">
+              <label for="field-term">include term vectors</label>
+              </span>
+              <span ng-if="field.type != 'geopoint'">
+                <input type="checkbox" ng-model="field.docvalues" id="field-docvalues">
+                <label for="field-docvalues">docvalues</label>
+              </span>
             </div>
           </div>
         </div>
