@@ -507,6 +507,44 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
         });
     }
 
+    $scope.obtainScope = function(indexDef) {
+        if (angular.isDefined(indexDef.params.doc_config.mode)) {
+            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
+                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
+                    if (indexDef.params.mapping.default_mapping.enabled) {
+                        return "_default";
+                    }
+                }
+                if (angular.isDefined(indexDef.params.mapping.types)) {
+                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
+                        return key.split(".")[0];
+                    }
+                }
+            }
+        }
+        return "_default"
+    }
+
+    $scope.obtainCollections = function(indexDef) {
+        if (angular.isDefined(indexDef.params.doc_config.mode)) {
+            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
+                let collectionNames = [];
+                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
+                    if (indexDef.params.mapping.default_mapping.enabled) {
+                        collectionNames.push("_default");
+                    }
+                }
+                if (angular.isDefined(indexDef.params.mapping.types)) {
+                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
+                        collectionNames.push(key.split(".")[1]);
+                    }
+                }
+                return collectionNames;
+            }
+        }
+        return ["_default"];
+    }
+
     http.get("/api/managerMeta").
     then (function(response) {
         var data = response.data;

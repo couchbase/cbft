@@ -28,6 +28,8 @@
       <tr>
         <th>index name</th>
         <th>bucket</th>
+        <th>scope</th>
+        <th>collections</th>
         <th>docs processed
           <span class="fa-stack icon-info raised"
                 uib-tooltip="Number of documents examined across active index partitions."
@@ -61,6 +63,16 @@
             {{indexDef.sourceName}}
           </td>
           <td>
+            {{obtainScope(indexDef)}}
+          </td>
+          <td class="table">
+            <span ng-repeat="collectionName in obtainCollections(indexDef)">
+              <div>
+                {{collectionName}}
+              </div>
+            </span>
+          </td>
+          <td>
             <span ng-bind="indexDocCount"></span>
           </td>
           <td>
@@ -69,7 +81,7 @@
         </tr>
         <!-- index details area ************************* -->
         <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
-          <td colspan="4">
+          <td colspan="6">
             <div class="fts-index-details">
               <div class="margin-bottom1">
                 <form class="forms">
