@@ -3127,8 +3127,6 @@ func RestartOnIndexDefChanges(
 	if configRequest.IndexDefnPrev.Name != configRequest.IndexDefnCur.Name ||
 		configRequest.IndexDefnPrev.SourceName !=
 			configRequest.IndexDefnCur.SourceName ||
-		configRequest.IndexDefnPrev.SourceType !=
-			configRequest.IndexDefnCur.SourceType ||
 		configRequest.IndexDefnPrev.SourceUUID !=
 			configRequest.IndexDefnCur.SourceUUID ||
 		!reloadableSourceParamsChange(configRequest.IndexDefnPrev.SourceParams,
