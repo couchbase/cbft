@@ -549,13 +549,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/query/index/{indexName}", "GET",
 		cbft.NewQuerySupervisorDetails())
 
+	handle(prefix+"/api/conciseOptions", "GET", cbft.NewConciseOptions(mgr))
+
 	router := exportMuxRoutesToHttprouter(muxrouter)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",
 		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewManagerOptionsExt(mgr)))
-
-	router.Handler("GET", prefix+"/api/conciseOptions",
-		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewConciseOptions(mgr)))
 
 	router.Handler("GET", prefix+"/api/query",
 		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQuerySupervisorDetails()))

@@ -148,4 +148,7 @@ cluster.admin.internal.stats!read
 
 RPC /Search
 cluster.collection[<sourceName>].fts!read
+
+GET /api/conciseOptions
+cluster.settings.fts!read
 `
