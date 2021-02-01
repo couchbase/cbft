@@ -414,13 +414,13 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 				continue
 			}
 
-			currSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
+			totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
 				indexDef, src, dst)
 			if err != nil {
 				continue
 			}
 
-			nsIndexStat["curr_seq_received"] = currSeqReceived
+			nsIndexStat["tot_seq_received"] = totSeqReceived
 			nsIndexStat["num_mutations_to_index"] = numMutationsToIndex
 		}
 	}
@@ -434,7 +434,7 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 
 // Utility function obtains the following for an index definition from
 // it's source's and destination stats:
-//   - curr_seq_received
+//   - tot_seq_received
 //   - num_mutations_to_index
 func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	srcPartitionSeqs map[string]cbgt.UUIDSeq,
@@ -444,7 +444,7 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 		return 0, 0, err
 	}
 
-	var currSeq, totSeq uint64
+	var totDestSeq, totSrcSeq uint64
 	for partitionId, dstUUIDSeq := range destPartitionSeqs {
 		var srcSeq uint64
 		for i := range collections {
@@ -468,16 +468,16 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 		}
 
 		if srcSeq > 0 {
-			totSeq += srcSeq
-			currSeq += dstUUIDSeq.Seq
+			totSrcSeq += srcSeq
+			totDestSeq += dstUUIDSeq.Seq
 		}
 	}
 
-	if totSeq >= currSeq {
-		return currSeq, totSeq - currSeq, nil
+	if totSrcSeq >= totDestSeq {
+		return totDestSeq, totSrcSeq - totDestSeq, nil
 	}
 
-	return currSeq, 0, nil
+	return totDestSeq, 0, nil
 }
 
 func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {

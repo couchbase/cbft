@@ -44,18 +44,18 @@ func (h *ProgressStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	docCount, _ := indexProgressStats["doc_count"].(uint64)
 	numMutationsToIndex, _ := indexProgressStats["num_mutations_to_index"].(uint64)
-	currSeqReceived, _ := indexProgressStats["curr_seq_received"].(uint64)
+	totSeqReceived, _ := indexProgressStats["tot_seq_received"].(uint64)
 
 	rv := struct {
 		Status              string `json:"status"`
 		DocCount            uint64 `json:"doc_count"`
 		NumMutationsToIndex uint64 `json:"num_mutations_to_index"`
-		CurrSeqReceived     uint64 `json:"curr_seq_received"`
+		TotSeqReceived      uint64 `json:"tot_seq_received"`
 	}{
 		Status:              "ok",
 		DocCount:            docCount,
 		NumMutationsToIndex: numMutationsToIndex,
-		CurrSeqReceived:     currSeqReceived,
+		TotSeqReceived:      totSeqReceived,
 	}
 	rest.MustEncode(w, rv)
 }
@@ -122,13 +122,13 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 		}
 	}
 
-	currSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
+	totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
 		indexDef, sourcePartitionSeqs, destPartitionSeqs)
 	if err != nil {
 		return rv, err
 	}
 
-	rv["curr_seq_received"] = currSeqReceived
+	rv["tot_seq_received"] = totSeqReceived
 	rv["num_mutations_to_index"] = numMutationsToIndex
 
 	return rv, nil
