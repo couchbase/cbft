@@ -40,9 +40,8 @@
         </th>
         <th>indexing progress</th>
       </tr>
-      <tbody ng-repeat="(indexName, indexDef) in indexDefs"
+      <tbody ng-repeat="indexDef in obtainFullTextIndexes()"
              class="has-hover"
-             ng-if="indexDef.type != 'fulltext-alias'"
              ng-click="expando(indexName)"
              ng-controller="indexViewController">
         <tr ng-class="{
@@ -201,6 +200,33 @@
         </tr>
       </tbody>
     </table>
+    <div class="row pagination">
+      <div class="simple-select">
+        <select ng-model="indexesPerPage"
+                ng-options="item for item in [5,10,20]"
+                ng-change="updateIndexesPerPage(indexesPerPage)">
+        </select>
+      </div>
+      <div ng-show="indexesNumPages > 1" class="col-lg-12 col-lg-offset-5">
+        <ul class="pagination">
+          <li ng-show="indexesPage > 1">
+            <a ng-click="jumpToIndexesPage(indexesPage-1, $event)" href="">
+              &laquo;
+            </a>
+          </li>
+          <li ng-repeat="i in indexesValidPages" ng-attr-class="{{i == indexesPage}}">
+            <a ng-show="i != indexesPage" href="" ng-click="jumpToIndexesPage(i, $event)">{{i}}</a>
+            <span ng-hide="i != indexesPage">{{i}}</span>
+          </li>
+          <li>
+            <a ng-show="indexesPage < indexesNumPages" ng-click="jumpToIndexesPage(indexesPage+1, $event)" href="">
+              &raquo;
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <br>
 
     <!-- table of aliases  ******************** -->
     <div class="row margin-bottom-half">

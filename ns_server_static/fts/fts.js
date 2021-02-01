@@ -288,6 +288,8 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     var done = false;
 
     $scope.indexViewController = function($scope, $state, $uibModal) {
+        $scope.indexName = $scope.indexDef.name;
+
         var stateParams = {indexName: $scope.indexName};
 
         $scope.jsonDetails = false;

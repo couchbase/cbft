@@ -28,6 +28,11 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
 
+    $scope.fullTextIndexes = [];
+    $scope.indexesPerPage = 10;
+    $scope.indexesPage = 1;
+    $scope.indexesNumPages = 1;
+
     $scope.refreshIndexNames = function() {
         $http.get('/api/index').then(function(response) {
             var data = response.data;
@@ -37,6 +42,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             var indexNames = [];
             if (data.indexDefs) {
                 $scope.indexDefs = data.indexDefs.indexDefs;
+                $scope.fullTextIndexes = [];
                 for (var indexName in data.indexDefs.indexDefs) {
                     indexNames.push(indexName);
 
@@ -45,10 +51,16 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
                         indexDef.paramsObj =
                             JSON.parse(JSON.stringify(indexDef.params));
                     }
+
+                    if ($scope.indexDefs[indexName].type == "fulltext-index") {
+                        $scope.fullTextIndexes.push($scope.indexDefs[indexName]);
+                    }
                 }
             }
-            indexNames.sort();
 
+            $scope.updateIndexesPerPage($scope.indexesPerPage);
+
+            indexNames.sort();
             $scope.indexNames = indexNames;
             $scope.indexNamesReady = true;
         }, function(response) {
@@ -57,6 +69,32 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
             $scope.errorMessage = errorMessage(data, response.code);
             $scope.errorMessageFull = data;
         });
+    };
+
+    $scope.obtainFullTextIndexes = function() {
+        let start = ($scope.indexesPage-1)*$scope.indexesPerPage;
+        return $scope.fullTextIndexes.slice(
+            start,
+            Math.min(start+$scope.indexesPerPage, $scope.fullTextIndexes.length)
+        );
+    };
+
+    $scope.updateIndexesPerPage = function(i) {
+        $scope.indexesPerPage = i;
+        $scope.indexesPage = 1;
+        $scope.indexesNumPages = Math.ceil($scope.fullTextIndexes.length/$scope.indexesPerPage);
+        $scope.indexesValidPages = [];
+        for(var i = 1; i <= $scope.indexesNumPages; i++) {
+            $scope.indexesValidPages.push(i);
+        }
+    };
+
+    $scope.jumpToIndexesPage = function(pageNum, $event) {
+        if ($event) {
+            $event.preventDefault();
+        }
+
+        $scope.indexesPage = pageNum;
     };
 
     $scope.deleteIndex = function(name) {
