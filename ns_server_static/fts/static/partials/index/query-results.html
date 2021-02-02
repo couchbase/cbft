@@ -9,7 +9,10 @@
       <span class="roundTook">({{results.roundTook}} server-side)</span>
     </h5>
     <div class="pull-right" ng-show="results.hits">
-      <input type="checkbox" ng-model="explainScoring"> Explain Scoring
+      <input type="checkbox"
+             id="explain-scoring"
+             ng-model="explainScoring">
+      <label for="explain-scoring">Explain Scoring</label>
     </div>
 
     <ol start="{{firstResult}}">
