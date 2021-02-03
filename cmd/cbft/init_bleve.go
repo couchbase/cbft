@@ -46,8 +46,7 @@ func initBleveOptions(options map[string]string) error {
 
 		bleveSearcher.DisjunctionMaxClauseCount = v
 	} else {
-		// default to 1024
-		bleveSearcher.DisjunctionMaxClauseCount = 1024
+		bleveSearcher.DisjunctionMaxClauseCount = cbft.DefaultBleveMaxClauseCount
 	}
 
 	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]

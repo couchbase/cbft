@@ -102,7 +102,7 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 
 		if options["bleveMaxClauseCount"] != "" {
 			bleveMaxClauseCount, err := strconv.Atoi(options["bleveMaxClauseCount"])
-			if err != nil || bleveMaxClauseCount < 0 {
+			if err != nil || bleveMaxClauseCount <= 0 {
 				return nil, fmt.Errorf("illegal value for bleveMaxClauseCount: '%v'",
 					options["bleveMaxClauseCount"])
 			}
@@ -110,7 +110,7 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 
 		if options["bleveMaxResultWindow"] != "" {
 			bleveMaxResultWindow, err := strconv.Atoi(options["bleveMaxResultWindow"])
-			if err != nil || bleveMaxResultWindow < 0 {
+			if err != nil || bleveMaxResultWindow <= 0 {
 				return nil, fmt.Errorf("illegal value for bleveMaxResultWindow: '%v'",
 					options["bleveMaxResultWindow"])
 			}
@@ -166,6 +166,12 @@ func (h *ConciseOptions) ServeHTTP(
 	bucketTypesAllowed := h.mgr.Options()["bucketTypesAllowed"]
 	hideUI := h.mgr.Options()["hideUI"]
 	vbuckets, _ := strconv.Atoi(h.mgr.Options()["vbuckets"])
+	bleveMaxResultWindow, _ := strconv.Atoi(h.mgr.Options()["bleveMaxResultWindow"])
+	bleveMaxClauseCount, _ := strconv.Atoi(h.mgr.Options()["bleveMaxClauseCount"])
+	if bleveMaxClauseCount == 0 {
+		// in case bleveMaxClauseCount wasn't updated by user
+		bleveMaxClauseCount = DefaultBleveMaxClauseCount
+	}
 
 	var collectionsSupport bool
 	if nodeDefs, _, err := cbgt.CfgGetNodeDefs(
@@ -176,19 +182,23 @@ func (h *ConciseOptions) ServeHTTP(
 	}
 
 	rv := struct {
-		Status             string `json:"status"`
-		MaxReplicasAllowed int    `json:"maxReplicasAllowed"`
-		BucketTypesAllowed string `json:"bucketTypesAllowed"`
-		HideUI             string `json:"hideUI"`
-		VBuckets           int    `json:"vbuckets"`
-		CollectionsSupport bool   `json:"collectionsSupport"`
+		Status               string `json:"status"`
+		MaxReplicasAllowed   int    `json:"maxReplicasAllowed"`
+		BucketTypesAllowed   string `json:"bucketTypesAllowed"`
+		HideUI               string `json:"hideUI"`
+		VBuckets             int    `json:"vbuckets"`
+		CollectionsSupport   bool   `json:"collectionsSupport"`
+		BleveMaxResultWindow int    `json:"bleveMaxResultWindow"`
+		BleveMaxClauseCount  int    `json:"bleveMaxClauseCount"`
 	}{
-		Status:             "ok",
-		MaxReplicasAllowed: maxReplicasAllowed,
-		BucketTypesAllowed: bucketTypesAllowed,
-		HideUI:             hideUI,
-		VBuckets:           vbuckets,
-		CollectionsSupport: collectionsSupport,
+		Status:               "ok",
+		MaxReplicasAllowed:   maxReplicasAllowed,
+		BucketTypesAllowed:   bucketTypesAllowed,
+		HideUI:               hideUI,
+		VBuckets:             vbuckets,
+		CollectionsSupport:   collectionsSupport,
+		BleveMaxResultWindow: bleveMaxResultWindow,
+		BleveMaxClauseCount:  bleveMaxClauseCount,
 	}
 	rest.MustEncode(w, rv)
 }

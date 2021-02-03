@@ -83,6 +83,8 @@ var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
 
+const DefaultBleveMaxClauseCount = 1024
+
 // represents the number of async batch workers per pindex
 var asyncBatchWorkerCount = 4 // need to make it configurable,
 
