@@ -94,19 +94,19 @@ angular
               parent: {name: 'Full Text Search', link: parent + '.fts_list'}
             }
           })
-            .state(parent + '.fts_new_easy', {
-                url: '/fts_new_easy/?indexType&sourceType',
-                views: {
-                    "main@app.admin": {
-                        controller: 'IndexNewCtrlFTEasy_NS',
-                        templateUrl: '../_p/ui/fts/fts_new_easy.html'
-                    }
-                },
-                data: {
-                  title: "Quick Index",
-                  parent: {name: 'Full Text Search', link: parent + '.fts_list'}
-                }
-            })
+          .state(parent + '.fts_new_easy', {
+            url: '/fts_new_easy/?indexType&sourceType',
+            views: {
+              "main@app.admin": {
+                controller: 'IndexNewCtrlFTEasy_NS',
+                templateUrl: '../_p/ui/fts/fts_new_easy.html'
+              }
+            },
+            data: {
+              title: "Quick Index",
+              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+            }
+          })
           .state(parent + '.fts_new_alias', {
             url: '/fts_new_alias/?indexType&sourceType',
             views: {
