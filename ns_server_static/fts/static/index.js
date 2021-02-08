@@ -8,7 +8,7 @@
 //  IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 //  express or implied. See the License for the specific language
 //  governing permissions and limitations under the License.
-import {errorMessage,
+import {errorMessage, confirmDialog,
         blevePIndexInitController, blevePIndexDoneController} from "/_p/ui/fts/fts.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
@@ -21,7 +21,7 @@ var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
 };
 
-function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
+function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibModal) {
     $scope.data = null;
     $scope.indexNames = [];
     $scope.indexNamesReady = false;
@@ -98,19 +98,21 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location) {
     };
 
     $scope.deleteIndex = function(name) {
-        if (!confirm("Are you sure you want to permanently delete the index '"
-                     + name + "'?")) {
-            return;
-        }
-
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        $http.delete('/api/index/' + name).then(function(response) {
-            $scope.refreshIndexNames();
-        }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
-            $scope.errorMessageFull = response.data;
+        confirmDialog(
+            $scope, $uibModal,
+            "Confirm Delete Index",
+            "Warning: Index `" + name + "` will be permanently deleted.",
+            "Delete Index"
+        ).then(function success() {
+            $http.delete('/api/index/' + name).then(function(response) {
+                $scope.refreshIndexNames();
+            }, function(response) {
+                $scope.errorMessage = errorMessage(response.data, response.code);
+                $scope.errorMessageFull = response.data;
+            });
         });
     };
 
@@ -411,16 +413,19 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        if (!confirm("Are you sure you want to change this setting?")) {
-            return;
-        }
-
-        $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).
-        then(function(response) {
-            $scope.loadIndexDetails();
-        }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
-            $scope.errorMessageFull = response.data;
+        confirmDialog(
+            $scope, $uibModal,
+            "Modify Index Control settings",
+            "This will change the `" + what + "` setting to `" + op + "` for index `" + indexName + "`.",
+            "Submit"
+        ).then(function success() {
+            $http.post('/api/index/' + indexName + "/" +  what + "Control/" + op).
+                then(function(response) {
+                    $scope.loadIndexDetails();
+                }, function(response) {
+                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessageFull = response.data;
+                });
         });
     };
 }

@@ -47,6 +47,7 @@ import {newEasyMappings, newEasyMapping} from "/_p/ui/fts/fts_easy_mapping.js";
 
 export default ftsAppName;
 export {errorMessage, blevePIndexInitController, blevePIndexDoneController};
+export {confirmDialog, alertDialog};
 
 angular
     .module(ftsAppName,
@@ -229,7 +230,8 @@ angular
 var updateDocCountIntervalMS = 5000;
 
 function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
-                          $log, $sce, $location, mnPoolDefault, mnPermissions) {
+                          $log, $sce, $location, $uibModal,
+                          mnPoolDefault, mnPermissions) {
     var $routeParams = $stateParams;
 
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
@@ -328,7 +330,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         return rv;
     }
 
-    var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location);
+    var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location, $uibModal);
 
     $scope.$on('$stateChangeStart', function() {
         done = true;
@@ -1873,10 +1875,14 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.deleteFieldInCollection = function(collection, path) {
-            var result = confirm("Are you sure you want to delete the field at path '" + path + "' in the '" + collection + "' collection?");
-            if (result) {
+            confirmDialog(
+                $scope, $uibModal,
+                "Confirm Delete Field",
+                "Warning: This will drop field at path `" + path + "` within collection `" + collection + "`.",
+                "Delete Field"
+            ).then(function success() {
                 $scope.easyMappings.deleteFieldFromCollection(collection, path);
-            }
+            });
             $scope.editField.path = "";
         }
 
@@ -1903,43 +1909,76 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
 
         $scope.bucketChanged = function(orig) {
             if (orig) {
-                var result = confirm("Changing the bucket will lose all configuration made with the current bucket, are you sure?");
-                if (!result) {
-                    $scope.newSourceName = orig;
-                    return;
-                }
-            }
-            listScopesForBucket($scope.newSourceName).then(function (scopes) {
-                $scope.scopeNames = scopes;
-                if (scopes.length > 0) {
-                    $scope.newScopeName = scopes[0];
-                }
-                $scope.scopeChanged();
-            });
+                confirmDialog(
+                    $scope, $uibModal,
+                    "Confirm Bucket Change",
+                    "Warning: All configurations made with the current bucket will be lost.",
+                    "Update Bucket"
+                ).then(function success() {
+                    listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                        $scope.scopeNames = scopes;
+                        if (scopes.length > 0) {
+                            $scope.newScopeName = scopes[0];
+                        }
+                        $scope.scopeChanged();
+                    });
 
-            $scope.easyMappings = newEasyMappings();
-            $scope.editFields = newEditFields();
-            $scope.parsedDocs = newParsedDocs();
+                    $scope.easyMappings = newEasyMappings();
+                    $scope.editFields = newEditFields();
+                    $scope.parsedDocs = newParsedDocs();
+                }, function error() {
+                    $scope.newSourceName = orig;
+                });
+            } else {
+                listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                    $scope.scopeNames = scopes;
+                    if (scopes.length > 0) {
+                        $scope.newScopeName = scopes[0];
+                    }
+                    $scope.scopeChanged();
+                });
+
+                $scope.easyMappings = newEasyMappings();
+                $scope.editFields = newEditFields();
+                $scope.parsedDocs = newParsedDocs();
+            }
         };
 
         $scope.scopeChanged = function(orig) {
             if (orig) {
-                var result = confirm("Changing the scope will lose all configuration made with the current bucket and scope, are you sure?");
-                if (!result) {
-                    $scope.newScopeName = orig;
-                    return;
-                }
-            }
-            $scope.listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
-                $scope.collectionNames = collections;
-                if (collections.length > 0) {
-                    $scope.expando(collections[0]);
-                }
-            });
+                confirmDialog(
+                    $scope, $uibModal,
+                    "Confirm Scope Change",
+                    "Warning: All configurations made with the current scope will be lost.",
+                    "Update Scope"
+                ).then(function success() {
+                    $scope.listCollectionsForBucketScope($scope.newSourceName,
+                        $scope.newScopeName).then(function (collections) {
+                        $scope.collectionNames = collections;
+                        if (collections.length > 0) {
+                            $scope.expando(collections[0]);
+                        }
+                    });
 
-            $scope.easyMappings = newEasyMappings();
-            $scope.editFields = newEditFields();
-            $scope.parsedDocs = newParsedDocs();
+                    $scope.easyMappings = newEasyMappings();
+                    $scope.editFields = newEditFields();
+                    $scope.parsedDocs = newParsedDocs();
+                }, function error() {
+                    $scope.newScopeName = orig;
+                });
+            } else {
+                $scope.listCollectionsForBucketScope($scope.newSourceName,
+                    $scope.newScopeName).then(function (collections) {
+                        $scope.collectionNames = collections;
+                        if (collections.length > 0) {
+                            $scope.expando(collections[0]);
+                        }
+                    });
+
+                $scope.easyMappings = newEasyMappings();
+                $scope.editFields = newEditFields();
+                $scope.parsedDocs = newParsedDocs();
+            }
         };
 
         $scope.expando = function(collectionName) {
@@ -2124,4 +2163,28 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             };
         }
     }
+}
+
+// -------------------------------------------------------
+
+function confirmDialog($scope, $uibModal, title, desc, confirmMessage) {
+    var innerScope = $scope.$new(true);
+    innerScope.title = title;
+    innerScope.desc = desc;
+    innerScope.confirmMessage = confirmMessage;
+
+    return $uibModal.open({
+        templateUrl: '/_p/ui/fts/confirm_dialog.html',
+        scope: innerScope
+    }).result;
+}
+
+function alertDialog($scope, $uibModal, title, desc) {
+    var innerScope = $scope.$new(true);
+    innerScope.title = title;
+    innerScope.desc = desc;
+    return $uibModal.open({
+        templateUrl: '/_p/ui/fts/alert_dialog.html',
+        scope: innerScope
+    }).result;
 }

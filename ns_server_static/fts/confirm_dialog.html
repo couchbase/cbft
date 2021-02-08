@@ -1,0 +1,21 @@
+<div class="dialog-small">
+  <div class="panel-header">
+    <h2>{{title}}</h2>
+  </div>
+  <div class="panel-content">
+    <div class="row flex-left">
+      <span class="icon fa-warning fa-2x red-3"></span>
+      <p>
+        {{desc}}
+      </p>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <a ng-click="$dismiss('cancel')">Cancel</a>
+    <button
+       type="submit"
+       ng-click="$close('ok')">
+        {{confirmMessage}}
+    </button>
+  </div>
+</div>

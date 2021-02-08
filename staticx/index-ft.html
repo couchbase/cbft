@@ -159,13 +159,13 @@ angular.module('cbgtApp').
 // ----------------------------------------------
 
 function IndexesCtrlFT($scope, $http, $routeParams,
-                       $log, $sce, $location) {
+                       $log, $sce, $location, $uibModal, $rootScope) {
     $scope.searchBarRun = function(indexName, q) {
         $location.path("/indexes/" + indexName + "/query").search("q", q);
     }
 
     return IndexesCtrl($scope, $http, $routeParams,
-                       $log, $sce, $location);
+                       $log, $sce, $location, $uibModal, $rootScope);
 }
 
 function IndexNewCtrlFT($scope, $http, $route, $routeParams,
