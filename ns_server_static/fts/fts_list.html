@@ -48,12 +48,11 @@
                       'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                       'no-stroke': detailsOpened[node.hostname]
                       }">
-          <td
-            class="cbui-tablerow-title ellipsis"
-            uib-tooltip="{{indexName}}"
-            tooltip-append-to-body="true"
-            tooltip-placement="auto top"
-            tooltip-trigger="'mouseenter'">{{indexName}}</td>
+          <td class="cbui-tablerow-title ellipsis">
+            <span>
+              {{indexName}}
+            </span>
+          </td>
           <td>
             <span ng-if="indexDef.sourceType != 'couchbase' && indexDef.sourceType != 'gocbcore'">
               {{indexDef.sourceType}}
@@ -65,10 +64,16 @@
             {{obtainScope(indexDef)}}
           </td>
           <td class="table">
-            <span ng-repeat="collectionName in obtainCollections(indexDef)">
-              <div>
-                {{collectionName}}
-              </div>
+            <span ng-repeat="collectionName in obtainCollections(indexDef) | limitTo: 5">
+                <div>{{collectionName}}</div>
+            </span>
+             &nbsp;
+            <span class="text-fine nowrap">
+              <a
+                 uib-tooltip="{{obtainCollections(indexDef)}}"
+                 tooltip-append-to-body="true"
+                 tooltip-placement="auto right"
+                 tooltip-trigger="mouseenter">{{obtainCollections(indexDef).length}} total</a>
             </span>
           </td>
           <td>
