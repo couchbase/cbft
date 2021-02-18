@@ -78,7 +78,7 @@ func BenchmarkListLongerThan(b *testing.B) {
 		// reads' routine
 		go func() {
 			for i := 0; i < 50; i++ {
-				_ = querySupervisor.ListLongerThan(0, "")
+				_, _ = querySupervisor.ListLongerThanWithQueryCount(0, "")
 			}
 			done <- struct{}{}
 		}()

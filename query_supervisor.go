@@ -39,7 +39,6 @@ type QuerySupervisor struct {
 	queryMap         map[uint64]*QuerySupervisorContext
 	indexAccessTimes map[string]time.Time
 	id               uint64
-	removed          uint64
 }
 
 var querySupervisor *QuerySupervisor
@@ -71,17 +70,15 @@ func (qs *QuerySupervisor) DeleteEntry(id uint64) {
 	qs.m.Lock()
 	if _, exists := qs.queryMap[id]; exists {
 		delete(qs.queryMap, id)
-		qs.removed++
 	}
 	qs.m.Unlock()
 }
 
 func (qs *QuerySupervisor) Count() uint64 {
 	qs.m.RLock()
-	removed := qs.removed
-	added := qs.id
+	count := uint64(len(qs.queryMap))
 	qs.m.RUnlock()
-	return (added - removed)
+	return count
 }
 
 func (qs *QuerySupervisor) GetLastAccessTimeForIndex(name string) string {
@@ -100,12 +97,12 @@ type RunningQueryDetails struct {
 	ExecutionTime string `json:"executionTime"`
 }
 
-// ListLongerThan filters the active running queries against the
-// given duration and the index name.
+// ListLongerThanWithQueryCount filters the active running queries against the
+// given duration and the index name along with the total active query count.
 // TODO - Incoming queries shouldn't get blocked due to lock deprivations
 // from the frequent read operations.
-func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration,
-	indexName string) (queryMap map[uint64]*RunningQueryDetails) {
+func (qs *QuerySupervisor) ListLongerThanWithQueryCount(longerThan time.Duration,
+	indexName string) (queryMap map[uint64]*RunningQueryDetails, activeQueryCount int) {
 	var i int
 	qs.m.RLock()
 	// upfront initialisations to save frequent allocator trips.
@@ -122,9 +119,10 @@ func (qs *QuerySupervisor) ListLongerThan(longerThan time.Duration,
 			i++
 		}
 	}
+	activeQueryCount = len(qs.queryMap)
 	qs.m.RUnlock()
 
-	return queryMap
+	return queryMap, activeQueryCount
 }
 
 func (qs *QuerySupervisor) ExecutionTime(id uint64) (time.Duration, bool) {
@@ -171,8 +169,8 @@ func (qss *QuerySupervisorDetails) ServeHTTP(
 		longerThan = duration
 	}
 
-	queryCount := querySupervisor.Count()
-	queryMap := querySupervisor.ListLongerThan(longerThan, indexName)
+	queryMap, queryCount := querySupervisor.ListLongerThanWithQueryCount(
+		longerThan, indexName)
 
 	rv := struct {
 		Status                      string                          `json:"status"`
@@ -181,7 +179,7 @@ func (qss *QuerySupervisorDetails) ServeHTTP(
 		ActiveQueryMap              map[uint64]*RunningQueryDetails `json:"activeQueryMap"`
 	}{
 		Status:           "ok",
-		ActiveQueryCount: queryCount,
+		ActiveQueryCount: uint64(queryCount),
 		ActiveQueryMap:   queryMap,
 	}
 
