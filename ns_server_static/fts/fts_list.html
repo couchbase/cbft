@@ -61,16 +61,16 @@
           <td>
             {{obtainScope(indexDef)}}
           </td>
-          <td class="table">
-            <span ng-repeat="collectionName in obtainCollections(indexDef) | limitTo: 8" class="comma-list">{{collectionName}}</span>
-             &nbsp;
-            <span class="text-fine nowrap">
-              <a
-                 uib-tooltip="'{{obtainCollections(indexDef)}}'"
-                 tooltip-append-to-body="true"
-                 tooltip-placement="auto right"
-                 tooltip-trigger="mouseenter">{{obtainCollections(indexDef).length}} total</a>
-            </span>
+          <td>
+            <div ng-if="obtainCollections(indexDef).length == 1">
+              {{obtainCollections(indexDef)[0]}}
+            </div>
+            <div ng-if="obtainCollections(indexDef).length > 1"
+                 class="max-height-60-box">
+              <div ng-repeat="collectionName in obtainCollections(indexDef)">
+                {{collectionName}}
+              </div>
+            </div>
           </td>
           <td>
             <span ng-bind="docCount"></span>

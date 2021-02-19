@@ -697,3 +697,24 @@ select.midwide {
 .CodeMirror-activeline-background {
   background-color: #b3cfef;
 }
+
+.max-height-60-box {
+  border: 1px solid silver;
+  max-height: 60px;
+  overflow: auto;
+  overflow-y: scroll;
+}
+.max-height-60-box::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+.max-height-60-box::-webkit-scrollbar:vertical {
+  width: 11px;
+}
+.max-height-60-box::-webkit-scrollbar:horizontal {
+  height: 11px;
+}
+.max-height-60-box::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 2px solid white;
+  background-color: rgba(0, 0, 0, .5);
+}
