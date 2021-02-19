@@ -1766,15 +1766,15 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
+	t.m.Lock()
+	defer t.m.Unlock()
+
 	// if verbose stats is requested then send most of the index stats.
 	if verbose {
 		_, err = w.Write(prefixPIndexStoreStats)
 		if err != nil {
 			return
 		}
-
-		t.m.Lock()
-		defer t.m.Unlock()
 
 		t.stats.WriteJSON(w)
 
