@@ -209,7 +209,8 @@
             <!-- NUMBER OF PINDEXES *********************** -->
             <label for="inputNumPindexes" class="inline">Index Partitions</label>
             <span class="fa-stack icon-info"
-                  uib-tooltip="Number of index partitions to cover all vbuckets." tooltip-placement="auto right">
+                  uib-tooltip="Partitioning the index allows multiple nodes running the search service to share indexing and query workload."
+                  tooltip-placement="auto right">
               <span class="icon fa-circle-thin fa-stack-2x"></span>
               <span class="icon fa-info fa-stack-1x"></span>
             </span>
@@ -217,6 +218,10 @@
                    type="number"
                    class="width-1">
           </div>
+        </div>
+
+        <div>
+          See documentation for creating indexes <a href="https://docs.couchbase.com/server/current/fts/fts-creating-indexes.html" target="_blank">here</a>.
         </div>
 
         <!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->

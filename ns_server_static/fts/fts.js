@@ -1120,8 +1120,10 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                             $scope.numPIndexes = newPlanParamsObj["indexPartitions"];
                         }
                         if ($scope.numPIndexes == 0) {
-                            var maxPartitionsPerPIndex = newPlanParamsObj["maxPartitionsPerPIndex"];
-                            $scope.numPIndexes = Math.ceil($scope.vbuckets / maxPartitionsPerPIndex);
+                            // Initialize maxPartitionsPerPIndex to the vbucket count;
+                            // and indexPartitions to 1.
+                            var maxPartitionsPerPIndex = $scope.vbuckets;
+                            $scope.numPIndexes = 1;
                         }
                     } catch (e) {
                         console.log("blevePIndexInitController numPlanParams", initKind, e)
