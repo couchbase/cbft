@@ -277,11 +277,9 @@ function newEasyMapping() {
 
             if (field.type == "text") {
                 editField.type = "text";
-                editField.analyzer = "standard";
+                editField.analyzer = field.analyzer;
                 if (field.analyzer == "keyword") {
                     editField.identifier = true;
-                } else {
-                    editField.analyzer = field.analyzer;
                 }
             } else if (field.type == "number") {
                 editField.type = "number";
