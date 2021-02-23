@@ -1031,10 +1031,13 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 	kvConfig, _, _ := bleveRuntimeConfigMap(bleveParams)
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
 	// where perhaps there was a previous missing or race-y Close().
+	startTime := time.Now()
+	log.Printf("bleve: start open using: %s", path)
 	bindex, err := bleve.OpenUsing(path, kvConfig)
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
 
 	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
