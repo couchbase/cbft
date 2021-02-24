@@ -163,7 +163,6 @@ func main() {
 	options := cmd.ParseOptions(flags.Options, "CBFT_ENV_OPTIONS",
 		map[string]string{
 			cbgt.FeedAllotmentOption: cbgt.FeedAllotmentOnePerPIndex,
-			"managerLoadDataDir":     "async",
 			"authType":               flags.AuthType,
 		})
 
