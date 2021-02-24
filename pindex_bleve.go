@@ -894,6 +894,7 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
 		"numSnapshotsToKeep":     3,
 		"forceSegmentType":       "zap",
+		"bolt_timeout":           "30s",
 	}
 	for k, v := range bleveParams.Store {
 		if k == "segmentVersion" {
