@@ -43,19 +43,16 @@ func (h *ProgressStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 
 	docCount, _ := indexProgressStats["doc_count"].(uint64)
-	numMutationsToIndex, _ := indexProgressStats["num_mutations_to_index"].(uint64)
 	totSeqReceived, _ := indexProgressStats["tot_seq_received"].(uint64)
 
 	rv := struct {
-		Status              string `json:"status"`
-		DocCount            uint64 `json:"doc_count"`
-		NumMutationsToIndex uint64 `json:"num_mutations_to_index"`
-		TotSeqReceived      uint64 `json:"tot_seq_received"`
+		Status         string `json:"status"`
+		DocCount       uint64 `json:"doc_count"`
+		TotSeqReceived uint64 `json:"tot_seq_received"`
 	}{
-		Status:              "ok",
-		DocCount:            docCount,
-		NumMutationsToIndex: numMutationsToIndex,
-		TotSeqReceived:      totSeqReceived,
+		Status:         "ok",
+		DocCount:       docCount,
+		TotSeqReceived: totSeqReceived,
 	}
 	rest.MustEncode(w, rv)
 }
@@ -82,20 +79,7 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 	rv := map[string]interface{}{}
 	rv["doc_count"] = count
 
-	sourcePartitionSeqs := GetSourcePartitionSeqs(SourceSpec{
-		SourceType:   indexDef.SourceType,
-		SourceName:   indexDef.SourceName,
-		SourceUUID:   indexDef.SourceUUID,
-		SourceParams: indexDef.SourceParams,
-		Server:       mgr.Server(),
-	})
-
-	if sourcePartitionSeqs == nil {
-		return rv, nil
-	}
-
 	destPartitionSeqs := map[string]cbgt.UUIDSeq{}
-
 	_, pindexes := mgr.CurrentMaps()
 	for _, pindex := range pindexes {
 		if pindex.IndexName != indexDef.Name {
@@ -122,14 +106,13 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 		}
 	}
 
-	totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
-		indexDef, sourcePartitionSeqs, destPartitionSeqs)
+	totSeqReceived, _, err := obtainDestSeqsForIndex(
+		indexDef, nil, destPartitionSeqs)
 	if err != nil {
 		return rv, err
 	}
 
 	rv["tot_seq_received"] = totSeqReceived
-	rv["num_mutations_to_index"] = numMutationsToIndex
 
 	return rv, nil
 }

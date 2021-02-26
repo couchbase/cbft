@@ -439,14 +439,24 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	srcPartitionSeqs map[string]cbgt.UUIDSeq,
 	destPartitionSeqs map[string]cbgt.UUIDSeq) (uint64, uint64, error) {
-	scope, collections, err := GetScopeCollectionsFromIndexDef(indexDef)
-	if err != nil {
-		return 0, 0, err
+	var scope string
+	var collections []string
+
+	// obtain collections of interest from index definition only if
+	// srcPartitionSeqs was provided; skip determining source stats for
+	// the index otherwise
+	if len(srcPartitionSeqs) > 0 {
+		var err error
+		scope, collections, err = GetScopeCollectionsFromIndexDef(indexDef)
+		if err != nil {
+			return 0, 0, err
+		}
 	}
 
 	var totDestSeq, totSrcSeq uint64
 	for partitionId, dstUUIDSeq := range destPartitionSeqs {
 		var srcSeq uint64
+		// the following loop is skipped if srcPartitionSeqs isn't available
 		for i := range collections {
 			uuidHighSeq, exists :=
 				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]+":high_seqno"]
@@ -465,12 +475,14 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 			if uuidHighSeq.Seq > uuidStartSeq.Seq && uuidHighSeq.Seq > srcSeq {
 				srcSeq = uuidHighSeq.Seq
 			}
+
 		}
 
 		if srcSeq > 0 {
 			totSrcSeq += srcSeq
-			totDestSeq += dstUUIDSeq.Seq
 		}
+
+		totDestSeq += dstUUIDSeq.Seq
 	}
 
 	if totSrcSeq >= totDestSeq {
