@@ -235,8 +235,8 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 
 	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
 
-	// Keyed by indexName, sub-key is source partition id.
-	indexNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
+	// Keyed by sourceName, sub-key is source partition id.
+	sourceNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
 	// Keyed by indexName, sub-key is source partition id.
 	indexNameToDestPartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
@@ -312,20 +312,22 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 		nsIndexStat["last_access_time"] =
 			querySupervisor.GetLastAccessTimeForIndex(indexName)
 
-		feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
-		if !exists || feedType == nil || feedType.PartitionSeqs == nil {
-			continue
-		}
+		if _, exists := sourceNameToSourcePartitionSeqs[indexDef.SourceName]; !exists {
+			feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
+			if !exists || feedType == nil || feedType.PartitionSeqs == nil {
+				continue
+			}
 
-		partitionSeqs := GetSourcePartitionSeqs(SourceSpec{
-			SourceType:   indexDef.SourceType,
-			SourceName:   indexDef.SourceName,
-			SourceUUID:   indexDef.SourceUUID,
-			SourceParams: indexDef.SourceParams,
-			Server:       mgr.Server(),
-		})
-		if partitionSeqs != nil {
-			indexNameToSourcePartitionSeqs[indexName] = partitionSeqs
+			partitionSeqs := GetSourcePartitionSeqs(SourceSpec{
+				SourceType:   indexDef.SourceType,
+				SourceName:   indexDef.SourceName,
+				SourceUUID:   indexDef.SourceUUID,
+				SourceParams: indexDef.SourceParams,
+				Server:       mgr.Server(),
+			})
+			if partitionSeqs != nil {
+				sourceNameToSourcePartitionSeqs[indexName] = partitionSeqs
+			}
 		}
 	}
 
@@ -404,7 +406,7 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	for indexName, indexDef := range indexDefsMap {
 		nsIndexStat, ok := nsIndexStats[indexDef.SourceName+":"+indexName]
 		if ok {
-			src := indexNameToSourcePartitionSeqs[indexName]
+			src := sourceNameToSourcePartitionSeqs[indexDef.SourceName]
 			if src == nil {
 				continue
 			}
