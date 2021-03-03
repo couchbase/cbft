@@ -466,15 +466,9 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 				continue
 			}
 
-			uuidStartSeq, exists :=
-				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]+":start_seqno"]
-			if !exists {
-				continue
-			}
-
 			// account this collection's high seq only if it actually holds
 			// any items and is greater than the last accounted value
-			if uuidHighSeq.Seq > uuidStartSeq.Seq && uuidHighSeq.Seq > srcSeq {
+			if uuidHighSeq.Seq > srcSeq {
 				srcSeq = uuidHighSeq.Seq
 			}
 
