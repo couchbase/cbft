@@ -680,6 +680,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 				log.Printf("main: cbauth_service registering... done")
 			}()
 		}
+
+		router.Handler("GET", prefix+"/api/ctlmanager",
+		cbft.NewAuthVersionHandler(mgr, nil, ctl.NewCtlManagerStatusHandler(ctlMgr)))
 	}
 
 	// ------------------------------------------------

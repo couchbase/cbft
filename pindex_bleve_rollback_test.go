@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 	"github.com/couchbase/moss"
 )
 
@@ -88,6 +89,10 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 	rollbackToSeq uint64,
 	rollbackDesc string,
 	afterRollbackCountResponseMatch map[string]bool, indexType string) {
+
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	BlevePIndexAllowMossPrev := BlevePIndexAllowMoss
 	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
 	bleveConfigDefaultIndexTypePrev := bleve.Config.DefaultIndexType
@@ -109,6 +114,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 		bleve.Config.DefaultKVStore = bleveConfigDefaultKVStorePrev
 		bleve.Config.DefaultIndexType = bleveConfigDefaultIndexTypePrev
 		bleveMoss.RegistryCollectionOptions["fts"] = bleveMossRegistryCollectionOptionsFTSPrev
+		rest.RequestProxyStubFunc = nil
 	}()
 
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
