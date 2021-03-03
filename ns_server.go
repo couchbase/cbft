@@ -326,7 +326,7 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 				Server:       mgr.Server(),
 			})
 			if partitionSeqs != nil {
-				sourceNameToSourcePartitionSeqs[indexName] = partitionSeqs
+				sourceNameToSourcePartitionSeqs[indexDef.SourceName] = partitionSeqs
 			}
 		}
 	}
