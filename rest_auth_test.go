@@ -128,8 +128,15 @@ func (s *stubDefinitionLookuper) GetIndexDefs(refresh bool) (
 }
 
 func TestSourceNamesFromReq(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
+
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -280,8 +287,14 @@ func TestSourceNamesFromReq(t *testing.T) {
 }
 
 func TestPreparePerms(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}

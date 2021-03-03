@@ -26,6 +26,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 
 	"github.com/couchbase/moss"
 
@@ -142,6 +143,12 @@ func (test *RESTHandlerTest) check(t *testing.T,
 
 func testRESTHandlers(t *testing.T,
 	tests []*RESTHandlerTest, router *mux.Router) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
+	defer func() {
+		rest.RequestProxyStubFunc = nil
+	}()
 	for _, test := range tests {
 		if test.Before != nil {
 			test.Before()
@@ -859,8 +866,14 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 }
 
 func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -2155,8 +2168,14 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	cbgt.Cfg, *cbgt.Manager, *mux.Router) {
 	cfg := cbgt.NewCfgMem()
 
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir0)
+	defer func() {
+		os.RemoveAll(emptyDir0)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	meh0 := &TestMEH{}
 	options0 := map[string]string{"maxReplicasAllowed": "1"}
@@ -2716,8 +2735,14 @@ func TestNodePlanParams(t *testing.T) {
 }
 
 func TestHandlersForIndexControl(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -2958,8 +2983,14 @@ func TestHandlersForIndexControl(t *testing.T) {
 }
 
 func TestMultiFeedStats(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -3028,8 +3059,14 @@ func TestMultiFeedStats(t *testing.T) {
 }
 
 func TestIndexDefWithJSON(t *testing.T) {
+	rest.RequestProxyStubFunc = func() bool {
+		return false
+	}
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.RequestProxyStubFunc = nil
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
