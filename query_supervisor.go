@@ -172,21 +172,26 @@ func (qss *QuerySupervisorDetails) ServeHTTP(
 	queryMap, queryCount := querySupervisor.ListLongerThanWithQueryCount(
 		longerThan, indexName)
 
-	rv := struct {
-		Status                      string                          `json:"status"`
-		ActiveQueryCount            uint64                          `json:"activeQueryCount"`
-		ActiveLongRunningQueryCount *int                            `json:"activeLongRunningQueryCount,omitempty"`
-		ActiveQueryMap              map[uint64]*RunningQueryDetails `json:"activeQueryMap"`
-	}{
-		Status:           "ok",
-		ActiveQueryCount: uint64(queryCount),
-		ActiveQueryMap:   queryMap,
+	type filteredQueryStats struct {
+		IndexName string `json:"indexName,omitempty"`
+		LongerThan string `json:"longerThan,omitempty"`
+		QueryCount uint64                            `json:"queryCount"`
+		QueryMap              map[uint64]*RunningQueryDetails `json:"queryMap"`
 	}
 
-	var count int
-	if longerThan.Seconds() > 0 {
-		count = len(queryMap)
-		rv.ActiveLongRunningQueryCount = &count
+	rv := struct {
+		Status                string `json:"status"`
+		TotalActiveQueryCount uint64 `json:"totalActiveQueryCount"`
+		FilteredActiveQueries         filteredQueryStats `json:"filteredActiveQueries"`
+	}{
+		Status:                "ok",
+		TotalActiveQueryCount: uint64(queryCount),
+		FilteredActiveQueries: filteredQueryStats{
+			IndexName: indexName,
+			LongerThan: params,
+			QueryCount: uint64(len(queryMap)),
+			QueryMap:   queryMap,
+		},
 	}
 
 	rest.MustEncode(w, rv)
