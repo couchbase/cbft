@@ -694,23 +694,22 @@ func getTestCache() *collMetaFieldCache {
 	cache["ftsIndexB$colB"] = "_$suid_$cuidB"
 	cache["ftsIndexB$colC"] = "_$suid_$cuidC"
 
-	indexCache := make(map[string]map[uint32]string)
-	cmap := make(map[uint32]string)
-	cmap[1] = "colA"
-	cmap[2] = "colB"
-	indexCache["ftsIndexA"] = cmap
-	cmap = make(map[uint32]string)
-	cmap[1] = "colA"
-	cmap[2] = "colB"
-	cmap[3] = "colC"
-	indexCache["ftsIndexB"] = cmap
+	indexCache := make(map[string]*sourceDetails)
+	sdm := &sourceDetails{scopeName: "test",
+		collUIDNameMap: make(map[uint32]string)}
+	sdm.collUIDNameMap[1] = "colA"
+	sdm.collUIDNameMap[2] = "colB"
+	indexCache["ftsIndexA"] = sdm
+	sdm = &sourceDetails{scopeName: "test",
+		collUIDNameMap: make(map[uint32]string)}
+	sdm.collUIDNameMap[1] = "colA"
+	sdm.collUIDNameMap[2] = "colB"
+	sdm.collUIDNameMap[3] = "colC"
+	indexCache["ftsIndexB"] = sdm
 
-	testCache := &collMetaFieldCache{
-		cache:            make(map[string]string),
-		collUIDNameCache: make(map[string]map[uint32]string),
-	}
+	testCache := &collMetaFieldCache{}
 	testCache.cache = cache
-	testCache.collUIDNameCache = indexCache
+	testCache.sourceDetailsMap = indexCache
 	return testCache
 }
 

@@ -195,6 +195,19 @@ func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 
 		docConfigMode, _, _, _ := jsonparser.Get(docConfig, "mode")
 		if strings.HasPrefix(string(docConfigMode), ConfigModeCollPrefix) {
+			// look up the scope/collection details from the cache.
+			sdm, _ := metaFieldValCache.getSourceDetailsMap(indexDef.Name)
+			if sdm != nil && len(sdm.collUIDNameMap) > 0 {
+				sourceNames := make([]string, len(sdm.collUIDNameMap))
+				i := 0
+				for _, colName := range sdm.collUIDNameMap {
+					sourceNames[i] = indexDef.SourceName + ":" + sdm.scopeName + ":" + colName
+					i++
+				}
+				return sourceNames, nil
+			}
+
+			// parse it again if the cache is empty like that in a unit test.
 			bmapping, _, _, err := jsonparser.Get(bleveParamBytes, "mapping")
 			if err != nil {
 				return nil, err

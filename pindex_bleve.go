@@ -232,9 +232,9 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 	// bail out early if the index is a single collection index as there
 	// won't be any docID decorations done during indexing as well as the
 	// collection scoping during the querying also redundant.
-	var collUIDNameMap map[uint32]string
-	if collUIDNameMap, ok = cache.getCollUIDNameMap(indexName); !ok ||
-		len(collUIDNameMap) <= 1 {
+	var sdm *sourceDetails
+	if sdm, ok = cache.getSourceDetailsMap(indexName); !ok ||
+		len(sdm.collUIDNameMap) <= 1 {
 		return nil, q
 	}
 
@@ -248,7 +248,7 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 			hash[cname] = struct{}{}
 		}
 		newIDs := make([]string, 0, len(decoratedQuery.IDs))
-		for cuid, cname := range collUIDNameMap {
+		for cuid, cname := range sdm.collUIDNameMap {
 			if _, ok := hash[cname]; !ok && len(hash) > 0 {
 				continue
 			}
@@ -269,7 +269,7 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 	djnq := query.NewDisjunctionQuery(nil)
 
 	for _, col := range sr.Collections {
-		queryStr := cache.getValue(indexName, col)
+		queryStr := cache.getMetaFieldValue(indexName, col)
 		mq := query.NewMatchQuery(queryStr)
 		mq.Analyzer = "keyword"
 		mq.SetField(CollMetaFieldName)
@@ -755,6 +755,9 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 
 	// Reset gRPC focusStats of the index
 	GrpcPathStats.ResetFocusStats(indexDef.Name)
+
+	// reset the metaFieldValCache
+	metaFieldValCache.reset(indexDef.Name)
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
@@ -868,7 +871,8 @@ func initBleveDocConfigs(indexName, sourceName string,
 			cmf.typeMappings = append(cmf.typeMappings, coll.typeMapping)
 		}
 
-		metaFieldValCache.setValue(indexName, coll.Name, suid, cuid, multiCollIndex)
+		metaFieldValCache.setValue(indexName, scope.Name, suid,
+			coll.Name, cuid, multiCollIndex)
 	}
 	return rv
 }
@@ -1328,8 +1332,8 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 		if len(searchResult.Hits) > 0 {
 			// if this is a multi collection index, then strip the collection UID
 			// from the hit ID and fill the details of source collection
-			if collNameMap, multiCollIndex :=
-				metaFieldValCache.getCollUIDNameMap(indexName); multiCollIndex {
+			if sdm, multiCollIndex :=
+				metaFieldValCache.getSourceDetailsMap(indexName); multiCollIndex {
 				for _, hit := range searchResult.Hits {
 					if _, exists := hit.Fields["_$c"]; exists {
 						// collection name has already been retrieved for this hit;
@@ -1338,7 +1342,7 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 					}
 					idBytes := []byte(hit.ID)
 					cuid := binary.LittleEndian.Uint32(idBytes[:4])
-					if collName, ok := collNameMap[cuid]; ok {
+					if collName, ok := sdm.collUIDNameMap[cuid]; ok {
 						hit.ID = string(idBytes[4:])
 						if hit.Fields == nil {
 							hit.Fields = make(map[string]interface{})

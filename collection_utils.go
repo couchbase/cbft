@@ -28,10 +28,15 @@ const defaultScopeName = "_default"
 
 const defaultCollName = "_default"
 
+type sourceDetails struct {
+	scopeName      string
+	collUIDNameMap map[uint32]string // coll uid => coll name
+}
+
 type collMetaFieldCache struct {
 	m                sync.RWMutex
-	cache            map[string]string            // indexName$collName => _$suid_$cuid
-	collUIDNameCache map[string]map[uint32]string // indexName => coll uid => coll name
+	cache            map[string]string         // indexName$collName => _$suid_$cuid
+	sourceDetailsMap map[string]*sourceDetails // indexName => sourceDetails
 }
 
 // metaFieldValCache holds a runtime volatile cache
@@ -42,11 +47,11 @@ var metaFieldValCache *collMetaFieldCache
 func init() {
 	metaFieldValCache = &collMetaFieldCache{
 		cache:            make(map[string]string),
-		collUIDNameCache: make(map[string]map[uint32]string),
+		sourceDetailsMap: make(map[string]*sourceDetails),
 	}
 }
 
-func (c *collMetaFieldCache) getValue(indexName, collName string) string {
+func (c *collMetaFieldCache) getMetaFieldValue(indexName, collName string) string {
 	c.m.RLock()
 	rv := c.cache[indexName+"$"+collName]
 	c.m.RUnlock()
@@ -57,20 +62,21 @@ func encodeCollMetaFieldValue(suid, cuid int64) string {
 	return fmt.Sprintf("_$%d_$%d", suid, cuid)
 }
 
-func (c *collMetaFieldCache) setValue(indexName, collName string,
-	suid, cuid int64, multiCollIndex bool) {
+func (c *collMetaFieldCache) setValue(indexName, scopeName string,
+	suid int64, collName string, cuid int64, multiCollIndex bool) {
 	key := indexName + "$" + collName
 	c.m.Lock()
-
 	c.cache[key] = encodeCollMetaFieldValue(suid, cuid)
+
 	if multiCollIndex {
-		var indexMap map[uint32]string
+		var sd *sourceDetails
 		var ok bool
-		if indexMap, ok = c.collUIDNameCache[indexName]; !ok {
-			indexMap = make(map[uint32]string)
-			c.collUIDNameCache[indexName] = indexMap
+		if sd, ok = c.sourceDetailsMap[indexName]; !ok {
+			sd = &sourceDetails{scopeName: scopeName,
+				collUIDNameMap: make(map[uint32]string)}
+			c.sourceDetailsMap[indexName] = sd
 		}
-		indexMap[uint32(cuid)] = collName
+		sd.collUIDNameMap[uint32(cuid)] = collName
 	}
 
 	c.m.Unlock()
@@ -79,7 +85,8 @@ func (c *collMetaFieldCache) setValue(indexName, collName string,
 func (c *collMetaFieldCache) reset(indexName string) {
 	prefix := indexName + "$"
 	c.m.Lock()
-	delete(c.collUIDNameCache, indexName)
+	delete(c.sourceDetailsMap, indexName)
+
 	for k := range c.cache {
 		if strings.HasPrefix(k, prefix) {
 			delete(c.cache, k)
@@ -88,10 +95,10 @@ func (c *collMetaFieldCache) reset(indexName string) {
 	c.m.Unlock()
 }
 
-func (c *collMetaFieldCache) getCollUIDNameMap(indexName string) (
-	collUIDNameCache map[uint32]string, multiCollIndex bool) {
+func (c *collMetaFieldCache) getSourceDetailsMap(indexName string) (
+	sdm *sourceDetails, multiCollIndex bool) {
 	c.m.RLock()
-	collUIDNameCache, multiCollIndex = c.collUIDNameCache[indexName]
+	sdm, multiCollIndex = c.sourceDetailsMap[indexName]
 	c.m.RUnlock()
 	return
 }

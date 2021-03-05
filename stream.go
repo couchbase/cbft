@@ -251,9 +251,9 @@ func (s *streamer) MakeDocumentMatchHandler(
 	}
 	dmh.bhits = append(dmh.bhits, sliceStart...)
 
-	if collNameMap, multiCollIndex :=
-		metaFieldValCache.getCollUIDNameMap(s.index); multiCollIndex {
-		dmh.collNameMap = collNameMap
+	if sdm, multiCollIndex :=
+		metaFieldValCache.getSourceDetailsMap(s.index); multiCollIndex {
+		dmh.collNameMap = sdm.collUIDNameMap
 	}
 
 	return dmh.documentMatchHandler, true, nil
