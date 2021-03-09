@@ -457,11 +457,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		extras, bindHTTP, dataDir, server, meh, options)
 	meh.mgr = mgr
 
-	err = mgr.Start(register)
-	if err != nil {
-		return nil, err
-	}
-
 	// enabled by default, runtime controllable through manager options
 	log.Printf("main: custom jsoniter json implementation enabled")
 	cbft.JSONImpl = &cbft.CustomJSONImpl{CustomJSONImplType: "jsoniter"}
@@ -652,6 +647,14 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
+		}
+
+		// deferred start of the mgr after the ctl initialisations, as
+		// this helps ctl to get a glimpse of the cluster nodes before
+		// self-registeration to cfg.
+		err = mgr.Start(register)
+		if err != nil {
+			return nil, err
 		}
 
 		nodeInfo := &service.NodeInfo{
