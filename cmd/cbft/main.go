@@ -682,7 +682,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		router.Handler("GET", prefix+"/api/ctlmanager",
-		cbft.NewAuthVersionHandler(mgr, nil, ctl.NewCtlManagerStatusHandler(ctlMgr)))
+			cbft.NewAuthVersionHandler(mgr, nil, ctl.NewCtlManagerStatusHandler(ctlMgr)))
 	}
 
 	// ------------------------------------------------

@@ -173,21 +173,21 @@ func (qss *QuerySupervisorDetails) ServeHTTP(
 		longerThan, indexName)
 
 	type filteredQueryStats struct {
-		IndexName string `json:"indexName,omitempty"`
-		LongerThan string `json:"longerThan,omitempty"`
-		QueryCount uint64                            `json:"queryCount"`
-		QueryMap              map[uint64]*RunningQueryDetails `json:"queryMap"`
+		IndexName  string                          `json:"indexName,omitempty"`
+		LongerThan string                          `json:"longerThan,omitempty"`
+		QueryCount uint64                          `json:"queryCount"`
+		QueryMap   map[uint64]*RunningQueryDetails `json:"queryMap"`
 	}
 
 	rv := struct {
-		Status                string `json:"status"`
-		TotalActiveQueryCount uint64 `json:"totalActiveQueryCount"`
-		FilteredActiveQueries         filteredQueryStats `json:"filteredActiveQueries"`
+		Status                string             `json:"status"`
+		TotalActiveQueryCount uint64             `json:"totalActiveQueryCount"`
+		FilteredActiveQueries filteredQueryStats `json:"filteredActiveQueries"`
 	}{
 		Status:                "ok",
 		TotalActiveQueryCount: uint64(queryCount),
 		FilteredActiveQueries: filteredQueryStats{
-			IndexName: indexName,
+			IndexName:  indexName,
 			LongerThan: params,
 			QueryCount: uint64(len(queryMap)),
 			QueryMap:   queryMap,
