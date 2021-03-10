@@ -465,6 +465,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     $scope.docCount = "";
     $scope.totSeqReceived = "";
     $scope.prevTotSeqReceived = "";
+    $scope.numMutationsToIndex = "";
     $scope.httpStatus = 200;    // OK
     $scope.showHiddenUI = false;
 
@@ -481,6 +482,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             if (data) {
                 $scope.docCount = data["doc_count"];
                 $scope.totSeqReceived = data["tot_seq_received"];
+                $scope.numMutationsToIndex = data["num_mutations_to_index"];
                 updateProgressPct();
             }
         }, function(response) {
@@ -568,16 +570,26 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     });
 
     function updateProgressPct() {
-        var currS = parseInt($scope.totSeqReceived);
-        var lastS = parseInt($scope.prevTotSeqReceived);
+        var docCount = parseInt($scope.docCount);
+        var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
+        var totSeqReceived = parseInt($scope.totSeqReceived);
+        var prevTotSeqReceived = parseInt($scope.prevTotSeqReceived);
         let prog = 0.0;
-        if (currS == 0 && lastS == 0) {
+
+        if (totSeqReceived == 0 && prevTotSeqReceived == 0) {
             prog = 100.0;
-        } else if (currS > 0 && lastS >= 0) {
+        } else if ((totSeqReceived == prevTotSeqReceived) &&
+            numMutationsToIndex > 0 && docCount > 0) {
+            // if the totSeqReceived is equal to the one recorded in the
+            // previous iteration, check if we can determine the progress
+            // based on the docCount and numMutationsToIndex.
+            prog = ((1.0 * docCount) / (docCount + numMutationsToIndex)) * 100.0;
+        } else if (totSeqReceived > 0 && prevTotSeqReceived >= 0) {
             // determine progressPct relative to the current
             // totSeqReceived and the prevTotSeqReceived.
-            prog = ((1.0 * lastS) / currS) * 100.0;
+            prog = ((1.0 * prevTotSeqReceived) / totSeqReceived) * 100.0;
         }
+
         $scope.progressPct = prog.toPrecision(4);
         $scope.prevTotSeqReceived = $scope.totSeqReceived;
     }

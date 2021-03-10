@@ -44,15 +44,18 @@ func (h *ProgressStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 	docCount, _ := indexProgressStats["doc_count"].(uint64)
 	totSeqReceived, _ := indexProgressStats["tot_seq_received"].(uint64)
+	numMutationsToIndex, _ := indexProgressStats["num_mutations_to_index"].(uint64)
 
 	rv := struct {
-		Status         string `json:"status"`
-		DocCount       uint64 `json:"doc_count"`
-		TotSeqReceived uint64 `json:"tot_seq_received"`
+		Status              string `json:"status"`
+		DocCount            uint64 `json:"doc_count"`
+		TotSeqReceived      uint64 `json:"tot_seq_received"`
+		NumMutationsToIndex uint64 `json:"num_mutations_to_index"`
 	}{
-		Status:         "ok",
-		DocCount:       docCount,
-		TotSeqReceived: totSeqReceived,
+		Status:              "ok",
+		DocCount:            docCount,
+		NumMutationsToIndex: numMutationsToIndex,
+		TotSeqReceived:      totSeqReceived,
 	}
 	rest.MustEncode(w, rv)
 }
@@ -78,6 +81,14 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 
 	rv := map[string]interface{}{}
 	rv["doc_count"] = count
+
+	sourcePartitionSeqs := GetSourcePartitionSeqs(SourceSpec{
+		SourceType:   indexDef.SourceType,
+		SourceName:   indexDef.SourceName,
+		SourceUUID:   indexDef.SourceUUID,
+		SourceParams: indexDef.SourceParams,
+		Server:       mgr.Server(),
+	})
 
 	destPartitionSeqs := map[string]cbgt.UUIDSeq{}
 	_, pindexes := mgr.CurrentMaps()
@@ -106,13 +117,14 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 		}
 	}
 
-	totSeqReceived, _, err := obtainDestSeqsForIndex(
-		indexDef, nil, destPartitionSeqs)
+	totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
+		indexDef, sourcePartitionSeqs, destPartitionSeqs)
 	if err != nil {
 		return rv, err
 	}
 
 	rv["tot_seq_received"] = totSeqReceived
+	rv["num_mutations_to_index"] = numMutationsToIndex
 
 	return rv, nil
 }
