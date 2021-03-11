@@ -383,7 +383,7 @@
   <footer
      class="footer-fts"
      ng-controller="mnFooterStatsController as footerStatsCtl"
-     ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length  && !selfDestroy">
+     ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length  && !destroyGsiFooter">
     <div class="column vertical-divider">
       <span class="width-6">RAM Used by Search</span>
       <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts.fts_num_bytes_used_ram') | mnFormatQuantity}}</span><br>
