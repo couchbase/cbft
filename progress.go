@@ -17,7 +17,6 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-	log "github.com/couchbase/clog"
 )
 
 // ProgressStatsHandler is a REST handler that provides stats relevant to
@@ -37,10 +36,7 @@ func (h *ProgressStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	indexProgressStats, err := gatherIndexProgressStats(h.mgr, indexName)
-	if err != nil {
-		log.Warnf("Error in fetching progress stats for `%v`, err: %v", indexName, err)
-	}
+	indexProgressStats, _ := gatherIndexProgressStats(h.mgr, indexName)
 
 	docCount, _ := indexProgressStats["doc_count"].(uint64)
 	totSeqReceived, _ := indexProgressStats["tot_seq_received"].(uint64)
