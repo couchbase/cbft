@@ -167,14 +167,37 @@ func scopeCollNames(params, sourceName string) (string, []string) {
 }
 
 func getNsIndexStatsKey(indexName, sourceName, params string) string {
+	key := ` {bucket="` + sourceName + `",scope="%s"` +
+		`,collection="%s",index="` +
+		indexName + `"}`
+	var colNames string
+	// look up the scope/collection details from the cache.
+	sdm, _ := metaFieldValCache.getSourceDetailsMap(indexName)
+	if sdm != nil && len(sdm.collUIDNameMap) > 0 {
+		i := 0
+		for _, colName := range sdm.collUIDNameMap {
+			if i > 0 {
+				colName = "," + colName
+			}
+			colNames += colName
+			i++
+		}
+		return fmt.Sprintf(key, sdm.scopeName, colNames)
+	}
+
+	// compute afresh for a cache miss.
 	sname, cnames := scopeCollNames(params, sourceName)
 	if sname == "" && len(cnames) == 0 {
 		sname = "_default"
 		cnames = []string{"_default"}
 	}
-	return ` {bucket="` + sourceName + `", ` + `scope="` +
-		sname + `", ` + `collection="` + cnames[0] + `", ` +
-		`index="` + indexName + `"}`
+	for i, colName := range cnames {
+		if i > 0 {
+			colName = "," + colName
+		}
+		colNames += colName
+	}
+	return fmt.Sprintf(key, sname, colNames)
 }
 
 // PrometheusMetricsHandler is a REST handler that provides low

@@ -449,9 +449,17 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	// the index otherwise
 	if len(srcPartitionSeqs) > 0 {
 		var err error
-		scope, collections, err = GetScopeCollectionsFromIndexDef(indexDef)
-		if err != nil {
-			return 0, 0, err
+		sdm, _ := metaFieldValCache.getSourceDetailsMap(indexDef.Name)
+		if sdm != nil && len(sdm.collUIDNameMap) > 0 {
+			scope = sdm.scopeName
+			for _, colName := range sdm.collUIDNameMap {
+				collections = append(collections, colName)
+			}
+		} else {
+			scope, collections, err = GetScopeCollectionsFromIndexDef(indexDef)
+			if err != nil {
+				return 0, 0, err
+			}
 		}
 	}
 
