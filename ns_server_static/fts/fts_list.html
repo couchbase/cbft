@@ -202,11 +202,13 @@
       </tbody>
     </table>
     <div class="row pagination">
-      <div class="simple-select">
-        <select ng-model="indexesPerPage"
-                ng-options="item for item in [5,10,20]"
-                ng-change="updateIndexesPerPage(indexesPerPage)">
-        </select>
+      <div>
+        <mn-select
+           class="fix-width-1"
+           ng-model="indexesPerPage"
+           on-select="updateIndexesPerPage(selectedOption)"
+           values="[5, 10, 20]">
+        </mn-select>
       </div>
       <div ng-show="indexesNumPages > 1" class="col-lg-12 col-lg-offset-5">
         <ul class="pagination">
@@ -393,19 +395,14 @@
       <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts.fts_curr_batches_blocked_by_herder') | mnFormatQuantity:1000}}</span>
     </div>
     <div class="margin-right-1">
-      <ui-select
-         class="cbui-select cbui-select-small"
+      <mn-select
+         class="mn-select-small block"
          ng-model="footerStatsCtl.currentBucket"
-         theme="selectize"
-         ng-disabled="!rbac.bucketNames['.stats!read'].length"
-         on-select="footerStatsCtl.onSelectBucket($item)">
-        <ui-select-match class="ui-select-match">{{$select.selected}} </ui-select-match>
-        <ui-select-choices
-           class="ui-select-choices"
-           repeat="name in rbac.bucketNames['.stats!read'] | filter: $select.search">
-          <span class="select-item ellipsis" ng-bind-html="name | highlight: $select.search"></span>
-        </ui-select-choices>
-      </ui-select>
+         values="rbac.bucketNames['.stats!read']"
+         mn-disabled="!rbac.bucketNames['.stats!read'].length"
+         on-select="footerStatsCtl.onSelectBucket(selectedOption)"
+         open-on-top="true">
+      </mn-select>
     </div>
     <div class="column">
       <span class="width-6">Index Rate</span>
