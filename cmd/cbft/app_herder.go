@@ -41,6 +41,12 @@ type appHerder struct {
 
 	// Tracks estimated memory used by running queries
 	runningQueryUsed uint64
+
+	// states for log deduplication
+	memUsedPrev int64
+	pimPrev     int64
+	waitingPrev int64
+	indexesPrev int64
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
@@ -133,7 +139,6 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	a.indexes[c] = s
 
 	wasWaiting := false
-	var memUsedPrev, pimPrev, waitingPrev, indexesPrev int64
 	isOverQuota, preIndexingMemory, memUsed := a.overMemQuotaForIndexingLOCKED()
 
 	for isOverQuota {
@@ -145,12 +150,18 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		// If we're over the memory quota, then wait for persister,
 		// query or other progress.
 		// log only if the values change from the last time.
-		if memUsedPrev != memUsed || pimPrev != preIndexingMemory ||
-			waitingPrev != int64(a.waiting) ||
-			indexesPrev != int64(len(a.indexes)) {
+		if a.memUsedPrev != memUsed || a.pimPrev != preIndexingMemory ||
+			a.waitingPrev != int64(a.waiting) ||
+			a.indexesPrev != int64(len(a.indexes)) {
 			log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d,"+
 				" preIndexingMemory: %d, indexes: %d, waiting: %d", a.indexQuota,
 				memUsed, preIndexingMemory, len(a.indexes), a.waiting)
+
+			// capture the previous logged values as we don't want to log them again.
+			a.memUsedPrev = memUsed
+			a.pimPrev = preIndexingMemory
+			a.waitingPrev = int64(a.waiting)
+			a.indexesPrev = int64(len(a.indexes))
 		}
 
 		if a.overQuotaCh != nil {
@@ -158,12 +169,6 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 		}
 
 		a.waitCond.Wait()
-
-		// remember the previous values
-		memUsedPrev = memUsed
-		pimPrev = preIndexingMemory
-		waitingPrev = int64(a.waiting)
-		indexesPrev = int64(len(a.indexes))
 
 		a.waiting--
 		atomic.AddUint64(&cbft.TotHerderWaitingOut, 1)
