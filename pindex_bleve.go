@@ -2213,6 +2213,8 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 		t.lastUUID = cbgt.ParseOpaqueToUUID(value)
 	}
 
+	lastOpaque := append([]byte(nil), t.lastOpaque...) // Another copy of value.
+
 	if t.seqMax <= 0 {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
@@ -2223,7 +2225,7 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 		}
 		if len(buf) <= 0 {
 			t.m.Unlock()
-			return t.lastOpaque, 0, nil // No seqMax buf is a valid case.
+			return lastOpaque, 0, nil // No seqMax buf is a valid case.
 		}
 		if len(buf) != 8 {
 			t.m.Unlock()
@@ -2236,9 +2238,10 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 		}
 	}
 
-	lastOpaque, seqMax := t.lastOpaque, t.seqMax
+	seqMax := t.seqMax
 
 	t.m.Unlock()
+
 	return lastOpaque, seqMax, nil
 }
 
