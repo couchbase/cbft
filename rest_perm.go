@@ -151,4 +151,16 @@ cluster.collection[<sourceName>].fts!read
 
 GET /api/conciseOptions
 cluster.settings.fts!read
+
+GET /api/v1/backup
+cluster.bucket{}.fts!read
+
+POST /api/v1/backup
+cluster.bucket{}.fts!read
+
+GET /api/v1/bucket/{bucketName}/backup
+cluster.bucket{}.fts!read
+
+POST /api/v1/bucket/{bucketName}/backup
+cluster.bucket{}.fts!read
 `
