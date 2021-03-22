@@ -92,6 +92,12 @@ func (qs *QuerySupervisor) GetLastAccessTimeForIndex(name string) string {
 	return ""
 }
 
+func (qs *QuerySupervisor) deleteEntryForIndex(name string) {
+	qs.m.Lock()
+	delete(qs.indexAccessTimes, name)
+	qs.m.Unlock()
+}
+
 type RunningQueryDetails struct {
 	QueryContext  *QuerySupervisorContext
 	ExecutionTime string `json:"executionTime"`

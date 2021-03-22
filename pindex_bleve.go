@@ -756,8 +756,11 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 	// Reset gRPC focusStats of the index
 	GrpcPathStats.ResetFocusStats(indexDef.Name)
 
-	// reset the metaFieldValCache
+	// Reset the metaFieldValCache
 	metaFieldValCache.reset(indexDef.Name)
+
+	// Reset QuerySupervisor's entry for last_access_time
+	querySupervisor.deleteEntryForIndex(indexDef.Name)
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
