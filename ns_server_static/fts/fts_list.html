@@ -85,7 +85,7 @@
             <div class="fts-index-details">
               <div class="margin-bottom1">
                 <form class="forms">
-                  <div class="row">
+                  <div class="row margin-bottom-half">
 
                     <!-- index search controls ************************* -->
                     <div class="fts-query-bar" ng-click="$event.stopPropagation()">
@@ -135,7 +135,7 @@
                 </form>
 
                 <!-- second row help link ************************* -->
-                <div class="row query-bar-help"
+                <div class="formrow text-smaller"
                      ng-if="queryHelp && queryHelp.length"
                      ng-bind-html="queryHelpSafe">
                 </div>
@@ -143,14 +143,12 @@
 
               <!-- index definition ******************************* -->
               <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
-                <div class="formrow">
-                  <span
-                    class="disclosure inline text-small"
-                    ng-class="{disclosed: showJSON[indexName]}"
-                    ng-click="showJSON[indexName] = !showJSON[indexName]">
-                    {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
-                  </span>
-                </div>
+                <p
+                  class="disclosure"
+                  ng-class="{disclosed: showJSON[indexName]}"
+                  ng-click="showJSON[indexName] = !showJSON[indexName]">
+                  {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
+                </p>
                 <div class="indent-1" ng-show="showJSON[indexName]">
                   <input
                     id="for-show-def-fts-curl-{{indexName}}"
@@ -300,14 +298,12 @@
               <!-- alias index definition ******************************* -->
               <div ng-controller="indexViewController">
                 <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
-                  <div class="formrow">
-                    <span
-                       class="disclosure inline text-small"
-                       ng-class="{disclosed: showJSON[indexName]}"
-                       ng-click="showJSON[indexName] = !showJSON[indexName]">
-                      {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
-                    </span>
-                  </div>
+                  <p
+                     class="disclosure"
+                     ng-class="{disclosed: showJSON[indexName]}"
+                     ng-click="showJSON[indexName] = !showJSON[indexName]">
+                    {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+                  </p>
                   <div class="indent-1" ng-show="showJSON[indexName]">
                     <input
                       id="for-show-alias-def-fts-curl-{{indexName}}"

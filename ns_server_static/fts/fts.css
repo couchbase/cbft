@@ -195,9 +195,6 @@ ul.list-text li {
   display: inline-block;
   width: 150px;
 }
-.indexContainer .query-bar-help {
-  font-size: .75rem;
-}
 
 /* ---- query results ----------------------- */
 .fts-query-results-area {

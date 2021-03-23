@@ -282,7 +282,7 @@
     </div>
 
 <!-- index definition ------------------------------------------------------ -->
-    <div class="overflow-auto max-height-500">
+    <div class="overflow-auto max-height-500 margin-bottom-4">
       <h4>Mapped Fields</h4>
       <div class="cbui-table">
         <div class="cbui-table-header padding-left">
@@ -291,7 +291,7 @@
         </div>
         <section class="has-hover" ng-repeat="(i, collectionName) in easyMappings.collectionNamesNotEmpty()">
           <div class="cbui-tablerow padding-left">
-            <span class="cbui-table-cell">{{collectionName}}</span>
+            <div class="cbui-table-cell debug-outline">{{collectionName}}</div>
             <span class="cbui-table-cell cbui-tablerow-title flex-grow-3">
 
                     <div class="cbui-table">
@@ -325,13 +325,10 @@
           Select a field and configure the details above to map a field in this collection.
         </div>
       </div>
-
-
     </div>
 
 <!-- save & cancel buttons ------------------------------------------------- -->
     <footer class="footer-save">
-
         <button
            ng-if="newIndexType && newIndexType != 'fulltext-alias'"
            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
