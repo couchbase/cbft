@@ -1812,11 +1812,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 			}
 		}
 
-		_, err = w.Write([]byte(`,"basic":{"DocCount":`))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(strconv.FormatUint(c, 10)))
+		_, err = w.Write([]byte(`,"basic":{"DocCount":` + strconv.FormatUint(c, 10)))
 		if err != nil {
 			return
 		}
@@ -1847,7 +1843,8 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	first := true
+
+	firstEntry := true
 	for partition, bdp := range t.partitions {
 		bdp.m.Lock()
 		bdpSeqMax := bdp.seqMax
@@ -1855,50 +1852,26 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		bdpLastUUID := bdp.lastUUID
 		bdp.m.Unlock()
 
-		if first {
+		if firstEntry {
 			_, err = w.Write([]byte(`"`))
 			if err != nil {
 				return
 			}
+			firstEntry = false
 		} else {
 			_, err = w.Write([]byte(`,"`))
 			if err != nil {
 				return
 			}
 		}
-		_, err = w.Write([]byte(partition))
+
+		_, err = w.Write([]byte(partition +
+			`":{"seq":` + strconv.FormatUint(bdpSeqMaxBatch, 10) +
+			`,"seqReceived":` + strconv.FormatUint(bdpSeqMax, 10) +
+			`,"uuid":"` + bdpLastUUID + `"}`))
 		if err != nil {
 			return
 		}
-		_, err = w.Write([]byte(`":{"seq":`))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(strconv.FormatUint(bdpSeqMaxBatch, 10)))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(`,"seqReceived":`))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(strconv.FormatUint(bdpSeqMax, 10)))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(`,"uuid":"`))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(bdpLastUUID))
-		if err != nil {
-			return
-		}
-		_, err = w.Write([]byte(`"}`))
-		if err != nil {
-			return
-		}
-		first = false
 	}
 	_, err = w.Write(cbgt.JsonCloseBrace)
 	if err != nil {
