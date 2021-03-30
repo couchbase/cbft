@@ -13,7 +13,6 @@ package cbft
 
 import (
 	"container/heap"
-	"container/list"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -32,8 +31,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-
-	metrics "github.com/rcrowley/go-metrics"
 
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
 	"github.com/blevesearch/bleve/v2"
@@ -362,14 +359,12 @@ type BleveDest struct {
 	// Invoked when mgr should restart this BleveDest, like on rollback.
 	restart func()
 
-	m          sync.Mutex // Protects the fields that follow.
-	bindex     bleve.Index
-	partitions map[string]*BleveDestPartition
+	partitions atomic.Value // type: map[string]*BleveDestPartition
+	stats      *cbgt.PIndexStoreStats
 
-	rev uint64 // Incremented whenever bindex changes.
-
-	stats cbgt.PIndexStoreStats
-
+	m           sync.RWMutex // Protects the fields that follow.
+	bindex      bleve.Index
+	rev         uint64 // Incremented whenever bindex changes.
 	batchReqChs []chan *batchRequest
 	stopCh      chan struct{}
 }
@@ -382,18 +377,16 @@ type BleveDestPartition struct {
 	partitionBytes  []byte
 	partitionOpaque []byte // Key used to implement OpaqueSet/OpaqueGet().
 
-	m           sync.Mutex // Protects the fields that follow.
-	seqMax      uint64     // Max seq # we've seen for this partition.
-	seqMaxBatch uint64     // Max seq # that got through batch apply/commit.
-	seqSnapEnd  uint64     // To track snapshot end seq # for this partition.
-	osoSnapshot bool       // Flag to track if current seq # is within an OSO Snapshot.
-	osoSeqMax   uint64     // Max seq # received within an OSO Snapshot.
+	seqMax      uint64       // Max seq # we've seen for this partition.
+	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
+	lastUUID    atomic.Value // type: string; Cache most recent partition UUID from lastOpaque.
 
-	batch *bleve.Batch // Batch applied when we hit seqSnapEnd.
-
-	lastOpaque []byte // Cache most recent value for OpaqueSet()/OpaqueGet().
-	lastUUID   string // Cache most recent partition UUID from lastOpaque.
-
+	m                 sync.Mutex   // Protects the fields that follow.
+	seqSnapEnd        uint64       // To track snapshot end seq # for this partition.
+	osoSnapshot       bool         // Flag to track if current seq # is within an OSO Snapshot.
+	osoSeqMax         uint64       // Max seq # received within an OSO Snapshot.
+	batch             *bleve.Batch // Batch applied when we hit seqSnapEnd.
+	lastOpaque        []byte       // Cache most recent value for OpaqueSet()/OpaqueGet().
 	cwrQueue          cbgt.CwrQueue
 	lastAsyncBatchErr error // for returning async batch err on next call
 }
@@ -412,15 +405,13 @@ func NewBleveDest(path string, bindex bleve.Index,
 		bleveDocConfig: bleveDocConfig,
 		restart:        restart,
 		bindex:         bindex,
-		partitions:     make(map[string]*BleveDestPartition),
-		stats: cbgt.PIndexStoreStats{
-			TimerBatchStore: metrics.NewTimer(),
-			Errors:          list.New(),
-		},
-		stopCh: make(chan struct{}),
+		stats:          cbgt.NewPIndexStoreStats(),
+		stopCh:         make(chan struct{}),
 	}
 
+	bleveDest.partitions.Store(make(map[string]*BleveDestPartition))
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		bleveDest.batchReqChs[i] = make(chan *batchRequest, 1)
 		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh, bindex)
@@ -1447,7 +1438,8 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 		return nil, fmt.Errorf("bleve: BleveDest already closed")
 	}
 
-	bdp, exists := t.partitions[partition]
+	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
+	bdp, exists := partitions[partition]
 	if !exists || bdp == nil {
 		bdp = &BleveDestPartition{
 			bdest:           t,
@@ -1460,7 +1452,9 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 		}
 		heap.Init(&bdp.cwrQueue)
 
-		t.partitions[partition] = bdp
+		partitions[partition] = bdp
+
+		t.partitions.Store(partitions)
 	}
 
 	return bdp, nil
@@ -1484,8 +1478,8 @@ func (t *BleveDest) closeLOCKED() error {
 
 	close(t.stopCh)
 
-	partitions := t.partitions
-	t.partitions = make(map[string]*BleveDestPartition)
+	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
+	t.partitions.Store(make(map[string]*BleveDestPartition))
 
 	t.bindex.Close()
 	t.bindex = nil
@@ -1537,9 +1531,10 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 		return err
 	}
 
-	bdp.m.Lock()
+	uuid, _ := bdp.lastUUID.Load().(string)
+	seq := atomic.LoadUint64(&bdp.seqMaxBatch)
 
-	uuid, seq := bdp.lastUUID, bdp.seqMaxBatch
+	bdp.m.Lock()
 	if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
 		cwr.DoneCh <- fmt.Errorf("bleve: pindex_consistency"+
 			" mismatched partition, uuid: %s, cwr: %#v", uuid, cwr)
@@ -1549,17 +1544,13 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 	} else {
 		close(cwr.DoneCh)
 	}
-
 	bdp.m.Unlock()
 
 	t.m.Unlock()
 
 	return cbgt.ConsistencyWaitDone(partition, cancelCh, cwr.DoneCh,
 		func() uint64 {
-			bdp.m.Lock()
-			seqMaxBatch := bdp.seqMaxBatch
-			bdp.m.Unlock()
-			return seqMaxBatch
+			return atomic.LoadUint64(&bdp.seqMaxBatch)
 		})
 }
 
@@ -1567,9 +1558,9 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 	uint64, error) {
-	t.m.Lock()
+	t.m.RLock()
 	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RUnlock()
 
 	if bindex == nil {
 		return 0, fmt.Errorf("bleve: Count, bindex already closed")
@@ -1634,9 +1625,9 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 
 	// phase 2 - execute query
 	// always 200, possibly with errors inside status
-	t.m.Lock()
+	t.m.RLock()
 	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RUnlock()
 
 	if bindex == nil {
 		err = fmt.Errorf("bleve: Query, bindex already closed")
@@ -1746,13 +1737,7 @@ func (t *BleveDest) AddError(op, partition string,
 
 	buf, err := json.Marshal(&e)
 	if err == nil {
-		t.m.Lock()
-		for t.stats.Errors.Len() >= cbgt.PINDEX_STORE_MAX_ERRORS {
-			t.stats.Errors.Remove(t.stats.Errors.Front())
-		}
-		t.stats.Errors.PushBack(string(buf))
-		t.stats.TotalErrorCount++
-		t.m.Unlock()
+		t.stats.AddError(string(buf))
 	}
 }
 
@@ -1777,9 +1762,6 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
-	t.m.Lock()
-	defer t.m.Unlock()
-
 	// if verbose stats is requested then send most of the index stats.
 	if verbose {
 		_, err = w.Write(prefixPIndexStoreStats)
@@ -1789,12 +1771,16 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 		t.stats.WriteJSON(w)
 
-		if t.bindex != nil {
+		t.m.RLock()
+		bindex := t.bindex
+		t.m.RUnlock()
+
+		if bindex != nil {
 			_, err = w.Write([]byte(`,"bleveIndexStats":`))
 			if err != nil {
 				return
 			}
-			idxStats := t.bindex.StatsMap()
+			idxStats := bindex.StatsMap()
 			var idxStatsJSON []byte
 			idxStatsJSON, err = MarshalJSON(idxStats)
 			if err != nil {
@@ -1806,7 +1792,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 				return
 			}
 
-			c, err = t.bindex.DocCount()
+			c, err = bindex.DocCount()
 			if err != nil {
 				return
 			}
@@ -1844,13 +1830,13 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
+	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
+
 	firstEntry := true
-	for partition, bdp := range t.partitions {
-		bdp.m.Lock()
-		bdpSeqMax := bdp.seqMax
-		bdpSeqMaxBatch := bdp.seqMaxBatch
-		bdpLastUUID := bdp.lastUUID
-		bdp.m.Unlock()
+	for partition, bdp := range partitions {
+		bdpSeqMax := atomic.LoadUint64(&bdp.seqMax)
+		bdpSeqMaxBatch := atomic.LoadUint64(&bdp.seqMaxBatch)
+		bdpLastUUID, _ := bdp.lastUUID.Load().(string)
 
 		if firstEntry {
 			_, err = w.Write([]byte(`"`))
@@ -1889,9 +1875,9 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 	rv = make(map[string]interface{})
 
-	t.m.Lock()
+	t.m.RLock()
 	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RUnlock()
 
 	if bindex != nil {
 		rv["bleveIndexStats"] = bindex.StatsMap()
@@ -1912,22 +1898,16 @@ func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 // Implements the PartitionSeqProvider interface.
 func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 	rv := map[string]cbgt.UUIDSeq{}
-
-	t.m.Lock()
-
-	for partition, bdp := range t.partitions {
-		bdp.m.Lock()
-		bdpSeqMaxBatch := bdp.seqMaxBatch
-		bdpLastUUID := bdp.lastUUID
-		bdp.m.Unlock()
+	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
+	for partition, bdp := range partitions {
+		bdpSeqMaxBatch := atomic.LoadUint64(&bdp.seqMaxBatch)
+		bdpLastUUID, _ := bdp.lastUUID.Load().(string)
 
 		rv[partition] = cbgt.UUIDSeq{
 			UUID: bdpLastUUID,
 			Seq:  bdpSeqMaxBatch,
 		}
 	}
-
-	t.m.Unlock()
 
 	return rv, nil
 }
@@ -2082,7 +2062,7 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 	if snapshotType == osoSnapshotStart {
 		t.m.Lock()
 		t.osoSnapshot = true
-		t.osoSeqMax = t.seqMax
+		t.osoSeqMax = atomic.LoadUint64(&t.seqMax)
 		revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 		t.m.Unlock()
 		if err == nil && revNeedsUpdate {
@@ -2095,8 +2075,8 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 		t.osoSnapshot = false
 		// When the OSO snapshot end message is received, update seqMax with
 		// the max seq received while in the OSO snapshot and flush the batch.
-		if t.seqMax < t.osoSeqMax {
-			t.seqMax = t.osoSeqMax
+		if atomic.LoadUint64(&t.seqMax) < t.osoSeqMax {
+			atomic.StoreUint64(&t.seqMax, t.osoSeqMax)
 		}
 		revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 		t.m.Unlock()
@@ -2186,12 +2166,12 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 			return nil, 0, err
 		}
 		t.lastOpaque = append([]byte(nil), value...) // Note: copies value.
-		t.lastUUID = cbgt.ParseOpaqueToUUID(value)
+		t.lastUUID.Store(cbgt.ParseOpaqueToUUID(value))
 	}
 
 	lastOpaque := append([]byte(nil), t.lastOpaque...) // Another copy of value.
 
-	if t.seqMax <= 0 {
+	if atomic.LoadUint64(&t.seqMax) <= 0 {
 		// TODO: Need way to control memory alloc during GetInternal(),
 		// perhaps with optional memory allocator func() parameter?
 		buf, err := t.bindex.GetInternal(t.partitionBytes)
@@ -2207,14 +2187,12 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 			t.m.Unlock()
 			return nil, 0, fmt.Errorf("bleve: unexpected size for seqMax bytes")
 		}
-		t.seqMax = binary.BigEndian.Uint64(buf[0:8])
 
-		if t.seqMaxBatch <= 0 {
-			t.seqMaxBatch = t.seqMax
-		}
+		atomic.StoreUint64(&t.seqMax, binary.BigEndian.Uint64(buf[0:8]))
+		atomic.CompareAndSwapUint64(&t.seqMaxBatch, 0, atomic.LoadUint64(&t.seqMax))
 	}
 
-	seqMax := t.seqMax
+	seqMax := atomic.LoadUint64(&t.seqMax)
 
 	t.m.Unlock()
 
@@ -2230,7 +2208,7 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 	}
 
 	t.lastOpaque = append(t.lastOpaque[0:0], value...)
-	t.lastUUID = cbgt.ParseOpaqueToUUID(value)
+	t.lastUUID.Store(cbgt.ParseOpaqueToUUID(value))
 
 	anotherCopy := append([]byte(nil), value...)
 	t.batch.SetInternal(t.partitionOpaque, anotherCopy)
@@ -2271,8 +2249,8 @@ func (t *BleveDestPartition) updateSeqLOCKED(seq uint64) (bool, error) {
 		if t.osoSeqMax < seq {
 			t.osoSeqMax = seq
 		}
-	} else if t.seqMax < seq {
-		t.seqMax = seq
+	} else if atomic.LoadUint64(&t.seqMax) < seq {
+		atomic.StoreUint64(&t.seqMax, seq)
 	}
 
 	if (t.osoSnapshot || seq < t.seqSnapEnd) &&
@@ -2386,7 +2364,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
 				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
-				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+				bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
 				batchReq.bdp.m.Unlock()
 				executeBatch(bdp, bdpMaxSeqNums, batchReq.bindex, batchReq.batch)
 				break
@@ -2397,7 +2375,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
 				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
-				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+				bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
 				batchReq.bdp.m.Unlock()
 				bindex = batchReq.bindex
 				targetBatch = batchReq.batch
@@ -2409,7 +2387,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 			atomic.AddUint64(&TotBatchesMerged, 1)
 			batchReq.bdp.m.Lock()
 			bdp = append(bdp, batchReq.bdp)
-			bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.bdp.seqMax)
+			bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
 			batchReq.bdp.m.Unlock()
 
 		case <-tickerCh:
@@ -2460,19 +2438,19 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		return err
 	}, bdp[0].bdest.stats.TimerBatchStore)
 
-	atomic.AddUint64(&BatchBytesRemoved, batchTotalDocsSize)
-
 	if err != nil {
 		return false, err
 	}
 
+	atomic.AddUint64(&BatchBytesRemoved, batchTotalDocsSize)
+
 	for i, t := range bdp {
 		t.m.Lock()
-		if bdpMaxSeqNums[i] > t.seqMaxBatch {
-			t.seqMaxBatch = bdpMaxSeqNums[i]
+		if bdpMaxSeqNums[i] > atomic.LoadUint64(&t.seqMaxBatch) {
+			atomic.StoreUint64(&t.seqMaxBatch, bdpMaxSeqNums[i])
 		}
 		for t.cwrQueue.Len() > 0 &&
-			t.cwrQueue[0].ConsistencySeq <= t.seqMaxBatch {
+			t.cwrQueue[0].ConsistencySeq <= atomic.LoadUint64(&t.seqMaxBatch) {
 			cwr := heap.Pop(&t.cwrQueue).(*cbgt.ConsistencyWaitReq)
 			if cwr != nil && cwr.DoneCh != nil {
 				close(cwr.DoneCh)
@@ -2793,10 +2771,10 @@ func bleveIndex(localPIndex *cbgt.PIndex) (bleve.Index, *BleveDest, uint64, erro
 			" localPIndex: %s, provider type: %T", localPIndex.Name, destFwd.DestProvider)
 	}
 
-	bdest.m.Lock()
+	bdest.m.RLock()
 	bindex := bdest.bindex
 	rev := bdest.rev
-	bdest.m.Unlock()
+	bdest.m.RUnlock()
 
 	if bindex == nil {
 		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+

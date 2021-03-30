@@ -63,10 +63,11 @@ func (t *BleveDest) partialMossRollbackLOCKED(kvstore store.KVStore,
 
 	seqMaxKey := upsidedown.NewInternalRow([]byte(partition), nil).Key()
 
+	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
 	// get vBucketMap/Opaque key
 	var vBucketMapKey []byte
-	if t.partitions[partition] != nil {
-		po := t.partitions[partition].partitionOpaque
+	if partitions[partition] != nil {
+		po := partitions[partition].partitionOpaque
 		vBucketMapKey = upsidedown.NewInternalRow(po, nil).Key()
 	}
 
