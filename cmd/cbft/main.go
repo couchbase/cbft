@@ -496,9 +496,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	handle := func(path string, method string, h http.Handler) {
 		dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
-			rest.NewHandlerWithRESTMeta(h, &rest.RESTMeta{path, method,
-				map[string]string{"_path": path}},
-				nil, path))
+			rest.NewHandlerWithRESTMeta(
+				h, &rest.RESTMeta{
+					Path:   path,
+					Method: method,
+					Opts:   map[string]string{"_path": path},
+				}, nil, path))
 
 		muxrouter.Handle(path, dh).Methods(method).Name(path)
 	}
