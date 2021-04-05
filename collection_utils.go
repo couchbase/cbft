@@ -96,9 +96,38 @@ func (c *collMetaFieldCache) reset(indexName string) {
 }
 
 func (c *collMetaFieldCache) getSourceDetailsMap(indexName string) (
-	sdm *sourceDetails, multiCollIndex bool) {
+	*sourceDetails, bool) {
 	c.m.RLock()
-	sdm, multiCollIndex = c.sourceDetailsMap[indexName]
+	sdm, multiCollIndex := c.sourceDetailsMap[indexName]
+	var ret *sourceDetails
+	if sdm != nil {
+		// obtain a copy of the sourceDetails
+		ret = &sourceDetails{
+			scopeName:      sdm.scopeName,
+			collUIDNameMap: make(map[uint32]string),
+		}
+
+		for k, v := range sdm.collUIDNameMap {
+			ret.collUIDNameMap[k] = v
+		}
+	}
+	c.m.RUnlock()
+	return ret, multiCollIndex
+}
+
+func (c *collMetaFieldCache) getScopeCollectionNames(indexName string) (
+	scopeName string, collectionNames []string) {
+	c.m.RLock()
+	sdm, _ := c.sourceDetailsMap[indexName]
+	if sdm != nil {
+		scopeName = sdm.scopeName
+		collectionNames = make([]string, len(sdm.collUIDNameMap))
+		i := 0
+		for _, v := range sdm.collUIDNameMap {
+			collectionNames[i] = v
+			i++
+		}
+	}
 	c.m.RUnlock()
 	return
 }

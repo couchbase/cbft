@@ -172,17 +172,16 @@ func getNsIndexStatsKey(indexName, sourceName, params string) string {
 		indexName + `"}`
 	var colNames string
 	// look up the scope/collection details from the cache.
-	sdm, _ := metaFieldValCache.getSourceDetailsMap(indexName)
-	if sdm != nil && len(sdm.collUIDNameMap) > 0 {
-		i := 0
-		for _, colName := range sdm.collUIDNameMap {
-			if i > 0 {
-				colName = "," + colName
+	scopeName, collectionNames := metaFieldValCache.getScopeCollectionNames(indexName)
+	if len(scopeName) > 0 && len(collectionNames) > 0 {
+		for i := range collectionNames {
+			if i == 0 {
+				colNames += collectionNames[i]
+			} else {
+				colNames += "," + collectionNames[i]
 			}
-			colNames += colName
-			i++
 		}
-		return fmt.Sprintf(key, sdm.scopeName, colNames)
+		return fmt.Sprintf(key, scopeName, colNames)
 	}
 
 	// compute afresh for a cache miss.

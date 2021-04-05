@@ -196,13 +196,11 @@ func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 		docConfigMode, _, _, _ := jsonparser.Get(docConfig, "mode")
 		if strings.HasPrefix(string(docConfigMode), ConfigModeCollPrefix) {
 			// look up the scope/collection details from the cache.
-			sdm, _ := metaFieldValCache.getSourceDetailsMap(indexDef.Name)
-			if sdm != nil && len(sdm.collUIDNameMap) > 0 {
-				sourceNames := make([]string, len(sdm.collUIDNameMap))
-				i := 0
-				for _, colName := range sdm.collUIDNameMap {
-					sourceNames[i] = indexDef.SourceName + ":" + sdm.scopeName + ":" + colName
-					i++
+			scopeName, collectionNames := metaFieldValCache.getScopeCollectionNames(indexDef.Name)
+			if len(scopeName) > 0 && len(collectionNames) > 0 {
+				sourceNames := make([]string, len(collectionNames))
+				for i := range collectionNames {
+					sourceNames[i] = indexDef.SourceName + ":" + scopeName + ":" + collectionNames[i]
 				}
 				return sourceNames, nil
 			}
