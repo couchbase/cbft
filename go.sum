@@ -47,8 +47,8 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
-github.com/couchbase/blance v0.0.0-20201030011610-c73b54864c1a h1:R7i/lnjZVY0g5U5eMkQdFRb+WkTKQFxZvwXWIpCsUR0=
-github.com/couchbase/blance v0.0.0-20201030011610-c73b54864c1a/go.mod h1:ELsp57vDmExnh14H7S9dvm5+NJpSfNhNeac9hhOLGZk=
+github.com/couchbase/blance v0.0.0-20210405154546-d58d94e85f88 h1:oAf1GP0iEmy2S2iAFD/L/LSPruSDuQhc5nJOzAPmUec=
+github.com/couchbase/blance v0.0.0-20210405154546-d58d94e85f88/go.mod h1:ELsp57vDmExnh14H7S9dvm5+NJpSfNhNeac9hhOLGZk=
 github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc h1:raV5sJWF+axK2Nv6Zrn/pOlYfbHHlLQ2LsRowsmGABE=
 github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc/go.mod h1:7tzUpEOsE+fgU81yfcjy5N1H6XtbVC8SgOz/3mCjmd4=
 github.com/couchbase/ghistogram v0.1.0 h1:b95QcQTCzjTUocDXp/uMgSNQi8oj1tGwnJ4bODWZnps=
