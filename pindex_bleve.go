@@ -1556,14 +1556,13 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 	uint64, error) {
 	t.m.RLock()
-	bindex := t.bindex
-	t.m.RUnlock()
+	defer t.m.RUnlock()
 
-	if bindex == nil {
+	if t.bindex == nil {
 		return 0, fmt.Errorf("bleve: Count, bindex already closed")
 	}
 
-	return bindex.DocCount()
+	return t.bindex.DocCount()
 }
 
 // ---------------------------------------------------------
@@ -1747,7 +1746,6 @@ type JSONStatsWriter interface {
 var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 func (t *BleveDest) Stats(w io.Writer) (err error) {
-	var c uint64
 	var vbstats, verbose bool
 	if w, ok := w.(rest.PartitionStatsWriter); ok {
 		vbstats = w.VbStats()
@@ -1768,34 +1766,37 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 		t.stats.WriteJSON(w)
 
+		var statsMap map[string]interface{}
+		var docCount uint64
 		t.m.RLock()
-		bindex := t.bindex
+		if t.bindex != nil {
+			statsMap = t.bindex.StatsMap()
+			docCount, err = t.bindex.DocCount()
+		}
 		t.m.RUnlock()
 
-		if bindex != nil {
+		if err != nil {
+			return
+		}
+
+		if statsMap != nil {
 			_, err = w.Write([]byte(`,"bleveIndexStats":`))
 			if err != nil {
 				return
 			}
-			idxStats := bindex.StatsMap()
 			var idxStatsJSON []byte
-			idxStatsJSON, err = MarshalJSON(idxStats)
+			idxStatsJSON, err = MarshalJSON(statsMap)
 			if err != nil {
-				log.Errorf("json failed to marshal was: %#v", idxStats)
+				log.Errorf("json failed to marshal was: %#v", statsMap)
 				return
 			}
 			_, err = w.Write(idxStatsJSON)
 			if err != nil {
 				return
 			}
-
-			c, err = bindex.DocCount()
-			if err != nil {
-				return
-			}
 		}
 
-		_, err = w.Write([]byte(`,"basic":{"DocCount":` + strconv.FormatUint(c, 10)))
+		_, err = w.Write([]byte(`,"basic":{"DocCount":` + strconv.FormatUint(docCount, 10)))
 		if err != nil {
 			return
 		}
@@ -1878,17 +1879,16 @@ func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 	rv = make(map[string]interface{})
 
 	t.m.RLock()
-	bindex := t.bindex
-	t.m.RUnlock()
+	defer t.m.RUnlock()
 
-	if bindex != nil {
-		rv["bleveIndexStats"] = bindex.StatsMap()
-
+	if t.bindex != nil {
+		rv["bleveIndexStats"] = t.bindex.StatsMap()
 		var c uint64
-		c, err = bindex.DocCount()
+		c, err = t.bindex.DocCount()
 		if err != nil {
 			return
 		}
+
 		rv["DocCount"] = c
 	}
 
