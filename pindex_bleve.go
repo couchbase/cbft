@@ -359,11 +359,11 @@ type BleveDest struct {
 	// Invoked when mgr should restart this BleveDest, like on rollback.
 	restart func()
 
-	partitions atomic.Value // type: map[string]*BleveDestPartition
-	stats      *cbgt.PIndexStoreStats
+	stats *cbgt.PIndexStoreStats
 
 	m           sync.RWMutex // Protects the fields that follow.
 	bindex      bleve.Index
+	partitions  map[string]*BleveDestPartition
 	rev         uint64 // Incremented whenever bindex changes.
 	batchReqChs []chan *batchRequest
 	stopCh      chan struct{}
@@ -405,11 +405,11 @@ func NewBleveDest(path string, bindex bleve.Index,
 		bleveDocConfig: bleveDocConfig,
 		restart:        restart,
 		bindex:         bindex,
+		partitions:     make(map[string]*BleveDestPartition),
 		stats:          cbgt.NewPIndexStoreStats(),
 		stopCh:         make(chan struct{}),
 	}
 
-	bleveDest.partitions.Store(make(map[string]*BleveDestPartition))
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
 	for i := 0; i < asyncBatchWorkerCount; i++ {
@@ -1438,8 +1438,7 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 		return nil, fmt.Errorf("bleve: BleveDest already closed")
 	}
 
-	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
-	bdp, exists := partitions[partition]
+	bdp, exists := t.partitions[partition]
 	if !exists || bdp == nil {
 		bdp = &BleveDestPartition{
 			bdest:           t,
@@ -1452,9 +1451,7 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 		}
 		heap.Init(&bdp.cwrQueue)
 
-		partitions[partition] = bdp
-
-		t.partitions.Store(partitions)
+		t.partitions[partition] = bdp
 	}
 
 	return bdp, nil
@@ -1478,8 +1475,8 @@ func (t *BleveDest) closeLOCKED() error {
 
 	close(t.stopCh)
 
-	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
-	t.partitions.Store(make(map[string]*BleveDestPartition))
+	partitions := t.partitions
+	t.partitions = make(map[string]*BleveDestPartition)
 
 	t.bindex.Close()
 	t.bindex = nil
@@ -1830,20 +1827,28 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
-	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
-
-	firstEntry := true
-	for partition, bdp := range partitions {
+	t.m.RLock()
+	partitionSeqs := make([][]byte, len(t.partitions))
+	i := 0
+	for partition, bdp := range t.partitions {
 		bdpSeqMax := atomic.LoadUint64(&bdp.seqMax)
 		bdpSeqMaxBatch := atomic.LoadUint64(&bdp.seqMaxBatch)
 		bdpLastUUID, _ := bdp.lastUUID.Load().(string)
 
-		if firstEntry {
+		partitionSeqs[i] = []byte(partition +
+			`":{"seq":` + strconv.FormatUint(bdpSeqMaxBatch, 10) +
+			`,"seqReceived":` + strconv.FormatUint(bdpSeqMax, 10) +
+			`,"uuid":"` + bdpLastUUID + `"}`)
+		i++
+	}
+	t.m.RUnlock()
+
+	for i, partitionSeq := range partitionSeqs {
+		if i == 0 {
 			_, err = w.Write([]byte(`"`))
 			if err != nil {
 				return
 			}
-			firstEntry = false
 		} else {
 			_, err = w.Write([]byte(`,"`))
 			if err != nil {
@@ -1851,10 +1856,7 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 			}
 		}
 
-		_, err = w.Write([]byte(partition +
-			`":{"seq":` + strconv.FormatUint(bdpSeqMaxBatch, 10) +
-			`,"seqReceived":` + strconv.FormatUint(bdpSeqMax, 10) +
-			`,"uuid":"` + bdpLastUUID + `"}`))
+		_, err = w.Write(partitionSeq)
 		if err != nil {
 			return
 		}
@@ -1898,8 +1900,8 @@ func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 // Implements the PartitionSeqProvider interface.
 func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 	rv := map[string]cbgt.UUIDSeq{}
-	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
-	for partition, bdp := range partitions {
+	t.m.RLock()
+	for partition, bdp := range t.partitions {
 		bdpSeqMaxBatch := atomic.LoadUint64(&bdp.seqMaxBatch)
 		bdpLastUUID, _ := bdp.lastUUID.Load().(string)
 
@@ -1908,6 +1910,7 @@ func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 			Seq:  bdpSeqMaxBatch,
 		}
 	}
+	t.m.RUnlock()
 
 	return rv, nil
 }

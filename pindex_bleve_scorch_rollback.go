@@ -32,12 +32,10 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 	partition string, vBucketUUID, rollbackSeq uint64) (bool, bool, error) {
 	seqMaxKey := []byte(partition)
 
-	partitions, _ := t.partitions.Load().(map[string]*BleveDestPartition)
-
 	// get vBucketMap/Opaque key
 	var vBucketMapKey []byte
-	if partitions[partition] != nil {
-		vBucketMapKey = partitions[partition].partitionOpaque
+	if t.partitions[partition] != nil {
+		vBucketMapKey = t.partitions[partition].partitionOpaque
 	}
 
 	totSnapshotsExamined := 0
