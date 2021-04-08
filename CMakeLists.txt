@@ -27,13 +27,13 @@ GoInstall (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.13.7)
+  GOVERSION 1.11.5)
 
 GoInstall (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOPATH "${PROJECT_SOURCE_DIR}/../../../.." "${GODEPSDIR}"
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft-bleve
-  GOVERSION 1.13.7)
+  GOVERSION 1.11.5)
 
 # Generate pluggable-ui-fts.json file.
 SET (DOC_ROOT_PREFIX "")
@@ -87,4 +87,4 @@ GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope
   GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
   INSTALL_PATH bin OUTPUT mossScope
-  GOVERSION 1.13.7)
+  GOVERSION 1.11.5)
