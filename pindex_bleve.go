@@ -2709,9 +2709,6 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	numPIndexes := len(localPIndexesAll) + len(remotePlanPIndexes)
-	if numPIndexes == 0 {
-		log.Warnf("pindex_bleve: bleveIndexTargets found 0 pindexes for: %s", indexName)
-	}
 
 	localPIndexes := localPIndexesAll
 	if onlyPIndexes != nil {
@@ -2720,6 +2717,18 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 			if onlyPIndexes[localPIndex.Name] {
 				localPIndexes = append(localPIndexes, localPIndex)
 			}
+		}
+		if len(localPIndexes) == 0 {
+			var wantedPIndexNames []string
+			for pIndexName := range onlyPIndexes {
+				wantedPIndexNames = append(wantedPIndexNames, pIndexName)
+			}
+			var hadPIndexNames []string
+			for _, pIndex := range localPIndexesAll {
+				hadPIndexNames = append(hadPIndexNames, pIndex.Name)
+			}
+			log.Warnf("pindex_bleve: bleveIndexTargets 0 localPIndexes, wanted: %v, had: %v for index: %s",
+				wantedPIndexNames, hadPIndexNames, indexName)
 		}
 	}
 
