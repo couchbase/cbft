@@ -2094,10 +2094,28 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 		snapshotType)
 }
 
-func (t *BleveDestPartition) SeqNoAdvanced(partition string,
-	seq uint64) error {
+func (t *BleveDestPartition) CreateCollection(partition string,
+	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
 	t.m.Lock()
 	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
+	t.m.Unlock()
+	if err == nil && revNeedsUpdate {
+		t.incRev()
+	}
+
+	return err
+}
+
+func (t *BleveDestPartition) SeqNoAdvanced(partition string, seq uint64) error {
+	// This is received when the feed is subscribed to collections; this message
+	// is to be simply treated as snapshot END message. At this point submit
+	// a batch execution. The seqno shouldn't be accounted as new.
+	var revNeedsUpdate bool
+	var err error
+	t.m.Lock()
+	if seq >= t.seqSnapEnd {
+		revNeedsUpdate, err = t.submitAsyncBatchRequestLOCKED()
+	}
 	t.m.Unlock()
 	if err == nil && revNeedsUpdate {
 		t.incRev()
