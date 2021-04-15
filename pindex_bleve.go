@@ -2094,18 +2094,6 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 		snapshotType)
 }
 
-func (t *BleveDestPartition) CreateCollection(partition string,
-	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
-	t.m.Lock()
-	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
-	t.m.Unlock()
-	if err == nil && revNeedsUpdate {
-		t.incRev()
-	}
-
-	return err
-}
-
 func (t *BleveDestPartition) SeqNoAdvanced(partition string, seq uint64) error {
 	// This is received when the feed is subscribed to collections; this message
 	// is to be simply treated as snapshot END message. At this point submit
@@ -2122,6 +2110,36 @@ func (t *BleveDestPartition) SeqNoAdvanced(partition string, seq uint64) error {
 	}
 
 	return err
+}
+
+func (t *BleveDestPartition) CreateCollection(partition string,
+	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
+	t.m.Lock()
+	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
+	t.m.Unlock()
+	if err == nil && revNeedsUpdate {
+		t.incRev()
+	}
+
+	return err
+}
+
+func (t *BleveDestPartition) DeleteCollection(partition string,
+	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
+	// NO-OP
+	return nil
+}
+
+func (t *BleveDestPartition) FlushCollection(partition string,
+	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
+	// NO-OP
+	return nil
+}
+
+func (t *BleveDestPartition) ModifyCollection(partition string,
+	manifestUid uint64, scopeId, collecitonId uint32, seq uint64) error {
+	// NO-OP
+	return nil
 }
 
 // ---------------------------------------------------------
