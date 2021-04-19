@@ -23,25 +23,26 @@ import (
 const defaultDataDir = "data"
 
 type cbftFlags struct {
-	BindHTTP    string
-	BindHTTPS   string
-	BindGRPC    string
-	BindGRPCSSL string
-	CfgConnect  string
-	Container   string
-	DataDir     string
-	Help        bool
-	Options     string
-	Register    string
-	Server      string
-	StaticDir   string
-	StaticETag  string
-	Tags        string
-	UUID        string
-	Version     bool
-	Weight      int
-	Extras      string
-	AuthType    string
+	BindHTTP      string
+	BindHTTPS     string
+	BindGRPC      string
+	BindGRPCSSL   string
+	CfgConnect    string
+	Container     string
+	DataDir       string
+	Help          bool
+	Options       string
+	Register      string
+	Server        string
+	ServerSslPort int
+	StaticDir     string
+	StaticETag    string
+	Tags          string
+	UUID          string
+	Version       bool
+	Weight        int
+	Extras        string
+	AuthType      string
 
 	TLSCertFile string
 	TLSKeyFile  string
@@ -161,6 +162,9 @@ func initFlags(flags *cbftFlags) map[string][]string {
 		"URL to datasource server; example when using couchbase 3.x as"+
 			"\nyour datasource server: 'http://localhost:8091';"+
 			"\nuse '.' when there is no datasource server.")
+	i(&flags.ServerSslPort,
+		[]string{"serverSslPort"}, "INTEGER", -1,
+		"SSL Port of server")
 	s(&flags.StaticDir,
 		[]string{"staticDir"}, "DIR", "static",
 		"optional directory for web UI static content;"+

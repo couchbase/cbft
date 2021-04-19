@@ -188,6 +188,12 @@ func main() {
 		options["nsServerURL"] = flags.Server
 	}
 
+	if _, ok := options["serverSslPort"]; !ok {
+		if flags.ServerSslPort > 0 {
+			options["serverSslPort"] = strconv.Itoa(flags.ServerSslPort)
+		}
+	}
+
 	// Update the cached CertFile and KeyFile for TLS.
 	cbgt.TLSCertFile = flags.TLSCertFile
 	cbgt.TLSKeyFile = flags.TLSKeyFile
