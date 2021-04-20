@@ -28,7 +28,6 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 	github.com/julienschmidt/httprouter v1.1.1-0.20170430222011-975b5c4c7c21
-	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563
 	github.com/spf13/cobra v0.0.5
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
