@@ -37,12 +37,13 @@
           </div>
           <div class="width-6" ng-show="newSourceType && newSourceType != 'nil'">
             <label for="inputSourceName">Bucket</label>
-            <select ng-show="bucketNames && bucketNames.length >= 0"
-                    ng-model="$parent.newSourceName"
-                    ng-options="t for t in bucketNames"
-                    ng-change="updateBucketDetails()">
-              <option value="" selected hidden></option>
-            </select>
+            <mn-select
+               ng-show="bucketNames && bucketNames.length >= 0"
+               ng-model="$parent.newSourceName"
+               values="bucketNames"
+               on-select="updateBucketDetails(selectedOption)"
+               has-search="true">
+            </mn-select>
           </div>
         </div>
         <div class="items-top formrow width-480">
@@ -62,11 +63,13 @@
         <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport && $parent.docConfigCollections"
              class="row items-top formrow width-480">
           <div class="column width-12">
-            <label for"inputSourceName">Scope</label>
-            <select ng-model="$parent.newScopeName"
-                    ng-options="t for t in scopeNames"
-                    ng-change="updateScopeDetails(newScopeName)">
-            </select>
+            <label for="inputSourceName">Scope</label>
+            <mn-select
+               ng-model="$parent.newScopeName"
+               values="scopeNames"
+               on-select="updateScopeDetails(selectedOption)"
+               has-search="true">
+            </mn-select>
           </div>
         </div>
 

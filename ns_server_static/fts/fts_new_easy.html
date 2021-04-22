@@ -52,43 +52,43 @@
             <small>bucket.scope.collection</small>
           </label>
           <div class="row flex-left">
-            <select
+            <mn-select
                ng-show="bucketNames && bucketNames.length >= 0 && !isEdit"
                ng-model="$parent.newSourceName"
-               ng-options="t for t in bucketNames"
-               ng-change="bucketChanged('{{newSourceName}}')"
-               class="margin-right-quarter">
-                <option value="" selected hidden></option>
-            </select>
+               values="bucketNames"
+               on-select="bucketChanged(selectedOption)"
+               has-search="true"
+               class="margin-right-quarter width-12">
+            </mn-select>
 
             <div class="text-small nowrap" ng-if="isEdit">
               {{newSourceName}}.
             </div>
-
-            <select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
-                    ng-model="$parent.newScopeName"
-                    ng-options="t for t in scopeNames"
-                    ng-change="scopeChanged('{{newScopeName}}')"
-                    class="margin-right-quarter">
-              <option value="" selected hidden></option>
-            </select>
+            <mn-select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
+                       ng-model="$parent.newScopeName"
+                       values="scopeNames"
+                       on-select="scopeChanged(selectedOption)"
+                       has-search="true"
+                       class="margin-right-quarter width-12">
+            </mn-select>
 
             <div class="text-small nowrap" ng-if="isEdit">
               {{newScopeName}}.
             </div>
 
-            <select
+            <mn-select
                ng-show="collectionNames && collectionNames.length >= 0"
                ng-model="$parent.collectionOpened"
-               ng-options="collectionLabel(t) for t in collectionNames"
-               ng-change="expando(collectionOpened)"
-               class="margin-right-half">
-              <option value="" selected hidden></option>
-            </select>
+               values="collectionNames"
+               values-mapping="collectionLabel"
+               on-select="expando(selectedOption)"
+               has-search="true"
+               class="margin-right-half width-12">
+            </mn-select>
             <span>
               <span
                  class="fa-stack icon-info"
-                 uib-tooltip="* indicates this colleciton has fields mapped in the index defintion."
+                 uib-tooltip="* indicates this collection has fields mapped in the index definition."
                  tooltip-placement="auto right">
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>

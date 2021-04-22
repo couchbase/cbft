@@ -25,6 +25,7 @@ import mnFooterStatsController from "/ui/app/mn_admin/mn_gsi_footer_controller.j
 import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
 import mnDocumentsEditingService from "/ui/app/mn_admin/mn_documents_editing_service.js";
 import mnDocumentsListService from "/ui/app/mn_admin/mn_documents_list_service.js";
+import mnSelect from "/ui/app/components/directives/mn_select/mn_select.js";
 
 import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
 import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
@@ -52,7 +53,7 @@ export {confirmDialog, alertDialog};
 angular
     .module(ftsAppName,
             [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService,
-                uiCodemirror, mnDocumentsEditingService, mnDocumentsListService])
+                uiCodemirror, mnDocumentsEditingService, mnDocumentsListService, mnSelect])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
@@ -695,8 +696,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.docConfigCollections = false;
         $scope.docConfigMode = "type_field";
 
-        $scope.updateBucketDetails = function() {
-            listScopesForBucket($scope.newSourceName).then(function (scopes) {
+        $scope.updateBucketDetails = function(selectedBucket) {
+            listScopesForBucket(selectedBucket || $scope.newSourceName).then(function (scopes) {
                 $scope.scopeNames = scopes;
                 if ($scope.newScopeName == "") {
                     if ($scope.scopeNames.length > 0) {
@@ -1906,7 +1907,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             $scope.userSelectedField(parsedDoc.getPath(cursor.line), parsedDoc.getType(cursor.line));
         };
 
-        $scope.bucketChanged = function(orig) {
+        $scope.bucketChanged = function(selectedBucket) {
+            let orig = $scope.newSourceName;
             if (orig) {
                 confirmDialog(
                     $scope, $uibModal,
@@ -1914,7 +1916,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     "Warning: All configurations made with the current bucket will be lost.",
                     "Update Bucket"
                 ).then(function success() {
-                    listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                    listScopesForBucket(selectedBucket).then(function (scopes) {
                         $scope.scopeNames = scopes;
                         if (scopes.length > 0) {
                             $scope.newScopeName = scopes[0];
@@ -1929,7 +1931,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.newSourceName = orig;
                 });
             } else {
-                listScopesForBucket($scope.newSourceName).then(function (scopes) {
+                listScopesForBucket(selectedBucket).then(function (scopes) {
                     $scope.scopeNames = scopes;
                     if (scopes.length > 0) {
                         $scope.newScopeName = scopes[0];
@@ -1943,8 +1945,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             }
         };
 
-        $scope.scopeChanged = function(orig) {
-            if (orig) {
+        $scope.scopeChanged = function(selectedScope) {
+          let orig = $scope.newScopeName;
+            if (selectedScope && orig) {
                 confirmDialog(
                     $scope, $uibModal,
                     "Confirm Scope Change",
@@ -1952,7 +1955,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     "Update Scope"
                 ).then(function success() {
                     $scope.listCollectionsForBucketScope($scope.newSourceName,
-                        $scope.newScopeName).then(function (collections) {
+                      selectedScope).then(function (collections) {
                         $scope.collectionNames = collections;
                         if (collections.length > 0) {
                             $scope.expando(collections[0]);

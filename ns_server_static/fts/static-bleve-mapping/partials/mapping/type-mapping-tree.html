@@ -36,12 +36,13 @@
         <span ng-if="mapping._kind == 'mappingType'">
           <span ng-if="$parent.docConfigCollections && !mapping.name">
             <label>Collection:</label>
-            <select ng-show="collectionNames && collectionNames.length >= 0"
-                    ng-model="$parent.newCollectionName"
-                    ng-options="t for t in collectionNames"
-                    ng-change="mapping.name=buildMappingName(newScopeName,newCollectionName)">
-              <option value="" selected hidden></option>
-            </select>
+            <mn-select ng-show="collectionNames && collectionNames.length >= 0"
+                       ng-model="$parent.newCollectionName"
+                       values="collectionNames"
+                       on-select="mapping.name=buildMappingName(newScopeName,selectedOption)"
+                       has-search="true"
+                       class="inline align-bottom">
+            </mn-select>
           </span>
           <input ng-if="!$parent.docConfigCollections || mapping.name"
                  type="text"
