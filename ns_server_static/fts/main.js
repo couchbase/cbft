@@ -1,6 +1,7 @@
 import angular from "/ui/web_modules/angular.js";
 import app from "/ui/app/app.js";
 import mnElementCrane from "/ui/app/components/directives/mn_element_crane/mn_element_crane.js";
+import { mnLazyload } from "/ui/app/mn.app.imports.js";
 
 import { NgModule } from '/ui/web_modules/@angular/core.js';
 import { UIRouterUpgradeModule } from '/ui/web_modules/@uirouter/angular-hybrid.js';
@@ -37,11 +38,8 @@ class FtsUI {
           states: [{
             name: "app.admin.search.**",
             url: "/fts",
-            lazyLoad: ($transition$) => {
-              return import('/_p/ui/fts/fts.js').then(m => {
-                $transition$.injector().get('$ocLazyLoad').load({name: 'fts'});
-              });
-            }
+            lazyLoad: ($transition$) =>
+              mnLazyload('/_p/ui/fts/fts.js', 'fts', $transition$)
           }]
         })
       ]
