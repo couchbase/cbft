@@ -518,7 +518,9 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 }
                 if (angular.isDefined(indexDef.params.mapping.types)) {
                     for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
-                        return key.split(".")[0];
+                        if (value.enabled) {
+                            return key.split(".")[0];
+                        }
                     }
                 }
             }
@@ -537,7 +539,9 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 }
                 if (angular.isDefined(indexDef.params.mapping.types)) {
                     for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
-                        collectionNames.push(key.split(".")[1]);
+                        if (value.enabled) {
+                            collectionNames.push(key.split(".")[1]);
+                        }
                     }
                 }
                 return collectionNames;
@@ -696,11 +700,37 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.docConfigCollections = false;
         $scope.docConfigMode = "type_field";
 
+
+        function initScopeName(params) {
+            let paramsObj = angular.fromJson(params);
+            let docConfig = angular.fromJson(paramsObj.doc_config);
+            if (angular.isDefined(docConfig.mode)) {
+                if (docConfig.mode.startsWith("scope.collection.")) {
+                    let mapping = angular.fromJson(paramsObj.mapping);
+                    if (angular.isDefined(mapping.default_mapping)) {
+                        if (mapping.default_mapping.enabled) {
+                            return "_default";
+                        }
+                        for (let [key, value] of Object.entries(mapping.types)) {
+                            if (value.enabled) {
+                                return key.split(".")[0];
+                            }
+                        }
+                    }
+                    return "";
+                }
+                return "_default";
+            }
+            return "";
+        }
+
         $scope.updateBucketDetails = function(selectedBucket) {
             listScopesForBucket(selectedBucket || $scope.newSourceName).then(function (scopes) {
+                $scope.newScopeName = initScopeName($scope.newIndexParams['fulltext-index']);
                 $scope.scopeNames = scopes;
-                if ($scope.newScopeName == "") {
-                    if ($scope.scopeNames.length > 0) {
+                if ($scope.scopeNames.length > 0) {
+                    if ($scope.newScopeName == "" || $scope.scopeNames.indexOf($scope.newScopeName) < 0) {
+                        // init scope to first entry in options if unavailable or not in options
                         $scope.newScopeName = $scope.scopeNames[0];
                     }
                 }
@@ -1217,6 +1247,21 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     var done = false;
     var previewPrev = "";
 
+    function getScopeName(docConfigMode, mapping) {
+        if (docConfigMode.startsWith("scope.collection.")) {
+            if (mapping.default_mapping.enabled) {
+                return "_default";
+            }
+            for (let [key, value] of Object.entries(mapping.types)) {
+                if (value.enabled) {
+                    return key.split(".")[0];
+                }
+            }
+            return "";
+        }
+        return "_default";
+    }
+
     function updatePreview() {
         if (done) {
             return;
@@ -1259,6 +1304,27 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     if (preview != previewPrev) {
                         $scope.indexEditorPreview[$scope.newIndexType] = preview;
                         previewPrev = preview;
+                    }
+                }
+            }
+
+            if ($scope.newIndexType == "fulltext-index") {
+                if (angular.isDefined(rv.indexDef) &&
+                    angular.isDefined(rv.indexDef.params) &&
+                    angular.isDefined(rv.indexDef.params.doc_config) &&
+                    angular.isDefined(rv.indexDef.params.mapping)) {
+                    let scopeName = getScopeName(rv.indexDef.params.doc_config.mode,
+                        rv.indexDef.params.mapping);
+                    if (scopeName.length > 0 && scopeName != $scope.newScopeName) {
+                        $scope.errorMessage =
+                            "scope selected `" + $scope.newScopeName + "`, mappings use `" + scopeName + "`";
+                        $scope.scopeMismatch = true;
+                    } else {
+                        $scope.scopeMismatch = false;
+                        if ($scope.errorMessage != null && $scope.errorMessage.startsWith("scope selected")) {
+                            // reset a previous scope mismiatch error
+                            $scope.errorMessage = "";
+                        }
                     }
                 }
             }
@@ -1584,7 +1650,6 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             return scopes;
         }, function (resp) {
             $scope.errorMessage = "Error listing scopes for bucket.";
-            console.log("error listing scopes for bucket", resp);
         });
     }
 
@@ -1603,7 +1668,6 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             return collections;
         }, function (resp) {
             $scope.errorMessage = "Error listing collections for bucket/scope.";
-            console.log("error listing collections for bucket/scope", resp);
         });
     }
 

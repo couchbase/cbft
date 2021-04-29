@@ -270,7 +270,7 @@
         <div class="row flex-left">
           <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
                   ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
-                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)"
+                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0) || (scopeMismatch)"
                   type="submit">
             <span ng-show="!isEdit">
               Create Index

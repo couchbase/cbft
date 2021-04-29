@@ -230,11 +230,13 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
     function getScopeAndCollection(docConfigMode, mapping) {
         if (docConfigMode.startsWith("scope.collection.")) {
             if (mapping.default_mapping.enabled) {
-                return ["_default", "_default"]
+                return ["_default", "_default"];
             } else {
                 for (let [key, value] of Object.entries(mapping.types)) {
-                    let mappingName = key.split(".");
-                    return [mappingName[0], mappingName[1]];
+                    if (value.enabled) {
+                        let mappingName = key.split(".");
+                        return [mappingName[0], mappingName[1]];
+                    }
                 }
             }
         }
