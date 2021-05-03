@@ -1252,9 +1252,11 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             if (mapping.default_mapping.enabled) {
                 return "_default";
             }
-            for (let [key, value] of Object.entries(mapping.types)) {
-                if (value.enabled) {
-                    return key.split(".")[0];
+            if (angular.isDefined(mapping.types)) {
+                for (let [key, value] of Object.entries(mapping.types)) {
+                    if (value.enabled) {
+                        return key.split(".")[0];
+                    }
                 }
             }
             return "";
