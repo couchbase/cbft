@@ -38,8 +38,7 @@ class FtsUI {
           states: [{
             name: "app.admin.search.**",
             url: "/fts",
-            lazyLoad: ($transition$) =>
-              mnLazyload('/_p/ui/fts/fts.js', 'fts', $transition$)
+            lazyLoad: mnLazyload('/_p/ui/fts/fts.js', 'fts')
           }]
         })
       ]
