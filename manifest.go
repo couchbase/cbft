@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -84,13 +85,14 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	if CurrentNodeDefsFetcher == nil || bucket == "" {
 		return nil, fmt.Errorf("invalid input")
 	}
-	url := fmt.Sprintf("/pools/default/buckets/%s/scopes", bucket)
-	url = CurrentNodeDefsFetcher.GetManager().Server() + url
-	u, err := cbgt.CBAuthURL(url)
+	urlPath := fmt.Sprintf("/pools/default/buckets/%s/scopes",
+		url.QueryEscape(bucket))
+	urlPath = CurrentNodeDefsFetcher.GetManager().Server() + urlPath
+	u, err := cbgt.CBAuthURL(urlPath)
 	if err != nil {
 		return nil, fmt.Errorf("manifest: auth for ns_server,"+
 			" url: %s, authType: %s, err: %v",
-			url, "cbauth", err)
+			urlPath, "cbauth", err)
 	}
 
 	req, err := http.NewRequest("GET", u, nil)
@@ -107,14 +109,14 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	respBuf, err := ioutil.ReadAll(resp.Body)
 	if err != nil || len(respBuf) == 0 {
 		return nil, fmt.Errorf("manifest: error reading resp.Body,"+
-			" url: %s, resp: %#v, err: %v", url, resp, err)
+			" url: %s, resp: %#v, err: %v", urlPath, resp, err)
 	}
 
 	rv := &Manifest{}
 	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("manifest: error parsing respBuf: %s,"+
-			" url: %s, err: %v", respBuf, url, err)
+			" url: %s, err: %v", respBuf, urlPath, err)
 
 	}
 	return rv, nil
