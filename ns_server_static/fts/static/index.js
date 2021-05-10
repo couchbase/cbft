@@ -32,6 +32,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
     $scope.indexesPerPage = 10;
     $scope.indexesPage = 1;
     $scope.indexesNumPages = 1;
+    $scope.maxIndexPagesToShow = 5;
 
     $scope.refreshIndexNames = function() {
         $http.get('/api/index').then(function(response) {
@@ -83,10 +84,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
         $scope.indexesPerPage = i;
         $scope.indexesPage = 1;
         $scope.indexesNumPages = Math.ceil($scope.fullTextIndexes.length/$scope.indexesPerPage);
-        $scope.indexesValidPages = [];
-        for(var i = 1; i <= $scope.indexesNumPages; i++) {
-            $scope.indexesValidPages.push(i);
-        }
+        $scope.jumpToIndexesPage($scope.indexesPage, null);
     };
 
     $scope.jumpToIndexesPage = function(pageNum, $event) {
@@ -95,6 +93,32 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
         }
 
         $scope.indexesPage = pageNum;
+
+        $scope.indexesValidPages = [];
+        for(var i = 1; i <= $scope.indexesNumPages; i++) {
+            $scope.indexesValidPages.push(i);
+        }
+
+        // now see if we have too many pages
+        if ($scope.indexesValidPages.length > $scope.maxIndexPagesToShow) {
+            var numPagesToRemove = $scope.indexesValidPages.length - $scope.maxIndexPagesToShow;
+            var frontPagesToRemove = 0
+            var backPagesToRemove = 0;
+            while (numPagesToRemove - frontPagesToRemove - backPagesToRemove > 0) {
+                var numPagesBefore = $scope.indexesPage - 1 - frontPagesToRemove;
+                var numPagesAfter =
+                    $scope.indexesValidPages.length - $scope.indexesPage - backPagesToRemove;
+                if (numPagesAfter > numPagesBefore) {
+                    backPagesToRemove++;
+                } else {
+                    frontPagesToRemove++;
+                }
+            }
+
+            // remove from the end first, to keep indexes simpler
+            $scope.indexesValidPages.splice(-backPagesToRemove, backPagesToRemove);
+            $scope.indexesValidPages.splice(0, frontPagesToRemove);
+        }
     };
 
     $scope.deleteIndex = function(name) {
