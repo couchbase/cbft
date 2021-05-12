@@ -752,6 +752,9 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 
 	// Reset QuerySupervisor's entry for last_access_time
 	querySupervisor.deleteEntryForIndex(indexDef.Name)
+
+	// Clear out source partition seqs cache for this index
+	DropSourcePartitionSeqs(indexDef.SourceName, indexDef.SourceUUID)
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,

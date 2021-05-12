@@ -1021,6 +1021,17 @@ func GetSourcePartitionSeqs(sourceSpec SourceSpec) map[string]cbgt.UUIDSeq {
 	return rv
 }
 
+func DropSourcePartitionSeqs(sourceName, sourceUUID string) {
+	mapSourcePartitionSeqsM.Lock()
+	for sourceSpec, _ := range mapSourcePartitionSeqs {
+		if sourceSpec.SourceName == sourceName &&
+			sourceSpec.SourceUUID == sourceUUID {
+			delete(mapSourcePartitionSeqs, sourceSpec)
+		}
+	}
+	mapSourcePartitionSeqsM.Unlock()
+}
+
 func RunSourcePartitionSeqs(options map[string]string, stopCh chan struct{}) {
 	sourcePartitionSeqsSleep := SourcePartitionSeqsSleepDefault
 	v, exists := options["sourcePartitionSeqsSleepMS"]
