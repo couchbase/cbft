@@ -1315,17 +1315,19 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     angular.isDefined(rv.indexDef.params) &&
                     angular.isDefined(rv.indexDef.params.doc_config) &&
                     angular.isDefined(rv.indexDef.params.mapping)) {
-                    let scopeName = getScopeName(rv.indexDef.params.doc_config.mode,
-                        rv.indexDef.params.mapping);
-                    if (scopeName.length > 0 && scopeName != $scope.newScopeName) {
-                        $scope.errorMessage =
-                            "scope selected `" + $scope.newScopeName + "`, mappings use `" + scopeName + "`";
-                        $scope.scopeMismatch = true;
-                    } else {
-                        $scope.scopeMismatch = false;
-                        if ($scope.errorMessage != null && $scope.errorMessage.startsWith("scope selected")) {
-                            // reset a previous scope mismiatch error
-                            $scope.errorMessage = "";
+                    if (rv.indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
+                        let scopeName = getScopeName(rv.indexDef.params.doc_config.mode,
+                            rv.indexDef.params.mapping);
+                        if (scopeName.length > 0 && scopeName != $scope.newScopeName) {
+                            $scope.errorMessage =
+                                "scope selected `" + $scope.newScopeName + "`, mappings use `" + scopeName + "`";
+                            $scope.scopeMismatch = true;
+                        } else {
+                            $scope.scopeMismatch = false;
+                            if ($scope.errorMessage != null && $scope.errorMessage.startsWith("scope selected")) {
+                                // reset a previous scope mismiatch error
+                                $scope.errorMessage = "";
+                            }
                         }
                     }
                 }
