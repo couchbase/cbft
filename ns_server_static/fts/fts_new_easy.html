@@ -8,7 +8,16 @@
   </div>
 </mn-element-cargo>
 
-<div class="indexContainer">
+<div class="indexContainer"
+     ng-if="!collectionsSupport"
+     style="color: red;">
+  <br>
+  The quick editor is <b>NOT</b> supported when one or more nodes hosting the <i>Search</i> service is on a Couchbase-server version less than 7.0.<br>
+  Only those nodes with Couchbase-server version greater than or at 7.0 support collections.
+  <hr>
+</div>
+<div class="indexContainer"
+     ng-if="collectionsSupport">
   <div ng-if="meta">
   <form class="forms">
     <div class="fts-index-editor">
