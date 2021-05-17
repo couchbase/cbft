@@ -464,7 +464,7 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 		// the following loop is skipped if srcPartitionSeqs isn't available
 		for i := range collections {
 			uuidHighSeq, exists :=
-				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]+":high_seqno"]
+				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]]
 			if !exists {
 				continue
 			}
