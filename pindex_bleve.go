@@ -2098,15 +2098,12 @@ func (t *BleveDestPartition) OSOSnapshot(partition string,
 }
 
 func (t *BleveDestPartition) SeqNoAdvanced(partition string, seq uint64) error {
-	// This is received when the feed is subscribed to collections; this message
-	// is to be simply treated as snapshot END message. At this point submit
-	// a batch execution. The seqno shouldn't be accounted as new.
-	var revNeedsUpdate bool
-	var err error
+	// Can be received when the feed is subscribed to collections;
+	// This message is to be viewed as a snapshot END message, indicating that
+	// no other sequence numbers will be received in that snapshot;
+	// Also, this seqno is to be used in the event of re-connection.
 	t.m.Lock()
-	if seq >= t.seqSnapEnd {
-		revNeedsUpdate, err = t.submitAsyncBatchRequestLOCKED()
-	}
+	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
 	t.m.Unlock()
 	if err == nil && revNeedsUpdate {
 		t.incRev()
