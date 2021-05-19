@@ -1750,9 +1750,13 @@ var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var vbstats, verbose bool
+	var indexDef *cbgt.IndexDef
+	var sourcePartitionSeqs map[string]cbgt.UUIDSeq
 	if w, ok := w.(rest.PartitionStatsWriter); ok {
 		vbstats = w.VbStats()
 		verbose = w.Verbose()
+		indexDef = w.IndexDef()
+		sourcePartitionSeqs = w.SourcePartitionSeqs()
 	}
 
 	// exit early if all details are disabled.
@@ -1831,6 +1835,9 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
+	// obtain scope, collection names
+	scope, collections, _ := GetScopeCollectionsFromIndexDef(indexDef)
+
 	t.m.RLock()
 	partitionSeqs := make([][]byte, len(t.partitions))
 	i := 0
@@ -1839,10 +1846,28 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		bdpSeqMaxBatch := atomic.LoadUint64(&bdp.seqMaxBatch)
 		bdpLastUUID, _ := bdp.lastUUID.Load().(string)
 
-		partitionSeqs[i] = []byte(partition +
+		partitionSeq := partition +
 			`":{"seq":` + strconv.FormatUint(bdpSeqMaxBatch, 10) +
-			`,"seqReceived":` + strconv.FormatUint(bdpSeqMax, 10) +
-			`,"uuid":"` + bdpLastUUID + `"}`)
+			`,"seqReceived":` + strconv.FormatUint(bdpSeqMax, 10)
+
+		if len(scope) > 0 && len(collections) > 0 && sourcePartitionSeqs != nil {
+			var highSeq uint64
+			// determine which collection holds the highest sequence number
+			for _, coll := range collections {
+				if uuidSeq, exists :=
+					sourcePartitionSeqs[partition+":"+scope+":"+coll]; exists {
+					if highSeq < uuidSeq.Seq {
+						highSeq = uuidSeq.Seq
+					}
+				}
+			}
+			partitionSeq += `,"sourceSeq":` + strconv.FormatUint(highSeq, 10)
+		}
+
+		partitionSeq += `,"uuid":"` + bdpLastUUID + `"}`
+
+		partitionSeqs[i] = []byte(partitionSeq)
+
 		i++
 	}
 	t.m.RUnlock()
