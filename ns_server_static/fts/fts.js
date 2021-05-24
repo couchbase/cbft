@@ -1999,6 +1999,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.newSourceName = orig;
                 });
             } else {
+                $scope.newSourceName = selectedBucket;
                 listScopesForBucket(selectedBucket).then(function (scopes) {
                     $scope.scopeNames = scopes;
                     if (scopes.length > 0) {
@@ -2014,7 +2015,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         };
 
         $scope.scopeChanged = function(selectedScope) {
-          let orig = $scope.newScopeName;
+            let orig = $scope.newScopeName;
             if (selectedScope && orig) {
                 confirmDialog(
                     $scope, $uibModal,
@@ -2022,6 +2023,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     "Warning: All configurations made with the current scope will be lost.",
                     "Update Scope"
                 ).then(function success() {
+                    $scope.newScopeName = selectedScope;
                     $scope.listCollectionsForBucketScope($scope.newSourceName,
                       selectedScope).then(function (collections) {
                         $scope.collectionNames = collections;
