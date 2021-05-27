@@ -540,7 +540,12 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 if (angular.isDefined(indexDef.params.mapping.types)) {
                     for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
                         if (value.enabled) {
-                            collectionNames.push(key.split(".")[1]);
+                            try {
+                                let collName = key.split(".")[1];
+                                if (collName.length > 0 && collectionNames.indexOf(collName) < 0) {
+                                    collectionNames.push(collName);
+                                }
+                            } catch (e) {}
                         }
                     }
                 }
