@@ -1173,8 +1173,6 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 	cfgChangedCh := make(chan struct{}, 10)
 
-	var indexDefsChanged uint32
-
 	go func() { // Debounce cfg events to feed into the cfgChangedCh.
 		ech := make(chan cbgt.CfgEvent)
 		cfg.Subscribe(cbgt.PLAN_PINDEXES_KEY, ech)
@@ -1183,23 +1181,14 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		cfg.Subscribe(cbgt.CfgNodeDefsKey(cbgt.NODE_DEFS_WANTED), ech)
 
 		for {
-			ev := <-ech // First, wait for a cfg event.
-
-			// check whether it is an index defn update.
-			if ev.Key == cbgt.INDEX_DEFS_KEY {
-				atomic.StoreUint32(&indexDefsChanged, 1)
-			}
+			<-ech // First, wait for a cfg event.
 
 			debounceTimeCh := time.After(500 * time.Millisecond)
 
 		DEBOUNCE_LOOP:
 			for {
 				select {
-				case ev = <-ech:
-					// check whether it is an index defn update.
-					if ev.Key == cbgt.INDEX_DEFS_KEY {
-						atomic.StoreUint32(&indexDefsChanged, 1)
-					}
+				case <-ech:
 					// NO-OP when there are more, spammy cfg events.
 
 				case <-debounceTimeCh:
@@ -1229,9 +1218,6 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 			planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
 		}
 	}
-
-	// initialize the metaFieldValCache.
-	refreshMetaFieldValCache(indexDefs)
 
 	for {
 
@@ -1277,24 +1263,13 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		for {
 			select {
 			case <-cfgChangedCh:
-				var refresh bool
-				if atomic.LoadUint32(&indexDefsChanged) == 1 {
-					refresh = true
-				}
-
 				// refresh the configs
-				indexDefs, indexDefsMap, err = mgr.GetIndexDefs(refresh)
+				indexDefs, indexDefsMap, err = mgr.GetIndexDefs(false)
 				if err == nil {
 					nodeDefs, _, err = cbgt.CfgGetNodeDefs(cfg, cbgt.NODE_DEFS_WANTED)
 					if err == nil {
 						planPIndexes, _, err = cbgt.CfgGetPlanPIndexes(cfg)
 					}
-				}
-
-				// update the metaFieldValCache
-				if refresh {
-					atomic.StoreUint32(&indexDefsChanged, 0)
-					refreshMetaFieldValCache(indexDefs)
 				}
 
 				break REUSE_CACHE

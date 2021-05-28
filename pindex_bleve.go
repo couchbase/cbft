@@ -803,7 +803,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			}
 
 			bleveParams.DocConfig.CollPrefixLookup =
-				initMetaFieldValCache(ip.IndexName, ip.SourceName, im)
+				initBleveDocConfigs(ip.IndexName, ip.SourceName, im)
 		}
 	}
 
@@ -835,7 +835,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}, nil
 }
 
-func initMetaFieldValCache(indexName, sourceName string,
+func initBleveDocConfigs(indexName, sourceName string,
 	im *mapping.IndexMappingImpl) map[uint32]*collMetaField {
 	if im == nil {
 		return nil
@@ -1017,7 +1017,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 			}
 			// populate the collection meta field look up cache.
 			bleveParams.DocConfig.CollPrefixLookup =
-				initMetaFieldValCache(tmp.IndexName, tmp.SourceName, am)
+				initBleveDocConfigs(tmp.IndexName, tmp.SourceName, am)
 		}
 	}
 
