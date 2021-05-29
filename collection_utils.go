@@ -22,6 +22,7 @@ import (
 
 	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/couchbase/cbgt"
+	log "github.com/couchbase/clog"
 )
 
 const defaultScopeName = "_default"
@@ -48,6 +49,29 @@ func init() {
 	metaFieldValCache = &collMetaFieldCache{
 		cache:            make(map[string]string),
 		sourceDetailsMap: make(map[string]*sourceDetails),
+	}
+}
+
+// refreshMetaFieldValCache updates the metaFieldValCache with
+// the latest index definitions.
+func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
+	if indexDefs == nil || metaFieldValCache == nil {
+		return
+	}
+
+	bleveParams := NewBleveParams()
+	for _, indexDef := range indexDefs.IndexDefs {
+		err := json.Unmarshal([]byte(indexDef.Params), bleveParams)
+		if err != nil {
+			log.Printf("collection_utils: refreshMetaFieldValCache, err: %v", err)
+			continue
+		}
+		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
+			if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+				_ = initMetaFieldValCache(indexDef.Name, indexDef.SourceName, im)
+			}
+		}
+		*bleveParams = BleveParams{}
 	}
 }
 
