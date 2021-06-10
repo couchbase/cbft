@@ -12,10 +12,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync/atomic"
 
 	"github.com/blevesearch/bleve/v2"
-
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 )
@@ -150,14 +148,8 @@ func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 
 func getRemoteClients(mgr *cbgt.Manager) addRemoteClients {
 	var addRemClients addRemoteClients
-	if atomic.LoadInt32(&compatibleClusterFound) == 1 {
+	if versionTracker != nil && versionTracker.compatibleCluster() {
 		addRemClients = addGrpcClients
-	} else {
-		// switch to grpc for scatter gather in an advanced enough cluster
-		if ok, _ := cbgt.VerifyEffectiveClusterVersion(mgr.Cfg(), "6.5.0"); ok {
-			addRemClients = addGrpcClients
-			atomic.StoreInt32(&compatibleClusterFound, 1)
-		}
 	}
 
 	if _, ok := mgr.Options()["SkipScatterGatherOverGrpc"]; ok ||

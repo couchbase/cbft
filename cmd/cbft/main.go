@@ -32,6 +32,7 @@ import (
 	"github.com/blevesearch/bleve/v2"
 	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	ftsHttp "github.com/couchbase/cbft/http"
+	"github.com/couchbase/go-couchbase"
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
@@ -40,7 +41,6 @@ import (
 	"github.com/couchbase/cbgt/ctl"
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
-	"github.com/couchbase/go-couchbase"
 	audit "github.com/couchbase/goutils/go-cbaudit"
 	"github.com/couchbase/goutils/platform"
 )
@@ -464,6 +464,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		uuid, tags, container, weight,
 		extras, bindHTTP, dataDir, server, meh, options)
 	meh.mgr = mgr
+
+	// start the effective cluster tracker.
+	cbft.StartClusterVersionTracker(cbgt.CfgAppVersion,
+		options["nsServerURL"])
 
 	// enabled by default, runtime controllable through manager options
 	log.Printf("main: custom jsoniter json implementation enabled")

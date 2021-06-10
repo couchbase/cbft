@@ -9,12 +9,17 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	log "github.com/couchbase/clog"
 )
 
 // cbft product version
@@ -87,4 +92,107 @@ func CheckAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
 
 	w.Header().Set("Content-type", API_MAX_VERSION_JSON)
 	return nil
+}
+
+// versionTracker checks the cluster compatibilty version
+// with the ns-server and tracks the cluster version until
+// the effective cluster version matches the given application version.
+var versionTracker *clusterVersionTracker
+
+type clusterVersionTracker struct {
+	version uint64
+	server  string
+	found   int32
+}
+
+func StartClusterVersionTracker(version string, server string) {
+	versionTracker = &clusterVersionTracker{server: server + "/pools/default"}
+	versionTracker.version, _ = cbgt.CompatibilityVersion(version)
+	go versionTracker.run()
+}
+
+func (vt *clusterVersionTracker) run() {
+	found := int32(1)
+	ev, err := getEffectiveClusterVersion(vt.server)
+	if err != nil {
+		log.Printf("version: getEffectiveClusterVersion, err: %v", err)
+	}
+
+	if vt.version == ev {
+		log.Printf("version: matching clusterCompatibility"+
+			" version: %d found", ev)
+		atomic.StoreInt32(&vt.found, found)
+		return
+	}
+
+	// monitor the effective cluster version until it matches the app version.
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			ev, err := getEffectiveClusterVersion(vt.server)
+			if err != nil {
+				log.Printf("version: getEffectiveClusterVersion, err: %v", err)
+				continue
+			}
+
+			if vt.version != ev {
+				continue
+			}
+
+			log.Printf("version: matching clusterCompatibility"+
+				" version: %d found", ev)
+
+			atomic.StoreInt32(&vt.found, found)
+			return
+		}
+	}
+}
+
+func (vt *clusterVersionTracker) compatibleCluster() bool {
+	return atomic.LoadInt32(&vt.found) == 1
+}
+
+func getEffectiveClusterVersion(server string) (uint64, error) {
+	if len(server) < 2 {
+		return 1, fmt.Errorf("version: no server URL configured")
+	}
+
+	u, err := cbgt.CBAuthURL(server)
+	if err != nil {
+		return 0, fmt.Errorf("version: auth for ns_server,"+
+			" server: %s, authType: %s, err: %v",
+			server, "cbauth", err)
+	}
+
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := HttpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("version: error reading resp.Body,"+
+			" nsServerURL: %s, resp: %#v, err: %v", server, resp, err)
+	}
+
+	rv := &cbgt.NsServerResponse{}
+	err = json.Unmarshal(respBuf, rv)
+	if err != nil {
+		return 0, fmt.Errorf("version: error parsing respBuf: %s,"+
+			" server: %s, err: %v", respBuf, server, err)
+
+	}
+
+	return uint64(rv.Nodes[0].ClusterCompatibility), nil
 }

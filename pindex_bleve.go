@@ -85,9 +85,6 @@ var asyncBatchWorkerCount = 4 // need to make it configurable,
 var TotBleveDestOpened uint64
 var TotBleveDestClosed uint64
 
-// local cache for the cluster compatibility
-var compatibleClusterFound int32
-
 // BleveDefaultZapVersion represents the default zap version.
 // This version is expected to remain a constant as all the
 // future indexes are going to have a default segment version.
