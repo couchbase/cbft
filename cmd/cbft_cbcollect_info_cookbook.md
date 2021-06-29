@@ -74,7 +74,7 @@ To fix a hash mismatch issue with planPIndexes Or
     step1. curl -i http://<hostname:8091>/diag/eval -d 'metakv:set(<<"/fts/cbgt/cfg/curMetaKvPlanKey">>, <<"">>).'
      -u<uname>:<pwd>
 
-    step2. curl -i http://<hostname:8091>/diag/eval -d 'metakv:set(<<"/fts/cbgt/cfg/planPIndexes">>, <<"\"ImplVersion\":\"5.5.0\"}">>).' -u<uname>:<pwd>
+    step2. curl -i http://<hostname:8091>/diag/eval -d 'metakv:set(<<"/fts/cbgt/cfg/planPIndexes">>, <<"{\"ImplVersion\":\"5.5.0\"}">>).' -u<uname>:<pwd>
 
 To find the couchbase nodes that ns-server might know about...
 
