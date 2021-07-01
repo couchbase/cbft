@@ -275,7 +275,7 @@ type BleveDest struct {
 	// Invoked when mgr should restart this BleveDest, like on rollback.
 	restart func()
 
-	m          sync.Mutex // Protects the fields that follow.
+	m          sync.RWMutex // Protects the fields that follow.
 	bindex     bleve.Index
 	partitions map[string]*BleveDestPartition
 
@@ -1151,15 +1151,14 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 func (t *BleveDest) Count(pindex *cbgt.PIndex, cancelCh <-chan bool) (
 	uint64, error) {
-	t.m.Lock()
-	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RLock()
+	defer t.m.RUnlock()
 
-	if bindex == nil {
+	if t.bindex == nil {
 		return 0, fmt.Errorf("bleve: Count, bindex already closed")
 	}
 
-	return bindex.DocCount()
+	return t.bindex.DocCount()
 }
 
 // ---------------------------------------------------------
@@ -1218,9 +1217,9 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 
 	// phase 2 - execute query
 	// always 200, possibly with errors inside status
-	t.m.Lock()
+	t.m.RLock()
 	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RUnlock()
 
 	if bindex == nil {
 		err = fmt.Errorf("bleve: Query, bindex already closed")
@@ -1356,8 +1355,8 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		return
 	}
 
-	t.m.Lock()
-	defer t.m.Unlock()
+	t.m.RLock()
+	defer t.m.RUnlock()
 
 	t.stats.WriteJSON(w)
 
@@ -1472,15 +1471,14 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 	rv = make(map[string]interface{})
 
-	t.m.Lock()
-	bindex := t.bindex
-	t.m.Unlock()
+	t.m.RLock()
+	defer t.m.RUnlock()
 
-	if bindex != nil {
-		rv["bleveIndexStats"] = bindex.StatsMap()
+	if t.bindex != nil {
+		rv["bleveIndexStats"] = t.bindex.StatsMap()
 
 		var c uint64
-		c, err = bindex.DocCount()
+		c, err = t.bindex.DocCount()
 		if err != nil {
 			return
 		}
@@ -1496,7 +1494,7 @@ func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
 func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 	rv := map[string]cbgt.UUIDSeq{}
 
-	t.m.Lock()
+	t.m.RLock()
 
 	for partition, bdp := range t.partitions {
 		bdp.m.Lock()
@@ -1510,7 +1508,7 @@ func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 		}
 	}
 
-	t.m.Unlock()
+	t.m.RUnlock()
 
 	return rv, nil
 }
@@ -2245,10 +2243,10 @@ func bleveIndex(localPIndex *cbgt.PIndex) (bleve.Index, *BleveDest, uint64, erro
 			" localPIndex: %s, provider type: %T", localPIndex.Name, destFwd.DestProvider)
 	}
 
-	bdest.m.Lock()
+	bdest.m.RLock()
 	bindex := bdest.bindex
 	rev := bdest.rev
-	bdest.m.Unlock()
+	bdest.m.RUnlock()
 
 	if bindex == nil {
 		return nil, nil, 0, fmt.Errorf("bleve: bleveIndexTargets, nil bindex,"+
