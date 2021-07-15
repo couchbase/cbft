@@ -15,6 +15,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	log "github.com/couchbase/clog"
 )
 
 const defaultDataDir = "data"
@@ -258,3 +260,28 @@ const examples = `
     ./cbft -cfg=couchbase:http://cfg-bucket@CB_HOST:8091 \
            -server=http://CB_HOST:8091
 `
+
+const (
+	ip_off      = "off"
+	ip_required = "required"
+	ip_optional = "optional"
+)
+
+var ipv6 = ip_optional
+var ipv4 = ip_required
+
+func validateIPFlags() {
+	if ipv4 != ip_off && ipv4 != ip_required && ipv4 != ip_optional {
+		log.Fatalf("init_http: validateIPFlags, invalid entry for ipv4: %s", ipv4)
+	}
+
+	if ipv6 != ip_off && ipv6 != ip_required && ipv6 != ip_optional {
+		log.Fatalf("init_http: validateIPFlags, invalid entry for ipv6: %s", ipv6)
+	}
+
+	if ipv4 != ip_required && ipv6 != ip_required {
+		log.Fatalf("init_http: validateIPFlags, bad values for ipv4, ipv6;"+
+			" at least one should be set to 'required', ipv4: %s, ipv6: %s",
+			ipv4, ipv6)
+	}
+}

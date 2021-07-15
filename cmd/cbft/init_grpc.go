@@ -50,7 +50,7 @@ func closeAndClearGRPCSSLServerList() {
 	grpcServersMutex.Unlock()
 }
 
-func setupGRPCListenersAndServ(mgr *cbgt.Manager,
+func setupGRPCListenersAndServe(mgr *cbgt.Manager,
 	options map[string]string) {
 
 	if flags.BindGRPC != "" {
@@ -81,8 +81,6 @@ func setupGRPCListenersAndServ(mgr *cbgt.Manager,
 
 func setupGRPCListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
 	secure bool, options map[string]string, authType string) {
-	ipv6 = options["ipv6"]
-
 	if secure {
 		// close any previously open grpc servers
 		closeAndClearGRPCSSLServerList()
@@ -123,7 +121,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 				host := "0.0.0.0"
 				if net.ParseIP(bindGRPC[:portIndex-1]).To4() == nil &&
 					// not an IPv4
-					ipv6 == "true" {
+					ipv6 != ip_off {
 					host = "[::]"
 				}
 
@@ -139,27 +137,7 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		} // else port not found.
 	}
 
-	nwps := getNetworkProtocols()
-	for p, nwp := range nwps {
-		listener, err := getListener(bindGRPC, nwp)
-		if listener == nil && err == nil {
-			continue
-		}
-		if err != nil {
-			if p == 0 {
-				// Fail the service as the listen failed on the primary protocol.
-				// If ipv6=true,
-				//	-start listening to ipv6 - fail service if listen fails
-				//	-try to listen to ipv4 - don't fail service even if listen fails.
-				// If ipv6=false,
-				//	-start listening to ipv4 - fail service if listen fails
-				//	-try to listen to ipv6 - don't fail service even if listen fails.
-				log.Fatalf("init_grpc: listen, err: %v", err)
-			}
-			log.Errorf("init_grpc: listen, err: %v", err)
-			continue
-		}
-
+	setupGRPCServer := func(listener net.Listener, nwp string) {
 		go func(nwp string, listener net.Listener) {
 			opts := getGrpcOpts(secure, authType)
 
@@ -190,6 +168,36 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 			}
 			atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
 		}(nwp, listener)
+	}
+
+	if ipv6 != ip_off {
+		listener, err := getListener(bindGRPC, "tcp6")
+		if err != nil {
+			if ipv6 == ip_required {
+				log.Fatalf("init_grpc: listen on ipv6, err: %v", err)
+			} else { // ip_optional
+				log.Errorf("init_grpc: listen on ipv6, err: %v", err)
+			}
+		} else if listener != nil {
+			setupGRPCServer(listener, "tcp6")
+		} else {
+			log.Warnf("init_grpc: ipv6 listener not set up")
+		}
+	}
+
+	if ipv4 != ip_off {
+		listener, err := getListener(bindGRPC, "tcp4")
+		if err != nil {
+			if ipv4 == ip_required {
+				log.Fatalf("init_grpc: listen on ipv4, err: %v", err)
+			} else { // ip_optional
+				log.Errorf("init_grpc: listen on ipv4, err: %v", err)
+			}
+		} else if listener != nil {
+			setupGRPCServer(listener, "tcp4")
+		} else {
+			log.Warnf("init_grpc: ipv4 listener not set up")
+		}
 	}
 }
 

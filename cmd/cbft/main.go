@@ -195,6 +195,11 @@ func main() {
 	cbgt.TLSCertFile = flags.TLSCertFile
 	cbgt.TLSKeyFile = flags.TLSKeyFile
 
+	// Update and validate the the ipv4 and ipv6 settings
+	ipv4 = options["ipv4"]
+	ipv6 = options["ipv6"]
+	validateIPFlags()
+
 	// If cfg is down, we error, leaving it to some user-supplied
 	// outside watchdog to backoff and restart/retry.
 	cfg, err := cmd.MainCfgEx(cmdName, flags.CfgConnect,
@@ -247,7 +252,7 @@ func main() {
 		defer platform.HideConsole(false)
 	}
 
-	setupHTTPListenersAndServ(routerInUse, bindHTTPList, options)
+	setupHTTPListenersAndServe(routerInUse, bindHTTPList, options)
 
 	<-(make(chan struct{})) // Block forever.
 }
@@ -478,7 +483,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	setupGRPCListenersAndServ(mgr, options)
+	setupGRPCListenersAndServe(mgr, options)
 
 	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)

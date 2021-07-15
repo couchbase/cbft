@@ -35,13 +35,9 @@ var httpsServers []*http.Server
 // AuthType used for HTTPS connections
 var authType string
 
-// Use IPv6
-var ipv6 string
-
-func setupHTTPListenersAndServ(routerInUse http.Handler, bindHTTPList []string,
+func setupHTTPListenersAndServe(routerInUse http.Handler, bindHTTPList []string,
 	options map[string]string) {
 	http.Handle("/", routerInUse)
-	ipv6 = options["ipv6"]
 
 	anyHostPorts := map[string]bool{}
 	// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
@@ -145,7 +141,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 				// Valid port.
 				host := "0.0.0.0"
 				if net.ParseIP(bindHTTP[:portIndex-1]).To4() == nil && // Not an IPv4
-					ipv6 == "true" {
+					ipv6 != ip_off {
 					host = "[::]"
 				}
 
@@ -167,27 +163,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 	log.Printf("init_http: web UI / REST API is available: %s://%s", proto, bindHTTP)
 	log.Printf(bar)
 
-	nwps := getNetworkProtocols()
-	for p, nwp := range nwps {
-		listener, err := getListener(bindHTTP, nwp)
-		if listener == nil && err == nil {
-			continue
-		}
-		if err != nil {
-			if p == 0 {
-				// Fail the service as the listen failed on the primary protocol.
-				// If ipv6=true,
-				//	-start listening to ipv6 - fail service if listen fails
-				//	-try to listen to ipv4 - don't fail service even if listen fails.
-				// If ipv6=false,
-				//	-start listening to ipv4 - fail service if listen fails
-				//	-try to listen to ipv6 - don't fail service even if listen fails.
-				log.Fatalf("init_http: listen, err: %v", err)
-			}
-			log.Errorf("init_http: listen, err: %v", err)
-			continue
-		}
-
+	setupHTTPServer := func(listener net.Listener, nwp string) {
 		server := &http.Server{Addr: bindHTTP,
 			Handler:           routerInUse,
 			ReadTimeout:       httpReadTimeout,
@@ -205,7 +181,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 				log.Printf("init_http: Setting up a http limit listener at %q,"+
 					" proto: %q", bindHTTP, nwp)
 				atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
-				err = server.Serve(limitListener)
+				err := server.Serve(limitListener)
 				if err != nil {
 					log.Printf("init_http: Serve, err: %v;\n"+
 						"  Please check that your -bindHttp parameter (%q)\n"+
@@ -226,6 +202,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 				config.NextProtos = append(config.NextProtos, "h2")
 			}
 
+			var err error
 			config.Certificates = make([]tls.Certificate, 1)
 			config.Certificates[0], err = tls.LoadX509KeyPair(
 				cbgt.TLSCertFile, cbgt.TLSKeyFile)
@@ -288,6 +265,36 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 			}(nwp, tlsListener)
 		}
 	}
+
+	if ipv6 != ip_off {
+		listener, err := getListener(bindHTTP, "tcp6")
+		if err != nil {
+			if ipv6 == ip_required {
+				log.Fatalf("init_http: listen on ipv6, err: %v", err)
+			} else { // ip_optional
+				log.Errorf("init_http: listen on ipv6, err: %v", err)
+			}
+		} else if listener != nil {
+			setupHTTPServer(listener, "tcp6")
+		} else {
+			log.Warnf("init_http: ipv6 listener not set up")
+		}
+	}
+
+	if ipv4 != ip_off {
+		listener, err := getListener(bindHTTP, "tcp4")
+		if err != nil {
+			if ipv4 == ip_required {
+				log.Fatalf("init_http: listen on ipv4, err: %v", err)
+			} else { // ip_optional
+				log.Errorf("init_http: listen on ipv4, err: %v", err)
+			}
+		} else if listener != nil {
+			setupHTTPServer(listener, "tcp4")
+		} else {
+			log.Warnf("init_http: ipv4 listener not set up")
+		}
+	}
 }
 
 // Helper function to determine if the provided string is already
@@ -325,13 +332,6 @@ func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
-}
-
-func getNetworkProtocols() []string {
-	if ipv6 == "true" {
-		return []string{"tcp6", "tcp4"}
-	}
-	return []string{"tcp4", "tcp6"}
 }
 
 func getListener(bindAddr, nwp string) (net.Listener, error) {
