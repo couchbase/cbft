@@ -23,6 +23,7 @@ const (
 	AuditRunGCEvent             = 24582 // 0x6006
 	AuditProfileCPUEvent        = 24583 // 0x6007
 	AuditProfileMemoryEvent     = 24584 // 0x6008
+	AuditAccessDeniedEvent      = 24585 // 0x6009
 )
 
 type IndexControlAuditLog struct {
@@ -56,6 +57,11 @@ func GetAuditEventData(eventId uint32, req *http.Request) interface{} {
 			Control:           rest.RequestVariableLookup(req, "op"),
 		}
 		return d
+	case AuditAccessDeniedEvent:
+		return IndexAuditLog{
+			CommonAuditFields: audit.GetCommonAuditFields(req),
+			IndexName:         rest.IndexNameLookup(req),
+		}
 	}
 	return nil
 }

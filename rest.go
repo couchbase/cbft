@@ -163,7 +163,7 @@ func (c *AuthVersionHandler) ServeHTTP(
 
 	c.doAudit(req, path)
 
-	if !CheckAPIAuth(c.mgr, w, req, path) {
+	if !checkAPIAuth(c, w, req, path) {
 		return
 	}
 

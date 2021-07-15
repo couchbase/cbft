@@ -22,6 +22,8 @@ import (
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+
+	"github.com/couchbase/goutils/go-cbaudit"
 )
 
 // CBAuthWebCreds extra level-of-indirection allows for overrides and
@@ -84,9 +86,18 @@ func init() {
 
 // --------------------------------------------------------
 
-func CheckAPIAuth(mgr *cbgt.Manager,
+func checkAPIAuth(avh *AuthVersionHandler,
 	w http.ResponseWriter, req *http.Request, path string) (allowed bool) {
 	authType := ""
+
+	var mgr *cbgt.Manager
+	var adtSvc *audit.AuditSvc
+
+	if avh != nil {
+		mgr = avh.mgr
+		adtSvc = avh.adtSvc
+	}
+
 	if mgr != nil && mgr.Options() != nil {
 		authType = mgr.Options()["authType"]
 	}
@@ -118,6 +129,12 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
 			" err: %v", err), http.StatusForbidden)
+
+		if adtSvc != nil {
+			d := GetAuditEventData(AuditAccessDeniedEvent, req)
+			go adtSvc.Write(AuditAccessDeniedEvent, d)
+		}
+
 		return false
 	}
 
@@ -132,6 +149,12 @@ func CheckAPIAuth(mgr *cbgt.Manager,
 
 		if !allowed {
 			CBAuthSendForbidden(w, perm)
+
+			if adtSvc != nil {
+				d := GetAuditEventData(AuditAccessDeniedEvent, req)
+				go adtSvc.Write(AuditAccessDeniedEvent, d)
+			}
+
 			return false
 		}
 	}
