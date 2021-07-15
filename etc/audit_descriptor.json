@@ -188,6 +188,29 @@
                         }
                   },
                   "optional_fields": {}
+            },
+            {
+                  "id": 24585,
+                  "name": "Access denied",
+                  "description": "User has been denied access to the REST API due to invalid permissions/credentials",
+                  "sync": false,
+                  "enabled": true,
+                  "mandatory_fields": {
+                        "timestamp": "",
+                        "real_userid": {
+                              "domain": "",
+                              "user": ""
+                        },
+                        "local": {
+                              "ip": "",
+                              "port": ""
+                        },
+                        "remote": {
+                              "ip": "",
+                              "port": ""
+                        }
+                  },
+                  "optional_fields": {}
             }
       ]
 }
