@@ -35,6 +35,9 @@ var API_MAX_VERSION_JSON = WithJSONVersion(API_MAX_VERSION)
 
 const VersionTag = "version="
 
+var FeatureCollectionVersion = "7.0.0"
+var FeatureGrpcVersion = "6.5.0"
+
 func HandleAPIVersion(h string) (string, error) {
 	if len(h) <= 0 || h == "*/*" {
 		return API_MAX_VERSION, nil
@@ -100,9 +103,10 @@ func CheckAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
 var versionTracker *clusterVersionTracker
 
 type clusterVersionTracker struct {
-	version uint64
-	server  string
-	found   int32
+	server         string
+	version        uint64 // current cbft version.
+	clusterVersion uint64 // current compatibility version found on cluster.
+	found          int32
 }
 
 func StartClusterVersionTracker(version string, server string) {
@@ -117,6 +121,8 @@ func (vt *clusterVersionTracker) run() {
 	if err != nil {
 		log.Printf("version: getEffectiveClusterVersion, err: %v", err)
 	}
+
+	vt.clusterVersion = ev
 
 	if vt.version == ev {
 		log.Printf("version: matching clusterCompatibility"+
@@ -138,6 +144,8 @@ func (vt *clusterVersionTracker) run() {
 				continue
 			}
 
+			vt.clusterVersion = ev
+
 			if vt.version != ev {
 				continue
 			}
@@ -151,8 +159,24 @@ func (vt *clusterVersionTracker) run() {
 	}
 }
 
-func (vt *clusterVersionTracker) compatibleCluster() bool {
-	return atomic.LoadInt32(&vt.found) == 1
+// clusterCompatibleForVersion checks whether a compatible cluster found
+// If not, then it checks whether the current cluster compatibility
+// version is greater than or equal the given app version.
+func (vt *clusterVersionTracker) clusterCompatibleForVersion(
+	version string) bool {
+	// if already a compatible cluster found then exit early to
+	// avoid compatibility version parsing.
+	if atomic.LoadInt32(&vt.found) == 1 {
+		return true
+	}
+
+	givenVersion, err := cbgt.CompatibilityVersion(version)
+	if err == nil && vt.clusterVersion != 0 &&
+		vt.clusterVersion >= givenVersion {
+		return true
+	}
+
+	return false
 }
 
 func getEffectiveClusterVersion(server string) (uint64, error) {
