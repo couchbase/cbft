@@ -497,7 +497,12 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		return indexDef, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
 	}
 
-	collectionsSupported := cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+	var collectionsSupported bool
+	if versionTracker != nil &&
+		versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
+		collectionsSupported =
+			cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+	}
 
 	if collectionsSupported {
 		// Use "gocbcore" for DCP streaming if cluster is 7.0+

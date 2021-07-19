@@ -148,7 +148,8 @@ func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 
 func getRemoteClients(mgr *cbgt.Manager) addRemoteClients {
 	var addRemClients addRemoteClients
-	if versionTracker != nil && versionTracker.compatibleCluster() {
+	if versionTracker != nil &&
+		versionTracker.clusterCompatibleForVersion(FeatureGrpcVersion) {
 		addRemClients = addGrpcClients
 	}
 
