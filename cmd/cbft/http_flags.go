@@ -25,6 +25,7 @@ var httpReadTimeout = 20 * time.Second
 var httpReadHeaderTimeout = 5 * time.Second
 var httpWriteTimeout = 60 * time.Second
 var httpIdleTimeout = 60 * time.Second
+var httpHandlerTimeout = 300 * time.Minute
 
 func initHTTPOptions(options map[string]string) error {
 	s := options["httpTransportDialContextTimeout"]
@@ -100,6 +101,10 @@ func initHTTPOptions(options map[string]string) error {
 	ht, found := cbgt.ParseOptionsInt(options, "httpReadHeaderTimeout")
 	if found {
 		httpReadHeaderTimeout = time.Duration(ht) * time.Second
+	}
+	ht, found = cbgt.ParseOptionsInt(options, "httpHandlerTimeout")
+	if found {
+		httpHandlerTimeout = time.Duration(ht) * time.Minute
 	}
 
 	transport := &http.Transport{
