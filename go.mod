@@ -4,14 +4,14 @@ go 1.13
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.0.3
+	github.com/blevesearch/bleve/v2 v2.0.7
 	github.com/blevesearch/bleve_index_api v1.0.0
 	github.com/blevesearch/upsidedown_store_api v1.0.1
-	github.com/blevesearch/zapx/v11 v11.2.0
-	github.com/blevesearch/zapx/v12 v12.2.0
-	github.com/blevesearch/zapx/v13 v13.2.0
-	github.com/blevesearch/zapx/v14 v14.2.0
-	github.com/blevesearch/zapx/v15 v15.2.0
+	github.com/blevesearch/zapx/v11 v11.2.1
+	github.com/blevesearch/zapx/v12 v12.2.1
+	github.com/blevesearch/zapx/v13 v13.2.1
+	github.com/blevesearch/zapx/v14 v14.2.1
+	github.com/blevesearch/zapx/v15 v15.2.1
 	github.com/buger/jsonparser v1.1.1
 	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
@@ -22,15 +22,15 @@ require (
 	github.com/couchbase/moss v0.1.0
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0
+	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.4.0
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 	github.com/julienschmidt/httprouter v1.1.1-0.20170430222011-975b5c4c7c21
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
-	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	google.golang.org/grpc v1.24.0
 )
 
