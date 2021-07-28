@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.0.3
+	github.com/blevesearch/bleve/v2 v2.0.4-0.20210728162813-ea67c5c8c6bf
 	github.com/blevesearch/bleve_index_api v1.0.0
 	github.com/blevesearch/upsidedown_store_api v1.0.1
 	github.com/blevesearch/zapx/v11 v11.2.0
