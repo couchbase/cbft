@@ -469,6 +469,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	cbft.StartClusterVersionTracker(cbgt.CfgAppVersion,
 		options["nsServerURL"])
 
+	// start the server group tracker.
+	cbft.StartServerGroupTracker(mgr)
+
 	// enabled by default, runtime controllable through manager options
 	log.Printf("main: custom jsoniter json implementation enabled")
 	cbft.JSONImpl = &cbft.CustomJSONImpl{CustomJSONImplType: "jsoniter"}
