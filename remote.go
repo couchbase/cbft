@@ -37,10 +37,12 @@ func RegisterRemoteClientsForSecurity() {
 		handleRefreshSecuritySettings)
 }
 
-func handleRefreshSecuritySettings() error {
-	ss := cbgt.GetSecuritySetting()
-	setupHttp2Client(ss.CertInBytes)
-	resetGrpcClients()
+func handleRefreshSecuritySettings(status int) error {
+	if status&cbgt.AuthChange_certificates != 0 {
+		ss := cbgt.GetSecuritySetting()
+		setupHttp2Client(ss.CertInBytes)
+		resetGrpcClients()
+	}
 	return nil
 }
 

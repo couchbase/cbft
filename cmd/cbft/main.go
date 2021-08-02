@@ -56,6 +56,9 @@ var expvars = expvar.NewMap("stats")
 // http router in use
 var routerInUse http.Handler
 
+// AuthType used for SSL servers/listeners
+var authType string
+
 func init() {
 	cbgt.DCPFeedPrefix = "fts:"
 
@@ -220,6 +223,8 @@ func main() {
 		tagsArr = strings.Split(flags.Tags, ",")
 	}
 
+	authType = options["authType"]
+
 	if flags.BindGRPC != "" {
 		bindGRPCList := strings.Split(flags.BindGRPC, ",")
 		options["bindGRPC"] = bindGRPCList[0]
@@ -252,7 +257,7 @@ func main() {
 		defer platform.HideConsole(false)
 	}
 
-	setupHTTPListenersAndServe(routerInUse, bindHTTPList, options)
+	setupHTTPListenersAndServe(routerInUse)
 
 	<-(make(chan struct{})) // Block forever.
 }
@@ -491,7 +496,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	setupGRPCListenersAndServe(mgr, options)
+	setupGRPCListenersAndServe(mgr)
 
 	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)

@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -28,87 +27,60 @@ import (
 	"golang.org/x/net/netutil"
 )
 
-// List of active https servers
-var httpsServersMutex sync.Mutex
-var httpsServers []*http.Server
-
-// AuthType used for HTTPS connections
-var authType string
-
-func setupHTTPListenersAndServe(routerInUse http.Handler, bindHTTPList []string,
-	options map[string]string) {
+func setupHTTPListenersAndServe(routerInUse http.Handler) {
 	http.Handle("/", routerInUse)
 
-	anyHostPorts := map[string]bool{}
-	// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
-	for _, bindHTTP := range bindHTTPList {
-		if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
-			strings.HasPrefix(bindHTTP, "[::]:") {
-			mainServeHTTP("http", bindHTTP, nil)
-
-			anyHostPorts[bindHTTP] = true
-		}
-	}
-
-	for i := len(bindHTTPList) - 1; i >= 1; i-- {
-		mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
-	}
-
-	authType = options["authType"]
+	bindHTTPList := strings.Split(flags.BindHTTP, ",")
+	bindHTTPSList := strings.Split(flags.BindHTTPS, ",")
 
 	if authType == "cbauth" {
-		// Registering a TLS refresh callback with cbauth, which
-		// will be responsible for updating https listeners,
-		// whenever ssl certificates or the client cert auth settings
-		// are changed.
-		handleConfigChanges := func() error {
+		// register a security refresh callback with cbauth, which is
+		// responsible for updating the listeners on refresh
+		handleConfigChanges := func(status int) error {
 			// restart the servers in case of a refresh
-			setupHTTPSListeners()
+			setupHTTPListeners(bindHTTPList, bindHTTPSList, status)
 			return nil
 		}
-		cbgt.RegisterConfigRefreshCallback("fts/https", handleConfigChanges)
+		cbgt.RegisterConfigRefreshCallback("fts/http,https", handleConfigChanges)
 	}
 
-	setupHTTPSListeners()
+	setupHTTPListeners(bindHTTPList, bindHTTPSList,
+		cbgt.AuthChange_nonSSLPorts|cbgt.AuthChange_certificates)
 }
 
-// Add to HTTPS Server list serially
-func addToHTTPSServerList(server *http.Server) {
-	httpsServersMutex.Lock()
-	httpsServers = append(httpsServers, server)
-	httpsServersMutex.Unlock()
-}
+func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error {
+	if status&cbgt.AuthChange_nonSSLPorts != 0 {
+		// close any previously opened http servers
+		serversCache.shutdownHttpServers(false)
 
-// Close all HTTPS Servers and clear HTTPS Server list
-func closeAndClearHTTPSServerList() {
-	httpsServersMutex.Lock()
-	defer httpsServersMutex.Unlock()
+		ss := cbgt.GetSecuritySetting()
+		if ss == nil || !ss.DisableNonSSLPorts {
+			anyHostPorts := map[string]bool{}
+			// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
+			for _, bindHTTP := range bindHTTPList {
+				if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
+					strings.HasPrefix(bindHTTP, "[::]:") {
+					mainServeHTTP("http", bindHTTP, nil)
+					anyHostPorts[bindHTTP] = true
+				}
+			}
 
-	for _, entry := range httpsServers {
-		// Upon invoking Close() for a server, the blocking Serve(..) for
-		// the server will return ErrServerClosed and is also responsible
-		// for closing the listener that it's accepting incoming
-		// connections on.
-		entry.Close()
+			for i := len(bindHTTPList) - 1; i >= 1; i-- {
+				mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
+			}
+		}
 	}
-	httpsServers = nil
-}
 
-func setupHTTPSListeners() error {
-	// Close any previously open https servers
-	closeAndClearHTTPSServerList()
+	if status&cbgt.AuthChange_certificates != 0 {
+		// close any previously opened https servers
+		serversCache.shutdownHttpServers(true)
 
-	anyHostPorts := map[string]bool{}
-
-	if flags.BindHTTPS != "" {
-		bindHTTPSList := strings.Split(flags.BindHTTPS, ",")
-
-		// Bind to 0.0.0.0's first for https listening.
+		anyHostPorts := map[string]bool{}
+		// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
 		for _, bindHTTPS := range bindHTTPSList {
 			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") ||
 				strings.HasPrefix(bindHTTPS, "[::]:") {
 				mainServeHTTP("https", bindHTTPS, nil)
-
 				anyHostPorts[bindHTTPS] = true
 			}
 		}
@@ -164,7 +136,8 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 	log.Printf(bar)
 
 	setupHTTPServer := func(listener net.Listener, nwp string) {
-		server := &http.Server{Addr: bindHTTP,
+		server := &http.Server{
+			Addr:              bindHTTP,
 			Handler:           routerInUse,
 			ReadTimeout:       httpReadTimeout,
 			ReadHeaderTimeout: httpReadHeaderTimeout,
@@ -175,6 +148,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 		}
 
 		if proto == "http" {
+			serversCache.registerHttpServer(server, false)
 			limitListener := netutil.LimitListener(listener, httpMaxConnections)
 			go func(nwp string, listener net.Listener) {
 				log.Printf("init_http: Setting up a http limit listener at %q,"+
@@ -182,14 +156,13 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 				atomic.AddUint64(&cbft.TotHTTPLimitListenersOpened, 1)
 				err := server.Serve(limitListener)
 				if err != nil {
-					log.Printf("init_http: Serve, err: %v;\n"+
-						"  Please check that your -bindHttp parameter (%q)\n"+
-						"  is correct and available.", err, bindHTTP)
+					log.Warnf("init_http: Serve, err: %v;"+
+						" closed HTTP listener on bindHTTP: %q, proto: %q", err, bindHTTP, nwp)
 				}
 				atomic.AddUint64(&cbft.TotHTTPLimitListenersClosed, 1)
 			}(nwp, limitListener)
 		} else {
-			addToHTTPSServerList(server)
+			serversCache.registerHttpServer(server, true)
 			// Initialize server.TLSConfig to the listener's TLS Config before calling
 			// server for HTTP/2 support.
 			// See: https://golang.org/pkg/net/http/#Server.Serve
@@ -220,20 +193,18 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 
 					if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
 						caCertPool := x509.NewCertPool()
-						var certBytes []byte
-						if len(ss.CertInBytes) != 0 {
-							certBytes = ss.CertInBytes
-						} else {
+						certInBytes := ss.CertInBytes
+						if len(certInBytes) == 0 {
 							// if no CertInBytes found in settings, then fallback
 							// to reading directly from file. Upon any certs change
 							// callbacks later, reboot of servers will ensure the
 							// latest certificates in the servers.
-							certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
+							certInBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
 							if err != nil {
 								log.Fatalf("init_http: ReadFile of cacert, err: %v", err)
 							}
 						}
-						ok := caCertPool.AppendCertsFromPEM(certBytes)
+						ok := caCertPool.AppendCertsFromPEM(certInBytes)
 						if !ok {
 							log.Fatalf("init_http: error in appending certificates")
 						}
@@ -256,9 +227,8 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 				atomic.AddUint64(&cbft.TotHTTPSLimitListenersOpened, 1)
 				err = server.Serve(tlsListener)
 				if err != nil {
-					log.Printf("init_http: Serve, err: %v;"+
-						" HTTPS listeners closed, likely to be re-initialized, "+
-						" -bindHttp(s) (%q) on nwp: %s\n", err, bindHTTP, nwp)
+					log.Warnf("init_http: Serve, err: %v;"+
+						" closed HTTPS listener on bindHTTPS: %q, proto: %q", err, bindHTTP, nwp)
 				}
 				atomic.AddUint64(&cbft.TotHTTPSLimitListenersClosed, 1)
 			}(nwp, tlsListener)
@@ -276,7 +246,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 		} else if listener != nil {
 			setupHTTPServer(listener, "tcp6")
 		} else {
-			log.Warnf("init_http: ipv6 listener not set up")
+			log.Warnf("init_http: ipv6 listener not set up for %s", bindHTTP)
 		}
 	}
 
@@ -291,7 +261,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 		} else if listener != nil {
 			setupHTTPServer(listener, "tcp4")
 		} else {
-			log.Warnf("init_http: ipv4 listener not set up")
+			log.Warnf("init_http: ipv4 listener not set up for %s", bindHTTP)
 		}
 	}
 }
