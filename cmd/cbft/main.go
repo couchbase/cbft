@@ -298,7 +298,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
 		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
 		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections +
-		"," + cbft.FeatureBlevePreferredSegmentVersion
+		"," + cbft.FeatureBlevePreferredSegmentVersion +
+		"," + cbft.FeatureFileTransferRebalance
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
@@ -549,6 +550,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
+
+	handle(prefix+"/api/pindex/{pindexName}/contents", "GET",
+		cbft.NewPIndexContentHandler(mgr))
 
 	handle(prefix+"/api/v1/backup", "GET",
 		cbft.NewBackupIndexHandler(mgr))

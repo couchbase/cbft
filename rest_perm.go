@@ -128,6 +128,9 @@ cluster.collection[<sourceName>].fts!read
 POST /api/pindex/{pindexName}/query
 cluster.collection[<sourceName>].fts!read
 
+GET /api/pindex/{pindexName}/contents
+cluster.bucket[<sourceName>].fts!write
+
 GET /api/ping
 none
 
