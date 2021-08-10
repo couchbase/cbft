@@ -91,12 +91,15 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 	// compute the node specific offset from the node index.
 	pos := 1
 	nodeDefs, _ := st.mgr.GetNodeDefs(cbgt.NODE_DEFS_KNOWN, false)
-	for _, nodeDef := range nodeDefs.NodeDefs {
-		if nodeDef.UUID == st.mgr.UUID() {
-			break
+	if nodeDefs != nil {
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			if nodeDef.UUID == st.mgr.UUID() {
+				break
+			}
+			pos++
 		}
-		pos++
 	}
+
 	dbinterval := nm * pos * offset
 	log.Printf("server_groups: debounce duration: %d MS", dbinterval)
 
@@ -309,7 +312,7 @@ func listenStreamingEndpoint(url string, decodeResponse func([]byte) (
 
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -326,12 +329,12 @@ func listenStreamingEndpoint(url string, decodeResponse func([]byte) (
 			}
 		}
 
-		resBytes, err := reader.ReadBytes('\n')
+		resBytes, err := reader.ReadBytes('\r')
 		if err != nil {
 			log.Printf("server_groups: reader, err: %v", err)
 			continue
 		}
-		if len(resBytes) == 1 && resBytes[0] == '\n' {
+		if len(resBytes) == 1 && resBytes[0] == '\r' {
 			continue
 		}
 

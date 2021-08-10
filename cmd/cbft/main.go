@@ -298,7 +298,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
 		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
 		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections +
-		"," + cbft.FeatureBlevePreferredSegmentVersion
+		"," + cbft.FeatureBlevePreferredSegmentVersion +
+		"," + cbft.FeatureFileTransferRebalance
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
@@ -550,6 +551,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
 
+	handle(prefix+"/api/pindex/{pindexName}/contents", "GET",
+		cbft.NewPIndexContentHandler(mgr))
+
 	handle(prefix+"/api/v1/backup", "GET",
 		cbft.NewBackupIndexHandler(mgr))
 
@@ -567,7 +571,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	handle(prefix+"/api/conciseOptions", "GET", cbft.NewConciseOptions(mgr))
 
-	router := exportMuxRoutesToHttprouter(muxrouter)
+	router := exportMuxRoutesToHttprouter(muxrouter, options)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",
 		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewManagerOptionsExt(mgr)))
@@ -737,7 +741,8 @@ func ContextGet(req *http.Request, name string) string {
 
 // Fetches all routes, their methods and handlers from gorilla/mux router
 // and initializes the julienschmidt/httprouter router with them.
-func exportMuxRoutesToHttprouter(router *mux.Router) *httprouter.Router {
+func exportMuxRoutesToHttprouter(router *mux.Router,
+	options map[string]string) *httprouter.Router {
 	hr := httprouter.New()
 
 	re := regexp.MustCompile("{([^/]*)}")
@@ -751,6 +756,8 @@ func exportMuxRoutesToHttprouter(router *mux.Router) *httprouter.Router {
 				req = ContextSet(req, p)
 				handler.ServeHTTP(w, req)
 			}
+
+			handler = wrapTimeoutHandler(handler, options)
 
 			hr.Handle(method, path, httpRouterHandler)
 			routesHandled[method+path] = true

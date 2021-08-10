@@ -164,36 +164,27 @@ func scopeCollNames(params, sourceName string) (string, []string) {
 }
 
 func getNsIndexStatsKey(indexName, sourceName, params string) string {
-	key := ` {bucket="` + sourceName + `",scope="%s"` +
-		`,collection="%s",index="` +
-		indexName + `"}`
 	var colNames string
 	// look up the scope/collection details from the cache.
-	scopeName, collectionNames := metaFieldValCache.getScopeCollectionNames(indexName)
-	if len(scopeName) > 0 && len(collectionNames) > 0 {
-		for i := range collectionNames {
-			if i == 0 {
-				colNames += collectionNames[i]
-			} else {
-				colNames += "," + collectionNames[i]
-			}
+	sname, cnames := metaFieldValCache.getScopeCollectionNames(indexName)
+	// compute afresh for a cache miss.
+	if len(sname) == 0 && len(cnames) == 0 {
+		sname, cnames = scopeCollNames(params, sourceName)
+		if sname == "" && len(cnames) == 0 {
+			sname = "_default"
+			cnames = []string{"_default"}
 		}
-		return fmt.Sprintf(key, scopeName, colNames)
 	}
 
-	// compute afresh for a cache miss.
-	sname, cnames := scopeCollNames(params, sourceName)
-	if sname == "" && len(cnames) == 0 {
-		sname = "_default"
-		cnames = []string{"_default"}
-	}
 	for i, colName := range cnames {
 		if i > 0 {
 			colName = "," + colName
 		}
 		colNames += colName
 	}
-	return fmt.Sprintf(key, sname, colNames)
+
+	return ` {bucket="` + sourceName + `",scope="` + sname + `"` +
+		`,collection="` + colNames + `",index="` + indexName + `"}`
 }
 
 // PrometheusMetricsHandler is a REST handler that provides low

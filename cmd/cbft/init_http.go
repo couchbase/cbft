@@ -168,7 +168,6 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 			Handler:           routerInUse,
 			ReadTimeout:       httpReadTimeout,
 			ReadHeaderTimeout: httpReadHeaderTimeout,
-			WriteTimeout:      httpWriteTimeout,
 			IdleTimeout:       httpIdleTimeout,
 			ConnContext: func(ctx context.Context, conn net.Conn) context.Context {
 				return context.WithValue(ctx, "conn", conn)
@@ -340,4 +339,21 @@ func getListener(bindAddr, nwp string) (net.Listener, error) {
 		return nil, nil
 	}
 	return net.Listen(nwp, bindAddr)
+}
+
+// wrapTimeoutHandler wraps the given handler with an http.TimeoutHandler.
+func wrapTimeoutHandler(h http.Handler,
+	options map[string]string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var timeoutHandler http.Handler
+		msg := "server write time out."
+		// override the default only for /contents endpoint
+		if strings.HasSuffix(r.URL.Path, "/contents") {
+			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, msg)
+		} else {
+			// keeping the same old config value for the write timeout.
+			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, msg)
+		}
+		timeoutHandler.ServeHTTP(w, r)
+	}
 }

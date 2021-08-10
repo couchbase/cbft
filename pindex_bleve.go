@@ -353,7 +353,8 @@ type BleveDest struct {
 	// Invoked when mgr should restart this BleveDest, like on rollback.
 	restart func()
 
-	stats *cbgt.PIndexStoreStats
+	stats     *cbgt.PIndexStoreStats
+	copyStats *CopyPartitionStats
 
 	m           sync.RWMutex // Protects the fields that follow.
 	bindex      bleve.Index
@@ -401,20 +402,25 @@ func NewBleveDest(path string, bindex bleve.Index,
 		bindex:         bindex,
 		partitions:     make(map[string]*BleveDestPartition),
 		stats:          cbgt.NewPIndexStoreStats(),
+		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
 	}
 
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
-	for i := 0; i < asyncBatchWorkerCount; i++ {
-		bleveDest.batchReqChs[i] = make(chan *batchRequest, 1)
-		go runBatchWorker(bleveDest.batchReqChs[i], bleveDest.stopCh, bindex)
-		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, bindex.Name())
-	}
+	bleveDest.startBatchWorkers()
 
 	atomic.AddUint64(&TotBleveDestOpened, 1)
 
 	return bleveDest
+}
+
+func (t *BleveDest) startBatchWorkers() {
+	for i := 0; i < asyncBatchWorkerCount; i++ {
+		t.batchReqChs[i] = make(chan *batchRequest, 1)
+		go runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex)
+		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, t.bindex.Name())
+	}
 }
 
 // ---------------------------------------------------------
@@ -456,6 +462,7 @@ func init() {
 		OnDelete: OnDeleteIndex,
 
 		New:       NewBlevePIndexImpl,
+		NewEx:     NewBlevePIndexImplEx,
 		Open:      OpenBlevePIndexImpl,
 		OpenUsing: OpenBlevePIndexImplUsing,
 
@@ -756,26 +763,30 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 	DropSourcePartitionSeqs(indexDef.SourceName, indexDef.SourceUUID)
 }
 
-func NewBlevePIndexImpl(indexType, indexParams, path string,
-	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+func parseIndexParams(indexParams string) (
+	bleveParams *BleveParams, kvConfig map[string]interface{},
+	bleveIndexType string, kvStoreName string, err error) {
 	var ip cbgt.IndexPrepParams
-	err := json.Unmarshal([]byte(indexParams), &ip)
+	err = json.Unmarshal([]byte(indexParams), &ip)
 	if err != nil {
-		return nil, nil, fmt.Errorf("bleve: new index, json marshal"+
-			" err: %v", err)
+		return nil, nil, "", "",
+			fmt.Errorf("bleve: new index, json marshal"+
+				" err: %v", err)
 	}
-	indexParams = ip.Params
-	bleveParams := NewBleveParams()
 
+	indexParams = ip.Params
+	bleveParams = NewBleveParams()
 	if len(indexParams) > 0 {
 		buf, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 		if err != nil {
-			return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
+			return nil, nil, "", "",
+				fmt.Errorf("bleve: cleanse params, err: %v", err)
 		}
 
 		err = json.Unmarshal(buf, bleveParams)
 		if err != nil {
-			return nil, nil, fmt.Errorf("bleve: parse params, err: %v", err)
+			return nil, nil, "", "",
+				fmt.Errorf("bleve: parse params, err: %v", err)
 		}
 	}
 
@@ -784,19 +795,20 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 			scope, err := validateScopeCollFromMappings(ip.SourceName,
 				im, false)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, "", "", err
 			}
 			// if there are more than 1 collection then need to
 			// insert $scope#$collection field into the mappings
 			if multiCollection(scope.Collections) {
 				err = enhanceMappingsWithCollMetaField(im.TypeMapping)
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, "", "", err
 				}
 				ipBytes, err := json.Marshal(bleveParams)
 				if err != nil {
-					return nil, nil, fmt.Errorf("bleve: new , json marshal,"+
-						" err: %v", err)
+					return nil, nil, "", "",
+						fmt.Errorf("bleve: new , json marshal,"+
+							" err: %v", err)
 				}
 				indexParams = string(ipBytes)
 			}
@@ -806,7 +818,17 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		}
 	}
 
-	kvConfig, bleveIndexType, kvStoreName := bleveRuntimeConfigMap(bleveParams)
+	kvConfig, bleveIndexType, kvStoreName = bleveRuntimeConfigMap(bleveParams)
+	return bleveParams, kvConfig, bleveIndexType, kvStoreName, nil
+}
+
+func NewBlevePIndexImpl(indexType, indexParams, path string,
+	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	bleveParams, kvConfig, bleveIndexType, kvStoreName, err :=
+		parseIndexParams(indexParams)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	if bleveIndexType == "upside_down" {
 		log.Printf("bleve: new index, path: %s,"+
@@ -1427,6 +1449,12 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 
 // ---------------------------------------------------------
 
+func (t *BleveDest) resetBIndex(bindex bleve.Index) {
+	t.m.Lock()
+	t.bindex = bindex
+	t.m.Unlock()
+}
+
 func (t *BleveDest) Dest(partition string) (cbgt.Dest, error) {
 	t.m.Lock()
 	d, err := t.getPartitionLOCKED(partition)
@@ -1747,6 +1775,8 @@ type JSONStatsWriter interface {
 
 var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
+var prefixCopyPartitionStats = []byte(`,"copyPartitionStats":`)
+
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var vbstats, verbose bool
 	var indexDef *cbgt.IndexDef
@@ -1810,6 +1840,13 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 		if err != nil {
 			return
 		}
+
+		_, err = w.Write(prefixCopyPartitionStats)
+		if err != nil {
+			return err
+		}
+
+		t.copyStats.WriteJSON(w)
 
 		// skip the vbucket stats if vbstats is not requested.
 		if !vbstats {
