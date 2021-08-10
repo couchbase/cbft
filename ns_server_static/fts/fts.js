@@ -20,8 +20,7 @@ import ngSortable from "/ui/libs/angular-legacy-sortable.js";
 import mnPermissions from "/ui/app/components/mn_permissions.js";
 import mnFooterStatsController from "/ui/app/mn_admin/mn_gsi_footer_controller.js";
 import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
-import mnDocumentsEditingService from "/ui/app/mn_admin/mn_documents_editing_service.js";
-import mnDocumentsListService from "/ui/app/mn_admin/mn_documents_list_service.js";
+import mnDocumentsService from "/ui/app/mn_admin/mn_documents_service.js";
 import mnSelect from "/ui/app/components/directives/mn_select/mn_select.js";
 
 import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
@@ -50,7 +49,7 @@ export {confirmDialog, alertDialog};
 angular
     .module(ftsAppName,
             [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService,
-                uiCodemirror, mnDocumentsEditingService, mnDocumentsListService, mnSelect])
+                uiCodemirror, mnDocumentsService, mnSelect])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
 
@@ -1620,7 +1619,7 @@ function getBucketScopeFromMapping(mapping) {
 // IndexNewCtrlFTEasy_NS is the controller for the create/edit easy mode
 function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                                $location, $log, $sce, $uibModal,
-                               $q, mnBucketsService, mnPoolDefault, mnDocumentsEditingService, mnDocumentsListService) {
+                               $q, mnBucketsService, mnPoolDefault, mnDocumentsService) {
     mnBucketsService.getBucketsByType(true).
     then(initWithBuckets,
         function(err) {
@@ -1684,7 +1683,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
     }
 
     function getSampleDocument(params) {
-        return mnDocumentsEditingService.getDocument(params).then(function (sampleDocument) {
+        return mnDocumentsService.getDocument(params).then(function (sampleDocument) {
             return prepareDocForCodeMirror(sampleDocument.data);
         }, function (resp) {
             switch(resp.status) {
@@ -1712,7 +1711,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             switch(resp.status) {
                 case 404:
                     if (resp.data.error === "fallback_to_all_docs") {
-                        return mnDocumentsListService.getDocuments({
+                        return mnDocumentsService.getDocuments({
                             bucket: params.bucket,
                             scope: params.scope,
                             collection: params.collection,
