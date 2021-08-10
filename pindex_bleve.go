@@ -774,6 +774,7 @@ func parseIndexParams(indexParams string) (
 				" err: %v", err)
 	}
 
+	indexParams = ip.Params
 	bleveParams = NewBleveParams()
 	if len(indexParams) > 0 {
 		buf, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
