@@ -268,6 +268,7 @@ type requestParser interface {
 	GetPIndexName() (string, error)
 	GetIndexDef() (*cbgt.IndexDef, error)
 	GetRequest() (interface{}, string)
+	GetCollectionNames() ([]string, error)
 }
 
 var errInvalidHttpRequest = fmt.Errorf("rest_auth: invalid http request")
@@ -322,6 +323,28 @@ func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
 	return &indexDef, nil
 }
 
+func (p *restRequestParser) GetCollectionNames() ([]string, error) {
+	var requestBody []byte
+	var err error
+	if p.req.Body != nil {
+		requestBody, err = ioutil.ReadAll(p.req.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// reset req.Body so it can be read later by the handler
+	p.req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+
+	var rv []string
+	jsonparser.ArrayEach(requestBody, func(value []byte,
+		dataType jsonparser.ValueType, offset int, err error) {
+		rv = append(rv, string(value))
+	}, "collections")
+
+	return rv, nil
+}
+
 func (p *restRequestParser) GetSourceName() (string, error) {
 	return p.req.FormValue("sourceName"), nil
 }
@@ -363,16 +386,26 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 			if err != nil {
 				return nil, err
 			}
-			sourceNames = append(sourceNames, currSourceNames...)
+
+			// get the target collections from the request
+			targetColls, _ := rp.GetCollectionNames()
+
+			// authenticate against all the sourcenames if its a blanket query
+			if len(targetColls) == 0 {
+				return append(sourceNames, currSourceNames...), nil
+			}
+
+			// authenticate only against the given target collections
+			collMap := cbgt.StringsToMap(targetColls)
+			for _, sn := range currSourceNames {
+				pos := strings.LastIndex(sn, ":") + 1
+				if _, found := collMap[sn[pos:]]; found {
+					sourceNames = append(sourceNames, sn)
+				}
+			}
 		}
 
-		// now also add any sources from new definition in the request
-		newSourceNames, err := findCouchbaseSourceNames(rp, indexName, indexDefsByName)
-		if err != nil {
-			return nil, err
-		}
-
-		return append(sourceNames, newSourceNames...), nil
+		return sourceNames, nil
 	}
 
 	pindexName, err := rp.GetPIndexName()
