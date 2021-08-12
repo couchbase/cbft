@@ -305,49 +305,70 @@ func listenStreamingEndpoint(url string, decodeResponse func([]byte) (
 			url, "cbauth", err)
 	}
 
-	req, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
+	backoffStartSleepMS := 500
+	backoffFactor := float32(1.5)
+	backoffMaxSleepMS := 60000
 
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := HttpClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	reader := bufio.NewReader(resp.Body)
-	defer resp.Body.Close()
-
+RECONNECT:
 	for {
-		if stopCh != nil {
-			select {
-			case <-stopCh:
-				return nil
-			default:
+
+		var resp *http.Response
+
+		// keep retrying with backoff logic upon connection errors.
+		cbgt.ExponentialBackoffLoop("server_groups listening",
+			func() int {
+				req, err := http.NewRequest("GET", u, nil)
+				if err != nil {
+					log.Printf("server_groups: req, err: %v", err)
+					return 0
+				}
+				req.Header.Add("Content-Type", "application/json")
+
+				resp, err = HttpClient.Do(req)
+				if err != nil {
+					log.Printf("server_groups: http client, err: %v", err)
+					return 0
+				}
+
+				log.Printf("server_groups: pool streaming started")
+				return -1 // success
+			},
+			backoffStartSleepMS, backoffFactor, backoffMaxSleepMS,
+		)
+
+		reader := bufio.NewReader(resp.Body)
+
+		for {
+			if stopCh != nil {
+				select {
+				case <-stopCh:
+					resp.Body.Close()
+					return nil
+				default:
+				}
 			}
-		}
 
-		resBytes, err := reader.ReadBytes('\r')
-		if err != nil {
-			log.Printf("server_groups: reader, err: %v", err)
-			continue
-		}
-		if len(resBytes) == 1 && resBytes[0] == '\r' {
-			continue
-		}
+			resBytes, err := reader.ReadBytes('\n')
+			if err != nil {
+				log.Printf("server_groups: reconnecting upon reader, err: %v", err)
+				resp.Body.Close()
+				continue RECONNECT
+			}
+			if len(resBytes) == 1 && resBytes[0] == '\n' {
+				continue
+			}
 
-		res, err := decodeResponse(resBytes)
-		if err != nil {
-			log.Printf("server_groups: decodeResponse, err: %v", err)
-			continue
-		}
+			res, err := decodeResponse(resBytes)
+			if err != nil {
+				log.Printf("server_groups: decodeResponse, err: %v", err)
+				continue
+			}
 
-		err = notify(res)
-		if err != nil {
-			log.Printf("server_groups: notify, err: %v", err)
-			continue
+			err = notify(res)
+			if err != nil {
+				log.Printf("server_groups: notify, err: %v", err)
+				continue
+			}
 		}
 	}
 
