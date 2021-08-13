@@ -196,13 +196,6 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 	if ssl {
 		var err error
 		config := &tls.Config{}
-		config.Certificates = make([]tls.Certificate, 1)
-		config.Certificates[0], err = tls.LoadX509KeyPair(
-			cbgt.TLSCertFile, cbgt.TLSKeyFile)
-		if err != nil {
-			log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
-		}
-
 		if authType == "cbauth" {
 			ss := cbgt.GetSecuritySetting()
 			if ss != nil && ss.TLSConfig != nil {
@@ -220,9 +213,15 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 						// to reading directly from file. Upon any certs change
 						// callbacks later, reboot of servers will ensure the
 						// latest certificates in the servers.
-						certInBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
+						caFile := cbgt.TLSCertFile
+						if len(cbgt.TLSCAFile) > 0 {
+							caFile = cbgt.TLSCAFile
+						}
+
+						certInBytes, err = ioutil.ReadFile(caFile)
 						if err != nil {
-							log.Fatalf("init_grpc: ReadFile of cacert, err: %v", err)
+							log.Fatalf("init_grpc: ReadFile of cacert, path: %v, err: %v",
+								caFile, err)
 						}
 					}
 					ok := caCertPool.AppendCertsFromPEM(certInBytes)
@@ -236,6 +235,16 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 				}
 			} else {
 				config.ClientAuth = tls.NoClientCert
+			}
+		} else {
+			if len(cbgt.TLSCertFile) > 0 && len(cbgt.TLSKeyFile) > 0 {
+				config.Certificates = make([]tls.Certificate, 1)
+				config.Certificates[0], err = tls.LoadX509KeyPair(cbgt.TLSCertFile, cbgt.TLSKeyFile)
+				if err != nil {
+					log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
+				}
+			} else {
+				log.Fatalf("init_grpc: TLSCertFile/TLSKeyFile unavailable")
 			}
 		}
 

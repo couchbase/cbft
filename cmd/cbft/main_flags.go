@@ -43,6 +43,7 @@ type cbftFlags struct {
 	Extras        string
 	AuthType      string
 
+	TLSCAFile   string
 	TLSCertFile string
 	TLSKeyFile  string
 }
@@ -200,6 +201,9 @@ func initFlags(flags *cbftFlags) map[string][]string {
 	s(&flags.AuthType,
 		[]string{"authType", "auth"}, "AUTH_TYPE", "",
 		"authentication type for cbft requests.")
+	s(&flags.TLSCAFile,
+		[]string{"tlsCAFile"}, "PATH", "",
+		"TLS CA file; see also bindHttps.")
 	s(&flags.TLSCertFile,
 		[]string{"tlsCertFile"}, "PATH", "",
 		"TLS cert file; see also bindHttps.")
