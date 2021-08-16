@@ -33,14 +33,13 @@ import (
 const clusterActionScatterGather = "fts/scatter-gather"
 
 func RegisterRemoteClientsForSecurity() {
+	cbgt.RegisterHttpClient()
 	cbgt.RegisterConfigRefreshCallback("fts/remoteClients",
 		handleRefreshSecuritySettings)
 }
 
 func handleRefreshSecuritySettings(status int) error {
 	if status&cbgt.AuthChange_certificates != 0 {
-		ss := cbgt.GetSecuritySetting()
-		setupHttp2Client(ss.CertInBytes)
 		resetGrpcClients()
 	}
 	return nil
@@ -62,14 +61,6 @@ type addRemoteClients func(mgr *cbgt.Manager, indexName, indexUUID string,
 	collector BleveIndexCollector, groupByNode bool) ([]RemoteClient, error)
 
 const RemoteRequestOverhead = 500 * time.Millisecond
-
-var HttpTransportDialContextTimeout = 30 * time.Second   // Go's default is 30 secs.
-var HttpTransportDialContextKeepAlive = 30 * time.Second // Go's default is 30 secs.
-var HttpTransportMaxIdleConns = 300                      // Go's default is 100 (0 means no limit).
-var HttpTransportMaxIdleConnsPerHost = 100               // Go's default is 2.
-var HttpTransportIdleConnTimeout = 90 * time.Second      // Go's default is 90 secs.
-var HttpTransportTLSHandshakeTimeout = 10 * time.Second  // Go's default is 10 secs.
-var HttpTransportExpectContinueTimeout = 1 * time.Second // Go's default is 1 secs.
 
 var HttpClient = http.DefaultClient // Overridable for testability / advanced needs.
 

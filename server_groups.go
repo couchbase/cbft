@@ -70,8 +70,7 @@ func (st *serverGroupTracker) listen() {
 
 	st.handleServerGroupUpdates()
 
-	err := listenStreamingEndpoint(st.url, decodeJson,
-		notifyUpdates, nil)
+	err := listenStreamingEndpoint(st.url, decodeJson, notifyUpdates, nil)
 	if err != nil {
 		log.Errorf("server_groups: listenStreamingEndpoint, err: %v", err)
 	}
@@ -260,7 +259,12 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 		return nil, err
 	}
 
-	resp, err := HttpClient.Do(req)
+	httpClient := cbgt.HttpClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("server_groups: HttpClient unavailable")
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +328,12 @@ RECONNECT:
 				}
 				req.Header.Add("Content-Type", "application/json")
 
-				resp, err = HttpClient.Do(req)
+				httpClient := cbgt.HttpClient()
+				if httpClient == nil {
+					httpClient = HttpClient
+				}
+
+				resp, err = httpClient.Do(req)
 				if err != nil {
 					log.Printf("server_groups: http client, err: %v", err)
 					return 0
