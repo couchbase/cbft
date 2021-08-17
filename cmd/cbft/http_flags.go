@@ -34,7 +34,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportDialContextTimeout = v
+		cbgt.HttpTransportDialContextTimeout = v
 	}
 
 	s = options["httpTransportDialContextKeepAlive"]
@@ -43,7 +43,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportDialContextKeepAlive = v
+		cbgt.HttpTransportDialContextKeepAlive = v
 	}
 
 	s = options["httpTransportIdleConnTimeout"]
@@ -52,7 +52,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportIdleConnTimeout = v
+		cbgt.HttpTransportIdleConnTimeout = v
 	}
 
 	s = options["httpTransportMaxIdleConns"]
@@ -61,7 +61,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportMaxIdleConns = v
+		cbgt.HttpTransportMaxIdleConns = v
 	}
 
 	s = options["httpTransportMaxIdleConnsPerHost"]
@@ -70,7 +70,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportMaxIdleConnsPerHost = v
+		cbgt.HttpTransportMaxIdleConnsPerHost = v
 	}
 
 	s = options["httpTransportTLSHandshakeTimeout"]
@@ -79,7 +79,16 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportTLSHandshakeTimeout = v
+		cbgt.HttpTransportTLSHandshakeTimeout = v
+	}
+
+	s = options["httpClientTimeout"]
+	if s != "" {
+		v, err := time.ParseDuration(s)
+		if err != nil {
+			return err
+		}
+		cbgt.HttpClientTimeout = v
 	}
 
 	mc, found := cbgt.ParseOptionsInt(options, "httpMaxConnections")
@@ -110,14 +119,14 @@ func initHTTPOptions(options map[string]string) error {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   cbft.HttpTransportDialContextTimeout,
-			KeepAlive: cbft.HttpTransportDialContextKeepAlive,
+			Timeout:   cbgt.HttpTransportDialContextTimeout,
+			KeepAlive: cbgt.HttpTransportDialContextKeepAlive,
 		}).DialContext,
-		MaxIdleConns:          cbft.HttpTransportMaxIdleConns,
-		MaxIdleConnsPerHost:   cbft.HttpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:       cbft.HttpTransportIdleConnTimeout,
-		TLSHandshakeTimeout:   cbft.HttpTransportTLSHandshakeTimeout,
-		ExpectContinueTimeout: cbft.HttpTransportExpectContinueTimeout,
+		MaxIdleConns:          cbgt.HttpTransportMaxIdleConns,
+		MaxIdleConnsPerHost:   cbgt.HttpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:       cbgt.HttpTransportIdleConnTimeout,
+		TLSHandshakeTimeout:   cbgt.HttpTransportTLSHandshakeTimeout,
+		ExpectContinueTimeout: cbgt.HttpTransportExpectContinueTimeout,
 	}
 
 	cbft.HttpClient = &http.Client{Transport: transport}

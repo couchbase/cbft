@@ -198,7 +198,12 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := HttpClient.Do(req)
+	httpClient := cbgt.HttpClient()
+	if httpClient == nil {
+		return 0, fmt.Errorf("version: HttpClient unavailable")
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}

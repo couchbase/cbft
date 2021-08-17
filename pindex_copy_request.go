@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"runtime"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -239,7 +238,8 @@ func getNodesHostingPIndex(uuids []string,
 				defer cancel()
 				req, _ := http.NewRequestWithContext(ctx, "GET", reqs.url, nil)
 
-				res, err := HttpClient.Do(req)
+				httpClient := cbgt.HttpClient()
+				res, err := httpClient.Do(req)
 				if err != nil {
 					responseCh <- &statsResp{
 						uuid:   reqs.uuid,
@@ -339,34 +339,14 @@ func getStatsUrls(uuids []string, authType string,
 		return urlStr, nil
 	}
 
-	ss := cbgt.GetSecuritySetting()
-
 	for _, uuid := range uuids {
 		if node, ok := nodeDefs.NodeDefs[uuid]; ok {
-			delimiterPos := strings.LastIndex(node.HostPort, ":")
-			if delimiterPos < 0 || delimiterPos >= len(node.HostPort)-1 {
-				// no port available
-				continue
-			}
-			host := node.HostPort[:delimiterPos]
-			port := node.HostPort[delimiterPos+1:]
-			proto := "http://"
-
-			// switch over to tls endpoints if possible.
-			if ss.EncryptionEnabled {
-				extrasBindHTTPS, er := node.GetFromParsedExtras("bindHTTPS")
-				if er == nil && extrasBindHTTPS != nil {
-					if bindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
-						portPos := strings.LastIndex(bindHTTPSstr, ":") + 1
-						if portPos > 0 && portPos < len(bindHTTPSstr) {
-							port = bindHTTPSstr[portPos:]
-							proto = "https://"
-						}
-					}
-				}
+			hostPortUrl := "http://" + node.HostPort
+			if u, err := node.HttpsURL(); err == nil {
+				hostPortUrl = u
 			}
 
-			urlStr := proto + host + ":" + port + "/api/stats?partitions=true"
+			urlStr := hostPortUrl + "/api/stats?partitions=true"
 			urlStr, err := urlWithAuth(authType, urlStr)
 			if err != nil {
 				continue
