@@ -2622,6 +2622,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	prefix := mgr.Options()["urlPrefix"]
 	remoteClients := make([]*IndexClient, 0, len(remotePlanPIndexes))
 	rv := make([]RemoteClient, 0, len(remotePlanPIndexes))
+	ss := cbgt.GetSecuritySetting()
 	for _, remotePlanPIndex := range remotePlanPIndexes {
 		if (onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name]) ||
 			remotePlanPIndex.NodeDef == nil {
@@ -2630,9 +2631,11 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 
 		http2Enabled := false
 		hostPortUrl := "http://" + remotePlanPIndex.NodeDef.HostPort
-		if u, err := remotePlanPIndex.NodeDef.HttpsURL(); err == nil {
-			hostPortUrl = u
-			http2Enabled = true
+		if ss.EncryptionEnabled {
+			if u, err := remotePlanPIndex.NodeDef.HttpsURL(); err == nil {
+				hostPortUrl = u
+				http2Enabled = true
+			}
 		}
 
 		baseURL := hostPortUrl + prefix +
@@ -2648,10 +2651,11 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
-			httpClient:  cbgt.HttpClient(),
+			httpClient:  HttpClient,
 		}
 
 		if http2Enabled {
+			indexClient.httpClient = cbgt.HttpClient()
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)
