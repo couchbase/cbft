@@ -339,11 +339,15 @@ func getStatsUrls(uuids []string, authType string,
 		return urlStr, nil
 	}
 
+	ss := cbgt.GetSecuritySetting()
+
 	for _, uuid := range uuids {
 		if node, ok := nodeDefs.NodeDefs[uuid]; ok {
 			hostPortUrl := "http://" + node.HostPort
-			if u, err := node.HttpsURL(); err == nil {
-				hostPortUrl = u
+			if ss.EncryptionEnabled {
+				if u, err := node.HttpsURL(); err == nil {
+					hostPortUrl = u
+				}
 			}
 
 			urlStr := hostPortUrl + "/api/stats?partitions=true"
