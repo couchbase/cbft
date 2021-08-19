@@ -85,6 +85,10 @@ func setupGRPCListeners(mgr *cbgt.Manager,
 
 func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
 	ssl bool, anyHostPorts map[string]bool) {
+	if len(bindGRPC) == 0 {
+		return
+	}
+
 	if bindGRPC[0] == ':' {
 		bindGRPC = "localhost" + bindGRPC
 	}
