@@ -82,15 +82,6 @@ func initHTTPOptions(options map[string]string) error {
 		cbgt.HttpTransportTLSHandshakeTimeout = v
 	}
 
-	s = options["httpClientTimeout"]
-	if s != "" {
-		v, err := time.ParseDuration(s)
-		if err != nil {
-			return err
-		}
-		cbgt.HttpClientTimeout = v
-	}
-
 	mc, found := cbgt.ParseOptionsInt(options, "httpMaxConnections")
 	if found {
 		httpMaxConnections = mc
