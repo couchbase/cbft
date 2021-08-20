@@ -96,6 +96,10 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 // mainServeHTTP starts the http/https servers for cbft.
 // The proto may be "http" or "https".
 func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
+	if len(bindHTTP) == 0 {
+		return
+	}
+
 	if bindHTTP[0] == ':' && proto == "http" {
 		bindHTTP = "localhost" + bindHTTP
 	}

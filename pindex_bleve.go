@@ -1837,13 +1837,6 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 			return
 		}
 
-		_, err = w.Write(prefixCopyPartitionStats)
-		if err != nil {
-			return err
-		}
-
-		t.copyStats.WriteJSON(w)
-
 		// skip the vbucket stats if vbstats is not requested.
 		if !vbstats {
 			_, _ = w.Write(cbgt.JsonCloseBrace)
@@ -1926,6 +1919,13 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	if err != nil {
 		return
 	}
+
+	_, err = w.Write(prefixCopyPartitionStats)
+	if err != nil {
+		return err
+	}
+
+	t.copyStats.WriteJSON(w)
 
 	_, err = w.Write(cbgt.JsonCloseBrace)
 	if err != nil {
