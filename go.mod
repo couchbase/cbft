@@ -27,7 +27,7 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
-	github.com/julienschmidt/httprouter v1.1.1-0.20170430222011-975b5c4c7c21
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v0.0.5
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
