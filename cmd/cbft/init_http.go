@@ -323,7 +323,7 @@ func wrapTimeoutHandler(h http.Handler,
 		msg := "server write time out."
 		// override the default only for /contents endpoint
 		if strings.HasSuffix(r.URL.Path, "/contents") {
-			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, msg)
+			timeoutHandler = newTimeoutHandler(h, httpHandlerTimeout, msg)
 		} else {
 			// keeping the same old config value for the write timeout.
 			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, msg)
