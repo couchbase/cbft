@@ -135,7 +135,6 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 
 			// skip if there is no change in the server group rev numbers.
 			if rev == st.prevRev {
-				log.Printf("server_groups: rev %s, st.prevRev: %s", rev, st.prevRev)
 				continue
 			}
 
