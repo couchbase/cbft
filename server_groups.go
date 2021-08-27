@@ -172,7 +172,7 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 				}
 
 				if !updated {
-					log.Printf("server_groups: no server group membership"+
+					log.Debugf("server_groups: no server group membership"+
 						" updates found for nodeDefs kind: %s", kind)
 					continue
 				}
