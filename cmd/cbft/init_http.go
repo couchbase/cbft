@@ -44,33 +44,26 @@ func setupHTTPListenersAndServe(routerInUse http.Handler) {
 		cbgt.RegisterConfigRefreshCallback("fts/http,https", handleConfigChanges)
 	}
 
-	setupHTTPListeners(bindHTTPList, bindHTTPSList,
-		cbgt.AuthChange_nonSSLPorts|cbgt.AuthChange_certificates)
-}
-
-func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error {
-	if status&cbgt.AuthChange_nonSSLPorts != 0 {
-		// close any previously opened http servers
-		serversCache.shutdownHttpServers(false)
-
-		ss := cbgt.GetSecuritySetting()
-		if ss == nil || !ss.DisableNonSSLPorts {
-			anyHostPorts := map[string]bool{}
-			// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
-			for _, bindHTTP := range bindHTTPList {
-				if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
-					strings.HasPrefix(bindHTTP, "[::]:") {
-					mainServeHTTP("http", bindHTTP, nil)
-					anyHostPorts[bindHTTP] = true
-				}
-			}
-
-			for i := len(bindHTTPList) - 1; i >= 1; i-- {
-				mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
-			}
+	// Ignore DisableNonSSLPorts and keep listeners always open on FTS non-SSL port
+	// Ref: MB-48142
+	anyHostPorts := map[string]bool{}
+	// Bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for http listening.
+	for _, bindHTTP := range bindHTTPList {
+		if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
+			strings.HasPrefix(bindHTTP, "[::]:") {
+			mainServeHTTP("http", bindHTTP, nil)
+			anyHostPorts[bindHTTP] = true
 		}
 	}
 
+	for i := len(bindHTTPList) - 1; i >= 1; i-- {
+		mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
+	}
+
+	setupHTTPListeners(bindHTTPList, bindHTTPSList, cbgt.AuthChange_certificates)
+}
+
+func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error {
 	if status&cbgt.AuthChange_certificates != 0 {
 		// close any previously opened https servers
 		serversCache.shutdownHttpServers(true)
@@ -323,7 +316,7 @@ func wrapTimeoutHandler(h http.Handler,
 		msg := "server write time out."
 		// override the default only for /contents endpoint
 		if strings.HasSuffix(r.URL.Path, "/contents") {
-			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, msg)
+			timeoutHandler = newTimeoutHandler(h, httpHandlerTimeout, msg)
 		} else {
 			// keeping the same old config value for the write timeout.
 			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, msg)

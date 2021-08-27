@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"runtime"
 	"sort"
@@ -74,10 +73,14 @@ func (s *CopyPartitionStats) WriteJSON(w io.Writer) {
 	stats += fmt.Sprintf(`,"TotCopyPartitionCancelled":%d`, t)
 	t = atomic.LoadInt32(&s.TotCopyPartitionOnHttp2)
 	stats += fmt.Sprintf(`,"TotCopyPartitionOnHttp2":%d`, t)
-	if atomic.LoadInt32(&s.CopyPartitionNumBytesExpected) > 0 {
-		prog := math.Round(float64(atomic.LoadInt32(&s.CopyPartitionNumBytesReceived)) /
-			float64(atomic.LoadInt32(&s.CopyPartitionNumBytesExpected)) * 100 / 100)
-		stats += `,"TransferProgress":` + fmt.Sprintf("%f", prog)
+	finished := atomic.LoadInt32(&s.TotCopyPartitionFinished)
+	started := atomic.LoadInt32(&s.TotCopyPartitionStart)
+	if started != 0 && started == finished {
+		stats += `,"TransferProgress": 1`
+	} else if atomic.LoadInt32(&s.CopyPartitionNumBytesExpected) > 0 {
+		prog := float64(atomic.LoadInt32(&s.CopyPartitionNumBytesReceived)) /
+			float64(atomic.LoadInt32(&s.CopyPartitionNumBytesExpected))
+		stats += `,"TransferProgress":` + fmt.Sprintf("%.6f", prog)
 	}
 	w.Write([]byte(stats))
 	w.Write(cbgt.JsonCloseBrace)
