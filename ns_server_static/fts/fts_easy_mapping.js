@@ -210,7 +210,7 @@ function newEasyMapping() {
         // traverse the path, adding any missing document mappings along the way
         for (var pathElementI in pathElements) {
             let pathElement = pathElements[pathElementI];
-            if (mapping.propertyies && (pathElement in mapping.properties)) {
+            if (mapping.properties && (pathElement in mapping.properties)) {
                 mapping = mapping.properties[pathElement];
                 continue;
             }
