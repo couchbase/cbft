@@ -198,11 +198,8 @@ func main() {
 	//
 	// All 3 flags are paths to PEM encoded data.
 	//   - TLSCAFile - holds multiple CAs
-	//   - TLSCertFile - (legacy) holds a certificate chain
+	//   - TLSCertFile - holds a certificate chain
 	//   - TLSKeyFile - holds the private key
-	//
-	// If TLSCAFile is provided, TLSCertFile and TLSKeyFile will not
-	// be used when authType:cbauth.
 	cbgt.TLSCAFile = flags.TLSCAFile
 	cbgt.TLSCertFile = flags.TLSCertFile
 	cbgt.TLSKeyFile = flags.TLSKeyFile

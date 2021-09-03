@@ -196,6 +196,12 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 	if ssl {
 		var err error
 		config := &tls.Config{}
+		config.Certificates = make([]tls.Certificate, 1)
+		config.Certificates[0], err = tls.LoadX509KeyPair(
+			cbgt.TLSCertFile, cbgt.TLSKeyFile)
+		if err != nil {
+			log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
+		}
 		if authType == "cbauth" {
 			ss := cbgt.GetSecuritySetting()
 			if ss != nil && ss.TLSConfig != nil {
@@ -235,16 +241,6 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 				}
 			} else {
 				config.ClientAuth = tls.NoClientCert
-			}
-		} else {
-			if len(cbgt.TLSCertFile) > 0 && len(cbgt.TLSKeyFile) > 0 {
-				config.Certificates = make([]tls.Certificate, 1)
-				config.Certificates[0], err = tls.LoadX509KeyPair(cbgt.TLSCertFile, cbgt.TLSKeyFile)
-				if err != nil {
-					log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
-				}
-			} else {
-				log.Fatalf("init_grpc: TLSCertFile/TLSKeyFile unavailable")
 			}
 		}
 

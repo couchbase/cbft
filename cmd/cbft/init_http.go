@@ -172,6 +172,12 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 			}
 
 			var err error
+			config.Certificates = make([]tls.Certificate, 1)
+			config.Certificates[0], err = tls.LoadX509KeyPair(
+				cbgt.TLSCertFile, cbgt.TLSKeyFile)
+				if err != nil {
+					log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
+				}
 			if authType == "cbauth" {
 				ss := cbgt.GetSecuritySetting()
 				if ss != nil && ss.TLSConfig != nil {
@@ -211,16 +217,6 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 					}
 				} else {
 					config.ClientAuth = tls.NoClientCert
-				}
-			} else {
-				if len(cbgt.TLSCertFile) > 0 && len(cbgt.TLSKeyFile) > 0 {
-					config.Certificates = make([]tls.Certificate, 1)
-					config.Certificates[0], err = tls.LoadX509KeyPair(cbgt.TLSCertFile, cbgt.TLSKeyFile)
-					if err != nil {
-						log.Fatalf("init_http: LoadX509KeyPair, err: %v", err)
-					}
-				} else {
-					log.Fatalf("init_http: TLSCertFile/TLSKeyFile unavailable")
 				}
 			}
 
