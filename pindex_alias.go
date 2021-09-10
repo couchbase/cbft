@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"strings"
@@ -131,10 +132,46 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	if err != nil {
 		return err
 	}
+	processAliasResponse(searchResponse)
 
 	rest.MustEncode(res, searchResponse)
 
 	return nil
+}
+
+func processAliasResponse(searchResponse *bleve.SearchResult) {
+	if searchResponse != nil {
+		if len(searchResponse.Hits) > 0 {
+			for _, hit := range searchResponse.Hits {
+				// extract indexName for the hit's Index field, which holds the pindex name;
+				// a pindex name has the format ..
+				//     default_2d9ca20632cb632e_4c1c5584
+				// where "default" is the index name
+				var indexName string
+				if x := strings.LastIndex(hit.Index, "_"); x > 0 && x < len(hit.Index) {
+					temp := hit.Index[:x]
+					if x = strings.LastIndex(temp, "_"); x > 0 && x < len(hit.Index) {
+						indexName = temp[:x]
+					}
+				}
+
+				// if this is a multi collection index, then strip the collection UID
+				// from the hit ID and fill the details of source collection
+				if sdm, multiCollIndex :=
+					metaFieldValCache.getSourceDetailsMap(indexName); multiCollIndex {
+					idBytes := []byte(hit.ID)
+					cuid := binary.LittleEndian.Uint32(idBytes[:4])
+					if collName, ok := sdm.collUIDNameMap[cuid]; ok {
+						hit.ID = string(idBytes[4:])
+						if hit.Fields == nil {
+							hit.Fields = make(map[string]interface{})
+						}
+						hit.Fields["_$c"] = collName
+					}
+				}
+			}
+		}
+	}
 }
 
 func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
