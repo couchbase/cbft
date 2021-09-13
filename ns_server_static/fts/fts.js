@@ -1588,13 +1588,22 @@ function ftsServiceHostPort($scope, $http, $location) {
     $http.get("/pools/default/nodeServices").then(function(resp) {
         var nodes = resp.data.nodesExt;
         for (var i = 0; i < nodes.length; i++) {
-            if (nodes[i].services && nodes[i].services.fts) {
-                var host = $location.host();
-                if (angular.isDefined(nodes[i].hostname)) {
-                    host = nodes[i].hostname;
+            if (nodes[i].services) {
+                if ($location.protocol() == "https" && nodes[i].services.ftsSSL) {
+                    var host = $location.host();
+                    if (angular.isDefined(nodes[i].hostname)) {
+                        host = nodes[i].hostname;
+                    }
+                    $scope.hostPort = host + ":" + nodes[i].services.ftsSSL;
+                    return;
+                } else if (nodes[i].services.fts) {
+                    var host = $location.host();
+                    if (angular.isDefined(nodes[i].hostname)) {
+                        host = nodes[i].hostname;
+                    }
+                    $scope.hostPort = host + ":" + nodes[i].services.fts;
+                    return;
                 }
-                $scope.hostPort = host + ":" + nodes[i].services.fts;
-                return;
             }
         }
     });
