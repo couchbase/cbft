@@ -1174,7 +1174,6 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 	go func() { // Debounce cfg events to feed into the cfgChangedCh.
 		ech := make(chan cbgt.CfgEvent)
-		cfg.Subscribe(cbgt.PLAN_PINDEXES_KEY, ech)
 		cfg.Subscribe(cbgt.PLAN_PINDEXES_DIRECTORY_STAMP, ech)
 		cfg.Subscribe(cbgt.INDEX_DEFS_KEY, ech)
 		cfg.Subscribe(cbgt.CfgNodeDefsKey(cbgt.NODE_DEFS_WANTED), ech)
