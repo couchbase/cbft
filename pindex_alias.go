@@ -78,7 +78,7 @@ func ValidateAlias(indexType, indexName, indexParams string) error {
 
 func CountAlias(mgr *cbgt.Manager,
 	indexName, indexUUID string) (uint64, error) {
-	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
+	alias, _, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, false, nil, nil, false, "")
 	if err != nil {
 		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
@@ -120,7 +120,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	// setupContextAndCancelCh always exits
 	defer cancel()
 
-	alias, err := bleveIndexAliasForUserIndexAlias(mgr,
+	alias, multiCollIndex, err := bleveIndexAliasForUserIndexAlias(mgr,
 		indexName, indexUUID, true,
 		queryCtlParams.Ctl.Consistency, cancelCh, true,
 		queryCtlParams.Ctl.PartitionSelection)
@@ -132,7 +132,10 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 	if err != nil {
 		return err
 	}
-	processAliasResponse(searchResponse)
+	// additional processing with multi-collection indexes.
+	if multiCollIndex {
+		processAliasResponse(searchResponse)
+	}
 
 	rest.MustEncode(res, searchResponse)
 
@@ -206,17 +209,17 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 	consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool,
 	partitionSelection string) (
-	bleve.IndexAlias, error) {
+	bleve.IndexAlias, bool, error) {
 	alias := bleve.NewIndexAlias()
 
 	indexDefs, _, err := mgr.GetIndexDefs(false)
 	if err != nil {
-		return nil, fmt.Errorf("alias: could not get indexDefs,"+
+		return nil, false, fmt.Errorf("alias: could not get indexDefs,"+
 			" indexName: %s, err: %v", indexName, err)
 	}
 
 	num := 0
-
+	var multiCollIndex bool
 	var fillAlias func(aliasName, aliasUUID string) error
 
 	fillAlias = func(aliasName, aliasUUID string) error {
@@ -247,6 +250,10 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 		}
 
 		for targetName, targetSpec := range params.Targets {
+			if !multiCollIndex {
+				_, multiCollIndex = metaFieldValCache.getSourceDetailsMap(targetName)
+			}
+
 			if num > maxAliasTargets {
 				return fmt.Errorf("alias: too many alias targets,"+
 					" perhaps there's a cycle,"+
@@ -298,8 +305,8 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 
 	err = fillAlias(indexName, indexUUID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return alias, nil
+	return alias, multiCollIndex, nil
 }
