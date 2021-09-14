@@ -13,7 +13,7 @@ require (
 	github.com/blevesearch/zapx/v14 v14.2.2
 	github.com/blevesearch/zapx/v15 v15.2.2
 	github.com/buger/jsonparser v1.1.1
-	github.com/couchbase/cbauth v0.0.0-20200508215310-0d352b097b19
+	github.com/couchbase/cbauth v0.0.0-20210911011937-6a860d4b3951
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.0.0-20190523192451-b8e6d5d421bc
