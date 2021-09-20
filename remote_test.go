@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 )
@@ -74,7 +75,7 @@ func TestBadURLsIndexClient(t *testing.T) {
 	bc := &IndexClient{
 		CountURL:   "bogus url",
 		QueryURL:   "fake url",
-		httpClient: HttpClient,
+		httpClient: http.DefaultClient,
 	}
 	c, err := bc.DocCount()
 	if err == nil || c != 0 {
@@ -92,21 +93,21 @@ func TestGroupIndexClientsByHostPort(t *testing.T) {
 		IndexName:   "indexA",
 		PIndexNames: []string{"a", "b"},
 		QueryURL:    "foo",
-		httpClient:  HttpClient,
+		httpClient:  http.DefaultClient,
 	}
 	c1 := &IndexClient{
 		HostPort:    "x",
 		IndexName:   "indexA",
 		PIndexNames: []string{"c"},
 		QueryURL:    "bar",
-		httpClient:  HttpClient,
+		httpClient:  http.DefaultClient,
 	}
 	c2 := &IndexClient{
 		HostPort:    "y",
 		IndexName:   "indexA",
 		PIndexNames: []string{"d"},
 		QueryURL:    "baz",
-		httpClient:  HttpClient,
+		httpClient:  http.DefaultClient,
 	}
 
 	a, err := GroupIndexClientsByHostPort([]*IndexClient{c0, c1, c2})

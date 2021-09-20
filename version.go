@@ -198,7 +198,7 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := HttpClient.Do(req)
+	resp, err := cbgt.HttpClient().Do(req)
 	if err != nil {
 		return 0, err
 	}

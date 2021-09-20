@@ -2568,10 +2568,10 @@ func (t *BleveDestPartition) incRev() {
 
 // ---------------------------------------------------------
 
-// Atomic counters that keep track of the number of times http and http2
+// Atomic counters that keep track of the number of times http and http-ssl
 // were used for scatter gather over remote pindexes.
 var totRemoteHttp uint64
-var totRemoteHttp2 uint64
+var totRemoteHttpSsl uint64
 
 // ---------------------------------------------------------
 
@@ -2629,13 +2629,16 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			continue
 		}
 
-		http2Enabled := false
 		hostPortUrl := "http://" + remotePlanPIndex.NodeDef.HostPort
 		if ss.EncryptionEnabled {
 			if u, err := remotePlanPIndex.NodeDef.HttpsURL(); err == nil {
 				hostPortUrl = u
-				http2Enabled = true
+				atomic.AddUint64(&totRemoteHttpSsl, 1)
+			} else {
+				atomic.AddUint64(&totRemoteHttp, 1)
 			}
+		} else {
+			atomic.AddUint64(&totRemoteHttp, 1)
 		}
 
 		baseURL := hostPortUrl + prefix +
@@ -2651,14 +2654,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
 			Consistency: consistencyParams,
-			httpClient:  HttpClient,
-		}
-
-		if http2Enabled {
-			indexClient.httpClient = cbgt.HttpClient()
-			atomic.AddUint64(&totRemoteHttp2, 1)
-		} else {
-			atomic.AddUint64(&totRemoteHttp, 1)
+			httpClient:  cbgt.HttpClient(),
 		}
 
 		remoteClients = append(remoteClients, indexClient)

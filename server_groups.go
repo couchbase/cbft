@@ -258,7 +258,7 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 		return nil, err
 	}
 
-	resp, err := HttpClient.Do(req)
+	resp, err := cbgt.HttpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ RECONNECT:
 				}
 				req.Header.Add("Content-Type", "application/json")
 
-				resp, err = HttpClient.Do(req)
+				resp, err = cbgt.HttpClient().Do(req)
 				if err != nil {
 					log.Printf("server_groups: http client, err: %v", err)
 					return 0

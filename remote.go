@@ -62,8 +62,6 @@ type addRemoteClients func(mgr *cbgt.Manager, indexName, indexUUID string,
 
 const RemoteRequestOverhead = 500 * time.Millisecond
 
-var HttpClient = http.DefaultClient // Overridable for testability / advanced needs.
-
 // Overridable for testability / advanced needs.
 var HttpPost = func(client *http.Client,
 	url string, bodyType string, body io.Reader) (*http.Response, error) {

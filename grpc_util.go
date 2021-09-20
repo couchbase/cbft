@@ -148,7 +148,7 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
 	if len(certInBytes) == 0 {
 		atomic.AddUint64(&totRemoteGrpc, 1)
 	} else {
-		atomic.AddUint64(&totRemoteGrpcSecure, 1)
+		atomic.AddUint64(&totRemoteGrpcSsl, 1)
 	}
 
 	return cli, nil

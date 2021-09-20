@@ -31,8 +31,7 @@ var FeatureGRPC = "protocol:gRPC"
 
 // atomic counter that keep track of the number of gRPC searches
 var totRemoteGrpc uint64
-
-var totRemoteGrpcSecure uint64
+var totRemoteGrpcSsl uint64
 
 // totGrpcQueryRejectOnNotEnoughQuota tracks the number of rejected
 // gRPC search requests on hitting the memory threshold for query

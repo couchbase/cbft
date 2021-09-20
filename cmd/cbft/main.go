@@ -318,7 +318,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	s := options["http2"]
 	if s == "true" &&
 		(flags.TLSCAFile != "" ||
-		(flags.TLSCertFile != "" && flags.TLSKeyFile != "")) {
+			(flags.TLSCertFile != "" && flags.TLSKeyFile != "")) {
 		extrasMap["bindHTTPS"] = flags.BindHTTPS
 	}
 

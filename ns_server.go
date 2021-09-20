@@ -497,7 +497,8 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
-	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttp2)
+	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttpSsl) // deprecated
+	topLevelStats["tot_remote_http_ssl"] = atomic.LoadUint64(&totRemoteHttpSsl)
 	topLevelStats["tot_queryreject_on_memquota"] =
 		atomic.LoadUint64(&totQueryRejectOnNotEnoughQuota)
 
@@ -511,7 +512,8 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 		atomic.LoadUint64(&TotHTTPSLimitListenersClosed)
 
 	topLevelStats["tot_remote_grpc"] = atomic.LoadUint64(&totRemoteGrpc)
-	topLevelStats["tot_remote_grpc_tls"] = atomic.LoadUint64(&totRemoteGrpcSecure)
+	topLevelStats["tot_remote_grpc_tls"] = atomic.LoadUint64(&totRemoteGrpcSsl) // deprecated
+	topLevelStats["tot_remote_grpc_ssl"] = atomic.LoadUint64(&totRemoteGrpcSsl)
 	topLevelStats["tot_grpc_queryreject_on_memquota"] =
 		atomic.LoadUint64(&totGrpcQueryRejectOnNotEnoughQuota)
 

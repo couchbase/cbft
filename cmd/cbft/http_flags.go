@@ -9,12 +9,9 @@
 package main
 
 import (
-	"net"
-	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 )
 
@@ -106,21 +103,6 @@ func initHTTPOptions(options map[string]string) error {
 	if found {
 		httpHandlerTimeout = time.Duration(ht) * time.Minute
 	}
-
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   cbgt.HttpTransportDialContextTimeout,
-			KeepAlive: cbgt.HttpTransportDialContextKeepAlive,
-		}).DialContext,
-		MaxIdleConns:          cbgt.HttpTransportMaxIdleConns,
-		MaxIdleConnsPerHost:   cbgt.HttpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:       cbgt.HttpTransportIdleConnTimeout,
-		TLSHandshakeTimeout:   cbgt.HttpTransportTLSHandshakeTimeout,
-		ExpectContinueTimeout: cbgt.HttpTransportExpectContinueTimeout,
-	}
-
-	cbft.HttpClient = &http.Client{Transport: transport}
 
 	return nil
 }
