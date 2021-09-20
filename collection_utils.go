@@ -57,7 +57,8 @@ func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
 	for _, indexDef := range indexDefs.IndexDefs {
 		err := json.Unmarshal([]byte(indexDef.Params), bleveParams)
 		if err != nil {
-			log.Printf("collection_utils: refreshMetaFieldValCache, err: %v", err)
+			log.Printf("collection_utils: refreshMetaFieldValCache,"+
+				" indexName: %v, err: %v", indexDef.Name, err)
 			continue
 		}
 		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
@@ -65,7 +66,6 @@ func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
 				_ = initMetaFieldValCache(indexDef.Name, indexDef.SourceName, im)
 			}
 		}
-		*bleveParams = BleveParams{}
 	}
 }
 
