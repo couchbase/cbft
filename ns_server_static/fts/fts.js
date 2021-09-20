@@ -10,37 +10,37 @@ var ftsAppName = 'fts';
 var ftsPrefix = 'fts';
 
 // -------------------------------------------------------
-import angular from "/ui/web_modules/angular.js";
+import angular from "angular";
 
-import uiRouter from "/ui/web_modules/@uirouter/angularjs.js";
-import uiCodemirror from "/ui/libs/angular-ui-codemirror.js";
-import CodeMirror from "/ui/web_modules/codemirror.js";
-import ngClipboard from "/ui/libs/ngclipboard.js";
-import ngSortable from "/ui/libs/angular-legacy-sortable.js";
-import mnPermissions from "/ui/app/components/mn_permissions.js";
-import mnFooterStatsController from "/ui/app/mn_admin/mn_gsi_footer_controller.js";
-import mnStatisticsNewService from "/ui/app/mn_admin/mn_statistics_service.js";
-import mnDocumentsService from "/ui/app/mn_admin/mn_documents_service.js";
-import mnSelect from "/ui/app/components/directives/mn_select/mn_select.js";
+import uiRouter from "@uirouter/angularjs";
+import uiCodemirror from "angular-ui-codemirror";
+import CodeMirror from "codemirror";
+import ngClipboard from "ngclipboard";
+import ngSortable from "angular-legacy-sortable";
+import mnPermissions from "components/mn_permissions";
+import mnFooterStatsController from "mn_admin/mn_gsi_footer_controller";
+import mnStatisticsNewService from "mn_admin/mn_statistics_service";
+import mnDocumentsService from "mn_admin/mn_documents_service";
+import mnSelect from "components/directives/mn_select/mn_select";
 
-import BleveAnalyzerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-analyzer.js";
-import BleveCharFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-charfilter.js";
-import BleveDatetimeParserModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-datetimeparser.js";
-import BleveTokenFilterModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
-import BleveTokenizerModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-tokenizer.js";
-import BleveWordListModalCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis-wordlist.js";
-import initBleveIndexMappingController from "/_p/ui/fts/static-bleve-mapping/js/mapping/index-mapping.js";
+import BleveAnalyzerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-analyzer.js";
+import BleveCharFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-charfilter.js";
+import BleveDatetimeParserModalCtrl from "./static-bleve-mapping/js/mapping/analysis-datetimeparser.js";
+import BleveTokenFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
+import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenizer.js";
+import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
+import initBleveIndexMappingController from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
-import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "/_p/ui/fts/static/index.js";
-import QueryCtrl from "/_p/ui/fts/static/query.js";
-import uiTree from "/ui/web_modules/angular-ui-tree.js";
+import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
+import QueryCtrl from "./static/query.js";
+import uiTree from "angular-ui-tree";
 
-import qwDocEditorService from "/_p/ui/query/qw_doc_editor_service.js";
+import qwDocEditorService from "../query/qw_doc_editor_service.js";
 
-import {initCodeMirrorActiveLine} from "/_p/ui/fts/codemirror-active-line.js";
-import {newParsedDocs} from "/_p/ui/fts/fts_easy_parse.js";
-import {newEditFields, newEditField} from "/_p/ui/fts/fts_easy_field.js";
-import {newEasyMappings, newEasyMapping} from "/_p/ui/fts/fts_easy_mapping.js";
+import {initCodeMirrorActiveLine} from "./codemirror-active-line.js";
+import {newParsedDocs} from "./fts_easy_parse.js";
+import {newEditFields, newEditField} from "./fts_easy_field.js";
+import {newEasyMappings, newEasyMapping} from "./fts_easy_mapping.js";
 
 export default ftsAppName;
 export {errorMessage, blevePIndexInitController, blevePIndexDoneController};

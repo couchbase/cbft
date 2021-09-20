@@ -8,13 +8,13 @@ be governed by the Apache License, Version 2.0, included in the file
 licenses/APL2.txt.
 */
 
-import angular from "/ui/web_modules/angular.js";
-import app from "/ui/app/app.js";
-import mnElementCrane from "/ui/app/components/directives/mn_element_crane/mn_element_crane.js";
-import { mnLazyload } from "/ui/app/mn.app.imports.js";
+import angular from "angular";
+import app from "app";
+import mnElementCrane from "components/directives/mn_element_crane/mn_element_crane";
+import { mnLazyload } from "mn.app.imports";
 
-import { NgModule } from '/ui/web_modules/@angular/core.js';
-import { UIRouterUpgradeModule } from '/ui/web_modules/@uirouter/angular-hybrid.js';
+import { NgModule } from '@angular/core';
+import { UIRouterUpgradeModule } from '@uirouter/angular-hybrid';
 
 angular
   .module(app)
@@ -48,7 +48,7 @@ class FtsUI {
           states: [{
             name: "app.admin.search.**",
             url: "/fts",
-            lazyLoad: mnLazyload('/_p/ui/fts/fts.js', 'fts')
+            lazyLoad: mnLazyload(() => import('./fts.js'), 'fts')
           }]
         })
       ]

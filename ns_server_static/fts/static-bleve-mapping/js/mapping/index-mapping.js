@@ -5,8 +5,8 @@
 //  in that file, in accordance with the Business Source License, use of this
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
-import BleveAnalysisCtrl from "/_p/ui/fts/static-bleve-mapping/js/mapping/analysis.js";
-import initBleveTypeMappingController from "/_p/ui/fts/static-bleve-mapping/js/mapping/type-mapping.js";
+import BleveAnalysisCtrl from "./analysis.js";
+import initBleveTypeMappingController from "./type-mapping.js";
 export default initBleveIndexMappingController;
 export {bleveIndexMappingScrub};
 function initBleveIndexMappingController(

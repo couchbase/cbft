@@ -7,7 +7,7 @@
 //  the file licenses/APL2.txt.
 
 // controller responsible for building custom analysis components
-import {confirmDialog, alertDialog} from "/_p/ui/fts/fts.js"
+import {confirmDialog, alertDialog} from "../../../fts.js";
 export default BleveAnalysisCtrl;
 function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
     var viewOnly = $scope.viewOnly;
