@@ -41,9 +41,6 @@ var connPoolSize = 5
 
 var defaultRPCClientCacheSize = 10
 
-// GrpcPort represents the port used with gRPC.
-var GrpcPort = ":15000"
-
 // default values same as that for http/rest connections
 var DefaultGrpcConnectionIdleTimeout = time.Duration(60) * time.Second
 var DefaultGrpcConnectionHeartBeatInterval = time.Duration(60) * time.Second
