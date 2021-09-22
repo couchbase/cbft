@@ -491,13 +491,27 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
 	}
 
+	partitionsLimit := int(getIndexPartitionsLimit())
+	if indexDef.PlanParams.IndexPartitions > partitionsLimit {
+		return nil,
+			fmt.Errorf("bleve: Prepare, indexDef exceeds partition limit (%v > %v)",
+				indexDef.PlanParams.IndexPartitions, partitionsLimit)
+	}
+
+	replicasLimit := int(getIndexReplicasLimit())
+	if indexDef.PlanParams.NumReplicas > replicasLimit {
+		return nil,
+			fmt.Errorf("bleve: Prepare, indexDef exceeds replica limit (%v > %v)",
+				indexDef.PlanParams.NumReplicas, replicasLimit)
+	}
+
 	if CurrentNodeDefsFetcher == nil {
-		return indexDef, nil
+		return limitIndexDef(indexDef)
 	}
 
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
 	if err != nil {
-		return indexDef, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
+		return nil, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
 	}
 
 	var collectionsSupported bool
@@ -595,7 +609,7 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	}
 	indexDef.Params = string(updatedParams)
 
-	return indexDef, nil
+	return limitIndexDef(indexDef)
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {

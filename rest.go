@@ -175,13 +175,18 @@ func (c *AuthVersionHandler) ServeHTTP(
 
 	c.doAudit(req, path)
 
-	if !checkAPIAuth(c, w, req, path) {
+	wEx := wrapResponseWriter(w)
+
+	ok, username := checkAPIAuth(c, wEx, req, path)
+	if !ok {
 		return
 	}
 
 	if c.H != nil {
-		c.H.ServeHTTP(w, req)
+		c.H.ServeHTTP(wEx, req)
 	}
+
+	completeRequest(username, path, req, wEx.Length())
 }
 
 func (c *AuthVersionHandler) doAudit(req *http.Request, path string) {
@@ -193,4 +198,26 @@ func (c *AuthVersionHandler) doAudit(req *http.Request, path string) {
 		d := GetAuditEventData(eventId, req)
 		go c.adtSvc.Write(eventId, d)
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+func wrapResponseWriter(w http.ResponseWriter) *ResponseWriterEx {
+	return &ResponseWriterEx{w, 0}
+}
+
+// Wrapper for ResponseWriter to capture the number of bytes written to it
+type ResponseWriterEx struct {
+	http.ResponseWriter
+	length int64
+}
+
+func (w *ResponseWriterEx) Write(b []byte) (n int, err error) {
+	n, err = w.ResponseWriter.Write(b)
+	w.length += int64(n)
+	return
+}
+
+func (w *ResponseWriterEx) Length() int64 {
+	return w.length
 }

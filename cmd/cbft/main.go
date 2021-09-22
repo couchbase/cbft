@@ -505,6 +505,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		extras, bindHTTP, dataDir, server, meh, options)
 	meh.mgr = mgr
 
+	if authType == "cbauth" {
+		// subscribe for notifications on limits' changes
+		cbft.SubscribeToLimits(mgr)
+	}
+
 	// start the effective cluster tracker.
 	cbft.StartClusterVersionTracker(cbgt.CfgAppVersion,
 		options["nsServerURL"])

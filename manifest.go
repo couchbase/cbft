@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -34,9 +33,10 @@ type Collection struct {
 }
 
 type Scope struct {
-	Name        string       `json:"name"`
-	Uid         string       `json:"uid"`
-	Collections []Collection `json:"collections"`
+	Name        string                    `json:"name"`
+	Uid         string                    `json:"uid"`
+	Collections []Collection              `json:"collections"`
+	Limits      map[string]map[string]int `json:"limits"`
 }
 
 type Manifest struct {
@@ -79,41 +79,8 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	if CurrentNodeDefsFetcher == nil || bucket == "" {
 		return nil, fmt.Errorf("invalid input")
 	}
-	urlPath := fmt.Sprintf("/pools/default/buckets/%s/scopes",
-		url.QueryEscape(bucket))
-	urlPath = CurrentNodeDefsFetcher.GetManager().Server() + urlPath
-	u, err := cbgt.CBAuthURL(urlPath)
-	if err != nil {
-		return nil, fmt.Errorf("manifest: auth for ns_server,"+
-			" url: %s, authType: %s, err: %v",
-			urlPath, "cbauth", err)
-	}
 
-	req, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := cbgt.HttpClient().Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	respBuf, err := ioutil.ReadAll(resp.Body)
-	if err != nil || len(respBuf) == 0 {
-		return nil, fmt.Errorf("manifest: error reading resp.Body,"+
-			" url: %s, resp: %#v, err: %v", urlPath, resp, err)
-	}
-
-	rv := &Manifest{}
-	err = json.Unmarshal(respBuf, rv)
-	if err != nil {
-		return nil, fmt.Errorf("manifest: error parsing respBuf: %s,"+
-			" url: %s, err: %v", respBuf, urlPath, err)
-
-	}
-	return rv, nil
+	return obtainManifest(CurrentNodeDefsFetcher.GetManager().Server(), bucket)
 }
 
 func (c *manifestCache) monitor() {
@@ -146,4 +113,37 @@ func (c *manifestCache) monitor() {
 			}
 		}
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+func obtainManifest(serverURL, bucket string) (*Manifest, error) {
+	if len(serverURL) == 0 || len(bucket) == 0 {
+		return nil, fmt.Errorf("manifest: empty arguments")
+	}
+
+	path := fmt.Sprintf("/pools/default/buckets/%s/scopes", url.QueryEscape(bucket))
+	u, err := cbgt.CBAuthURL(serverURL + path)
+	if err != nil {
+		return nil, fmt.Errorf("manifest: error building URL, err: %v", err)
+	}
+
+	resp, err := HttpGet(cbgt.HttpClient(), u)
+	if err != nil {
+		return nil, fmt.Errorf("manifest: request, err: %v", err)
+	}
+	defer resp.Body.Close()
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil || len(respBuf) == 0 {
+		return nil, fmt.Errorf("manifest: error reading resp.Body, err: %v", err)
+	}
+
+	rv := &Manifest{}
+	err = json.Unmarshal(respBuf, rv)
+	if err != nil {
+		return nil, fmt.Errorf("manifest: error parsing respBuf, err: %v", err)
+	}
+
+	return rv, nil
 }

@@ -87,7 +87,8 @@ func init() {
 // --------------------------------------------------------
 
 func checkAPIAuth(avh *AuthVersionHandler,
-	w http.ResponseWriter, req *http.Request, path string) (allowed bool) {
+	w http.ResponseWriter, req *http.Request, path string) (
+	allowed bool, username string) {
 	authType := ""
 
 	var mgr *cbgt.Manager
@@ -103,11 +104,11 @@ func checkAPIAuth(avh *AuthVersionHandler,
 	}
 
 	if authType == "" {
-		return true
+		return true, ""
 	}
 
 	if authType != "cbauth" {
-		return false
+		return false, ""
 	}
 
 	r := &restRequestParser{req: req}
@@ -117,11 +118,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 		requestBody, _ := ioutil.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: preparePerms,"+
 			" err: %v", err), http.StatusBadRequest)
-		return false
-	}
-
-	if len(perms) <= 0 {
-		return true
+		return false, ""
 	}
 
 	creds, err := CBAuthWebCreds(req)
@@ -135,7 +132,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 			go adtSvc.Write(AuditAccessDeniedEvent, d)
 		}
 
-		return false
+		return false, ""
 	}
 
 	for _, perm := range perms {
@@ -144,7 +141,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 			requestBody, _ := ioutil.ReadAll(req.Body)
 			rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
 				" err: %v", err), http.StatusForbidden)
-			return false
+			return false, ""
 		}
 
 		if !allowed {
@@ -155,11 +152,19 @@ func checkAPIAuth(avh *AuthVersionHandler,
 				go adtSvc.Write(AuditAccessDeniedEvent, d)
 			}
 
-			return false
+			return false, ""
 		}
 	}
 
-	return true
+	username = creds.Name()
+
+	if ok, msg := processRequest(username, path, req); !ok {
+		requestBody, _ := ioutil.ReadAll(req.Body)
+		rest.PropagateError(w, requestBody, msg, http.StatusTooManyRequests)
+		return false, ""
+	}
+
+	return true, username
 }
 
 // --------------------------------------------------------

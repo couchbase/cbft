@@ -773,7 +773,7 @@ func TestPingAuth(t *testing.T) {
 		t.Errorf("Invalid perms for ping %v, was not expecting any", actualPerms)
 	}
 
-	ok := checkAPIAuth(nil, nil, req, path)
+	ok, _ := checkAPIAuth(nil, nil, req, path)
 	if ok != true {
 		t.Errorf("Not expecting auth failure for ping")
 	}
