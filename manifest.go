@@ -94,7 +94,7 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := cbgt.HttpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
