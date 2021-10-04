@@ -60,9 +60,8 @@ github.com/couchbase/ghistogram v0.1.0 h1:b95QcQTCzjTUocDXp/uMgSNQi8oj1tGwnJ4bOD
 github.com/couchbase/ghistogram v0.1.0/go.mod h1:s1Jhy76zqfEecpNWJfWUiKZookAFaiGOEoyzgHt9i7k=
 github.com/couchbase/gocbcore/v9 v9.1.7-0.20210825200734-fa22caf5138a h1:E3Fa+SjiTClrEIjmfAuH0ZykGf4bpaDmYaYp/ulPYh4=
 github.com/couchbase/gocbcore/v9 v9.1.7-0.20210825200734-fa22caf5138a/go.mod h1:jOSQeBSECyNvD7aS4lfuaw+pD5t6ciTOf8hrDP/4Nus=
-github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85/go.mod h1:BQwMFlJzDjFDG3DJUdU0KORxn88UlsOULuxLExMh3Hs=
-github.com/couchbase/goutils v0.0.0-20201030094643-5e82bb967e67 h1:NCqJ6fwen6YP0WlV/IyibaT0kPt3JEI1rA62V/UPKT4=
-github.com/couchbase/goutils v0.0.0-20201030094643-5e82bb967e67/go.mod h1:BQwMFlJzDjFDG3DJUdU0KORxn88UlsOULuxLExMh3Hs=
+github.com/couchbase/goutils v0.1.1 h1:U0T4coHiYw+Ol13iHWG1jQbNcjJ65yCA7ewqNzJMzjU=
+github.com/couchbase/goutils v0.1.1/go.mod h1:h89Ek/tiOxxqjz30nPPlwZdQbdB8BwgnuBxeoUe/ViE=
 github.com/couchbase/moss v0.1.0 h1:HCL+xxHUwmOaL44kMM/gU08OW6QGCui1WVFO58bjhNI=
 github.com/couchbase/moss v0.1.0/go.mod h1:9MaHIaRuy9pvLPUJxB8sh8OrLfyDczECVL37grCIubs=
 github.com/couchbase/vellum v1.0.2/go.mod h1:FcwrEivFpNi24R3jLOs3n+fs5RnuQnQqCLBJ1uAg1W4=
