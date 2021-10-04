@@ -85,6 +85,13 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
+	// start the system event listener
+	err := cbgt.StartSystemEventListener(flags.Server, "search", "cbft",
+		os.Getpid())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mr, err := cbgt.NewMsgRing(os.Stderr, 1000)
 	if err != nil {
 		log.Fatalf("main: could not create MsgRing, err: %v", err)
@@ -265,10 +272,29 @@ func main() {
 
 	setupHTTPListenersAndServe(routerInUse)
 
+	err = cbgt.PublishSystemEvent(cbgt.NewSystemEvent(
+		cbgt.ServiceStartEventID,
+		"info",
+		"Search Service started",
+		map[string]interface{}{
+			"SearchNodeUUID":  uuid,
+			"SearchIPAddress": bindHTTPList[0],
+			"SearchDataDir":   flags.DataDir,
+			"CBFTVersion":     cbft.VERSION,
+			"CBGTVersion":     cbgt.VERSION,
+		}))
+	if err != nil {
+		log.Errorf("main: unexpected system_event error: %v", err)
+	}
 	<-(make(chan struct{})) // Block forever.
 }
 
 func loggerFunc(level, format string, args ...interface{}) string {
+	defer func() {
+		if level == "FATA" {
+			cbgt.PublishCrashEvent(fmt.Sprintf(format, args...))
+		}
+	}()
 	ts := time.Now().Format("2006-01-02T15:04:05.000-07:00")
 	prefix := ts + " [" + level + "] "
 	if format != "" {

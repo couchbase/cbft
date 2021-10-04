@@ -9,7 +9,9 @@
 package cbft
 
 import (
+	"fmt"
 	"net/http"
+	"runtime"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -149,6 +151,16 @@ func NewAuthVersionHandler(mgr *cbgt.Manager, adtSvc *audit.AuditSvc,
 
 func (c *AuthVersionHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			buf := make([]byte, 2048)
+			n := runtime.Stack(buf, false)
+			cbgt.PublishCrashEvent(map[string]interface{}{
+				"stackTrace": string(buf[:n]),
+				"crashError": fmt.Sprintf("%v", err),
+			})
+		}
+	}()
 	if err := CheckAPIVersion(w, req); err != nil {
 		return
 	}
