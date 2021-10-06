@@ -35,17 +35,8 @@ GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   INSTALL_PATH bin
   GOVERSION 1.13.7)
 
-# Generate pluggable-ui-fts.json file.
-SET (DOC_ROOT_PREFIX "")
-configure_file (pluggable-ui-fts.json.in pluggable-ui-fts.json)
-
-# Copy pluggable-ui-fts.json to install/etc/couchbase directory.
-install (FILES "${PROJECT_BINARY_DIR}/pluggable-ui-fts.json"
-  DESTINATION etc/couchbase)
-
-# Copy static resources to install/lib/fts directory.
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ns_server_static/fts"
-  DESTINATION lib)
+# Build the UI and copy the files to the correct place
+ADD_SUBDIRECTORY(ns_server_static)
 
 install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/staticx"
   DESTINATION lib/fts)
@@ -78,10 +69,7 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-
   DESTINATION lib/fts/static/lib)
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
-SET (GOPROJ_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/..")
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
-configure_file (pluggable-ui-fts.cluster_run.json.in
-                ${PROJECT_BINARY_DIR}/../cluster_run_ui_plugins/pluggable-ui-fts.cluster_run.json)
 
 GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope

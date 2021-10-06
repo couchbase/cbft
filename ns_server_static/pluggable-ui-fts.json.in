@@ -9,6 +9,6 @@
   "version-dirs": [
     {"version": [7, 0], "dir": "."}
   ],
-  "doc-root": "@DOC_ROOT_PREFIX@fts",
+  "doc-root": "@BIN_PREFIX@fts",
   "module": "main.js"
 }
