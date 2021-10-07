@@ -58,7 +58,7 @@ type AliasParamsTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
 }
 
-func PrepareAlias(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
 	return indexDef, nil

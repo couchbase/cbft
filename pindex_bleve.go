@@ -486,7 +486,8 @@ func init() {
 
 }
 
-func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
+	*cbgt.IndexDef, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
 	}
@@ -608,6 +609,10 @@ func PrepareIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 			" err: %v", err)
 	}
 	indexDef.Params = string(updatedParams)
+
+	if err := checkSourceCompatability(mgr, indexDef.SourceName); err != nil {
+		return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
+	}
 
 	return limitIndexDef(indexDef)
 }
@@ -3193,4 +3198,57 @@ func MustEncodeWithParser(w io.Writer, i interface{}) {
 					JSONImpl.GetParserType(), err), http.StatusInternalServerError)
 		}
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+// This API determines if the sourceName provided within the index
+// definition is compatible for FTS indexes by obtaining bucket
+// information from the /pools/default/bucket/{bucketName} endpoint.
+func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
+	if mgr == nil {
+		return nil
+	}
+
+	if len(sourceName) == 0 {
+		return fmt.Errorf("source name not provided")
+	}
+
+	url := mgr.Server() + "/pools/default/buckets/" + sourceName
+	u, err := cbgt.CBAuthURL(url)
+	if err != nil {
+		return err
+	}
+
+	resp, err := HttpGet(cbgt.HttpClient(), u)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	rv := struct {
+		BucketType     string `json:"bucketType"`
+		StorageBackend string `json:"storageBackend"`
+	}{}
+
+	err = UnmarshalJSON(respBuf, &rv)
+	if err != nil {
+		return err
+	}
+
+	if rv.BucketType != "membase" && rv.BucketType != "ephemeral" {
+		return fmt.Errorf("unsupported bucket type")
+	}
+
+	if rv.BucketType == "membase" && rv.StorageBackend != "couchstore" {
+		return fmt.Errorf("unsupported storage/backend for bucket: %v",
+			rv.StorageBackend)
+	}
+
+	return nil
 }
