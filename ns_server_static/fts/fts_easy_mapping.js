@@ -6,7 +6,7 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-import {newEditFields, newEditField} from "/_p/ui/fts/fts_easy_field.js";
+import {newEditFields, newEditField} from "./fts_easy_field.js";
 
 function newEasyMappings() {
     var mappings = {};
