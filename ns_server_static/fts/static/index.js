@@ -6,7 +6,7 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 import {errorMessage, confirmDialog,
-        blevePIndexInitController, blevePIndexDoneController} from "../fts.js";
+        blevePIndexInitController, blevePIndexDoneController} from "./util.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
 var indexStatsPrevs = {};
