@@ -794,13 +794,12 @@ func exportMuxRoutesToHttprouter(router *mux.Router,
 
 	handleRoute := func(method, path string, handler http.Handler) {
 		if _, handled := routesHandled[method+path]; !handled {
+			handler = wrapTimeoutHandler(handler, options)
 			httpRouterHandler := func(w http.ResponseWriter, req *http.Request,
 				p httprouter.Params) {
 				req = ContextSet(req, p)
 				handler.ServeHTTP(w, req)
 			}
-
-			handler = wrapTimeoutHandler(handler, options)
 
 			hr.Handle(method, path, httpRouterHandler)
 			routesHandled[method+path] = true
