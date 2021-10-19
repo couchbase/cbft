@@ -29,7 +29,6 @@ import BleveDatetimeParserModalCtrl from "./static-bleve-mapping/js/mapping/anal
 import BleveTokenFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
 import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenizer.js";
 import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
-import initBleveIndexMappingController from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
 import {errorMessage, confirmDialog, alertDialog} from "./static/util.js";
