@@ -13,14 +13,33 @@ var lastQueryReq = null;
 var lastQueryRes = null;
 
 function PrepQueryRequest(scope) {
+    let q = scope.query
+    try {
+        var obj = JSON.parse(scope.query);
+        q = obj;
+    } catch(e) {}
+
     let qr = {
         "explain": true,
         "fields": ["*"],
         "highlight": {},
         "query": {
-            "query": scope.query,
+            "query": q,
         },
     };
+    if (typeof q == "object") {
+        if ('query' in q) {
+            qr = q;
+        } else {
+            qr = {
+                "explain": true,
+                "fields": ["*"],
+                "highlight": {},
+                "query": q
+            };
+        }
+    }
+
     if (scope.resultsPerPage != 10) {
       qr["size"] = scope.resultsPerPage;
     }
