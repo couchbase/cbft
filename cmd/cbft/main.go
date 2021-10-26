@@ -656,6 +656,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.Handler("GET", "/debug/vars",
 		cbft.NewAuthVersionHandler(mgr, adtSvc, expvar.Handler()))
 
+	// Handle unsupported method for route(s)
+	router.MethodNotAllowed = &methodNotAllowedHandler{}
+
 	// Handle untracked route(s)
 	router.NotFound = &untrackedRouteHandler{}
 
@@ -853,6 +856,14 @@ func exportMuxRoutesToHttprouter(router *mux.Router,
 	rest.RequestVariableLookup = ContextGet
 
 	return hr
+}
+
+type methodNotAllowedHandler struct {}
+
+func (h *methodNotAllowedHandler) ServeHTTP(w http.ResponseWriter,
+	req *http.Request) {
+	rest.PropagateError(w, nil, fmt.Sprintf("Method not allowed for endpoint"),
+		http.StatusMethodNotAllowed)
 }
 
 // Custom handler for handling untracked route(s)
