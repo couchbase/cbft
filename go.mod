@@ -17,7 +17,7 @@ require (
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
-	github.com/couchbase/go-couchbase v0.0.0-20201026062457-7b3be89bbd89
+	github.com/couchbase/go-couchbase v0.1.1
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/moss v0.1.0
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
