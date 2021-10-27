@@ -13,7 +13,7 @@ require (
 	github.com/blevesearch/zapx/v14 v14.3.1
 	github.com/blevesearch/zapx/v15 v15.3.1
 	github.com/buger/jsonparser v1.1.1
-	github.com/couchbase/cbauth v0.0.0-20210911011937-6a860d4b3951
+	github.com/couchbase/cbauth v0.1.0
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
@@ -25,7 +25,7 @@ require (
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.4.0
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/gorilla/mux v1.7.4
+	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v0.0.5
