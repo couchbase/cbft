@@ -40,13 +40,9 @@ function PrepQueryRequest(scope) {
         }
     }
 
-    if (scope.resultsPerPage != 10) {
-      qr["size"] = scope.resultsPerPage;
-    }
-    let from = (scope.page-1) * scope.resultsPerPage;
-    if (from != 0) {
-      qr["from"] = from
-    }
+    qr["size"] = scope.resultsPerPage;
+    qr["from"] = (scope.page-1) * scope.resultsPerPage;
+
     return qr
 }
 
@@ -165,6 +161,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
             lastQueryReq = req;
             lastQueryRes = JSON.stringify(data);
             $scope.processResults(data);
+            $scope.queryChanged()
         }, function(response) {
             var data = response.data;
             var code = response.code;
