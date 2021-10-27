@@ -178,6 +178,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
     if ($location.port()) {
         $scope.hostPort = $scope.hostPort + ":" + $location.port();
     }
+    $scope.protocol = $location.protocol();
 
     $scope.meta = null;
     $http.get('/api/managerMeta').

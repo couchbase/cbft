@@ -56,7 +56,7 @@ licenses/APL2.txt.
       </input>
 
       <pre ng-show="curlDetails">curl -XPUT -H "Content-Type: application/json" \
- http://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
+ {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} \
  -d '{{indexDefStr}}'</pre>
 
       <pre ng-show="!curlDetails"

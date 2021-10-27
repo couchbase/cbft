@@ -186,7 +186,7 @@ licenses/APL2.txt.
                   ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                   class="json-content row items-top">
                   <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
--u &lt;username&gt;:&lt;password&gt; http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+-u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                   <button
                     class="outline copy-to-clipboard"
@@ -341,7 +341,7 @@ licenses/APL2.txt.
                     ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                     class="json-content row items-top">
                     <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
-  -u &lt;username&gt;:&lt;password&gt; http://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+  -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
   '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                     <button
                       class="outline copy-to-clipboard"

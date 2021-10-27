@@ -74,7 +74,7 @@ licenses/APL2.txt.
         </label>
         <pre ng-show="!curlToggle">{{jsonQuery}}</pre>
         <pre ng-show="curlToggle">curl -XPOST -H "Content-Type: application/json" \
- http://{{hostPort}}/api/index/{{indexName}}/query \
+ {{protocol}}://{{hostPort}}/api/index/{{indexName}}/query \
  -d '{{jsonQuery}}'</pre>
       </div>
     </div>

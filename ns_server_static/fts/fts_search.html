@@ -98,7 +98,7 @@ licenses/APL2.txt.
     </div>
     <div ng-show="curl_example_toggle" class="json-content row items-top margin-bottom1">
       <pre id="jsonQueryCurlContent">curl -XPOST -H "Content-Type: application/json" \
--u &lt;username&gt;:&lt;password&gt; http://{{hostPort}}/api/index/{{indexName}}/query \
+-u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}/api/index/{{indexName}}/query \
 -d '{{jsonQuery}}'</pre>
       <button class="outline copy-to-clipboard" ngclipboard data-clipboard-target="#jsonQueryCurlContent">
         Copy to Clipboard

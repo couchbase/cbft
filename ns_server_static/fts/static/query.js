@@ -68,6 +68,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
     if ($location.port()) {
         $scope.hostPort = $scope.hostPort + ":" + $location.port();
     }
+    $scope.protocol = $location.protocol();
 
     $http.get("/api/managerMeta").
     then(function(response) {

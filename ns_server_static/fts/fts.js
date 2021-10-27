@@ -1243,6 +1243,7 @@ function prefixedHttp($http, prefix, dataNoJSONify) {
 
 function ftsServiceHostPort($scope, $http, $location) {
     $scope.hostPort = $location.host() + ":FTS_PORT";
+    $scope.protocol = $location.protocol();
 
     $http.get("/pools/default/nodeServices").then(function(resp) {
         var nodes = resp.data.nodesExt;
