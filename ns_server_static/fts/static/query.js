@@ -46,7 +46,7 @@ function PrepQueryRequest(scope) {
     return qr
 }
 
-function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditorService) {
+function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogService) {
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
     $scope.query = null;
@@ -284,7 +284,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, docEditor
                 // the fields section
                 scopeCollection[1] = hit.fields["_$c"];
             }
-            docEditorService.getAndShowDocumentWithinCollection(
+            qwDialogService.getAndShowDocument(true, hit.id,
                 iDef.sourceName, scopeCollection[0], scopeCollection[1], hit.id);
         } catch(e) {}
     };

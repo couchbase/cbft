@@ -12,6 +12,9 @@ var ftsPrefix = 'fts';
 // -------------------------------------------------------
 import angular from "angular";
 
+import {downgradeInjectable} from '@angular/upgrade/static';
+import { QwDialogService } from '../query/angular-directives/qw.dialog.service.js';
+
 import uiRouter from "@uirouter/angularjs";
 import uiCodemirror from "angular-ui-codemirror";
 import CodeMirror from "codemirror";
@@ -35,8 +38,6 @@ import {errorMessage, confirmDialog, alertDialog} from "./static/util.js";
 import QueryCtrl from "./static/query.js";
 import uiTree from "angular-ui-tree";
 
-import qwDocEditorService from "../query/qw_doc_editor_service.js";
-
 import {initCodeMirrorActiveLine} from "./codemirror-active-line.js";
 import {newParsedDocs} from "./fts_easy_parse.js";
 import {newEditFields, newEditField} from "./fts_easy_field.js";
@@ -46,7 +47,7 @@ export default ftsAppName;
 
 angular
     .module(ftsAppName,
-            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, qwDocEditorService,
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, 
                 uiCodemirror, mnDocumentsService, mnSelect])
     .config(function($stateProvider) {
       addFtsStates("app.admin.search");
@@ -218,7 +219,8 @@ angular
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
         controller('IndexNewCtrlFTEasy_NS', IndexNewCtrlFTEasy_NS).
         controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
-        controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS);
+        controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS).
+        factory('qwDialogService', downgradeInjectable(QwDialogService));
 
 // ----------------------------------------------
 
@@ -952,7 +954,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 // -------------------------------------------------------
 
 function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
-                              $location, mnPermissions, qwDocEditorService) {
+                              $location, mnPermissions, qwDialogService) {
   var $httpPrefixed = prefixedHttp($http, '../_p/' + ftsPrefix, true);
 
   var $routeParams = $stateParams;
@@ -1030,7 +1032,7 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
         $location.search("p", $scope.page);
     }
 
-    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location, qwDocEditorService);
+    QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location, qwDialogService);
 
     ftsServiceHostPort($scope, $http, $location);
 
