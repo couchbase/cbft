@@ -220,10 +220,13 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 	defer e.m.Unlock()
 
 	if path == indexPath {
-		// pre-processing only for a DELETE INDEX request
+		// Refresh the indexCache of the rateLimiter at this point,
+		// to track updates that have been received at other nodes.
+		//
+		// Also, pre-processing here for a DELETE INDEX request only
 		// (pre-processing for CREATE and UPDATE INDEX requests is handled
-		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef)
-		e.processIndexDeletionLOCKED(req)
+		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef).
+		e.updateIndexCacheLOCKED(req)
 	}
 
 	now := time.Now()
@@ -313,7 +316,39 @@ func (e *rateLimiter) completeRequest(username, path string, req *http.Request, 
 
 // -----------------------------------------------------------------------------
 
-func (e *rateLimiter) processIndexDeletionLOCKED(req *http.Request) {
+func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
+	// GetIndexDefs(..) without a refresh should be a fast operation
+	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
+	if err != nil {
+		return
+	}
+
+	// Clear only indexCache's actives for those entries that have
+	// non-zero pending indexes, for all else drop the key entirely;
+	// This cache is updated subsequently.
+	for k := range e.indexCache {
+		if len(e.indexCache[k].pending) > 0 {
+			e.indexCache[k].active = map[string]struct{}{}
+		} else {
+			delete(e.indexCache, k)
+		}
+	}
+
+	for indexName, indexDef := range indexDefsByName {
+		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
+		key := getBucketScopeKey(indexDef.SourceName, scope)
+		if _, exists := e.indexCache[key]; !exists {
+			e.indexCache[key] = &indexStats{
+				active:  map[string]struct{}{indexName: struct{}{}},
+				pending: make(map[string]struct{}),
+			}
+		} else {
+			e.indexCache[key].active[indexName] = struct{}{}
+		}
+	}
+
+	// Update index cache if request received was for deleting an index
+	// definition.
 	if req.Method != "DELETE" {
 		return
 	}
@@ -321,13 +356,11 @@ func (e *rateLimiter) processIndexDeletionLOCKED(req *http.Request) {
 	// This is invoked prior to the index deletion, so the index definition
 	// should still be available in the system.
 	indexName := rest.IndexNameLookup(req)
-	if _, indexDefsByName, err := e.mgr.GetIndexDefs(false); err == nil {
-		if indexDef, exists := indexDefsByName[indexName]; exists {
-			scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
-			key := getBucketScopeKey(indexDef.SourceName, scope)
-			if entry, exists := e.indexCache[key]; exists {
-				delete(entry.active, indexName)
-			}
+	if indexDef, exists := indexDefsByName[indexName]; exists {
+		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
+		key := getBucketScopeKey(indexDef.SourceName, scope)
+		if entry, exists := e.indexCache[key]; exists {
+			delete(entry.active, indexName)
 		}
 	}
 }
