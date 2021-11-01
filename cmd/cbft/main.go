@@ -858,7 +858,7 @@ func exportMuxRoutesToHttprouter(router *mux.Router,
 	return hr
 }
 
-type methodNotAllowedHandler struct {}
+type methodNotAllowedHandler struct{}
 
 func (h *methodNotAllowedHandler) ServeHTTP(w http.ResponseWriter,
 	req *http.Request) {
