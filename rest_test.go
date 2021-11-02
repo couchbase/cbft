@@ -2187,7 +2187,8 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	}()
 
 	meh0 := &TestMEH{}
-	options0 := map[string]string{"maxReplicasAllowed": "1"}
+	options0 := map[string]string{"maxReplicasAllowed": "1",
+		"enablePartitionNodeStickiness": "true"}
 	mgr0 := cbgt.NewManagerEx(cbgt.VERSION, cfg, cbgt.NewUUID(),
 		nil, "", 1, "", "localhost:1000", emptyDir0, "some-datasource",
 		meh0, options0)
@@ -2433,7 +2434,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 	}
 	testRESTHandlers(t, tests, router0)
 
-	planPIndexesPrev, _, err := cbgt.CfgGetPlanPIndexes(cfg)
+	planPIndexesPrev, casPrev, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
@@ -2474,16 +2475,19 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 
 	mgr0.Kick("test-kick-after-new-node")
 
-	planPIndexesCurr, _, err := cbgt.CfgGetPlanPIndexes(cfg)
+	planPIndexesCurr, casCurr, err := cbgt.CfgGetPlanPIndexes(cfg)
 	if err != nil {
 		t.Errorf("expected no err")
 	}
+	if casPrev != casCurr {
+		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
+	}
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		/*planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
 		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans,"+
-		" planPIndexesPrev: %s, planPIndexesCurr: %s",
-		planPIndexesPrevJS, planPIndexesCurrJS)*/
+			" planPIndexesPrev: %s, planPIndexesCurr: %s",
+			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
 
 	n := 0
