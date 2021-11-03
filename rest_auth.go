@@ -295,7 +295,7 @@ func (p *restRequestParser) GetPIndexName() (string, error) {
 	if pindexName != "" {
 		return pindexName, nil
 	}
-	return "", fmt.Errorf("missing pindexName")
+	return "", fmt.Errorf("rest_auth: restRequestParser, missing pindexName")
 }
 
 func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
@@ -304,7 +304,7 @@ func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
 	if p.req.Body != nil {
 		requestBody, err = ioutil.ReadAll(p.req.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rest_auth: restRequestParser, err: %v", err)
 		}
 	}
 
@@ -315,7 +315,7 @@ func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
 	if len(requestBody) > 0 {
 		err := json.Unmarshal(requestBody, &indexDef)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rest_auth: restRequestParser, unmarshal err: %v", err)
 		}
 	}
 
@@ -334,7 +334,7 @@ func (p *restRequestParser) GetCollectionNames() ([]string, error) {
 	if p.req.Body != nil {
 		requestBody, err = ioutil.ReadAll(p.req.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rest_auth: restRequestParser, err: %v", err)
 		}
 	}
 
