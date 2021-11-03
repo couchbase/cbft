@@ -492,20 +492,6 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
 	}
 
-	partitionsLimit := int(getIndexPartitionsLimit())
-	if indexDef.PlanParams.IndexPartitions > partitionsLimit {
-		return nil,
-			fmt.Errorf("bleve: Prepare, indexDef exceeds partition limit (%v > %v)",
-				indexDef.PlanParams.IndexPartitions, partitionsLimit)
-	}
-
-	replicasLimit := int(getIndexReplicasLimit())
-	if indexDef.PlanParams.NumReplicas > replicasLimit {
-		return nil,
-			fmt.Errorf("bleve: Prepare, indexDef exceeds replica limit (%v > %v)",
-				indexDef.PlanParams.NumReplicas, replicasLimit)
-	}
-
 	if CurrentNodeDefsFetcher == nil {
 		return limitIndexDef(indexDef)
 	}

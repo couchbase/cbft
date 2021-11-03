@@ -51,9 +51,10 @@ func setIndexReplicasLimit(to uint32) {
 
 func SubscribeToLimits(mgr *cbgt.Manager) {
 	limiter = &rateLimiter{
-		mgr:          mgr,
-		requestCache: make(map[string]*requestStats),
-		indexCache:   make(map[string]*indexStats),
+		mgr:            mgr,
+		requestCache:   make(map[string]*requestStats),
+		indexCache:     make(map[string]map[string]struct{}),
+		pendingIndexes: make(map[string]string),
 	}
 	cbgt.RegisterConfigRefreshCallback("fts/limits", limiter.refreshLimits)
 }
@@ -108,6 +109,20 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		return nil, fmt.Errorf("indexDef not available")
 	}
 
+	partitionsLimit := int(getIndexPartitionsLimit())
+	if indexDef.PlanParams.IndexPartitions > partitionsLimit {
+		return nil,
+			fmt.Errorf("partition limit exceeded (%v > %v)",
+				indexDef.PlanParams.IndexPartitions, partitionsLimit)
+	}
+
+	replicasLimit := int(getIndexReplicasLimit())
+	if indexDef.PlanParams.NumReplicas > replicasLimit {
+		return nil,
+			fmt.Errorf("replica limit exceeded (%v > %v)",
+				indexDef.PlanParams.NumReplicas, replicasLimit)
+	}
+
 	bucket := indexDef.SourceName
 	scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
 	numIndexesLimit, err := obtainIndexesLimitForScope(limiter.mgr, bucket, scope)
@@ -122,20 +137,23 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 
 	entry, exists := limiter.indexCache[key]
 	if !exists {
-		limiter.indexCache[key] = &indexStats{
-			active:  make(map[string]struct{}),
-			pending: map[string]struct{}{indexDef.Name: struct{}{}},
-		}
+		limiter.indexCache[key] = make(map[string]struct{})
+		limiter.pendingIndexes[indexDef.Name] = key
 		return indexDef, nil
 	}
 
-	if _, exists := entry.active[indexDef.Name]; exists {
+	if _, exists := entry[indexDef.Name]; exists {
 		// allow index update
 		return indexDef, nil
 	}
 
-	numActiveIndexes := len(entry.active)
-	numPendingIndexes := len(entry.pending)
+	numActiveIndexes := len(entry)
+	numPendingIndexes := 0
+	for _, v := range limiter.pendingIndexes {
+		if v == key {
+			numPendingIndexes++
+		}
+	}
 
 	if numIndexesLimit > 0 &&
 		(numActiveIndexes >= numIndexesLimit ||
@@ -144,7 +162,7 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 			numActiveIndexes, numPendingIndexes, numIndexesLimit)
 	}
 
-	entry.pending[indexDef.Name] = struct{}{}
+	limiter.pendingIndexes[indexDef.Name] = key
 
 	return indexDef, nil
 }
@@ -159,11 +177,6 @@ type requestStats struct {
 	egressBytesSinceStamp  int64
 }
 
-type indexStats struct {
-	active  map[string]struct{}
-	pending map[string]struct{}
-}
-
 type rateLimiter struct {
 	active uint32
 
@@ -174,9 +187,12 @@ type rateLimiter struct {
 	// Cache of request stats mapped at a user level.
 	requestCache map[string]*requestStats
 
-	// Cache of index stats mapped at bucket:scope level.
+	// Cache of index names mapped at bucket:scope level.
 	// (use getBucketScopeKey(..) for map lookup)
-	indexCache map[string]*indexStats
+	indexCache map[string]map[string]struct{}
+
+	// Pending index names mapped to bucket:scope.
+	pendingIndexes map[string]string
 }
 
 var limiter *rateLimiter
@@ -207,7 +223,7 @@ func (e *rateLimiter) refreshLimits(status int) error {
 func (e *rateLimiter) reset() {
 	e.m.Lock()
 	e.requestCache = make(map[string]*requestStats)
-	e.indexCache = make(map[string]*indexStats)
+	e.indexCache = make(map[string]map[string]struct{})
 	e.m.Unlock()
 }
 
@@ -327,23 +343,16 @@ func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
 	// non-zero pending indexes, for all else drop the key entirely;
 	// This cache is updated subsequently.
 	for k := range e.indexCache {
-		if len(e.indexCache[k].pending) > 0 {
-			e.indexCache[k].active = map[string]struct{}{}
-		} else {
-			delete(e.indexCache, k)
-		}
+		e.indexCache[k] = map[string]struct{}{}
 	}
 
 	for indexName, indexDef := range indexDefsByName {
 		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
 		key := getBucketScopeKey(indexDef.SourceName, scope)
 		if _, exists := e.indexCache[key]; !exists {
-			e.indexCache[key] = &indexStats{
-				active:  map[string]struct{}{indexName: struct{}{}},
-				pending: make(map[string]struct{}),
-			}
+			e.indexCache[key] = map[string]struct{}{indexName: struct{}{}}
 		} else {
-			e.indexCache[key].active[indexName] = struct{}{}
+			e.indexCache[key][indexName] = struct{}{}
 		}
 	}
 
@@ -360,7 +369,7 @@ func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
 		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
 		key := getBucketScopeKey(indexDef.SourceName, scope)
 		if entry, exists := e.indexCache[key]; exists {
-			delete(entry.active, indexName)
+			delete(entry, indexName)
 		}
 	}
 }
@@ -380,17 +389,15 @@ func (e *rateLimiter) completeIndexRequestLOCKED(req *http.Request) {
 			key := getBucketScopeKey(indexDef.SourceName, scope)
 			entry, exists := e.indexCache[key]
 			if !exists {
-				e.indexCache[key] = &indexStats{
-					active:  map[string]struct{}{indexName: struct{}{}},
-					pending: make(map[string]struct{}),
-				}
+				e.indexCache[key] = map[string]struct{}{indexName: struct{}{}}
 				return
 			}
-
-			delete(entry.pending, indexName)
 			// adds or updates index entry
-			entry.active[indexName] = struct{}{}
+			entry[indexName] = struct{}{}
 		}
+		// whether index creation was successful or not, the pending
+		// entry will need to be removed
+		delete(e.pendingIndexes, indexName)
 	}
 }
 
