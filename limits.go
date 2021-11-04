@@ -339,12 +339,9 @@ func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
 		return
 	}
 
-	// Clear only indexCache's actives for those entries that have
-	// non-zero pending indexes, for all else drop the key entirely;
-	// This cache is updated subsequently.
-	for k := range e.indexCache {
-		e.indexCache[k] = map[string]struct{}{}
-	}
+	// Clear out the indexCache entries for all bucket:scope keys;
+	// This cache is updated with the latest subsequently.
+	e.indexCache = make(map[string]map[string]struct{})
 
 	for indexName, indexDef := range indexDefsByName {
 		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
