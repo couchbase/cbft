@@ -118,13 +118,25 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 		return err
 	}
 
+	// check whether the dest is already closed.
+	if isClosed(dest.stopCh) {
+		log.Printf("pindex_bleve_copy: tryCopyBleveIndex pindex: %s"+
+			" has already closed", pindexName)
+		// It is cleaner to remove the path as there could be corner/racy
+		// cases where it is still desirable, for eg: when the copy partition
+		// operation performs a rename of the temp download dir to pindex path
+		// that might have missed the clean up performed during the dest closure.
+		_ = os.RemoveAll(path)
+		return nil
+	}
+
 	var bindex bleve.Index
 	bindex, err = openBleveIndex(path, kvConfig)
 	if err != nil {
 		return err
 	}
 
-	updateBleveIndex(pindexName, mgr, bindex, dest)
+	updateBleveIndex(pindexName, mgr, bindex, dest, true)
 	return nil
 }
 
@@ -178,6 +190,18 @@ func openBleveIndex(path string, kvConfig map[string]interface{}) (
 func createNewBleveIndex(indexType, indexParams, path string,
 	restart func(), dest *BleveDest, mgr *cbgt.Manager) {
 	pindexName := cbgt.PIndexNameFromPath(path)
+	// check whether the dest is already closed.
+	if isClosed(dest.stopCh) {
+		log.Printf("pindex_bleve_copy: createNewBleveIndex pindex: %s"+
+			" has already closed", pindexName)
+		// It is cleaner to remove the path as there could be corner/racy
+		// cases where it is still desirable, for eg: when the copy partition
+		// operation performs a rename of the temp download dir to pindex path
+		// that might have missed the clean up performed during the dest closure.
+		_ = os.RemoveAll(path)
+		return
+	}
+
 	impl, _, err := NewBlevePIndexImpl(indexType, indexParams, path, restart)
 	if err != nil {
 		var ok bool
@@ -201,7 +225,7 @@ func createNewBleveIndex(indexType, indexParams, path string,
 
 	// update the new index into the pindex.
 	if bindex, ok := impl.(bleve.Index); ok {
-		updateBleveIndex(pindexName, mgr, bindex, dest)
+		updateBleveIndex(pindexName, mgr, bindex, dest, false)
 	} else {
 		log.Errorf("pindex_bleve_copy: no bleve.Index implementation"+
 			"found: %s", pindexName)
@@ -209,10 +233,21 @@ func createNewBleveIndex(indexType, indexParams, path string,
 }
 
 func updateBleveIndex(pindexName string, mgr *cbgt.Manager,
-	index bleve.Index, dest *BleveDest) {
+	index bleve.Index, dest *BleveDest, kickWorkers bool) {
 	dest.resetBIndex(index)
-	dest.startBatchWorkers()
+	if kickWorkers {
+		dest.startBatchWorkers()
+	}
 	http.RegisterIndexName(pindexName, index)
 
 	mgr.JanitorKick(fmt.Sprintf("feed init kick for pindex: %s", pindexName))
+}
+
+func isClosed(ch chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+		return false
+	}
 }
