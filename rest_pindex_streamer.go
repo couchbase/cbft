@@ -333,8 +333,8 @@ func getCopyableBleveIndex(pindexName string, mgr *cbgt.Manager) (
 		return ib, nil
 	}
 
-	return nil, fmt.Errorf("rest_pindex_streamer: no" +
-		" IndexReaderCopyable implementation found")
+	return nil, fmt.Errorf("rest_pindex_streamer: bleve.Index" +
+		" is not copyable")
 }
 
 func isCanceled(ctx context.Context) bool {
