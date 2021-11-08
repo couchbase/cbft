@@ -118,7 +118,7 @@ func (h *PIndexContentHandler) streamPIndexContents(pindexName string,
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 			" read failed for path: %s, err: %v", pindexPath, err),
-			http.StatusBadRequest)
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (h *PIndexContentHandler) streamPIndexContents(pindexName string,
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 			" GetDirectorySize failed for path: %s, err: %v",
-			pindexPath, err), http.StatusBadRequest)
+			pindexPath, err), http.StatusInternalServerError)
 		return
 	}
 
