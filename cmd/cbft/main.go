@@ -893,12 +893,13 @@ func (meh *mainHandlers) OnUnregisterPIndex(pindex *cbgt.PIndex) {
 }
 
 func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
-	log.Printf("main: meh.OnFeedError, srcType: %s, err: %v", srcType, err)
-
 	if r == nil ||
 		(srcType != cbgt.SOURCE_GOCOUCHBASE && srcType != cbgt.SOURCE_GOCBCORE) {
 		return
 	}
+
+	log.Printf("main: meh.OnFeedError, srcType: %s, feed name: %s, err: %v",
+		srcType, r.Name(), err)
 
 	if srcType == cbgt.SOURCE_GOCOUCHBASE {
 		if _, ok := err.(*couchbase.BucketNotFoundError); !ok {
