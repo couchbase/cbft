@@ -58,11 +58,15 @@ function newEditField() {
             if (this.phrase) {
                 supporting.push("phrase matching");
             }
+            if (this.includeInAll) {
+                supporting.push("field agnostic search");
+            }
             if (this.sortFacet) {
                 supporting.push("sorting and faceting");
             }
+
             if (supporting.length > 0) {
-                rv += "supporting " + supporting.join(", ");
+                rv += "supporting: [" + supporting.join(", ") + "]";
             }
 
             return rv;

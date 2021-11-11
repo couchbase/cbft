@@ -367,18 +367,15 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
 
                 if (mapping.fields[0].type == "text") {
-                    if (!mapping.fields[0].include_in_all ||
-                        !angular.isDefined(mapping.fields[0].analyzer) ||
+                    if (!angular.isDefined(mapping.fields[0].analyzer) ||
                         mapping.fields[0].analyzer == "") {
-                        // text field has include_in_all disabled and/or no analyzer specified
+                        // text field has no analyzer specified
                         return true;
                     }
                 } else {
-                    if (mapping.fields[0].include_in_all ||
-                        (angular.isDefined(mapping.fields[0].analyzer) &&
+                    if ((angular.isDefined(mapping.fields[0].analyzer) &&
                         mapping.fields[0].analyzer != "")) {
-                        // fields of other types have include_in_all enabled or
-                        // an analyzer set
+                        // fields of other types have an analyzer set
                         return true;
                     }
                 }
@@ -1575,6 +1572,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.store = false;
                 $scope.editField.highlight = false;
                 $scope.editField.phrase = false;
+                $scope.editField.includeInAll = false;
                 $scope.editField.sortFacet = false;
                 $scope.editField.date_format = "dateTimeOptional";
                 if (valType === "boolean") {

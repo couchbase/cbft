@@ -251,6 +251,23 @@ licenses/APL2.txt.
               </span>
             </div>
 
+            <div>
+              <input
+                 type="checkbox"
+                 id="field-include-in-all"
+                 ng-model="editField.includeInAll">
+              <label for="field-include-in-all" class="margin-right-0">
+                Support field agnostic search
+              </label>
+              <span
+                 class="fa-stack icon-info"
+                 uib-tooltip="Content can be queried without specifying the field name."
+                 tooltip-placement="auto right">
+                <span class="icon fa-circle-thin fa-stack-2x"></span>
+                <span class="icon fa-info fa-stack-1x"></span>
+              </span>
+            </div>
+
             <div class="formrow">
               <input
                  type="checkbox"

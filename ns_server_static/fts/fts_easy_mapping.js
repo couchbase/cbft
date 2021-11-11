@@ -131,7 +131,9 @@ function newEasyMapping() {
         if (field.highlight || field.phrase) {
             fieldMapping.include_term_vectors = true;
         }
-        fieldMapping.include_in_all = true;
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
         if (field.sortFacet) {
             fieldMapping.docvalues = true;
         }
@@ -149,6 +151,9 @@ function newEasyMapping() {
         if (field.highlight || field.phrase) {
             fieldMapping.include_term_vectors = true;
         }
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
         if (field.sortFacet) {
             fieldMapping.docvalues = true;
         }
@@ -165,6 +170,9 @@ function newEasyMapping() {
         fieldMapping.index = true;
         if (field.highlight || field.phrase) {
             fieldMapping.include_term_vectors = true;
+        }
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
         }
         if (field.sortFacet) {
             fieldMapping.docvalues = true;
@@ -184,6 +192,9 @@ function newEasyMapping() {
         if (field.highlight || field.phrase) {
             fieldMapping.include_term_vectors = true;
         }
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
         if (field.sortFacet) {
             fieldMapping.docvalues = true;
         }
@@ -198,6 +209,9 @@ function newEasyMapping() {
             fieldMapping.store = true;
         }
         fieldMapping.index = true;
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
         if (field.sortFacet) {
             fieldMapping.docValues = true;
         }
@@ -270,6 +284,7 @@ function newEasyMapping() {
             editField.store = false;
             editField.highlight = false;
             editField.phrase = false;
+            editField.includeInAll = false;
             editField.sortFacet = false;
 
             if (field.type == "text") {
@@ -296,6 +311,9 @@ function newEasyMapping() {
             if (field.include_term_vectors) {
                 editField.highlight = true;
                 editField.phrase = true;
+            }
+            if (field.include_in_all) {
+                editField.includeInAll = true;
             }
             if (field.docvalues) {
                 editField.sortFacet = true;
