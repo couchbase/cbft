@@ -1273,20 +1273,6 @@ function ftsServiceHostPort($scope, $http, $location) {
 
 // -------------------------------------------------------
 
-// getBucketScopeFromMapping determines the scope from an index mapping
-// it is assumed that this mapping has types of the form scope.collection
-// no attempt is made to validate that the same scope is set for all types
-// if no scope can be determined, empty string is returned
-function getBucketScopeFromMapping(mapping) {
-    for (var typeName in mapping.types) {
-        let scopeCollType = typeName.split(".", 2)
-        return scopeCollType[0];
-    }
-    return "";
-}
-
-// -------------------------------------------------------
-
 // IndexNewCtrlFTEasy_NS is the controller for the create/edit easy mode
 function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                                $location, $log, $sce, $uibModal,

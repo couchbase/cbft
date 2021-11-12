@@ -8,7 +8,6 @@
 
 import initBleveIndexMappingController from "../static-bleve-mapping/js/mapping/index-mapping.js";
 
-
 export {errorMessage, confirmDialog, alertDialog};
 export {blevePIndexInitController, blevePIndexDoneController};
 
@@ -375,3 +374,16 @@ function blevePIndexDoneController(doneKind, indexParams, indexUI,
     }
 }
 
+// -------------------------------------------------------
+
+// getBucketScopeFromMapping determines the scope from an index mapping
+// it is assumed that this mapping has types of the form scope.collection
+// no attempt is made to validate that the same scope is set for all types
+// if no scope can be determined, empty string is returned
+function getBucketScopeFromMapping(mapping) {
+    for (var typeName in mapping.types) {
+        let scopeCollType = typeName.split(".", 2)
+        return scopeCollType[0];
+    }
+    return "";
+}
