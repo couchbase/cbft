@@ -215,6 +215,7 @@ angular
   angular.module(ftsAppName).
         controller('mnFooterStatsController', mnFooterStatsController).
         controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
+        controller('indexViewController', indexViewController).
         controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
         controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
         controller('IndexNewCtrlFTEasy_NS', IndexNewCtrlFTEasy_NS).
@@ -284,53 +285,12 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
     $scope.searchInputs = {};
 
-    var done = false;
-
-    $scope.indexViewController = function($scope, $state, $uibModal) {
-        $scope.indexName = $scope.indexDef.name;
-
-        var stateParams = {indexName: $scope.indexName};
-
-        $scope.jsonDetails = false;
-        $scope.curlDetails = false;
-
-        var rv = IndexCtrlFT_NS($scope, $http, stateParams, $state,
-                                $location, $log, $sce, $uibModal);
-
-        var loadProgressStats = $scope.loadProgressStats;
-
-        function checkRetStatus(code) {
-            if (code == 403) {
-                // http status for FORBIDDEN
-                return false;
-            } else if (code == 400) {
-                // http status for BAD REQUEST
-                return false;
-            }
-            return true;
-        }
-
-        function updateDocCount() {
-            if (!done) {
-                if (loadProgressStats(checkRetStatus)) {
-                    setTimeout(updateDocCount, updateDocCountIntervalMS);
-                }
-            }
-        }
-
-        setTimeout(updateDocCount, updateDocCountIntervalMS);
-
-        if ($scope.indexDef.sourceName) {
-            mnPermissions.check()
-        }
-
-        return rv;
-    }
+    $scope.done = false;
 
     var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location, $uibModal);
 
     $scope.$on('$stateChangeStart', function() {
-        done = true;
+        $scope.done = true;
     });
 
     function isMappingIncompatibleWithQuickEditor(mapping) {
@@ -443,6 +403,47 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
             }, 100);
         }
     };
+
+    return rv;
+}
+
+function indexViewController($scope, $http, $state, $log, $sce, $location, $uibModal, mnPermissions) {
+    $scope.indexName = $scope.indexDef.name;
+
+    var stateParams = {indexName: $scope.indexName};
+
+    $scope.jsonDetails = false;
+    $scope.curlDetails = false;
+
+    var rv = IndexCtrlFT_NS($scope, $http, stateParams, $state,
+        $location, $log, $sce, $uibModal);
+
+    var loadProgressStats = $scope.loadProgressStats;
+
+    function checkRetStatus(code) {
+        if (code == 403) {
+            // http status for FORBIDDEN
+            return false;
+        } else if (code == 400) {
+            // http status for BAD REQUEST
+            return false;
+        }
+        return true;
+    }
+
+    function updateDocCount() {
+        if (!$scope.done) {
+            if (loadProgressStats(checkRetStatus)) {
+                setTimeout(updateDocCount, updateDocCountIntervalMS);
+            }
+        }
+    }
+
+    setTimeout(updateDocCount, updateDocCountIntervalMS);
+
+    if ($scope.indexDef.sourceName) {
+        mnPermissions.check()
+    }
 
     return rv;
 }
@@ -587,7 +588,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             // previous iteration, check if we can determine the progress
             // based on the docCount and numMutationsToIndex.
             prog = ((1.0 * docCount) / (docCount + numMutationsToIndex)) * 100.0;
-        } else if (totSeqReceived > 0 && prevTotSeqReceived >= 0) {
+        } else if (totSeqReceived > 0 && prevTotSeqReceived <= totSeqReceived) {
             // determine progressPct relative to the current
             // totSeqReceived and the prevTotSeqReceived.
             prog = ((1.0 * prevTotSeqReceived) / totSeqReceived) * 100.0;
