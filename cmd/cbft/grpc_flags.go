@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbgt"
 )
 
 func initGRPCOptions(options map[string]string) error {
@@ -45,17 +46,17 @@ func initGRPCOptions(options map[string]string) error {
 		cbft.DefaultGrpcMaxBackOffDelay = v
 	}
 
-	v, found := parseOptionsInt(options, "grpcMaxRecvMsgSize")
+	v, found := cbgt.ParseOptionsInt(options, "grpcMaxRecvMsgSize")
 	if found {
 		cbft.DefaultGrpcMaxRecvMsgSize = v
 	}
 
-	v, found = parseOptionsInt(options, "grpcMaxSendMsgSize")
+	v, found = cbgt.ParseOptionsInt(options, "grpcMaxSendMsgSize")
 	if found {
 		cbft.DefaultGrpcMaxSendMsgSize = v
 	}
 
-	v, found = parseOptionsInt(options, "grpcMaxConcurrentStreams")
+	v, found = cbgt.ParseOptionsInt(options, "grpcMaxConcurrentStreams")
 	if found {
 		cbft.DefaultGrpcMaxConcurrentStreams = uint32(v)
 	}

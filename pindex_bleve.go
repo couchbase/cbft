@@ -15,8 +15,6 @@ import (
 	"container/heap"
 	"container/list"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -52,8 +50,6 @@ import (
 	"github.com/couchbase/cbgt/rest"
 
 	"github.com/couchbase/moss"
-
-	"golang.org/x/net/http2"
 )
 
 var BatchBytesAdded uint64
@@ -1952,60 +1948,6 @@ var totRemoteHttp2 uint64
 
 // ---------------------------------------------------------
 
-var http2ClientLock sync.RWMutex
-var http2Client *http.Client
-
-func setupHttp2Client(certInBytes []byte) {
-	http2ClientLock.Lock()
-	setupHttp2ClientLOCKED(certInBytes)
-	http2ClientLock.Unlock()
-}
-
-func setupHttp2ClientLOCKED(certInBytes []byte) {
-	transport := &http.Transport{
-		MaxIdleConns:        HttpTransportMaxIdleConns,
-		MaxIdleConnsPerHost: HttpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:     HttpTransportIdleConnTimeout,
-		TLSClientConfig:     &tls.Config{},
-	}
-
-	roots := x509.NewCertPool()
-	ok := roots.AppendCertsFromPEM(certInBytes)
-	if ok {
-		transport.TLSClientConfig.RootCAs = roots
-		err := http2.ConfigureTransport(transport)
-		if err != nil {
-			log.Warnf("error in configuring transport for http2, err: %v", err)
-		}
-	} else {
-		log.Warnf("error in appending certificates to transport's tlsConfig")
-		transport.TLSClientConfig.InsecureSkipVerify = true
-	}
-
-	http2Client = &http.Client{Transport: transport}
-}
-
-func FetchHttp2Client() *http.Client {
-	http2ClientLock.RLock()
-	if http2Client != nil {
-		http2ClientLock.RUnlock()
-		return http2Client
-	}
-	http2ClientLock.RUnlock()
-
-	http2ClientLock.Lock()
-	defer http2ClientLock.Unlock()
-	if http2Client != nil {
-		return http2Client
-	}
-
-	ss := cbgt.GetSecuritySetting()
-	setupHttp2ClientLOCKED(ss.CertInBytes)
-	return http2Client
-}
-
-// ---------------------------------------------------------
-
 // Returns a bleve.IndexAlias that represents all the PIndexes for the
 // index, including perhaps bleve remote client PIndexes.
 //
@@ -2052,46 +1994,29 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	prefix := mgr.Options()["urlPrefix"]
 	remoteClients := make([]*IndexClient, 0, len(remotePlanPIndexes))
 	rv := make([]RemoteClient, 0, len(remotePlanPIndexes))
+	ss := cbgt.GetSecuritySetting()
 	for _, remotePlanPIndex := range remotePlanPIndexes {
-		if onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name] {
+		if (onlyPIndexes != nil && !onlyPIndexes[remotePlanPIndex.PlanPIndex.Name]) ||
+			remotePlanPIndex.NodeDef == nil {
 			continue
 		}
-
-		delimiterPos := strings.LastIndex(remotePlanPIndex.NodeDef.HostPort, ":")
-		if delimiterPos < 0 || delimiterPos >= len(remotePlanPIndex.NodeDef.HostPort)-1 {
-			// No port available
-			log.Warnf("bleveIndexTargets: IndexClient with no possible port into: %v",
-				remotePlanPIndex.NodeDef.HostPort)
-			continue
-		}
-		host := remotePlanPIndex.NodeDef.HostPort[:delimiterPos]
-		port := remotePlanPIndex.NodeDef.HostPort[delimiterPos+1:]
-
-		proto := "http://"
 
 		http2Enabled := false
-		ss := cbgt.GetSecuritySetting()
+		hostPortUrl := "http://" + remotePlanPIndex.NodeDef.HostPort
 		if ss.EncryptionEnabled {
-			extrasBindHTTPS, er := remotePlanPIndex.NodeDef.GetFromParsedExtras("bindHTTPS")
-			if er == nil && extrasBindHTTPS != nil {
-				if bindHTTPSstr, ok := extrasBindHTTPS.(string); ok {
-					portPos := strings.LastIndex(bindHTTPSstr, ":") + 1
-					if portPos > 0 && portPos < len(bindHTTPSstr) {
-						port = bindHTTPSstr[portPos:]
-						proto = "https://"
-						http2Enabled = true
-					}
-				}
+			if u, err := remotePlanPIndex.NodeDef.HttpsURL(); err == nil {
+				hostPortUrl = u
+				http2Enabled = true
 			}
 		}
 
-		baseURL := proto + host + ":" + port + prefix +
+		baseURL := hostPortUrl + prefix +
 			"/api/pindex/" + remotePlanPIndex.PlanPIndex.Name
 
 		indexClient := &IndexClient{
 			mgr:         mgr,
 			name:        fmt.Sprintf("IndexClient - %s", baseURL),
-			HostPort:    host + ":" + port,
+			HostPort:    remotePlanPIndex.NodeDef.HostPort,
 			IndexName:   indexName,
 			IndexUUID:   indexUUID,
 			PIndexNames: []string{remotePlanPIndex.PlanPIndex.Name},
@@ -2102,7 +2027,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 
 		if http2Enabled {
-			indexClient.httpClient = FetchHttp2Client()
+			indexClient.httpClient = cbgt.HttpClient()
 			atomic.AddUint64(&totRemoteHttp2, 1)
 		} else {
 			atomic.AddUint64(&totRemoteHttp, 1)

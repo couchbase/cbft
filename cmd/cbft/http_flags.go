@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/couchbase/cbft"
-	log "github.com/couchbase/clog"
+	"github.com/couchbase/cbgt"
 )
 
 var httpMaxConnections = 100000
@@ -36,7 +36,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportDialContextTimeout = v
+		cbgt.HttpTransportDialContextTimeout = v
 	}
 
 	s = options["httpTransportDialContextKeepAlive"]
@@ -45,7 +45,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportDialContextKeepAlive = v
+		cbgt.HttpTransportDialContextKeepAlive = v
 	}
 
 	s = options["httpTransportIdleConnTimeout"]
@@ -54,7 +54,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportIdleConnTimeout = v
+		cbgt.HttpTransportIdleConnTimeout = v
 	}
 
 	s = options["httpTransportMaxIdleConns"]
@@ -63,7 +63,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportMaxIdleConns = v
+		cbgt.HttpTransportMaxIdleConns = v
 	}
 
 	s = options["httpTransportMaxIdleConnsPerHost"]
@@ -72,7 +72,7 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportMaxIdleConnsPerHost = v
+		cbgt.HttpTransportMaxIdleConnsPerHost = v
 	}
 
 	s = options["httpTransportTLSHandshakeTimeout"]
@@ -81,26 +81,26 @@ func initHTTPOptions(options map[string]string) error {
 		if err != nil {
 			return err
 		}
-		cbft.HttpTransportTLSHandshakeTimeout = v
+		cbgt.HttpTransportTLSHandshakeTimeout = v
 	}
 
-	mc, found := parseOptionsInt(options, "httpMaxConnections")
+	mc, found := cbgt.ParseOptionsInt(options, "httpMaxConnections")
 	if found {
 		httpMaxConnections = mc
 	}
-	rt, found := parseOptionsInt(options, "httpReadTimeout")
+	rt, found := cbgt.ParseOptionsInt(options, "httpReadTimeout")
 	if found {
 		httpReadTimeout = time.Duration(rt) * time.Second
 	}
-	wt, found := parseOptionsInt(options, "httpWriteTimeout")
+	wt, found := cbgt.ParseOptionsInt(options, "httpWriteTimeout")
 	if found {
 		httpWriteTimeout = time.Duration(wt) * time.Second
 	}
-	it, found := parseOptionsInt(options, "httpIdleTimeout")
+	it, found := cbgt.ParseOptionsInt(options, "httpIdleTimeout")
 	if found {
 		httpIdleTimeout = time.Duration(it) * time.Second
 	}
-	ht, found := parseOptionsInt(options, "httpReadHeaderTimeout")
+	ht, found := cbgt.ParseOptionsInt(options, "httpReadHeaderTimeout")
 	if found {
 		httpReadHeaderTimeout = time.Duration(ht) * time.Second
 	}
@@ -108,29 +108,17 @@ func initHTTPOptions(options map[string]string) error {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   cbft.HttpTransportDialContextTimeout,
-			KeepAlive: cbft.HttpTransportDialContextKeepAlive,
+			Timeout:   cbgt.HttpTransportDialContextTimeout,
+			KeepAlive: cbgt.HttpTransportDialContextKeepAlive,
 		}).DialContext,
-		MaxIdleConns:          cbft.HttpTransportMaxIdleConns,
-		MaxIdleConnsPerHost:   cbft.HttpTransportMaxIdleConnsPerHost,
-		IdleConnTimeout:       cbft.HttpTransportIdleConnTimeout,
-		TLSHandshakeTimeout:   cbft.HttpTransportTLSHandshakeTimeout,
-		ExpectContinueTimeout: cbft.HttpTransportExpectContinueTimeout,
+		MaxIdleConns:          cbgt.HttpTransportMaxIdleConns,
+		MaxIdleConnsPerHost:   cbgt.HttpTransportMaxIdleConnsPerHost,
+		IdleConnTimeout:       cbgt.HttpTransportIdleConnTimeout,
+		TLSHandshakeTimeout:   cbgt.HttpTransportTLSHandshakeTimeout,
+		ExpectContinueTimeout: cbgt.HttpTransportExpectContinueTimeout,
 	}
 
 	cbft.HttpClient = &http.Client{Transport: transport}
 
 	return nil
-}
-
-func parseOptionsInt(options map[string]string, configKey string) (int, bool) {
-	if val, exists := options[configKey]; exists && val != "" {
-		n, err := strconv.Atoi(val)
-		if err == nil {
-			log.Printf("parseOptionsInt: %s set to %d", configKey, n)
-			return n, exists
-		}
-		log.Printf("parseOptionsInt: %s parse, err: %v", configKey, err)
-	}
-	return 0, false
 }
