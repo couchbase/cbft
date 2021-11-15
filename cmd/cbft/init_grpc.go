@@ -15,6 +15,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"net"
+	"strconv"
+	"strings"
+	"sync/atomic"
 
 	"github.com/couchbase/cbft"
 	pb "github.com/couchbase/cbft/protobuf"
@@ -23,85 +27,70 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
-	"net"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
 )
 
-var grpcServers []*grpc.Server
-var grpcServersMutex sync.Mutex
+func setupGRPCListenersAndServe(mgr *cbgt.Manager) {
+	bindGRPCList := strings.Split(flags.BindGRPC, ",")
+	bindGRPCSList := strings.Split(flags.BindGRPCSSL, ",")
 
-// Close all Grpc Servers
-func closeAndClearGrpcServerList() {
-	grpcServersMutex.Lock()
-
-	for _, server := range grpcServers {
-		// stop the grpc server.
-		server.Stop()
+	if authType == "cbauth" {
+		// register a security refresh callback with cbauth, which is
+		// responsible for upating the listeners on refresh
+		handleConfigChanges := func(status int) error {
+			// restart the servers in case of a refresh
+			setupGRPCListeners(mgr, bindGRPCList, bindGRPCSList, status)
+			return nil
+		}
+		cbgt.RegisterConfigRefreshCallback("fts/grpc,grpc-ssl", handleConfigChanges)
 	}
-	grpcServers = nil
-	grpcServersMutex.Unlock()
+
+	setupGRPCListeners(mgr, bindGRPCList, bindGRPCSList,
+		cbgt.AuthChange_nonSSLPorts|cbgt.AuthChange_certificates)
 }
 
-func setUpGrpcListenersAndServ(mgr *cbgt.Manager,
-	options map[string]string) {
-
-	if flags.BindGRPC != "" {
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPC, false, options, "")
-	}
-
-	if flags.BindGRPCSSL != "" {
-		authType = options["authType"]
-
-		if authType == "cbauth" {
-			// Registering a TLS refresh callback with cbauth, which
-			// will be responsible for updating https listeners,
-			// whenever ssl certificates or the client cert auth settings
-			// are changed.
-			handleConfigChanges := func() error {
-				// restart the servers in case of a refresh
-				setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options,
-					authType)
-				return nil
+func setupGRPCListeners(mgr *cbgt.Manager,
+	bindGRPCList, bindGRPCSList []string, status int) error {
+	startGRPCListeners := func(ssl bool, servers []string) {
+		anyHostPorts := map[string]bool{}
+		// bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for grpc listening.
+		for _, server := range servers {
+			if strings.HasPrefix(server, "0.0.0.0:") ||
+				strings.HasPrefix(server, "[::]:") {
+				startGrpcServer(mgr, server, ssl, nil)
+				anyHostPorts[server] = true
 			}
-
-			cbgt.RegisterConfigRefreshCallback("fts/grpc-ssl", handleConfigChanges)
 		}
 
-		setUpGrpcListenersAndServUtil(mgr, flags.BindGRPCSSL, true, options, authType)
-	}
-}
-
-func setUpGrpcListenersAndServUtil(mgr *cbgt.Manager, bindPORT string,
-	secure bool, options map[string]string, authType string) {
-	ipv6 = options["ipv6"]
-
-	if secure {
-		// close any previously open grpc servers
-		closeAndClearGrpcServerList()
-	}
-
-	bindGRPCList := strings.Split(bindPORT, ",")
-	anyHostPorts := map[string]bool{}
-	// bind to 0.0.0.0's (IPv4) or [::]'s (IPv6) first for grpc listening.
-	for _, bindGRPC := range bindGRPCList {
-		if strings.HasPrefix(bindGRPC, "0.0.0.0:") ||
-			strings.HasPrefix(bindGRPC, "[::]:") {
-			go startGrpcServer(mgr, bindGRPC, secure, nil, authType)
-
-			anyHostPorts[bindGRPC] = true
+		for i := len(servers) - 1; i >= 1; i-- {
+			startGrpcServer(mgr, servers[i], ssl, anyHostPorts)
 		}
 	}
 
-	for i := len(bindGRPCList) - 1; i >= 1; i-- {
-		go startGrpcServer(mgr, bindGRPCList[i], secure, anyHostPorts, authType)
+	if status&cbgt.AuthChange_nonSSLPorts != 0 {
+		// close any previously opened grpc servers
+		serversCache.shutdownGrpcServers(false)
+
+		ss := cbgt.GetSecuritySetting()
+		if ss == nil || !ss.DisableNonSSLPorts {
+			startGRPCListeners(false, bindGRPCList)
+		}
 	}
+
+	if status&cbgt.AuthChange_certificates != 0 {
+		// close any previously opened grpc-ssl servers
+		serversCache.shutdownGrpcServers(true)
+		startGRPCListeners(true, bindGRPCSList)
+	}
+
+	return nil
 }
 
-func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
-	anyHostPorts map[string]bool, authType string) {
+func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
+	ssl bool, anyHostPorts map[string]bool) {
+	if len(bindGRPC) == 0 {
+		return
+	}
+
 	if bindGRPC[0] == ':' {
 		bindGRPC = "localhost" + bindGRPC
 	}
@@ -134,44 +123,49 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string, secure bool,
 		} // else port not found.
 	}
 
+	setupGRPCServer := func(listener net.Listener) {
+		go func(listener net.Listener) {
+			opts := getGrpcOpts(ssl, authType)
+
+			s := grpc.NewServer(opts...)
+
+			searchSrv := &cbft.SearchService{}
+			searchSrv.SetManager(mgr)
+			pb.RegisterSearchServiceServer(s, searchSrv)
+
+			reflection.Register(s)
+
+			serversCache.registerGrpcServer(s, ssl)
+			if ssl {
+				atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
+			} else {
+				atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
+			}
+			log.Printf("init_grpc: GrpcServer Started at %q", bindGRPC)
+			if err := s.Serve(listener); err != nil {
+				log.Warnf("init_grpc: Serve, err: %v;"+
+					" closed gRPC listener on bindGRPC: %q", err, bindGRPC)
+			}
+
+			if ssl {
+				atomic.AddUint64(&cbft.TotGRPCSListenersClosed, 1)
+				return
+			}
+			atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
+		}(listener)
+	}
+
 	listener, err := net.Listen("tcp", bindGRPC)
 	if err != nil {
 		log.Fatalf("init_grpc: mainGrpcServer, failed to listen: %v", err)
-	}
-
-	opts := getGrpcOpts(secure, authType)
-
-	s := grpc.NewServer(opts...)
-
-	searchSrv := &cbft.SearchService{}
-	searchSrv.SetManager(mgr)
-	pb.RegisterSearchServiceServer(s, searchSrv)
-
-	reflection.Register(s)
-
-	if secure {
-		grpcServersMutex.Lock()
-		grpcServers = append(grpcServers, s)
-		grpcServersMutex.Unlock()
-		atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
+	} else if listener != nil {
+		setupGRPCServer(listener)
 	} else {
-		atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
+		log.Warnf("init_grpc: listener not set up for %s", bindGRPC)
 	}
-
-	log.Printf("init_grpc: GrpcServer Started at %s", bindGRPC)
-	if err := s.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-
-	if secure {
-		atomic.AddUint64(&cbft.TotGRPCSListenersClosed, 1)
-		return
-	}
-
-	atomic.AddUint64(&cbft.TotGRPCListenersClosed, 1)
 }
 
-func getGrpcOpts(secure bool, authType string) []grpc.ServerOption {
+func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 	opts := []grpc.ServerOption{
 		cbft.AddServerInterceptor(),
 		grpc.MaxConcurrentStreams(cbft.DefaultGrpcMaxConcurrentStreams),
@@ -180,7 +174,7 @@ func getGrpcOpts(secure bool, authType string) []grpc.ServerOption {
 		// TODO add more configurability
 	}
 
-	if secure {
+	if ssl {
 		var err error
 		config := &tls.Config{}
 		config.Certificates = make([]tls.Certificate, 1)
@@ -201,20 +195,18 @@ func getGrpcOpts(secure bool, authType string) []grpc.ServerOption {
 
 				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
 					caCertPool := x509.NewCertPool()
-					var certBytes []byte
-					if len(ss.CertInBytes) != 0 {
-						certBytes = ss.CertInBytes
-					} else {
+					certInBytes := ss.CertInBytes
+					if len(certInBytes) == 0 {
 						// if no CertInBytes found in settings, then fallback
 						// to reading directly from file. Upon any certs change
 						// callbacks later, reboot of servers will ensure the
 						// latest certificates in the servers.
-						certBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
+						certInBytes, err = ioutil.ReadFile(cbgt.TLSCertFile)
 						if err != nil {
 							log.Fatalf("init_grpc: ReadFile of cacert, err: %v", err)
 						}
 					}
-					ok := caCertPool.AppendCertsFromPEM(certBytes)
+					ok := caCertPool.AppendCertsFromPEM(certInBytes)
 					if !ok {
 						log.Fatalf("init_grpc: error in appending certificates")
 					}
