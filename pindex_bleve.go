@@ -414,9 +414,16 @@ func NewBleveDest(path string, bindex bleve.Index,
 func (t *BleveDest) startBatchWorkers() {
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		t.batchReqChs[i] = make(chan *batchRequest, 1)
-		go runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex)
-		log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", i, t.bindex.Name())
+		go runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex, i)
 	}
+}
+
+func (t *BleveDest) stopBatchWorkers() {
+	t.m.Lock()
+	ch := t.stopCh
+	t.stopCh = make(chan struct{})
+	t.m.Unlock()
+	close(ch)
 }
 
 // ---------------------------------------------------------
@@ -2412,7 +2419,7 @@ func (t *BleveDestPartition) setLastAsyncBatchErr(err error) {
 }
 
 func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
-	bindex bleve.Index) {
+	bindex bleve.Index, workerID int) {
 	var targetBatch *bleve.Batch
 	bdp := make([]*BleveDestPartition, 0, 50)
 	bdpMaxSeqNums := make([]uint64, 0, 50)
@@ -2435,6 +2442,8 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 		defer ticker.Stop()
 	}
 	var tickerCh <-chan time.Time
+
+	log.Printf("pindex_bleve: started runBatchWorker: %d for pindex: %s", workerID, bindex.Name())
 
 	for {
 		// trigger batch execution if we have enough items in batch
@@ -2500,7 +2509,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 			tickerCh = nil
 
 		case <-stopCh:
-			log.Printf("pindex_bleve: batchWorker stopped for `%v`", bindex.Name())
+			log.Printf("pindex_bleve: batchWorker %d stopped for `%v`", workerID, bindex.Name())
 			return
 		}
 

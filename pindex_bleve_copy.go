@@ -52,15 +52,16 @@ func (t *BleveDest) IsFeedable() (bool, error) {
 func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	mgr *cbgt.Manager, restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	pindexName := cbgt.PIndexNameFromPath(path)
-	if CopyPartition == nil || IsCopyPartitionPreferred == nil ||
-		!IsCopyPartitionPreferred(mgr, pindexName, path, sourceParams) {
-		return NewBlevePIndexImpl(indexType, indexParams, path, restart)
-	}
-
 	// validate the index params and exit early on errors.
-	bleveParams, kvConfig, _, _, err := parseIndexParams(indexParams)
+	bleveParams, kvConfig, bleveIndexType, _, err := parseIndexParams(indexParams)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if CopyPartition == nil || IsCopyPartitionPreferred == nil ||
+		bleveIndexType == "upside_down" ||
+		!IsCopyPartitionPreferred(mgr, pindexName, path, sourceParams) {
+		return NewBlevePIndexImpl(indexType, indexParams, path, restart)
 	}
 
 	if path != "" {
@@ -136,7 +137,7 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 		return err
 	}
 
-	updateBleveIndex(pindexName, mgr, bindex, dest, true)
+	updateBleveIndex(pindexName, mgr, bindex, dest)
 	return nil
 }
 
@@ -202,7 +203,7 @@ func createNewBleveIndex(indexType, indexParams, path string,
 		return
 	}
 
-	impl, _, err := NewBlevePIndexImpl(indexType, indexParams, path, restart)
+	impl, destWrapper, err := NewBlevePIndexImpl(indexType, indexParams, path, restart)
 	if err != nil {
 		var ok bool
 		var pi *cbgt.PIndex
@@ -223,9 +224,16 @@ func createNewBleveIndex(indexType, indexParams, path string,
 		return
 	}
 
+	// stop the old workers.
+	if fwder, ok := destWrapper.(*cbgt.DestForwarder); ok {
+		if bdest, ok := fwder.DestProvider.(*BleveDest); ok {
+			bdest.stopBatchWorkers()
+		}
+	}
+
 	// update the new index into the pindex.
 	if bindex, ok := impl.(bleve.Index); ok {
-		updateBleveIndex(pindexName, mgr, bindex, dest, false)
+		updateBleveIndex(pindexName, mgr, bindex, dest)
 	} else {
 		log.Errorf("pindex_bleve_copy: no bleve.Index implementation"+
 			"found: %s", pindexName)
@@ -233,11 +241,9 @@ func createNewBleveIndex(indexType, indexParams, path string,
 }
 
 func updateBleveIndex(pindexName string, mgr *cbgt.Manager,
-	index bleve.Index, dest *BleveDest, kickWorkers bool) {
+	index bleve.Index, dest *BleveDest) {
 	dest.resetBIndex(index)
-	if kickWorkers {
-		dest.startBatchWorkers()
-	}
+	dest.startBatchWorkers()
 	http.RegisterIndexName(pindexName, index)
 
 	mgr.JanitorKick(fmt.Sprintf("feed init kick for pindex: %s", pindexName))
