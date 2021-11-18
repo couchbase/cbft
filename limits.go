@@ -387,10 +387,10 @@ func (e *rateLimiter) completeIndexRequestLOCKED(req *http.Request) {
 			entry, exists := e.indexCache[key]
 			if !exists {
 				e.indexCache[key] = map[string]struct{}{indexName: struct{}{}}
-				return
+			} else {
+				// adds or updates index entry
+				entry[indexName] = struct{}{}
 			}
-			// adds or updates index entry
-			entry[indexName] = struct{}{}
 		}
 		// whether index creation was successful or not, the pending
 		// entry will need to be removed
