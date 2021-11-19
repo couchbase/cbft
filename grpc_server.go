@@ -144,9 +144,11 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	// pre process the query if applicable
 	var undecoratedQuery query.Query
+	var coordinatingNode bool
 	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
 		hv, _ := extractMetaHeader(stream.Context(), rpcClusterActionKey)
 		if hv != clusterActionScatterGather {
+			coordinatingNode = true
 			undecoratedQuery, searchRequest.Query = sr.decorateQuery(req.IndexName,
 				searchRequest.Query, nil)
 		}
@@ -242,16 +244,19 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
 		bleve.SearchQueryEndCallbackFn(bleveCtxQueryEndCallback))
 
-	// register with the QuerySupervisor
-	id := querySupervisor.AddEntry(&QuerySupervisorContext{
-		Query:     searchRequest.Query,
-		Cancel:    cancel,
-		Size:      searchRequest.Size,
-		From:      searchRequest.From,
-		Timeout:   queryCtlParams.Ctl.Timeout,
-		IndexName: req.IndexName,
-	})
-	defer querySupervisor.DeleteEntry(id)
+	if coordinatingNode {
+		// register with the QuerySupervisor only on the coordinating node.
+		id := querySupervisor.AddEntry(&QuerySupervisorContext{
+			Query:     searchRequest.Query,
+			Cancel:    cancel,
+			Size:      searchRequest.Size,
+			From:      searchRequest.From,
+			Timeout:   queryCtlParams.Ctl.Timeout,
+			IndexName: req.IndexName,
+		})
+
+		defer querySupervisor.DeleteEntry(id)
+	}
 
 	var searchResult *bleve.SearchResult
 	searchResult, err = alias.SearchInContext(ctx, searchRequest)
