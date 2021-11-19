@@ -1596,7 +1596,11 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
 
         $scope.addField = function() {
             $scope.editField.new = false;
-            $scope.easyMapping.addField($scope.editField)
+            $scope.easyMapping.addField($scope.editField);
+        }
+
+        $scope.hasFieldDefChanged = function() {
+            return $scope.easyMapping.hasFieldDefChanged($scope.editField);
         }
 
         $scope.deleteFieldInCollection = function(collection, path) {

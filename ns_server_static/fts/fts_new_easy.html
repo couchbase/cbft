@@ -301,7 +301,8 @@ licenses/APL2.txt.
 <!-- save new field mapping or update changes to an existing mapping ------- -->
             <button
                ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-               ng-click="addField()">
+               ng-click="addField()"
+               ng-disabled="!hasFieldDefChanged()">
               <span ng-if="editField.new">
                 Add
               </span>

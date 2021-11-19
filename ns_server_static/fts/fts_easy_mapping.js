@@ -330,10 +330,19 @@ function newEasyMapping() {
             }
         },
         addField: function(editField) {
+            if (editField.identifier) {
+                editField.analyzer = "keyword";
+            }
             mapping[editField.path] = Object.assign({}, editField);
         },
         deleteField: function(path) {
             delete mapping[path];
+        },
+        hasFieldDefChanged: function(editField) {
+            if (JSON.stringify(mapping[editField.path]) === JSON.stringify(editField)) {
+                return false;
+            }
+            return true;
         },
         hasFieldAtPath: function(path) {
             if (path in mapping) {
