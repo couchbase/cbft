@@ -17,6 +17,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -3209,7 +3210,7 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 		return fmt.Errorf("source name not provided")
 	}
 
-	url := mgr.Server() + "/pools/default/buckets/" + sourceName
+	url := mgr.Server() + "/pools/default/buckets/" + url.QueryEscape(sourceName)
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
 		return err
