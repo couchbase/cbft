@@ -158,8 +158,9 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if numIndexesLimit > 0 &&
 		(numActiveIndexes >= numIndexesLimit ||
 			(numActiveIndexes+numPendingIndexes) >= numIndexesLimit) {
-		return nil, fmt.Errorf("num_fts_indexes (active + pending), (%v + %v) >= %v",
-			numActiveIndexes, numPendingIndexes, numIndexesLimit)
+		return nil, fmt.Errorf("Exceeds indexes limit for scope: %s,"+
+			" num_fts_indexes (active + pending): (%v + %v) >= %v",
+			scope, numActiveIndexes, numPendingIndexes, numIndexesLimit)
 	}
 
 	limiter.pendingIndexes[indexDef.Name] = key
