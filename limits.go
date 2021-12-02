@@ -159,7 +159,7 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 		(numActiveIndexes >= numIndexesLimit ||
 			(numActiveIndexes+numPendingIndexes) >= numIndexesLimit) {
 		return nil, fmt.Errorf("Exceeds indexes limit for scope: %s,"+
-			" num_fts_indexes (active + pending): (%v + %v) >= %v",
+			" num_fts_indexes (active + pending): (%v + %v), limit: %v",
 			scope, numActiveIndexes, numPendingIndexes, numIndexesLimit)
 	}
 
@@ -258,7 +258,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 		if maxConcurrentRequests > 0 &&
 			entry.live >= maxConcurrentRequests {
 			// reject, surpassed the concurrency limit
-			return false, fmt.Sprintf("num_concurrent_requests, %v >= %v",
+			return false, fmt.Sprintf("num_concurrent_requests: %v, limit: %v",
 				entry.live, maxConcurrentRequests)
 		}
 
@@ -267,7 +267,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 			if maxQueriesPerMin > 0 &&
 				entry.countSinceStamp >= maxQueriesPerMin {
 				// reject, surpassed the queries per minute limit
-				return false, fmt.Sprintf("num_queries_per_min, %v >= %v",
+				return false, fmt.Sprintf("num_queries_per_min: %v, limit: %v",
 					entry.countSinceStamp, maxQueriesPerMin)
 			}
 
@@ -275,7 +275,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 			if maxIngressPerMin > 0 &&
 				entry.ingressBytesSinceStamp >= maxIngressPerMin {
 				// reject, surpassed the ingress per minute limit
-				return false, fmt.Sprintf("ingress_mib_per_min, %v >= %v",
+				return false, fmt.Sprintf("ingress_mib_per_min: %v, limit: %v",
 					entry.ingressBytesSinceStamp, maxIngressPerMin)
 			}
 
@@ -283,7 +283,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 			if maxEgressPerMin > 0 &&
 				entry.egressBytesSinceStamp >= maxEgressPerMin {
 				// reject, surpassed the egress per minute limit
-				return false, fmt.Sprintf("egress_mib_per_min, %v >= %v",
+				return false, fmt.Sprintf("egress_mib_per_min: %v, limit: %v",
 					entry.egressBytesSinceStamp, maxEgressPerMin)
 			}
 		} else {
