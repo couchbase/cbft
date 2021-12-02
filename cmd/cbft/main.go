@@ -725,6 +725,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return nil, err
 		}
 
+		// Re-initialize bleve options with manager's options to
+		// overwrite/set any previously overwritten settings.
+		err = initBleveOptions(mgr.Options())
+		if err != nil {
+			return nil, err
+		}
+
 		nodeInfo := &service.NodeInfo{
 			NodeID: service.NodeID(uuid),
 		}
