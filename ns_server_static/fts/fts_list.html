@@ -61,17 +61,17 @@ licenses/APL2.txt.
           <td class="cbui-tablerow-title ellipsis">
             {{indexName}}
           </td>
-          <td>
+          <td class="break-word">
             <span ng-if="indexDef.sourceType != 'couchbase' && indexDef.sourceType != 'gocbcore'">
               {{indexDef.sourceType}}
               &nbsp;/&nbsp;
             </span>
             {{indexDef.sourceName}}
           </td>
-          <td>
+          <td class="break-word">
             {{obtainScope(indexDef)}}
           </td>
-          <td>
+          <td class="break-word">
             <div ng-if="obtainCollections(indexDef).length == 1">
               {{obtainCollections(indexDef)[0]}}
             </div>
