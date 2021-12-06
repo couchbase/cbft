@@ -611,7 +611,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.NewBucketRestoreIndexHandler(mgr))
 
 	handle(prefix+"/api/query/index/{indexName}", "GET",
-		cbft.NewQuerySupervisorDetails())
+		cbft.NewQuerySupervisorDetails(mgr))
 
 	handle(prefix+"/api/conciseOptions", "GET", cbft.NewConciseOptions(mgr))
 
@@ -621,12 +621,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewManagerOptionsExt(mgr)))
 
 	router.Handler("GET", prefix+"/api/query",
-		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQuerySupervisorDetails()))
+		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQuerySupervisorDetails(mgr)))
 
 	router.Handle("POST", prefix+"/api/query/:queryID/cancel",
 		func(w http.ResponseWriter, req *http.Request, p httprouter.Params) {
 			req = ContextSet(req, p)
-			handler := cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQueryKiller())
+			handler := cbft.NewAuthVersionHandler(mgr, nil, cbft.NewQueryKiller(mgr))
 			handler.ServeHTTP(w, req)
 		})
 

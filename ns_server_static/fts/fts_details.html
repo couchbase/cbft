@@ -7,40 +7,59 @@ file, in accordance with the Business Source License, use of this software will
 be governed by the Apache License, Version 2.0, included in the file
 licenses/APL2.txt.
 -->
-
+<style>
+  div.navigation {
+    display: inline-block;
+    width: 100%;
+  }
+  div.navigation * {
+    display: table-cell;
+    text-align: center;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+</style>
 <div class="indexContainer">
-
+  <mn-element-cargo depot="actions" class="ng-scope">
+    <div class="header-controls resp-sml">
+      <a onclick="javascript:history.back()"
+         class="resp-hide-sml">
+        <span class="icon fa-arrow-left"></span> BACK
+      </a>
+    </div>
+  </mn-element-cargo>
   <div ng-show="errorMessage" class="error ng-cloak" role="alert">
     {{errorMessage}}
   </div>
 
-  <div class="row margin-bottom-half">
-    <h3>Details for {{indexName}}</h3>
-  </div>
-  <hr/>
-
   <div class="tabs">
     <button ng-class="{ active: isIndexTab(1) }"
             ng-click="setIndexTab(1)">
-      Summary
+      Partition Layout
     </button>
     <button ng-class="{ active: isIndexTab(2) }"
             ng-click="setIndexTab(2)">
-      Monitor
+      Query Monitor
     </button>
-    <button ng-class="{ active: isIndexTab(3) }"
+    <!-- <button ng-class="{ active: isIndexTab(3) }"
             ng-click="setIndexTab(3)">
       Manage
-    </button>
+    </button> -->
   </div>
 
   <p/>
   <hr/>
-
+  <div class="navigation row margin-bottom-half">
+    <h3>{{indexName}}</h3>
+    <span class="icon fa-angle-right"></span>
+    <h3 ng-if="isIndexTab(1)">Partition Layout</h3>
+    <h3 ng-if="isIndexTab(2)">Query Monitor</h3>
+  </div>
+  <hr/>
   <div ng-show="isIndexTab(1)">
     <div class="fts-query-results"
          ng-include
-         src="'../_p/ui/fts/static/partials/index/tab-summary.html'">
+         src="'../_p/ui/fts/static/partials/index/tab-layout.html'">
     </div>
   </div>
   <div ng-show="isIndexTab(2)">
@@ -49,11 +68,10 @@ licenses/APL2.txt.
          src="'../_p/ui/fts/static/partials/index/tab-monitor.html'">
     </div>
   </div>
-  <div ng-show="isIndexTab(3)">
+  <!-- <div ng-show="isIndexTab(3)">
     <div class="fts-query-results"
          ng-include
          src="'../_p/ui/fts/static/partials/index/tab-manage.html'">
     </div>
-  </div>
-
+  </div> -->
 </div>

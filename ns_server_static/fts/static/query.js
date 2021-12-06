@@ -5,8 +5,11 @@
 //  in that file, in accordance with the Business Source License, use of this
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
-import {errorMessage} from "./util.js";
+import {confirmDialog, errorMessage} from "./util.js";
+import {timer}   from "rxjs";
+import { takeWhile } from 'rxjs/operators';
 export default QueryCtrl;
+export {queryMonitor};
 
 var lastQueryIndex = null;
 var lastQueryReq = null;
@@ -369,5 +372,147 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
 
             $location.search('q', lastQueryReq.q);
         }
+    }
+}
+
+function queryMonitor($scope, $uibModal, $http){
+    function notHidden(el) {
+        return !(el === null || (el.offsetParent === null));
+    }
+    $scope.startPoller = function(){
+        $scope.querySupervisorMap = {};
+        $scope.queryFilterVal = "5ms";
+        let query_poller = timer(0,5000);
+        query_poller.pipe(takeWhile(()=>{
+            return notHidden(document.getElementById("monitorTab"));
+        })).subscribe(() => {
+            $scope.monitorQuerySupervisor();
+        });
+    };
+
+    var monitoring = true;
+    $scope.getToggleLabel = function(){
+        return monitoring ? "Pause" : "Resume";
+    }
+    $scope.toggleMonitorFlag = function(){
+        monitoring = monitoring ? false : true;
+    }
+    $scope.getMonitorFlag = function(){
+        return monitoring;
+    }
+
+    function transformTime(a){
+        if (a.includes('ms')){
+            var ms = a.indexOf('ms');
+            return parseFloat(a.substring(0,ms));
+        }
+        var h = a.indexOf('h');
+        if (h != -1) {
+            a = a.substr(0, h) + '#' + a.substr(h + 1);
+        }
+        var m = a.indexOf('m');
+        if (m != -1) {
+            a = a.substr(0, m) + '#' + a.substr(m + 1);
+        }
+        var s = a.indexOf('s');
+        if (s != -1) {
+            a = a.substr(0, s) + '#' + a.substr(s + 1);
+        }
+        var sl = a.split('#');
+        return (h == -1 ? 0 : parseFloat(sl[0]) * 60 * 60)
+            + (m == -1 ? 0 : (h == -1 ? parseFloat(sl[0]) * 60 : (parseFloat(sl[1]) * 60)))
+            + (s == -1 ? 0 : (m == -1 ? (h == -1 ? parseFloat(sl[0]):parseFloat(sl[1])):parseFloat(sl[2])));
+    }
+    var sortFlag = {}
+    $scope.ascendingOrder = function(arg){
+        return (typeof(sortFlag) != "undefined") && sortFlag.col == arg && sortFlag.order;
+    }
+    function sortActiveQueries(){
+        if (Object.keys(sortFlag).length === 0) {
+            return
+        }
+        var clone = {};
+        if(sortFlag.col.localeCompare("queryID") == 0){
+            clone = Object.keys($scope.querySupervisorMap).sort(
+                (a, b) => sortFlag.order ? a.localeCompare(b) : b.localeCompare(a)
+            ).reduce((r, k) => (r[k] = $scope.querySupervisorMap[k], r), {});
+        }
+        if(sortFlag.col.localeCompare("duration") == 0){
+            clone = Object.fromEntries(
+                Object.entries($scope.querySupervisorMap).sort(([,a],[,b]) =>
+                sortFlag.order ? transformTime(a["executionTime"]) - transformTime(b["executionTime"]) :
+                transformTime(b["executionTime"]) - transformTime(a["executionTime"])
+            ));
+        }
+        $scope.querySupervisorMap = JSON.parse(JSON.stringify(clone));
+    }
+    $scope.updateSortFlag = function(arg){
+        if (Object.keys(sortFlag).length === 0){
+            sortFlag = {
+                col: arg,
+                order: true,
+            }
+        } else {
+            sortFlag = {
+                col: arg,
+                order: arg == sortFlag.col ? !sortFlag.order : true
+            }
+        }
+        sortActiveQueries()
+    }
+
+    $scope.noSlowRunningQueries = function(){
+        return typeof($scope.querySupervisorMap) != "undefined" &&
+                Object.keys($scope.querySupervisorMap).length == 0;
+    };
+
+    $scope.filterQueries = function(arg){
+        $scope.queryFilterVal = arg;
+        $scope.monitorQuerySupervisor();
+    }
+
+    $scope.monitorQuerySupervisor = function(){
+        $http.get('/api/query/index/'+$scope.indexName+'?longerThan='+$scope.queryFilterVal).
+        then(function(response) {
+            var respMap = response.data;
+            var totalActives = respMap["filteredActiveQueries"]["queryCount"];
+            if (!monitoring){
+                return
+            }
+            $scope.querySupervisorMap = {};
+            if (totalActives == 0) {
+                return
+            }
+            var queryMap = respMap["filteredActiveQueries"]["queryMap"];
+            for (let key of Object.keys(queryMap)){
+                var uuid = key.split('-')[0];
+                $scope.querySupervisorMap[key] = queryMap[key];
+                $scope.querySupervisorMap[key]["hostPort"] = $scope.nodeDefsByUUID[uuid]["hostPort"];
+            }
+            sortActiveQueries()
+        }, function(response) {
+            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessageFull = response.data;
+        });
+    };
+    $scope.killQuery = function(ID){
+        confirmDialog(
+            $scope, $uibModal,
+            "Confirm Abort Query",
+            "Are you sure you want to abort this query?",
+            "Abort Query"
+        ).then(function success() {
+            var queryID = ID.split('-')[1];
+            var body = {
+                uuid: ID.split('-')[0],
+            };
+            $http.post('/api/query/'+queryID+'/cancel', body).
+            then(function(){
+                delete $scope.querySupervisorMap[ID];
+            }, function(response){
+                $scope.errorMessage = errorMessage(response.data, response.code);
+                $scope.errorMessageFull = response.data;
+            });
+        });
     }
 }

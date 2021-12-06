@@ -1077,6 +1077,9 @@ function IndexDetailsCtrlFT_NS($scope, $http, $stateParams,
     $scope.indexTab = 1;
 
     $scope.setIndexTab = function(newTab) {
+        if (newTab === 2){
+            $scope.startPoller()
+        }
         $scope.indexTab = newTab;
     }
 

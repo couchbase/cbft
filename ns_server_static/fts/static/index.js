@@ -7,6 +7,7 @@
 //  the file licenses/APL2.txt.
 import {errorMessage, confirmDialog,
         blevePIndexInitController, blevePIndexDoneController} from "./util.js";
+import { queryMonitor } from "./query.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
 var indexStatsPrevs = {};
@@ -191,14 +192,26 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
             var data = response.data;
             $scope.nodeDefsByUUID = {}
             $scope.nodeDefsByAddr = {}
+            $scope.serverGroups = {}
             $scope.nodeAddrsArr = []
             for (var k in data.nodeDefsWanted.nodeDefs) {
                 var nodeDef = data.nodeDefsWanted.nodeDefs[k]
                 $scope.nodeDefsByUUID[nodeDef.uuid] = nodeDef
                 $scope.nodeDefsByAddr[nodeDef.hostPort] = nodeDef
+                if (typeof($scope.serverGroups[nodeDef.container]) === "undefined") {
+                    $scope.serverGroups[nodeDef.container] = 0
+                }
+                $scope.serverGroups[nodeDef.container] += 1
                 $scope.nodeAddrsArr.push(nodeDef.hostPort);
             }
-            $scope.nodeAddrsArr.sort();
+            var toggle = true;
+            $scope.nodeAddrsArr.sort((a, b) => $scope.nodeDefsByAddr[a].container.localeCompare($scope.nodeDefsByAddr[b].container));
+             $scope.serverGroups = Object.keys($scope.serverGroups).sort(
+                (a, b) => a.localeCompare(b)
+            ).reduce((r, k) => (r[k] = {
+                        size: $scope.serverGroups[k],
+                        toggleStyle: (toggle = !toggle)
+                    }, r), {});
             $scope.loadIndexDetails()
         }, function(response) {
             $scope.errorMessage = errorMessage(response.data, response.code);
@@ -295,7 +308,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
             });
         };
     });
-
+    queryMonitor($scope, $uibModal, $http)
     $scope.loadIndexDocCount = function() {
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;

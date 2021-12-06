@@ -1,0 +1,96 @@
+<!--
+Copyright 2021-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+-->
+
+<style>
+  .partitionLayout {
+    margin-left: 20px;
+    max-height: 93vh;
+  }
+  tr.planPIndex td {
+    white-space: nowrap;
+  }
+  th.nodeAddr {
+    text-align: center;
+    width: 131px;
+    position: relative;
+  }
+  th.nodeAddr a {
+    display: block;
+    position: absolute;
+    background: white;
+    -ms-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+    -webkit-transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+    transform: translate(-50%, 0) rotate(-50deg) translate(40%, 0);
+  }
+  td.nodeAddr div {
+    display: inline-flex;
+    justify-content: center;
+    width: 131px;
+    white-space: collapse;
+  }
+  th.nodeAddr div, td.nodeAddr div {
+    font-family: monospace;
+    padding: 3px 4px 3px 4px;
+  }
+  td.nodeAddr div.replicaTag {
+    display: inline-flex;
+    justify-content: center;
+    border: 1px solid;
+    border-left: none;
+    border-left: 8px solid #adadad;
+    border-right: none;
+    max-width: 28px;
+  }
+  .nodeSpec {
+    background-color: #9DEE9D;
+  }
+  .rwTag {
+    display: inline-flex;
+    justify-content: center;
+    border: 1px solid;
+    border-left: none;
+  }
+  .nodeSpecPriority-0 {
+    background-color: #61C661;
+  }
+  .sgToggle {
+    background-color: #f6f7f9;
+  }
+  </style>
+  <table class="table partitionLayout" style="max-width: 75vw;">
+    <tr>
+      <th colspan="2"></td>
+      <th ng-repeat="(containerName, sg) in serverGroups" colspan="{{sg.size}}" ng-class="{sgToggle : sg.toggleStyle}"
+      style="text-align: center;">{{containerName.slice(containerName.indexOf('/') + 1)}}</th>
+    </tr>
+    <tr>
+      <th>Index Partition</th>
+      <th>vBuckets</th>
+      <th ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr"
+      ng-class="{sgToggle : serverGroups[nodeDefsByAddr[nodeAddr].container].toggleStyle}">
+        {{nodeAddr}}
+      </th>
+    </tr>
+      <tr ng-repeat="planPIndex in planPIndexes" class="planPIndex">
+        <td>{{planPIndex.name}}</td>
+        <td>{{planPIndex.sourcePartitionsStr}}</td>
+        <td ng-repeat="nodeAddr in nodeAddrsArr" class="nodeAddr"
+        ng-class="{sgToggle : serverGroups[nodeDefsByAddr[nodeAddr].container].toggleStyle}" style="text-align: center;">
+          <div class="row" ng-if="planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid]">
+            <div class="replicaTag">
+              {{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority == 1  ? "R" : "P" }}
+            </div>
+            <div class="rwTag nodeSpec nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
+              {{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canRead && 'r') || '&nbsp;'}}{{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canWrite && 'w') || '&nbsp;'}}
+            </div>
+          </div>
+        </td>
+      </tr>
+  </table>
