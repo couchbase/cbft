@@ -19,7 +19,7 @@ require (
 	github.com/couchbase/clog v0.1.0
 	github.com/couchbase/go-couchbase v0.1.1
 	github.com/couchbase/goutils v0.1.2
-	github.com/couchbase/moss v0.1.0
+	github.com/couchbase/moss v0.1.1
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.1
