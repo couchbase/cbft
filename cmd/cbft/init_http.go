@@ -78,7 +78,9 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 				if portIndex > 0 && portIndex < len(bindHTTPList[0]) {
 					port := bindHTTPList[0][portIndex:]
 					mainServeHTTP("http", "127.0.0.1:"+port, nil)
-					mainServeHTTP("http", "[::1]:"+port, nil)
+					if ipv6 == "true" {
+						mainServeHTTP("http", "[::1]:"+port, nil)
+					}
 				}
 			}
 		}
