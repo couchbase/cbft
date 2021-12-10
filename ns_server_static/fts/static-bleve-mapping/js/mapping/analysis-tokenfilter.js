@@ -7,6 +7,8 @@
 //  the file licenses/APL2.txt.
 import {bleveIndexMappingScrub} from "./index-mapping.js";
 export default BleveTokenFilterModalCtrl;
+BleveTokenFilterModalCtrl.$inject = ["$scope", "$modalInstance", "$http",
+                                     "name", "value", "mapping", "static_prefix"];
 function BleveTokenFilterModalCtrl($scope, $modalInstance, $http,
                                    name, value, mapping, static_prefix) {
     $scope.origName = name;

@@ -27,6 +27,7 @@ function errorMessage(errorMessageFull, code) {
     return a[a.length - 1];
 }
 
+confirmDialog.$inject = ["$scope", "$uibModal", "title", "desc", "confirmMessage"];
 function confirmDialog($scope, $uibModal, title, desc, confirmMessage) {
     var innerScope = $scope.$new(true);
     innerScope.title = title;
@@ -39,6 +40,7 @@ function confirmDialog($scope, $uibModal, title, desc, confirmMessage) {
     }).result;
 }
 
+confirmDialog.$inject = ["$scope", "$uibModal", "title", "desc"];
 function alertDialog($scope, $uibModal, title, desc) {
     var innerScope = $scope.$new(true);
     innerScope.title = title;
@@ -76,6 +78,8 @@ function bleveNewIndexMapping() {
     }
 };
 
+blevePIndexInitController.$inject = ["initKind", "indexParams", "indexUI",
+    "$scope", "$http", "$routeParams", "$location", "$log", "$sce", "$uibModal"];
 function blevePIndexInitController(initKind, indexParams, indexUI,
     $scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
 
@@ -362,7 +366,9 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 }
 
 var bleveUpdatePreviewTimeoutMS = 1000;
-
+blevePIndexDoneController.$inject = ["doneKind", "indexParams", "indexUI",
+                                     "$scope", "$http", "$routeParams", "$location",
+                                     "$log", "$sce", "$uibModal"];
 function blevePIndexDoneController(doneKind, indexParams, indexUI,
     $scope, $http, $routeParams, $location, $log, $sce, $uibModal) {
     if (indexParams) {

@@ -47,9 +47,9 @@ export default ftsAppName;
 
 angular
     .module(ftsAppName,
-            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService, 
+            [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService,
                 uiCodemirror, mnDocumentsService, mnSelect])
-    .config(function($stateProvider) {
+    .config(["$stateProvider", function($stateProvider) {
       addFtsStates("app.admin.search");
 
       function addFtsStates(parent) {
@@ -210,17 +210,38 @@ angular
             }
           });
       }
-    });
+    }]);
 
   angular.module(ftsAppName).
         controller('mnFooterStatsController', mnFooterStatsController).
-        controller('IndexesCtrlFT_NS', IndexesCtrlFT_NS).
-        controller('indexViewController', indexViewController).
-        controller('IndexCtrlFT_NS', IndexCtrlFT_NS).
-        controller('IndexNewCtrlFT_NS', IndexNewCtrlFT_NS).
-        controller('IndexNewCtrlFTEasy_NS', IndexNewCtrlFTEasy_NS).
-        controller('IndexSearchCtrlFT_NS', IndexSearchCtrlFT_NS).
-        controller('IndexDetailsCtrlFT_NS', IndexDetailsCtrlFT_NS).
+        controller('IndexesCtrlFT_NS',
+                   ["$scope", "$http", "$state", "$stateParams",
+                    "$log", "$sce", "$location", "$uibModal",
+                    "mnPoolDefault", "mnPermissions", IndexesCtrlFT_NS]).
+        controller('indexViewController',
+                   ["$scope", "$http", "$state", "$log",
+                    "$sce", "$location", "$uibModal",
+                    "mnPermissions", indexViewController]).
+        controller('IndexCtrlFT_NS',
+                   ["$scope", "$http", "$stateParams", "$state",
+                    "$location", "$log", "$sce", "$uibModal", IndexCtrlFT_NS]).
+        controller('IndexNewCtrlFT_NS',
+                   ["$scope", "$http", "$state", "$stateParams",
+                    "$location", "$log", "$sce", "$uibModal",
+                    "$q", "mnBucketsService", "mnPoolDefault", IndexNewCtrlFT_NS]).
+        controller('IndexNewCtrlFTEasy_NS',
+                   ["$scope", "$http", "$state", "$stateParams",
+                    "$location", "$log", "$sce", "$uibModal",
+                    "$q", "mnBucketsService", "mnPoolDefault",
+                    "mnDocumentsService", IndexNewCtrlFTEasy_NS]).
+        controller('IndexSearchCtrlFT_NS',
+                   ["$scope", "$http", "$stateParams", "$log", "$sce",
+                    "$location", "mnPermissions",
+                    "qwDialogService", IndexSearchCtrlFT_NS]).
+        controller('IndexDetailsCtrlFT_NS',
+                   ["$scope", "$http", "$stateParams",
+                    "$location", "$log", "$sce",
+                    "$uibModal", IndexDetailsCtrlFT_NS]).
         factory('qwDialogService', downgradeInjectable(QwDialogService));
 
 // ----------------------------------------------
@@ -1071,17 +1092,23 @@ function IndexDetailsCtrlFT_NS($scope, $http, $stateParams,
 
 angular.module(ftsAppName).
     controller('BleveAnalyzerModalCtrl',
-               BleveAnalyzerModalCtrl_NS).
+               ["$scope", "$uibModalInstance", "$http",
+                "name", "value", "mapping", "static_prefix", BleveAnalyzerModalCtrl_NS]).
     controller('BleveCharFilterModalCtrl',
-               BleveCharFilterModalCtrl_NS).
+               ["$scope", "$uibModalInstance", "$http",
+                "name", "value", "mapping", "static_prefix", BleveCharFilterModalCtrl_NS]).
     controller('BleveTokenizerModalCtrl',
-               BleveTokenizerModalCtrl_NS).
+               ["$scope", "$uibModalInstance", "$http",
+                "name", "value", "mapping", "static_prefix", BleveTokenizerModalCtrl_NS]).
     controller('BleveTokenFilterModalCtrl',
-               BleveTokenFilterModalCtrl_NS).
+               ["$scope", "$uibModalInstance", "$http",
+                "name", "value", "mapping", "static_prefix", BleveTokenFilterModalCtrl_NS]).
     controller('BleveWordListModalCtrl',
-               BleveWordListModalCtrl_NS).
+               ["$scope", "$uibModalInstance",
+                "name", "words", "mapping", "static_prefix", BleveWordListModalCtrl_NS]).
     controller('BleveDatetimeParserModalCtrl',
-               BleveDatetimeParserModalCtrl_NS);
+               ["$scope", "$uibModalInstance",
+                "name", "layouts", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]);
 
 // ----------------------------------------------
 

@@ -9,6 +9,8 @@ import BleveAnalysisCtrl from "./analysis.js";
 import initBleveTypeMappingController from "./type-mapping.js";
 export default initBleveIndexMappingController;
 export {bleveIndexMappingScrub};
+initBleveIndexMappingController.$inject =
+  ["$scope", "$http", "$log", "$uibModal", "indexMappingIn", "options"];
 function initBleveIndexMappingController(
     $scope, $http, $log, $uibModal, indexMappingIn, options) {
     options = options || {};

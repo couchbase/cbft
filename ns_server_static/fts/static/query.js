@@ -45,7 +45,7 @@ function PrepQueryRequest(scope) {
 
     return qr
 }
-
+QueryCtrl.$inject = ["$scope", "$http", "$routeParams", "$log", "$sce", "$location", "qwDialogService"];
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogService) {
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;

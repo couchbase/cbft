@@ -17,7 +17,7 @@ var ctrlKeeper = {blevePIndexInitController, blevePIndexDoneController};
 var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
 };
-
+IndexesCtrl.$inject = ["$scope", "$http", "$routeParams", "$log", "$sce", "$location", "$uibModal"];
 function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibModal) {
     $scope.data = null;
     $scope.indexNames = [];

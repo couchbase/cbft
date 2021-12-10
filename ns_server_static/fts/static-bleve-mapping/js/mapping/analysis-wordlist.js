@@ -6,6 +6,8 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 export default BleveWordListModalCtrl;
+BleveWordListModalCtrl.$inject = ["$scope", "$modalInstance",
+                                  "name", "words", "mapping", "static_prefix"];
 function BleveWordListModalCtrl($scope, $modalInstance,
                                 name, words, mapping, static_prefix) {
     $scope.name = name;

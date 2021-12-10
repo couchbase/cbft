@@ -7,7 +7,8 @@
 //  the file licenses/APL2.txt.
 import {bleveIndexMappingScrub} from "./index-mapping.js";
 export default BleveAnalyzerModalCtrl;
-
+BleveAnalyzerModalCtrl.$inject = ["$scope", "$modalInstance", "$http",
+                                  "name", "value", "mapping", "static_prefix"];
 function BleveAnalyzerModalCtrl($scope, $modalInstance, $http,
                                 name, value, mapping, static_prefix) {
     $scope.origName = name;

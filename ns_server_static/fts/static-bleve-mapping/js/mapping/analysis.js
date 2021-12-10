@@ -9,6 +9,7 @@
 // controller responsible for building custom analysis components
 import {confirmDialog, alertDialog} from "../../../static/util.js";
 export default BleveAnalysisCtrl;
+BleveAnalysisCtrl.$inject = ["$scope", "$http", "$log", "$uibModal"];
 function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
     var viewOnly = $scope.viewOnly;
 
