@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.2.3-0.20211215201529-b41c8cc48479
+	github.com/blevesearch/bleve/v2 v2.2.3-0.20211215221715-ba2e47b263b9
 	github.com/blevesearch/bleve_index_api v1.0.1
 	github.com/blevesearch/upsidedown_store_api v1.0.1
 	github.com/blevesearch/zapx/v11 v11.3.1
@@ -29,8 +29,8 @@ require (
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+	golang.org/x/net v0.0.0-20211020060615-d418f374d309
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/grpc v1.24.0
 )
