@@ -35,6 +35,8 @@ require (
 	google.golang.org/grpc v1.24.0
 )
 
+replace golang.org/x/text => golang.org/x/text v0.3.7
+
 replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
 
 replace github.com/couchbase/cbftx => ../cbftx
