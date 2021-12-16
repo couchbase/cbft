@@ -342,8 +342,10 @@ func wrapTimeoutHandler(h http.Handler,
 	return func(w http.ResponseWriter, r *http.Request) {
 		var timeoutHandler http.Handler
 		timeoutMsg := `{"status":"fail", "error": "server write timeout"}`
-		// override the default only for /contents endpoint
-		if strings.HasSuffix(r.URL.Path, "/contents") {
+		// override the default only for /contents and /query endpoints.
+		if strings.HasSuffix(r.URL.Path, "/contents") ||
+			(strings.HasPrefix(r.URL.Path, "/api/index/") &&
+				strings.HasSuffix(r.URL.Path, "/query")) {
 			timeoutHandler = newTimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
 		} else {
 			// keeping the same old config value for the write timeout.
