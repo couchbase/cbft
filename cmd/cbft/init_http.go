@@ -342,13 +342,17 @@ func wrapTimeoutHandler(h http.Handler,
 	return func(w http.ResponseWriter, r *http.Request) {
 		var timeoutHandler http.Handler
 		timeoutMsg := `{"status":"fail", "error": "server write timeout"}`
-		// override the default only for /contents and /query endpoints.
-		if strings.HasSuffix(r.URL.Path, "/contents") ||
-			(strings.HasPrefix(r.URL.Path, "/api/index/") &&
-				strings.HasSuffix(r.URL.Path, "/query")) {
+		if strings.HasSuffix(r.URL.Path, "/contents") {
+			// override with custom timeout handler only for /contents (file
+			// transfer rebalance) endpoint.
 			timeoutHandler = newTimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
+		} else if (strings.HasPrefix(r.URL.Path, "/api/index/") &&
+			strings.HasSuffix(r.URL.Path, "/query")) {
+			// use the httpHandlerTimeout for the /api/index/{indexName}/query
+			// endpoint to not override the ctl timeout.
+			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
 		} else {
-			// keeping the same old config value for the write timeout.
+			// keeping httpWriteTimeout for all other endpoints.
 			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, timeoutMsg)
 		}
 		timeoutHandler.ServeHTTP(w, r)
