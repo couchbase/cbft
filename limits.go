@@ -264,7 +264,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 
 		if now.Sub(entry.stamp) < windowLength {
 			maxQueriesPerMin, _ := limits["num_queries_per_min"]
-			if maxQueriesPerMin > 0 &&
+			if path == queryPath && maxQueriesPerMin > 0 &&
 				entry.countSinceStamp >= maxQueriesPerMin {
 				// reject, surpassed the queries per minute limit
 				return false, fmt.Sprintf("num_queries_per_min: %v, limit: %v",
@@ -295,7 +295,9 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 	}
 
 	entry.live++
-	entry.countSinceStamp++
+	if path == queryPath {
+		entry.countSinceStamp++
+	}
 	entry.ingressBytesSinceStamp += ingress
 
 	return true, ""
