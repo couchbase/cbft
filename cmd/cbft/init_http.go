@@ -346,8 +346,8 @@ func wrapTimeoutHandler(h http.Handler,
 			// override with custom timeout handler only for /contents (file
 			// transfer rebalance) endpoint.
 			timeoutHandler = newTimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
-		} else if (strings.HasPrefix(r.URL.Path, "/api/index/") &&
-			strings.HasSuffix(r.URL.Path, "/query")) {
+		} else if strings.HasPrefix(r.URL.Path, "/api/index/") &&
+			strings.HasSuffix(r.URL.Path, "/query") {
 			// use the httpHandlerTimeout for the /api/index/{indexName}/query
 			// endpoint to not override the ctl timeout.
 			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
