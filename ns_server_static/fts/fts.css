@@ -265,19 +265,6 @@ ul.list-text li {
   overflow-x: auto;
 }
 
-ul.pagination {
-  float: right;
-}
-ul.pagination li {
-  display: inline-block;
-  margin: 5px 5px 5px 5px;
-}
-ul.pagination li span {
-  background-color: #ececec;
-  padding-right: 4px;
-  padding-left: 4px;
-  color: #333;
-}
 .fts-query-results mark {
  padding: 0 0;
  background-color: yellow;
