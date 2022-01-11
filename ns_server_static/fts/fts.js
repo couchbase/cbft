@@ -271,6 +271,8 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
     then(function(response) {
       $scope.ftsAvailable = true;
       $scope.ftsChecking = false;
+
+      nextSteps();
     }, function(response) {
       $scope.ftsChecking = false;
       // if we got a 404, there is no fts service on this node.
@@ -284,148 +286,157 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         // some other error to show
         $scope.ftsCheckError = response.data;
       }
+
+      nextSteps();
     });
 
-    $scope.detailsOpened = {};
-    if ($state.params && $state.params.open) {
-        $scope.detailsOpened[$state.params.open] = true;
-    }
-
-    $scope.detailsOpenedJSON = {};
-    $scope.detailsOpenedJSONCurl = {};
-
-    $scope.escapeCmdLineParam = function(s) {
-        // Transform single quotes (') into '"'"', so...
-        //   curl http://foo -d '{{escapeCmdLineParam(stringWithQuotes)}}'
-        // where...
-        //   stringWithQuotes == "he said 'hi' twice"
-        // will result in...
-        //   curl http://foo -d 'he said '"'"'hi'"'"' twice'
-        return s.replace(/\'/g, '\'"\'"\'');
-    }
-
-    $scope.searchInputs = {};
-
-    $scope.done = false;
-
-    var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location, $uibModal);
-
-    $scope.$on('$stateChangeStart', function() {
-        $scope.done = true;
-    });
-
-    function isMappingIncompatibleWithQuickEditor(mapping) {
-        if (!mapping.enabled ||
-            mapping.dynamic ||
-            (angular.isDefined(mapping.default_analyzer) && mapping.default_analyzer != "")) {
-            // mapping is either disabled and/or dynamic and/or has default_analyzer
-            // explicitly defined
-            return true;
+    function nextSteps() {
+        if (!$scope.ftsChecking && !$scope.ftsAvailable && !$scope.ftsNodes.length) {
+            // can't do anything if no nodes hosting search service
+            return;
         }
 
-        if ((!angular.isDefined(mapping.properties) || mapping.properties.length == 0) &&
-            (!angular.isDefined(mapping.fields) || mapping.fields.length == 0)) {
-            // mapping has no child mappings or fields defined within it
-            return true;
+        $scope.detailsOpened = {};
+        if ($state.params && $state.params.open) {
+            $scope.detailsOpened[$state.params.open] = true;
         }
 
-        for (var name in mapping.properties) {
-            if (isMappingIncompatibleWithQuickEditor(mapping.properties[name])) {
-                return true;
-            }
+        $scope.detailsOpenedJSON = {};
+        $scope.detailsOpenedJSONCurl = {};
+
+        $scope.escapeCmdLineParam = function(s) {
+            // Transform single quotes (') into '"'"', so...
+            //   curl http://foo -d '{{escapeCmdLineParam(stringWithQuotes)}}'
+            // where...
+            //   stringWithQuotes == "he said 'hi' twice"
+            // will result in...
+            //   curl http://foo -d 'he said '"'"'hi'"'"' twice'
+            return s.replace(/\'/g, '\'"\'"\'');
         }
 
-        if (angular.isDefined(mapping.fields)) {
-            if (mapping.fields.length > 1) {
-                // a field was mapped multiple times
+        $scope.searchInputs = {};
+
+        $scope.done = false;
+
+        var rv = IndexesCtrl($scope, http, $routeParams, $log, $sce, $location, $uibModal);
+
+        $scope.$on('$stateChangeStart', function() {
+            $scope.done = true;
+        });
+
+        function isMappingIncompatibleWithQuickEditor(mapping) {
+            if (!mapping.enabled ||
+                mapping.dynamic ||
+                (angular.isDefined(mapping.default_analyzer) && mapping.default_analyzer != "")) {
+                // mapping is either disabled and/or dynamic and/or has default_analyzer
+                // explicitly defined
                 return true;
             }
 
-            if (mapping.fields.length == 1) {
-                if (!mapping.fields[0].index) {
-                    // un-indexed field
+            if ((!angular.isDefined(mapping.properties) || mapping.properties.length == 0) &&
+                (!angular.isDefined(mapping.fields) || mapping.fields.length == 0)) {
+                // mapping has no child mappings or fields defined within it
+                return true;
+            }
+
+            for (var name in mapping.properties) {
+                if (isMappingIncompatibleWithQuickEditor(mapping.properties[name])) {
+                    return true;
+                }
+            }
+
+            if (angular.isDefined(mapping.fields)) {
+                if (mapping.fields.length > 1) {
+                    // a field was mapped multiple times
                     return true;
                 }
 
-                if (mapping.fields[0].type == "text") {
-                    if (!angular.isDefined(mapping.fields[0].analyzer) ||
-                        mapping.fields[0].analyzer == "") {
-                        // text field has no analyzer specified
+                if (mapping.fields.length == 1) {
+                    if (!mapping.fields[0].index) {
+                        // un-indexed field
                         return true;
                     }
-                } else {
-                    if ((angular.isDefined(mapping.fields[0].analyzer) &&
-                        mapping.fields[0].analyzer != "")) {
-                        // fields of other types have an analyzer set
-                        return true;
+
+                    if (mapping.fields[0].type == "text") {
+                        if (!angular.isDefined(mapping.fields[0].analyzer) ||
+                            mapping.fields[0].analyzer == "") {
+                            // text field has no analyzer specified
+                            return true;
+                        }
+                    } else {
+                        if ((angular.isDefined(mapping.fields[0].analyzer) &&
+                            mapping.fields[0].analyzer != "")) {
+                            // fields of other types have an analyzer set
+                            return true;
+                        }
                     }
                 }
             }
-        }
 
-        return false;
-    }
-
-    $scope.showEasyMode = function(indexDef) {
-        let params = indexDef.params;
-        if (params.doc_config.mode != "scope.collection.type_field" ||
-            params.doc_config.type_field != "type") {
-            // quick (easy) editor works in scope.collection.type_field mode only
             return false;
         }
 
-        if (params.mapping.index_dynamic ||
-            params.mapping.store_dynamic ||
-            params.mapping.docvalues_dynamic ||
-            params.mapping.default_analyzer != "standard" ||
-            params.mapping.default_datetime_parser != "dateTimeOptional" ||
-            params.mapping.default_field != "_all" ||
-            params.mapping.default_type != "_default" ||
-            params.mapping.type_field != "_type") {
-            // advanced settings' violation for quick (easy) editor
-            return false;
-        }
-
-        let analysis = params.mapping.analysis;
-        if (angular.isDefined(analysis) &&
-            Object.keys(analysis).length > 0) {
-            // custom analysis elements aren't supported with quick (easy) editor
-            return false;
-        }
-
-        if (params.mapping.default_mapping.enabled) {
-            // default mapping not supported with quick (easy) editor
-            return false;
-        }
-
-        for (var name in params.mapping.types) {
-            let scopeCollection = name.split(".");
-            if (scopeCollection.length != 2) {
-                // type names can only be of format "scope.collection" to
-                // work with the quick (easy) editor
-                return false
-            }
-
-            if (isMappingIncompatibleWithQuickEditor(params.mapping.types[name])) {
+        $scope.showEasyMode = function(indexDef) {
+            let params = indexDef.params;
+            if (params.doc_config.mode != "scope.collection.type_field" ||
+                params.doc_config.type_field != "type") {
+                // quick (easy) editor works in scope.collection.type_field mode only
                 return false;
             }
-        }
 
-        return true;
-    };
+            if (params.mapping.index_dynamic ||
+                params.mapping.store_dynamic ||
+                params.mapping.docvalues_dynamic ||
+                params.mapping.default_analyzer != "standard" ||
+                params.mapping.default_datetime_parser != "dateTimeOptional" ||
+                params.mapping.default_field != "_all" ||
+                params.mapping.default_type != "_default" ||
+                params.mapping.type_field != "_type") {
+                // advanced settings' violation for quick (easy) editor
+                return false;
+            }
 
-    $scope.expando = function(indexName) {
-        $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
+            let analysis = params.mapping.analysis;
+            if (angular.isDefined(analysis) &&
+                Object.keys(analysis).length > 0) {
+                // custom analysis elements aren't supported with quick (easy) editor
+                return false;
+            }
 
-        // The timeout gives angular some time to create the input control.
-        if ($scope.detailsOpened[indexName]) {
-            setTimeout(function() {
-                document.getElementById('query_bar_input_' + indexName).focus()
-            }, 100);
-        }
-    };
+            if (params.mapping.default_mapping.enabled) {
+                // default mapping not supported with quick (easy) editor
+                return false;
+            }
 
-    return rv;
+            for (var name in params.mapping.types) {
+                let scopeCollection = name.split(".");
+                if (scopeCollection.length != 2) {
+                    // type names can only be of format "scope.collection" to
+                    // work with the quick (easy) editor
+                    return false
+                }
+
+                if (isMappingIncompatibleWithQuickEditor(params.mapping.types[name])) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        $scope.expando = function(indexName) {
+            $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
+
+            // The timeout gives angular some time to create the input control.
+            if ($scope.detailsOpened[indexName]) {
+                setTimeout(function() {
+                    document.getElementById('query_bar_input_' + indexName).focus()
+                }, 100);
+            }
+        };
+
+        return rv;
+    }
 }
 
 function indexViewController($scope, $http, $state, $log, $sce, $location, $uibModal, mnPermissions) {
