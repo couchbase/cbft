@@ -212,11 +212,9 @@ type response struct {
 }
 
 func (qss *QuerySupervisorDetails) getURLs(nodeDefs *cbgt.NodeDefs,
-	indexName string, longerThan string) (map[string]string, error) {
-	if nodeDefs == nil {
-		return nil, fmt.Errorf("empty node definitions")
-	}
+	indexName string, longerThan string) (map[string]string, map[string]error) {
 	nodeURLs := make(map[string]string)
+	errs := make(map[string]error)
 	ss := cbgt.GetSecuritySetting()
 	for uuid, node := range nodeDefs.NodeDefs {
 		hostPortUrl := "http://" + node.HostPort
@@ -234,12 +232,12 @@ func (qss *QuerySupervisorDetails) getURLs(nodeDefs *cbgt.NodeDefs,
 		}
 		urlStr, err := cbgt.CBAuthURL(urlStr)
 		if err != nil {
-			return nil, fmt.Errorf("failed to authenticate"+
-				" the URL, err :%v", err)
+			urlStr = ""
+			errs[uuid] = err
 		}
 		nodeURLs[uuid] = urlStr
 	}
-	return nodeURLs, nil
+	return nodeURLs, errs
 }
 
 func (qss *QuerySupervisorDetails) getSupervisorMaps(nodeDefs *cbgt.NodeDefs,
@@ -254,12 +252,8 @@ func (qss *QuerySupervisorDetails) getSupervisorMaps(nodeDefs *cbgt.NodeDefs,
 		err  error
 	}
 
-	supervisorDetailsURLs, err := qss.getURLs(nodeDefs, indexName,
+	supervisorDetailsURLs, urlErrs := qss.getURLs(nodeDefs, indexName,
 		longerThan)
-	if err != nil {
-		return nil, map[string]string{qss.mgr.UUID(): fmt.Sprintf(
-			"error while forming the URLs err: %v", err)}
-	}
 	var wg sync.WaitGroup
 	groupSize := getWorkerCount(len(supervisorDetailsURLs))
 	requestCh := make(chan *supervisorReq, len(supervisorDetailsURLs))
@@ -323,8 +317,12 @@ func (qss *QuerySupervisorDetails) getSupervisorMaps(nodeDefs *cbgt.NodeDefs,
 			wg.Done()
 		}()
 	}
-
+	errs := make(map[string]string)
 	for uuid, url := range supervisorDetailsURLs {
+		if url == "" {
+			errs[uuid] = fmt.Sprintf("%v", urlErrs[uuid])
+			continue
+		}
 		requestCh <- &supervisorReq{uuid: uuid, url: url}
 	}
 	close(requestCh)
@@ -332,7 +330,6 @@ func (qss *QuerySupervisorDetails) getSupervisorMaps(nodeDefs *cbgt.NodeDefs,
 	close(responseCh)
 
 	var responses []response
-	errs := make(map[string]string)
 	for resp := range responseCh {
 		if resp.err == nil {
 			responses = append(responses, response{
@@ -425,6 +422,11 @@ func (qss *QuerySupervisorDetails) ServeHTTP(
 				http.StatusInternalServerError)
 			return
 		}
+		if nodeDefs == nil {
+			rest.ShowError(w, nil, fmt.Sprintf("query details: empty node"+
+				" definitions"), http.StatusInternalServerError)
+		}
+
 		responses, errs := qss.getSupervisorMaps(nodeDefs, indexName, params)
 		if len(responses) == 0 {
 			errStats, err := MarshalJSON(responseStats{
@@ -485,13 +487,13 @@ func (qk *QueryKiller) killQuery(queryID string, uuid string) (int, error) {
 	if uuid == "" {
 		qid, err := strconv.ParseUint(queryID, 10, 64)
 		if err != nil {
-			return http.StatusBadRequest, fmt.Errorf("query cancel: query ID "+
+			return http.StatusBadRequest, fmt.Errorf("query abort: query ID "+
 				"'%v' not a uint64",
 				queryID)
 		}
 
 		if !querySupervisor.KillQuery(qid) {
-			return http.StatusBadRequest, fmt.Errorf("query cancel: query ID"+
+			return http.StatusBadRequest, fmt.Errorf("query abort: query ID"+
 				" '%v' not found", qid)
 
 		}
@@ -499,13 +501,18 @@ func (qk *QueryKiller) killQuery(queryID string, uuid string) (int, error) {
 	}
 	nodeDefs, err := qk.mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, false)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("query cancel: could"+
+		return http.StatusInternalServerError, fmt.Errorf("query abort: could"+
 			"not get node definition, err: %v", err)
 	}
+	if nodeDefs == nil {
+		return http.StatusInternalServerError, fmt.Errorf("query abort: empty" +
+			" node definitions")
+	}
+
 	queryKillURL, err := qk.getURL(nodeDefs, uuid, queryID)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("query cancel: failed"+
-			" to form the cancel url, err: %v", err)
+		return http.StatusInternalServerError, fmt.Errorf("query abort: failed"+
+			" to form the abort url, err: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(),
@@ -513,23 +520,24 @@ func (qk *QueryKiller) killQuery(queryID string, uuid string) (int, error) {
 	defer cancel()
 	killReq, err := http.NewRequestWithContext(ctx, "POST", queryKillURL, nil)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("query cancel: failed"+
-			" to create cancel request, err: %v", err)
+		return http.StatusInternalServerError, fmt.Errorf("query abort: failed"+
+			" to create abort request, err: %v", err)
 	}
 	httpClient := cbgt.HttpClient()
 	resp, err := httpClient.Do(killReq)
 
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("query cancel: cancel"+
+		return http.StatusInternalServerError, fmt.Errorf("query abort: abort"+
 			" request to node: %s failed, err: %v", uuid, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		respBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("query cancel: error"+
-				" while reading the response from node: %s err: %v", uuid, err)
+			return http.StatusInternalServerError, fmt.Errorf("query abort:"+
+				" error while reading the response from node: %s err: %v",
+				uuid, err)
 		}
-		return http.StatusInternalServerError, fmt.Errorf("query cancel: cancel"+
+		return http.StatusInternalServerError, fmt.Errorf("query abort: abort"+
 			" request failed in node: %s, msg: %s", uuid, respBytes)
 	}
 	return http.StatusOK, nil
@@ -539,7 +547,7 @@ func (qk *QueryKiller) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	queryID := rest.RequestVariableLookup(req, "queryID")
 	if queryID == "" {
-		rest.ShowError(w, nil, "query cancel: query ID not provided",
+		rest.ShowError(w, nil, "query abort: query ID not provided",
 			http.StatusBadRequest)
 		return
 	}
@@ -547,7 +555,7 @@ func (qk *QueryKiller) ServeHTTP(
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		rest.ShowError(w, nil,
-			fmt.Sprintf("query cancel: could not read request body"+
+			fmt.Sprintf("query abort: could not read request body"+
 				" for uuid, err: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -559,7 +567,7 @@ func (qk *QueryKiller) ServeHTTP(
 		err = UnmarshalJSON(body, &r)
 		if err != nil {
 			rest.ShowError(w, nil,
-				fmt.Sprintf("query cancel: could not unmarshal request body"+
+				fmt.Sprintf("query abort: could not unmarshal request body"+
 					" for uuid, err: %v", err),
 				http.StatusBadRequest)
 			return
@@ -580,7 +588,7 @@ func (qk *QueryKiller) ServeHTTP(
 		Msg    string `json:"msg"`
 	}{
 		Status: "ok",
-		Msg: fmt.Sprintf("query with ID '%v' on node '%s' was canceled!",
+		Msg: fmt.Sprintf("query with ID '%v' on node '%s' was aborted!",
 			queryID, uuid),
 	}
 	rest.MustEncode(w, rv)
