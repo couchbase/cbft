@@ -333,6 +333,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
+		"," + cbgt.NodeFeatureAdvMetaEncoding +
 		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
 		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections +
 		"," + cbft.FeatureBlevePreferredSegmentVersion +
