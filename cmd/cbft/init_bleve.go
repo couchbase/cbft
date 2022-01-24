@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -29,6 +30,8 @@ import (
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 )
+
+var initAnalysisQueue sync.Once
 
 func initBleveOptions(options map[string]string) error {
 	bleveMapping.StoreDynamic = false
@@ -70,27 +73,36 @@ func initBleveOptions(options map[string]string) error {
 		cbft.BleveMaxOpsPerBatch = v
 	}
 
-	bleveAnalysisQueueSize := runtime.NumCPU()
+	var err error
+	var v int
+	// bleveAnalysisQueueSize is a one time initialisation config.
+	initAnalysisQueue.Do(func() {
+		bleveAnalysisQueueSize := runtime.NumCPU()
 
-	bleveAnalysisQueueSizeStr := options["bleveAnalysisQueueSize"]
-	if bleveAnalysisQueueSizeStr != "" {
-		v, err := strconv.Atoi(bleveAnalysisQueueSizeStr)
-		if err != nil {
-			return err
+		bleveAnalysisQueueSizeStr := options["bleveAnalysisQueueSize"]
+		if bleveAnalysisQueueSizeStr != "" {
+			v, err = strconv.Atoi(bleveAnalysisQueueSizeStr)
+			if err != nil {
+				return
+			}
+
+			if v > 0 {
+				bleveAnalysisQueueSize = v
+			} else {
+				bleveAnalysisQueueSize = bleveAnalysisQueueSize - v
+			}
 		}
 
-		if v > 0 {
-			bleveAnalysisQueueSize = v
-		} else {
-			bleveAnalysisQueueSize = bleveAnalysisQueueSize - v
+		if bleveAnalysisQueueSize < 1 {
+			bleveAnalysisQueueSize = 1
 		}
-	}
 
-	if bleveAnalysisQueueSize < 1 {
-		bleveAnalysisQueueSize = 1
-	}
+		bleve.Config.SetAnalysisQueueSize(bleveAnalysisQueueSize)
+	})
 
-	bleve.Config.SetAnalysisQueueSize(bleveAnalysisQueueSize)
+	if err != nil {
+		return err
+	}
 
 	// set scorch index's OnEvent callbacks using the app herder
 	scorch.RegistryEventCallbacks["scorchEventCallbacks"] =
