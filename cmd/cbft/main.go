@@ -725,13 +725,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return nil, err
 		}
 
-		// Re-initialize bleve options with manager's options to
-		// overwrite/set any previously overwritten settings.
-		err = initBleveOptions(mgr.Options())
-		if err != nil {
-			return nil, err
-		}
-
 		nodeInfo := &service.NodeInfo{
 			NodeID: service.NodeID(uuid),
 		}
@@ -885,6 +878,16 @@ func (h *untrackedRouteHandler) ServeHTTP(w http.ResponseWriter,
 
 type mainHandlers struct {
 	mgr *cbgt.Manager
+}
+
+func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
+	if meh.mgr != nil {
+		err := initBleveOptions(options)
+		if err != nil {
+			log.Printf("main: meh.OnRefreshManagerOptions, err: %v", err)
+			return
+		}
+	}
 }
 
 func (meh *mainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
