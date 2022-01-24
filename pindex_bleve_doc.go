@@ -149,7 +149,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 
 	var v map[string]interface{}
 	err := json.Unmarshal(val, &v)
-	if err != nil {
+	if err != nil || v == nil {
 		v = map[string]interface{}{}
 	}
 
