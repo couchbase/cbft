@@ -831,6 +831,16 @@ type mainHandlers struct {
 	mgr *cbgt.Manager
 }
 
+func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
+	if meh.mgr != nil {
+		err := initBleveOptions(options)
+		if err != nil {
+			log.Printf("main: meh.OnRefreshManagerOptions, err: %v", err)
+			return
+		}
+	}
+}
+
 func (meh *mainHandlers) OnRegisterPIndex(pindex *cbgt.PIndex) {
 	bindex, ok := pindex.Impl.(bleve.Index)
 	if ok {
