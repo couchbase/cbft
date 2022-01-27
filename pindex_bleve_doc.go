@@ -164,7 +164,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 		typ := cmf.scopeDotColl
 		// there could be multiple type mappings under a single collection.
 		for _, t := range cmf.typeMappings {
-			if bdoc.Type() == t {
+			if len(t) > 0 && bdoc.Type() == t {
 				// append type information only if the type mapping specifies a
 				// 'type' and the document's matches it.
 				typ += "." + t
