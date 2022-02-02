@@ -2301,11 +2301,15 @@ func (t *BleveDestPartition) OpaqueGet(partition string) ([]byte, uint64, error)
 		atomic.CompareAndSwapUint64(&t.seqMaxBatch, 0, atomic.LoadUint64(&t.seqMax))
 	}
 
-	seqMax := atomic.LoadUint64(&t.seqMax)
+	lastSeq := atomic.LoadUint64(&t.seqMax)
+	lastCommittedSeq := atomic.LoadUint64(&t.seqMaxBatch)
+	if lastSeq > lastCommittedSeq {
+		lastSeq = lastCommittedSeq
+	}
 
 	t.m.Unlock()
 
-	return lastOpaque, seqMax, nil
+	return lastOpaque, lastSeq, nil
 }
 
 func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
