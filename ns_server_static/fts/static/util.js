@@ -8,6 +8,9 @@
 
 import initBleveIndexMappingController from "../static-bleve-mapping/js/mapping/index-mapping.js";
 
+import confirmDialogTemplate from "../confirm_dialog.html";
+import alertDialogTemplate from "../alert_dialog.html";
+
 export {errorMessage, confirmDialog, alertDialog};
 export {blevePIndexInitController, blevePIndexDoneController};
 
@@ -35,7 +38,7 @@ function confirmDialog($scope, $uibModal, title, desc, confirmMessage) {
     innerScope.confirmMessage = confirmMessage;
 
     return $uibModal.open({
-        templateUrl: '/_p/ui/fts/confirm_dialog.html',
+        template: confirmDialogTemplate,
         scope: innerScope
     }).result;
 }
@@ -46,7 +49,7 @@ function alertDialog($scope, $uibModal, title, desc) {
     innerScope.title = title;
     innerScope.desc = desc;
     return $uibModal.open({
-        templateUrl: '/_p/ui/fts/alert_dialog.html',
+        template: alertDialogTemplate,
         scope: innerScope
     }).result;
 }

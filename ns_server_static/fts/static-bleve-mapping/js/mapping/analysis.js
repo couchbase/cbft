@@ -8,6 +8,14 @@
 
 // controller responsible for building custom analysis components
 import {confirmDialog, alertDialog} from "../../../static/util.js";
+
+import analyzerTemplate from '../../partials/analysis/analyzer.html';
+import wordlistTemplate from '../../partials/analysis/wordlist.html';
+import charfilterTemplate from '../../partials/analysis/charfilter.html';
+import tokenizerTemplate from '../../partials/analysis/tokenizer.html';
+import tokenfilterTemplate from '../../partials/analysis/tokenfilter.html';
+import datetimeparserTemplate from '../../partials/analysis/datetimeparser.html';
+
 export default BleveAnalysisCtrl;
 BleveAnalysisCtrl.$inject = ["$scope", "$http", "$log", "$uibModal"];
 function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
@@ -116,8 +124,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/analyzer.html',
+          template: analyzerTemplate,
           controller: 'BleveAnalyzerModalCtrl',
           resolve: {
             name: function() {
@@ -212,8 +219,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/wordlist.html',
+          template: wordlistTemplate,
           controller: 'BleveWordListModalCtrl',
           resolve: {
             name: function() {
@@ -297,8 +303,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/charfilter.html',
+          template: charfilterTemplate,
           controller: 'BleveCharFilterModalCtrl',
           resolve: {
             name: function() {
@@ -387,8 +392,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/tokenizer.html',
+          template: tokenizerTemplate,
           controller: 'BleveTokenizerModalCtrl',
           resolve: {
             name: function() {
@@ -472,8 +476,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/tokenfilter.html',
+          template: tokenfilterTemplate,
           controller: 'BleveTokenFilterModalCtrl',
           resolve: {
             name: function() {
@@ -614,8 +617,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
         var modalInstance = $uibModal.open({
           scope: $scope,
           animation: $scope.animationsEnabled,
-          templateUrl: ($scope.static_prefix || '/static-bleve-mapping') +
-                '/partials/analysis/datetimeparser.html',
+          template: datetimeparserTemplate,
           controller: 'BleveDatetimeParserModalCtrl',
           resolve: {
             name: function() {

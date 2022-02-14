@@ -43,6 +43,12 @@ import {newParsedDocs} from "./fts_easy_parse.js";
 import {newEditFields, newEditField} from "./fts_easy_field.js";
 import {newEasyMappings, newEasyMapping} from "./fts_easy_mapping.js";
 
+import ftsListTemplate from "./fts_list.html";
+import ftsNewTemplate from "./fts_new.html";
+import ftsNewEasyTemplate from "./fts_new_easy.html";
+import ftsSearchTemplate from "./fts_search.html";
+import ftsDetailsTemplate from "./fts_details.html";
+
 export default ftsAppName;
 
 angular
@@ -60,7 +66,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: "IndexesCtrlFT_NS",
-                templateUrl: '../_p/ui/fts/fts_list.html'
+                template: ftsListTemplate
               }
             },
             params: {
@@ -76,14 +82,14 @@ angular
           .state(parent + '.fts_list', {
             url: '/fts_list?open',
             controller: 'IndexesCtrlFT_NS',
-            templateUrl: '../_p/ui/fts/fts_list.html'
+            template: ftsListTemplate
           })
           .state(parent + '.fts_new', {
             url: '/fts_new/?indexType&sourceType',
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -96,7 +102,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFTEasy_NS',
-                templateUrl: '../_p/ui/fts/fts_new_easy.html'
+                template: ftsNewEasyTemplate
               }
             },
             data: {
@@ -109,7 +115,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -122,7 +128,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -135,7 +141,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFTEasy_NS',
-                templateUrl: '../_p/ui/fts/fts_new_easy.html'
+                template: ftsNewEasyTemplate
               }
             },
             data: {
@@ -148,7 +154,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -161,7 +167,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -174,7 +180,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_new.html'
+                template: ftsNewTemplate
               }
             },
             data: {
@@ -188,7 +194,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexSearchCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_search.html'
+                template: ftsSearchTemplate
               }
             },
             data: {
@@ -201,7 +207,7 @@ angular
             views: {
               "main@app.admin": {
                 controller: 'IndexDetailsCtrlFT_NS',
-                templateUrl: '../_p/ui/fts/fts_details.html'
+                template: ftsDetailsTemplate
               }
             },
             data: {
