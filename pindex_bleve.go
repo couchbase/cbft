@@ -453,7 +453,7 @@ func (ndf *NodeDefsFetcher) Get() (*cbgt.NodeDefs, error) {
 // ---------------------------------------------------------
 
 const bleveQueryHelp = `
-<a href="https://docs.couchbase.com/server/7.0/fts/query-string-queries.html"
+<a href="https://docs.couchbase.com/server/7.1/fts/fts-supported-queries.html"
    target="_blank">
    query syntax help
 </a>
