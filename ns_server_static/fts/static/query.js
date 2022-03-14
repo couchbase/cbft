@@ -31,7 +31,7 @@ function PrepQueryRequest(scope) {
         },
     };
     if (typeof q == "object") {
-        if ('query' in q) {
+        if (('query' in q) && (typeof q['query'] == "object")) {
             qr = q;
         } else {
             qr = {
