@@ -233,8 +233,13 @@ licenses/APL2.txt.
           </div>
         </div>
 
-        <div class="margin-bottom-1">
-          See documentation for creating indexes <a href="https://docs.couchbase.com/server/7.0/fts/fts-creating-indexes.html" target="_blank">here</a>.
+        <div class="margin-bottom-1"
+            ng-if="newIndexType == 'fulltext-index'">
+          See documentation on creating indexes <a href="https://docs.couchbase.com/server/7.1/fts/fts-creating-indexes.html" target="_blank">here</a>.
+        </div>
+        <div class="margin-bottom-1"
+            ng-if="newIndexType == 'fulltext-alias'">
+          See documentation on creating index aliases <a href="https://docs.couchbase.com/server/7.1/fts/fts-creating-full-text-aliases.html" target="_blank">here</a>.
         </div>
 
         <!-- ADDITIONAL OPTIONS group HIDDEN but still present ***************** -->
