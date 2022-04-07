@@ -35,6 +35,10 @@ var API_MAX_VERSION_JSON = WithJSONVersion(API_MAX_VERSION)
 
 const VersionTag = "version="
 
+// FeatureGeoSpatialVersion contains the spatial
+// indexing/query capabilities based on s2.
+var FeatureGeoSpatialVersion = "7.1.1"
+
 var FeatureCollectionVersion = "7.0.0"
 var FeatureGrpcVersion = "6.5.0"
 

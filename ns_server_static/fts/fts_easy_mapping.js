@@ -201,6 +201,26 @@ function newEasyMapping() {
         return fieldMapping;
     };
 
+    var newGeoShapeField = function(field) {
+        var fieldMapping = {};
+        fieldMapping.name = field.name;
+        fieldMapping.type = "geoshape";
+        if (field.store) {
+            fieldMapping.store = true;
+        }
+        fieldMapping.index = true;
+        if (field.highlight || field.phrase) {
+            fieldMapping.include_term_vectors = true;
+        }
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
+        if (field.sortFacet) {
+            fieldMapping.docvalues = true;
+        }
+        return fieldMapping;
+    };
+
     var newBooleanField = function(field) {
         var fieldMapping = {};
         fieldMapping.name = field.name;
@@ -249,7 +269,9 @@ function newEasyMapping() {
             mapping.fields.push(newDateTimeField(field));
         } else if (field.type == "geopoint") {
             mapping.fields.push(newGeoPointField(field));
-        } else if (field.type == "boolean") {
+        } else if (field.type == "geoshape") {
+            mapping.fields.push(newGeoShapeField(field));
+        }else if (field.type == "boolean") {
             mapping.fields.push(newBooleanField(field));
         }
     };
@@ -300,6 +322,8 @@ function newEasyMapping() {
                 editField.date_format = field.date_format;
             } else if (field.type == "geopoint") {
                 editField.type = "geopoint";
+            } else if (field.type == "geoshape") {
+                editField.type = "geoshape";
             } else if (field.type == "boolean") {
                 editField.type = "boolean";
             }

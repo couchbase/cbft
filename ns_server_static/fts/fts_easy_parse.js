@@ -10,13 +10,13 @@ function newParsedDocs() {
     var parsedDocs = {};
 
     return {
-        getParsedDocForCollection: function(collectionName) {
+        getParsedDocForCollection: function (collectionName) {
             if (!(collectionName in parsedDocs)) {
                 parsedDocs[collectionName] = parseDocument('{}');
             }
             return parsedDocs[collectionName];
         },
-        setDocForCollection: function(collectionName, src) {
+        setDocForCollection: function (collectionName, src) {
             parsedDocs[collectionName] = parseDocument(src);
         }
     }
@@ -31,9 +31,9 @@ function parseDocument(doc) {
     var count = 0;
     var valsSincePop = 0;
 
-    var replacer = function(key, value) {
+    var replacer = function (key, value) {
         // on closing brace, pop stack, duplicate last entry for rowpaths
-        while ((parseStack.length > 0) && (this !== parseStack[parseStack.length-1])) {
+        while ((parseStack.length > 0) && (this !== parseStack[parseStack.length - 1])) {
             parseStack.pop();
             keysStack.pop();
 
@@ -69,12 +69,12 @@ function parseDocument(doc) {
         // for any row other than the first, push the path onto rowPaths
         if (count != 0) {
             rowPaths.push(fullPath);
-            rowTypes.push (valType);
+            rowTypes.push(valType);
         }
         // this is the second row, push an extra to fix up opening brace case
         if (count == 1) {
             rowPaths.push(fullPath);
-            rowTypes.push (valType);
+            rowTypes.push(valType);
         }
 
         count++;
@@ -94,21 +94,44 @@ function parseDocument(doc) {
     while (parseStack.length > 0) {
         parseStack.pop();
         keysStack.pop();
-        rowPaths.push(rowPaths[rowPaths.length-1]);
-        rowTypes.push (rowTypes[rowTypes.length-1]);
+        rowPaths.push(rowPaths[rowPaths.length - 1]);
+        rowTypes.push(rowTypes[rowTypes.length - 1]);
     }
 
     return {
-        getPath: function(col) {
+        getPath: function (col) {
             return rowPaths[col];
         },
-        getType: function(col) {
+        getType: function (col) {
+            // check whether the object is a nested geojson shape.
+            if (rowTypes[col] === "object" &&
+                col < rowPaths.length - 2 && col < rowTypes.length - 2) {
+
+                var childPath1 = rowPaths[col + 1].toLowerCase()
+                var childPath2 = rowPaths[col + 2].toLowerCase()
+                var typeField = rowPaths[col] + ".type"
+                var coordField = rowPaths[col] + ".coordinates"
+                var gcField = rowPaths[col] + ".geometries"
+
+                if (childPath1.includes(typeField)) {
+                    if (childPath2.includes(coordField) ||
+                        childPath2.includes(gcField)) {
+                        return "geoshape"
+                    }
+                } else if (childPath2.includes(typeField)) {
+                    if (childPath1.includes(coordField) ||
+                        childPath1.includes(gcField)) {
+                        return "geoshape"
+                    }
+                }
+            }
+
             return rowTypes[col];
         },
-        getDocument: function() {
+        getDocument: function () {
             return docString;
         },
-        getRow: function(path) {
+        getRow: function (path) {
             for (var i = 1; i < rowPaths.length; i++) {
                 if (rowPaths[i] == path) {
                     return i;
@@ -119,4 +142,4 @@ function parseDocument(doc) {
     };
 }
 
-export {newParsedDocs};
+export { newParsedDocs };
