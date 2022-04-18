@@ -3245,9 +3245,14 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 		return fmt.Errorf("unsupported bucket type")
 	}
 
-	if rv.BucketType == "membase" && rv.StorageBackend != "couchstore" {
-		return fmt.Errorf("unsupported storage/backend for bucket: %v",
-			rv.StorageBackend)
+	if rv.BucketType == "membase" {
+		switch rv.StorageBackend {
+		case "couchstore":
+		case "magma":
+		default:
+			return fmt.Errorf("unsupported storage/backend for bucket: %v",
+				rv.StorageBackend)
+		}
 	}
 
 	return nil
