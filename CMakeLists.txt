@@ -25,15 +25,17 @@ ENDIF(BUILD_ENTERPRISE)
 
 GoPrivateMod(MODULE cbftx)
 
+GoPrivateMod(MODULE hebrew)
+
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.13.7)
+  GOVERSION 1.17.9)
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
-  GOVERSION 1.13.7)
+  GOVERSION 1.17.9)
 
 # Build the UI and copy the files to the correct place
 ADD_SUBDIRECTORY(ns_server_static)
@@ -75,4 +77,4 @@ GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope
   GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
   INSTALL_PATH bin OUTPUT mossScope
-  GOVERSION 1.13.7)
+  GOVERSION 1.17.9)
