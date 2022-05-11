@@ -519,6 +519,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		options["sourcePartitions"] = options["vbuckets"]
 	}
 
+	// Force OSO Backfills for ingest while using the gocbcore sourceType
+	options["useOSOBackfill"] = "true"
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
