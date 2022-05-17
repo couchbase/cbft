@@ -152,7 +152,7 @@ func testPartitioning(t *testing.T,
 		t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
 	}
 	if len(pindexes) != expectedNumPIndexes {
-		t.Errorf("expected to be %d pindex, got pindexes: %+v",
+		t.Fatalf("expected to be %d pindex, got pindexes: %+v",
 			expectedNumPIndexes, pindexes)
 	}
 	var feed cbgt.Feed
@@ -224,10 +224,10 @@ func TestPartitioningMutations(t *testing.T) {
 				}
 			}
 			if pindex0 == nil {
-				t.Errorf("expected pindex0")
+				t.Fatalf("expected pindex0")
 			}
 			if pindex1 == nil {
-				t.Errorf("expected pindex1")
+				t.Fatalf("expected pindex1")
 			}
 			bindex0, ok := pindex0.Impl.(bleve.Index)
 			if !ok || bindex0 == nil {

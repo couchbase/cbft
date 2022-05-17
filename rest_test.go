@@ -263,8 +263,16 @@ func TestHandlersForRuntimeOps(t *testing.T) {
 }
 
 func TestHandlersForEmptyManager(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+		os.RemoveAll(emptyDir)
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -498,6 +506,14 @@ func TestHandlersForEmptyManager(t *testing.T) {
 }
 
 func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	testHandlersForOneBleveTypeIndexWithNILFeed(t, "fulltext-index")
 }
 
@@ -878,6 +894,14 @@ func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 }
 
 func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
@@ -1642,8 +1666,17 @@ func TestHandlersWithOnePartitionPrimaryFeedRollbackDefault(t *testing.T) {
 }
 
 func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+
 	emptyDir, _ := ioutil.TempDir("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+
+	defer func() {
+		os.RemoveAll(emptyDir)
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -1883,6 +1916,14 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 }
 
 func TestCreateIndexTwoNodes(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg := cbgt.NewCfgMem()
 
 	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
@@ -2308,8 +2349,8 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 				}
 
 				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
-				if len(indexDefs.IndexDefs) != 1 {
-					t.Errorf("expected 1 indexDef")
+				if indexDefs == nil || len(indexDefs.IndexDefs) != 1 {
+					t.Fatalf("expected 1 indexDef")
 				}
 				for _, indexDef := range indexDefs.IndexDefs {
 					if indexDef.Name != "myIdx" {
@@ -2326,6 +2367,14 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 }
 
 func TestCreateIndexAddNode(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
 		[]string{`{"maxPartitionsPerPIndex":1}`}, 2, 1)
 
@@ -2410,6 +2459,14 @@ func TestCreateIndexAddNode(t *testing.T) {
 }
 
 func TestCreateIndex1PIndexAddNode(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
 		[]string{`{"maxPartitionsPerPIndex":100}`}, 1, 1)
 
@@ -2509,6 +2566,14 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 }
 
 func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
 		[]string{`{"maxPartitionsPerPIndex":1,"planFrozen":true}`}, 0, 0)
 
@@ -2580,6 +2645,14 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 }
 
 func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
 		[]string{`{"maxPartitionsPerPIndex":1}`}, 2, 1)
 
@@ -2662,6 +2735,14 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 }
 
 func TestNodePlanParams(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	cfg, mgr0, router0 := testCreateIndex1Node(t,
 		[]string{`{"maxPartitionsPerPIndex":1,"numReplicas":0,"nodePlanParams":{"":{"":{"canRead":false,"canWrite":false}}}}`},
 		2, 0)
@@ -2750,6 +2831,11 @@ func TestNodePlanParams(t *testing.T) {
 }
 
 func TestHandlersForIndexControl(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
@@ -2757,6 +2843,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
 	}()
 
 	cfg := cbgt.NewCfgMem()
@@ -2998,6 +3085,14 @@ func TestHandlersForIndexControl(t *testing.T) {
 }
 
 func TestMultiFeedStats(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
@@ -3074,6 +3169,14 @@ func TestMultiFeedStats(t *testing.T) {
 }
 
 func TestIndexDefWithJSON(t *testing.T) {
+	getNumSourcePartitionsForBucket := rest.GetNumSourcePartitionsForBucket
+	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
+		return 0, nil
+	}
+	defer func() {
+		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+	}()
+
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}

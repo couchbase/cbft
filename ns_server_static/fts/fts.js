@@ -920,7 +920,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                             if (numPIndexes > 0) {
                                 let newPlanParamsObj = JSON.parse(newPlanParams);
                                 newPlanParamsObj["indexPartitions"] = numPIndexes;
-                                newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
                                 newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
                             } else {
                                 errs.push("Index Partitions cannot be less than 1");
@@ -1886,7 +1885,6 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                             if (numPIndexes > 0) {
                                 let newPlanParamsObj = JSON.parse(newPlanParams);
                                 newPlanParamsObj["indexPartitions"] = numPIndexes;
-                                newPlanParamsObj["maxPartitionsPerPIndex"] = Math.ceil($scope.vbuckets / numPIndexes);
                                 newPlanParams = JSON.stringify(newPlanParamsObj, undefined, 2);
                             } else {
                                 errs.push("Index Partitions cannot be less than 1");

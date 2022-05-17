@@ -175,6 +175,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 				}, // Never compact during this test.
 				"sourceType":   []string{"primary"},
 				"sourceParams": []string{`{"numPartitions":1}`},
+				"planParams":   []string{`{"maxPartitionsPerPIndex": 0}`},
 			},
 			Status: http.StatusOK,
 			ResponseMatch: map[string]bool{

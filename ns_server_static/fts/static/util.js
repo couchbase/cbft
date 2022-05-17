@@ -89,7 +89,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     if (initKind == "edit" || initKind == "create") {
         $scope.replicaOptions = [0];
         $scope.numReplicas = $scope.replicaOptions[0];
-        $scope.vbuckets = 1024;
         $scope.numPIndexes = 0;
         $scope.collectionsSupport = false;
         $http.get('/api/conciseOptions').
@@ -119,10 +118,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 }
             }
 
-            if (response.data.vbuckets != "") {
-                $scope.vbuckets = parseInt(response.data.vbuckets)
-            }
-
             if ($scope.newIndexType != "fulltext-alias") {
                 if ($scope.newPlanParams) {
                     try {
@@ -134,8 +129,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
                         if (angular.isDefined(newPlanParamsObj["indexPartitions"])) {
                             $scope.numPIndexes = newPlanParamsObj["indexPartitions"];
-                        } else if (angular.isDefined(newPlanParamsObj["maxPartitionsPerPIndex"])) {
-                            $scope.numPIndexes = Math.ceil($scope.vbuckets/newPlanParamsObj["maxPartitionsPerPIndex"]);
                         } else {
                             $scope.numPIndexes = 1;
                         }
