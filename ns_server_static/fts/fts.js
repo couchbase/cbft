@@ -1510,6 +1510,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 id: "cjk"
             },
             {
+                label: "Croatian",
+                id: "hr"
+            },
+            {
                 label: "Danish",
                 id: "da"
             },
@@ -1528,6 +1532,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             {
                 label: "German",
                 id: "de"
+            },
+            {
+                label: "Hebrew",
+                id: "he"
             },
             {
                 label: "Hindi",
