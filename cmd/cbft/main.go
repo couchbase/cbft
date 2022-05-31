@@ -337,7 +337,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
 		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections +
 		"," + cbft.FeatureBlevePreferredSegmentVersion +
-		"," + cbft.FeatureFileTransferRebalance
+		"," + cbft.FeatureFileTransferRebalance + "," + cbft.FeatureGeoSpatial
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION

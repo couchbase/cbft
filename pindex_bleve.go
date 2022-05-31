@@ -64,6 +64,8 @@ var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
 var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
 
+var FeatureGeoSpatial = "geoSpatial"
+
 var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
@@ -509,11 +511,17 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return nil, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
 	}
 
-	var collectionsSupported bool
-	if versionTracker != nil &&
-		versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
-		collectionsSupported =
-			cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+	var collectionsSupported, s2SpatialSupported bool
+	if versionTracker != nil {
+		if versionTracker.clusterCompatibleForVersion(FeatureGeoSpatialVersion) {
+			s2SpatialSupported =
+				cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
+			// as its implicit since spatial is already on an advanced version.
+			collectionsSupported = true
+		} else if versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
+			collectionsSupported =
+				cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+		}
 	}
 
 	if collectionsSupported {
@@ -546,6 +554,10 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				// If indexType were "scorch", the "kvStoreName" setting isn't
 				// really applicable, so drop the setting.
 				delete(bp.Store, "kvStoreName")
+
+				if s2SpatialSupported {
+					bp.Store["spatialPlugin"] = "s2"
+				}
 			}
 		}
 
@@ -3053,6 +3065,10 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 		if !strings.Contains(paramPrev, "kvStoreName") {
 			bpPrev.Store["kvStoreName"] = "mossStore"
 		}
+	}
+
+	if bpPrev.Store["spatialPlugin"] != bpCur.Store["spatialPlugin"] {
+		return true
 	}
 
 	// check for non store parameter differences

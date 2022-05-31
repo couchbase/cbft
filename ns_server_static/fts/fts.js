@@ -1634,6 +1634,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "boolean";
                 } else if (valType === "number") {
                     $scope.editField.type = "number";
+                } else  if (valType === "geoshape") {
+                    $scope.editField.type = "geoshape";
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";

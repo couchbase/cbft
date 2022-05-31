@@ -249,7 +249,7 @@ licenses/APL2.txt.
                 <input type="checkbox" ng-model="field.include_term_vectors" id="field-term">
               <label for="field-term">include term vectors</label>
               </span>
-              <span ng-if="field.type != 'geopoint'">
+              <span ng-if="field.type != 'geopoint' || field.type != 'geoshape'">
                 <input type="checkbox" ng-model="field.docvalues" id="field-docvalues">
                 <label for="field-docvalues">docvalues</label>
               </span>

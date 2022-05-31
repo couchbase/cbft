@@ -45,6 +45,8 @@ function newEditField() {
                 rv = "datetime ";
             } else if (this.type == "geopoint") {
                 rv = "geopoint ";
+            } else if (this.type == "geoshape") {
+                    rv = "geoshape ";
             } else if (this.type == "boolean") {
                 rv = "boolean ";
             }
