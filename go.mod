@@ -33,7 +33,7 @@ require (
 )
 
 require (
-	github.com/RoaringBitmap/roaring v1.1.0 // indirect
+	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/bits-and-blooms/bitset v1.2.2 // indirect
 	github.com/blevesearch/geo v0.1.12-0.20220531073316-e435177b73a3 // indirect
 	github.com/blevesearch/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
