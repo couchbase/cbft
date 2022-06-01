@@ -4,14 +4,14 @@ go 1.17
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.3.3-0.20220531075447-9845adbf7246
-	github.com/blevesearch/bleve_index_api v1.0.2-0.20220328092731-fdf526452081
+	github.com/blevesearch/bleve/v2 v2.3.3-0.20220601150214-3b8127049e42
+	github.com/blevesearch/bleve_index_api v1.0.2
 	github.com/blevesearch/upsidedown_store_api v1.0.1
-	github.com/blevesearch/zapx/v11 v11.3.3
-	github.com/blevesearch/zapx/v12 v12.3.3
-	github.com/blevesearch/zapx/v13 v13.3.3
-	github.com/blevesearch/zapx/v14 v14.3.3
-	github.com/blevesearch/zapx/v15 v15.3.3
+	github.com/blevesearch/zapx/v11 v11.3.4
+	github.com/blevesearch/zapx/v12 v12.3.4
+	github.com/blevesearch/zapx/v13 v13.3.4
+	github.com/blevesearch/zapx/v14 v14.3.4
+	github.com/blevesearch/zapx/v15 v15.3.4
 	github.com/buger/jsonparser v1.1.1
 	github.com/couchbase/cbauth v0.1.1
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
@@ -44,7 +44,7 @@ require (
 	github.com/blevesearch/scorch_segment_api/v2 v2.1.0 // indirect
 	github.com/blevesearch/segment v0.9.0 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
-	github.com/blevesearch/vellum v1.0.7 // indirect
+	github.com/blevesearch/vellum v1.0.8 // indirect
 	github.com/couchbase/blance v0.1.1 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
