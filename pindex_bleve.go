@@ -516,6 +516,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		if versionTracker.clusterCompatibleForVersion(FeatureGeoSpatialVersion) {
 			s2SpatialSupported =
 				cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
+
+				// check whether the spatial plugin usage is disabled for geo points.
+			if v, ok := mgr.Options()["disableGeoPointSpatialPlugin"]; ok &&
+				v == "true" {
+				s2SpatialSupported = false
+			}
+
 			// as its implicit since spatial is already on an advanced version.
 			collectionsSupported = true
 		} else if versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
@@ -557,6 +564,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 				if s2SpatialSupported {
 					bp.Store["spatialPlugin"] = "s2"
+				} else {
+					delete(bp.Store, "spatialPlugin")
 				}
 			}
 		}
