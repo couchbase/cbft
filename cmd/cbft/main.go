@@ -303,6 +303,20 @@ func loggerFunc(level, format string, args ...interface{}) string {
 	return prefix + fmt.Sprint(args...)
 }
 
+func initCPUOptions(options map[string]string) error {
+	if options == nil {
+		return nil
+	}
+
+	numCPU := os.Getenv("GOMAXPROCS")
+	if numCPU == "" {
+		numCPU = strconv.Itoa(runtime.NumCPU())
+	}
+	options["ftsCpuQuota"] = numCPU
+	log.Printf("main: FTS CPU quota is: %s", numCPU)
+	return nil
+}
+
 func mainWelcome(flagAliases map[string][]string) {
 	cmd.LogFlags(flagAliases)
 
@@ -365,6 +379,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	extras = string(extrasJSON)
 
 	err = initMemOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	err = initCPUOptions(options)
 	if err != nil {
 		return nil, err
 	}

@@ -14,9 +14,13 @@ import (
 	"time"
 
 	"github.com/couchbase/cbft"
+	log "github.com/couchbase/clog"
 )
 
-var ftsHerder *appHerder
+var (
+	ftsHerder            *appHerder
+	MemoryQuotaThreshold float32 = 0.75
+)
 
 func initMemOptions(options map[string]string) (err error) {
 	if options == nil {
@@ -24,6 +28,7 @@ func initMemOptions(options map[string]string) (err error) {
 	}
 
 	var memQuota uint64
+
 	v, exists := options["ftsMemoryQuota"] // In bytes.
 	if exists {
 		fmq, err2 := strconv.Atoi(v)
@@ -32,6 +37,18 @@ func initMemOptions(options map[string]string) (err error) {
 				" parsing ftsMemoryQuota: %q, err: %v", v, err2)
 		}
 		memQuota = uint64(fmq)
+
+		memoryLimit, err := getMemoryLimit()
+		if err != nil {
+			return fmt.Errorf("init_mem: error getting memory limit: %v", err)
+		}
+		if memoryLimit < memQuota {
+			memQuota = uint64(MemoryQuotaThreshold * float32(memoryLimit))
+			// multiplying by the threshold avoids the OOM error by having
+			// (1-threshold)*memoryLimit as a buffer.
+		}
+		options["ftsMemoryQuota"] = strconv.Itoa(int(memQuota))
+		log.Printf("init_mem: the FTS memory quota is: %s bytes", options["ftsMemoryQuota"])
 	}
 
 	var memCheckInterval time.Duration
