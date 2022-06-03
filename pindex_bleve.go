@@ -517,7 +517,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			s2SpatialSupported =
 				cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
 
-				// check whether the spatial plugin usage is disabled for geo points.
+			// check whether the spatial plugin usage is disabled for geo points.
 			if v, ok := mgr.Options()["disableGeoPointSpatialPlugin"]; ok &&
 				v == "true" {
 				s2SpatialSupported = false
@@ -562,7 +562,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				// really applicable, so drop the setting.
 				delete(bp.Store, "kvStoreName")
 
-				if s2SpatialSupported {
+				// insert spatial config only if geopoint field exists in the mapping.
+				if s2SpatialSupported && isGeoPointFieldInMapping(bp) {
 					bp.Store["spatialPlugin"] = "s2"
 				} else {
 					delete(bp.Store, "spatialPlugin")
@@ -3281,4 +3282,43 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 	}
 
 	return nil
+}
+
+func findGeoPoint(dm *mapping.DocumentMapping) bool {
+	if dm != nil && dm.Enabled {
+		for _, fm := range dm.Fields {
+			if fm.Index && fm.Type == "geopoint" {
+				return true
+			}
+		}
+		for _, dmapping := range dm.Properties {
+			found := findGeoPoint(dmapping)
+			if found {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isGeoPointFieldInMapping(bp *BleveParams) bool {
+	if bp != nil && bp.Mapping != nil {
+		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+			// look for in the default mapping.
+			res := findGeoPoint(im.DefaultMapping)
+			if res {
+				return true
+			}
+
+			// look for among the custom mappings.
+			for _, dm := range im.TypeMapping {
+				res := findGeoPoint(dm)
+				if res {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
