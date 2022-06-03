@@ -500,7 +500,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     $scope.prevTotSeqReceived = "";
     $scope.numMutationsToIndex = "";
     $scope.httpStatus = 200;    // OK
-    $scope.showHiddenUI = false;
 
     $scope.loadProgressStats = function(callback) {
         if ($scope.indexDef.type != "fulltext-index") {
@@ -526,18 +525,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
         if (callback) {
             return callback($scope.httpStatus);
         }
-    }
-
-    $scope.checkHiddenUI = function() {
-        $scope.showHiddenUI = false;
-
-        http.get('/api/conciseOptions').
-        then(function(response) {
-            let hideUI = response.data.hideUI;
-            if (hideUI === "false") {
-                $scope.showHiddenUI = true;
-            }
-        });
     }
 
     $scope.obtainScope = function(indexDef) {
@@ -641,7 +628,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
     if ($scope.tab === "summary") {
         $scope.loadProgressStats();
-        $scope.checkHiddenUI();
     }
 
     ftsServiceHostPort($scope, $http, $location);

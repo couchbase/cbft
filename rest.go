@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -34,59 +33,49 @@ func InitStaticRouter(staticDir, staticETag string,
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 
-	showUI := true
-	if mgr != nil && mgr.Options()["hideUI"] != "" {
-		hideUI, err := strconv.ParseBool(mgr.Options()["hideUI"])
-		if err == nil && hideUI {
-			showUI = false
-		}
+	prefix := ""
+	if mgr != nil {
+		prefix = mgr.Options()["urlPrefix"]
 	}
 
-	if showUI {
-		prefix := ""
-		if mgr != nil {
-			prefix = mgr.Options()["urlPrefix"]
-		}
+	hfsStaticX := http.FileServer(assetFS())
 
-		hfsStaticX := http.FileServer(assetFS())
+	router.Handle(prefix+"/",
+	http.RedirectHandler(prefix+"/index.html", 302))
+	router.Handle(prefix+"/index.html",
+	http.RedirectHandler(prefix+"/staticx/index.html", 302))
+	router.Handle(prefix+"/static/partials/index/start.html",
+	http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
+	router.Handle(prefix+"/static/partials/index/new.html",
+	http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
+	router.Handle(prefix+"/static/partials/index/list.html",
+	http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
 
-		router.Handle(prefix+"/",
-			http.RedirectHandler(prefix+"/index.html", 302))
-		router.Handle(prefix+"/index.html",
-			http.RedirectHandler(prefix+"/staticx/index.html", 302))
-		router.Handle(prefix+"/static/partials/index/start.html",
-			http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
-		router.Handle(prefix+"/static/partials/index/new.html",
-			http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
-		router.Handle(prefix+"/static/partials/index/list.html",
-			http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
+	router = rest.InitStaticRouterEx(router,
+	staticDir, staticETag, []string{
+		prefix + "/indexes",
+		prefix + "/nodes",
+		prefix + "/monitor",
+		prefix + "/manage",
+		prefix + "/logs",
+		prefix + "/debug",
+	}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
 
-		router = rest.InitStaticRouterEx(router,
-			staticDir, staticETag, []string{
-				prefix + "/indexes",
-				prefix + "/nodes",
-				prefix + "/monitor",
-				prefix + "/manage",
-				prefix + "/logs",
-				prefix + "/debug",
-			}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
+	staticxRoutes := []string{
+		"/staticx/",
+		"/staticx/css/cbft.css",
+		"/staticx/index.html",
+		"/staticx/index-ft.html",
+		"/staticx/js/debug.js",
+		"/staticx/partials/debug-rows.html",
+		"/staticx/partials/debug.html",
+		"/staticx/partials/index/ft/list.html",
+		"/staticx/partials/index/ft/new.html",
+		"/staticx/partials/index/start.html",
+	}
 
-		staticxRoutes := []string{
-			"/staticx/",
-			"/staticx/css/cbft.css",
-			"/staticx/index.html",
-			"/staticx/index-ft.html",
-			"/staticx/js/debug.js",
-			"/staticx/partials/debug-rows.html",
-			"/staticx/partials/debug.html",
-			"/staticx/partials/index/ft/list.html",
-			"/staticx/partials/index/ft/new.html",
-			"/staticx/partials/index/start.html",
-		}
-
-		for _, route := range staticxRoutes {
-			router.Handle(prefix+route, http.StripPrefix(prefix+"/staticx/", hfsStaticX))
-		}
+	for _, route := range staticxRoutes {
+		router.Handle(prefix+route, http.StripPrefix(prefix+"/staticx/", hfsStaticX))
 	}
 
 	return router

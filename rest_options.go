@@ -161,7 +161,6 @@ func (h *ConciseOptions) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	maxReplicasAllowed, _ := strconv.Atoi(h.mgr.Options()["maxReplicasAllowed"])
 	bucketTypesAllowed := h.mgr.Options()["bucketTypesAllowed"]
-	hideUI := h.mgr.Options()["hideUI"]
 	bleveMaxResultWindow, _ := strconv.Atoi(h.mgr.Options()["bleveMaxResultWindow"])
 	bleveMaxClauseCount, _ := strconv.Atoi(h.mgr.Options()["bleveMaxClauseCount"])
 	if bleveMaxClauseCount == 0 {
@@ -184,7 +183,6 @@ func (h *ConciseOptions) ServeHTTP(
 		Status               string `json:"status"`
 		MaxReplicasAllowed   int    `json:"maxReplicasAllowed"`
 		BucketTypesAllowed   string `json:"bucketTypesAllowed"`
-		HideUI               string `json:"hideUI"`
 		CollectionsSupport   bool   `json:"collectionsSupport"`
 		BleveMaxResultWindow int    `json:"bleveMaxResultWindow"`
 		BleveMaxClauseCount  int    `json:"bleveMaxClauseCount"`
@@ -192,7 +190,6 @@ func (h *ConciseOptions) ServeHTTP(
 		Status:               "ok",
 		MaxReplicasAllowed:   maxReplicasAllowed,
 		BucketTypesAllowed:   bucketTypesAllowed,
-		HideUI:               hideUI,
 		CollectionsSupport:   collectionsSupported,
 		BleveMaxResultWindow: bleveMaxResultWindow,
 		BleveMaxClauseCount:  bleveMaxClauseCount,

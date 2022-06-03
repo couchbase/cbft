@@ -114,7 +114,6 @@
                     <span class="nowrap" ng-click="$event.stopPropagation()">
                       <button class="outline"
                               ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
-                              ng-show=showHiddenUI
                               ui-sref="^.search.fts_details({indexName: indexName})">
                         Details
                       </button>
