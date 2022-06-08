@@ -41,25 +41,25 @@ func InitStaticRouter(staticDir, staticETag string,
 	hfsStaticX := http.FileServer(assetFS())
 
 	router.Handle(prefix+"/",
-	http.RedirectHandler(prefix+"/index.html", 302))
+		http.RedirectHandler(prefix+"/index.html", 302))
 	router.Handle(prefix+"/index.html",
-	http.RedirectHandler(prefix+"/staticx/index.html", 302))
+		http.RedirectHandler(prefix+"/staticx/index.html", 302))
 	router.Handle(prefix+"/static/partials/index/start.html",
-	http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
+		http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
 	router.Handle(prefix+"/static/partials/index/new.html",
-	http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
+		http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
 	router.Handle(prefix+"/static/partials/index/list.html",
-	http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
+		http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
 
 	router = rest.InitStaticRouterEx(router,
-	staticDir, staticETag, []string{
-		prefix + "/indexes",
-		prefix + "/nodes",
-		prefix + "/monitor",
-		prefix + "/manage",
-		prefix + "/logs",
-		prefix + "/debug",
-	}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
+		staticDir, staticETag, []string{
+			prefix + "/indexes",
+			prefix + "/nodes",
+			prefix + "/monitor",
+			prefix + "/manage",
+			prefix + "/logs",
+			prefix + "/debug",
+		}, http.RedirectHandler(prefix+"/staticx/index.html", 302), mgr)
 
 	staticxRoutes := []string{
 		"/staticx/",
