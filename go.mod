@@ -13,6 +13,7 @@ require (
 	github.com/blevesearch/zapx/v14 v14.3.4
 	github.com/blevesearch/zapx/v15 v15.3.4
 	github.com/buger/jsonparser v1.1.1
+	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.1
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
@@ -56,7 +57,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
-	github.com/pkg/errors v0.8.1-0.20180127015812-30136e27e2ac // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect

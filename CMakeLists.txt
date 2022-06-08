@@ -29,6 +29,8 @@ GoPrivateMod(MODULE hebrew)
 
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
+  CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
+  CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
   GOVERSION 1.17.9)
 
@@ -36,6 +38,8 @@ GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
   GOVERSION 1.17.9)
+
+  ADD_DEPENDENCIES(cbft sigar)
 
 # Build the UI and copy the files to the correct place
 ADD_SUBDIRECTORY(ns_server_static)
