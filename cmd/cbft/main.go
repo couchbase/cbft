@@ -637,6 +637,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			handler.ServeHTTP(w, req)
 		})
 
+	if mgr.Options()["deploymentModel"] == "serverless" {
+		router.Handler("GET", prefix+"/api"+cbft.MeteringEndpoint,
+			cbft.NewAuthVersionHandler(mgr, nil, cbft.NewMeteringHandler(mgr)))
+	}
+
 	// Setup all debug/pprof routes
 	router.Handler("GET", "/debug/pprof/",
 		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
