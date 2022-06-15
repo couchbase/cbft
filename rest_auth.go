@@ -121,6 +121,10 @@ func checkAPIAuth(avh *AuthVersionHandler,
 		return false, ""
 	}
 
+	if len(perms) <= 0 {
+		return true, ""
+	}
+
 	creds, err := CBAuthWebCreds(req)
 	if err != nil {
 		requestBody, _ := ioutil.ReadAll(req.Body)
