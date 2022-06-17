@@ -1,4 +1,4 @@
-//  Copyright 2018-Present Couchbase, Inc.
+//  Copyright 2022-Present Couchbase, Inc.
 //
 //  Use of this software is governed by the Business Source License included
 //  in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
@@ -6,11 +6,18 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-//go:build enterprise
-// +build enterprise
+//go:build !enterprise
+// +build !enterprise
 
-package main
+package cbft
 
 import (
-	_ "github.com/couchbase/cbftx"
+	"net/http"
+
+	"github.com/couchbase/cbgt"
 )
+
+func MeteringEndpointHandler(mgr *cbgt.Manager) (string, http.Handler) {
+	return "", nil
+}
+

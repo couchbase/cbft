@@ -20,7 +20,7 @@ SET (FTS_DEFAULT "server")
 INCLUDE (FindCouchbaseGo)
 
 IF (BUILD_ENTERPRISE)
-    SET (BUILD_TAG "cbftx")
+    SET (BUILD_TAG "enterprise")
 ENDIF(BUILD_ENTERPRISE)
 
 GoPrivateMod(MODULE cbftx)

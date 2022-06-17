@@ -6,6 +6,9 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
+//go:build enterprise
+// +build enterprise
+
 package cbft
 
 import (
@@ -16,7 +19,9 @@ import (
 	"net/http"
 )
 
-var MeteringEndpoint = regulator.MeteringEndpoint
+func MeteringEndpointHandler(mgr *cbgt.Manager) (string, http.Handler) {
+	return regulator.MeteringEndpoint, NewMeteringHandler(mgr)
+}
 
 type message struct {
 	user      string
