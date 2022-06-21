@@ -345,7 +345,8 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 }
 
 type BleveDest struct {
-	path string
+	path       string
+	sourceName string
 
 	bleveDocConfig BleveDocumentConfig
 
@@ -389,6 +390,30 @@ type batchRequest struct {
 	bdp    *BleveDestPartition
 	bindex bleve.Index
 	batch  *bleve.Batch
+}
+
+func NewBleveDestEx(path string, bindex bleve.Index,
+	restart func(), bleveDocConfig BleveDocumentConfig, sourceName string) *BleveDest {
+
+	bleveDest := &BleveDest{
+		path:           path,
+		bleveDocConfig: bleveDocConfig,
+		restart:        restart,
+		bindex:         bindex,
+		partitions:     make(map[string]*BleveDestPartition),
+		stats:          cbgt.NewPIndexStoreStats(),
+		copyStats:      &CopyPartitionStats{},
+		stopCh:         make(chan struct{}),
+		sourceName:     sourceName,
+	}
+
+	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+
+	bleveDest.startBatchWorkers()
+
+	atomic.AddUint64(&TotBleveDestOpened, 1)
+
+	return bleveDest
 }
 
 func NewBleveDest(path string, bindex bleve.Index,
@@ -881,9 +906,17 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	if err != nil {
 		return nil, nil, err
 	}
+	tmp := struct {
+		SourceName string `json:"sourceName"`
+	}{}
 
+	err = json.Unmarshal([]byte(indexParams), &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+	}
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
+		DestProvider: NewBleveDestEx(path, bindex, restart, bleveParams.DocConfig,
+			tmp.SourceName),
 	}, nil
 }
 
@@ -1093,8 +1126,24 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 	}
 	log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
 
+	buf, err = ioutil.ReadFile(path +
+		string(os.PathSeparator) + "PINDEX_META")
+	if err != nil {
+		return nil, nil, err
+	}
+	tmp := struct {
+		SourceName string `json:"sourceName"`
+		IndexName  string `json:"indexName"`
+	}{}
+
+	err = json.Unmarshal(buf, &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+	}
+
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDest(path, bindex, restart, bleveParams.DocConfig),
+		DestProvider: NewBleveDestEx(path, bindex, restart, bleveParams.DocConfig,
+			tmp.SourceName),
 	}, nil
 }
 
@@ -2545,10 +2594,36 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 
 func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
-	_, err := execute(bdp, bdpMaxSeqNums, index, batch)
+
+	action, duration, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+	if action == CheckResultReject {
+		// NOTE: Definitely this execution MUST NOT be rejected.
+		//
+		// returned duration value for a reject type is -1,
+		// so currently sleeping for 1 second and then continuing the execution
+		// TODO: Need a better mechanism for the sleep value determination
+		log.Warnf("limiting/throttling: the current batch to be indexed " +
+			"is trying to get rejected, sleeping for 1 second")
+		time.Sleep(1 * time.Second)
+	} else if action == CheckResultThrottle {
+		log.Warnf("limiting/throttling: the current batch to be indexed "+
+			"is going to be throttled for %v\n", duration)
+		time.Sleep(duration)
+	} else if action == CheckResultError {
+		log.Errorf("limting/throttling: failed to regulate the "+
+			"request err: %v\n", err)
+	}
+
+	_, err = execute(bdp, bdpMaxSeqNums, index, batch)
 	if err != nil {
 		bdp[0].setLastAsyncBatchErr(err)
+		return
 	}
+
+	// NOTE: each partition is going to fetch its bleve index's
+	// bytes written to disk, and meter this to its local node
+	// in the cluster
+	MeterWrites(bdp[0].bdest.sourceName, index)
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,

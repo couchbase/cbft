@@ -641,10 +641,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		})
 
 	if mgr.Options()["deploymentModel"] == "serverless" {
+		cbft.ServerlessMode = true
 		endpoint, handler := cbft.MeteringEndpointHandler(mgr)
 		if len(endpoint) > 0 && handler != nil {
 			router.Handler("GET", prefix+"/api"+endpoint,
-			cbft.NewAuthVersionHandler(mgr, nil, handler))
+				cbft.NewAuthVersionHandler(mgr, nil, handler))
 		}
 	}
 

@@ -132,6 +132,9 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 			}
 		}
 	}
+	// writing the metering and throttling metrics in
+	// the high cardinality prometheus handler
+	WriteRegulatorMetrics(w)
 }
 
 func scopeCollNames(params, sourceName string) (string, []string) {

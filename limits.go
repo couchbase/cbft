@@ -9,9 +9,13 @@
 package cbft
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,6 +29,7 @@ const bytesPerMB = 1048576
 const windowLength = 1 * time.Minute
 const indexPath = "/api/index/{indexName}"
 const queryPath = "/api/index/{indexName}/query"
+const gRPCQueryPath = "/Search"
 
 // -----------------------------------------------------------------------------
 
@@ -62,7 +67,21 @@ func SubscribeToLimits(mgr *cbgt.Manager) {
 // -----------------------------------------------------------------------------
 
 // Pre-processing for a request
-func processRequest(username, path string, req *http.Request) (bool, string) {
+func processRequest(username, path string, reqI interface{}) (bool, string) {
+	if ServerlessMode {
+		if path != indexPath && path != queryPath && path != gRPCQueryPath {
+			return true, ""
+		}
+		return limiter.processRequestForLimiting(username, path, reqI)
+	}
+
+	var req *http.Request
+	req, ok := reqI.(*http.Request)
+	if !ok {
+		// RPC calls not rate limited
+		return true, ""
+	}
+
 	if limiter == nil || !limiter.isActive() {
 		// rateLimiter not active
 		return true, ""
@@ -80,6 +99,11 @@ func processRequest(username, path string, req *http.Request) (bool, string) {
 
 // Post-processing after a response is shipped for a request
 func completeRequest(username, path string, req *http.Request, egress int64) {
+	if ServerlessMode {
+		limiter.completeRequestProcessing(path, req)
+		return
+	}
+
 	if limiter == nil || !limiter.isActive() {
 		// rateLimiter not active
 		return
@@ -230,6 +254,162 @@ func (e *rateLimiter) reset() {
 
 // -----------------------------------------------------------------------------
 
+var ServerlessMode bool
+
+type CheckResult uint
+
+const (
+	CheckResultNormal CheckResult = iota
+	CheckResultThrottle
+	CheckResultReject
+	CheckResultError
+)
+
+const IndexCountThresholdPerDataBase int = 20
+
+func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
+	for key, entry := range e.indexCache {
+		if _, ok := entry[indexName]; ok {
+			return key
+		}
+	}
+	return ""
+}
+
+func extractSourceNameFromReq(req *http.Request) (string, error) {
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return "", fmt.Errorf("limiter: failed to parse the req body %v\n", err)
+	}
+
+	indexDef := cbgt.IndexDef{}
+
+	if len(requestBody) > 0 {
+		err := json.Unmarshal(requestBody, &indexDef)
+		if err != nil {
+			return "", fmt.Errorf("limiter: failed to unmarshal "+
+				"the req body %v\n", err)
+		}
+	}
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
+	return indexDef.SourceName, nil
+}
+
+func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
+	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
+	if err != nil {
+		return CheckResultError, fmt.Errorf("failed to retrieve index defs")
+	}
+	indexCount := 0
+	for _, indexDef := range indexDefsByName {
+		if bucket == indexDef.SourceName {
+			indexCount++
+			// compare the index count of existing indexes
+			// in system with the threshold.
+			if indexCount >= IndexCountThresholdPerDataBase {
+				return CheckResultReject, fmt.Errorf("rejecting create " +
+					"request since index count limit per database has been reached")
+			}
+		}
+	}
+
+	return CheckResultNormal, nil
+}
+
+func (e *rateLimiter) regulateRequest(username, path string,
+	req interface{}) (CheckResult, time.Duration, error) {
+
+	reqG, isGRPC := req.(*rpcRequestParser)
+	reqH, isHTTP := req.(*http.Request)
+
+	// No need to throttle/limit the request incase of delete op
+	// Since it ultimately leads to cleaning up of resources
+	if isHTTP && reqH.Method == "DELETE" {
+		return CheckResultNormal, 0, nil
+	}
+	var indexName string
+	if isGRPC {
+		indexName, _ = reqG.GetIndexName()
+	} else {
+		indexName = rest.IndexNameLookup(reqH)
+	}
+	// need to see which bucket EXACTLY is this request for.
+	bucketScopeKey := e.getIndexKeyLOCKED(indexName)
+	bucket := strings.Split(bucketScopeKey, ":")[0]
+
+	var createReq bool
+	if bucket == "" {
+		createReq = true
+		// bucket is empty string only while CREATE index case
+		if isHTTP && path == indexPath {
+			sourceName, err := extractSourceNameFromReq(reqH)
+			if err != nil {
+				return CheckResultError, 0, fmt.Errorf("failed to get index "+
+					"info from request %v\n", err)
+			}
+			bucket = sourceName
+		}
+	}
+
+	if path == queryPath || path == gRPCQueryPath {
+		return CheckQuotaRead(bucket, username, req)
+	}
+
+	action, duration, err := CheckQuotaWrite(bucket, username, req)
+	if createReq && action == CheckResultNormal {
+		//TODO: Include CheckStorageLimits() API for create requests.
+		createReqResult, err := e.limitIndexCount(bucket)
+		return createReqResult, 0, err
+	}
+	return action, duration, err
+}
+
+// custom function just to check out the LMT.
+// can be removed and made part of the original rate Limiter later on, if necessary.
+func (e *rateLimiter) processRequestForLimiting(username, path string,
+	req interface{}) (bool, string) {
+	e.m.Lock()
+	defer e.m.Unlock()
+
+	if path == indexPath {
+		// Refresh the indexCache of the rateLimiter at this point,
+		// to track updates that have been received at other nodes.
+		//
+		// Also, pre-processing here for a DELETE INDEX request only
+		// (pre-processing for CREATE and UPDATE INDEX requests is handled
+		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef).
+		if reqH, ok := req.(*http.Request); ok {
+			e.updateIndexCacheLOCKED(reqH)
+		}
+	}
+
+	action, duration, err := e.regulateRequest(username, path, req)
+	if action == CheckResultReject {
+		return false, fmt.Sprintf("limting/throttling: the request has been "+
+			"rejected according to regulator, msg:%v\n", err)
+	} else if action == CheckResultThrottle {
+		time.Sleep(duration)
+	} else if action == CheckResultError {
+		return false, fmt.Sprintf("limting/throttling: failed to regulate the "+
+			"request err: %v\n", err)
+	}
+	return true, ""
+}
+
+// custom function just to check out the LMT.
+// can be removed and made part of the original rate Limiter later on, if necessary.
+func (e *rateLimiter) completeRequestProcessing(path string, req *http.Request) {
+	e.m.Lock()
+	defer e.m.Unlock()
+
+	if path == indexPath {
+		// post-processing for INDEX requests
+		e.completeIndexRequestLOCKED(req)
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 func (e *rateLimiter) processRequest(username, path string, req *http.Request) (bool, string) {
 	limits, _ := cbauth.GetUserLimits(username, "local", "fts")
 
@@ -361,9 +541,9 @@ func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
 	if req.Method != "DELETE" {
 		return
 	}
-
 	// This is invoked prior to the index deletion, so the index definition
 	// should still be available in the system.
+
 	indexName := rest.IndexNameLookup(req)
 	if indexDef, exists := indexDefsByName[indexName]; exists {
 		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)

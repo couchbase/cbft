@@ -108,7 +108,13 @@ func (m *cacheBleveIndex) Search(req *bleve.SearchRequest) (
 func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 	if !ResultCache.enabled() {
-		return m.bindex.SearchInContext(ctx, req)
+		res, err := m.bindex.SearchInContext(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		MeterReads(m.pindex.SourceName, m.bindex)
+		return res, nil
 	}
 
 	key, err := m.bleveSearchRequestToCacheKey(req)
@@ -131,6 +137,7 @@ func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 		return nil, err
 	}
 
+	MeterReads(m.pindex.SourceName, m.bindex)
 	if len(res.Hits) < BleveResultCacheMaxHits { // Don't cache overly large results.
 		ResultCache.encache(key, func() []byte {
 			// TODO: Use something better than JSON to copy a search result.

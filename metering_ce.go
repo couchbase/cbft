@@ -13,11 +13,36 @@ package cbft
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/blevesearch/bleve/v2"
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/regulator"
 )
 
-func MeteringEndpointHandler(mgr *cbgt.Manager) (string, http.Handler) {
+func MeteringEndpointHandler(mgr *cbgt.Manager) (string,
+	regulator.StatsHttpHandler) {
 	return "", nil
 }
 
+func MeterWrites(bucket string, index bleve.Index) {
+	return
+}
+
+func MeterReads(bucket string, index bleve.Index) {
+	return
+}
+
+func CheckQuotaWrite(bucket, user string,
+	req interface{}) (CheckResult, time.Duration, error) {
+	return CheckResultNormal, 0, nil
+}
+
+func CheckQuotaRead(bucket, user string,
+	req interface{}) (CheckResult, time.Duration, error) {
+	return CheckResultNormal, 0, nil
+}
+
+func WriteRegulatorMetrics(w http.ResponseWriter) {
+	return
+}

@@ -11,14 +11,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
-
 	"github.com/couchbase/cbauth"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"strings"
 )
 
 type gRPCAuthKeyType string
@@ -142,6 +141,10 @@ func (a *authWrapper) authenticate(r requestParser) (bool, error) {
 		if !allowed {
 			return false, err
 		}
+	}
+	ok, msg := processRequest(a.creds.Name(), a.path, r)
+	if !ok {
+		return false, fmt.Errorf("%s", msg)
 	}
 	return true, nil
 }
