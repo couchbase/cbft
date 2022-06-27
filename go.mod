@@ -55,7 +55,7 @@ require (
 	github.com/couchbase/gocb/v2 v2.5.0 // indirect
 	github.com/couchbase/gocbcore/v10 v10.1.2 // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
-	github.com/couchbase/gomemcached v0.1.4 // indirect
+	github.com/couchbase/gomemcached v0.1.5-0.20220627085811-f29815b6005a // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
