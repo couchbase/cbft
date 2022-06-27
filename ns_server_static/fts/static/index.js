@@ -650,14 +650,20 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
         }
 
         var errs = [];
-        if (!indexName) {
+        let newNameSuffix = indexName;
+        let pos = indexName.lastIndexOf(".");
+        if (pos > 0 && pos+1 < indexName.length) {
+            newNameSuffix = indexName.slice(pos+1);
+        }
+
+        if (!newNameSuffix) {
             errorFields["indexName"] = true;
             errs.push("index name is required");
         } else if ($scope.meta &&
                    $scope.meta.indexNameRE &&
-                   !indexName.match($scope.meta.indexNameRE)) {
+                   !newNameSuffix.match($scope.meta.indexNameRE)) {
             errorFields["indexName"] = true;
-            errs.push("index name '" + indexName + "'" +
+            errs.push("index name '" + newNameSuffix + "'" +
                       " does not pass validation regexp (" +
                       $scope.meta.indexNameRE + ")");
         }

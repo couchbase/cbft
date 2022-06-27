@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -61,6 +62,38 @@ type AliasParamsTarget struct {
 func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
+
+	alias := &struct {
+		Targets map[string]interface{} `json:"targets"`
+	}{}
+
+	err := json.Unmarshal([]byte(indexDef.Params), alias)
+	if err != nil {
+		return indexDef, err
+	}
+
+	// apply alias name decorations if it is for a single index.
+	if len(alias.Targets) == 1 {
+		var sourceIndexName string
+		for sourceIndexName = range alias.Targets {
+		}
+
+		// obtain the original alias name without the keyspace and
+		// it might be keyspace prefixed during the alias updates.
+		undecoratedAliasName := indexDef.Name
+		pos := strings.LastIndex(undecoratedAliasName, ".")
+		if pos > 0 && pos+1 < len(undecoratedAliasName) {
+			undecoratedAliasName = undecoratedAliasName[pos+1:]
+		}
+
+		// obtain the keyspace from the sourceIndexName and update
+		// the alias with with the sourceIndex's keyspace prefix.
+		pos = strings.LastIndex(sourceIndexName, ".")
+		if pos > 1 {
+			indexDef.Name = sourceIndexName[:pos] + "." + undecoratedAliasName
+		}
+	}
+
 	return indexDef, nil
 }
 

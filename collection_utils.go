@@ -339,3 +339,27 @@ func multiCollection(colls []Collection) bool {
 	}
 	return len(hash) > 1
 }
+
+// decorateIndexNameWithKeySpace updates the indexname
+// by prefixing the $bucketName.$scopeName keyspace.
+// For the restored indexes, this name mangling can
+// be optionally skipped.
+func decorateIndexNameWithKeySpace(sourceName, scopeName,
+	indexName string, restore bool) string {
+	// '.' is a valid character only for bucket name.
+	sourceName = sourceName + "."
+	scopeName = scopeName + "."
+
+	// check whether the name is already decorated or not.
+	pos := strings.LastIndex(indexName, ".")
+	if pos < 0 {
+		if !restore {
+			return sourceName + scopeName + indexName
+		}
+		// no decoration during the restore paths.
+		return indexName
+	}
+
+	// decorated index name.
+	return sourceName + scopeName + indexName[pos+1:]
+}

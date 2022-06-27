@@ -395,3 +395,103 @@ func getTypeNames(tm map[string]*mapping.DocumentMapping) []string {
 	sort.Strings(rv)
 	return rv
 }
+
+func TestRemapIndexDefinions(t *testing.T) {
+	tests := []struct {
+		indexDefBytes   []byte
+		mappingRules    map[string]string
+		resIndexName    string
+		resMappings     []string
+		testDescription string
+	}{
+		// verify an index name and mappings remap for the keyspaced index.
+		{
+			indexDefBytes: []byte(`{"uuid":"34483a9bd6044df7","indexDefs":{"travel-sample.inventory.DemoIndex":
+			{"type":"fulltext-index","name":"travel-sample.inventory.DemoIndex","uuid":"","sourceType":
+			"gocbcore","sourceName":"travel-sample","planParams":{"maxPartitionsPerPIndex":1024,"indexPartitions":1},
+			"params":{"doc_config":{"docid_prefix_delim":"","docid_regexp":"","mode":"scope.collection.type_field",
+			"type_field":"type"},"mapping":{"analysis":{},"default_analyzer":"standard","default_datetime_parser":
+			"dateTimeOptional","default_field":"_all","default_mapping":{"dynamic":true,"enabled":false},
+			"default_type":"_default","docvalues_dynamic":false,"index_dynamic":true,"store_dynamic":false,
+			"type_field":"_type","types":{"inventory.hotel":{"dynamic":true,"enabled":true},"inventory.landmark":
+			{"dynamic":true,"enabled":true}}},"store":{"indexType":"scorch","segmentVersion":15}},"sourceParams":{}}},
+			"implVersion":"5.6.0"}`),
+			mappingRules: map[string]string{
+				"travel-sample.inventory": "beer-sample.brewery",
+			},
+			resIndexName:    "beer-sample.brewery.DemoIndex",
+			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
+			testDescription: "remap an index defn with both bucket and scope name remapped",
+		},
+		// verify an index name and mappings remap for the restored index.
+		{
+			indexDefBytes: []byte(`{"uuid":"34483a9bd6044df7","indexDefs":{"DemoIndex":
+			{"type":"fulltext-index","name":"DemoIndex","uuid":"","sourceType":
+			"gocbcore","sourceName":"travel-sample","planParams":{"maxPartitionsPerPIndex":1024,"indexPartitions":1},
+			"params":{"doc_config":{"docid_prefix_delim":"","docid_regexp":"","mode":"scope.collection.type_field",
+			"type_field":"type"},"mapping":{"analysis":{},"default_analyzer":"standard","default_datetime_parser":
+			"dateTimeOptional","default_field":"_all","default_mapping":{"dynamic":true,"enabled":false},
+			"default_type":"_default","docvalues_dynamic":false,"index_dynamic":true,"store_dynamic":false,
+			"type_field":"_type","types":{"inventory.hotel":{"dynamic":true,"enabled":true},"inventory.landmark":
+			{"dynamic":true,"enabled":true}}},"store":{"indexType":"scorch","segmentVersion":15}},"sourceParams":{}}},
+			"implVersion":"5.6.0"}`),
+			mappingRules: map[string]string{
+				"travel-sample.inventory": "beer-sample.brewery",
+			},
+			resIndexName:    "DemoIndex",
+			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
+			testDescription: "remap an index defn with both bucket and scope name remapped",
+		},
+		// verify an index name and mappings remap to the default index.
+		{
+			indexDefBytes: []byte(`{"uuid":"34483a9bd6044df7","indexDefs":{"travel-sample.inventory.DemoIndex":
+			{"type":"fulltext-index","name":"travel-sample.inventory.DemoIndex","uuid":"","sourceType":
+			"gocbcore","sourceName":"travel-sample","planParams":{"maxPartitionsPerPIndex":1024,"indexPartitions":1},
+			"params":{"doc_config":{"docid_prefix_delim":"","docid_regexp":"","mode":"scope.collection.type_field",
+			"type_field":"type"},"mapping":{"analysis":{},"default_analyzer":"standard","default_datetime_parser":
+			"dateTimeOptional","default_field":"_all","default_mapping":{"dynamic":true,"enabled":false},
+			"default_type":"_default","docvalues_dynamic":false,"index_dynamic":true,"store_dynamic":false,
+			"type_field":"_type","types":{"inventory.hotel":{"dynamic":true,"enabled":true},"inventory.landmark":
+			{"dynamic":true,"enabled":true}}},"store":{"indexType":"scorch","segmentVersion":15}},"sourceParams":{}}},
+			"implVersion":"5.6.0"}`),
+			mappingRules: map[string]string{
+				"travel-sample.inventory": "beer-sample._default",
+			},
+			resIndexName:    "beer-sample._default.DemoIndex",
+			resMappings:     []string{"_default.hotel", "_default.landmark"},
+			testDescription: "remap an index defn with both bucket and scope name remapped",
+		},
+	}
+
+	for i, test := range tests {
+		var indexDefs cbgt.IndexDefs
+		err := json.Unmarshal(test.indexDefBytes, &indexDefs)
+		if err != nil {
+			t.Errorf("test %d, json err: %v", i, err)
+		}
+
+		resIndexDefs, err := remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
+		if err != nil {
+			t.Errorf("test %d, remapIndexDefinitions failed, err: %v", i, err)
+		}
+
+		if len(resIndexDefs.IndexDefs) != 1 {
+			t.Errorf("test %d remapIndexDefinitions, multiple index defns found: %+v",
+				i, resIndexDefs.IndexDefs)
+		}
+
+		var res *cbgt.IndexDef
+		var found bool
+		if res, found = resIndexDefs.IndexDefs[test.resIndexName]; !found {
+			t.Errorf("test %d remapIndexDefinitions, no index defn found for: %s, %+v",
+				i, test.resIndexName, resIndexDefs.IndexDefs)
+		}
+
+		for _, mappingName := range test.resMappings {
+			if !strings.Contains(res.Params, mappingName) {
+				t.Errorf("test %d remapIndexDefinitions, no mapping found for: %s",
+					i, mappingName)
+			}
+		}
+	}
+}

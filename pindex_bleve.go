@@ -596,6 +596,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
+		scopeName := "_default"
 		// figure out the scope/collection details from mappings
 		// and perform the validation checks.
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
@@ -605,13 +606,18 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
-				_, err := validateScopeCollFromMappings(indexDef.SourceName,
+				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
 					im, false)
 				if err != nil {
 					return nil, err
 				}
+				scopeName = scope.Name
 			}
 		}
+
+		// decorate the index name with the keyspace.
+		indexDef.Name = decorateIndexNameWithKeySpace(
+			indexDef.SourceName, scopeName, indexDef.Name, false)
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(

@@ -874,16 +874,22 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     newIndexParams['fulltext-index'].store = JSON.stringify($scope.ftsStore);
                 } catch (e) {}
 
-                if (!newIndexName) {
+                let newNameSuffix = newIndexName;
+                let pos = newIndexName.lastIndexOf(".");
+                if (pos > 0 && pos+1 < newIndexName.length) {
+                    newNameSuffix = newIndexName.slice(pos+1);
+                }
+
+                if (!newNameSuffix) {
                     errorFields["indexName"] = true;
                     errs.push("index name is required");
                 } else if ($scope.meta &&
-                           $scope.meta.indexNameRE &&
-                           !newIndexName.match($scope.meta.indexNameRE)) {
+                    $scope.meta.indexNameRE &&
+                    !newNameSuffix.match($scope.meta.indexNameRE)) {
                     errorFields["indexName"] = true;
-                    errs.push("index name '" + newIndexName + "'" +
-                              " must start with an alphabetic character, and" +
-                              " must only use alphanumeric or '-' or '_' characters");
+                    errs.push("index name '" + newNameSuffix + "'" +
+                        " must start with an alphabetic character, and" +
+                        " must only use alphanumeric or '-' or '_' characters");
                 }
 
                 if (!newSourceName) {
@@ -1841,14 +1847,20 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     newIndexParams['fulltext-index'].store = JSON.stringify($scope.ftsStore);
                 } catch (e) {}
 
-                if (!newIndexName) {
+                let newNameSuffix = newIndexName;
+                let pos = newIndexName.lastIndexOf(".");
+                if (pos > 0 && pos+1 < newIndexName.length) {
+                    newNameSuffix = newIndexName.slice(pos+1);
+                }
+
+                if (!newNameSuffix) {
                     errorFields["indexName"] = true;
                     errs.push("index name is required");
                 } else if ($scope.meta &&
                     $scope.meta.indexNameRE &&
-                    !newIndexName.match($scope.meta.indexNameRE)) {
+                    !newNameSuffix.match($scope.meta.indexNameRE)) {
                     errorFields["indexName"] = true;
-                    errs.push("index name '" + newIndexName + "'" +
+                    errs.push("index name '" + newNameSuffix + "'" +
                         " must start with an alphabetic character, and" +
                         " must only use alphanumeric or '-' or '_' characters");
                 }

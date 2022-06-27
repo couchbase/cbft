@@ -124,7 +124,11 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 
 	// update the remapped index definitions.
 	for indexName, remappedIndexDef := range indexDefs.IndexDefs {
-		delete(curIndexDefs.IndexDefs, indexName)
+		// error out if the remapped index name already exists.
+		if _, exists := curIndexDefs.IndexDefs[indexName]; exists {
+			return fmt.Errorf("backup_restore: remapped index name: %s"+
+				" already exists", indexName)
+		}
 		curIndexDefs.IndexDefs[indexName] = remappedIndexDef
 	}
 
@@ -162,7 +166,8 @@ func processRemapRequest(req *http.Request, bucketName string) (
 	if err != nil {
 		return nil, err
 	}
-	indexDefs, err = remapIndexDefinitions(indexDefs, mapingRules, bucketName)
+	indexDefs, err = remapIndexDefinitions(indexDefs, mapingRules,
+		bucketName, false)
 	if err != nil {
 		return nil, fmt.Errorf("index remapping error: %v", err)
 	}
@@ -189,7 +194,8 @@ func parseMappingParams(params string) (map[string]string, error) {
 }
 
 func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
-	mappingRules map[string]string, bucketName string) (*cbgt.IndexDefs, error) {
+	mappingRules map[string]string, bucketName string,
+	skipValidation bool) (*cbgt.IndexDefs, error) {
 	for _, indexDef := range indexDefs.IndexDefs {
 		// override the UUID during restore.
 		indexDef.UUID = cbgt.NewUUID()
@@ -242,12 +248,25 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 					}
 					indexDef.Params = string(ipBytes)
 
-					_, err = validateScopeCollFromMappings(indexDef.SourceName,
-						im, false)
-					if err != nil {
-						return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
-							"validation errs: %v", indexDef.Name, err)
+					var scopeName string
+					if skipValidation {
+						sName, _, _, err := getScopeCollTypeMappings(im, false)
+						if err != nil {
+							return nil, err
+						}
+						scopeName = sName
+					} else {
+						scope, err := validateScopeCollFromMappings(
+							indexDef.SourceName, im, false)
+						if err != nil {
+							return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
+								"validation errs: %v", indexDef.Name, err)
+						}
+						scopeName = scope.Name
 					}
+
+					indexDef.Name = decorateIndexNameWithKeySpace(
+						indexDef.SourceName, scopeName, indexDef.Name, true)
 				}
 			} else {
 				if bname, ok := mappingRules[indexDef.SourceName]; ok {
@@ -258,7 +277,13 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 			}
 		}
 	}
-	return indexDefs, nil
+
+	rv := cbgt.NewIndexDefs(indexDefs.ImplVersion)
+	for _, indexDef := range indexDefs.IndexDefs {
+		rv.IndexDefs[indexDef.Name] = indexDef
+	}
+
+	return rv, nil
 }
 
 func remapTypeMappings(typeMappings map[string]*mapping.DocumentMapping,
