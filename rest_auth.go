@@ -19,11 +19,11 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/buger/jsonparser"
+
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-
-	"github.com/couchbase/goutils/go-cbaudit"
+	audit "github.com/couchbase/goutils/go-cbaudit"
 )
 
 // CBAuthWebCreds extra level-of-indirection allows for overrides and
@@ -86,6 +86,10 @@ func init() {
 
 // --------------------------------------------------------
 
+func addUserAgentHeaderToRequest(req *http.Request) {
+	req.Header.Set("User-Agent", cbgt.UserAgentStr)
+}
+
 func checkAPIAuth(avh *AuthVersionHandler,
 	w http.ResponseWriter, req *http.Request, path string) (
 	allowed bool, username string) {
@@ -125,6 +129,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 		return true, ""
 	}
 
+	addUserAgentHeaderToRequest(req)
 	creds, err := CBAuthWebCreds(req)
 	if err != nil {
 		requestBody, _ := ioutil.ReadAll(req.Body)
@@ -538,6 +543,7 @@ func (h *CBAuthBasicLogin) ServeHTTP(
 	}
 
 	if authType == "cbauth" {
+		addUserAgentHeaderToRequest(req)
 		creds, err := CBAuthWebCreds(req)
 		if err != nil {
 			requestBody, _ := ioutil.ReadAll(req.Body)

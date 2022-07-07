@@ -63,13 +63,13 @@ type addRemoteClients func(mgr *cbgt.Manager, indexName, indexUUID string,
 const RemoteRequestOverhead = 500 * time.Millisecond
 
 // Overridable for testability / advanced needs.
-var HttpPost = func(client *http.Client,
+var HttpPost = func(client cbgt.HTTPClient,
 	url string, bodyType string, body io.Reader) (*http.Response, error) {
 	return client.Post(url, bodyType, body)
 }
 
 // Overridable for testability / advanced needs.
-var HttpGet = func(client *http.Client, url string) (*http.Response, error) {
+var HttpGet = func(client cbgt.HTTPClient, url string) (*http.Response, error) {
 	return client.Get(url)
 }
 
@@ -93,7 +93,7 @@ type IndexClient struct {
 	CountURL       string
 	TaskRequestURL string
 	Consistency    *cbgt.ConsistencyParams
-	httpClient     *http.Client
+	httpClient     cbgt.HTTPClient
 
 	lastMutex        sync.RWMutex
 	lastSearchStatus int
