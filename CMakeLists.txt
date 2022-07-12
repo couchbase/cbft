@@ -32,12 +32,12 @@ GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.17.9)
+  GOVERSION 1.18.3)
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
-  GOVERSION 1.17.9)
+  GOVERSION 1.18.3)
 
   ADD_DEPENDENCIES(cbft sigar)
 
