@@ -17,11 +17,9 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/couchbase/cbgt"
-	"github.com/couchbase/regulator"
 )
 
-func MeteringEndpointHandler(mgr *cbgt.Manager) (string,
-	regulator.StatsHttpHandler) {
+func MeteringEndpointHandler(mgr *cbgt.Manager) (string, http.Handler) {
 	return "", nil
 }
 
