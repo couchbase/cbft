@@ -506,8 +506,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// Force OSO Backfills for ingest while using the gocbcore sourceType
 	options["useOSOBackfill"] = "true"
 
-	// Force OSO Backfills for ingest while using the gocbcore sourceType
-	options["useOSOBackfill"] = "true"
+	// Set DCP connection sharing for gocbcore feeds to 6
+	options["maxFeedsPerDCPAgent"] = "6"
 
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
