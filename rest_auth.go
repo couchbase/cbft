@@ -154,7 +154,12 @@ func checkAPIAuth(avh *AuthVersionHandler,
 		}
 
 		if !allowed {
-			CBAuthSendForbidden(w, perm)
+			forbiddenMessage := "permission to perform this action for the source."
+			split := strings.Split(perm, "!")
+			if len(split) >= 2 {
+				forbiddenMessage = split[len(split)-1] + " permission for the source."
+			}
+			CBAuthSendForbidden(w, forbiddenMessage)
 
 			if adtSvc != nil {
 				d := GetAuditEventData(AuditAccessDeniedEvent, req)
