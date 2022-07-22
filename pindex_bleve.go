@@ -3152,8 +3152,9 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 		}
 	}
 
+	// check for any changes in the spatial engines.
 	if bpPrev.Store["spatialPlugin"] != bpCur.Store["spatialPlugin"] {
-		return true
+		return false
 	}
 
 	// check for non store parameter differences
