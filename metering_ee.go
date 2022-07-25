@@ -94,7 +94,7 @@ func (sr *serviceRegulator) startMetering() {
 
 			if err != nil {
 				log.Errorf("metering: error while metering the stats "+
-					"with regulator %v\n", err)
+					"with regulator %v", err)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (sr *serviceRegulator) meteringUtil(bucket, index string,
 	case sr.messageChan <- msg:
 	case <-time.After(5 * time.Second):
 		log.Warnf("metering: message dropped, too much traffic on the "+
-			"channel %v\n", msg)
+			"channel %v", msg)
 	}
 }
 
@@ -212,7 +212,7 @@ func CheckQuotaWrite(bucket, user string,
 		regulator.Write, uint64(0))
 	if err != nil {
 		return CheckResultError, 0, fmt.Errorf("limiting/throttling: failed to "+
-			"create estimated units err: %v\n", err)
+			"create estimated units err: %v", err)
 	}
 
 	checkQuotaOps := &regulator.CheckQuotaOpts{
@@ -237,7 +237,7 @@ func CheckQuotaRead(bucket, user string,
 		regulator.Write, uint64(0))
 	if err != nil {
 		return CheckResultError, 0, fmt.Errorf("limiting/throttling: failed to "+
-			"create estimated units err: %v\n", err)
+			"create estimated units err: %v", err)
 	}
 	checkQuotaOps := &regulator.CheckQuotaOpts{
 		NoThrottle:        false,

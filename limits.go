@@ -279,7 +279,7 @@ func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
 func extractSourceNameFromReq(req *http.Request) (string, error) {
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		return "", fmt.Errorf("limiter: failed to parse the req body %v\n", err)
+		return "", fmt.Errorf("limiter: failed to parse the req body %v", err)
 	}
 
 	indexDef := cbgt.IndexDef{}
@@ -288,7 +288,7 @@ func extractSourceNameFromReq(req *http.Request) (string, error) {
 		err := json.Unmarshal(requestBody, &indexDef)
 		if err != nil {
 			return "", fmt.Errorf("limiter: failed to unmarshal "+
-				"the req body %v\n", err)
+				"the req body %v", err)
 		}
 	}
 	req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
@@ -345,7 +345,7 @@ func (e *rateLimiter) regulateRequest(username, path string,
 			sourceName, err := extractSourceNameFromReq(reqH)
 			if err != nil {
 				return CheckResultError, 0, fmt.Errorf("failed to get index "+
-					"info from request %v\n", err)
+					"info from request %v", err)
 			}
 			bucket = sourceName
 		}
@@ -386,12 +386,12 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 	action, duration, err := e.regulateRequest(username, path, req)
 	if action == CheckResultReject {
 		return false, fmt.Sprintf("limting/throttling: the request has been "+
-			"rejected according to regulator, msg:%v\n", err)
+			"rejected according to regulator, msg:%v", err)
 	} else if action == CheckResultThrottle {
 		time.Sleep(duration)
 	} else if action == CheckResultError {
 		return false, fmt.Sprintf("limting/throttling: failed to regulate the "+
-			"request err: %v\n", err)
+			"request err: %v", err)
 	}
 	return true, ""
 }

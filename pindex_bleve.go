@@ -2607,11 +2607,11 @@ func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		time.Sleep(1 * time.Second)
 	} else if action == CheckResultThrottle {
 		log.Warnf("limiting/throttling: the current batch to be indexed "+
-			"is going to be throttled for %v\n", duration)
+			"is going to be throttled for %v", duration)
 		time.Sleep(duration)
 	} else if action == CheckResultError {
 		log.Errorf("limting/throttling: failed to regulate the "+
-			"request err: %v\n", err)
+			"request err: %v", err)
 	}
 
 	_, err = execute(bdp, bdpMaxSeqNums, index, batch)
