@@ -2595,20 +2595,19 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
-	action, duration, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+	action, _, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+	// FIXME Rejecting or throttling can cause out-of-order batch
+	// execution which could result in data loss/inconsistency.
+	//
+	// Need to figure out a good way to do this and until then logging
+	// and permitting the batch execution regardless of what the
+	// regulator has to say.
 	if action == CheckResultReject {
-		// NOTE: Definitely this execution MUST NOT be rejected.
-		//
-		// returned duration value for a reject type is -1,
-		// so currently sleeping for 1 second and then continuing the execution
-		// TODO: Need a better mechanism for the sleep value determination
 		log.Warnf("limiting/throttling: the current batch to be indexed " +
-			"is trying to get rejected, sleeping for 1 second")
-		time.Sleep(1 * time.Second)
+			"is to be rejected, but allowing for now")
 	} else if action == CheckResultThrottle {
 		log.Warnf("limiting/throttling: the current batch to be indexed "+
-			"is going to be throttled for %v", duration)
-		time.Sleep(duration)
+			"is to be throttled, but allowing for now")
 	} else if action == CheckResultError {
 		log.Errorf("limting/throttling: failed to regulate the "+
 			"request err: %v", err)
