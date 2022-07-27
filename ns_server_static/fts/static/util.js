@@ -311,12 +311,17 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
                         let mapping = rv.indexDef.params.mapping;
                         if (angular.isDefined(mapping.default_mapping) && mapping.default_mapping.enabled) {
-                            $scope.chosenCollections = ["_default"];
+                            $scope.collectionsSelected = ["_default"];
+                            $scope.scopeSelected = "_default";
                         } else if (angular.isDefined(mapping.types)) {
                             let collectionNames = [];
                             for (let [key, value] of Object.entries(mapping.types)) {
                                 if (value.enabled) {
                                     try {
+                                        let scopeName = key.split(".")[0];
+                                        if (scopeName.length > 0) {
+                                            $scope.scopeSelected = scopeName;
+                                        }
                                         let collName = key.split(".")[1];
                                         if (collName.length > 0 && collectionNames.indexOf(collName) < 0) {
                                             collectionNames.push(collName);
@@ -324,12 +329,13 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                                     } catch (e) {}
                                 }
                             }
-                            $scope.chosenCollections = collectionNames;
+                            $scope.collectionsSelected = collectionNames;
                         } else {
-                            $scope.chosenCollections = [];
+                            $scope.collectionsSelected = [];
                         }
                     } else {
-                        $scope.chosenCollections = ["_default"];
+                        $scope.scopeSelected = "_default";
+                        $scope.collectionsSelected = ["_default"];
                     }
                 }
             }

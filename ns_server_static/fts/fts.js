@@ -776,8 +776,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             });
         };
 
-        $scope.chosenCollections = [];
-
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),
                        $routeParams,
