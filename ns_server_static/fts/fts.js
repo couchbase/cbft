@@ -769,11 +769,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 $scope.collectionNames = [];
                 return;
             }
+
             $scope.newScopeName = newScopeName;
             listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
                 $scope.collectionNames = collections;
             });
         };
+
+        $scope.chosenCollections = [];
 
         IndexNewCtrlFT($scope,
                        prefixedHttp($http, '../_p/' + ftsPrefix),

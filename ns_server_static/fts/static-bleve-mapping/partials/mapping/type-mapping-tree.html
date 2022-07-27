@@ -61,6 +61,7 @@ licenses/APL2.txt.
                  ng-change="validateMapping(mapping, mappings)"
                  ng-class="{'invalid': mapping._invalid}"
                  style="min-width:240px;">
+          </input>
           <span ng-if="$parent.docConfigCollections && mapping.name"
                 class="fa-stack icon-info"
                 uib-tooltip="Format: scope.collection[.type]"
@@ -138,7 +139,7 @@ licenses/APL2.txt.
             data-nodrag>
         <a class="btn btn-xs btn-success"
            data-nodrag
-           ng-disabled="mapping._invalid"
+           ng-disabled="mapping._invalid || !mapping.name"
            ng-click="editAttrsDone(mapping, true)">
           <i class="glyphicon glyphicon-ok"></i></a>
         <a class="btn btn-xs btn-cancel"

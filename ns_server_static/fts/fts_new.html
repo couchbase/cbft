@@ -57,6 +57,22 @@ licenses/APL2.txt.
           </div>
         </div>
 
+        <div class="margin-bottom-1"
+             ng-if="newIndexName && newSourceName"
+             style="font-size:14px;">
+            Data ingest from:
+            <ul>
+                <li>Scope: <b>{{newScopeName}}</b></li>
+                <li>Collections:&nbsp;
+                    <span style="display: inline-block; position: absolute; width: 30em; overflow:hidden; text-overflow:ellipsis;">
+                        <b>{{chosenCollections}}</b>
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+        <hr>
+
         <label class="disclosure"
                ng-class="{disclosed: showCustomizeIndex}"
                ng-init="showCustomizeIndex = isEdit"
@@ -72,7 +88,7 @@ licenses/APL2.txt.
                                      ng-change="typeIdentifierChanged()">
               <label for="subscribe-to-collections">Use non-default scope/collection(s)</label>
               <span class="fa-stack icon-info"
-                    uib-tooltip="Check this option should you want the index to stream data from a non-default scope and/or non-default collection(s) on the source bucket."
+                    uib-tooltip="Check this option for the index to be able to ingest data from a non-default scope and/or non-default collection(s) on the source bucket."
                     tooltip-placement="auto right">
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>

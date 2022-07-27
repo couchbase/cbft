@@ -78,13 +78,17 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
 
     // -------------------------------------------------------
 
-    $scope.buildMappingName = function(scopeName, collectionName) {
+    $scope.buildMappingName = function(scopeName, collectionName, typeName) {
         if (scopeName == "") {
             return "";
         }
 
         if (collectionName == "") {
             return "";
+        }
+
+        if (angular.isDefined(typeName) && typeName != "") {
+            return scopeName + "." + collectionName + "." + typeName
         }
 
         return scopeName + "." + collectionName;

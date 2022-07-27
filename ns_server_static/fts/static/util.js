@@ -308,6 +308,28 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                                 $scope.errorMessage = "";
                             }
                         }
+
+                        let mapping = rv.indexDef.params.mapping;
+                        if (angular.isDefined(mapping.default_mapping) && mapping.default_mapping.enabled) {
+                            $scope.chosenCollections = ["_default"];
+                        } else if (angular.isDefined(mapping.types)) {
+                            let collectionNames = [];
+                            for (let [key, value] of Object.entries(mapping.types)) {
+                                if (value.enabled) {
+                                    try {
+                                        let collName = key.split(".")[1];
+                                        if (collName.length > 0 && collectionNames.indexOf(collName) < 0) {
+                                            collectionNames.push(collName);
+                                        }
+                                    } catch (e) {}
+                                }
+                            }
+                            $scope.chosenCollections = collectionNames;
+                        } else {
+                            $scope.chosenCollections = [];
+                        }
+                    } else {
+                        $scope.chosenCollections = ["_default"];
                     }
                 }
             }
