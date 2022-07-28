@@ -2601,34 +2601,72 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
-	action, _, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
-	// FIXME Rejecting or throttling can cause out-of-order batch
-	// execution which could result in data loss/inconsistency.
-	//
-	// Need to figure out a good way to do this and until then logging
-	// and permitting the batch execution regardless of what the
-	// regulator has to say.
-	if action == CheckResultReject {
-		log.Warnf("limiting/throttling: the current batch to be indexed " +
-			"is to be rejected, but allowing for now")
-	} else if action == CheckResultThrottle {
-		log.Warnf("limiting/throttling: the current batch to be indexed "+
-			"is to be throttled, but allowing for now")
-	} else if action == CheckResultError {
-		log.Errorf("limting/throttling: failed to regulate the "+
-			"request err: %v", err)
-	}
-
-	_, err = execute(bdp, bdpMaxSeqNums, index, batch)
-	if err != nil {
-		bdp[0].setLastAsyncBatchErr(err)
-		return
-	}
+	regulateAndExecute(bdp, bdpMaxSeqNums, index, batch)
 
 	// NOTE: each partition is going to fetch its bleve index's
 	// bytes written to disk, and meter this to its local node
 	// in the cluster
 	MeterWrites(bdp[0].bdest.sourceName, index)
+}
+
+func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
+	index bleve.Index, batch *bleve.Batch) {
+
+	if !ServerlessMode {
+		_, err := execute(bdp, bdpMaxSeqNums, index, batch)
+		if err != nil {
+			bdp[0].setLastAsyncBatchErr(err)
+		}
+		return
+	}
+
+	action, duration, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+
+	for {
+		switch action {
+		case CheckResultNormal:
+			_, err = execute(bdp, bdpMaxSeqNums, index, batch)
+			if err != nil {
+				bdp[0].setLastAsyncBatchErr(err)
+			}
+			return
+
+		case CheckResultThrottle:
+			time.Sleep(duration)
+			action = CheckResultNormal
+
+		case CheckResultReject:
+			// Should return -1 when regulator returns CheckResultNormal
+			// since no further progress can be made.
+			// For CheckResultThrottle/Reject, should return 1 since
+			// that indicates that further progress is required.
+			checkQuotaExponentialBackoff := func() int {
+				var err error
+				action, duration, err = CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+				if err != nil {
+					return -1 // no progress can be made in case of regulator error.
+				}
+				if action == CheckResultNormal || action == CheckResultThrottle ||
+					action == CheckResultError {
+					return -1
+				}
+
+				return 0 // 0 in case of Reject to add a sleep between retries.
+			}
+
+			// Blocking wait to execute the request till it returns.
+			cbgt.ExponentialBackoffLoop("", checkQuotaExponentialBackoff,
+				int(200*time.Millisecond), 2, int(30*time.Second))
+			if action == CheckResultReject {
+				// If the request is still limited after the exponential backoff, accept it.
+				action = CheckResultNormal
+			}
+
+		case CheckResultError:
+			log.Printf("limiting/throttling: failed to regulate the request: %v", err)
+			action = CheckResultNormal
+		}
+	}
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
