@@ -29,8 +29,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
 	google.golang.org/grpc v1.31.0
 )
 
@@ -82,6 +82,8 @@ require (
 replace github.com/json-iterator/go => github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 
 replace golang.org/x/text => golang.org/x/text v0.3.7
+
+replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 
 replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
 
