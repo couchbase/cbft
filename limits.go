@@ -265,8 +265,6 @@ const (
 	CheckResultError
 )
 
-const IndexCountThresholdPerDataBase int = 20
-
 func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
 	for key, entry := range e.indexCache {
 		if _, ok := entry[indexName]; ok {
@@ -300,13 +298,20 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	if err != nil {
 		return CheckResultError, fmt.Errorf("failed to retrieve index defs")
 	}
+
+	maxIndexCountPerSource := 20
+	v, found := cbgt.ParseOptionsInt(e.mgr.Options(), "maxIndexCountPerSource")
+	if found {
+		maxIndexCountPerSource = v
+	}
+
 	indexCount := 0
 	for _, indexDef := range indexDefsByName {
 		if bucket == indexDef.SourceName {
 			indexCount++
 			// compare the index count of existing indexes
 			// in system with the threshold.
-			if indexCount >= IndexCountThresholdPerDataBase {
+			if indexCount >= maxIndexCountPerSource {
 				return CheckResultReject, fmt.Errorf("rejecting create " +
 					"request since index count limit per database has been reached")
 			}
