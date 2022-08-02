@@ -375,6 +375,10 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             } catch (e) {
             }
 
+            if (rv.indexDef["type"] == "fulltext-alias") {
+                delete rv.indexDef["sourceUUID"];
+            }
+
             if (angular.equals(origIndexDef, rv.indexDef)) {
                 return false;
             }
