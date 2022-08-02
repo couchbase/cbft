@@ -1,11 +1,11 @@
 <!--
-     Copyright 2015-Present Couchbase, Inc.
+  Copyright 2015-Present Couchbase, Inc.
 
-     Use of this software is governed by the Business Source License included in
-     the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
-     file, in accordance with the Business Source License, use of this software will
-     be governed by the Apache License, Version 2.0, included in the file
-     licenses/APL2.txt.
+  Use of this software is governed by the Business Source License included in
+  the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+  file, in accordance with the Business Source License, use of this software will
+  be governed by the Apache License, Version 2.0, included in the file
+  licenses/APL2.txt.
 -->
 <link rel="stylesheet" type="text/css" href="../_p/ui/fts/fts.css"/>
 <link rel="stylesheet" type="text/css" href="../_p/ui/fts/lib/angular-ui-tree/dist/angular-ui-tree.min.css"/>
@@ -13,15 +13,15 @@
 <mn-element-cargo depot="actions">
   <div class="header-controls resp-sml">
     <a
-       ui-sref="app.admin.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-       ng-disabled="!permsCluster.bucket['.'].fts.write"
-       class="resp-hide-sml">
+        ui-sref="app.admin.search.fts_new({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+        ng-disabled="!permsCluster.bucket['.'].fts.write"
+        class="resp-hide-sml">
       ADD INDEX
     </a>
     <a
-       ui-sref="app.admin.search.fts_new_easy({indexType: 'fulltext-index', sourceType: 'couchbase'})"
-       ng-disabled="!permsCluster.bucket['.'].fts.write"
-       class="resp-hide-sml">
+        ui-sref="app.admin.search.fts_new_easy({indexType: 'fulltext-index', sourceType: 'couchbase'})"
+        ng-disabled="!permsCluster.bucket['.'].fts.write"
+        class="resp-hide-sml">
       QUICK INDEX
     </a>
   </div>
@@ -33,7 +33,7 @@
     {{errorMessage}}
   </div>
 
-<!-- table of indexes  ******************** -->
+  <!-- table of indexes  ******************** -->
   <span ng-if="indexNamesReady">
     <h4 class="margin-bottom-half">Full Text Indexes</h4>
     <table class="fts-indexes-list table-stroked">
@@ -57,11 +57,16 @@
              ng-click="expando(indexName)"
              ng-controller="indexViewController">
         <tr ng-class="{
-                      'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
-                      'no-stroke': detailsOpened[node.hostname]
-                      }">
+                       'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
+                       'no-stroke': detailsOpened[node.hostname]
+                       }">
           <td class="cbui-tablerow-title ellipsis">
-            {{indexName}}
+            <span uib-tooltip="{{indexName}}"
+                  tooltip-trigger="mouseenter"
+                  tooltip-placement="auto top"
+                  tooltip-append-to-body="true">
+              {{indexName}}
+            </span>
           </td>
           <td class="break-word">
             <span ng-if="indexDef.sourceType != 'couchbase' && indexDef.sourceType != 'gocbcore'">
@@ -138,7 +143,7 @@
                               tooltip-trigger="mouseenter"
                               tooltip-placement="auto right"
                               tooltip-append-to-body="true">
-                            Quick Edit
+                          Quick Edit
                         </span>
                       </button>
                     </span>
@@ -155,16 +160,16 @@
               <!-- index definition ******************************* -->
               <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
                 <p
-                  class="disclosure"
-                  ng-class="{disclosed: showJSON[indexName]}"
-                  ng-click="showJSON[indexName] = !showJSON[indexName]">
-                  {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
+                    class="disclosure"
+                    ng-class="{disclosed: showJSON[indexName]}"
+                    ng-click="showJSON[indexName] = !showJSON[indexName]">
+                {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
                 </p>
                 <div class="indent-1" ng-show="showJSON[indexName]">
                   <input
-                    id="for-show-def-fts-curl-{{indexName}}"
-                    type="checkbox"
-                    ng-model="showJSONCurl[indexName]">
+                      id="for-show-def-fts-curl-{{indexName}}"
+                      type="checkbox"
+                      ng-model="showJSONCurl[indexName]">
                   <label for="for-show-def-fts-curl-{{indexName}}">
                     Show curl command to modify this index definition
                   </label>
@@ -172,38 +177,38 @@
 
                 <!-- defintion JSON ******************** -->
                 <div
-                  ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
-                  class="row items-top json-content">
+                    ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
+                    class="row items-top json-content">
                   <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
                   <button
-                    class="outline"
-                    ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
+                      class="outline"
+                      ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
                     Copy to Clipboard
                   </button>
                 </div>
 
                 <!-- definition with CURL ****************** -->
                 <div
-                  ng-show="showJSONCurl[indexName] && showJSON[indexName]"
-                  class="json-content row items-top">
+                    ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                    class="json-content row items-top">
                   <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
 -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                   <button
-                    class="outline copy-to-clipboard"
-                    ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                      class="outline copy-to-clipboard"
+                      ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
                     Copy to Clipboard
                   </button>
                 </div>
               </div>
 
               <mn-detail-stats
-                bucket="{{indexDef.sourceName}}"
-                mn-title="Search Index Stats"
-                item-id="{{indexName}}"
-                service="fts"
-                prefix="fts"
-                ></mn-detail-stats>
+                  bucket="{{indexDef.sourceName}}"
+                  mn-title="Search Index Stats"
+                  item-id="{{indexName}}"
+                  service="fts"
+                  prefix="fts"
+                  ></mn-detail-stats>
 
             </div>
           </td>
@@ -213,10 +218,10 @@
     <div class="row pagination">
       <div>
         <mn-select
-           class="fix-width-1"
-           ng-model="indexesPerPage"
-           on-select="updateIndexesPerPage(selectedOption)"
-           values="[5, 10, 20]">
+            class="fix-width-1"
+            ng-model="indexesPerPage"
+            on-select="updateIndexesPerPage(selectedOption)"
+            values="[5, 10, 20]">
         </mn-select>
       </div>
       <div ng-show="indexesNumPages > 1" class="col-lg-12 col-lg-offset-5">
@@ -244,9 +249,9 @@
     <div class="row margin-bottom-half">
       <h4>Full Text Aliases</h4>
       <button
-         ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
-         ng-disabled="!permsCluster.bucket['.'].fts.write"
-         class="outline tight">
+          ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
+          ng-disabled="!permsCluster.bucket['.'].fts.write"
+          class="outline tight">
         + Add Alias
       </button>
     </div>
@@ -260,10 +265,17 @@
              ng-if="indexDef.type == 'fulltext-alias'"
              ng-click="detailsOpened[indexName] = !detailsOpened[indexName]">
         <tr ng-class="{
-                      'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
-                      'no-stroke': detailsOpened[node.hostname]
-                      }">
-          <td class="cbui-tablerow-title ellipsis">{{indexName}}</td>
+                       'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
+                       'no-stroke': detailsOpened[node.hostname]
+                       }">
+          <td class="cbui-tablerow-title ellipsis">
+            <span uib-tooltip="{{indexName}}"
+                  tooltip-trigger="mouseenter"
+                  tooltip-placement="auto top"
+                  tooltip-append-to-body="true">
+              {{indexName}}
+            </span>
+          </td>
           <td class="alias-targets">
             <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
               {{targetName}}<span ng-show="!$last">, </span>
@@ -280,9 +292,9 @@
                   <!-- search controls **************************** -->
                   <div class="fts-query-bar" ng-click="$event.stopPropagation()">
                     <input
-                      ng-model="searchInputs[indexName]"
-                      type="text"
-                      placeholder="search this alias..."/>
+                        ng-model="searchInputs[indexName]"
+                        type="text"
+                        placeholder="search this alias..."/>
                     <button ui-sref="^.search.fts_search({indexName: indexName, q: searchInputs[indexName]})">
                       Search
                     </button>
@@ -310,16 +322,16 @@
               <div ng-controller="indexViewController">
                 <div class="indexDetailsJSON" ng-click="$event.stopPropagation()">
                   <p
-                     class="disclosure"
-                     ng-class="{disclosed: showJSON[indexName]}"
-                     ng-click="showJSON[indexName] = !showJSON[indexName]">
-                    {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
+                      class="disclosure"
+                      ng-class="{disclosed: showJSON[indexName]}"
+                      ng-click="showJSON[indexName] = !showJSON[indexName]">
+                  {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
                   </p>
                   <div class="indent-1" ng-show="showJSON[indexName]">
                     <input
-                      id="for-show-alias-def-fts-curl-{{indexName}}"
-                      ng-model="showJSONCurl[indexName]"
-                      type="checkbox">
+                        id="for-show-alias-def-fts-curl-{{indexName}}"
+                        ng-model="showJSONCurl[indexName]"
+                        type="checkbox">
                     <label for="for-show-alias-def-fts-curl-{{indexName}}">
                       Show curl command to modify this alias definition
                     </label>
@@ -327,26 +339,26 @@
 
                   <!-- alias definition JSON ******************** -->
                   <div
-                    ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
-                    class="json-content row items-top">
+                      ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
+                      class="json-content row items-top">
                     <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
                     <button
-                      class="outline copy-to-clipboard"
-                      ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
+                        class="outline copy-to-clipboard"
+                        ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
                       Copy to Clipboard
                     </button>
                   </div>
 
                   <!-- alias definition with CURL ****************** -->
                   <div
-                    ng-show="showJSONCurl[indexName] && showJSON[indexName]"
-                    class="json-content row items-top">
+                      ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                      class="json-content row items-top">
                     <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
   -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
   '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                     <button
-                      class="outline copy-to-clipboard"
-                      ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                        class="outline copy-to-clipboard"
+                        ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
                       Copy to Clipboard
                     </button>
                   </div>
@@ -382,17 +394,17 @@
 </div>
 
 <div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"
-   class="error ng-cloak ftsCheck" role="alert">
+     class="error ng-cloak ftsCheck" role="alert">
   {{ftsCheckError}}
 </div>
 
 <div ng-init="stats = (adminCtl.poolDefault.compat.atLeast70 ? [
-              '@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts_total_bytes_indexed', '@fts-.fts_total_queries', '@fts-.fts_num_files_on_disk', '@fts-.fts_num_bytes_used_disk'] :
-              ['@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts/total_bytes_indexed', '@fts-.fts/total_queries', '@fts-.fts/num_files_on_disk', '@fts-.fts/num_bytes_used_disk']);">
+               '@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts_total_bytes_indexed', '@fts-.fts_total_queries', '@fts-.fts_num_files_on_disk', '@fts-.fts_num_bytes_used_disk'] :
+               ['@fts.fts_num_bytes_used_ram', '@fts.fts_total_queries_rejected_by_herder', '@fts.fts_curr_batches_blocked_by_herder', '@fts-.fts/total_bytes_indexed', '@fts-.fts/total_queries', '@fts-.fts/num_files_on_disk', '@fts-.fts/num_bytes_used_disk']);">
   <footer
-     class="footer-fts"
-     ng-controller="mnFooterStatsController as footerStatsCtl"
-     ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length  && !destroyGsiFooter">
+      class="footer-fts"
+      ng-controller="mnFooterStatsController as footerStatsCtl"
+      ng-if="ftsAvailable && rbac.bucketNames['.stats!read'].length  && !destroyGsiFooter">
     <div class="column vertical-divider">
       <span class="width-6">RAM Used by Search</span>
       <span class="text-right width-6">{{footerStatsCtl.getLatestStat('@fts.fts_num_bytes_used_ram') | mnFormatQuantity}}</span><br>
@@ -403,12 +415,12 @@
     </div>
     <div class="margin-right-1">
       <mn-select
-         class="mn-select-small block"
-         ng-model="footerStatsCtl.currentBucket"
-         values="rbac.bucketNames['.stats!read']"
-         mn-disabled="!rbac.bucketNames['.stats!read'].length"
-         on-select="footerStatsCtl.onSelectBucket(selectedOption)"
-         open-on-top="true">
+          class="mn-select-small block"
+          ng-model="footerStatsCtl.currentBucket"
+          values="rbac.bucketNames['.stats!read']"
+          mn-disabled="!rbac.bucketNames['.stats!read'].length"
+          on-select="footerStatsCtl.onSelectBucket(selectedOption)"
+          open-on-top="true">
       </mn-select>
     </div>
     <div class="column">

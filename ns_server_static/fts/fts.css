@@ -94,16 +94,6 @@ ul.list-text li {
 }
 */
 
-.index-definition-preview {
-  margin-left: 2.5rem;
-  padding: 1rem .5rem;
-  width: 360px;
-  flex: 0 0 auto;
-}
-.index-definition-preview .json-content  {
-  min-height: 600px;
-  position: relative;
-}
 .json-content > .spinner {
   position: absolute;
   z-index: 10;

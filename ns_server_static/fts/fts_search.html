@@ -1,11 +1,11 @@
 <!--
-Copyright 2015-Present Couchbase, Inc.
+  Copyright 2015-Present Couchbase, Inc.
 
-Use of this software is governed by the Business Source License included in
-the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
-file, in accordance with the Business Source License, use of this software will
-be governed by the Apache License, Version 2.0, included in the file
-licenses/APL2.txt.
+  Use of this software is governed by the Business Source License included in
+  the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+  file, in accordance with the Business Source License, use of this software will
+  be governed by the Apache License, Version 2.0, included in the file
+  licenses/APL2.txt.
 -->
 
 <link rel="stylesheet" type="text/css" href="../_p/ui/fts/fts.css"/>
@@ -14,8 +14,8 @@ licenses/APL2.txt.
 <mn-element-cargo depot="actions">
   <div class="header-controls resp-sml">
     <a
-       ui-sref="app.admin.search.fts_list"
-       class="resp-hide-sml">
+        ui-sref="app.admin.search.fts_list"
+        class="resp-hide-sml">
       <span class="icon fa-arrow-left"></span> BACK
     </a>
   </div>
@@ -32,21 +32,21 @@ licenses/APL2.txt.
     <div class="row flex-left">
       <div class="fts-query-bar fts-query-bar-results">
         <input
-          id="query_bar_input"
-          ng-model="query"
-          ng-change="queryChanged()"
-          type="text"
-          placeholder="search again...">
+            id="query_bar_input"
+            ng-model="query"
+            ng-change="queryChanged()"
+            type="text"
+            placeholder="search again...">
         <button ng-click="runNewQuery(query)">
           Search
         </button>
       </div>
       <div>
         <input
-          ng-model="query_advanced_toggle"
-          ng-change="queryChanged()"
-          type="checkbox"
-          id="for-search-advanced-fts">
+            ng-model="query_advanced_toggle"
+            ng-change="queryChanged()"
+            type="checkbox"
+            id="for-search-advanced-fts">
         <label for="for-search-advanced-fts">
           show advanced query settings
         </label>
@@ -56,9 +56,9 @@ licenses/APL2.txt.
 
   <!-- second row help link **************** -->
   <div
-    class="query-bar-help"
-    ng-if="queryHelp && queryHelp.length"
-    ng-bind-html="queryHelpSafe">
+      class="query-bar-help"
+      ng-if="queryHelp && queryHelp.length"
+      ng-bind-html="queryHelpSafe">
   </div>
 
   <!-- hidden advanced query settings **************** -->
@@ -66,10 +66,10 @@ licenses/APL2.txt.
     <div class="formrow form-inline">
       <label class="checkbox">Timeout (msecs)</label>
       <input
-        type="number" min=0
-        oninput="validity.valid||(value='');"
-        ng-model="timeout" id="timeout"
-                           ng-change="queryChanged()">
+          type="number" min=0
+          oninput="validity.valid||(value='');"
+          ng-model="timeout" id="timeout"
+                             ng-change="queryChanged()">
     </div>
     <div class="formrow form-inline">
       <label class="checkbox">Consistency Level</label>

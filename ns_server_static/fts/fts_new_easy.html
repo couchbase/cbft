@@ -1,18 +1,18 @@
 <!--
-Copyright 2020-Present Couchbase, Inc.
+  Copyright 2020-Present Couchbase, Inc.
 
-Use of this software is governed by the Business Source License included in
-the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
-file, in accordance with the Business Source License, use of this software will
-be governed by the Apache License, Version 2.0, included in the file
-licenses/APL2.txt.
+  Use of this software is governed by the Business Source License included in
+  the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+  file, in accordance with the Business Source License, use of this software will
+  be governed by the Apache License, Version 2.0, included in the file
+  licenses/APL2.txt.
 -->
 
 <mn-element-cargo depot="actions">
   <div class="header-controls resp-sml">
     <a
-       ui-sref="app.admin.search.fts_list"
-       class="resp-hide-sml">
+        ui-sref="app.admin.search.fts_list"
+        class="resp-hide-sml">
       <span class="icon fa-arrow-left"></span> BACK
     </a>
   </div>
@@ -27,348 +27,348 @@ licenses/APL2.txt.
 <div class="indexContainer"
      ng-if="collectionsSupport">
   <div ng-if="meta">
-  <form class="forms">
-    <div class="fts-index-editor">
-      <p class="max-width-7 margin-bottom-1-5 text-small">
+    <form class="forms">
+      <div class="fts-index-editor">
+        <p class="max-width-7 margin-bottom-1-5 text-small">
         Use this quick index creator to pull fields for mapping directly from
         your documents. For more advanced field mapping options, filters, etc.,
         use the regular Add or Edit Index tool any time.
-      </p>
-      <div ng-show="errorMessage" class="error error-form ng-cloak" role="alert">
-        {{errorMessage}}
-      </div>
+        </p>
+        <div ng-show="errorMessage" class="error error-form ng-cloak" role="alert">
+          {{errorMessage}}
+        </div>
 
-<!-- first row of input controls for name and keyspace --------------------- -->
-      <div class="row width-8 items-top margin-bottom-2">
-        <div class="column" ng-if="isEdit">
-          <label class="margin-bottom-quarter">Index Name</label>
-          <div class="text-small width-12">
-            {{newIndexName}}
+        <!-- first row of input controls for name and keyspace --------------------- -->
+        <div class="row width-8 items-top margin-bottom-2">
+          <div class="column" ng-if="isEdit">
+            <label class="margin-bottom-quarter">Index Name</label>
+            <div class="text-small width-12">
+              {{newIndexName}}
+            </div>
           </div>
-        </div>
-        <div class="column" ng-if="!isEdit">
-          <label>Index Name</label>
-          <span
-             class="text-small"
-             ng-show="isEdit"
-             uib-tooltip="{{newIndexName}}"
-             tooltip-placement="auto top"
-             tooltip-trigger="'mouseenter'">
-            {{newIndexName}}
-          </span>
-          <input
-             ng-show="!isEdit"
-             ng-model="$parent.newIndexName"
-             id="inputIndexName"
-             type="text"
-             autofocus>
-        </div>
-        <div class="flex-grow-1 column" ng-show="newSourceType && newSourceType != 'nil'">
-          <label for="inputSourceName">
-            Keyspace
-            <small>bucket.scope.collection</small>
-          </label>
-          <div class="row flex-left">
-            <mn-select
-               ng-show="bucketNames && bucketNames.length >= 0 && !isEdit"
-               ng-model="$parent.newSourceName"
-               values="bucketNames"
-               on-select="bucketChanged(selectedOption)"
-               has-search="true"
-               class="margin-right-quarter width-12">
-            </mn-select>
-
-            <div class="text-small nowrap" ng-if="isEdit">
-              {{newSourceName}}.
-            </div>
-            <mn-select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
-                       ng-model="$parent.newScopeName"
-                       values="scopeNames"
-                       on-select="scopeChanged(selectedOption)"
-                       has-search="true"
-                       class="margin-right-quarter width-12">
-            </mn-select>
-
-            <div class="text-small nowrap" ng-if="isEdit">
-              {{newScopeName}}.
-            </div>
-
-            <mn-select
-               ng-show="collectionNames && collectionNames.length >= 0"
-               ng-model="$parent.collectionOpened"
-               values="collectionNames"
-               values-mapping="collectionLabel"
-               on-select="expando(selectedOption)"
-               has-search="true"
-               class="margin-right-half width-12">
-            </mn-select>
-            <span>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="* indicates this collection has fields mapped in the index definition."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
+          <div class="column" ng-if="!isEdit">
+            <label>Index Name</label>
+            <span
+                class="text-small"
+                ng-show="isEdit"
+                uib-tooltip="{{newIndexName}}"
+                tooltip-placement="auto top"
+                tooltip-trigger="'mouseenter'">
+              {{newIndexName}}
             </span>
-
+            <input
+                ng-show="!isEdit"
+                ng-model="$parent.newIndexName"
+                id="inputIndexName"
+                type="text"
+                autofocus>
           </div>
-        </div>
+          <div class="flex-grow-1 column" ng-show="newSourceType && newSourceType != 'nil'">
+            <label for="inputSourceName">
+              Keyspace
+              <small>bucket.scope.collection</small>
+            </label>
+            <div class="row flex-left">
+              <mn-select
+                  ng-show="bucketNames && bucketNames.length >= 0 && !isEdit"
+                  ng-model="$parent.newSourceName"
+                  values="bucketNames"
+                  on-select="bucketChanged(selectedOption)"
+                  has-search="true"
+                  class="margin-right-quarter width-12">
+              </mn-select>
 
-<!--        <div class="mapped-collections text-small nowrap">
-          <div ng-if="newSourceName && newScopeName">
+              <div class="text-small nowrap" ng-if="isEdit">
+                {{newSourceName}}.
+              </div>
+              <mn-select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
+                         ng-model="$parent.newScopeName"
+                         values="scopeNames"
+                         on-select="scopeChanged(selectedOption)"
+                         has-search="true"
+                         class="margin-right-quarter width-12">
+              </mn-select>
+
+              <div class="text-small nowrap" ng-if="isEdit">
+                {{newScopeName}}.
+              </div>
+
+              <mn-select
+                  ng-show="collectionNames && collectionNames.length >= 0"
+                  ng-model="$parent.collectionOpened"
+                  values="collectionNames"
+                  values-mapping="collectionLabel"
+                  on-select="expando(selectedOption)"
+                  has-search="true"
+                  class="margin-right-half width-12">
+              </mn-select>
+              <span>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="* indicates this collection has fields mapped in the index definition."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </span>
+
+            </div>
+          </div>
+
+          <!--        <div class="mapped-collections text-small nowrap">
+            <div ng-if="newSourceName && newScopeName">
             <label class="margin-bottom-half">
-              Collections Indexed
+            Collections Indexed
             </label>
             <div ng-repeat="(i, collectionName) in collectionNames" ng-click="expando(collectionName)">
-              <span class="icon fa-check green-3"></span>
-              {{collectionName}}
+            <span class="icon fa-check green-3"></span>
+            {{collectionName}}
             </div>
-          </div>
-        </div>  -->
+            </div>
+            </div>  -->
 
-      </div>
-
-<!-- this row contains the code editor and the field mapper widgets -->
-      <div class="row items-top width-12">
-<!-- CodeMirror widget to select fields ------------------------------------ -->
-        <div class="width-7">
-          <div class="row margin-bottom-quarter">
-            <h4 class="flex-grow-1">
-              Select Fields&nbsp;
-              <small>
-                documents selected randomly from the keyspace above
-              </small>
-            </h4>
-            <a
-               ng-disabled="!newSourceName"
-               ng-click="loadAnotherDocument($parent.newSourceName, $parent.newScopeName, $parent.collectionOpened)">
-              <span class="icon fa-refresh gray-icon"></span>
-            </a>
-          </div>
-          <div class="width-12">
-            <textarea
-               class="fts-sample-doc"
-               ui-codemirror="{ onLoad : codemirrorLoaded }"
-               ng-model="sampleDocument"></textarea>
-          </div>
         </div>
 
-<!-- mapping widget on the right side -------------------------------------- -->
-        <div class="width-5 row flex-left margin-left-2-5 margin-right-2 overflow-hidden">
-          <div ng-if="!editField.path" class="">
-            <h4 class="margin-bottom-half">Configure Fields</h4>
-            <div class="filler">&nbsp;</div>
+        <!-- this row contains the code editor and the field mapper widgets -->
+        <div class="row items-top width-12">
+          <!-- CodeMirror widget to select fields ------------------------------------ -->
+          <div class="width-7">
+            <div class="row margin-bottom-quarter">
+              <h4 class="flex-grow-1">
+                Select Fields&nbsp;
+                <small>
+                  documents selected randomly from the keyspace above
+                </small>
+              </h4>
+              <a
+                  ng-disabled="!newSourceName"
+                  ng-click="loadAnotherDocument($parent.newSourceName, $parent.newScopeName, $parent.collectionOpened)">
+                <span class="icon fa-refresh gray-icon"></span>
+              </a>
+            </div>
+            <div class="width-12">
+              <textarea
+                  class="fts-sample-doc"
+                  ui-codemirror="{ onLoad : codemirrorLoaded }"
+                  ng-model="sampleDocument"></textarea>
+            </div>
           </div>
-          <div ng-if="editField.path" class="width-12 margin-top-half">
-            <h4 class="margin-bottom-half" ng-if="editField.new">Configure New Field</h4>
-            <h4 class="margin-bottom-half" ng-if="!editField.new">Edit Fields</h4>
 
-            <p class="text-small">
+          <!-- mapping widget on the right side -------------------------------------- -->
+          <div class="width-5 row flex-left margin-left-2-5 margin-right-2 overflow-hidden">
+            <div ng-if="!editField.path" class="">
+              <h4 class="margin-bottom-half">Configure Fields</h4>
+              <div class="filler">&nbsp;</div>
+            </div>
+            <div ng-if="editField.path" class="width-12 margin-top-half">
+              <h4 class="margin-bottom-half" ng-if="editField.new">Configure New Field</h4>
+              <h4 class="margin-bottom-half" ng-if="!editField.new">Edit Fields</h4>
+
+              <p class="text-small">
               <span ng-if="editField.new">The field at path <em>{{editField.path}}</em> is not yet in the index. Configure it here.</span>
               <span ng-if="!editField.new">The field at path <em>{{editField.path}}</em> is in the index as:</span>
-            </p>
+              </p>
 
-            <div class="formrow">
-              <label>Type</label>
-              <select
-                 ng-model="editField.type"
-                 ng-options="t as t for t in fieldTypes">
-              </select>
-            </div>
-            <div ng-if="editField.type == 'text'"
-                 class="formrow">
-              <input
-                 type="checkbox"
-                 id="field-is-identifier"
-                 ng-model="editField.identifier">
-              <label for="field-is-identifier" class="margin-right-0">
-                Index this field as an identifier
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Identifier values are indexed exactly as is without any transformation."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-            <div ng-if="editField.type == 'text' && !editField.identifier" class="formrow">
-              <label>Language</label>
-              <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages">
-              </select>
-            </div>
-            <div>
-              <input
-                 type="checkbox" id="field-is-stored"
-                 ng-model="editField.store"
-                 ng-change="storeOptionChanged()">
-              <label for="field-is-stored" class="margin-right-0">
-                Include in search results
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Returning the value with search results requires
-                             additional storage and will make the index larger."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-
-            <div ng-if="editField.type == 'text'">
-              <input
-                 type="checkbox"
-                 id="field-is-highlight"
-                 ng-disabled="!editField.store"
-                 ng-model="editField.highlight">
-              <label for="field-is-highlight" class="margin-right-0">
-                Support highlighting
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Highlighting matches requires storing additional position information and will make the index larger (needs field to be included in search results)."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-
-            <div ng-if="editField.type == 'text'">
-              <input
-                 type="checkbox"
-                 id="field-is-phrase"
-                 ng-model="editField.phrase">
-              <label for="field-is-phrase" class="margin-right-0">
-                Support phrase matching
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Phrase matching requires storing additional position information and will make the index larger."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-
-            <div>
-              <input
-                 type="checkbox"
-                 id="field-include-in-all"
-                 ng-model="editField.includeInAll">
-              <label for="field-include-in-all" class="margin-right-0">
-                Support field agnostic search
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Content can be queried without specifying the field name."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-
-            <div class="formrow">
-              <input
-                 type="checkbox"
-                 id="field-is-sort-facet"
-                 ng-model="editField.sortFacet">
-              <label for="field-is-sort-facet" class="margin-right-0">
-                Support sorting and faceting
-              </label>
-              <span
-                 class="fa-stack icon-info"
-                 uib-tooltip="Sorting and Faceting requires storing additional information and will make the index larger."
-                 tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-            </div>
-
-            <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
-              <label for="searchable-as">Searchable As</label>
-              <div class="row">
-                {{editField.pathPrefix()}}
-                <input
-                   id="searchable-as"
-                   type="text"
-                   placeholder="please enter a name"
-                   ng-model="editField.name"
-                   ng-change="validateField(field, mapping)">
+              <div class="formrow">
+                <label>Type</label>
+                <select
+                    ng-model="editField.type"
+                    ng-options="t as t for t in fieldTypes">
+                </select>
               </div>
+              <div ng-if="editField.type == 'text'"
+                   class="formrow">
+                <input
+                    type="checkbox"
+                    id="field-is-identifier"
+                    ng-model="editField.identifier">
+                <label for="field-is-identifier" class="margin-right-0">
+                  Index this field as an identifier
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Identifier values are indexed exactly as is without any transformation."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+              <div ng-if="editField.type == 'text' && !editField.identifier" class="formrow">
+                <label>Language</label>
+                <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages">
+                </select>
+              </div>
+              <div>
+                <input
+                    type="checkbox" id="field-is-stored"
+                                    ng-model="editField.store"
+                                    ng-change="storeOptionChanged()">
+                <label for="field-is-stored" class="margin-right-0">
+                  Include in search results
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Returning the value with search results requires
+                                 additional storage and will make the index larger."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+
+              <div ng-if="editField.type == 'text'">
+                <input
+                    type="checkbox"
+                    id="field-is-highlight"
+                    ng-disabled="!editField.store"
+                    ng-model="editField.highlight">
+                <label for="field-is-highlight" class="margin-right-0">
+                  Support highlighting
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Highlighting matches requires storing additional position information and will make the index larger (needs field to be included in search results)."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+
+              <div ng-if="editField.type == 'text'">
+                <input
+                    type="checkbox"
+                    id="field-is-phrase"
+                    ng-model="editField.phrase">
+                <label for="field-is-phrase" class="margin-right-0">
+                  Support phrase matching
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Phrase matching requires storing additional position information and will make the index larger."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+
+              <div>
+                <input
+                    type="checkbox"
+                    id="field-include-in-all"
+                    ng-model="editField.includeInAll">
+                <label for="field-include-in-all" class="margin-right-0">
+                  Support field agnostic search
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Content can be queried without specifying the field name."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+
+              <div class="formrow">
+                <input
+                    type="checkbox"
+                    id="field-is-sort-facet"
+                    ng-model="editField.sortFacet">
+                <label for="field-is-sort-facet" class="margin-right-0">
+                  Support sorting and faceting
+                </label>
+                <span
+                    class="fa-stack icon-info"
+                    uib-tooltip="Sorting and Faceting requires storing additional information and will make the index larger."
+                    tooltip-placement="auto right">
+                  <span class="icon fa-circle-thin fa-stack-2x"></span>
+                  <span class="icon fa-info fa-stack-1x"></span>
+                </span>
+              </div>
+
+              <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
+                <label for="searchable-as">Searchable As</label>
+                <div class="row">
+                  {{editField.pathPrefix()}}
+                  <input
+                      id="searchable-as"
+                      type="text"
+                      placeholder="please enter a name"
+                      ng-model="editField.name"
+                      ng-change="validateField(field, mapping)">
+                </div>
+              </div>
+
+              <!-- save new field mapping or update changes to an existing mapping ------- -->
+              <button
+                  ng-if="newIndexType && newIndexType != 'fulltext-alias'"
+                  ng-click="addField()"
+                  ng-disabled="!hasFieldDefChanged()">
+                <span ng-if="editField.new">
+                  Add
+                </span>
+                <span ng-if="!editField.new">
+                  Update
+                </span>
+              </button>
             </div>
 
-<!-- save new field mapping or update changes to an existing mapping ------- -->
-            <button
-               ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-               ng-click="addField()"
-               ng-disabled="!hasFieldDefChanged()">
-              <span ng-if="editField.new">
-                Add
-              </span>
-              <span ng-if="!editField.new">
-                Update
-              </span>
-            </button>
           </div>
-
         </div>
       </div>
-    </div>
 
-<!-- index definition ------------------------------------------------------ -->
-    <div class="overflow-auto max-height-500 margin-bottom-4">
-      <h4>Mapped Fields</h4>
-      <div class="cbui-table">
-        <div class="cbui-table-header padding-left">
-          <span class="cbui-table-cell">collection</span>
-          <span class="cbui-table-cell flex-grow-3"></span>
-        </div>
-        <section class="has-hover" ng-repeat="(i, collectionName) in easyMappings.collectionNamesNotEmpty()">
-          <div class="cbui-tablerow padding-left">
-            <div class="cbui-table-cell">{{collectionName}}</div>
-            <span class="cbui-table-cell cbui-tablerow-title flex-grow-3">
+      <!-- index definition ------------------------------------------------------ -->
+      <div class="overflow-auto max-height-500 margin-bottom-4">
+        <h4>Mapped Fields</h4>
+        <div class="cbui-table">
+          <div class="cbui-table-header padding-left">
+            <span class="cbui-table-cell">collection</span>
+            <span class="cbui-table-cell flex-grow-3"></span>
+          </div>
+          <section class="has-hover" ng-repeat="(i, collectionName) in easyMappings.collectionNamesNotEmpty()">
+            <div class="cbui-tablerow padding-left">
+              <div class="cbui-table-cell">{{collectionName}}</div>
+              <span class="cbui-table-cell cbui-tablerow-title flex-grow-3">
 
-                    <div class="cbui-table">
-                      <div class="cbui-table-header padding-left">
-                        <span class="cbui-table-cell">searchable as</span>
-                        <span class="cbui-table-cell">source JSON path</span>
-                        <span class="cbui-table-cell flex-grow-2">field mapping details</span>
-                        <span class="cbui-table-cell text-right"></span>
-                      </div>
-                      <section class="has-hover" ng-repeat="(i, fieldDef) in easyMappings.getMappingForCollection(collectionName).fields() track by fieldDef.path">
-                        <div
-                                class="cbui-tablerow padding-left"
-                                ng-click="userSelectedFieldInCollection(collectionName, fieldDef.path, '')"
-                                ng-class="{'selected-field-row' : fieldDef.path == editField.path && collectionName == collectionOpened}">
-                            <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
-                            <span class="cbui-table-cell">{{fieldDef.path}}</span>
-                            <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
-                            <span class="cbui-table-cell text-right">
-                              <a ng-click="deleteFieldInCollection(collectionName, fieldDef.path)">
-                                Delete
-                              </a>
-                            </span>
-                        </div>
-                      </section>
+                <div class="cbui-table">
+                  <div class="cbui-table-header padding-left">
+                    <span class="cbui-table-cell">searchable as</span>
+                    <span class="cbui-table-cell">source JSON path</span>
+                    <span class="cbui-table-cell flex-grow-2">field mapping details</span>
+                    <span class="cbui-table-cell text-right"></span>
+                  </div>
+                  <section class="has-hover" ng-repeat="(i, fieldDef) in easyMappings.getMappingForCollection(collectionName).fields() track by fieldDef.path">
+                    <div
+                        class="cbui-tablerow padding-left"
+                        ng-click="userSelectedFieldInCollection(collectionName, fieldDef.path, '')"
+                        ng-class="{'selected-field-row' : fieldDef.path == editField.path && collectionName == collectionOpened}">
+                      <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
+                      <span class="cbui-table-cell">{{fieldDef.path}}</span>
+                      <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
+                      <span class="cbui-table-cell text-right">
+                        <a ng-click="deleteFieldInCollection(collectionName, fieldDef.path)">
+                          Delete
+                        </a>
+                      </span>
                     </div>
+                  </section>
+                </div>
 
-            </span>
+              </span>
+            </div>
+          </section>
+          <div ng-if="easyMapping.numFields() < 1" class="zero-content">
+            Select a field and configure the details above to map a field in this collection.
           </div>
-        </section>
-        <div ng-if="easyMapping.numFields() < 1" class="zero-content">
-          Select a field and configure the details above to map a field in this collection.
         </div>
       </div>
-    </div>
 
-<!-- save & cancel buttons ------------------------------------------------- -->
-    <footer class="footer-save">
+      <!-- save & cancel buttons ------------------------------------------------- -->
+      <footer class="footer-save">
         <button
-           ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-           ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
-           type="submit"
-           ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)">
+            ng-if="newIndexType && newIndexType != 'fulltext-alias'"
+            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+            type="submit"
+            ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)">
           <span ng-show="!isEdit">
             Create Index
           </span>
@@ -378,9 +378,9 @@ licenses/APL2.txt.
         </button>
 
         <button
-           ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-           ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
-           type="submit">
+            ng-if="newIndexType && newIndexType == 'fulltext-alias'"
+            ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
+            type="submit">
           <span ng-show="!isEdit">
             Create Index Alias
           </span>
@@ -393,7 +393,7 @@ licenses/APL2.txt.
           Cancel
         </a>
 
-    </footer>
-  </form>
+      </footer>
+    </form>
   </div>
 </div>
