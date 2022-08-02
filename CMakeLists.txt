@@ -81,4 +81,4 @@ GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope
   GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
   INSTALL_PATH bin OUTPUT mossScope
-  GOVERSION 1.17)
+  GOVERSION 1.18)
