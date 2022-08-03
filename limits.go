@@ -124,13 +124,22 @@ func completeRequest(username, path string, req *http.Request, egress int64) {
 // Limits index definitions from being introduced into the system based on
 // the rateLimiter settings
 func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
-	if limiter == nil || !limiter.isActive() {
-		// rateLimiter not active
+	if indexDef == nil {
+		return nil, fmt.Errorf("indexDef not available")
+	}
+
+	if ServerlessMode {
+		if indexDef.PlanParams.IndexPartitions != 1 ||
+			indexDef.PlanParams.NumReplicas != 1 {
+			return nil, fmt.Errorf("support for indexes with 1 active +" +
+				" 1 replica partitions only in serverless mode")
+		}
 		return indexDef, nil
 	}
 
-	if indexDef == nil {
-		return nil, fmt.Errorf("indexDef not available")
+	if limiter == nil || !limiter.isActive() {
+		// rateLimiter not active
+		return indexDef, nil
 	}
 
 	partitionsLimit := int(getIndexPartitionsLimit())
