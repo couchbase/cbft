@@ -96,6 +96,9 @@ const BleveDefaultZapVersion = int(11)
 // version in any given release.
 var BlevePreferredZapVersion = int(15)
 
+var defaultLimitingMinTime = 500
+var defaultLimitingMaxTime = 120000
+
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
 //     {
@@ -2609,6 +2612,34 @@ func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	MeterWrites(bdp[0].bdest.sourceName, index)
 }
 
+// Returns the maximum and minimum time, in milliseconds, for limiting requests.
+func serverlessLimitingBounds() (int, int) {
+	mgr := CurrentNodeDefsFetcher.GetManager()
+	var err error
+
+	minTime := defaultLimitingMinTime
+	if min, exists := mgr.Options()["minBackoffTimeForBatchLimitingMS"]; exists {
+		minTime, err = strconv.Atoi(min)
+		if err != nil {
+			log.Errorf("limiting/throttling: error parsing minimum time for "+
+				"exponential backoff, returning defaults: %#v", err)
+			minTime = defaultLimitingMinTime
+		}
+	}
+
+	maxTime := defaultLimitingMaxTime
+	if max, exists := mgr.Options()["maxBackoffTimeForBatchLimitingMS"]; exists {
+		maxTime, err = strconv.Atoi(max)
+		if err != nil {
+			log.Errorf("limiting/throttling: error parsing maximum time for "+
+				"exponential backoff, returning defaults: %#v", err)
+			maxTime = defaultLimitingMaxTime
+		}
+	}
+
+	return minTime, maxTime
+}
+
 func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
@@ -2654,9 +2685,11 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 				return -1 // terminate backoff on any other action
 			}
 
+			minTime, maxTime := serverlessLimitingBounds()
+
 			// Blocking wait to execute the request till it returns.
 			cbgt.ExponentialBackoffLoop("", checkQuotaExponentialBackoff,
-				200, 2, 30000)
+				minTime, 2, maxTime)
 			if action == CheckResultReject {
 				// If the request is still limited after the exponential backoff, accept it.
 				action = CheckResultNormal
