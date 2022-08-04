@@ -29,7 +29,6 @@ const bytesPerMB = 1048576
 const windowLength = 1 * time.Minute
 const indexPath = "/api/index/{indexName}"
 const queryPath = "/api/index/{indexName}/query"
-const gRPCQueryPath = "/Search"
 
 // -----------------------------------------------------------------------------
 
@@ -67,19 +66,12 @@ func SubscribeToLimits(mgr *cbgt.Manager) {
 // -----------------------------------------------------------------------------
 
 // Pre-processing for a request
-func processRequest(username, path string, reqI interface{}) (bool, string) {
+func processRequest(username, path string, req *http.Request) (bool, string) {
 	if ServerlessMode {
-		if path != indexPath && path != queryPath && path != gRPCQueryPath {
+		if path != indexPath && path != queryPath {
 			return true, ""
 		}
-		return limiter.processRequestForLimiting(username, path, reqI)
-	}
-
-	var req *http.Request
-	req, ok := reqI.(*http.Request)
-	if !ok {
-		// RPC calls not rate limited
-		return true, ""
+		return limiter.processRequestForLimiting(username, path, req)
 	}
 
 	if limiter == nil || !limiter.isActive() {
@@ -331,22 +323,14 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 }
 
 func (e *rateLimiter) regulateRequest(username, path string,
-	req interface{}) (CheckResult, time.Duration, error) {
-
-	reqG, isGRPC := req.(*rpcRequestParser)
-	reqH, isHTTP := req.(*http.Request)
+	req *http.Request) (CheckResult, time.Duration, error) {
 
 	// No need to throttle/limit the request incase of delete op
 	// Since it ultimately leads to cleaning up of resources
-	if isHTTP && reqH.Method == "DELETE" {
+	if req.Method == "DELETE" {
 		return CheckResultNormal, 0, nil
 	}
-	var indexName string
-	if isGRPC {
-		indexName, _ = reqG.GetIndexName()
-	} else {
-		indexName = rest.IndexNameLookup(reqH)
-	}
+	indexName := rest.IndexNameLookup(req)
 	// need to see which bucket EXACTLY is this request for.
 	bucketScopeKey := e.getIndexKeyLOCKED(indexName)
 	bucket := strings.Split(bucketScopeKey, ":")[0]
@@ -355,17 +339,15 @@ func (e *rateLimiter) regulateRequest(username, path string,
 	if bucket == "" {
 		createReq = true
 		// bucket is empty string only while CREATE index case
-		if isHTTP && path == indexPath {
-			sourceName, err := extractSourceNameFromReq(reqH)
-			if err != nil {
-				return CheckResultError, 0, fmt.Errorf("failed to get index "+
-					"info from request %v", err)
-			}
-			bucket = sourceName
+		sourceName, err := extractSourceNameFromReq(req)
+		if err != nil {
+			return CheckResultError, 0, fmt.Errorf("failed to get index "+
+				"info from request %v", err)
 		}
+		bucket = sourceName
 	}
 
-	if path == queryPath || path == gRPCQueryPath {
+	if path == queryPath {
 		return CheckQuotaRead(bucket, username, req)
 	}
 
@@ -381,7 +363,7 @@ func (e *rateLimiter) regulateRequest(username, path string,
 // custom function just to check out the LMT.
 // can be removed and made part of the original rate Limiter later on, if necessary.
 func (e *rateLimiter) processRequestForLimiting(username, path string,
-	req interface{}) (bool, string) {
+	req *http.Request) (bool, string) {
 	e.m.Lock()
 	defer e.m.Unlock()
 
@@ -392,9 +374,7 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 		// Also, pre-processing here for a DELETE INDEX request only
 		// (pre-processing for CREATE and UPDATE INDEX requests is handled
 		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef).
-		if reqH, ok := req.(*http.Request); ok {
-			e.updateIndexCacheLOCKED(reqH)
-		}
+		e.updateIndexCacheLOCKED(req)
 	}
 
 	action, duration, err := e.regulateRequest(username, path, req)

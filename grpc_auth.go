@@ -142,10 +142,6 @@ func (a *authWrapper) authenticate(r requestParser) (bool, error) {
 			return false, err
 		}
 	}
-	ok, msg := processRequest(a.creds.Name(), a.path, r)
-	if !ok {
-		return false, fmt.Errorf("%s", msg)
-	}
 	return true, nil
 }
 
