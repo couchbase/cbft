@@ -58,7 +58,6 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 	regOps := regulator.InitSettings{
 		NodeID:    service.NodeID(mgr.UUID()),
 		Service:   regulator.Search,
-		TlsCAFile: cbgt.TLSCAFile,
 	}
 
 	regHandler := factory.InitRegulator(regOps)
