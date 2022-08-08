@@ -429,7 +429,7 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	nsIndexStats["regulatorStats"] = GetRegulatorStats()
 
 	if !collAware {
-		nsIndexStats[""] = gatherTopLevelStats(rd)
+		nsIndexStats[""] = gatherTopLevelStats(mgr, rd)
 	}
 
 	return nsIndexStats, nil
@@ -492,7 +492,7 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	return totDestSeq, 0, nil
 }
 
-func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
+func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
 	topLevelStats := map[string]interface{}{}
 	// (Sys - HeapReleased) is the estimate the cbft process can make that
 	// best represents the process RSS; this accounts for memory that has been
@@ -551,6 +551,25 @@ func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
+
+	options := mgr.Options()
+	if options["deploymentModel"] == "serverless" {
+		if val, exists := options["highWaterMarkThreshold"]; exists {
+			if valInt, err := strconv.Atoi(val); err == nil {
+				topLevelStats["highWaterMarkThreshold"] = valInt
+			}
+		}
+		if val, exists := options["lowWaterMarkThreshold"]; exists {
+			if valInt, err := strconv.Atoi(val); err == nil {
+				topLevelStats["lowWaterMarkThreshold"] = valInt
+			}
+		}
+		if val, exists := options["scaleInWaterMarkThreshold"]; exists {
+			if valInt, err := strconv.Atoi(val); err == nil {
+				topLevelStats["scaleInWaterMarkThreshold"] = valInt
+			}
+		}
+	}
 
 	return topLevelStats
 }

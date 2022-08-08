@@ -1290,6 +1290,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
+
 	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		return fmt.Errorf("bleve: QueryBleve"+

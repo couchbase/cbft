@@ -215,7 +215,7 @@ func (h *PrometheusMetricsHandler) ServeHTTP(w http.ResponseWriter,
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	stats := gatherTopLevelStats(rd)
+	stats := gatherTopLevelStats(h.mgr, rd)
 	for k, v := range stats {
 		b, err := json.Marshal(v)
 		if err != nil {
