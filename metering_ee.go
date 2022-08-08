@@ -56,8 +56,8 @@ func MeteringEndpointHandler(mgr *cbgt.Manager) (string,
 }
 func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 	regOps := regulator.InitSettings{
-		NodeID:    service.NodeID(mgr.UUID()),
-		Service:   regulator.Search,
+		NodeID:  service.NodeID(mgr.UUID()),
+		Service: regulator.Search,
 	}
 
 	regHandler := factory.InitRegulator(regOps)
@@ -162,14 +162,14 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 		}
 		return nil
 	}
-	wcus, err := metering.SearchWriteToWU(bytes - prevBytesMetered)
+	wus, err := metering.SearchWriteToWU(bytes - prevBytesMetered)
 	if err != nil {
 		return err
 	}
 	context := regulator.NewBucketCtx(bucket)
 
 	sr.prevWBytes[pindexName] = bytes
-	return regulator.RecordUnits(context, wcus)
+	return regulator.RecordUnits(context, wus)
 }
 
 func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
@@ -186,14 +186,29 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 		return nil
 	}
 
-	rcus, err := metering.SearchReadToRU(bytes - prevBytesMetered)
+	rus, err := metering.SearchReadToRU(bytes - prevBytesMetered)
 	if err != nil {
 		return err
 	}
 
+	// Capping the RUs according to the default ftsThrottleLimit = 5000.
+	// The reasoning here is that currently the queries incur a very high
+	// first time cost in terms of the bytes read from the disk. In a scenario
+	// where there are multiple first time queries, the per second units
+	// metered would be extremely high, which can result in extremely
+	// high wait times.
+	// the formula for capping off ->
+	// 			ftsThrottleLimit/(#indexesPerTenant * #queriesAllowed)
+	if rus.Whole() > 5000 {
+		rus, err = regulator.NewUnits(regulator.Search, 0, 5000/(20*10))
+		if err != nil {
+			return fmt.Errorf("metering: failed to cap the RUs %v\n", err)
+		}
+	}
+
 	context := regulator.NewBucketCtx(bucket)
 	sr.prevRBytes[pindexName] = bytes
-	return regulator.RecordUnits(context, rcus)
+	return regulator.RecordUnits(context, rus)
 }
 
 // Note: keeping the throttle/limiting of read and write separate,
