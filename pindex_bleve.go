@@ -2646,12 +2646,12 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 				if err != nil {
 					return -1 // no progress can be made in case of regulator error.
 				}
-				if action == CheckResultNormal || action == CheckResultThrottle ||
-					action == CheckResultError {
-					return -1
+
+				if action == CheckResultReject {
+					return 0 // backoff on reject
 				}
 
-				return 0 // 0 in case of Reject to add a sleep between retries.
+				return -1 // terminate backoff on any other action
 			}
 
 			// Blocking wait to execute the request till it returns.
@@ -2662,8 +2662,10 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 				action = CheckResultNormal
 			}
 
-		case CheckResultError:
-			log.Printf("limiting/throttling: failed to regulate the request: %v", err)
+		default:
+			log.Warnf("limiting/throttling: failed to regulate ingest for partition: %s"+
+				", action: %v, err: %v",
+				bdp[0].bdest.path, action, err)
 			action = CheckResultNormal
 		}
 	}
