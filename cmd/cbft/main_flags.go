@@ -46,6 +46,9 @@ type cbftFlags struct {
 	TLSCAFile   string
 	TLSCertFile string
 	TLSKeyFile  string
+
+	ClientCertFile string
+	ClientKeyFile  string
 }
 
 var flags cbftFlags
@@ -201,15 +204,23 @@ func initFlags(flags *cbftFlags) map[string][]string {
 	s(&flags.AuthType,
 		[]string{"authType", "auth"}, "AUTH_TYPE", "",
 		"authentication type for cbft requests.")
+
 	s(&flags.TLSCAFile,
 		[]string{"tlsCAFile"}, "PATH", "",
-		"TLS CA file; see also bindHttps.")
+		"TLS CA file; (for external TLS connections) see also bindHttps.")
 	s(&flags.TLSCertFile,
 		[]string{"tlsCertFile"}, "PATH", "",
-		"TLS cert file; see also bindHttps.")
+		"TLS cert file; (for external TLS connections) see also bindHttps.")
 	s(&flags.TLSKeyFile,
 		[]string{"tlsKeyFile"}, "PATH", "",
-		"TLS key file; see also bindHttps.")
+		"TLS key file; (for external TLS connections) see also bindHttps.")
+
+	s(&flags.ClientCertFile,
+		[]string{"clientCertFile"}, "PATH", "",
+		"Client cert file (for internal TLS connections).")
+	s(&flags.ClientKeyFile,
+		[]string{"clientKeyFile"}, "PATH", "",
+		"Client key file (for internal TLS connections).")
 
 	flag.Usage = func() {
 		if !flags.Help {
