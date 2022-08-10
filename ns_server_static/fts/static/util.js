@@ -136,6 +136,12 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                         console.log("blevePIndexInitController numPlanParams", initKind, e)
                     }
                 }
+
+                var deploymentModel = response.data.deploymentModel;
+                if (deploymentModel == "serverless") {
+                    $scope.numPIndexes = 1;
+                    $scope.numReplicas = 1;
+                }
             } else {
                 $scope.newPlanParams = "{}"
             }

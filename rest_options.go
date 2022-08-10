@@ -159,10 +159,18 @@ func NewConciseOptions(mgr *cbgt.Manager) *ConciseOptions {
 
 func (h *ConciseOptions) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
-	maxReplicasAllowed, _ := strconv.Atoi(h.mgr.Options()["maxReplicasAllowed"])
-	bucketTypesAllowed := h.mgr.Options()["bucketTypesAllowed"]
-	bleveMaxResultWindow, _ := strconv.Atoi(h.mgr.Options()["bleveMaxResultWindow"])
-	bleveMaxClauseCount, _ := strconv.Atoi(h.mgr.Options()["bleveMaxClauseCount"])
+	options := h.mgr.Options()
+
+	maxReplicasAllowed, _ := strconv.Atoi(options["maxReplicasAllowed"])
+	bucketTypesAllowed := options["bucketTypesAllowed"]
+	bleveMaxResultWindow, _ := strconv.Atoi(options["bleveMaxResultWindow"])
+	bleveMaxClauseCount, _ := strconv.Atoi(options["bleveMaxClauseCount"])
+
+	var deploymentModel string
+	if val, exists := options["deploymentModel"]; exists {
+		deploymentModel = val
+	}
+
 	if bleveMaxClauseCount == 0 {
 		// in case bleveMaxClauseCount wasn't updated by user
 		bleveMaxClauseCount = DefaultBleveMaxClauseCount
@@ -186,6 +194,7 @@ func (h *ConciseOptions) ServeHTTP(
 		CollectionsSupport   bool   `json:"collectionsSupport"`
 		BleveMaxResultWindow int    `json:"bleveMaxResultWindow"`
 		BleveMaxClauseCount  int    `json:"bleveMaxClauseCount"`
+		DeploymentModel      string `json:"deploymentModel,omitempty"`
 	}{
 		Status:               "ok",
 		MaxReplicasAllowed:   maxReplicasAllowed,
@@ -193,6 +202,7 @@ func (h *ConciseOptions) ServeHTTP(
 		CollectionsSupport:   collectionsSupported,
 		BleveMaxResultWindow: bleveMaxResultWindow,
 		BleveMaxClauseCount:  bleveMaxClauseCount,
+		DeploymentModel:      deploymentModel,
 	}
 	rest.MustEncode(w, rv)
 }
