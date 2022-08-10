@@ -139,10 +139,10 @@ var statkeys = []string{
 
 	"num_mutations_to_index", // per-index stat.
 	// "doc_count",           // per-index stat (see above).
-	"total_bytes_indexed",              // per-index stat.
-	"num_bytes_indexed_after_analysis", // per-index stat.
-	"num_bytes_read_at_query_time",     //per-index stat
-	"num_recs_to_persist",              // per-index stat.
+	"total_bytes_indexed",             // per-index stat.
+	"num_bytes_written_at_index_time", // per-index stat.
+	"num_bytes_read_at_query_time",    //per-index stat
+	"num_recs_to_persist",             // per-index stat.
 
 	"num_bytes_used_disk",                     // per-index stat.
 	"num_bytes_used_disk_by_root",             // per-index stat.
@@ -753,7 +753,7 @@ var scorchStats = map[string]string{
 	"/num_persister_nap_merger_break":          "num_persister_nap_merger_break",
 	"/num_bytes_used_disk_by_root_reclaimable": "num_bytes_used_disk_by_root_reclaimable",
 	"/num_bytes_read_at_query_time":            "num_bytes_read_at_query_time",
-	"/num_bytes_indexed_after_analysis":        "num_bytes_indexed_after_analysis",
+	"/num_bytes_written_at_index_time":         "num_bytes_written_at_index_time",
 }
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {

@@ -130,7 +130,7 @@ func MeterWrites(bucket string, index bleve.Index) {
 
 	scorchStats := index.StatsMap()
 	indexStats, _ := scorchStats["index"].(map[string]interface{})
-	analysisBytes, _ := indexStats["num_bytes_indexed_after_analysis"].(uint64)
+	analysisBytes, _ := indexStats["num_bytes_written_at_index_time"].(uint64)
 
 	reg.meteringUtil(bucket, index.Name(), analysisBytes, write)
 }
