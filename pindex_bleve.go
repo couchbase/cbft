@@ -2656,7 +2656,7 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 
 			// Blocking wait to execute the request till it returns.
 			cbgt.ExponentialBackoffLoop("", checkQuotaExponentialBackoff,
-				int(200*time.Millisecond), 2, int(30*time.Second))
+				200, 2, 30000)
 			if action == CheckResultReject {
 				// If the request is still limited after the exponential backoff, accept it.
 				action = CheckResultNormal
