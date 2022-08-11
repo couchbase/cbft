@@ -201,8 +201,7 @@ func main() {
 		}
 	}
 
-	// Update the cached CAFile, CertFile and KeyFile for TLS.
-	//
+	// Update the cached TLSCAFile, TLSCertFile and TLSKeyFile for external TLS.
 	// All 3 flags are paths to PEM encoded data.
 	//   - TLSCAFile - holds multiple CAs
 	//   - TLSCertFile - holds a certificate chain
@@ -210,6 +209,11 @@ func main() {
 	cbgt.TLSCAFile = flags.TLSCAFile
 	cbgt.TLSCertFile = flags.TLSCertFile
 	cbgt.TLSKeyFile = flags.TLSKeyFile
+
+	// Update the cached ClientCertFile and ClientKeyFile for internal TLS.
+	// All 3 flags are paths to PEM encoded data.
+	cbgt.ClientCertFile = flags.ClientCertFile
+	cbgt.ClientKeyFile = flags.ClientKeyFile
 
 	// Update and validate the the ipv4 and ipv6 settings
 	ipv4 = options["ipv4"]

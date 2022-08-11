@@ -409,7 +409,7 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")
 			if err == nil {
 				port = bindPort
-				certInBytes = ss.CertInBytes
+				certInBytes = ss.CACertInBytes
 			}
 		}
 

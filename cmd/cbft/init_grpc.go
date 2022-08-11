@@ -199,7 +199,7 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 		if authType == "cbauth" {
 			ss := cbgt.GetSecuritySetting()
 			if ss != nil && ss.TLSConfig != nil {
-				config.Certificates = []tls.Certificate{ss.Certificate}
+				config.Certificates = []tls.Certificate{ss.ServerCertificate}
 
 				// Set MinTLSVersion and CipherSuites to what is provided by
 				// cbauth if authType were cbauth (cached locally).
@@ -209,7 +209,7 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 
 				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
 					caCertPool := x509.NewCertPool()
-					certInBytes := ss.CertInBytes
+					certInBytes := ss.CACertInBytes
 					if len(certInBytes) == 0 {
 						// if no CertInBytes found in settings, then fallback
 						// to reading directly from file. Upon any certs change
