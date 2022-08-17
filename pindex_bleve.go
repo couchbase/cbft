@@ -2612,34 +2612,6 @@ func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	MeterWrites(bdp[0].bdest.sourceName, index)
 }
 
-// Returns the maximum and minimum time, in milliseconds, for limiting requests.
-func serverlessLimitingBounds() (int, int) {
-	mgr := CurrentNodeDefsFetcher.GetManager()
-	var err error
-
-	minTime := defaultLimitingMinTime
-	if min, exists := mgr.Options()["minBackoffTimeForBatchLimitingMS"]; exists {
-		minTime, err = strconv.Atoi(min)
-		if err != nil {
-			log.Errorf("limiting/throttling: error parsing minimum time for "+
-				"exponential backoff, returning defaults: %#v", err)
-			minTime = defaultLimitingMinTime
-		}
-	}
-
-	maxTime := defaultLimitingMaxTime
-	if max, exists := mgr.Options()["maxBackoffTimeForBatchLimitingMS"]; exists {
-		maxTime, err = strconv.Atoi(max)
-		if err != nil {
-			log.Errorf("limiting/throttling: error parsing maximum time for "+
-				"exponential backoff, returning defaults: %#v", err)
-			maxTime = defaultLimitingMaxTime
-		}
-	}
-
-	return minTime, maxTime
-}
-
 func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
@@ -2651,57 +2623,15 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		return
 	}
 
-	action, duration, err := CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
+	CheckQuotaWrite(bdp[0].bdest.sourceName, "", true, nil)
 
-	for {
-		switch action {
-		case CheckResultNormal:
-			_, err = execute(bdp, bdpMaxSeqNums, index, batch)
-			if err != nil {
-				bdp[0].setLastAsyncBatchErr(err)
-			}
-			return
-
-		case CheckResultThrottle:
-			time.Sleep(duration)
-			action = CheckResultNormal
-
-		case CheckResultReject:
-			// Should return -1 when regulator returns CheckResultNormal
-			// since no further progress can be made.
-			// For CheckResultThrottle/Reject, should return 1 since
-			// that indicates that further progress is required.
-			checkQuotaExponentialBackoff := func() int {
-				var err error
-				action, duration, err = CheckQuotaWrite(bdp[0].bdest.sourceName, "", nil)
-				if err != nil {
-					return -1 // no progress can be made in case of regulator error.
-				}
-
-				if action == CheckResultReject {
-					return 0 // backoff on reject
-				}
-
-				return -1 // terminate backoff on any other action
-			}
-
-			minTime, maxTime := serverlessLimitingBounds()
-
-			// Blocking wait to execute the request till it returns.
-			cbgt.ExponentialBackoffLoop("", checkQuotaExponentialBackoff,
-				minTime, 2, maxTime)
-			if action == CheckResultReject {
-				// If the request is still limited after the exponential backoff, accept it.
-				action = CheckResultNormal
-			}
-
-		default:
-			log.Warnf("limiting/throttling: failed to regulate ingest for partition: %s"+
-				", action: %v, err: %v",
-				bdp[0].bdest.path, action, err)
-			action = CheckResultNormal
-		}
+	// NOTE: At this point, it's guaranteed that the action is always normal
+	// with the retry logic in CheckQuotaWrite()
+	_, err := execute(bdp, bdpMaxSeqNums, index, batch)
+	if err != nil {
+		bdp[0].setLastAsyncBatchErr(err)
 	}
+	return
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,

@@ -23,6 +23,10 @@ func MeteringEndpointHandler(mgr *cbgt.Manager) (string, http.Handler) {
 	return "", nil
 }
 
+func GetRegulatorStats() map[string]interface{} {
+	return nil
+}
+
 func MeterWrites(bucket string, index bleve.Index) {
 	return
 }
@@ -31,7 +35,7 @@ func MeterReads(bucket string, index bleve.Index) {
 	return
 }
 
-func CheckQuotaWrite(bucket, user string,
+func CheckQuotaWrite(bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
 	return CheckResultNormal, 0, nil
 }

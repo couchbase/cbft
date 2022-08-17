@@ -14,6 +14,8 @@ package cbft
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
@@ -39,6 +41,21 @@ type message struct {
 	operation uint
 }
 
+type regulatorStats struct {
+	TotalRUsMetered                uint64 `json:"total_RUs_metered"`
+	TotalWUsMetered                uint64 `json:"total_WUs_metered"`
+	TotalReadOpsCapped             uint64 `json:"total_read_ops_capped"`
+	TotalReadOpsRejected           uint64 `json:"total_read_ops_rejected"`
+	TotalWriteOpsRejected          uint64 `json:"total_write_ops_rejected"`
+	TotalReadThrottleSeconds       uint64 `json:"total_read_throttle_seconds"`
+	TotalWriteThrottleSeconds      uint64 `json:"total_write_throttle_seconds"`
+	TotalCheckQuotaReadErrs        uint64 `json:"total_read_ops_metering_errs"`
+	TotalCheckQuotaWriteErrs       uint64 `json:"total_write_ops_metering_errs"`
+	TotalOpsTimedOutWhileMetering  uint64 `json:"total_ops_timed_out_while_metering"`
+	TotalBatchLimitingTimeOuts     uint64 `json:"total_batch_limting_timeouts"`
+	TotalBatchRejectionBackoffTime uint64 `json:"total_batch_rejection_backoff_time_ms"`
+}
+
 type serviceRegulator struct {
 	mgr         *cbgt.Manager
 	handler     regulator.StatsHttpHandler
@@ -46,6 +63,7 @@ type serviceRegulator struct {
 	// pindex -> stats
 	prevWBytes map[string]uint64
 	prevRBytes map[string]uint64
+	stats      map[string]*regulatorStats
 }
 
 var reg *serviceRegulator
@@ -67,6 +85,7 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 		messageChan: make(chan *message, 10),
 		prevWBytes:  make(map[string]uint64),
 		prevRBytes:  make(map[string]uint64),
+		stats:       make(map[string]*regulatorStats),
 	}
 	log.Printf("metering: Metering and limiting of FTS read/write" +
 		" requests has started")
@@ -102,7 +121,9 @@ func (sr *serviceRegulator) startMetering() {
 // A common utility to send out the metering messages onto the channel
 func (sr *serviceRegulator) meteringUtil(bucket, index string,
 	totalBytes uint64, op uint) {
-
+	if sr.stats[bucket] == nil {
+		sr.stats[bucket] = &regulatorStats{}
+	}
 	msg := &message{
 		user:      "",
 		bucket:    bucket,
@@ -114,6 +135,7 @@ func (sr *serviceRegulator) meteringUtil(bucket, index string,
 	select {
 	case sr.messageChan <- msg:
 	case <-time.After(5 * time.Second):
+		atomic.AddUint64(&reg.stats[bucket].TotalOpsTimedOutWhileMetering, 1)
 		log.Warnf("metering: message dropped, too much traffic on the "+
 			"channel %v", msg)
 	}
@@ -167,8 +189,9 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 		return err
 	}
 	context := regulator.NewBucketCtx(bucket)
-
 	sr.prevWBytes[pindexName] = bytes
+
+	atomic.AddUint64(&sr.stats[bucket].TotalWUsMetered, wus.Whole())
 	return regulator.RecordUnits(context, wus)
 }
 
@@ -204,17 +227,65 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 		if err != nil {
 			return fmt.Errorf("metering: failed to cap the RUs %v\n", err)
 		}
+		atomic.AddUint64(&sr.stats[bucket].TotalReadOpsCapped, 1)
 	}
 
 	context := regulator.NewBucketCtx(bucket)
 	sr.prevRBytes[pindexName] = bytes
+
+	atomic.AddUint64(&sr.stats[bucket].TotalRUsMetered, rus.Whole())
 	return regulator.RecordUnits(context, rus)
+}
+
+func regulatorAggregateStats(in map[string]*regulatorStats) map[string]interface{} {
+	rv := make(map[string]interface{}, len(in)+1)
+	var total_units_metered uint64
+	for k, v := range in {
+		total_units_metered += (atomic.LoadUint64(&v.TotalRUsMetered) +
+			atomic.LoadUint64(&v.TotalWUsMetered))
+		rv[k] = v
+	}
+	rv["total_units_metered"] = total_units_metered
+	return rv
+}
+
+func GetRegulatorStats() map[string]interface{} {
+	if ServerlessMode {
+		return regulatorAggregateStats(reg.stats)
+	}
+	return nil
+}
+
+// Returns the maximum and minimum time, in milliseconds, for limiting requests.
+func serverlessLimitingBounds() (int, int) {
+	var err error
+	minTime := defaultLimitingMinTime
+	if min, exists := reg.mgr.Options()["minBackoffTimeForBatchLimitingMS"]; exists {
+		minTime, err = strconv.Atoi(min)
+		if err != nil {
+			log.Errorf("limiting/throttling: error parsing minimum time for "+
+				"exponential backoff, returning defaults: %#v", err)
+			minTime = defaultLimitingMinTime
+		}
+	}
+
+	maxTime := defaultLimitingMaxTime
+	if max, exists := reg.mgr.Options()["maxBackoffTimeForBatchLimitingMS"]; exists {
+		maxTime, err = strconv.Atoi(max)
+		if err != nil {
+			log.Errorf("limiting/throttling: error parsing maximum time for "+
+				"exponential backoff, returning defaults: %#v", err)
+			maxTime = defaultLimitingMaxTime
+		}
+	}
+
+	return minTime, maxTime
 }
 
 // Note: keeping the throttle/limiting of read and write separate,
 // so that further experiments or observations may lead to
 // them behaving differently from each other based on the request passed
-func CheckQuotaWrite(bucket, user string,
+func CheckQuotaWrite(bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
 	if !ServerlessMode {
 		// no throttle/limiting checks for non-serverless versions.
@@ -235,8 +306,87 @@ func CheckQuotaWrite(bucket, user string,
 		EstimatedDuration: time.Duration(0),
 		EstimatedUnits:    []regulator.Units{estimatedUnits},
 	}
-	result, duration, err := regulator.CheckQuota(context, checkQuotaOps)
-	return CheckResult(result), duration, err
+	if reg.stats[bucket] == nil {
+		reg.stats[bucket] = &regulatorStats{}
+	}
+	action, duration, err := regulator.CheckQuota(context, checkQuotaOps)
+	if !retry {
+		switch action {
+		case regulator.CheckResultError:
+			atomic.AddUint64(&reg.stats[bucket].TotalCheckQuotaWriteErrs, 1)
+		case regulator.CheckResultReject:
+			atomic.AddUint64(&reg.stats[bucket].TotalWriteOpsRejected, 1)
+		case regulator.CheckResultThrottle:
+			atomic.AddUint64(&reg.stats[bucket].TotalWriteThrottleSeconds,
+				uint64(float64(duration)/float64(time.Second)))
+		}
+		return CheckResult(action), duration, err
+	}
+
+	for {
+		switch CheckResult(action) {
+		case CheckResultNormal:
+			return CheckResult(action), duration, err
+		case CheckResultThrottle:
+			time.Sleep(duration)
+			atomic.AddUint64(&reg.stats[bucket].TotalWriteThrottleSeconds,
+				uint64(float64(duration)/float64(time.Second)))
+			action = regulator.CheckResultNormal
+
+		case CheckResultReject:
+			minTime, maxTime := serverlessLimitingBounds()
+			nextSleepMS := minTime
+			backoffFactor := 2
+
+			// Should return -1 when regulator returns CheckResultNormal/Throttle
+			// since the system can definitely make progress.
+			// For CheckResultReject, should return 0 since
+			// no progress has been made and needs a retry.
+			checkQuotaExponentialBackoff := func() int {
+				var err error
+				action, duration, err = regulator.CheckQuota(context, checkQuotaOps)
+				if err != nil {
+					return -1 // no progress can be made in case of regulator error.
+				}
+
+				if CheckResult(action) == CheckResultReject {
+					atomic.AddUint64(&reg.stats[bucket].TotalWriteOpsRejected, 1)
+					// A timeout logic to consider while performing the
+					// exponential backoff. If the exponential backoff takes more
+					// than maxTime to get a progress
+					if nextSleepMS > maxTime {
+						atomic.AddUint64(&reg.stats[bucket].TotalBatchLimitingTimeOuts, 1)
+						return -1
+					}
+					atomic.AddUint64(&reg.stats[bucket].TotalBatchRejectionBackoffTime,
+						uint64(nextSleepMS))
+
+					nextSleepMS = nextSleepMS * backoffFactor
+					return 0 // backoff on reject
+				}
+				log.Debugf("limiting/throttling: ending exponential backoff on " +
+					"rejection from regulator")
+				return -1 // terminate backoff on any other action
+			}
+
+			// Blocking wait to execute the request till it returns.
+			cbgt.ExponentialBackoffLoop("", checkQuotaExponentialBackoff,
+				minTime, float32(backoffFactor), maxTime)
+			if CheckResult(action) == CheckResultReject {
+				// If the request is still limited after the exponential backoff,
+				// accept it.
+				action = regulator.CheckResultNormal
+			}
+
+		// as of now this case only corresponds to CheckResultError
+		default:
+			atomic.AddUint64(&reg.stats[bucket].TotalCheckQuotaWriteErrs, 1)
+			log.Errorf("limiting/throttling: error while limiting/throttling "+
+				"the request %v\n", err)
+			action = regulator.CheckResultNormal
+		}
+	}
+	return CheckResult(action), duration, err
 }
 
 func CheckQuotaRead(bucket, user string,
@@ -259,8 +409,19 @@ func CheckQuotaRead(bucket, user string,
 		EstimatedDuration: time.Duration(0),
 		EstimatedUnits:    []regulator.Units{estimatedUnits},
 	}
-
+	if reg.stats[bucket] == nil {
+		reg.stats[bucket] = &regulatorStats{}
+	}
 	result, duration, err := regulator.CheckQuota(context, checkQuotaOps)
+	switch result {
+	case regulator.CheckResultError:
+		atomic.AddUint64(&reg.stats[bucket].TotalCheckQuotaReadErrs, 1)
+	case regulator.CheckResultReject:
+		atomic.AddUint64(&reg.stats[bucket].TotalReadOpsRejected, 1)
+	case regulator.CheckResultThrottle:
+		atomic.AddUint64(&reg.stats[bucket].TotalReadThrottleSeconds,
+			uint64(float64(duration)/float64(time.Second)))
+	}
 	return CheckResult(result), duration, err
 }
 

@@ -426,6 +426,8 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 		}
 	}
 
+	nsIndexStats["regulatorStats"] = GetRegulatorStats()
+
 	if !collAware {
 		nsIndexStats[""] = gatherTopLevelStats(rd)
 	}
