@@ -4,14 +4,14 @@ go 1.18
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.3.4-0.20220810122446-d89c6c0a6873
+	github.com/blevesearch/bleve/v2 v2.3.4
 	github.com/blevesearch/bleve_index_api v1.0.3
 	github.com/blevesearch/upsidedown_store_api v1.0.1
 	github.com/blevesearch/zapx/v11 v11.3.5
 	github.com/blevesearch/zapx/v12 v12.3.5
 	github.com/blevesearch/zapx/v13 v13.3.5
 	github.com/blevesearch/zapx/v14 v14.3.5
-	github.com/blevesearch/zapx/v15 v15.3.5-0.20220805051919-e14ad3bf63e7
+	github.com/blevesearch/zapx/v15 v15.3.5
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.2
