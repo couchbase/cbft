@@ -124,11 +124,7 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 
 	// update the remapped index definitions.
 	for indexName, remappedIndexDef := range indexDefs.IndexDefs {
-		// error out if the remapped index name already exists.
-		if _, exists := curIndexDefs.IndexDefs[indexName]; exists {
-			return fmt.Errorf("backup_restore: remapped index name: %s"+
-				" already exists", indexName)
-		}
+		delete(curIndexDefs.IndexDefs, indexName)
 		curIndexDefs.IndexDefs[indexName] = remappedIndexDef
 	}
 
