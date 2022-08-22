@@ -22,6 +22,9 @@ function newEditFields() {
 function newEditField() {
     return {
         splitPathPrefixAndField: function() {
+            if (!angular.isDefined(this.path)) {
+                return ["", this.path];
+            }
             let n = this.path.lastIndexOf(".");
             if (n < 0) {
                 return ["", this.path];
@@ -34,7 +37,9 @@ function newEditField() {
         description: function() {
             var rv = "";
             if (this.type == "text") {
-                if (this.analyzer == "keyword") {
+                if (!angular.isDefined(this.analyzer) || this.analyzer == "") {
+                    rv = "text ";
+                } else if (this.analyzer == "keyword") {
                     rv = "keyword ";
                 } else {
                     rv = this.analyzer + " text ";
@@ -50,6 +55,7 @@ function newEditField() {
             } else if (this.type == "boolean") {
                 rv = "boolean ";
             }
+
             var supporting = [];
             if (this.store) {
                 supporting.push("search results");

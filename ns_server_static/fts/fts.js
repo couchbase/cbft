@@ -331,21 +331,23 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         });
 
         function isMappingIncompatibleWithQuickEditor(mapping) {
-            if (!mapping.enabled ||
-                mapping.dynamic ||
-                (angular.isDefined(mapping.default_analyzer) && mapping.default_analyzer != "")) {
-                // mapping is either disabled and/or dynamic and/or has default_analyzer
-                // explicitly defined
+            if (!mapping.enabled) {
+                // mapping is disabled
                 return true;
             }
 
-            if ((!angular.isDefined(mapping.properties) || mapping.properties.length == 0) &&
+            if (!mapping.dynamic &&
+                (!angular.isDefined(mapping.properties) || mapping.properties.length == 0) &&
                 (!angular.isDefined(mapping.fields) || mapping.fields.length == 0)) {
                 // mapping has no child mappings or fields defined within it
                 return true;
             }
 
             for (var name in mapping.properties) {
+                if (mapping.properties[name].dynamic) {
+                    // dynamic child mappings not supported
+                    return true;
+                }
                 if (isMappingIncompatibleWithQuickEditor(mapping.properties[name])) {
                     return true;
                 }
@@ -362,20 +364,6 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
                         // un-indexed field
                         return true;
                     }
-
-                    if (mapping.fields[0].type == "text") {
-                        if (!angular.isDefined(mapping.fields[0].analyzer) ||
-                            mapping.fields[0].analyzer == "") {
-                            // text field has no analyzer specified
-                            return true;
-                        }
-                    } else {
-                        if ((angular.isDefined(mapping.fields[0].analyzer) &&
-                            mapping.fields[0].analyzer != "")) {
-                            // fields of other types have an analyzer set
-                            return true;
-                        }
-                    }
                 }
             }
 
@@ -390,10 +378,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
                 return false;
             }
 
-            if (params.mapping.index_dynamic ||
-                params.mapping.store_dynamic ||
-                params.mapping.docvalues_dynamic ||
-                params.mapping.default_analyzer != "standard" ||
+            if (params.mapping.default_analyzer != "standard" ||
                 params.mapping.default_datetime_parser != "dateTimeOptional" ||
                 params.mapping.default_field != "_all" ||
                 params.mapping.default_type != "_default" ||
@@ -1457,6 +1442,24 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.scopeNames = [];
         $scope.collectionNames = [];
         $scope.collectionOpened = "";
+        $scope.collectionDynamic = false;
+        $scope.collectionAnalyzer = "standard";
+        $scope.collectionTextFieldsAsIdentifiers = false;
+
+        $scope.collectionDynamicToggled = function() {
+            $scope.collectionAnalyzer = "standard";
+            $scope.collectionTextFieldsAsIdentifiers = false;
+            $scope.resetDynamic();
+        };
+
+        $scope.setCollectionAnalyzer = function(identifier, analyzer) {
+            $scope.collectionAnalyzer = "standard";
+            if (identifier) {
+                $scope.collectionAnalyzer = "keyword";
+            } else if (analyzer.length > 0) {
+                $scope.collectionAnalyzer = analyzer;
+            }
+        }
 
         $scope.indexEditorPreview = {};
         $scope.indexEditorPreview["fulltext-index"] = null;
@@ -1486,7 +1489,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.parsedDocs = newParsedDocs();
         $scope.easyLanguages = [
             {
-                label: "Unknown/Various",
+                label: "Standard",
                 id: "standard"
             },
             {
@@ -1643,6 +1646,16 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             }
         }
 
+        $scope.resetDynamic = function() {
+            $scope.easyMapping.resetDynamic();
+        }
+        $scope.makeDynamic = function() {
+            $scope.easyMapping.makeDynamic($scope.collectionAnalyzer);
+        }
+        $scope.hasDynamicDefChanged = function() {
+            return $scope.easyMapping.hasDynamicDefChanged($scope.collectionAnalyzer);
+        }
+
         $scope.addField = function() {
             $scope.editField.new = false;
             $scope.easyMapping.addField($scope.editField);
@@ -1653,6 +1666,22 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.deleteFieldInCollection = function(collection, path) {
+            if (!angular.isDefined(path) || path.length == 0) {
+                // Deleting dynamic mapping
+                confirmDialog(
+                    $scope, $uibModal,
+                    "Confirm Drop Dynamic Mapping",
+                    "Warning: This will drop the dynamic mapping for collection: `" + collection + "`.",
+                    "Drop"
+                ).then(function success() {
+                    $scope.collectionAnalyzer = "standard";
+                    $scope.collectionTextFieldsAsIdentifiers = false;
+                    $scope.collectionDynamic = false;
+                    $scope.resetDynamic();
+                });
+                return;
+            }
+
             confirmDialog(
                 $scope, $uibModal,
                 "Confirm Delete Field",
@@ -1775,6 +1804,20 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
 
             $scope.editField = $scope.editFields.getFieldForCollection(collectionName);
             $scope.easyMapping = $scope.easyMappings.getMappingForCollection(collectionName);
+
+            if (angular.isDefined($scope.easyMapping)) {
+                let dynamicAnalyzer = $scope.easyMapping.dynamicAnalyzer();
+                if (dynamicAnalyzer.length > 0) {
+                    $scope.collectionDynamic = true;
+                    $scope.collectionAnalyzer = dynamicAnalyzer;
+                    if (dynamicAnalyzer == "keyword") {
+                        $scope.collectionTextFieldsAsIdentifiers = true;
+                    }
+                    return;
+                }
+            }
+            $scope.collectionDynamic = false;
+            $scope.collectionAnalyzer = "";
         };
 
         $scope.codemirrorLoaded = function(_editor){

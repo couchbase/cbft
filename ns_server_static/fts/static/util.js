@@ -376,7 +376,14 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 // Delete "numReplicas" if set to 0.
                 if (angular.isDefined(rv.indexDef["planParams"]["numReplicas"]) &&
                     rv.indexDef["planParams"]["numReplicas"] == 0) {
-                    delete rv.indexDef["planParams"]["numReplicas"]
+                    delete rv.indexDef["planParams"]["numReplicas"];
+                }
+                // Delete "empty" fields array if present in type mappings objects.
+                for (var name in rv.indexDef["params"]["mapping"]["types"]) {
+                    if (angular.isDefined(rv.indexDef["params"]["mapping"]["types"][name]["fields"]) &&
+                        rv.indexDef["params"]["mapping"]["types"][name]["fields"].length == 0) {
+                        delete rv.indexDef["params"]["mapping"]["types"][name]["fields"];
+                    }
                 }
             } catch (e) {
             }
@@ -389,6 +396,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 return false;
             }
         } // Else could not retrieve the index definition, permit the update.
+
         return true;
     };
 

@@ -92,12 +92,22 @@ function newEasyMappings() {
                 "enabled": false
             };
 
+            let dynamicCollectionMappings = false;
             let collectionNames = Object.keys(mappings);
             for (var collectionNameI in collectionNames) {
                 let collectionName = collectionNames[collectionNameI];
                 if (mappings[collectionName].numFields() > 0) {
                     indexMapping.types[scopeName + '.' + collectionName] = mappings[collectionName].getMapping();
                 }
+                if (mappings[collectionName].dynamicAnalyzer().length > 0) {
+                    dynamicCollectionMappings = true;
+                }
+            }
+
+            if (dynamicCollectionMappings) {
+                indexMapping.store_dynamic = true;
+                indexMapping.index_dynamic = true;
+                indexMapping.docvalues_dynamic = true;
             }
 
             return indexMapping;
@@ -244,14 +254,19 @@ function newEasyMapping() {
         // traverse the path, adding any missing document mappings along the way
         for (var pathElementI in pathElements) {
             let pathElement = pathElements[pathElementI];
+            if (pathElement === "*dynamic*") {
+                mapping.dynamic = true;
+                mapping.default_analyzer = field.analyzer;
+                continue;
+            }
             if (mapping.properties && (pathElement in mapping.properties)) {
                 mapping = mapping.properties[pathElement];
                 continue;
             }
-            let newMapping = newDocMapping();
             if (!mapping.properties) {
                 mapping.properties = {};
             }
+            let newMapping = newDocMapping();
             mapping.properties[pathElement] = newMapping;
             mapping = mapping.properties[pathElement];
         }
@@ -282,6 +297,17 @@ function newEasyMapping() {
             addDocumentMappingFromPathField(rootDocMapping, path, mapping[path]);
         }
         return rootDocMapping;
+    }
+
+    var rebuildDynamicness = function(indexMapping) {
+        if (indexMapping.dynamic) {
+            let analyzer = indexMapping.default_analyzer;
+            let obj = {
+                analyzer: analyzer,
+                name: "(dynamic - " + analyzer + ")",
+            };
+            mapping["*dynamic*"] = obj;
+        }
     }
 
     var rebuildFieldFromProperty = function(parentPath, path, property) {
@@ -349,9 +375,46 @@ function newEasyMapping() {
 
     return {
         loadFromMapping: function(indexMapping) {
+            rebuildDynamicness(indexMapping);
             for (var propertyName in indexMapping.properties) {
-                rebuildFieldFromProperty("", propertyName, indexMapping.properties[propertyName])
+                rebuildFieldFromProperty("", propertyName, indexMapping.properties[propertyName]);
             }
+        },
+        resetDynamic: function() {
+            delete mapping["*dynamic*"];
+        },
+        makeDynamic: function(collectionAnalyzer) {
+            if (collectionAnalyzer.length == 0) {
+              collectionAnalyzer = "standard";
+            }
+            let obj = {
+              analyzer: collectionAnalyzer,
+              name: "(dynamic - " + collectionAnalyzer + ")",
+            };
+            mapping["*dynamic*"] = Object.assign({}, obj);
+        },
+        hasDynamicDefChanged: function(collectionAnalyzer) {
+            if (collectionAnalyzer.length == 0) {
+              collectionAnalyzer = "standard";
+            }
+            let obj = {
+              analyzer: collectionAnalyzer,
+              name: "(dynamic - " + collectionAnalyzer + ")",
+            };
+            if (JSON.stringify(mapping["*dynamic*"]) === JSON.stringify(obj)) {
+              return false;
+            }
+            return true;
+        },
+        dynamicAnalyzer: function() {
+          if (angular.isDefined(mapping["*dynamic*"])) {
+              let rv = mapping["*dynamic*"].analyzer;
+              if (rv.length == 0) {
+                rv = "standard"
+              }
+              return rv;
+           }
+           return "";
         },
         addField: function(editField) {
             if (editField.identifier) {
