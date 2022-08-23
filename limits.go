@@ -351,7 +351,7 @@ func (e *rateLimiter) regulateRequest(username, path string,
 		return CheckQuotaRead(bucket, username, req)
 	}
 
-	action, duration, err := CheckQuotaWrite(bucket, username, false, req)
+	action, duration, err := CheckQuotaWrite(nil, bucket, username, false, req)
 	if createReq && action == CheckResultNormal {
 		//TODO: Include CheckStorageLimits() API for create requests.
 		createReqResult, err := e.limitIndexCount(bucket)

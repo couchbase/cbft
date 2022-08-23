@@ -145,12 +145,15 @@ func (sr *serviceRegulator) meteringUtil(bucket, index string,
 // Note: keeping the metering of read and write separate,
 // so that further experiments or observations may lead to
 // them behaving differently from each other
-func MeterWrites(bucket string, index bleve.Index) {
+func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	if !ServerlessMode {
 		// no metering for non-serverless versions.
 		return
 	}
-
+	if isClosed(stopCh) {
+		log.Warnf("metering: pindex was closed, so ignoring its metering")
+		return
+	}
 	scorchStats := index.StatsMap()
 	indexStats, _ := scorchStats["index"].(map[string]interface{})
 	analysisBytes, _ := indexStats["num_bytes_written_at_index_time"].(uint64)
@@ -302,7 +305,7 @@ func getThrottleLimit(ctx regulator.Ctx) uint32 {
 // Note: keeping the throttle/limiting of read and write separate,
 // so that further experiments or observations may lead to
 // them behaving differently from each other based on the request passed
-func CheckQuotaWrite(bucket, user string, retry bool,
+func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
 	if !ServerlessMode {
 		// no throttle/limiting checks for non-serverless versions.
@@ -336,11 +339,21 @@ func CheckQuotaWrite(bucket, user string, retry bool,
 		case regulator.CheckResultThrottle:
 			atomic.AddUint64(&reg.stats[bucket].TotalWriteThrottleSeconds,
 				uint64(float64(duration)/float64(time.Second)))
+		default:
+			log.Warnf("limiting/metering: unindentified result from "+
+				"regulator, result: %v\n", action)
+
+			// allowing normal execution for unidentified actions for now
+			return CheckResultNormal, 0, nil
 		}
 		return CheckResult(action), duration, err
 	}
 
 	for {
+		if isClosed(stopCh) {
+			return CheckResultError, 0, fmt.Errorf("limiting/throttling: pindex " +
+				"was closed, ignoring its limting and throttling")
+		}
 		switch CheckResult(action) {
 		case CheckResultNormal:
 			return CheckResult(action), duration, err
@@ -360,6 +373,10 @@ func CheckQuotaWrite(bucket, user string, retry bool,
 			// For CheckResultReject, should return 0 since
 			// no progress has been made and needs a retry.
 			checkQuotaExponentialBackoff := func() int {
+				if isClosed(stopCh) {
+					action = regulator.CheckResultError
+					return -1
+				}
 				var err error
 				action, duration, err = regulator.CheckQuota(context, checkQuotaOps)
 				if err != nil {

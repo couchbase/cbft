@@ -2609,7 +2609,7 @@ func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	// NOTE: each partition is going to fetch its bleve index's
 	// bytes written to disk, and meter this to its local node
 	// in the cluster
-	MeterWrites(bdp[0].bdest.sourceName, index)
+	MeterWrites(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, index)
 }
 
 func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
@@ -2623,15 +2623,20 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		return
 	}
 
-	CheckQuotaWrite(bdp[0].bdest.sourceName, "", true, nil)
+	result, _, err := CheckQuotaWrite(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, "", true, nil)
 
-	// NOTE: At this point, it's guaranteed that the action is always normal
-	// with the retry logic in CheckQuotaWrite()
-	_, err := execute(bdp, bdpMaxSeqNums, index, batch)
+	// NOTE: At this point, it's guaranteed that the action is either
+	// CheckResultError (which is the case when the bdp's bleve index is closed)
+	// or CheckResultNormal, in which case we continue the execution
+	if result == CheckResultError {
+		log.Error(err)
+		return
+	}
+
+	_, err = execute(bdp, bdpMaxSeqNums, index, batch)
 	if err != nil {
 		bdp[0].setLastAsyncBatchErr(err)
 	}
-	return
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
