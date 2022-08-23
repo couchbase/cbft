@@ -23,6 +23,7 @@ import (
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/regulator"
+	"github.com/couchbase/regulator/config"
 	"github.com/couchbase/regulator/factory"
 	"github.com/couchbase/regulator/metering"
 )
@@ -87,7 +88,7 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 		prevRBytes:  make(map[string]uint64),
 		stats:       make(map[string]*regulatorStats),
 	}
-	log.Printf("metering: Metering and limiting of FTS read/write" +
+	log.Printf("regulator: Metering and limiting of FTS read/write" +
 		" requests has started")
 	go reg.startMetering()
 	return regHandler
@@ -214,7 +215,8 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 		return err
 	}
 
-	// Capping the RUs according to the default ftsThrottleLimit = 5000.
+	// Capping the RUs according to the ftsThrottleLimit for that bucket,
+	// fetched from regulator's GetConfiguredLimitForBucket API.
 	// The reasoning here is that currently the queries incur a very high
 	// first time cost in terms of the bytes read from the disk. In a scenario
 	// where there are multiple first time queries, the per second units
@@ -222,15 +224,22 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 	// high wait times.
 	// the formula for capping off ->
 	// 			ftsThrottleLimit/(#indexesPerTenant * #queriesAllowed)
-	if rus.Whole() > 5000 {
-		rus, err = regulator.NewUnits(regulator.Search, 0, 5000/(20*10))
+	context := regulator.NewBucketCtx(bucket)
+	throttleLimit := uint64(getThrottleLimit(context))
+	if rus.Whole() > throttleLimit {
+		maxIndexCountPerSource := 20
+		v, found := cbgt.ParseOptionsInt(sr.mgr.Options(), "maxIndexCountPerSource")
+		if found {
+			maxIndexCountPerSource = v
+		}
+		rus, err = regulator.NewUnits(regulator.Search, 0,
+			throttleLimit/(uint64(maxIndexCountPerSource)*10))
 		if err != nil {
 			return fmt.Errorf("metering: failed to cap the RUs %v\n", err)
 		}
 		atomic.AddUint64(&sr.stats[bucket].TotalReadOpsCapped, 1)
 	}
 
-	context := regulator.NewBucketCtx(bucket)
 	sr.prevRBytes[pindexName] = bytes
 
 	atomic.AddUint64(&sr.stats[bucket].TotalRUsMetered, rus.Whole())
@@ -280,6 +289,14 @@ func serverlessLimitingBounds() (int, int) {
 	}
 
 	return minTime, maxTime
+}
+
+func getThrottleLimit(ctx regulator.Ctx) uint32 {
+	bCtx, _ := ctx.(regulator.BucketCtx)
+	rCfg := config.GetConfig()
+	searchHandle := config.ResolveSettingsHandle(regulator.Search, ctx)
+	limit := rCfg.GetConfiguredLimitForBucket(bCtx.Bucket(), searchHandle)
+	return limit
 }
 
 // Note: keeping the throttle/limiting of read and write separate,
