@@ -513,7 +513,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// Set DCP connection sharing for gocbcore feeds to 6
 	options["maxFeedsPerDCPAgent"] = "6"
 
-	options = registerServerlessHooks(options)
+	options = registerServerlessHooks(options, dataDir)
 
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
@@ -646,8 +646,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			handler.ServeHTTP(w, req)
 		})
 
-	if mgr.Options()["deploymentModel"] == "serverless" {
-		cbft.ServerlessMode = true
+	if cbft.ServerlessMode {
 		endpoint, handler := cbft.MeteringEndpointHandler(mgr)
 		if len(endpoint) > 0 && handler != nil {
 			router.Handler("GET", prefix+endpoint,

@@ -420,7 +420,6 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 			action = regulator.CheckResultNormal
 		}
 	}
-	return CheckResult(action), duration, err
 }
 
 func CheckQuotaRead(bucket, user string,

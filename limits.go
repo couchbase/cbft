@@ -115,18 +115,13 @@ func completeRequest(username, path string, req *http.Request, egress int64) {
 
 // Limits index definitions from being introduced into the system based on
 // the rateLimiter settings
-func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+func limitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("indexDef not available")
 	}
 
 	if ServerlessMode {
-		if indexDef.PlanParams.IndexPartitions != 1 ||
-			indexDef.PlanParams.NumReplicas != 1 {
-			return nil, fmt.Errorf("support for indexes with 1 active +" +
-				" 1 replica partitions only in serverless mode")
-		}
-		return indexDef, nil
+		return limitIndexDefInServerlessMode(mgr, indexDef)
 	}
 
 	if limiter == nil || !limiter.isActive() {
@@ -191,6 +186,163 @@ func limitIndexDef(indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	limiter.pendingIndexes[indexDef.Name] = key
 
 	return indexDef, nil
+}
+
+func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
+	*cbgt.IndexDef, error) {
+	if indexDef.PlanParams.IndexPartitions != 1 ||
+		indexDef.PlanParams.NumReplicas != 1 {
+		return nil, fmt.Errorf("limitIndexDef: support for indexes with" +
+			" 1 active + 1 replica partitions only in serverless mode")
+	}
+
+	if mgr != nil {
+		nodeDefs, err := mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, false)
+		if err != nil || nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
+			return nil, fmt.Errorf("limitIndexDef: GetNodeDefs,"+
+				" nodeDefs: %+v, err: %v", nodeDefs, err)
+		}
+
+		asyncResponses := make(chan error, len(nodeDefs.NodeDefs))
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			go func(n *cbgt.NodeDef) {
+				asyncResponses <- CanNodeAccommodateRequest(n)
+			}(nodeDef)
+		}
+
+		var nodesAboveHWM int // Number of nodes sustaining usage over high watermark
+
+		for i := 0; i < len(nodeDefs.NodeDefs); i++ {
+			err := <-asyncResponses
+			if err != nil {
+				nodesAboveHWM++
+			}
+		}
+
+		if nodesAboveHWM > 0 && nodesAboveHWM == len(nodeDefs.NodeDefs) {
+			// All nodes show usage above HWM, deny index request
+			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
+				" index request: %v", indexDef.Name)
+		}
+	}
+
+	return indexDef, nil
+}
+
+// -----------------------------------------------------------------------------
+
+type NodeStats struct {
+	HighWaterMark             float64
+	LowWaterMark              float64
+	UnderUtilizationWaterMark float64
+
+	BillableUnits uint64
+	DiskUsage     uint64
+	MemoryUsage   uint64
+	CPUUsage      uint64 // placeholder
+
+	MaxBillableUnits uint64
+	MaxDiskUsage     uint64
+	MaxMemoryUsage   uint64
+}
+
+func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) error {
+	nodeStats, err := ObtainNodeStats(nodeDef)
+	if err != nil {
+		return err
+	}
+
+	if nodeStats.MaxBillableUnits > 0 &&
+		nodeStats.BillableUnits >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxBillableUnits)) {
+		return fmt.Errorf("billableUnits exceeds limit")
+	}
+
+	if nodeStats.MaxDiskUsage > 0 &&
+		nodeStats.DiskUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxDiskUsage)) {
+		return fmt.Errorf("disk usage exceeds limit")
+	}
+
+	if nodeStats.MaxMemoryUsage > 0 &&
+		nodeStats.MemoryUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxMemoryUsage)) {
+		return fmt.Errorf("memory usage exceeds limit")
+	}
+
+	return nil
+}
+
+func ObtainNodeStats(nodeDef *cbgt.NodeDef) (*NodeStats, error) {
+	if nodeDef == nil || len(nodeDef.HostPort) == 0 {
+		return nil, fmt.Errorf("ObtainNodeStats: nodeDef unavailable")
+	}
+
+	nsstats, err := fetchNSStatsForNode(nodeDef.HostPort)
+	if err != nil {
+		return nil, fmt.Errorf("ObtainNodeStats, err: %v", err)
+	}
+
+	ns := &NodeStats{}
+	if _, exists := nsstats["resourceUtilizationHighWaterMark"]; exists {
+		ns.HighWaterMark = nsstats["resourceUtilizationHighWaterMark"].(float64)
+	}
+	if _, exists := nsstats["resourceUtilizationLowWaterMark"]; exists {
+		ns.LowWaterMark = nsstats["resourceUtilizationLowWaterMark"].(float64)
+	}
+	if _, exists := nsstats["resourceUnderUtilizationWaterMark"]; exists {
+		ns.UnderUtilizationWaterMark = nsstats["resourceUnderUtilizationWaterMark"].(float64)
+	}
+
+	if valInterface, exists := nsstats["utilization"]; exists {
+		if val, ok := valInterface.(map[string]uint64); ok {
+			ns.BillableUnits = val["billableUnits"]
+			ns.DiskUsage = val["disk"]
+			ns.MemoryUsage = val["memory"]
+		}
+	}
+	if valInterface, exists := nsstats["limits"]; exists {
+		if val, ok := valInterface.(map[string]uint64); ok {
+			ns.MaxBillableUnits = val["billableUnits"]
+			ns.MaxDiskUsage = val["disk"]
+			ns.MaxMemoryUsage = val["memory"]
+		}
+	}
+
+	return ns, nil
+}
+
+func fetchNSStatsForNode(hostport string) (map[string]interface{}, error) {
+	url := "http://" + hostport + "/api/nsstats"
+
+	u, err := cbgt.CBAuthURL(url)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := cbgt.HttpClient().Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(respBuf) == 0 {
+		return nil, fmt.Errorf("response was empty")
+	}
+
+	var stats map[string]interface{}
+	if err := json.Unmarshal(respBuf, &stats); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
 // -----------------------------------------------------------------------------

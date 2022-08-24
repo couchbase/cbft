@@ -81,6 +81,16 @@ var prometheusStats = map[string]string{
 	"num_root_filesegments":          "gauge",
 	"num_root_memorysegments":        "gauge",
 	"curr_batches_blocked_by_herder": "gauge",
+
+	"resourceUtilizationHighWaterMark": "gauge",
+	"resourceUtilizationLowWaterMark": "gauge",
+	"resourceUnderUtilizationWaterMark": "gauge",
+	"utilization:billableUnits": "gauge",
+	"utilization:disk": "gauge",
+	"utilization:memory": "gauge",
+	"limits:billableUnitsRate": "gauge",
+	"limits:disk": "gauge",
+	"limits:memory": "gauge",
 }
 
 var bline = []byte("\n")

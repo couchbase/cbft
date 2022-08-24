@@ -531,7 +531,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	}
 
 	if CurrentNodeDefsFetcher == nil {
-		return limitIndexDef(indexDef)
+		return limitIndexDef(mgr, indexDef)
 	}
 
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
@@ -664,7 +664,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
 	}
 
-	return limitIndexDef(indexDef)
+	return limitIndexDef(mgr, indexDef)
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {

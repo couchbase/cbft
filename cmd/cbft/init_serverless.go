@@ -11,25 +11,33 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"syscall"
 
+	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rebalance"
 	log "github.com/couchbase/clog"
 )
 
-func registerServerlessHooks(options map[string]string) map[string]string {
+func registerServerlessHooks(options map[string]string, dataDir string) map[string]string {
 	if options["deploymentModel"] != "serverless" {
 		return options
 	}
+
+	cbft.ServerlessMode = true
 
 	// enable partition node stickiness, to disable default node
 	// weight normalisation
 	options["enablePartitionNodeStickiness"] = "true"
 
 	// initialize usage thresholds
-	options["highWaterMarkThreshold"] = strconv.Itoa(defaultHighWaterMarkThreshold)
-	options["lowWaterMarkThreshold"] = strconv.Itoa(defaultLowWaterMarkThreshold)
-	options["scaleInWaterMarkThreshold"] = strconv.Itoa(defaultScaleInWaterMarkThreshold)
+	options["resourceUtilizationHighWaterMark"] = defaultHighWaterMark
+	options["resourceUtilizationLowWaterMark"] = defaultLowWaterMark
+	options["resourceUnderUtilizationWaterMark"] = defaultUnderUtilizationWaterMark
+
+	// FIXME
+	options["maxBillableUnitsRate"] = "0"
+	options["maxDisk"] = determineDiskCapacity(dataDir)
 
 	cbgt.PlannerHooks["serverless"] = serverlessPlannerHook
 	options["plannerHookName"] = "serverless"
@@ -39,14 +47,26 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	return options
 }
 
+func determineDiskCapacity(path string) string {
+	fs := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &fs)
+	if err != nil {
+		return "0"
+	}
+	return strconv.FormatUint(fs.Blocks*uint64(fs.Bsize), 10)
+}
+
 // -----------------------------------------------------------------------------
 
-const defaultHighWaterMarkThreshold = 80
-const defaultLowWaterMarkThreshold = 50
-const defaultScaleInWaterMarkThreshold = 30
+const defaultHighWaterMark = "0.8"
+const defaultLowWaterMark = "0.5"
+const defaultUnderUtilizationWaterMark = "0.3"
 
 func shouldNodeAccommodateIndexPartition(nodeDef *cbgt.NodeDef) bool {
-	// TODO: Implement usage vs threshold tracking algorithm here.
+	if err := cbft.CanNodeAccommodateRequest(nodeDef); err != nil {
+		return false
+	}
+
 	return true
 }
 
@@ -234,9 +254,12 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 
 	// Boost weight of the nodes holding the index's partitions that
 	// were untouched by the rebalance, to keep the already resident
-	// partitions where they are.
+	// partitions where they are only if node's usage is within
+	// permissible limits.
 	for nodeUUID := range indexNodeUUIDs {
-		nodeWeights[nodeUUID] = 2
+		if nodeWeights[nodeUUID] != minNodeWeight {
+			nodeWeights[nodeUUID] = 2
+		}
 	}
 
 	in.NodeWeights = nodeWeights

@@ -333,6 +333,8 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	feeds, pindexes := mgr.CurrentMaps()
 
 	var nsIndexName string
+	var totalBytesUsedDisk uint64
+
 	for _, pindex := range pindexes {
 		nsIndexName = indexNameToSourceName[pindex.IndexName]
 		nsIndexStat, ok := nsIndexStats[nsIndexName]
@@ -387,6 +389,14 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 					}
 				}
 			}
+
+			bytesOnDisk, ok := nsIndexStat["num_bytes_used_disk"]
+			if ok {
+				bytesUsedDisk, ok := bytesOnDisk.(float64)
+				if ok {
+					totalBytesUsedDisk += uint64(bytesUsedDisk)
+				}
+			}
 		}
 	}
 
@@ -426,10 +436,58 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 		}
 	}
 
-	nsIndexStats["regulatorStats"] = GetRegulatorStats()
+	regulatorStats := GetRegulatorStats()
+	nsIndexStats["regulatorStats"] = regulatorStats
 
 	if !collAware {
-		nsIndexStats[""] = gatherTopLevelStats(mgr, rd)
+		topLevelStats := gatherTopLevelStats(mgr, rd)
+
+		var totalUnitsMetered uint64
+		if val, exists := regulatorStats["total_units_metered"]; exists {
+			totalUnitsMetered = val.(uint64)
+		}
+
+		topLevelStats["utilization:billableUnits"] = totalUnitsMetered
+		topLevelStats["utilization:disk"] = totalBytesUsedDisk
+		topLevelStats["utilization:memory"] = rd.memStats.Sys - rd.memStats.HeapReleased
+
+		if ServerlessMode {
+			options := mgr.Options()
+
+			if val, exists := options["resourceUtilizationHighWaterMark"]; exists {
+				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+					topLevelStats["resourceUtilizationHighWaterMark"] = valFloat64
+				}
+			}
+			if val, exists := options["resourceUtilizationLowWaterMark"]; exists {
+				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+					topLevelStats["resourceUtilizationLowWaterMark"] = valFloat64
+				}
+			}
+			if val, exists := options["resourceUnderUtilizationWaterMark"]; exists {
+				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+					topLevelStats["resourceUnderUtilizationWaterMark"] = valFloat64
+				}
+			}
+
+			if val, exists := options["maxBillableUnitsRate"]; exists {
+				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+					topLevelStats["limits:billableUnitsRate"] = valUint64
+				}
+			}
+			if val, exists := options["maxDisk"]; exists {
+				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+					topLevelStats["limits:disk"] = valUint64
+				}
+			}
+			if val, exists := options["ftsMemoryQuota"]; exists {
+				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+					topLevelStats["limits:memory"] = valUint64
+				}
+			}
+		}
+
+		nsIndexStats[""] = topLevelStats
 	}
 
 	return nsIndexStats, nil
@@ -551,25 +609,6 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
-
-	options := mgr.Options()
-	if options["deploymentModel"] == "serverless" {
-		if val, exists := options["highWaterMarkThreshold"]; exists {
-			if valInt, err := strconv.Atoi(val); err == nil {
-				topLevelStats["highWaterMarkThreshold"] = valInt
-			}
-		}
-		if val, exists := options["lowWaterMarkThreshold"]; exists {
-			if valInt, err := strconv.Atoi(val); err == nil {
-				topLevelStats["lowWaterMarkThreshold"] = valInt
-			}
-		}
-		if val, exists := options["scaleInWaterMarkThreshold"]; exists {
-			if valInt, err := strconv.Atoi(val); err == nil {
-				topLevelStats["scaleInWaterMarkThreshold"] = valInt
-			}
-		}
-	}
 
 	return topLevelStats
 }
