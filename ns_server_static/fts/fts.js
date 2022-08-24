@@ -1443,12 +1443,13 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.collectionNames = [];
         $scope.collectionOpened = "";
         $scope.collectionDynamic = false;
-        $scope.collectionAnalyzer = "standard";
         $scope.collectionTextFieldsAsIdentifiers = false;
+        $scope.collectionAnalyzer = "standard";
 
         $scope.collectionDynamicToggled = function() {
-            $scope.collectionAnalyzer = "standard";
+            $scope.collectionDynamic = "false";
             $scope.collectionTextFieldsAsIdentifiers = false;
+            $scope.collectionAnalyzer = "standard";
             $scope.resetDynamic();
         };
 
@@ -1601,7 +1602,6 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.userSelectedField(path, valType)
             }, 300);
         }
-
 
         $scope.userSelectedField = function(path, valType) {
             var cursor = $scope.editor.getCursor();
@@ -1795,6 +1795,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.expando = function(collectionName) {
             $scope.errorMessage = "";
             $scope.collectionOpened = collectionName;
+            $scope.collectionDynamic = false;
+            $scope.collectionAnalyzer = "";
+            $scope.collectionTextFieldsAsIdentifiers = false;
+
             var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName).getDocument();
             if (sampleDocument == '{}') {
                 $scope.loadAnotherDocument($scope.newSourceName, $scope.newScopeName, collectionName);
@@ -1813,11 +1817,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     if (dynamicAnalyzer == "keyword") {
                         $scope.collectionTextFieldsAsIdentifiers = true;
                     }
-                    return;
                 }
             }
-            $scope.collectionDynamic = false;
-            $scope.collectionAnalyzer = "";
         };
 
         $scope.codemirrorLoaded = function(_editor){

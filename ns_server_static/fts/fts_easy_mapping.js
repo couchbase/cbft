@@ -385,36 +385,36 @@ function newEasyMapping() {
         },
         makeDynamic: function(collectionAnalyzer) {
             if (collectionAnalyzer.length == 0) {
-              collectionAnalyzer = "standard";
+                collectionAnalyzer = "standard";
             }
             let obj = {
-              analyzer: collectionAnalyzer,
-              name: "(dynamic - " + collectionAnalyzer + ")",
+                analyzer: collectionAnalyzer,
+                name: "(dynamic - " + collectionAnalyzer + ")",
             };
             mapping["*dynamic*"] = Object.assign({}, obj);
         },
         hasDynamicDefChanged: function(collectionAnalyzer) {
             if (collectionAnalyzer.length == 0) {
-              collectionAnalyzer = "standard";
+                collectionAnalyzer = "standard";
             }
             let obj = {
-              analyzer: collectionAnalyzer,
-              name: "(dynamic - " + collectionAnalyzer + ")",
+                analyzer: collectionAnalyzer,
+                name: "(dynamic - " + collectionAnalyzer + ")",
             };
             if (JSON.stringify(mapping["*dynamic*"]) === JSON.stringify(obj)) {
-              return false;
+                return false;
             }
             return true;
         },
         dynamicAnalyzer: function() {
-          if (angular.isDefined(mapping["*dynamic*"])) {
-              let rv = mapping["*dynamic*"].analyzer;
-              if (rv.length == 0) {
-                rv = "standard"
-              }
-              return rv;
-           }
-           return "";
+            if (angular.isDefined(mapping["*dynamic*"])) {
+                let rv = mapping["*dynamic*"].analyzer;
+                if (rv.length == 0) {
+                    rv = "standard"
+                }
+                return rv;
+            }
+            return "";
         },
         addField: function(editField) {
             if (editField.identifier) {
