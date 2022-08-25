@@ -231,86 +231,51 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 // -----------------------------------------------------------------------------
 
-type NodeStats struct {
-	HighWaterMark             float64
-	LowWaterMark              float64
-	UnderUtilizationWaterMark float64
-
-	BillableUnits uint64
-	DiskUsage     uint64
-	MemoryUsage   uint64
-	CPUUsage      uint64 // placeholder
-
-	MaxBillableUnits uint64
-	MaxDiskUsage     uint64
-	MaxMemoryUsage   uint64
-}
-
 func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) error {
-	nodeStats, err := ObtainNodeStats(nodeDef)
+	nodeStats, err := obtainNodeStats(nodeDef)
 	if err != nil {
 		return err
 	}
 
-	if nodeStats.MaxBillableUnits > 0 &&
-		nodeStats.BillableUnits >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxBillableUnits)) {
+	if nodeStats.LimitBillableUnitsRate > 0 &&
+		nodeStats.BillableUnitsRate >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitBillableUnitsRate)) {
 		return fmt.Errorf("billableUnits exceeds limit")
 	}
 
-	if nodeStats.MaxDiskUsage > 0 &&
-		nodeStats.DiskUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxDiskUsage)) {
+	if nodeStats.LimitDiskUsage > 0 &&
+		nodeStats.DiskUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitDiskUsage)) {
 		return fmt.Errorf("disk usage exceeds limit")
 	}
 
-	if nodeStats.MaxMemoryUsage > 0 &&
-		nodeStats.MemoryUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.MaxMemoryUsage)) {
+	if nodeStats.LimitMemoryUsage > 0 &&
+		nodeStats.MemoryUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitMemoryUsage)) {
 		return fmt.Errorf("memory usage exceeds limit")
 	}
 
 	return nil
 }
 
-func ObtainNodeStats(nodeDef *cbgt.NodeDef) (*NodeStats, error) {
-	if nodeDef == nil || len(nodeDef.HostPort) == 0 {
-		return nil, fmt.Errorf("ObtainNodeStats: nodeDef unavailable")
-	}
+type NodeStats struct {
+	HighWaterMark             float64 `json:"resourceUtilizationHighWaterMark"`
+	LowWaterMark              float64 `json:"resourceUtilizationLowWaterMark"`
+	UnderUtilizationWaterMark float64 `json:"resourceUnderUtilizationWaterMark"`
 
-	nsstats, err := fetchNSStatsForNode(nodeDef.HostPort)
-	if err != nil {
-		return nil, fmt.Errorf("ObtainNodeStats, err: %v", err)
-	}
+	BillableUnitsRate uint64 `json:"utilization:billableUnitsRate"`
+	DiskUsage         uint64 `json:"utilization:diskBytes"`
+	MemoryUsage       uint64 `json:"utilization:memoryBytes"`
+	CPUUsage          uint64 // placeholder
 
-	ns := &NodeStats{}
-	if _, exists := nsstats["resourceUtilizationHighWaterMark"]; exists {
-		ns.HighWaterMark = nsstats["resourceUtilizationHighWaterMark"].(float64)
-	}
-	if _, exists := nsstats["resourceUtilizationLowWaterMark"]; exists {
-		ns.LowWaterMark = nsstats["resourceUtilizationLowWaterMark"].(float64)
-	}
-	if _, exists := nsstats["resourceUnderUtilizationWaterMark"]; exists {
-		ns.UnderUtilizationWaterMark = nsstats["resourceUnderUtilizationWaterMark"].(float64)
-	}
-
-	if valInterface, exists := nsstats["utilization"]; exists {
-		if val, ok := valInterface.(map[string]uint64); ok {
-			ns.BillableUnits = val["billableUnits"]
-			ns.DiskUsage = val["disk"]
-			ns.MemoryUsage = val["memory"]
-		}
-	}
-	if valInterface, exists := nsstats["limits"]; exists {
-		if val, ok := valInterface.(map[string]uint64); ok {
-			ns.MaxBillableUnits = val["billableUnits"]
-			ns.MaxDiskUsage = val["disk"]
-			ns.MaxMemoryUsage = val["memory"]
-		}
-	}
-
-	return ns, nil
+	LimitBillableUnitsRate uint64 `json:"limits:billableUnitsRate"`
+	LimitDiskUsage         uint64 `json:"limits:diskBytes"`
+	LimitMemoryUsage       uint64 `json:"limits:memoryBytes"`
 }
 
-func fetchNSStatsForNode(hostport string) (map[string]interface{}, error) {
-	url := "http://" + hostport + "/api/nsstats"
+func obtainNodeStats(nodeDef *cbgt.NodeDef) (*NodeStats, error) {
+	if nodeDef == nil || len(nodeDef.HostPort) == 0 {
+		return nil, fmt.Errorf("nodeDef unavailable")
+	}
+
+	url := "http://" + nodeDef.HostPort + "/api/nsstats"
 
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
@@ -337,12 +302,12 @@ func fetchNSStatsForNode(hostport string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("response was empty")
 	}
 
-	var stats map[string]interface{}
-	if err := json.Unmarshal(respBuf, &stats); err != nil {
+	var nodeStats *NodeStats
+	if err := json.Unmarshal(respBuf, &nodeStats); err != nil {
 		return nil, err
 	}
 
-	return stats, nil
+	return nodeStats, nil
 }
 
 // -----------------------------------------------------------------------------

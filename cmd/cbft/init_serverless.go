@@ -35,7 +35,14 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 
 	// FIXME
 	options["maxBillableUnitsRate"] = "0"
-	options["maxDisk"] = "0"
+	options["maxDiskBytes"] = "0"
+
+	// Track statistics to determine moving average
+	// Prometheus pulls low cardinality stats about every 10s, setting numEntries
+	// to 360 to track moving average over 1 hour (3600/10).
+	cbft.InitTimeSeriesStatTracker()
+	cbft.TrackStatistic("memoryBytes", 360, false, false)
+	cbft.TrackStatistic("totalUnitsMetered", 360, true, true)
 
 	cbgt.PlannerHooks["serverless"] = serverlessPlannerHook
 	options["plannerHookName"] = "serverless"

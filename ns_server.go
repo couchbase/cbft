@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"sort"
@@ -333,7 +335,6 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	feeds, pindexes := mgr.CurrentMaps()
 
 	var nsIndexName string
-	var totalBytesUsedDisk uint64
 
 	for _, pindex := range pindexes {
 		nsIndexName = indexNameToSourceName[pindex.IndexName]
@@ -389,14 +390,6 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 					}
 				}
 			}
-
-			bytesOnDisk, ok := nsIndexStat["num_bytes_used_disk"]
-			if ok {
-				bytesUsedDisk, ok := bytesOnDisk.(float64)
-				if ok {
-					totalBytesUsedDisk += uint64(bytesUsedDisk)
-				}
-			}
 		}
 	}
 
@@ -436,58 +429,10 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 		}
 	}
 
-	regulatorStats := GetRegulatorStats()
-	nsIndexStats["regulatorStats"] = regulatorStats
+	nsIndexStats["regulatorStats"] = GetRegulatorStats()
 
 	if !collAware {
-		topLevelStats := gatherTopLevelStats(mgr, rd)
-
-		var totalUnitsMetered uint64
-		if val, exists := regulatorStats["total_units_metered"]; exists {
-			totalUnitsMetered = val.(uint64)
-		}
-
-		topLevelStats["utilization:billableUnits"] = totalUnitsMetered
-		topLevelStats["utilization:disk"] = totalBytesUsedDisk
-		topLevelStats["utilization:memory"] = rd.memStats.Sys - rd.memStats.HeapReleased
-
-		if ServerlessMode {
-			options := mgr.Options()
-
-			if val, exists := options["resourceUtilizationHighWaterMark"]; exists {
-				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
-					topLevelStats["resourceUtilizationHighWaterMark"] = valFloat64
-				}
-			}
-			if val, exists := options["resourceUtilizationLowWaterMark"]; exists {
-				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
-					topLevelStats["resourceUtilizationLowWaterMark"] = valFloat64
-				}
-			}
-			if val, exists := options["resourceUnderUtilizationWaterMark"]; exists {
-				if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
-					topLevelStats["resourceUnderUtilizationWaterMark"] = valFloat64
-				}
-			}
-
-			if val, exists := options["maxBillableUnitsRate"]; exists {
-				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
-					topLevelStats["limits:billableUnitsRate"] = valUint64
-				}
-			}
-			if val, exists := options["maxDisk"]; exists {
-				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
-					topLevelStats["limits:disk"] = valUint64
-				}
-			}
-			if val, exists := options["ftsMemoryQuota"]; exists {
-				if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
-					topLevelStats["limits:memory"] = valUint64
-				}
-			}
-		}
-
-		nsIndexStats[""] = topLevelStats
+		nsIndexStats[""] = gatherTopLevelStats(mgr, rd)
 	}
 
 	return nsIndexStats, nil
@@ -609,6 +554,64 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
+
+	var totalUnitsMetered uint64
+	if val, exists := GetRegulatorStats()["total_units_metered"]; exists {
+		totalUnitsMetered = val.(uint64)
+	}
+
+	topLevelStats["utilization:billableUnitsRate"] = DetermineNewAverage(
+		"totalUnitsMetered", totalUnitsMetered)
+	topLevelStats["utilization:memoryBytes"] = DetermineNewAverage(
+		"memoryBytes", uint64(rd.memStats.Sys-rd.memStats.HeapReleased))
+
+	var size int64
+	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return err
+	})
+	topLevelStats["utilization:diskBytes"] = uint64(size)
+
+	if ServerlessMode {
+		options := mgr.Options()
+
+		if val, exists := options["resourceUtilizationHighWaterMark"]; exists {
+			if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+				topLevelStats["resourceUtilizationHighWaterMark"] = valFloat64
+			}
+		}
+		if val, exists := options["resourceUtilizationLowWaterMark"]; exists {
+			if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+				topLevelStats["resourceUtilizationLowWaterMark"] = valFloat64
+			}
+		}
+		if val, exists := options["resourceUnderUtilizationWaterMark"]; exists {
+			if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
+				topLevelStats["resourceUnderUtilizationWaterMark"] = valFloat64
+			}
+		}
+
+		if val, exists := options["maxBillableUnitsRate"]; exists {
+			if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+				topLevelStats["limits:billableUnitsRate"] = valUint64
+			}
+		}
+		if val, exists := options["maxDiskBytes"]; exists {
+			if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+				topLevelStats["limits:diskBytes"] = valUint64
+			}
+		}
+		if val, exists := options["ftsMemoryQuota"]; exists {
+			if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+				topLevelStats["limits:memoryBytes"] = valUint64
+			}
+		}
+	}
 
 	return topLevelStats
 }
