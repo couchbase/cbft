@@ -513,7 +513,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// Set DCP connection sharing for gocbcore feeds to 6
 	options["maxFeedsPerDCPAgent"] = "6"
 
-	options = registerServerlessHooks(options, dataDir)
+	options = registerServerlessHooks(options)
 
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,

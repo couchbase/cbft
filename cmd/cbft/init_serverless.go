@@ -10,8 +10,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"syscall"
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
@@ -19,7 +17,7 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-func registerServerlessHooks(options map[string]string, dataDir string) map[string]string {
+func registerServerlessHooks(options map[string]string) map[string]string {
 	if options["deploymentModel"] != "serverless" {
 		return options
 	}
@@ -37,7 +35,7 @@ func registerServerlessHooks(options map[string]string, dataDir string) map[stri
 
 	// FIXME
 	options["maxBillableUnitsRate"] = "0"
-	options["maxDisk"] = determineDiskCapacity(dataDir)
+	options["maxDisk"] = "0"
 
 	cbgt.PlannerHooks["serverless"] = serverlessPlannerHook
 	options["plannerHookName"] = "serverless"
@@ -45,15 +43,6 @@ func registerServerlessHooks(options map[string]string, dataDir string) map[stri
 	rebalance.RebalanceHook = serverlessRebalanceHook
 
 	return options
-}
-
-func determineDiskCapacity(path string) string {
-	fs := syscall.Statfs_t{}
-	err := syscall.Statfs(path, &fs)
-	if err != nil {
-		return "0"
-	}
-	return strconv.FormatUint(fs.Blocks*uint64(fs.Bsize), 10)
 }
 
 // -----------------------------------------------------------------------------
