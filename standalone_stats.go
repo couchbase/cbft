@@ -9,17 +9,31 @@
 //go:build !server
 // +build !server
 
-package main
+package cbft
 
 import (
+	"os"
+
 	sigar "github.com/cloudfoundry/gosigar"
 )
 
-// getMemoryLimit returns the host's total memory, in bytes.
-func getMemoryLimit() (uint64, error) {
-	mem := sigar.Mem{}
+func InitSystemStats() error {
+	// no-op
+	return nil
+}
 
+// GetMemoryLimit returns the host's total memory, in bytes.
+func GetMemoryLimit() (uint64, error) {
+	mem := sigar.Mem{}
 	mem.Get()
 
 	return uint64(mem.Total * 1000), nil
+}
+
+// currentCPUPercent returns current CPU (percent) used by process.
+func currentCPUPercent() (float64, error) {
+	procCPU := sigar.ProcCpu{}
+	procCPU.Get(os.Getpid())
+
+	return procCPU.Percent * 100, nil
 }

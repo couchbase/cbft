@@ -88,6 +88,7 @@ var prometheusStats = map[string]string{
 	"utilization:billableUnitsRate":     "gauge",
 	"utilization:diskBytes":             "gauge",
 	"utilization:memoryBytes":           "gauge",
+	"utilization:cpuPercent":            "gauge",
 	"limits:billableUnitsRate":          "gauge",
 	"limits:diskBytes":                  "gauge",
 	"limits:memoryBytes":                "gauge",

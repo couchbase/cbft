@@ -38,7 +38,7 @@ func initMemOptions(options map[string]string) (err error) {
 		}
 		memQuota = uint64(fmq)
 
-		memoryLimit, err := getMemoryLimit()
+		memoryLimit, err := cbft.GetMemoryLimit()
 		if err != nil {
 			return fmt.Errorf("init_mem: error getting memory limit: %v", err)
 		}

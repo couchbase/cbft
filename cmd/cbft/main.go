@@ -382,29 +382,28 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extras = string(extrasJSON)
 
-	err = initMemOptions(options)
-	if err != nil {
+	if err = cbft.InitSystemStats(); err != nil {
 		return nil, err
 	}
 
-	err = initCPUOptions(options)
-	if err != nil {
+	if err = initMemOptions(options); err != nil {
 		return nil, err
 	}
 
-	err = initMossOptions(options)
-	if err != nil {
+	if err = initCPUOptions(options); err != nil {
 		return nil, err
 	}
 
-	err = initBleveOptions(options)
-	if err != nil {
+	if err = initMossOptions(options); err != nil {
+		return nil, err
+	}
+
+	if err = initBleveOptions(options); err != nil {
 		return nil, err
 	}
 
 	if options["logStatsEvery"] != "" {
-		var logStatsEvery int
-		logStatsEvery, err = strconv.Atoi(options["logStatsEvery"])
+		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
 		if err != nil {
 			return nil, err
 		}
@@ -413,13 +412,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	err = cbft.InitResultCacheOptions(options)
-	if err != nil {
+	if err = cbft.InitResultCacheOptions(options); err != nil {
 		return nil, err
 	}
 
-	err = cbft.InitBleveResultCacheOptions(options)
-	if err != nil {
+	if err = cbft.InitBleveResultCacheOptions(options); err != nil {
 		return nil, err
 	}
 

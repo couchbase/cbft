@@ -252,6 +252,10 @@ func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) error {
 		return fmt.Errorf("memory usage exceeds limit")
 	}
 
+	if nodeStats.CPUUsage >= uint64(nodeStats.HighWaterMark*100) {
+		return fmt.Errorf("cpu usage exceeds limit")
+	}
+
 	return nil
 }
 
@@ -263,7 +267,7 @@ type NodeStats struct {
 	BillableUnitsRate uint64 `json:"utilization:billableUnitsRate"`
 	DiskUsage         uint64 `json:"utilization:diskBytes"`
 	MemoryUsage       uint64 `json:"utilization:memoryBytes"`
-	CPUUsage          uint64 // placeholder
+	CPUUsage          uint64 `json:"utilization:cpuPercent"`
 
 	LimitBillableUnitsRate uint64 `json:"limits:billableUnitsRate"`
 	LimitDiskUsage         uint64 `json:"limits:diskBytes"`

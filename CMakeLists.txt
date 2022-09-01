@@ -36,6 +36,8 @@ GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
+  CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
+  CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin
   GOVERSION 1.18)
 

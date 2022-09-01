@@ -563,7 +563,7 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["utilization:billableUnitsRate"] = DetermineNewAverage(
 		"totalUnitsMetered", totalUnitsMetered)
 	topLevelStats["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", uint64(rd.memStats.Sys-rd.memStats.HeapReleased))
+		"memoryBytes", rd.memStats.Sys-rd.memStats.HeapReleased)
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
@@ -576,6 +576,11 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 		return err
 	})
 	topLevelStats["utilization:diskBytes"] = uint64(size)
+
+	if cpu, err := currentCPUPercent(); err == nil {
+		topLevelStats["utilization:cpuPercent"] = DetermineNewAverage(
+			"cpuPercent", uint64(cpu/float64(runtime.NumCPU())))
+	}
 
 	if ServerlessMode {
 		options := mgr.Options()

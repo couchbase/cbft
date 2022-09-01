@@ -43,6 +43,7 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	cbft.InitTimeSeriesStatTracker()
 	cbft.TrackStatistic("memoryBytes", 360, false, false)
 	cbft.TrackStatistic("totalUnitsMetered", 360, true, true)
+	cbft.TrackStatistic("cpuPercent", 360, false, false)
 
 	cbgt.PlannerHooks["serverless"] = serverlessPlannerHook
 	options["plannerHookName"] = "serverless"
