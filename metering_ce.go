@@ -35,6 +35,10 @@ func MeterReads(bucket string, index bleve.Index) {
 	return
 }
 
+func RefreshRegulatorStats() {
+	return
+}
+
 func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
 	return CheckResultNormal, 0, nil

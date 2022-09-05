@@ -826,6 +826,11 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 
 	// Clear out source partition seqs cache for this index
 	DropSourcePartitionSeqs(indexDef.SourceName, indexDef.SourceUUID)
+
+	// Refresh the regulator stats. For eg, Deletion of a bucket leads
+	// to index deletions, in which case the stale regulator stats
+	// needs to be removed.
+	RefreshRegulatorStats()
 }
 
 func parseIndexParams(indexParams string) (

@@ -182,7 +182,6 @@ func limitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 			" num_fts_indexes (active + pending): (%v + %v), limit: %v",
 			scope, numActiveIndexes, numPendingIndexes, numIndexesLimit)
 	}
-
 	limiter.pendingIndexes[indexDef.Name] = key
 
 	return indexDef, nil
@@ -415,6 +414,18 @@ func extractSourceNameFromReq(req *http.Request) (string, error) {
 	return indexDef.SourceName, nil
 }
 
+func checkAndSplitDecoratedIndexName(indexName string) (bool, string, string, string) {
+	if strings.Contains(indexName, ".") {
+		uIndexPos := strings.LastIndex(indexName, ".")
+		userIndex := indexName[uIndexPos+1:]
+		scopeIndex := strings.LastIndex(indexName[:uIndexPos], ".")
+		bucket := indexName[:scopeIndex]
+
+		return true, bucket, indexName[scopeIndex+1 : uIndexPos], userIndex
+	}
+	return false, "", "", indexName
+}
+
 func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
 	if err != nil {
@@ -439,7 +450,6 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 			}
 		}
 	}
-
 	return CheckResultNormal, nil
 }
 
@@ -451,10 +461,18 @@ func (e *rateLimiter) regulateRequest(username, path string,
 	if req.Method == "DELETE" {
 		return CheckResultNormal, 0, nil
 	}
+
 	indexName := rest.IndexNameLookup(req)
 	// need to see which bucket EXACTLY is this request for.
-	bucketScopeKey := e.getIndexKeyLOCKED(indexName)
-	bucket := strings.Split(bucketScopeKey, ":")[0]
+	decorated, bucket, _, _ := checkAndSplitDecoratedIndexName(indexName)
+	if !decorated {
+		bucketScopeKey := e.getIndexKeyLOCKED(indexName)
+		bucket = strings.Split(bucketScopeKey, ":")[0]
+	}
+
+	if path == queryPath {
+		return CheckQuotaRead(bucket, username, req)
+	}
 
 	var createReq bool
 	if bucket == "" {
@@ -466,10 +484,6 @@ func (e *rateLimiter) regulateRequest(username, path string,
 				"info from request %v", err)
 		}
 		bucket = sourceName
-	}
-
-	if path == queryPath {
-		return CheckQuotaRead(bucket, username, req)
 	}
 
 	action, duration, err := CheckQuotaWrite(nil, bucket, username, false, req)
@@ -678,6 +692,14 @@ func (e *rateLimiter) completeIndexRequestLOCKED(req *http.Request) {
 	// This is invoked after an index introduction/update, so the index
 	// definition should be available in the system.
 	indexName := rest.IndexNameLookup(req)
+	if !strings.Contains(indexName, ".") {
+		bucketScope := e.pendingIndexes[indexName]
+		delete(e.pendingIndexes, indexName)
+		delimPos := strings.LastIndex(bucketScope, ":")
+		indexName = decorateIndexNameWithKeySpace(bucketScope[:delimPos],
+			bucketScope[delimPos+1:], indexName, false)
+	}
+
 	if _, indexDefsByName, err := e.mgr.GetIndexDefs(false); err == nil {
 		if indexDef, exists := indexDefsByName[indexName]; exists {
 			scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
