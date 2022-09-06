@@ -49,7 +49,6 @@ type regulatorStats struct {
 	TotalReadOpsCapped             uint64 `json:"total_read_ops_capped"`
 	TotalReadOpsRejected           uint64 `json:"total_read_ops_rejected"`
 	TotalWriteOpsRejected          uint64 `json:"total_write_ops_rejected"`
-	TotalReadThrottleSeconds       uint64 `json:"total_read_throttle_seconds"`
 	TotalWriteThrottleSeconds      uint64 `json:"total_write_throttle_seconds"`
 	TotalCheckQuotaReadErrs        uint64 `json:"total_read_ops_metering_errs"`
 	TotalCheckQuotaWriteErrs       uint64 `json:"total_write_ops_metering_errs"`
@@ -345,11 +344,11 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 		switch action {
 		case regulator.CheckResultError:
 			atomic.AddUint64(&reg.stats[bucket].TotalCheckQuotaWriteErrs, 1)
-		case regulator.CheckResultReject:
+
+		// index create and update requests at the request admission layer
+		// are only limited, not throttled
+		case regulator.CheckResultThrottle, regulator.CheckResultReject:
 			atomic.AddUint64(&reg.stats[bucket].TotalWriteOpsRejected, 1)
-		case regulator.CheckResultThrottle:
-			atomic.AddUint64(&reg.stats[bucket].TotalWriteThrottleSeconds,
-				uint64(float64(duration)/float64(time.Second)))
 		default:
 			log.Warnf("limiting/metering: unindentified result from "+
 				"regulator, result: %v\n", action)
@@ -449,7 +448,7 @@ func CheckQuotaRead(bucket, user string,
 			"create estimated units err: %v", err)
 	}
 	checkQuotaOps := &regulator.CheckQuotaOpts{
-		NoThrottle:        false,
+		NoThrottle:        true,
 		NoReject:          false,
 		EstimatedDuration: time.Duration(0),
 		EstimatedUnits:    []regulator.Units{estimatedUnits},
@@ -461,11 +460,11 @@ func CheckQuotaRead(bucket, user string,
 	switch result {
 	case regulator.CheckResultError:
 		atomic.AddUint64(&reg.stats[bucket].TotalCheckQuotaReadErrs, 1)
-	case regulator.CheckResultReject:
+
+	// query requests are not throttled, only rejected at the
+	// request admission layer
+	case regulator.CheckResultThrottle, regulator.CheckResultReject:
 		atomic.AddUint64(&reg.stats[bucket].TotalReadOpsRejected, 1)
-	case regulator.CheckResultThrottle:
-		atomic.AddUint64(&reg.stats[bucket].TotalReadThrottleSeconds,
-			uint64(float64(duration)/float64(time.Second)))
 	}
 	return CheckResult(result), duration, err
 }

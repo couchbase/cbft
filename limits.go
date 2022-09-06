@@ -498,12 +498,12 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 		e.updateIndexCacheLOCKED(req)
 	}
 
-	action, duration, err := e.regulateRequest(username, path, req)
-	if action == CheckResultReject {
+	action, _, err := e.regulateRequest(username, path, req)
+
+	// support only limiting at the request admission layer
+	if action == CheckResultReject || action == CheckResultThrottle {
 		return false, fmt.Sprintf("limting/throttling: the request has been "+
 			"rejected according to regulator, msg:%v", err)
-	} else if action == CheckResultThrottle {
-		time.Sleep(duration)
 	} else if action == CheckResultError {
 		return false, fmt.Sprintf("limting/throttling: failed to regulate the "+
 			"request err: %v", err)
