@@ -85,7 +85,7 @@ licenses/APL2.txt.
         ng-class="{sgToggle : serverGroups[nodeDefsByAddr[nodeAddr].container].toggleStyle}" style="text-align: center;">
           <div class="row" ng-if="planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid]">
             <div class="replicaTag">
-              {{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority == 1  ? "R" : "P" }}
+              {{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority == 0  ? "P" : "R" }}
             </div>
             <div class="rwTag nodeSpec nodeSpecPriority-{{planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].priority}}">
               {{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canRead && 'r') || '&nbsp;'}}{{(planPIndex.nodes[nodeDefsByAddr[nodeAddr].uuid].canWrite && 'w') || '&nbsp;'}}
