@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -469,11 +470,24 @@ func CheckQuotaRead(bucket, user string,
 	return CheckResult(result), duration, err
 }
 
-func WriteRegulatorMetrics(w http.ResponseWriter) {
+func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64) {
 	if !ServerlessMode {
 		// dont write to prom http.ResponseWriter for
 		// non-serverless builds.
 		return
 	}
 	reg.handler.WriteMetrics(w)
+
+	statName := "num_bytes_used_disk_for_bucket"
+	for bucket, storageBytes := range storageStats {
+		b, err := json.Marshal(storageBytes)
+		if err != nil {
+			return
+		}
+		key := ` {bucket="` + bucket + `"}`
+		w.Write([]byte(fmt.Sprintf("# TYPE fts_%s guage\n", statName)))
+		w.Write(append([]byte("fts_"+statName+key+" "), b...))
+		w.Write(bline)
+	}
+
 }

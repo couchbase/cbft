@@ -45,6 +45,6 @@ func CheckQuotaRead(bucket, user string,
 	return CheckResultNormal, 0, nil
 }
 
-func WriteRegulatorMetrics(w http.ResponseWriter) {
+func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64) {
 	return
 }

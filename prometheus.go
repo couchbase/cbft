@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
@@ -128,6 +129,7 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
+	storageStats := make(map[string]uint64)
 	for k, nsis := range nsIndexStats {
 		for nsik, nsiv := range nsis {
 			b, err := json.Marshal(nsiv)
@@ -137,15 +139,22 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 				return
 			}
 			if typ, ok := prometheusStats[nsik]; ok {
+				if nsik == "num_bytes_used_disk" {
+					start := strings.Index(k, "bucket=") + len("bucket=")
+					end := strings.Index(k, ",scope=")
+					storageBytes, _ := nsiv.(float64)
+					storageStats[k[start+1:end-1]] += uint64(storageBytes)
+				}
 				w.Write([]byte(fmt.Sprintf("# TYPE fts_%s %s\n", nsik, typ)))
 				w.Write(append([]byte("fts_"+nsik+k+" "), b...))
 				w.Write(bline)
 			}
 		}
 	}
+
 	// writing the metering and throttling metrics in
 	// the high cardinality prometheus handler
-	WriteRegulatorMetrics(w)
+	WriteRegulatorMetrics(w, storageStats)
 }
 
 func scopeCollNames(params, sourceName string) (string, []string) {
