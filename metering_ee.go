@@ -94,6 +94,15 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 	return regHandler
 }
 
+func (sr *serviceRegulator) disableLimitingThrottling() bool {
+	if v, ok := sr.mgr.Options()["disableRegulatorControl"]; ok {
+		if val, err := strconv.ParseBool(v); err == nil {
+			return val
+		}
+	}
+	return false
+}
+
 func (sr *serviceRegulator) startMetering() {
 	for {
 		select {
@@ -147,7 +156,7 @@ func (sr *serviceRegulator) meteringUtil(bucket, index string,
 // them behaving differently from each other
 func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	if !ServerlessMode {
-		// no metering for non-serverless versions.
+		// no metering for non-serverless versions
 		return
 	}
 	if isClosed(stopCh) {
@@ -163,7 +172,7 @@ func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 
 func MeterReads(bucket string, index bleve.Index) {
 	if !ServerlessMode {
-		// no metering for non-serverless versions.
+		// no metering for non-serverless versions
 		return
 	}
 
@@ -251,13 +260,13 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 
 func regulatorAggregateStats(in map[string]*regulatorStats) map[string]interface{} {
 	rv := make(map[string]interface{}, len(in)+1)
-	var total_units_metered uint64
+	var totalUnitsMetered uint64
 	for k, v := range in {
-		total_units_metered += (atomic.LoadUint64(&v.TotalRUsMetered) +
+		totalUnitsMetered += (atomic.LoadUint64(&v.TotalRUsMetered) +
 			atomic.LoadUint64(&v.TotalWUsMetered))
 		rv[k] = v
 	}
-	rv["total_units_metered"] = total_units_metered
+	rv["total_units_metered"] = totalUnitsMetered
 	return rv
 }
 
@@ -307,8 +316,9 @@ func getThrottleLimit(ctx regulator.Ctx) uint32 {
 // them behaving differently from each other based on the request passed
 func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
-	if !ServerlessMode {
-		// no throttle/limiting checks for non-serverless versions.
+	if !ServerlessMode || reg.disableLimitingThrottling() {
+		// no throttle/limiting checks for non-serverless versions
+		// and when regulator's disabled.
 		return CheckResultNormal, 0, nil
 	}
 
@@ -424,8 +434,9 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 
 func CheckQuotaRead(bucket, user string,
 	req interface{}) (CheckResult, time.Duration, error) {
-	if !ServerlessMode {
-		// no throttle/limiting checks for non-serverless versions.
+	if !ServerlessMode || reg.disableLimitingThrottling() {
+		// no throttle/limiting checks for non-serverless versions
+		// and when regulator's disabled.
 		return CheckResultNormal, 0, nil
 	}
 
