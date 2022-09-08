@@ -202,23 +202,8 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				" nodeDefs: %+v, err: %v", nodeDefs, err)
 		}
 
-		asyncResponses := make(chan error, len(nodeDefs.NodeDefs))
-		for _, nodeDef := range nodeDefs.NodeDefs {
-			go func(n *cbgt.NodeDef) {
-				asyncResponses <- CanNodeAccommodateRequest(n)
-			}(nodeDef)
-		}
-
-		var nodesAboveHWM int // Number of nodes sustaining usage over high watermark
-
-		for i := 0; i < len(nodeDefs.NodeDefs); i++ {
-			err := <-asyncResponses
-			if err != nil {
-				nodesAboveHWM++
-			}
-		}
-
-		if nodesAboveHWM > 0 && nodesAboveHWM == len(nodeDefs.NodeDefs) {
+		nodesOverHWM := NumNodesWithUsageOverHWM(nodeDefs)
+		if nodesOverHWM > 0 && nodesOverHWM == len(nodeDefs.NodeDefs) {
 			// All nodes show usage above HWM, deny index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 				" index request: %v", indexDef.Name)
@@ -229,6 +214,30 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 }
 
 // -----------------------------------------------------------------------------
+
+func NumNodesWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) int {
+	if nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
+		return 0
+	}
+
+	asyncResponses := make(chan error, len(nodeDefs.NodeDefs))
+	for _, nodeDef := range nodeDefs.NodeDefs {
+		go func(n *cbgt.NodeDef) {
+			asyncResponses <- CanNodeAccommodateRequest(n)
+		}(nodeDef)
+	}
+
+	var nodesOverHWM int // Number of nodes sustaining usage over high watermark
+
+	for i := 0; i < len(nodeDefs.NodeDefs); i++ {
+		err := <-asyncResponses
+		if err != nil {
+			nodesOverHWM++
+		}
+	}
+
+	return nodesOverHWM
+}
 
 func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) error {
 	nodeStats, err := obtainNodeStats(nodeDef)

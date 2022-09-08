@@ -29,13 +29,25 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	options["enablePartitionNodeStickiness"] = "true"
 
 	// initialize usage thresholds
-	options["resourceUtilizationHighWaterMark"] = defaultHighWaterMark
-	options["resourceUtilizationLowWaterMark"] = defaultLowWaterMark
-	options["resourceUnderUtilizationWaterMark"] = defaultUnderUtilizationWaterMark
+	if _, exists := options["resourceUtilizationHighWaterMark"]; !exists {
+		options["resourceUtilizationHighWaterMark"] = defaultHighWaterMark
+	}
+	if _, exists := options["resourceUtilizationLowWaterMark"]; !exists {
+		options["resourceUtilizationLowWaterMark"] = defaultLowWaterMark
+	}
+	if _, exists := options["resourceUnderUtilizationWaterMark"]; !exists {
+		options["resourceUnderUtilizationWaterMark"] = defaultUnderUtilizationWaterMark
+	}
 
-	// FIXME
-	options["maxBillableUnitsRate"] = "0"
-	options["maxDiskBytes"] = "0"
+	// initialize limits
+	if _, exists := options["maxBillableUnitsRate"]; !exists {
+		// TODO
+		options["maxBillableUnitsRate"] = "0"
+	}
+	if _, exists := options["maxDiskBytes"]; !exists {
+		// TODO
+		options["maxDiskBytes"] = "0"
+	}
 
 	// Track statistics to determine moving average
 	// Prometheus pulls low cardinality stats about every 10s, setting numEntries
@@ -176,10 +188,13 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	}
 
 	if len(in.NodeUUIDsToRemove) == 0 {
-		// Rebalance-in operation, with enableNodePartitionStickiness set to
-		// true, no other node weights adjustment is necessary. Current index
-		// partitions to remain where they were.
-		return in, nil
+		// Possibly a rebalance-in operation or auto-rebalance;
+		// Only when resource usage on all nodes is below HWM, we don't need to edit the
+		// node weights here because with enableNodePartitionStickiness set to true -
+		// the resident index partitions will be favored to remain where they are.
+		if cbft.NumNodesWithUsageOverHWM(in.BegNodeDefs) == 0 {
+			return in, nil
+		}
 	}
 
 	numPlanPIndexes := len(in.BegPlanPIndexes.PlanPIndexes)
