@@ -11,10 +11,7 @@
 
 package cbft
 
-//#cgo darwin LDFLAGS: -Wl,-undefined -Wl,dynamic_lookup
-//#cgo !darwin LDFLAGS: -Wl,-unresolved-symbols=ignore-all
-//#cgo LDFLAGS: -L${SRCDIR}/../build/sigar/src -lsigar -Wl,-rpath,${SRCDIR}/../sigar/include
-//#cgo CFLAGS: -I ${SRCDIR}/../sigar/include
+//#cgo LDFLAGS: -lsigar
 //#include <sigar.h>
 //#include <sigar_control_group.h>
 import "C"
