@@ -116,7 +116,7 @@ func completeRequest(username, path string, req *http.Request, egress int64) {
 
 // Limits index definitions from being introduced into the system based on
 // the rateLimiter settings
-func limitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("indexDef not available")
 	}

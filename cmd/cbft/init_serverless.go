@@ -15,6 +15,7 @@ import (
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/ctl"
+	"github.com/couchbase/cbgt/hibernate"
 	"github.com/couchbase/cbgt/rebalance"
 	log "github.com/couchbase/clog"
 )
@@ -65,6 +66,14 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	rebalance.RebalanceHook = serverlessRebalanceHook
 
 	ctl.DefragmentedUtilizationHook = defragmentationUtilizationHook
+	ctl.HibernationClientHook = cbft.GetS3Client
+
+	cbgt.LimitIndexDefHook = cbft.LimitIndexDef
+
+	hibernate.GetRemoteBucketAndPathHook = cbft.GetRemoteBucketAndPathHook
+	hibernate.DownloadIndexMetadataHook = cbft.DownloadIndexMetadata
+	hibernate.UploadIndexMetadataHook = cbft.UploadIndexDefs
+	hibernate.CheckIfRemotePathIsValidHook = cbft.CheckIfRemotePathIsValid
 
 	return options
 }

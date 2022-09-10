@@ -70,7 +70,7 @@ func (st *serverGroupTracker) listen() {
 
 	st.handleServerGroupUpdates()
 
-	err := listenStreamingEndpoint(st.url, decodeJson, notifyUpdates, nil)
+	err := listenStreamingEndpoint("server_groups", st.url, decodeJson, notifyUpdates, nil)
 	if err != nil {
 		log.Errorf("server_groups: listenStreamingEndpoint, err: %v", err)
 	}
@@ -293,12 +293,12 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 // listenStreamingEndpoint is a generic stream endpoint listen
 // utility function which accepts callback methods for decoding the
 // stream response, notify methods and a stop signalling channel.
-func listenStreamingEndpoint(url string, decodeResponse func([]byte) (
+func listenStreamingEndpoint(msg, url string, decodeResponse func([]byte) (
 	interface{}, error), notify func(interface{}) error,
 	stopCh chan struct{}) error {
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
-		return fmt.Errorf("server_groups: auth for ns_server,"+
+		return fmt.Errorf(msg+": auth for ns_server,"+
 			" server: %s, authType: %s, err: %v",
 			url, "cbauth", err)
 	}
@@ -313,22 +313,22 @@ RECONNECT:
 		var resp *http.Response
 
 		// keep retrying with backoff logic upon connection errors.
-		cbgt.ExponentialBackoffLoop("server_groups listening",
+		cbgt.ExponentialBackoffLoop(msg+" listening",
 			func() int {
 				req, err := http.NewRequest("GET", u, nil)
 				if err != nil {
-					log.Printf("server_groups: req, err: %v", err)
+					log.Printf(msg+": req, err: %v", err)
 					return 0
 				}
 				req.Header.Add("Content-Type", "application/json")
 
 				resp, err = cbgt.HttpClient().Do(req)
 				if err != nil {
-					log.Printf("server_groups: http client, err: %v", err)
+					log.Printf(msg+": http client, err: %v", err)
 					return 0
 				}
 
-				log.Printf("server_groups: pool streaming started")
+				log.Printf(msg + ": pool streaming started")
 				return -1 // success
 			},
 			backoffStartSleepMS, backoffFactor, backoffMaxSleepMS,
@@ -348,7 +348,7 @@ RECONNECT:
 
 			resBytes, err := reader.ReadBytes('\n')
 			if err != nil {
-				log.Printf("server_groups: reconnecting upon reader, err: %v", err)
+				log.Printf(msg+": reconnecting upon reader, err: %v", err)
 				resp.Body.Close()
 				continue RECONNECT
 			}
@@ -358,16 +358,15 @@ RECONNECT:
 
 			res, err := decodeResponse(resBytes)
 			if err != nil {
-				log.Printf("server_groups: decodeResponse, err: %v", err)
+				log.Printf(msg+": decodeResponse, err: %v", err)
 				continue
 			}
 
 			err = notify(res)
 			if err != nil {
-				log.Printf("server_groups: notify, err: %v", err)
+				log.Printf(msg+": notify, err: %v", err)
 				continue
 			}
 		}
 	}
-
 }

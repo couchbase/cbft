@@ -3,6 +3,7 @@ module github.com/couchbase/cbft
 go 1.18
 
 require (
+	github.com/aws/aws-sdk-go v1.44.113
 	github.com/blevesearch/bleve-mapping-ui v0.5.1
 	github.com/blevesearch/bleve/v2 v2.3.5
 	github.com/blevesearch/bleve_index_api v1.0.4
@@ -14,7 +15,7 @@ require (
 	github.com/blevesearch/zapx/v15 v15.3.6
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
-	github.com/couchbase/cbauth v0.1.3
+	github.com/couchbase/cbauth v0.1.4
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
@@ -22,6 +23,7 @@ require (
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/moss v0.3.0
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
+	github.com/couchbase/tools-common v0.0.0-20220928120928-69aba4a231be
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.2
@@ -29,9 +31,9 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.4.0
-	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
-	google.golang.org/grpc v1.31.0
+	golang.org/x/net v0.0.0-20220923203811-8be639271d50
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
+	google.golang.org/grpc v1.49.0
 )
 
 require (
@@ -57,26 +59,35 @@ require (
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
 	github.com/couchbase/gomemcached v0.1.5-0.20220916124424-884dec4ebb14 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7 // indirect
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870 // indirect
 	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
+	google.golang.org/genproto v0.0.0-20220923205249-dd2d53f1fffc // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/json-iterator/go => github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede

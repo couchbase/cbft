@@ -497,10 +497,12 @@ func init() {
 		Validate: ValidateBleve,
 		OnDelete: OnDeleteIndex,
 
-		New:       NewBlevePIndexImpl,
-		NewEx:     NewBlevePIndexImplEx,
-		Open:      OpenBlevePIndexImpl,
-		OpenUsing: OpenBlevePIndexImplUsing,
+		New:         NewBlevePIndexImpl,
+		NewEx:       NewBlevePIndexImplEx,
+		Hibernate:   HibernateBlevePIndexImpl,
+		Unhibernate: UnhibernateBlevePIndexImpl,
+		Open:        OpenBlevePIndexImpl,
+		OpenUsing:   OpenBlevePIndexImplUsing,
 
 		Count: CountBleve,
 		Query: QueryBleve,
@@ -533,7 +535,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	}
 
 	if CurrentNodeDefsFetcher == nil {
-		return limitIndexDef(mgr, indexDef)
+		return LimitIndexDef(mgr, indexDef)
 	}
 
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
@@ -664,7 +666,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
 	}
 
-	return limitIndexDef(mgr, indexDef)
+	return LimitIndexDef(mgr, indexDef)
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {
