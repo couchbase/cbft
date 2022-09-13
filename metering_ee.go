@@ -546,7 +546,7 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 			return
 		}
 		key := ` {bucket="` + bucket + `"}`
-		w.Write([]byte(fmt.Sprintf("# TYPE fts_%s guage\n", statName)))
+		w.Write([]byte(fmt.Sprintf("# TYPE fts_%s gauge\n", statName)))
 		w.Write(append([]byte("fts_"+statName+key+" "), b...))
 		w.Write(bline)
 	}
