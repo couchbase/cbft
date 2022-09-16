@@ -71,14 +71,6 @@ const defaultHighWaterMark = "0.8"
 const defaultLowWaterMark = "0.5"
 const defaultUnderUtilizationWaterMark = "0.3"
 
-func shouldNodeAccommodateIndexPartition(nodeDef *cbgt.NodeDef) bool {
-	if err := cbft.CanNodeAccommodateRequest(nodeDef); err != nil {
-		return false
-	}
-
-	return true
-}
-
 const minNodeWeight = -100000
 
 // -----------------------------------------------------------------------------
@@ -137,7 +129,7 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 		// Check if there're nodes out there that already hold index
 		// partitions whose source is the same as the current index definition
 		for uuid, count := range nodePartitionCount {
-			if !shouldNodeAccommodateIndexPartition(in.NodeDefs.NodeDefs[uuid]) {
+			if !cbft.CanNodeAccommodateRequest(in.NodeDefs.NodeDefs[uuid]) {
 				nodeWeights[uuid] = minNodeWeight // this node is very high on usage
 			} else {
 				// Higher the resident partition count, lower the node weight
@@ -187,12 +179,14 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		return in, nil
 	}
 
+	nodeDefsWithUsageOverHWM := cbft.NodeDefsWithUsageOverHWM(in.BegNodeDefs)
+
 	if len(in.NodeUUIDsToRemove) == 0 {
 		// Possibly a rebalance-in operation or auto-rebalance;
 		// Only when resource usage on all nodes is below HWM, we don't need to edit the
 		// node weights here because with enableNodePartitionStickiness set to true -
 		// the resident index partitions will be favored to remain where they are.
-		if cbft.NumNodesWithUsageOverHWM(in.BegNodeDefs) == 0 {
+		if len(nodeDefsWithUsageOverHWM) == 0 {
 			return in, nil
 		}
 	}
@@ -228,7 +222,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 			delete(indexNodeUUIDs, nodeUUID)
 		}
 	}
-	if !indexAffected {
+	if !indexAffected && len(nodeDefsWithUsageOverHWM) == 0 {
 		// No need to adjust any node weights, favor stickiness
 		return in, nil
 	}
@@ -243,10 +237,10 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 			nodeWeights[nodeUUID] = 1
 		}
 	} else {
-		// Check if there're nodes out there that already hold index
+		// Check if there are nodes out there that already hold index
 		// partitions whose source is the same as the current index definition
 		for uuid, count := range nodePartitionCount {
-			if !shouldNodeAccommodateIndexPartition(in.BegNodeDefs.NodeDefs[uuid]) {
+			if !cbft.CanNodeAccommodateRequest(in.BegNodeDefs.NodeDefs[uuid]) {
 				nodeWeights[uuid] = minNodeWeight // this node is very high on usage
 			} else {
 				// Higher the resident partition count, lower the node weight
@@ -279,4 +273,13 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	log.Debugf("serverlessRebalanceHook: index: %v, proposed NodeWeights: %+v",
 		in.IndexDef.Name, nodeWeights)
 	return in, nil
+}
+
+// -----------------------------------------------------------------------------
+
+// autoRebalanceDefragUtilizationHook will server as a function override for the RPC
+// that lets the cluster-manager/control-plane know if the service (fts) will benefit
+// from a rebalance operation (index scrambling).
+func autoRebalanceDefragUtilizationHook(nodeDefs *cbgt.NodeDefs) {
+
 }

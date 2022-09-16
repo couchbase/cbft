@@ -202,8 +202,8 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				" nodeDefs: %+v, err: %v", nodeDefs, err)
 		}
 
-		nodesOverHWM := NumNodesWithUsageOverHWM(nodeDefs)
-		if nodesOverHWM > 0 && nodesOverHWM == len(nodeDefs.NodeDefs) {
+		nodesOverHWM := NodeDefsWithUsageOverHWM(nodeDefs)
+		if len(nodesOverHWM) > 0 && len(nodesOverHWM) == len(nodeDefs.NodeDefs) {
 			// All nodes show usage above HWM, deny index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 				" index request: %v", indexDef.Name)
@@ -215,56 +215,66 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 // -----------------------------------------------------------------------------
 
-func NumNodesWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) int {
+func NodeDefsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []*cbgt.NodeDef {
 	if nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
-		return 0
+		return nil
 	}
 
-	asyncResponses := make(chan error, len(nodeDefs.NodeDefs))
+	nodeDefsCh := make(chan *cbgt.NodeDef, len(nodeDefs.NodeDefs))
 	for _, nodeDef := range nodeDefs.NodeDefs {
 		go func(n *cbgt.NodeDef) {
-			asyncResponses <- CanNodeAccommodateRequest(n)
+			if !CanNodeAccommodateRequest(n) {
+				nodeDefsCh <- n
+			} else {
+				nodeDefsCh <- nil
+			}
 		}(nodeDef)
 	}
 
-	var nodesOverHWM int // Number of nodes sustaining usage over high watermark
+	// Node definitions for nodes with usage over HWM
+	nodeDefsOverHWM := []*cbgt.NodeDef{}
 
 	for i := 0; i < len(nodeDefs.NodeDefs); i++ {
-		err := <-asyncResponses
-		if err != nil {
-			nodesOverHWM++
+		n := <-nodeDefsCh
+		if n != nil {
+			nodeDefsOverHWM = append(nodeDefsOverHWM, n)
 		}
 	}
 
-	return nodesOverHWM
+	return nodeDefsOverHWM
 }
 
-func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) error {
+func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) bool {
 	nodeStats, err := obtainNodeStats(nodeDef)
 	if err != nil {
-		return err
+		// unable to get node stats!?
+		return false
 	}
 
 	if nodeStats.LimitBillableUnitsRate > 0 &&
 		nodeStats.BillableUnitsRate >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitBillableUnitsRate)) {
-		return fmt.Errorf("billableUnits exceeds limit")
+		// billableUnitsRate exceeds limit
+		return false
 	}
 
 	if nodeStats.LimitDiskUsage > 0 &&
 		nodeStats.DiskUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitDiskUsage)) {
-		return fmt.Errorf("disk usage exceeds limit")
+		// disk usage exceeds limit
+		return false
 	}
 
 	if nodeStats.LimitMemoryUsage > 0 &&
 		nodeStats.MemoryUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitMemoryUsage)) {
-		return fmt.Errorf("memory usage exceeds limit")
+		// memory usage exceeds limit
+		return false
 	}
 
 	if nodeStats.CPUUsage >= uint64(nodeStats.HighWaterMark*100) {
-		return fmt.Errorf("cpu usage exceeds limit")
+		// cpu usage exceeds limit
+		return false
 	}
 
-	return nil
+	return true
 }
 
 type NodeStats struct {
