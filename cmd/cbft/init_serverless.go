@@ -11,8 +11,10 @@ package main
 import (
 	"fmt"
 
+	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/ctl"
 	"github.com/couchbase/cbgt/rebalance"
 	log "github.com/couchbase/clog"
 )
@@ -61,6 +63,8 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	options["plannerHookName"] = "serverless"
 
 	rebalance.RebalanceHook = serverlessRebalanceHook
+
+	ctl.DefragmentedUtilizationHook = defragmentationUtilizationHook
 
 	return options
 }
@@ -288,9 +292,56 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 
 // -----------------------------------------------------------------------------
 
-// autoRebalanceDefragUtilizationHook will server as a function override for the RPC
-// that lets the cluster-manager/control-plane know if the service (fts) will benefit
-// from a rebalance operation (index scrambling).
-func autoRebalanceDefragUtilizationHook(nodeDefs *cbgt.NodeDefs) {
+// defragmentationUtilizationHook will serve as a function override for the RPC
+// that lets the cluster-manager/control-plane know if the service will benefit
+// from a (auto) rebalance operation (index scrambling).
+func defragmentationUtilizationHook(nodeDefs *cbgt.NodeDefs) (
+	*service.DefragmentedUtilizationInfo, error) {
+	nodesUtilStats := cbft.NodesUtilStats(nodeDefs)
+	if len(nodesUtilStats) == 0 {
+		return nil, fmt.Errorf("no node definitions/stats available")
+	}
 
+	var nodesBelowHWM, nodesAboveHWM []string
+	var sumBillableUnitsRate, sumDiskUsage, sumMemoryUsage, sumCpuUsage uint64
+
+	for k, v := range nodesUtilStats {
+		if v.IsUtilizationOverHWM() {
+			nodesAboveHWM = append(nodesAboveHWM, k)
+		} else {
+			nodesBelowHWM = append(nodesBelowHWM, k)
+		}
+
+		// This is a pretty basic "defragmented utilization" estimation
+		// which simply averages the sum of usages across all nodes.
+		// TODO: Perhaps we should take into account node hierarchy (server
+		//  group) information for estimating the outcome.
+		sumBillableUnitsRate += v.BillableUnitsRate
+		sumDiskUsage += v.DiskUsage
+		sumMemoryUsage += v.MemoryUsage
+		sumCpuUsage += v.CPUUsage
+	}
+
+	if len(nodesAboveHWM) > 0 && len(nodesBelowHWM) > 0 {
+		// FTS could benefit from a rebalance
+		rv := service.DefragmentedUtilizationInfo{}
+
+		samples := uint64(len(nodesUtilStats))
+		for k, _ := range nodesUtilStats {
+			nodeDef, _ := nodeDefs.NodeDefs[k]
+			rv[nodeDef.HostPort] = map[string]interface{}{
+				"billableUnitsRate": sumBillableUnitsRate / samples,
+				"diskBytes":         sumDiskUsage / samples,
+				"memoryBytes":       sumMemoryUsage / samples,
+				"cpuPercent":        sumCpuUsage / samples,
+			}
+		}
+
+		return &rv, nil
+	}
+
+	// Either a rebalance is NOT necessary, or there aren't resources available
+	// to benefit from a rebalance. Adding nodes will help in the latter case.
+
+	return nil, nil
 }

@@ -216,68 +216,61 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 // -----------------------------------------------------------------------------
 
 func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []string {
+	nodesStats := NodesUtilStats(nodeDefs)
+
+	if len(nodesStats) == 0 {
+		return nil
+	}
+
+	nodesOverHWM := []string{}
+	for k, v := range nodesStats {
+		if v.IsUtilizationOverHWM() {
+			nodesOverHWM = append(nodesOverHWM, k)
+		}
+	}
+
+	return nodesOverHWM
+}
+
+func NodesUtilStats(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
 	if nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
 		return nil
 	}
 
-	nodeDefsCh := make(chan *cbgt.NodeDef, len(nodeDefs.NodeDefs))
+	var m sync.Mutex
+	rv := map[string]*NodeUtilStats{}
+	addToRV := func(n *cbgt.NodeDef, s *NodeUtilStats) {
+		m.Lock()
+		rv[n.UUID] = s
+		m.Unlock()
+	}
+
+	var wg sync.WaitGroup
 	for _, nodeDef := range nodeDefs.NodeDefs {
+		wg.Add(1)
 		go func(n *cbgt.NodeDef) {
-			if !CanNodeAccommodateRequest(n) {
-				nodeDefsCh <- n
-			} else {
-				nodeDefsCh <- nil
+			if stats, err := obtainNodeUtilStats(n); err == nil {
+				addToRV(n, stats)
 			}
+			wg.Done()
 		}(nodeDef)
 	}
+	wg.Wait()
 
-	// Node UUIDs with usage over HWM
-	nodeUUIDsOverHWM := []string{}
-
-	for i := 0; i < len(nodeDefs.NodeDefs); i++ {
-		n := <-nodeDefsCh
-		if n != nil {
-			nodeUUIDsOverHWM = append(nodeUUIDsOverHWM, n.UUID)
-		}
-	}
-
-	return nodeUUIDsOverHWM
+	return rv
 }
 
 func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) bool {
-	nodeStats, err := obtainNodeStats(nodeDef)
+	stats, err := obtainNodeUtilStats(nodeDef)
 	if err != nil {
 		// unable to get node stats!?
 		return false
 	}
 
-	if nodeStats.LimitBillableUnitsRate > 0 &&
-		nodeStats.BillableUnitsRate >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitBillableUnitsRate)) {
-		// billableUnitsRate exceeds limit
-		return false
-	}
-
-	if nodeStats.LimitDiskUsage > 0 &&
-		nodeStats.DiskUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitDiskUsage)) {
-		// disk usage exceeds limit
-		return false
-	}
-
-	if nodeStats.LimitMemoryUsage > 0 &&
-		nodeStats.MemoryUsage >= uint64(nodeStats.HighWaterMark*float64(nodeStats.LimitMemoryUsage)) {
-		// memory usage exceeds limit
-		return false
-	}
-
-	if nodeStats.CPUUsage >= uint64(nodeStats.HighWaterMark*100) {
-		// cpu usage exceeds limit
-		return false
-	}
-
-	return true
+	return stats.IsUtilizationOverHWM()
 }
 
-type NodeStats struct {
+type NodeUtilStats struct {
 	HighWaterMark             float64 `json:"resourceUtilizationHighWaterMark"`
 	LowWaterMark              float64 `json:"resourceUtilizationLowWaterMark"`
 	UnderUtilizationWaterMark float64 `json:"resourceUnderUtilizationWaterMark"`
@@ -292,7 +285,34 @@ type NodeStats struct {
 	LimitMemoryUsage       uint64 `json:"limits:memoryBytes"`
 }
 
-func obtainNodeStats(nodeDef *cbgt.NodeDef) (*NodeStats, error) {
+func (ns *NodeUtilStats) IsUtilizationOverHWM() bool {
+	if ns.LimitBillableUnitsRate > 0 &&
+		ns.BillableUnitsRate >= uint64(ns.HighWaterMark*float64(ns.LimitBillableUnitsRate)) {
+		// billableUnitsRate exceeds limit
+		return false
+	}
+
+	if ns.LimitDiskUsage > 0 &&
+		ns.DiskUsage >= uint64(ns.HighWaterMark*float64(ns.LimitDiskUsage)) {
+		// disk usage exceeds limit
+		return false
+	}
+
+	if ns.LimitMemoryUsage > 0 &&
+		ns.MemoryUsage >= uint64(ns.HighWaterMark*float64(ns.LimitMemoryUsage)) {
+		// memory usage exceeds limit
+		return false
+	}
+
+	if ns.CPUUsage >= uint64(ns.HighWaterMark*100) {
+		// cpu usage exceeds limit
+		return false
+	}
+
+	return true
+}
+
+func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	if nodeDef == nil || len(nodeDef.HostPort) == 0 {
 		return nil, fmt.Errorf("nodeDef unavailable")
 	}
@@ -324,12 +344,12 @@ func obtainNodeStats(nodeDef *cbgt.NodeDef) (*NodeStats, error) {
 		return nil, fmt.Errorf("response was empty")
 	}
 
-	var nodeStats *NodeStats
-	if err := json.Unmarshal(respBuf, &nodeStats); err != nil {
+	var stats *NodeUtilStats
+	if err := json.Unmarshal(respBuf, &stats); err != nil {
 		return nil, err
 	}
 
-	return nodeStats, nil
+	return stats, nil
 }
 
 // -----------------------------------------------------------------------------
