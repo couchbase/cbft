@@ -540,23 +540,21 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	}
 
 	var collectionsSupported, s2SpatialSupported bool
-	if versionTracker != nil {
-		if versionTracker.clusterCompatibleForVersion(FeatureGeoSpatialVersion) {
-			s2SpatialSupported =
-				cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
+	if isClusterCompatibleFor(FeatureGeoSpatialVersion) {
+		s2SpatialSupported =
+			cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
 
-			// check whether the spatial plugin usage is disabled for geo points.
-			if v, ok := mgr.Options()["disableGeoPointSpatialPlugin"]; ok &&
-				v == "true" {
-				s2SpatialSupported = false
-			}
-
-			// as its implicit since spatial is already on an advanced version.
-			collectionsSupported = true
-		} else if versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
-			collectionsSupported =
-				cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
+		// check whether the spatial plugin usage is disabled for geo points.
+		if v, ok := mgr.Options()["disableGeoPointSpatialPlugin"]; ok &&
+			v == "true" {
+			s2SpatialSupported = false
 		}
+
+		// as its implicit since spatial is already on an advanced version.
+		collectionsSupported = true
+	} else if isClusterCompatibleFor(FeatureCollectionVersion) {
+		collectionsSupported =
+			cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs)
 	}
 
 	if collectionsSupported {

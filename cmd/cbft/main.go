@@ -64,7 +64,7 @@ func init() {
 
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
 
-	cbgt.CfgAppVersion = "7.1.0"
+	cbgt.CfgAppVersion = "7.2.0"
 }
 
 func main() {

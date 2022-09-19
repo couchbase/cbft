@@ -63,6 +63,11 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
 
+	// No name decoration for a partially upgraded cluster
+	if !isClusterCompatibleFor(FeatureIndexNameDecor) {
+		return indexDef, nil
+	}
+
 	alias := &struct {
 		Targets map[string]interface{} `json:"targets"`
 	}{}
@@ -221,8 +226,7 @@ func parseAliasParams(aliasDefParams string) (*AliasParams, error) {
 
 func getRemoteClients(mgr *cbgt.Manager) addRemoteClients {
 	var addRemClients addRemoteClients
-	if versionTracker != nil &&
-		versionTracker.clusterCompatibleForVersion(FeatureGrpcVersion) {
+	if isClusterCompatibleFor(FeatureGrpcVersion) {
 		addRemClients = addGrpcClients
 	}
 

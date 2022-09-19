@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/couchbase/cbgt"
@@ -41,6 +40,7 @@ var FeatureGeoSpatialVersion = "7.1.1"
 
 var FeatureCollectionVersion = "7.0.0"
 var FeatureGrpcVersion = "6.5.0"
+var FeatureIndexNameDecor = "7.2.0"
 
 func HandleAPIVersion(h string) (string, error) {
 	if len(h) <= 0 || h == "*/*" {
@@ -107,20 +107,20 @@ func CheckAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
 var versionTracker *clusterVersionTracker
 
 type clusterVersionTracker struct {
-	server         string
-	version        uint64 // current cbft version.
-	clusterVersion uint64 // current compatibility version found on cluster.
-	found          int32
+	server             string
+	version            uint64 // current cbft version.
+	clusterVersion     uint64 // current compatibility version found on cluster.
+	compatibleFeatures map[string]struct{}
 }
 
 func StartClusterVersionTracker(version string, server string) {
 	versionTracker = &clusterVersionTracker{server: server + "/pools/default"}
 	versionTracker.version, _ = cbgt.CompatibilityVersion(version)
+	versionTracker.compatibleFeatures = make(map[string]struct{})
 	go versionTracker.run()
 }
 
 func (vt *clusterVersionTracker) run() {
-	found := int32(1)
 	ev, err := getEffectiveClusterVersion(vt.server)
 	if err != nil {
 		log.Printf("version: getEffectiveClusterVersion, err: %v", err)
@@ -131,7 +131,6 @@ func (vt *clusterVersionTracker) run() {
 	if vt.version == ev {
 		log.Printf("version: matching clusterCompatibility"+
 			" version: %d found", ev)
-		atomic.StoreInt32(&vt.found, found)
 		return
 	}
 
@@ -157,7 +156,6 @@ func (vt *clusterVersionTracker) run() {
 			log.Printf("version: matching clusterCompatibility"+
 				" version: %d found", ev)
 
-			atomic.StoreInt32(&vt.found, found)
 			return
 		}
 	}
@@ -168,12 +166,6 @@ func (vt *clusterVersionTracker) run() {
 // version is greater than or equal the given app version.
 func (vt *clusterVersionTracker) clusterCompatibleForVersion(
 	version string) bool {
-	// if already a compatible cluster found then exit early to
-	// avoid compatibility version parsing.
-	if atomic.LoadInt32(&vt.found) == 1 {
-		return true
-	}
-
 	givenVersion, err := cbgt.CompatibilityVersion(version)
 	if err == nil && vt.clusterVersion != 0 &&
 		vt.clusterVersion >= givenVersion {
@@ -223,4 +215,21 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 	}
 
 	return uint64(rv.Nodes[0].ClusterCompatibility), nil
+}
+
+func isClusterCompatibleFor(feature string) bool {
+	if versionTracker == nil {
+		return false
+	}
+
+	if _, ok := versionTracker.compatibleFeatures[feature]; ok {
+		return true
+	}
+
+	isCompatible := versionTracker.clusterCompatibleForVersion(feature)
+	if isCompatible {
+		versionTracker.compatibleFeatures[feature] = struct{}{}
+	}
+
+	return isCompatible
 }

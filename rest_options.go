@@ -177,8 +177,7 @@ func (h *ConciseOptions) ServeHTTP(
 	}
 
 	var collectionsSupported bool
-	if versionTracker != nil &&
-		versionTracker.clusterCompatibleForVersion(FeatureCollectionVersion) {
+	if isClusterCompatibleFor(FeatureCollectionVersion) {
 		if nodeDefs, _, err := cbgt.CfgGetNodeDefs(
 			h.mgr.Cfg(), cbgt.NODE_DEFS_WANTED); err == nil {
 			if cbgt.IsFeatureSupportedByCluster(FeatureCollections, nodeDefs) {

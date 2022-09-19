@@ -463,6 +463,11 @@ func TestRemapIndexDefinions(t *testing.T) {
 		},
 	}
 
+	versionTracker = &clusterVersionTracker{}
+	versionTracker.version, _ = cbgt.CompatibilityVersion(FeatureIndexNameDecor)
+	versionTracker.clusterVersion = versionTracker.version
+	versionTracker.compatibleFeatures = make(map[string]struct{})
+
 	for i, test := range tests {
 		var indexDefs cbgt.IndexDefs
 		err := json.Unmarshal(test.indexDefBytes, &indexDefs)
@@ -494,4 +499,6 @@ func TestRemapIndexDefinions(t *testing.T) {
 			}
 		}
 	}
+
+	versionTracker = nil
 }

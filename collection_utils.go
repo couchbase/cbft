@@ -346,6 +346,11 @@ func multiCollection(colls []Collection) bool {
 // be optionally skipped.
 func decorateIndexNameWithKeySpace(sourceName, scopeName,
 	indexName string, restore bool) string {
+	// No name decoration for a partially upgraded cluster
+	if !isClusterCompatibleFor(FeatureIndexNameDecor) {
+		return indexName
+	}
+
 	// '.' is a valid character only for bucket name.
 	sourceName = sourceName + "."
 	scopeName = scopeName + "."
