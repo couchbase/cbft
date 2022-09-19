@@ -202,7 +202,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				" nodeDefs: %+v, err: %v", nodeDefs, err)
 		}
 
-		nodesOverHWM := NodeDefsWithUsageOverHWM(nodeDefs)
+		nodesOverHWM := NodeUUIDsWithUsageOverHWM(nodeDefs)
 		if len(nodesOverHWM) > 0 && len(nodesOverHWM) == len(nodeDefs.NodeDefs) {
 			// All nodes show usage above HWM, deny index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
@@ -215,7 +215,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 // -----------------------------------------------------------------------------
 
-func NodeDefsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []*cbgt.NodeDef {
+func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []string {
 	if nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
 		return nil
 	}
@@ -231,17 +231,17 @@ func NodeDefsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []*cbgt.NodeDef {
 		}(nodeDef)
 	}
 
-	// Node definitions for nodes with usage over HWM
-	nodeDefsOverHWM := []*cbgt.NodeDef{}
+	// Node UUIDs with usage over HWM
+	nodeUUIDsOverHWM := []string{}
 
 	for i := 0; i < len(nodeDefs.NodeDefs); i++ {
 		n := <-nodeDefsCh
 		if n != nil {
-			nodeDefsOverHWM = append(nodeDefsOverHWM, n)
+			nodeUUIDsOverHWM = append(nodeUUIDsOverHWM, n.UUID)
 		}
 	}
 
-	return nodeDefsOverHWM
+	return nodeUUIDsOverHWM
 }
 
 func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) bool {

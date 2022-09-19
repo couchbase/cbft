@@ -179,14 +179,14 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		return in, nil
 	}
 
-	nodeDefsWithUsageOverHWM := cbft.NodeDefsWithUsageOverHWM(in.BegNodeDefs)
+	nodeUUIDsWithUsageOverHWM := cbft.NodeUUIDsWithUsageOverHWM(in.BegNodeDefs)
 
 	if len(in.NodeUUIDsToRemove) == 0 {
 		// Possibly a rebalance-in operation or auto-rebalance;
 		// Only when resource usage on all nodes is below HWM, we don't need to edit the
 		// node weights here because with enableNodePartitionStickiness set to true -
 		// the resident index partitions will be favored to remain where they are.
-		if len(nodeDefsWithUsageOverHWM) == 0 {
+		if len(nodeUUIDsWithUsageOverHWM) == 0 {
 			return in, nil
 		}
 	}
@@ -218,11 +218,22 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	for _, nodeUUID := range in.NodeUUIDsToRemove {
 		if _, exists := indexNodeUUIDs[nodeUUID]; exists {
 			indexAffected = true
-			// Remove this nodeUUID from the index map
+			// Remove this nodeUUID from the index map, so we don't
+			// attempt to keep this partition on the same node.
 			delete(indexNodeUUIDs, nodeUUID)
 		}
 	}
-	if !indexAffected && len(nodeDefsWithUsageOverHWM) == 0 {
+	// Also, check if current index is resident on nodes showing usage over HWM
+	for _, nodeUUID := range nodeUUIDsWithUsageOverHWM {
+		if _, exists := indexNodeUUIDs[nodeUUID]; exists {
+			indexAffected = true
+			// Remove this nodeUUID from the index map, so we don't
+			// attempt to keep this partition on the same node.
+			delete(indexNodeUUIDs, nodeUUID)
+		}
+	}
+
+	if !indexAffected {
 		// No need to adjust any node weights, favor stickiness
 		return in, nil
 	}
