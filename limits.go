@@ -23,6 +23,7 @@ import (
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	log "github.com/couchbase/clog"
 )
 
 const bytesPerMB = 1048576
@@ -187,6 +188,8 @@ func limitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 	return indexDef, nil
 }
 
+// limitIndexDefInServerlessMode to be invoked ONLY when deploymentModel is
+// "serverless".
 func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
 	if indexDef.PlanParams.IndexPartitions != 1 ||
@@ -206,7 +209,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		if len(nodesOverHWM) > 0 && len(nodesOverHWM) == len(nodeDefs.NodeDefs) {
 			// All nodes show usage above HWM, deny index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
-				" index request: %v", indexDef.Name)
+				" index request: %v, resource utilization over limit(s)", indexDef.Name)
 		}
 	}
 
@@ -226,6 +229,16 @@ func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []string {
 	for k, v := range nodesStats {
 		if v.IsUtilizationOverHWM() {
 			nodesOverHWM = append(nodesOverHWM, k)
+		} else {
+			// remove entries of nodes whose usage is within limits
+			delete(nodesStats, k)
+		}
+	}
+
+	if len(nodesOverHWM) > 0 {
+		if out, err := json.Marshal(nodesStats); err == nil {
+			log.Warnf("Nodes showing resource utilization higher than HWM: %s",
+				string(out))
 		}
 	}
 
@@ -289,27 +302,27 @@ func (ns *NodeUtilStats) IsUtilizationOverHWM() bool {
 	if ns.LimitBillableUnitsRate > 0 &&
 		ns.BillableUnitsRate >= uint64(ns.HighWaterMark*float64(ns.LimitBillableUnitsRate)) {
 		// billableUnitsRate exceeds limit
-		return false
+		return true
 	}
 
 	if ns.LimitDiskUsage > 0 &&
 		ns.DiskUsage >= uint64(ns.HighWaterMark*float64(ns.LimitDiskUsage)) {
 		// disk usage exceeds limit
-		return false
+		return true
 	}
 
 	if ns.LimitMemoryUsage > 0 &&
 		ns.MemoryUsage >= uint64(ns.HighWaterMark*float64(ns.LimitMemoryUsage)) {
 		// memory usage exceeds limit
-		return false
+		return true
 	}
 
 	if ns.CPUUsage >= uint64(ns.HighWaterMark*100) {
 		// cpu usage exceeds limit
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
 func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
