@@ -305,30 +305,30 @@ func defragmentationUtilizationHook(nodeDefs *cbgt.NodeDefs) (
 	var nodesBelowHWM, nodesAboveHWM []string
 	var sumBillableUnitsRate, sumDiskUsage, sumMemoryUsage, sumCpuUsage uint64
 
-	for k, v := range nodesUtilStats {
-		if v.IsUtilizationOverHWM() {
-			nodesAboveHWM = append(nodesAboveHWM, k)
+	for uuid, stats := range nodesUtilStats {
+		if stats.IsUtilizationOverHWM() {
+			nodesAboveHWM = append(nodesAboveHWM, uuid)
 		} else {
-			nodesBelowHWM = append(nodesBelowHWM, k)
+			nodesBelowHWM = append(nodesBelowHWM, uuid)
 		}
 
 		// This is a pretty basic "defragmented utilization" estimation
 		// which simply averages the sum of usages across all nodes.
 		// TODO: Perhaps we should take into account node hierarchy (server
 		//  group) information for estimating the outcome.
-		sumBillableUnitsRate += v.BillableUnitsRate
-		sumDiskUsage += v.DiskUsage
-		sumMemoryUsage += v.MemoryUsage
-		sumCpuUsage += v.CPUUsage
+		sumBillableUnitsRate += stats.BillableUnitsRate
+		sumDiskUsage += stats.DiskUsage
+		sumMemoryUsage += stats.MemoryUsage
+		sumCpuUsage += stats.CPUUsage
 	}
+
+	rv := service.DefragmentedUtilizationInfo{}
 
 	if len(nodesAboveHWM) > 0 && len(nodesBelowHWM) > 0 {
 		// FTS could benefit from a rebalance
-		rv := service.DefragmentedUtilizationInfo{}
-
 		samples := uint64(len(nodesUtilStats))
-		for k, _ := range nodesUtilStats {
-			nodeDef, _ := nodeDefs.NodeDefs[k]
+		for uuid, _ := range nodesUtilStats {
+			nodeDef, _ := nodeDefs.NodeDefs[uuid]
 			rv[nodeDef.HostPort] = map[string]interface{}{
 				"billableUnitsRate": sumBillableUnitsRate / samples,
 				"diskBytes":         sumDiskUsage / samples,
@@ -336,12 +336,21 @@ func defragmentationUtilizationHook(nodeDefs *cbgt.NodeDefs) (
 				"cpuPercent":        sumCpuUsage / samples,
 			}
 		}
-
-		return &rv, nil
+	} else {
+		// Either a rebalance is NOT necessary, or there aren't resources
+		// available to benefit from a rebalance. Adding nodes will help
+		// in the latter situation.
+		// Either ways - we report node stats as is.
+		for uuid, stats := range nodesUtilStats {
+			nodeDef, _ := nodeDefs.NodeDefs[uuid]
+			rv[nodeDef.HostPort] = map[string]interface{}{
+				"billableUnitsRate": stats.BillableUnitsRate,
+				"diskBytes":         stats.DiskUsage,
+				"memoryBytes":       stats.MemoryUsage,
+				"cpuPercent":        stats.CPUUsage,
+			}
+		}
 	}
 
-	// Either a rebalance is NOT necessary, or there aren't resources available
-	// to benefit from a rebalance. Adding nodes will help in the latter case.
-
-	return nil, nil
+	return &rv, nil
 }
