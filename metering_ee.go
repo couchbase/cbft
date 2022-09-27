@@ -27,6 +27,7 @@ import (
 	"github.com/couchbase/regulator/config"
 	"github.com/couchbase/regulator/factory"
 	"github.com/couchbase/regulator/metering"
+	"github.com/couchbase/regulator/utils"
 )
 
 const (
@@ -362,7 +363,7 @@ func serverlessLimitingBounds() (int, int) {
 	return minTime, maxTime
 }
 
-func getThrottleLimit(ctx regulator.Ctx) uint32 {
+func getThrottleLimit(ctx regulator.Ctx) utils.Limit {
 	bCtx, _ := ctx.(regulator.BucketCtx)
 	rCfg := config.GetConfig()
 	searchHandle := config.ResolveSettingsHandle(regulator.Search, ctx)
