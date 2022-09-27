@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/couchbase/cbgt"
@@ -107,9 +108,11 @@ func CheckAPIVersion(w http.ResponseWriter, req *http.Request) (err error) {
 var versionTracker *clusterVersionTracker
 
 type clusterVersionTracker struct {
-	server             string
-	version            uint64 // current cbft version.
-	clusterVersion     uint64 // current compatibility version found on cluster.
+	server         string
+	version        uint64 // current cbft version.
+	clusterVersion uint64 // current compatibility version found on cluster.
+
+	m                  sync.RWMutex // Protects the fields that follow.
 	compatibleFeatures map[string]struct{}
 }
 
@@ -161,8 +164,7 @@ func (vt *clusterVersionTracker) run() {
 	}
 }
 
-// clusterCompatibleForVersion checks whether a compatible cluster found
-// If not, then it checks whether the current cluster compatibility
+// checks whether the current cluster compatibility
 // version is greater than or equal the given app version.
 func (vt *clusterVersionTracker) clusterCompatibleForVersion(
 	version string) bool {
@@ -217,19 +219,29 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 	return uint64(rv.Nodes[0].ClusterCompatibility), nil
 }
 
+// memoize the computation done by versionTracker.clusterCompatibleForVersion
+func (vt *clusterVersionTracker) isCompatible(feature string) bool {
+	vt.m.RLock()
+	if _, ok := vt.compatibleFeatures[feature]; ok {
+		vt.m.RUnlock()
+		return true
+	}
+	vt.m.RUnlock()
+
+	compatible := vt.clusterCompatibleForVersion(feature)
+	if compatible {
+		vt.m.Lock()
+		vt.compatibleFeatures[feature] = struct{}{}
+		vt.m.Unlock()
+	}
+
+	return compatible
+}
+
 func isClusterCompatibleFor(feature string) bool {
 	if versionTracker == nil {
 		return false
 	}
 
-	if _, ok := versionTracker.compatibleFeatures[feature]; ok {
-		return true
-	}
-
-	isCompatible := versionTracker.clusterCompatibleForVersion(feature)
-	if isCompatible {
-		versionTracker.compatibleFeatures[feature] = struct{}{}
-	}
-
-	return isCompatible
+	return versionTracker.isCompatible(feature)
 }
