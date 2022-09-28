@@ -295,6 +295,10 @@ func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
 }
 
 func RefreshRegulatorStats() {
+	if !ServerlessMode {
+		return
+	}
+
 	existingBuckets := make(map[string]struct{})
 	_, indexDefsByName, _ := reg.mgr.GetIndexDefs(false)
 	for _, indexDef := range indexDefsByName {
