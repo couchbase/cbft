@@ -23,10 +23,6 @@ IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "enterprise")
 ENDIF(BUILD_ENTERPRISE)
 
-GoPrivateMod(MODULE cbftx)
-
-GoPrivateMod(MODULE hebrew)
-
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
