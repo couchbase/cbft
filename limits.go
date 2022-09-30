@@ -509,8 +509,11 @@ func (e *rateLimiter) regulateRequest(username, path string,
 	req *http.Request) (CheckResult, time.Duration, error) {
 
 	// No need to throttle/limit the request incase of delete op
-	// Since it ultimately leads to cleaning up of resources
-	if req.Method == "DELETE" {
+	// Since it ultimately leads to cleaning up of resources.
+	// Furthermore, no need to throttle/limit the GET request of index listing
+	// which basically displays the index definition, since it doesn't impact the
+	// disk usage in the system.
+	if req.Method == "DELETE" || req.Method == "GET" {
 		return CheckResultNormal, 0, nil
 	}
 
