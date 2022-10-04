@@ -56,6 +56,8 @@ type regulatorStats struct {
 	TotalOpsTimedOutWhileMetering  uint64  `json:"total_ops_timed_out_while_metering"`
 	TotalBatchLimitingTimeOuts     uint64  `json:"total_batch_limiting_timeouts"`
 	TotalBatchRejectionBackoffTime uint64  `json:"total_batch_rejection_backoff_time_ms"`
+	TotCheckAccessOpsRejects       uint64  `json:"total_check_access_rejects"`
+	TotCheckAccessErrs             uint64  `json:"total_check_access_errs"`
 }
 
 type serviceRegulator struct {
@@ -135,9 +137,7 @@ func (sr *serviceRegulator) startMetering() {
 // A common utility to send out the metering messages onto the channel
 func (sr *serviceRegulator) meteringUtil(bucket, index string,
 	totalBytes uint64, op uint) {
-	if sr.stats[bucket] == nil {
-		sr.stats[bucket] = &regulatorStats{}
-	}
+	sr.initialiseRegulatorStats(bucket)
 	msg := &message{
 		user:      "",
 		bucket:    bucket,
@@ -291,6 +291,10 @@ func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
 			sr.stats[bucket].TotalBatchLimitingTimeOuts += uint64(val)
 		case "total_batch_rejection_backoff_time_ms":
 			sr.stats[bucket].TotalBatchRejectionBackoffTime += uint64(val)
+		case "total_check_access_rejects":
+			sr.stats[bucket].TotCheckAccessOpsRejects += uint64(val)
+		case "total_check_access_errs":
+			sr.stats[bucket].TotCheckAccessErrs += uint64(val)
 		}
 	}
 }
@@ -396,9 +400,9 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 		EstimatedDuration: time.Duration(0),
 		EstimatedUnits:    []regulator.Units{estimatedUnits},
 	}
-	if reg.stats[bucket] == nil {
-		reg.stats[bucket] = &regulatorStats{}
-	}
+
+	reg.initialiseRegulatorStats(bucket)
+
 	action, duration, err := regulator.CheckQuota(context, checkQuotaOps)
 	if !retry {
 		switch action {
@@ -494,6 +498,18 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	}
 }
 
+func (sr *serviceRegulator) initialiseRegulatorStats(bucket string) {
+	sr.m.RLock()
+	if reg.stats[bucket] == nil {
+		sr.m.RUnlock()
+		sr.m.Lock()
+		reg.stats[bucket] = &regulatorStats{}
+		sr.m.Unlock()
+		return
+	}
+	sr.m.RUnlock()
+}
+
 func CheckQuotaRead(bucket, user string,
 	req interface{}) (CheckResult, time.Duration, error) {
 	if !ServerlessMode || reg.disableLimitingThrottling() {
@@ -515,9 +531,9 @@ func CheckQuotaRead(bucket, user string,
 		EstimatedDuration: time.Duration(0),
 		EstimatedUnits:    []regulator.Units{estimatedUnits},
 	}
-	if reg.stats[bucket] == nil {
-		reg.stats[bucket] = &regulatorStats{}
-	}
+
+	reg.initialiseRegulatorStats(bucket)
+
 	result, duration, err := regulator.CheckQuota(context, checkQuotaOps)
 	switch result {
 	case regulator.CheckResultError:
@@ -556,4 +572,24 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 		w.Write(bline)
 	}
 
+}
+
+func CheckAccess(bucket, username string) (CheckResult, error) {
+	if !ServerlessMode {
+		return CheckAccessNormal, nil
+	}
+
+	context := regulator.NewBucketCtx(bucket)
+	action, _, err := regulator.CheckAccess(context, false)
+	switch action {
+	case regulator.AccessNormal:
+	case regulator.AccessNoIngress:
+		reg.updateRegulatorStats(bucket, "total_check_access_rejects", 1)
+		return CheckAccessNoIngress, fmt.Errorf("storage limit has been reached")
+	case regulator.AccessError:
+		reg.updateRegulatorStats(bucket, "total_check_access_errs", 1)
+		return CheckAccessError, fmt.Errorf("unexpected check access error "+
+			"with respect to storage limiting %v", err)
+	}
+	return CheckAccessNormal, nil
 }

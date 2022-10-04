@@ -438,6 +438,9 @@ const (
 	CheckResultThrottle
 	CheckResultReject
 	CheckResultError
+	CheckAccessNormal
+	CheckAccessNoIngress
+	CheckAccessError
 )
 
 func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
@@ -544,10 +547,12 @@ func (e *rateLimiter) regulateRequest(username, path string,
 	}
 
 	action, duration, err := CheckQuotaWrite(nil, bucket, username, false, req)
-	if createReq && action == CheckResultNormal {
-		//TODO: Include CheckStorageLimits() API for create requests.
-		createReqResult, err := e.limitIndexCount(bucket)
-		return createReqResult, 0, err
+	if action == CheckResultNormal {
+		action, err = CheckAccess(bucket, username)
+		if createReq {
+			createReqResult, err := e.limitIndexCount(bucket)
+			return createReqResult, 0, err
+		}
 	}
 	return action, duration, err
 }
@@ -571,14 +576,19 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 
 	action, _, err := e.regulateRequest(username, path, req)
 
-	// support only limiting at the request admission layer
-	if action == CheckResultReject || action == CheckResultThrottle {
-		return false, fmt.Sprintf("limting/throttling: the request has been "+
-			"rejected according to regulator, msg:%v", err)
-	} else if action == CheckResultError {
-		return false, fmt.Sprintf("limting/throttling: failed to regulate the "+
+	switch action {
+	// support only limiting of indexing and query requests at the request
+	// admission layer. Furthermore, reject those indexing requests if the
+	// tenant has hit a storage limit.
+	case CheckResultReject, CheckResultThrottle, CheckAccessNoIngress:
+		return false, fmt.Sprintf("limiting/throttling: the request has been "+
+			"rejected according to regulator, msg: %v", err)
+	case CheckResultError, CheckAccessError:
+		return false, fmt.Sprintf("limiting/throttling: failed to regulate the "+
 			"request err: %v", err)
+	default:
 	}
+
 	return true, ""
 }
 
