@@ -245,7 +245,8 @@ func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []string {
 	return nodesOverHWM
 }
 
-func NodesUtilStats(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
+// Override-able for unit testing
+var NodesUtilStats = func(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
 	if nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
 		return nil
 	}
@@ -273,7 +274,8 @@ func NodesUtilStats(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
 	return rv
 }
 
-func CanNodeAccommodateRequest(nodeDef *cbgt.NodeDef) bool {
+// Override-able for unit testing
+var CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
 	stats, err := obtainNodeUtilStats(nodeDef)
 	if err != nil {
 		// unable to get node stats!?

@@ -83,9 +83,8 @@ const minNodeWeight = -100000
 // deployment model to adjust node weights and be able to group index
 // partitions belonging to the same tenant/bucket as possible.
 func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool, error) {
-	if in.PlanPIndexesPrev == nil ||
-		len(in.PlanPIndexesPrev.PlanPIndexes) == 0 ||
-		in.NodeDefs == nil {
+	if in.PlanPIndexesPrev == nil || len(in.PlanPIndexesPrev.PlanPIndexes) == 0 ||
+		in.NodeDefs == nil || len(in.NodeDefs.NodeDefs) == 0 {
 		return in, false, nil
 	}
 
@@ -174,7 +173,7 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 // partition positioning for the current index during rebalance.
 func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	out rebalance.RebalanceHookInfo, err error) {
-	if in.BegNodeDefs == nil {
+	if in.BegNodeDefs == nil || len(in.BegNodeDefs.NodeDefs) == 0 {
 		return in, nil
 	}
 
