@@ -282,7 +282,7 @@ var CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
 		return false
 	}
 
-	return stats.IsUtilizationOverHWM()
+	return !stats.IsUtilizationOverHWM()
 }
 
 type NodeUtilStats struct {
