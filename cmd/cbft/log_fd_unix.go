@@ -6,6 +6,7 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
+//go:build linux || darwin
 // +build linux darwin
 
 package main
