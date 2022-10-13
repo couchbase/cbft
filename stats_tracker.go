@@ -69,6 +69,7 @@ func (s *timeSeriesStatsTracker) trackStatistic(name string, numEntries int,
 		size:         numEntries,
 		cumulative:   isCumulative,
 		estimateRate: estimateRate,
+		lastRecord:   time.Now(),
 	}
 	s.m.Unlock()
 }
@@ -88,11 +89,12 @@ func (s *timeSeriesStatsTracker) determineNewAverage(name string, val uint64) ui
 		newEntry -= sd.lastEntry
 		sd.lastEntry = val
 		if sd.estimateRate {
+			timeNow := time.Now()
 			if !sd.lastRecord.IsZero() {
 				newEntry = uint64(math.Ceil(float64(newEntry) /
-					time.Now().Sub(sd.lastRecord).Seconds()))
+					timeNow.Sub(sd.lastRecord).Seconds()))
 			}
-			sd.lastRecord = time.Now()
+			sd.lastRecord = timeNow
 		}
 	}
 	sd.values[sd.cursor] = newEntry

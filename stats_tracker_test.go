@@ -61,11 +61,11 @@ func TestStatsTrackerCumulativeRate(t *testing.T) {
 	InitTimeSeriesStatTracker()
 	TrackStatistic("cumulative", 2, true, true)
 	for i := 1; i <= 3; i++ {
+		time.Sleep(1 * time.Second)
 		expect := uint64(1)
 		got := DetermineNewAverage("cumulative", uint64(i))
 		if got != expect {
 			t.Fatalf("[%d] Expected average: %v, got: %v", i, expect, got)
 		}
-		time.Sleep(1 * time.Second)
 	}
 }
