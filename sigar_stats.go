@@ -18,6 +18,9 @@ import "C"
 
 import (
 	"fmt"
+	"os"
+	"runtime"
+	"strconv"
 )
 
 var stats *systemStats
@@ -34,6 +37,19 @@ func InitSystemStats() error {
 }
 
 // -----------------------------------------------------------------------------
+
+func GetNumCPUs() string {
+	cgroupInfo := stats.getControlGroupInfo()
+	if cgroupInfo.Supported == sigarCgroupSupported {
+		return strconv.FormatFloat(float64(cgroupInfo.NumCpuPrc)/100.0, 'f', 3, 64)
+	}
+
+	gomaxprocs := os.Getenv("GOMAXPROCS")
+	if gomaxprocs == "" {
+		return strconv.Itoa(runtime.NumCPU())
+	}
+	return gomaxprocs
+}
 
 // GetMemoryLimit returns total memory based on cgroup limits, if possible.
 func GetMemoryLimit() (uint64, error) {
@@ -130,6 +146,8 @@ type sigarControlGroupInfo struct {
 
 	// Maximum memory available in the group. Derived from memory.max
 	MemoryMax uint64
+
+	NumCpuPrc uint16
 }
 
 // getControlGroupInfo returns the fields of C.sigar_control_group_info_t FTS uses.
@@ -143,5 +161,6 @@ func (h *systemStats) getControlGroupInfo() *sigarControlGroupInfo {
 		Supported: uint8(info.supported),
 		Version:   uint8(info.version),
 		MemoryMax: uint64(info.memory_max),
+		NumCpuPrc: uint16(info.num_cpu_prc),
 	}
 }

@@ -577,14 +577,15 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	})
 	topLevelStats["utilization:diskBytes"] = uint64(size)
 
+	options := mgr.Options()
+
 	if cpu, err := currentCPUPercent(); err == nil {
+		numCPU, _ := strconv.ParseFloat(options["ftsCpuQuota"], 64)
 		topLevelStats["utilization:cpuPercent"] = DetermineNewAverage(
-			"cpuPercent", uint64(cpu/float64(runtime.NumCPU())))
+			"cpuPercent", uint64(cpu/numCPU))
 	}
 
 	if ServerlessMode {
-		options := mgr.Options()
-
 		if val, exists := options["resourceUtilizationHighWaterMark"]; exists {
 			if valFloat64, err := strconv.ParseFloat(val, 64); err == nil {
 				topLevelStats["resourceUtilizationHighWaterMark"] = valFloat64

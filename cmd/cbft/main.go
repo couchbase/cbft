@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -79,10 +78,6 @@ func main() {
 		fmt.Printf("%s main: %s, data: %s\n", path.Base(os.Args[0]),
 			version, cbgt.VERSION)
 		os.Exit(0)
-	}
-
-	if os.Getenv("GOMAXPROCS") == "" {
-		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
 	// start the system event listener
@@ -312,12 +307,11 @@ func initCPUOptions(options map[string]string) error {
 		return nil
 	}
 
-	numCPU := os.Getenv("GOMAXPROCS")
-	if numCPU == "" {
-		numCPU = strconv.Itoa(runtime.NumCPU())
-	}
+	numCPU := cbft.GetNumCPUs()
+
 	options["ftsCpuQuota"] = numCPU
 	log.Printf("main: FTS CPU quota is: %s", numCPU)
+
 	return nil
 }
 

@@ -13,6 +13,8 @@ package cbft
 
 import (
 	"os"
+	"runtime"
+	"strconv"
 
 	sigar "github.com/cloudfoundry/gosigar"
 )
@@ -20,6 +22,14 @@ import (
 func InitSystemStats() error {
 	// no-op
 	return nil
+}
+
+func GetNumCPUs() string {
+	gomaxprocs := os.Getenv("GOMAXPROCS")
+	if gomaxprocs == "" {
+		return strconv.Itoa(runtime.NumCPU())
+	}
+	return gomaxprocs
 }
 
 // GetMemoryLimit returns the host's total memory, in bytes.
