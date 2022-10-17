@@ -479,7 +479,7 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
     var http = prefixedHttp($http, '../_p/' + ftsPrefix);
 
-    $scope.progressPct = "--";
+    $scope.progress = "idle";
     $scope.docCount = "";
     $scope.totSeqReceived = "";
     $scope.prevTotSeqReceived = "";
@@ -500,11 +500,11 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 $scope.docCount = data["doc_count"];
                 $scope.totSeqReceived = data["tot_seq_received"];
                 $scope.numMutationsToIndex = data["num_mutations_to_index"];
-                updateProgressPct();
+                updateProgress();
             }
         }, function(response) {
             $scope.httpStatus = response.Status;
-            updateProgressPct();
+            updateProgress();
         });
 
         if (callback) {
@@ -583,28 +583,25 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
         }
     });
 
-    function updateProgressPct() {
+    function updateProgress() {
         var docCount = parseInt($scope.docCount);
         var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
         var totSeqReceived = parseInt($scope.totSeqReceived);
         var prevTotSeqReceived = parseInt($scope.prevTotSeqReceived);
-        let prog = 0.0;
+        let prog = "idle";
 
         if (totSeqReceived == 0 && prevTotSeqReceived == 0) {
-            prog = 100.0;
-        } else if ((totSeqReceived == prevTotSeqReceived) &&
-            numMutationsToIndex > 0 && docCount > 0) {
-            // if the totSeqReceived is equal to the one recorded in the
-            // previous iteration, check if we can determine the progress
-            // based on the docCount and numMutationsToIndex.
-            prog = ((1.0 * docCount) / (docCount + numMutationsToIndex)) * 100.0;
-        } else if (totSeqReceived > 0 && prevTotSeqReceived <= totSeqReceived) {
-            // determine progressPct relative to the current
-            // totSeqReceived and the prevTotSeqReceived.
-            prog = ((1.0 * prevTotSeqReceived) / totSeqReceived) * 100.0;
+            // no sequence numbers received
+            prog = "idle";
+        } else if (((totSeqReceived == prevTotSeqReceived) && numMutationsToIndex > 0 && docCount > 0) ||
+            (totSeqReceived > 0 && prevTotSeqReceived < totSeqReceived)) {
+            // if the totSeqReceived is equal to the one recorded earlier - check numMutationsToIndex
+            // to determine ingest stats, or else determine by checking totSeqReceived against
+            // the one recorded earlier.
+            prog = "active";
         }
 
-        $scope.progressPct = prog.toPrecision(4);
+        $scope.progress = prog;
         $scope.prevTotSeqReceived = $scope.totSeqReceived;
     }
 

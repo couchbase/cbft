@@ -50,7 +50,7 @@
             <span class="icon fa-info fa-stack-1x"></span>
           </span>
         </th>
-        <th>indexing progress</th>
+        <th>ingest</th>
       </tr>
       <tbody ng-repeat="indexDef in obtainFullTextIndexes()"
              class="has-hover"
@@ -93,7 +93,7 @@
             <span ng-bind="docCount"></span>
           </td>
           <td>
-            <span ng-if="progressPct">{{progressPct}}%</span>
+            <span ng-if="progress">{{progress}}</span>
           </td>
         </tr>
         <!-- index details area ************************* -->
