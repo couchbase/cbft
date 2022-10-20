@@ -160,4 +160,7 @@ cluster.bucket{}.fts!read
 
 POST /api/v1/bucket/{bucketName}/backup
 cluster.bucket{}.fts!read
+
+GET /api/indexes/source/{bucketName}
+cluster.bucket{}.fts!read
 `
