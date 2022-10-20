@@ -4,14 +4,14 @@ go 1.18
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
-	github.com/blevesearch/bleve/v2 v2.3.4
-	github.com/blevesearch/bleve_index_api v1.0.3
+	github.com/blevesearch/bleve/v2 v2.3.5
+	github.com/blevesearch/bleve_index_api v1.0.4
 	github.com/blevesearch/upsidedown_store_api v1.0.1
-	github.com/blevesearch/zapx/v11 v11.3.5
-	github.com/blevesearch/zapx/v12 v12.3.5
-	github.com/blevesearch/zapx/v13 v13.3.5
-	github.com/blevesearch/zapx/v14 v14.3.5
-	github.com/blevesearch/zapx/v15 v15.3.5
+	github.com/blevesearch/zapx/v11 v11.3.6
+	github.com/blevesearch/zapx/v12 v12.3.6
+	github.com/blevesearch/zapx/v13 v13.3.6
+	github.com/blevesearch/zapx/v14 v14.3.6
+	github.com/blevesearch/zapx/v15 v15.3.6
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.3
@@ -28,7 +28,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.4.0
 	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462
 	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
 	google.golang.org/grpc v1.31.0
@@ -38,18 +38,18 @@ require (
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.2 // indirect
-	github.com/blevesearch/geo v0.1.13 // indirect
+	github.com/blevesearch/geo v0.1.15 // indirect
 	github.com/blevesearch/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
 	github.com/blevesearch/gtreap v0.1.1 // indirect
 	github.com/blevesearch/mmap-go v1.0.4 // indirect
-	github.com/blevesearch/scorch_segment_api/v2 v2.1.2 // indirect
+	github.com/blevesearch/scorch_segment_api/v2 v2.1.3 // indirect
 	github.com/blevesearch/segment v0.9.0 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
-	github.com/blevesearch/vellum v1.0.8 // indirect
+	github.com/blevesearch/vellum v1.0.9 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/couchbase/blance v0.1.1 // indirect
+	github.com/couchbase/blance v0.1.3 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8 // indirect
 	github.com/couchbase/gocb/v2 v2.5.2 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
