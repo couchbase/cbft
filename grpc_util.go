@@ -59,13 +59,9 @@ var DefaultGrpcMaxSendMsgSize = 1024 * 1024 * 50 // 50 MB
 // streams/requests on either the client or server.
 var DefaultGrpcMaxConcurrentStreams = uint32(math.MaxInt32)
 
-var rsource rand.Source
-var r1 *rand.Rand
-
 func init() {
 	RPCClientConn = make(map[string][]*grpc.ClientConn, defaultRPCClientCacheSize)
-	rsource = rand.NewSource(time.Now().UnixNano())
-	r1 = rand.New(rsource)
+	rand.Seed(time.Now().UnixNano())
 }
 
 // resetGrpcClients is used to reset the existing clients so that
@@ -112,7 +108,7 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
 	var initialised bool
 
 	key := nodeUUID + "-" + hostPort
-	index := r1.Intn(connPoolSize)
+	index := rand.Intn(connPoolSize)
 
 	rpcConnMutex.Lock()
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
