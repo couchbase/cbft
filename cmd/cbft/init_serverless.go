@@ -55,9 +55,9 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	// Prometheus pulls low cardinality stats about every 10s, setting numEntries
 	// to 360 to track moving average over 1 hour (3600/10).
 	cbft.InitTimeSeriesStatTracker()
-	cbft.TrackStatistic("memoryBytes", 360, false, false)
-	cbft.TrackStatistic("totalUnitsMetered", 360, true, true)
-	cbft.TrackStatistic("cpuPercent", 360, false, false)
+	cbft.TrackStatistic("memoryBytes", 360, false)
+	cbft.TrackStatistic("totalUnitsMetered", 360, true)
+	cbft.TrackStatistic("cpuPercent", 360, false)
 
 	cbgt.PlannerHooks["serverless"] = serverlessPlannerHook
 	options["plannerHookName"] = "serverless"

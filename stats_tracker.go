@@ -20,9 +20,9 @@ func InitTimeSeriesStatTracker() {
 	}
 }
 
-func TrackStatistic(name string, numEntries int, isCumulative, estimateRate bool) {
+func TrackStatistic(name string, numEntries int, trackGrowthRate bool) {
 	if st != nil {
-		st.trackStatistic(name, numEntries, isCumulative, estimateRate)
+		st.trackStatistic(name, numEntries, trackGrowthRate)
 	}
 }
 
@@ -49,11 +49,9 @@ type statDetails struct {
 	values []uint64
 	size   int
 
-	cumulative bool
-	lastEntry  uint64
-
-	estimateRate bool
-	lastRecord   time.Time
+	trackGrowthRate bool
+	lastEntry       uint64
+	lastRecord      time.Time
 
 	count int
 	sum   uint64
@@ -62,14 +60,13 @@ type statDetails struct {
 }
 
 func (s *timeSeriesStatsTracker) trackStatistic(name string, numEntries int,
-	isCumulative, estimateRate bool) {
+	trackGrowthRate bool) {
 	s.m.Lock()
 	s.entries[name] = &statDetails{
-		values:       make([]uint64, numEntries),
-		size:         numEntries,
-		cumulative:   isCumulative,
-		estimateRate: estimateRate,
-		lastRecord:   time.Now(),
+		values:          make([]uint64, numEntries),
+		size:            numEntries,
+		trackGrowthRate: trackGrowthRate,
+		lastRecord:      time.Now(),
 	}
 	s.m.Unlock()
 }
@@ -85,15 +82,18 @@ func (s *timeSeriesStatsTracker) determineNewAverage(name string, val uint64) ui
 
 	sd.sum -= sd.values[sd.cursor]
 	newEntry := val
-	if sd.cumulative {
-		newEntry -= sd.lastEntry
-		sd.lastEntry = val
-		if sd.estimateRate {
-			timeNow := time.Now()
-			newEntry = uint64(math.Ceil(float64(newEntry) /
-				timeNow.Sub(sd.lastRecord).Seconds()))
-			sd.lastRecord = timeNow
+	if sd.trackGrowthRate {
+		if newEntry > sd.lastEntry {
+			newEntry -= sd.lastEntry
+			sd.lastEntry = val
+		} else {
+			newEntry = 0
 		}
+
+		timeNow := time.Now()
+		newEntry = uint64(math.Round(float64(newEntry) /
+			timeNow.Sub(sd.lastRecord).Seconds()))
+		sd.lastRecord = timeNow
 	}
 	sd.values[sd.cursor] = newEntry
 	sd.sum += newEntry

@@ -28,7 +28,7 @@ func TestStatsTrackerNoEntry(t *testing.T) {
 
 func TestStatsTrackerBasic1(t *testing.T) {
 	InitTimeSeriesStatTracker()
-	TrackStatistic("basic1", 10, false, false)
+	TrackStatistic("basic1", 10, false)
 	for i := 0; i < 100; i++ {
 		got := DetermineNewAverage("basic1", 2)
 		if got != 2 {
@@ -43,7 +43,7 @@ func TestStatsTrackerBasic2(t *testing.T) {
 		return uint64((start + end) / 2)
 	}
 
-	TrackStatistic("basic2", 1440, false, false)
+	TrackStatistic("basic2", 1440, false)
 	for i := 1; i <= 10000; i++ {
 		start := 1
 		if i > 1440 {
@@ -57,9 +57,9 @@ func TestStatsTrackerBasic2(t *testing.T) {
 	}
 }
 
-func TestStatsTrackerCumulativeRate(t *testing.T) {
+func TestStatsTrackerGrowthRate(t *testing.T) {
 	InitTimeSeriesStatTracker()
-	TrackStatistic("cumulative", 2, true, true)
+	TrackStatistic("cumulative", 2, true)
 	for i := 1; i <= 3; i++ {
 		time.Sleep(1 * time.Second)
 		expect := uint64(1)
