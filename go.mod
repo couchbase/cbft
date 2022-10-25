@@ -74,14 +74,14 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )
 
 replace github.com/json-iterator/go => github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede
 
-replace golang.org/x/text => golang.org/x/text v0.3.7
+replace golang.org/x/text => golang.org/x/text v0.4.0
 
 replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 
