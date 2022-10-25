@@ -90,10 +90,8 @@ func (s *timeSeriesStatsTracker) determineNewAverage(name string, val uint64) ui
 		sd.lastEntry = val
 		if sd.estimateRate {
 			timeNow := time.Now()
-			if !sd.lastRecord.IsZero() {
-				newEntry = uint64(math.Ceil(float64(newEntry) /
-					timeNow.Sub(sd.lastRecord).Seconds()))
-			}
+			newEntry = uint64(math.Ceil(float64(newEntry) /
+				timeNow.Sub(sd.lastRecord).Seconds()))
 			sd.lastRecord = timeNow
 		}
 	}
