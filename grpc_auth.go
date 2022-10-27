@@ -164,6 +164,10 @@ func (rp *rpcRequestParser) GetCollectionNames() ([]string, error) {
 	return nil, nil // placeholder implementation.
 }
 
+func (rp *rpcRequestParser) GetBucketName() (string, error) {
+	return "", nil // placeholder implementation.
+}
+
 func (rp *rpcRequestParser) GetRequest() (interface{}, string) {
 	return rp.request, "RPC"
 }

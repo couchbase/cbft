@@ -288,6 +288,7 @@ type requestParser interface {
 	GetIndexDef() (*cbgt.IndexDef, error)
 	GetRequest() (interface{}, string)
 	GetCollectionNames() ([]string, error)
+	GetBucketName() (string, error)
 }
 
 var errInvalidHttpRequest = fmt.Errorf("rest_auth: invalid http request")
@@ -310,6 +311,14 @@ func (p *restRequestParser) GetPIndexName() (string, error) {
 		return pindexName, nil
 	}
 	return "", fmt.Errorf("rest_auth: restRequestParser, missing pindexName")
+}
+
+func (p *restRequestParser) GetBucketName() (string, error) {
+	bucketName := rest.BucketNameLookup(p.req)
+	if bucketName != "" {
+		return bucketName, nil
+	}
+	return "", fmt.Errorf("rest_auth: restRequestParser, missing bucketName")
 }
 
 func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
@@ -362,10 +371,6 @@ func (p *restRequestParser) GetCollectionNames() ([]string, error) {
 	}, "collections")
 
 	return rv, nil
-}
-
-func (p *restRequestParser) GetSourceName() (string, error) {
-	return p.req.FormValue("sourceName"), nil
 }
 
 var errIndexNotFound = fmt.Errorf("index not found")
@@ -467,6 +472,13 @@ func preparePerms(mgr definitionLookuper, r requestParser,
 				decoratePermStrings(perm, sourceName))
 		}
 		return perms, nil
+	} else if strings.Index(perm, "<bucketName>") >= 0 {
+		bucketName, err := r.GetBucketName()
+		if err != nil {
+			return nil, err
+		}
+
+		perm = strings.ReplaceAll(perm, "<bucketName>", bucketName)
 	}
 
 	return []string{perm}, nil
