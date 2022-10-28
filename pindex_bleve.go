@@ -47,8 +47,11 @@ import (
 	"github.com/couchbase/moss"
 )
 
+// Use sync/atomic to access these stats
 var BatchBytesAdded uint64
+var NumBatchesAdded uint64
 var BatchBytesRemoved uint64
+var NumBatchesRemoved uint64
 
 var TotBatchesFlushedOnMaxOps uint64
 var TotBatchesFlushedOnTimer uint64
@@ -2655,6 +2658,7 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 
 	batchTotalDocsSize := batch.TotalDocsSize()
 	atomic.AddUint64(&BatchBytesAdded, batchTotalDocsSize)
+	atomic.AddUint64(&NumBatchesAdded, 1)
 
 	err := cbgt.Timer(func() error {
 		atomic.AddUint64(&aggregateBDPStats.TotExecuteBatchBeg, 1)
@@ -2672,6 +2676,7 @@ func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	}
 
 	atomic.AddUint64(&BatchBytesRemoved, batchTotalDocsSize)
+	atomic.AddUint64(&NumBatchesRemoved, 1)
 
 	for i, t := range bdp {
 		t.m.Lock()
