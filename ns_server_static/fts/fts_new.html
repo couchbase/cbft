@@ -241,20 +241,6 @@
                       ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
               </select>
             </div>
-            <div class="column">
-              <!-- STORE OPTIONS ******************************* -->
-              <label for="inputStoreOptions" class="inline">Index Type</label>
-              <span class="fa-stack icon-info"
-                    uib-tooltip="Index store format." tooltip-placement="auto right">
-                <span class="icon fa-circle-thin fa-stack-2x"></span>
-                <span class="icon fa-info fa-stack-1x"></span>
-              </span>
-              <select ng-model="$parent.indexStoreOption"
-                      ng-change="indexStoreOptionChanged()"
-                      class="midwide"
-                      ng-options="item for item in indexStoreOptions">
-              </select>
-            </div>
             <div class="width-6">
               <!-- NUMBER OF PINDEXES *********************** -->
               <label for="inputNumPindexes" class="inline">Index Partitions</label>

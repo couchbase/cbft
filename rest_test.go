@@ -11,6 +11,7 @@ package cbft
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,18 +21,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/gorilla/mux"
-
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-
-	"github.com/couchbase/moss"
-
-	"fmt"
-
-	"github.com/blevesearch/bleve/v2"
-	"github.com/blevesearch/bleve/v2/index/upsidedown"
-	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
+	"github.com/gorilla/mux"
 )
 
 // Implements ManagerEventHandlers interface.
@@ -1637,28 +1629,6 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	}
 
 	testRESTHandlers(t, tests, router)
-}
-
-func TestHandlersWithOnePartitionPrimaryFeedRollbackMoss(t *testing.T) {
-	BlevePIndexAllowMossPrev := BlevePIndexAllowMoss
-	BlevePIndexAllowMoss = true
-
-	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
-	bleve.Config.DefaultKVStore = "mossStore"
-	bleveConfigDefaultIndexTypePrev := bleve.Config.DefaultIndexType
-	bleve.Config.DefaultIndexType = upsidedown.Name
-
-	bleveMossRegistryCollectionOptionsFTSPrev := bleveMoss.RegistryCollectionOptions["fts"]
-	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
-
-	defer func() {
-		BlevePIndexAllowMoss = BlevePIndexAllowMossPrev
-		bleve.Config.DefaultKVStore = bleveConfigDefaultKVStorePrev
-		bleve.Config.DefaultIndexType = bleveConfigDefaultIndexTypePrev
-		bleveMoss.RegistryCollectionOptions["fts"] = bleveMossRegistryCollectionOptionsFTSPrev
-	}()
-
-	testHandlersWithOnePartitionPrimaryFeedRollback(t)
 }
 
 func TestHandlersWithOnePartitionPrimaryFeedRollbackDefault(t *testing.T) {

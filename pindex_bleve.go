@@ -43,8 +43,6 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-
-	"github.com/couchbase/moss"
 )
 
 // Use sync/atomic to access these stats
@@ -62,7 +60,6 @@ var TotRollbackFull uint64
 
 var featureIndexType = "indexType"
 var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
-var FeatureUpsidedownIndex = featureIndexType + ":" + upsidedown.Name
 
 var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
 
@@ -73,8 +70,6 @@ var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", Bleve
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
-
-var BlevePIndexAllowMoss = false // Unit tests prefer no moss.
 
 var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
 
@@ -125,7 +120,7 @@ type BleveParams struct {
 // BleveParams.Store field.
 type BleveParamsStore struct {
 	// The indexType defaults to bleve.Config.DefaultIndexType.
-	// Example: "upside_down".  See bleve.index.upsidedown.Name and
+	// Example: "scorch".  See bleve.index.scorch.Name and
 	// bleve.registry.RegisterIndexType().
 	IndexType string `json:"indexType"`
 
@@ -141,59 +136,6 @@ type BleveParamsStore struct {
 	// Note: the interposing metrics wrapper might introduce
 	// additional performance costs.
 	KvStoreMetricsAllow bool `json:"kvStoreMetricsAllow"`
-
-	// The kvStoreMossAllow defaults to true.
-	//
-	// The moss cache will be used for a bleve index's KVStore when
-	// both this kvStoreMossAllow flag and the
-	// cbft.BlevePIndexAllowMoss global flag are true.
-	//
-	// A user can also explicitly specify a kvStoreName of "moss" to
-	// force usage of the moss cache.
-	KvStoreMossAllow bool `json:"kvStoreMossAllow"`
-
-	// The mossCollectionOptions allows users to specify moss cache
-	// collection options, with defaults coming from
-	// moss.DefaultCollectionOptions.
-	//
-	// It only applies when a moss cache is in use for an index (see
-	// kvStoreMossAllow).
-	MossCollectionOptions moss.CollectionOptions `json:"mossCollectionOptions"`
-
-	// The mossLowerLevelStoreName specifies which lower-level
-	// bleve.index.store.KVStore to use underneath a moss cache.
-	// See also bleve.registry.RegisterKVStore().
-	//
-	// It only applies when a moss cache is in use for an index (see
-	// kvStoreMossAllow).
-	//
-	// As a special case, when moss cache is allowed, and the
-	// kvStoreName is not "moss", and the mossLowerLevelStoreName is
-	// unspecified or "", then the system will automatically
-	// reconfigure as a convenience so that the
-	// mossLowerLevelStoreName becomes the kvStoreName, and the
-	// kvStoreName becomes "moss", hence injecting moss cache into
-	// usage for an index.
-	//
-	// In another case, when the kvStoreName is "moss" and the
-	// mossLowerLevelStoreName is "" (empty string), that means the
-	// moss cache will run in memory-only mode with no lower-level
-	// storage.
-	MossLowerLevelStoreName string `json:"mossLowerLevelStoreName"`
-
-	// The mossLowerLevelStoreConfig can be used to provide advanced
-	// options to the lower-level KVStore that's used under a moss
-	// cache.
-	//
-	// NOTE: when the mossLowerLevelStoreName is "mossStore", the
-	// mossLowerLevelStoreConfig is not used; instead, please use
-	// mossStoreOptions.
-	MossLowerLevelStoreConfig map[string]interface{} `json:"mossLowerLevelStoreConfig"`
-
-	// The mossStoreOptions allows the user to specify advanced
-	// configuration options when moss cache is in use and when the
-	// mossLowerLevelStoreName is "mossStore",
-	MossStoreOptions moss.StoreOptions `json:"mossStoreOptions"`
 }
 
 func NewBleveParams() *BleveParams {
@@ -689,13 +631,11 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			indexType = entries["indexType"].(string)
 		}
 
-		if indexType != upsidedown.Name {
-			// Validate any indexType except upsidedown (to support pre-5.5)
-			if !cbgt.IsFeatureSupportedByCluster(featureIndexType+":"+indexType, nodeDefs) {
-				return fmt.Errorf("bleve: index validation failed:"+
-					" indexType: %v not supported on all nodes in"+
-					" cluster", indexType)
-			}
+		// Validate indexType
+		if !cbgt.IsFeatureSupportedByCluster(featureIndexType+":"+indexType, nodeDefs) {
+			return fmt.Errorf("bleve: index validation failed:"+
+				" indexType: %v not supported on all nodes in"+
+				" cluster", indexType)
 		}
 
 		return nil
@@ -903,10 +843,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	if bleveIndexType == "upside_down" {
-		log.Printf("bleve: new index, path: %s,"+
-			" uses index type upside_down which is now deprecated.  For more information, see:"+
-			" https://docs.couchbase.com/server/7.0/release-notes/relnotes.html#deprecated-and-removed-features",
-			path)
+		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
+			" uses index type upside_down which is no longer supported", path)
 	}
 
 	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
@@ -1006,69 +944,12 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		kvConfig[k] = v
 	}
 
-	kvStoreName := "scorch"
 	if bleveIndexType != "scorch" {
-		kvStoreName, ok = bleveParams.Store["kvStoreName"].(string)
-		if !ok || kvStoreName == "" {
-			if bleveIndexType == upsidedown.Name {
-				kvStoreName = "mossStore"
-			} else {
-				kvStoreName = bleve.Config.DefaultKVStore
-			}
-		}
-
-		// Use the "moss" wrapper KVStore if it's allowed, available
-		// and also not already configured.
-		kvStoreMossAllow := true
-		ksmv, exists := kvConfig["kvStoreMossAllow"]
-		if exists {
-			var v bool
-			v, ok = ksmv.(bool)
-			if ok {
-				kvStoreMossAllow = v
-			}
-		}
-
-		if kvStoreMossAllow && BlevePIndexAllowMoss {
-			_, exists = kvConfig["mossLowerLevelStoreName"]
-			if !exists &&
-				kvStoreName != "moss" &&
-				bleveRegistry.KVStoreConstructorByName("moss") != nil {
-				kvConfig["mossLowerLevelStoreName"] = kvStoreName
-				kvStoreName = "moss"
-			}
-
-			_, exists = kvConfig["mossCollectionOptionsName"]
-			if !exists {
-				kvConfig["mossCollectionOptionsName"] = "fts"
-			}
-		}
-
-		// Use the "metrics" wrapper KVStore if it's allowed, available
-		// and also not already configured.
-		kvStoreMetricsAllow := BleveKVStoreMetricsAllow
-		ksmv, exists = kvConfig["kvStoreMetricsAllow"]
-		if exists {
-			var v bool
-			v, ok = ksmv.(bool)
-			if ok {
-				kvStoreMetricsAllow = v
-			}
-		}
-
-		if kvStoreMetricsAllow {
-			_, exists := kvConfig["kvStoreName_actual"]
-			if !exists &&
-				kvStoreName != "metrics" &&
-				bleveRegistry.KVStoreConstructorByName("metrics") != nil {
-				kvConfig["kvStoreName_actual"] = kvStoreName
-				kvStoreName = "metrics"
-			}
-		}
-	} else {
-		// dummy entry for bleve in case of scorch indextype
-		kvConfig["kvStoreName"] = "scorch"
+		log.Warnf("unsupported index type: %s, overwriting to scorch", bleveIndexType)
+		bleveIndexType = "scorch"
 	}
+	kvStoreName := "scorch"
+	kvConfig["kvStoreName"] = "scorch"
 
 	return kvConfig, bleveIndexType, kvStoreName
 }
@@ -1119,15 +1000,6 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 			// populate the collection meta field look up cache.
 			bleveParams.DocConfig.CollPrefixLookup =
 				initMetaFieldValCache(tmp.IndexName, tmp.SourceName, am)
-		}
-	}
-
-	// Handle the case where indexType wasn't mentioned in
-	// the index params (only from pre 5.5 nodes)
-	if !strings.Contains(indexParams, "indexType") {
-		bleveParams.Store["indexType"] = upsidedown.Name
-		if !strings.Contains(indexParams, "kvStoreName") {
-			bleveParams.Store["kvStoreName"] = "mossStore"
 		}
 	}
 
@@ -3024,13 +2896,6 @@ func BleveInitRouter(r *mux.Router, phase string,
 			docGetHandler).Methods("GET")
 		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/doc/{docID}"] = "GET"
 
-		debugDocHandler := ftsHttp.NewDebugDocumentHandler("")
-		debugDocHandler.IndexNameLookup = rest.PIndexNameLookup
-		debugDocHandler.DocIDLookup = rest.DocIDLookup
-		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/docDebug/{docID}",
-			debugDocHandler).Methods("GET")
-		BleveRouteMethods[prefix+"/api/pindex-bleve/{pindexName}/docDebug/{docID}"] = "GET"
-
 		listFieldsHandler := ftsHttp.NewListFieldsHandler("")
 		listFieldsHandler.IndexNameLookup = rest.PIndexNameLookup
 		r.Handle(prefix+"/api/pindex-bleve/{pindexName}/fields",
@@ -3122,28 +2987,6 @@ should have a vbucketUUID of a0b1c2):`,
 	}
 }
 
-func parseStoreOptions(input string) *moss.StoreOptions {
-	params := make(map[string]map[string]interface{})
-	err := json.Unmarshal([]byte(input), &params)
-	if err != nil {
-		return nil
-	}
-	if v, ok := params["store"]["mossStoreOptions"]; ok {
-		// Convert from map[string]interface{}.
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil
-		}
-		storeOptions := &moss.StoreOptions{}
-		err = json.Unmarshal(b, storeOptions)
-		if err != nil {
-			return nil
-		}
-		return storeOptions
-	}
-	return nil
-}
-
 func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	bpPrev := NewBleveParams()
 	if len(paramPrev) == 0 {
@@ -3163,15 +3006,6 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	err = json.Unmarshal([]byte(paramCur), bpCur)
 	if err != nil {
 		return false
-	}
-
-	// Handle the case where indexType wasn't mentioned in
-	// the index params (only from pre 5.5 nodes)
-	if !strings.Contains(paramPrev, "indexType") {
-		bpPrev.Store["indexType"] = upsidedown.Name
-		if !strings.Contains(paramPrev, "kvStoreName") {
-			bpPrev.Store["kvStoreName"] = "mossStore"
-		}
 	}
 
 	// check for any changes in the spatial engines.
@@ -3196,21 +3030,8 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 			" detected, before: %s, after: %s", paramPrev, paramCur)
 		return true
 	}
-	// check storeOption changes
-	soPrev := parseStoreOptions(paramPrev)
-	soCur := parseStoreOptions(paramCur)
-	if soPrev == nil && soCur == nil {
-		return true
-	}
-	if soPrev == nil || soCur == nil {
-		return false
-	}
-	if soPrev.PersistKind != soCur.PersistKind {
-		return false
-	}
-	// even if there are no storeOption changes, we are good for a restart
-	log.Printf("bleve: reloadable storeOptions detected, before: %s, "+
-		" after: %s", paramPrev, paramCur)
+
+	log.Warnf("bleve: unsupported index type: %s", curType)
 	return true
 }
 

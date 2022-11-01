@@ -31,7 +31,6 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-	"github.com/couchbase/moss"
 	"github.com/dustin/go-jsonpointer"
 )
 
@@ -722,38 +721,16 @@ func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
 		if metrics, ok := v.(map[string]interface{}); ok {
 			extractMetricsStats(metrics, nsIndexStat)
-			// if we found metrics, look for moss one level deeper
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/moss")
-			if mossStats, ok := v.(*moss.CollectionStats); ok {
-				extractMossStats(mossStats, nsIndexStat)
-				// if we found moss, look for kv one level deeper
-				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv/kv")
-				if kvStats, ok := v.(map[string]interface{}); ok {
-					extractKVStats(kvStats, nsIndexStat)
-				}
-			} else {
-				// no moss at this level, but still look for kv stats
-				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
-				if kvStats, ok := v.(map[string]interface{}); ok {
-					extractKVStats(kvStats, nsIndexStat)
-				}
+			// look for kv stats
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
 			}
 		} else {
-			// maybe no metrics, look for moss at this level
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/moss")
-			if mossStats, ok := v.(*moss.CollectionStats); ok {
-				extractMossStats(mossStats, nsIndexStat)
-				// if we found moss, look for kv one level deeper
-				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
-				if kvStats, ok := v.(map[string]interface{}); ok {
-					extractKVStats(kvStats, nsIndexStat)
-				}
-			} else {
-				// maybe no metrics or moss, look for kv here
-				v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
-				if kvStats, ok := v.(map[string]interface{}); ok {
-					extractKVStats(kvStats, nsIndexStat)
-				}
+			// look for kv here
+			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+			if kvStats, ok := v.(map[string]interface{}); ok {
+				extractKVStats(kvStats, nsIndexStat)
 			}
 		}
 	} else {
@@ -788,13 +765,7 @@ func extractMetricsStats(metrics, nsIndexStat map[string]interface{}) error {
 	return nil
 }
 
-func extractMossStats(mossStats *moss.CollectionStats, nsIndexStat map[string]interface{}) error {
-	updateStat("num_recs_to_persist", float64(mossStats.CurDirtyOps), nsIndexStat)
-	return nil
-}
-
 var kvStats = map[string]string{
-	// From mossStore...
 	"/num_bytes_used_disk":            "num_bytes_used_disk",
 	"/total_compaction_written_bytes": "total_compaction_written_bytes",
 	"/num_files":                      "num_files_on_disk",

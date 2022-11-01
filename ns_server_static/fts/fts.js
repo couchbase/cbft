@@ -665,6 +665,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
     function initWithBuckets(buckets) {
         $scope.ftsDocConfig = {};
         $scope.ftsStore = {};
+        $scope.ftsStore.indexType = "scorch";
 
         $scope.ftsNodes = [];
         mnPoolDefault.get().then(function(value){
@@ -698,9 +699,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 $state.go("app.admin.search.fts_list", { open: newIndexName });
             }
         }
-
-        $scope.indexStoreOptions = ["Version 5.0 (Moss) (deprecated)", "Version 6.0 (Scorch)"];
-        $scope.indexStoreOption = $scope.indexStoreOptions[1];
 
         $scope.docConfigCollections = false;
         $scope.docConfigMode = "type_field";
@@ -784,21 +782,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     $scope.docConfigMode == "scope.collection.docid_prefix" ||
                     $scope.docConfigMode == "scope.collection.docid_regexp") {
                     $scope.ftsDocConfig.mode = $scope.docConfigMode;
-                }
-            }
-
-            $scope.indexStoreOptionChanged = function() {
-                if ($scope.newIndexParams) {
-                    switch($scope.indexStoreOption) {
-                        case $scope.indexStoreOptions[0]:
-                            $scope.ftsStore.kvStoreName = "mossStore";
-                            $scope.ftsStore.indexType = "upside_down";
-                            break;
-                        case $scope.indexStoreOptions[1]:
-                            $scope.ftsStore.indexType = "scorch";
-                            delete $scope.ftsStore.kvStoreName;
-                            break;
-                    }
                 }
             }
 
@@ -1475,9 +1458,6 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $state.go("app.admin.search.fts_list", { open: newIndexName });
             }
         }
-
-        $scope.indexStoreOptions = ["Version 5.0 (Moss)", "Version 6.0 (Scorch)"];
-        $scope.indexStoreOption = $scope.indexStoreOptions[1];
 
         $scope.docConfigCollections = false;
         $scope.docConfigMode = "type_field";

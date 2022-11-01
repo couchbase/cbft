@@ -29,7 +29,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/blevesearch/bleve/v2"
-	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	ftsHttp "github.com/couchbase/cbft/http"
 	"github.com/couchbase/go-couchbase"
 
@@ -317,15 +316,6 @@ func initCPUOptions(options map[string]string) error {
 
 func mainWelcome(flagAliases map[string][]string) {
 	cmd.LogFlags(flagAliases)
-
-	log.Printf("main: registered bleve stores")
-	types, instances := bleveRegistry.KVStoreTypesAndInstances()
-	for _, s := range types {
-		log.Printf("  %s", s)
-	}
-	for _, s := range instances {
-		log.Printf("  %s", s)
-	}
 }
 
 func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
@@ -346,10 +336,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
 		"," + cbgt.NodeFeatureAdvMetaEncoding +
-		"," + cbft.FeatureScorchIndex + "," + cbft.FeatureUpsidedownIndex +
-		"," + cbft.FeatureGRPC + "," + cbft.FeatureCollections +
+		"," + cbft.FeatureScorchIndex +
+		"," + cbft.FeatureGRPC +
+		"," + cbft.FeatureCollections +
 		"," + cbft.FeatureBlevePreferredSegmentVersion +
-		"," + cbft.FeatureFileTransferRebalance + "," + cbft.FeatureGeoSpatial
+		"," + cbft.FeatureFileTransferRebalance +
+		"," + cbft.FeatureGeoSpatial
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
@@ -385,10 +377,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	if err = initCPUOptions(options); err != nil {
-		return nil, err
-	}
-
-	if err = initMossOptions(options); err != nil {
 		return nil, err
 	}
 

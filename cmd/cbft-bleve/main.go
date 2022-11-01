@@ -17,12 +17,8 @@ import (
 	zapv15cmd "github.com/blevesearch/zapx/v15/cmd/zap/cmd"
 	"github.com/spf13/cobra"
 
-	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
-
 	// to support cbft's flavor of bleve build tags & flags
 	_ "github.com/couchbase/cbft"
-
-	"github.com/couchbase/moss"
 )
 
 func init() {
@@ -37,8 +33,6 @@ func init() {
 }
 
 func main() {
-	bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
-
 	// remove commands that can modify the index
 	for _, subCmd := range cmd.RootCmd.Commands() {
 		if cmd.CanMutateBleveIndex(subCmd) {

@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,39 +18,9 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
-	"github.com/blevesearch/bleve/v2/index/upsidedown"
-	bleveMoss "github.com/blevesearch/bleve/v2/index/upsidedown/store/moss"
-
-	"encoding/json"
-
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-	"github.com/couchbase/moss"
 )
-
-func TestPartialRollbackMossNoOp(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 100,
-		"Rollback to after all the snapshots, so it should be a no-op",
-		map[string]bool{`{"status":"ok","count":4}`: true}, "upside_down")
-}
-
-func TestPartialRollbackMossSeq11(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 11,
-		"Rollback to seq 11 in the middle of the stream of snapshots",
-		map[string]bool{`{"status":"ok","count":3}`: true}, "upside_down")
-}
-
-func TestPartialRollbackMossSeq10(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 10,
-		"Rollback to seq 10 in the middle of the stream of snapshots",
-		map[string]bool{`{"status":"ok","count":2}`: true}, "upside_down")
-}
-
-func TestPartialRollbackMossSeq0(t *testing.T) {
-	testHandlersWithOnePartitionPrimaryFeedPartialRollback(t, 0,
-		"Rollback to seq number 0",
-		map[string]bool{`{"status":"ok","count":0}`: true}, "upside_down")
-}
 
 func setVBucketFailoverLog(feed *cbgt.PrimaryFeed, partition string) {
 	flog := make([][]uint64, 1)
@@ -90,27 +61,15 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	BlevePIndexAllowMossPrev := BlevePIndexAllowMoss
 	bleveConfigDefaultKVStorePrev := bleve.Config.DefaultKVStore
 	bleveConfigDefaultIndexTypePrev := bleve.Config.DefaultIndexType
-	bleveMossRegistryCollectionOptionsFTSPrev := bleveMoss.RegistryCollectionOptions["fts"]
 
-	if indexType == "upside_down" {
-		BlevePIndexAllowMoss = true
-		bleve.Config.DefaultKVStore = "mossStore"
-		bleve.Config.DefaultIndexType = upsidedown.Name
-		bleveMoss.RegistryCollectionOptions["fts"] = moss.CollectionOptions{}
-	} else {
-		bleve.Config.DefaultKVStore = ""
-		bleve.Config.DefaultIndexType = "scorch"
-		bleve.Config.DefaultKVStore = ""
-	}
+	bleve.Config.DefaultKVStore = ""
+	bleve.Config.DefaultIndexType = "scorch"
 
 	defer func() {
-		BlevePIndexAllowMoss = BlevePIndexAllowMossPrev
 		bleve.Config.DefaultKVStore = bleveConfigDefaultKVStorePrev
 		bleve.Config.DefaultIndexType = bleveConfigDefaultIndexTypePrev
-		bleveMoss.RegistryCollectionOptions["fts"] = bleveMossRegistryCollectionOptionsFTSPrev
 		rest.RequestProxyStubFunc = nil
 	}()
 

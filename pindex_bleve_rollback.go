@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 
 	"github.com/blevesearch/bleve/v2/index/scorch"
-	"github.com/blevesearch/bleve/v2/index/upsidedown"
 
 	log "github.com/couchbase/clog"
 )
@@ -62,15 +61,6 @@ func (t *BleveDest) partialRollbackLOCKED(partition string,
 	index, err := t.bindex.Advanced()
 	if err != nil {
 		return false, false, err
-	}
-
-	if udc, ok := index.(*upsidedown.UpsideDownCouch); ok {
-		kvstore, err := udc.Advanced()
-		if err != nil {
-			return false, false, err
-		}
-		return t.partialMossRollbackLOCKED(kvstore,
-			partition, vBucketUUID, rollbackSeq)
 	}
 
 	if sh, ok := index.(*scorch.Scorch); ok {

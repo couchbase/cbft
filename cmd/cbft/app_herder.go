@@ -15,7 +15,6 @@ import (
 	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt/rest"
-	"github.com/couchbase/moss"
 
 	log "github.com/couchbase/clog"
 )
@@ -319,40 +318,6 @@ func (a *appHerder) onQueryEnd(depth int, size uint64) error {
 	a.m.Unlock()
 
 	return nil
-}
-
-// *** Moss Wrapper
-
-func (a *appHerder) MossHerderOnEvent() func(moss.Event) {
-	return func(event moss.Event) { a.onMossEvent(event) }
-}
-
-func mossSize(c interface{}) uint64 {
-	s, err := c.(moss.Collection).Stats()
-	if err != nil {
-		log.Warnf("app_herder: moss stats, err: %v", err)
-		return 0
-	}
-	return s.CurDirtyBytes
-}
-
-func (a *appHerder) onMossEvent(event moss.Event) {
-	if event.Collection.Options().LowerLevelUpdate == nil {
-		return
-	}
-	switch event.Kind {
-	case moss.EventKindClose:
-		a.onClose(event.Collection)
-
-	case moss.EventKindBatchExecuteStart:
-		a.onBatchExecuteStart(event.Collection, mossSize)
-
-	case moss.EventKindPersisterProgress:
-		a.onPersisterProgress()
-
-	default:
-		return
-	}
 }
 
 // *** Scorch Wrapper

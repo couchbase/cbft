@@ -158,12 +158,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     try {
         $scope.ftsStore = JSON.parse($scope.newIndexParams['fulltext-index'].store);
-        if ($scope.ftsStore.kvStoreName == "mossStore" &&
-                $scope.ftsStore.indexType == "upside_down") {
-            $scope.indexStoreOption = $scope.indexStoreOptions[0];
-        } else if ($scope.ftsStore.indexType == "scorch") {
-            $scope.indexStoreOption = $scope.indexStoreOptions[1];
-        }
     } catch (e) {}
 
     try {
