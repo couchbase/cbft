@@ -1,5 +1,5 @@
 {
-      "version": 1,
+      "version": 2,
       "module": "fts",
       "events": [
             {
@@ -8,6 +8,7 @@
                   "description": "FTS index was deleted",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -32,6 +33,7 @@
                   "description": "FTS index was created/Updated",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -56,6 +58,7 @@
                   "description": "FTS index control command was issued",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -80,6 +83,7 @@
                   "description": "FTS config was refreshed",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : false,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -103,6 +107,7 @@
                   "description": "FTS config was replanned",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : false,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -126,6 +131,7 @@
                   "description": "GC run was triggered",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -149,6 +155,7 @@
                   "description": "CPU profiling was started",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -172,6 +179,7 @@
                   "description": "Memory profiling was started",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : true,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
@@ -195,6 +203,7 @@
                   "description": "User has been denied access to the REST API due to invalid permissions/credentials",
                   "sync": false,
                   "enabled": true,
+                  "filtering_permitted" : false,
                   "mandatory_fields": {
                         "timestamp": "",
                         "real_userid": {
