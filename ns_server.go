@@ -535,8 +535,7 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 
 	topLevelStats["batch_bytes_added"] = atomic.LoadUint64(&BatchBytesAdded)
 	topLevelStats["batch_bytes_removed"] = atomic.LoadUint64(&BatchBytesRemoved)
-	topLevelStats["num_batches_added"] = atomic.LoadUint64(&NumBatchesAdded)
-	topLevelStats["num_batches_removed"] = atomic.LoadUint64(&NumBatchesRemoved)
+	topLevelStats["num_batches_introduced"] = atomic.LoadUint64(&NumBatchesIntroduced)
 
 	topLevelStats["tot_batches_flushed_on_maxops"] = atomic.LoadUint64(&TotBatchesFlushedOnMaxOps)
 	topLevelStats["tot_batches_flushed_on_timer"] = atomic.LoadUint64(&TotBatchesFlushedOnTimer)

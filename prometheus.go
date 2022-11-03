@@ -66,6 +66,7 @@ var prometheusStats = map[string]string{
 	"total_gc":                         "counter",
 	"batch_bytes_added":                "counter",
 	"batch_bytes_removed":              "counter",
+	"num_batches_introduced":           "counter",
 
 	"pct_cpu_gc":                     "gauge",
 	"num_bytes_used_ram":             "gauge",
