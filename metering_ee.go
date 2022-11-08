@@ -230,6 +230,7 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 	if err != nil {
 		return err
 	}
+	context := regulator.NewBucketCtx(bucket)
 
 	// Capping the RUs according to the ftsThrottleLimit for that bucket,
 	// fetched from regulator's GetConfiguredLimitForBucket API.
@@ -240,7 +241,6 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 	// high wait times.
 	// the formula for capping off ->
 	// 			ftsThrottleLimit/(#indexesPerTenant * #queriesAllowed)
-	context := regulator.NewBucketCtx(bucket)
 	throttleLimit := uint64(getThrottleLimit(context))
 	if rus.Whole() > throttleLimit {
 		maxIndexCountPerSource := 20
@@ -371,8 +371,7 @@ func getThrottleLimit(ctx regulator.Ctx) utils.Limit {
 	bCtx, _ := ctx.(regulator.BucketCtx)
 	rCfg := config.GetConfig()
 	searchHandle := config.ResolveSettingsHandle(regulator.Search, ctx)
-	limit := rCfg.GetConfiguredLimitForBucket(bCtx.Bucket(), searchHandle)
-	return limit
+	return rCfg.GetConfiguredLimitForBucket(bCtx.Bucket(), searchHandle)
 }
 
 // Note: keeping the throttle/limiting of read and write separate,
