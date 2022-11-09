@@ -188,12 +188,15 @@ func limitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 	return indexDef, nil
 }
 
+const serverlessActivePartitionLimit = 1
+const serverlessReplicaPartitionLimit = 1
+
 // limitIndexDefInServerlessMode to be invoked ONLY when deploymentModel is
 // "serverless".
 func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
-	if indexDef.PlanParams.IndexPartitions != 1 ||
-		indexDef.PlanParams.NumReplicas != 1 {
+	if indexDef.PlanParams.IndexPartitions != serverlessActivePartitionLimit ||
+		indexDef.PlanParams.NumReplicas != serverlessReplicaPartitionLimit {
 		return nil, fmt.Errorf("limitIndexDef: support for indexes with" +
 			" 1 active + 1 replica partitions only in serverless mode")
 	}
@@ -211,7 +214,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				delete(nodeDefs.NodeDefs, nodeUUID)
 			}
 
-			if len(nodeDefs.NodeDefs) < 2 {
+			if len(nodeDefs.NodeDefs) < (serverlessReplicaPartitionLimit + 1) {
 				// at least 2 nodes with usage below HWM needed to allow this index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 					" index request: %v, resource utilization over limit(s)", indexDef.Name)
@@ -223,7 +226,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				serverGroups[nodeDef.Container] = struct{}{}
 			}
 
-			if len(serverGroups) < 2 {
+			if len(serverGroups) < (serverlessReplicaPartitionLimit + 1) {
 				// nodes from at least 2 server groups needed to allow index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 					" index request: %v, at least 2 nodes in separate server groups"+
