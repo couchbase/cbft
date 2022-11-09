@@ -206,10 +206,30 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		nodesOverHWM := NodeUUIDsWithUsageOverHWM(nodeDefs)
-		if len(nodesOverHWM) > 0 && len(nodesOverHWM) == len(nodeDefs.NodeDefs) {
-			// All nodes show usage above HWM, deny index request
-			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
-				" index request: %v, resource utilization over limit(s)", indexDef.Name)
+		if len(nodesOverHWM) != 0 {
+			for _, nodeUUID := range nodesOverHWM {
+				delete(nodeDefs.NodeDefs, nodeUUID)
+			}
+
+			if len(nodeDefs.NodeDefs) < 2 {
+				// at least 2 nodes with usage below HWM needed to allow this index request
+				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
+					" index request: %v, resource utilization over limit(s)", indexDef.Name)
+			}
+
+			// now track number of server groups in nodes with usage below HWM
+			serverGroups := map[string]struct{}{}
+			for _, nodeDef := range nodeDefs.NodeDefs {
+				serverGroups[nodeDef.Container] = struct{}{}
+			}
+
+			if len(serverGroups) < 2 {
+				// nodes from at least 2 server groups needed to allow index request
+				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
+					" index request: %v, at least 2 nodes in separate server groups"+
+					" with resource utilization below limit(s) needed", indexDef.Name)
+			}
+
 		}
 	}
 
