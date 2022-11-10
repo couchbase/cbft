@@ -555,6 +555,7 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
+	topLevelStats["num_gocbcore_stats_agents"] = cbgt.NumStatsAgents()
 
 	var totalUnitsMetered uint64
 	if val, exists := GetRegulatorStats()["total_units_metered"]; exists {
