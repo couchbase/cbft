@@ -17,19 +17,14 @@ var lastQueryRes = null;
 
 function PrepQueryRequest(scope) {
     let q = scope.query
+
     try {
         var obj = JSON.parse(scope.query);
         q = obj;
     } catch(e) {}
 
-    let qr = {
-        "explain": true,
-        "fields": ["*"],
-        "highlight": {},
-        "query": {
-            "query": q,
-        },
-    };
+    let qr = {};
+
     if (typeof q == "object") {
         if (('query' in q) && (typeof q['query'] == "object")) {
             qr = q;
@@ -41,6 +36,15 @@ function PrepQueryRequest(scope) {
                 "query": q
             };
         }
+    } else {
+        qr = {
+            "explain": true,
+            "fields": ["*"],
+            "highlight": {},
+            "query": {
+                "query": scope.query,
+            },
+        };
     }
 
     qr["size"] = scope.resultsPerPage;
@@ -48,6 +52,7 @@ function PrepQueryRequest(scope) {
 
     return qr
 }
+
 QueryCtrl.$inject = ["$scope", "$http", "$routeParams", "$log", "$sce", "$location", "qwDialogService"];
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogService) {
     $scope.errorMessage = null;
