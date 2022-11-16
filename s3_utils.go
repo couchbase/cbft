@@ -44,7 +44,7 @@ func GetS3Client() (objcli.Client, error) {
 		return nil, fmt.Errorf("s3_utils: error creating session: %e", err)
 	}
 
-	client := objaws.NewClient(s3.New(session))
+	client := objaws.NewClient(objaws.ClientOptions{ServiceAPI: s3.New(session)})
 	return client, nil
 }
 

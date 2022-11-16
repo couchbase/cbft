@@ -21,7 +21,7 @@ require (
 	github.com/couchbase/go-couchbase v0.1.1
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
-	github.com/couchbase/tools-common v0.0.0-20220928120928-69aba4a231be
+	github.com/couchbase/tools-common v0.0.0-20221109180603-a4213f4d9c25
 	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.2
