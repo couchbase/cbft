@@ -32,7 +32,6 @@ import (
 	"github.com/blevesearch/bleve/v2"
 	_ "github.com/blevesearch/bleve/v2/config"
 	"github.com/blevesearch/bleve/v2/index/scorch"
-	"github.com/blevesearch/bleve/v2/index/upsidedown"
 	"github.com/blevesearch/bleve/v2/mapping"
 	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	"github.com/blevesearch/bleve/v2/search"
@@ -2390,17 +2389,6 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 	bdpMaxSeqNums := make([]uint64, 0, 50)
 	var ticker *time.Ticker
 	batchFlushDuration := BleveBatchFlushDuration
-
-	index, err := bindex.Advanced()
-	if err != nil {
-		log.Printf("pindex_bleve: batchWorker stopped for `%v`, err: %v",
-			bindex.Name(), err)
-		return
-	}
-	// batch merging disabled for upside-down index
-	if _, ok := index.(*upsidedown.UpsideDownCouch); ok {
-		batchFlushDuration = 0
-	}
 
 	if batchFlushDuration > 0 {
 		ticker = time.NewTicker(batchFlushDuration)
