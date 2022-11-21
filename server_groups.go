@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -179,7 +178,7 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 
 				for {
 					_, err = cbgt.CfgSetNodeDefs(st.mgr.Cfg(), kind,
-						nodeDefs, math.MaxUint64)
+						nodeDefs, cbgt.CFG_CAS_FORCE)
 					if err != nil {
 						if _, ok := err.(*cbgt.CfgCASError); ok {
 							// retry if it was a CAS mismatch
