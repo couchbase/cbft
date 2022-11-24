@@ -438,12 +438,10 @@ func init() {
 		Validate: ValidateBleve,
 		OnDelete: OnDeleteIndex,
 
-		New:         NewBlevePIndexImpl,
-		NewEx:       NewBlevePIndexImplEx,
-		Hibernate:   HibernateBlevePIndexImpl,
-		Unhibernate: UnhibernateBlevePIndexImpl,
-		Open:        OpenBlevePIndexImpl,
-		OpenUsing:   OpenBlevePIndexImplUsing,
+		New:       NewBlevePIndexImpl,
+		NewEx:     NewBlevePIndexImplEx,
+		Open:      OpenBlevePIndexImpl,
+		OpenUsing: OpenBlevePIndexImplUsing,
 
 		Count: CountBleve,
 		Query: QueryBleve,

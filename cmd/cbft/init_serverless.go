@@ -69,11 +69,14 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	ctl.HibernationClientHook = cbft.GetS3Client
 
 	cbgt.LimitIndexDefHook = cbft.LimitIndexDef
+	cbgt.UnhibernatePartitionsHook = cbft.UnhibernatePartitions
+	cbgt.HibernatePartitionsHook = cbft.HibernatePartitions
 
 	hibernate.GetRemoteBucketAndPathHook = cbft.GetRemoteBucketAndPathHook
 	hibernate.DownloadIndexMetadataHook = cbft.DownloadIndexMetadata
 	hibernate.UploadIndexMetadataHook = cbft.UploadIndexDefs
 	hibernate.CheckIfRemotePathIsValidHook = cbft.CheckIfRemotePathIsValid
+	hibernate.BucketStateTrackerHook = cbft.TrackBucketState
 
 	return options
 }

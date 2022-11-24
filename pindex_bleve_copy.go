@@ -36,41 +36,69 @@ var CopyPartition func(mgr *cbgt.Manager,
 var IsCopyPartitionPreferred func(mgr *cbgt.Manager,
 	pindexName, path, sourceParams string) bool
 
-func HibernateBlevePIndexImpl(mgr *cbgt.Manager, remotePath, pindexName,
-	path string) error {
+func HibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex,
+	sourceName, sourceType string) error {
 	client := mgr.GetObjStoreClient()
 	if client == nil {
 		return fmt.Errorf("pindex_bleve_copy: failed to get S3 client")
 	}
 
-	ctx, cancel := mgr.GetHibernationContext()
+	go func() {
+		ctx, cancel := mgr.GetHibernationContext()
 
-	go uploadPIndexFiles(mgr, client, remotePath, pindexName, path,
-		ctx, cancel)
+		for _, pindex := range pindexes {
+			hibernateParams := struct {
+				RemotePath string `json:"hibernate"`
+			}{}
+
+			err := json.Unmarshal([]byte(pindex.IndexParams), &hibernateParams)
+			if err != nil {
+				return
+			}
+
+			uploadPIndexFiles(mgr, client, hibernateParams.RemotePath, pindex.Name,
+				pindex.Path, ctx, cancel)
+		}
+	}()
 
 	return nil
 }
 
-func UnhibernateBlevePIndexImpl(mgr *cbgt.Manager, pindex *cbgt.PIndex) {
+func UnhibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex, sourceName,
+	sourceType string) {
 	go func() {
-		impl, dest, err := OpenBlevePIndexImplUsing(pindex.IndexType, pindex.Path,
-			pindex.IndexParams, nil)
-		if err != nil {
-			log.Errorf("pindex bleve copy: error opening bleve pindex: %e", err)
+		status, err := TrackBucketState(mgr, cbgt.UNHIBERNATE_TASK, sourceName)
+		if status == -1 {
+			log.Errorf("pindex bleve copy: error tracking bucket state: %v, deleting"+
+				"all indexes from source %s", err, sourceName)
+			mgr.DeleteAllIndexFromSource(sourceType, sourceName, "")
 			return
 		}
 
-		pindex.Impl = impl
-		pindex.Dest = dest
+		log.Printf("pindex bleve copy: resuming pindexes of bucket %s", sourceName)
 
-		if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
-			if dest, ok := destForwarder.DestProvider.(*BleveDest); ok {
-				dest.resetBIndex(impl.(bleve.Index))
-				http.RegisterIndexName(pindex.Name, impl.(bleve.Index))
+		for _, pindex := range pindexes {
+			impl, dest, err := OpenBlevePIndexImplUsing(pindex.IndexType, pindex.Path,
+				pindex.IndexParams, nil)
+			if err != nil {
+				log.Errorf("pindex bleve copy: error opening bleve pindex, deleting index: %e",
+					err)
+				mgr.DeleteIndex(pindex.IndexName)
+				return
+			}
 
-				mgr.JanitorKick(fmt.Sprintf("feed init kick for pindex: %s", pindex.Name))
+			pindex.Impl = impl
+			pindex.Dest = dest
+
+			if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
+				if dest, ok := destForwarder.DestProvider.(*BleveDest); ok {
+					dest.resetBIndex(impl.(bleve.Index))
+					http.RegisterIndexName(pindex.Name, impl.(bleve.Index))
+				}
 			}
 		}
+
+		mgr.JanitorKick(fmt.Sprintf("feed init kick for pindexes on unhibernation"))
 	}()
 }
 
@@ -130,7 +158,7 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 		err := downloadPIndexFiles(mgr, kvConfig, bucket, keyPrefix,
 			pindexName, path, copyStats)
 		if err != nil {
-			log.Errorf("pindex_bleve_copy: error downloading pindex files: %e",
+			log.Errorf("pindex_bleve_copy: error downloading pindex files: %v",
 				err)
 			return
 		}
