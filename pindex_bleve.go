@@ -2472,18 +2472,21 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 func executeBatch(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
+	// perform a regulator check and then the execute() in case of
+	// serverless mode. If that is successful, perform the corresponding
+	// metering.
 	regulateAndExecute(bdp, bdpMaxSeqNums, index, batch)
-
-	// NOTE: each partition is going to fetch its bleve index's
-	// bytes written to disk, and meter this to its local node
-	// in the cluster
-	MeterWrites(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, index)
 }
 
 func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	index bleve.Index, batch *bleve.Batch) {
 
-	if !ServerlessMode {
+	// The metering and checkQuota calls must happen on
+	// indexes with valid sources, i.e. their dests should contain
+	// valid sourceName. So, in scenarios like rebalance and hibernation
+	// when there is a no-op bleve dest involved, those operations
+	//  shouldn't happen.
+	if !ServerlessMode || bdp[0].bdest.sourceName == "" {
 		_, err := execute(bdp, bdpMaxSeqNums, index, batch)
 		if err != nil {
 			bdp[0].setLastAsyncBatchErr(err)
@@ -2504,7 +2507,13 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	_, err = execute(bdp, bdpMaxSeqNums, index, batch)
 	if err != nil {
 		bdp[0].setLastAsyncBatchErr(err)
+		return
 	}
+
+	// NOTE: each partition is going to fetch its bleve index's
+	// bytes written to disk, and meter this to its local node
+	// in the cluster.
+	MeterWrites(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, index)
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
