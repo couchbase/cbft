@@ -96,6 +96,7 @@ func resumeHandleFunc(reader *bufio.Reader) (int, error) {
 }
 
 func TrackBucketState(mgr *cbgt.Manager, operation, bucketName string) (int, error) {
+	mgr.RegisterHibernationBucketTracker(bucketName)
 
 	if operation == cbgt.HIBERNATE_TASK {
 		return setupStreamingEndpoint(mgr, bucketName, pauseHandleFunc)
@@ -142,7 +143,8 @@ func setupStreamingEndpoint(mgr *cbgt.Manager, bucketName string,
 				return 0
 			}
 
-			log.Printf("bucket state: pool streaming started")
+			log.Printf("bucket state: pool streaming started for bucket %s",
+				bucketName)
 			return -1 // success
 		},
 		backoffStartSleepMS, backoffFactor, backoffMaxSleepMS,

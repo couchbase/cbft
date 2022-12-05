@@ -52,6 +52,10 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 		options["maxDiskBytes"] = "0"
 	}
 
+	if _, exists := options["bucketInHibernation"]; !exists {
+		options["bucketInHibernation"] = cbgt.NoBucketInHibernation
+	}
+
 	// Track statistics to determine moving average
 	// Prometheus pulls low cardinality stats about every 10s, setting numEntries
 	// to 360 to track moving average over 1 hour (3600/10).
@@ -66,11 +70,12 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	rebalance.RebalanceHook = serverlessRebalanceHook
 
 	ctl.DefragmentedUtilizationHook = defragmentationUtilizationHook
-	ctl.HibernationClientHook = cbft.GetS3Client
 
 	cbgt.LimitIndexDefHook = cbft.LimitIndexDef
 	cbgt.UnhibernatePartitionsHook = cbft.UnhibernatePartitions
 	cbgt.HibernatePartitionsHook = cbft.HibernatePartitions
+	cbgt.HibernationBucketStateTrackerHook = cbft.TrackPauseBucketState
+	cbgt.HibernationClientHook = cbft.GetS3Client
 
 	hibernate.GetRemoteBucketAndPathHook = cbft.GetRemoteBucketAndPathHook
 	hibernate.DownloadIndexMetadataHook = cbft.DownloadIndexMetadata

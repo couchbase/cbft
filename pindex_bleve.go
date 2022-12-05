@@ -440,6 +440,7 @@ func init() {
 
 		New:       NewBlevePIndexImpl,
 		NewEx:     NewBlevePIndexImplEx,
+		NoOpDest:  NewNoOpBleveDest,
 		Open:      OpenBlevePIndexImpl,
 		OpenUsing: OpenBlevePIndexImplUsing,
 
@@ -949,6 +950,19 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 	kvConfig["kvStoreName"] = "scorch"
 
 	return kvConfig, bleveIndexType, kvStoreName
+}
+
+func NewNoOpBleveDest(path, indexParams string, restart func()) (cbgt.Dest, error) {
+	bleveParams, _, _, _, err := parseIndexParams(indexParams)
+	if err != nil {
+		return nil, err
+	}
+
+	pindexName := cbgt.PIndexNameFromPath(path)
+
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, nil)
+	destfwd := &cbgt.DestForwarder{DestProvider: dest}
+	return destfwd, nil
 }
 
 func OpenBlevePIndexImplUsing(indexType, path, indexParams string,

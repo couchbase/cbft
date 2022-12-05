@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 
 	"github.com/couchbase/cbft/http"
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/hibernate"
 	log "github.com/couchbase/clog"
 )
 
@@ -35,8 +37,8 @@ var CopyPartition func(mgr *cbgt.Manager,
 var IsCopyPartitionPreferred func(mgr *cbgt.Manager,
 	pindexName, path, sourceParams string) bool
 
-func HibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex,
-	sourceName, sourceType string) []error {
+func HibernatePartitions(mgr *cbgt.Manager, activePIndexes,
+	replicaPIndexes []*cbgt.PIndex) []error {
 	client := mgr.GetObjStoreClient()
 	if client == nil {
 		return []error{fmt.Errorf("pindex_bleve_copy: failed to get S3 client")}
@@ -45,7 +47,7 @@ func HibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex,
 	ctx, cancel := mgr.GetHibernationContext()
 	var errs []error
 
-	for _, pindex := range pindexes {
+	for _, pindex := range activePIndexes {
 		bleveParams, _, _, _, err := parseIndexParams(pindex.IndexParams)
 		if err != nil {
 			errs = append(errs, err)
@@ -59,15 +61,73 @@ func HibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex,
 			ctx, cancel)
 	}
 
+	for _, pindex := range replicaPIndexes {
+		bleveParams, _, _, _, err := parseIndexParams(pindex.IndexParams)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil)
+		pindex.Dest = &cbgt.DestForwarder{DestProvider: dest}
+	}
+
 	return errs
 }
 
-func UnhibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex, sourceName,
-	sourceType string) {
+func TrackPauseBucketState(mgr *cbgt.Manager, sourceName, sourceType string) {
+	status, err := TrackBucketState(mgr, cbgt.HIBERNATE_TASK, sourceName)
+
+	// Unsetting the bucket to be tracked since there is a conclusive bucket status
+	// and now, the bucket doesn't need to tracked further.
+	mgr.ResetBucketTrackedForHibernation()
+	mgr.UnregisterBucketTracker()
+
+	if err != nil {
+		log.Errorf("pindex bleve copy: pause: error tracking bucket %s: %v",
+			sourceName, err)
+		return
+	}
+
+	if status == 1 {
+		log.Printf("pindex bleve copy: hibernation succeeded, deleting indexes for "+
+			"bucket %s", sourceName)
+
+		mgr.DeleteAllIndexFromSource(sourceType, sourceName, "")
+	} else if status == -1 {
+		log.Errorf("pindex bleve copy: hibernation has failed, undoing pause changes for "+
+			"bucket %s.", sourceName)
+
+		// indexes which were being hibernated.
+		indexDefsToReset := cbgt.NewIndexDefs(mgr.Version())
+
+		indexDefs, _, err := cbgt.CfgGetIndexDefs(mgr.Cfg())
+		if err != nil {
+			return
+		}
+
+		for _, index := range indexDefs.IndexDefs {
+			if index.SourceName == sourceName {
+				indexDefsToReset.IndexDefs[index.Name] = index
+			}
+		}
+
+		hibernate.DropRemotePaths(mgr, indexDefsToReset)
+	}
+}
+
+func UnhibernatePartitions(mgr *cbgt.Manager, sourceName, sourceType string) {
+
+	mgr.RegisterHibernationBucketTracker(sourceName)
+
 	go func() {
 		status, err := TrackBucketState(mgr, cbgt.UNHIBERNATE_TASK, sourceName)
-		if status == -1 {
-			log.Errorf("pindex bleve copy: error tracking bucket state: %v, deleting"+
+
+		mgr.UnregisterBucketTracker()
+		mgr.ResetBucketTrackedForHibernation()
+
+		if err != nil || status == -1 {
+			log.Errorf("pindex bleve copy: error tracking bucket state: %v, deleting "+
 				"all indexes from source %s", err, sourceName)
 			mgr.DeleteAllIndexFromSource(sourceType, sourceName, "")
 			return
@@ -75,26 +135,42 @@ func UnhibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex, sourceNam
 
 		log.Printf("pindex bleve copy: resuming pindexes of bucket %s", sourceName)
 
+		_, pindexes := mgr.CurrentMaps()
+
+		var wg sync.WaitGroup
 		for _, pindex := range pindexes {
-			impl, dest, err := OpenBlevePIndexImplUsing(pindex.IndexType, pindex.Path,
-				pindex.IndexParams, nil)
-			if err != nil {
-				log.Errorf("pindex bleve copy: error opening bleve pindex, deleting index: %e",
-					err)
-				mgr.DeleteIndex(pindex.IndexName)
-				return
+			if pindex.SourceName != sourceName {
+				continue
 			}
 
-			pindex.Impl = impl
-			pindex.Dest = dest
+			wg.Add(1)
 
-			if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
-				if dest, ok := destForwarder.DestProvider.(*BleveDest); ok {
-					dest.resetBIndex(impl.(bleve.Index))
-					http.RegisterIndexName(pindex.Name, impl.(bleve.Index))
+			go func(pindex *cbgt.PIndex) {
+				defer wg.Done()
+
+				if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
+					if bdest, ok := destForwarder.DestProvider.(*BleveDest); ok {
+						if _, ok := bdest.bindex.(*noopBleveIndex); ok {
+							impl, dest, err := OpenBlevePIndexImplUsing(pindex.IndexType,
+								pindex.Path, pindex.IndexParams, nil)
+							if err != nil {
+								log.Errorf("pindex bleve copy: error opening bleve pindex, "+
+									"deleting index: %v", err)
+								mgr.DeleteIndex(pindex.IndexName)
+								return
+							}
+
+							pindex.Impl = impl
+							pindex.Dest = dest
+
+							bdest.resetBIndex(impl.(bleve.Index))
+							http.RegisterIndexName(pindex.Name, impl.(bleve.Index))
+						}
+					}
 				}
-			}
+			}(pindex)
 		}
+		wg.Wait()
 
 		mgr.JanitorKick(fmt.Sprintf("feed init kick for pindexes on unhibernation"))
 	}()
@@ -152,20 +228,26 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 	dest.copyStats = copyStats
 	destfwd = &cbgt.DestForwarder{DestProvider: dest}
 
-	go func() {
-		err := downloadPIndexFiles(mgr, kvConfig, bucket, keyPrefix,
-			pindexName, path, copyStats)
-		if err != nil {
-			log.Errorf("pindex_bleve_copy: error downloading pindex files: %v",
-				err)
-			return
-		}
-	}()
+	if mgr.Options()[cbgt.UNHIBERNATE_TASK] == "true" {
+		go func() {
+			err := downloadPIndexFiles(mgr, kvConfig, bucket, keyPrefix,
+				pindexName, path, copyStats)
+			if err != nil {
+				log.Errorf("pindex_bleve_copy: error downloading pindex files: %v",
+					err)
+				return
+			}
+		}()
+	} else {
+		// Useful for the case where download for the pindex
+		// was terminated due to process crash.
+		return nil, nil, cbgt.ErrTerminatedDownload
+	}
 
 	return nil, destfwd, nil
 }
 
-// Downloads PIndex files and adds feed on completed download for resumed index.
+// Downloads PIndex files for resumed index.
 func downloadPIndexFiles(mgr *cbgt.Manager, kvConfig map[string]interface{},
 	bucket, keyPrefix, pindexName, path string, copyStats *CopyPartitionStats) error {
 	prefix := keyPrefix + "/" + pindexName
