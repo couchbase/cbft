@@ -121,6 +121,11 @@ func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 		return nil, fmt.Errorf("indexDef not available")
 	}
 
+	// Applicable to fulltext indexes only.
+	if indexDef.Type != "fulltext-index" {
+		return indexDef, nil
+	}
+
 	if ServerlessMode {
 		return limitIndexDefInServerlessMode(mgr, indexDef)
 	}
