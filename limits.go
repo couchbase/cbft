@@ -480,37 +480,6 @@ func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
 	return ""
 }
 
-func extractSourceNameFromReq(req *http.Request) (string, error) {
-	requestBody, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return "", fmt.Errorf("limiter: failed to parse the req body %v", err)
-	}
-
-	indexDef := cbgt.IndexDef{}
-
-	if len(requestBody) > 0 {
-		err := json.Unmarshal(requestBody, &indexDef)
-		if err != nil {
-			return "", fmt.Errorf("limiter: failed to unmarshal "+
-				"the req body %v", err)
-		}
-	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
-	return indexDef.SourceName, nil
-}
-
-func checkAndSplitDecoratedIndexName(indexName string) (bool, string, string, string) {
-	if strings.Contains(indexName, ".") {
-		uIndexPos := strings.LastIndex(indexName, ".")
-		userIndex := indexName[uIndexPos+1:]
-		scopeIndex := strings.LastIndex(indexName[:uIndexPos], ".")
-		bucket := indexName[:scopeIndex]
-
-		return true, bucket, indexName[scopeIndex+1 : uIndexPos], userIndex
-	}
-	return false, "", "", indexName
-}
-
 func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
 	if err != nil {
@@ -538,9 +507,38 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	return CheckResultNormal, nil
 }
 
+func obtainIndexDefFromRequest(req *http.Request) (*cbgt.IndexDef, error) {
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil || len(requestBody) == 0 {
+		return nil, fmt.Errorf("limiter: failed to parse the req body %v", err)
+	}
+	defer func() {
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
+	}()
+
+	indexDef := cbgt.IndexDef{}
+	if err := json.Unmarshal(requestBody, &indexDef); err != nil {
+		return nil, fmt.Errorf("limiter: failed to unmarshal "+
+			"the req body %v", err)
+	}
+
+	return &indexDef, nil
+}
+
+func checkAndSplitDecoratedIndexName(indexName string) (bool, string, string, string) {
+	if strings.Contains(indexName, ".") {
+		uIndexPos := strings.LastIndex(indexName, ".")
+		userIndex := indexName[uIndexPos+1:]
+		scopeIndex := strings.LastIndex(indexName[:uIndexPos], ".")
+		bucket := indexName[:scopeIndex]
+
+		return true, bucket, indexName[scopeIndex+1 : uIndexPos], userIndex
+	}
+	return false, "", "", indexName
+}
+
 func (e *rateLimiter) regulateRequest(username, path string,
 	req *http.Request) (CheckResult, time.Duration, error) {
-
 	// No need to throttle/limit the request incase of delete op
 	// Since it ultimately leads to cleaning up of resources.
 	// Furthermore, no need to throttle/limit the GET request of index listing
@@ -562,23 +560,24 @@ func (e *rateLimiter) regulateRequest(username, path string,
 		return CheckQuotaRead(bucket, username, req)
 	}
 
-	var createReq bool
-	if bucket == "" {
-		createReq = true
-		// bucket is empty string only while CREATE index case
-		sourceName, err := extractSourceNameFromReq(req)
-		if err != nil {
-			return CheckResultError, 0, fmt.Errorf("failed to get index "+
-				"info from request %v", err)
-		}
-		bucket = sourceName
+	// path = indexPath
+	indexDef, err := obtainIndexDefFromRequest(req)
+	if err != nil {
+		return CheckResultError, 0, fmt.Errorf("failed to get index "+
+			"info from request %v", err)
 	}
 
-	action, duration, err := CheckQuotaWrite(nil, bucket, username, false, req)
+	// Regulator applicable to full text indexes ONLY
+	if indexDef.Type != "fulltext-index" {
+		return CheckResultNormal, 0, nil
+	}
+
+	action, duration, err := CheckQuotaWrite(nil, indexDef.SourceName, username, false, req)
 	if action == CheckResultNormal {
-		action, err = CheckAccess(bucket, username)
-		if createReq {
-			createReqResult, err := e.limitIndexCount(bucket)
+		action, err = CheckAccess(indexDef.SourceName, username)
+		if indexDef.UUID == "" {
+			// This is a CREATE INDEX request and NOT an UPDATE INDEX request.
+			createReqResult, err := e.limitIndexCount(indexDef.SourceName)
 			return createReqResult, 0, err
 		}
 	}
