@@ -44,13 +44,20 @@
         <th>collections</th>
         <th>docs processed
           <span class="fa-stack icon-info raised"
-                uib-tooltip="Number of documents held within active index partitions."
+                uib-tooltip="Number of unique documents processed by primary index partitions."
                 tooltip-placement="auto right">
             <span class="icon fa-circle-thin fa-stack-2x"></span>
             <span class="icon fa-info fa-stack-1x"></span>
           </span>
         </th>
-        <th>ingest</th>
+        <th>ingest
+          <span class="fa-stack icon-info raised"
+                uib-tooltip="State of documents' ingest by primary index partitions."
+                tooltip-placement="auto right">
+            <span class="icon fa-circle-thin fa-stack-2x"></span>
+            <span class="icon fa-info fa-stack-1x"></span>
+          </span>
+        </th>
       </tr>
       <tbody ng-repeat="indexDef in obtainFullTextIndexes()"
              class="has-hover"
