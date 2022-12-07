@@ -77,25 +77,49 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 		return indexDef, err
 	}
 
-	// apply alias name decorations if it is for a single index.
-	if len(alias.Targets) == 1 {
-		var sourceIndexName string
-		for sourceIndexName = range alias.Targets {
+	// map to track unique keyspaces (bucket.scope)
+	uniqueKeyspaces := map[string]struct{}{}
+	for target := range alias.Targets {
+		// obtain the keyspace from the sourceIndexName;
+		// a decorated index name would look like: `bucket.scope.name`
+		pos := strings.LastIndex(target, ".")
+		if pos < 0 {
+			// undecorated targets exist, skip name decoration for alias
+			return indexDef, nil
 		}
 
-		// obtain the original alias name without the keyspace and
-		// it might be keyspace prefixed during the alias updates.
+		uniqueKeyspaces[target[:pos]] = struct{}{}
+	}
+
+	// apply alias name decorations ONLY if it maps to index(es) that
+	// are built against a single keyspace (bucket.scope)
+	if len(uniqueKeyspaces) == 1 {
+		for keyspace := range uniqueKeyspaces {
+			// obtain the original alias name without the keyspace;
+			// it might be keyspace prefixed during the alias updates
+			undecoratedAliasName := indexDef.Name
+			pos := strings.LastIndex(undecoratedAliasName, ".")
+			if pos > 0 && pos+1 < len(undecoratedAliasName) {
+				undecoratedAliasName = undecoratedAliasName[pos+1:]
+			}
+
+			// prefix the keyspace to the original alias name
+			indexDef.Name = keyspace + "." + undecoratedAliasName
+		}
+	} else {
+		// alias to multiple keyspaces NOT allowed in serverless mode
+		if ServerlessMode {
+			return nil, fmt.Errorf("PrepareAlias: multiple keyspaces NOT" +
+				" supported in serverless mode")
+		}
+
+		// obtain the original alias name without the keyspace;
+		// it might be keyspace prefixed during the alias updates
 		undecoratedAliasName := indexDef.Name
 		pos := strings.LastIndex(undecoratedAliasName, ".")
 		if pos > 0 && pos+1 < len(undecoratedAliasName) {
-			undecoratedAliasName = undecoratedAliasName[pos+1:]
-		}
-
-		// obtain the keyspace from the sourceIndexName and update
-		// the alias with with the sourceIndex's keyspace prefix.
-		pos = strings.LastIndex(sourceIndexName, ".")
-		if pos > 1 {
-			indexDef.Name = sourceIndexName[:pos] + "." + undecoratedAliasName
+			// undecorate alias name because it points to multiple keyspaces
+			indexDef.Name = undecoratedAliasName[pos+1:]
 		}
 	}
 
