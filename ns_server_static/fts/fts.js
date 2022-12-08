@@ -481,8 +481,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 
     $scope.progress = "idle";
     $scope.docCount = "";
-    $scope.totSeqReceived = "";
-    $scope.prevTotSeqReceived = "";
     $scope.numMutationsToIndex = "";
     $scope.httpStatus = 200;    // OK
 
@@ -498,7 +496,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             var data = response.data;
             if (data) {
                 $scope.docCount = data["doc_count"];
-                $scope.totSeqReceived = data["tot_seq_received"];
                 $scope.numMutationsToIndex = data["num_mutations_to_index"];
                 updateProgress();
             }
@@ -584,25 +581,12 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     });
 
     function updateProgress() {
-        var docCount = parseInt($scope.docCount);
         var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
-        var totSeqReceived = parseInt($scope.totSeqReceived);
-        var prevTotSeqReceived = parseInt($scope.prevTotSeqReceived);
         let prog = "idle";
-
-        if (totSeqReceived == 0 && prevTotSeqReceived == 0) {
-            // no sequence numbers received
-            prog = "idle";
-        } else if (((totSeqReceived == prevTotSeqReceived) && numMutationsToIndex > 0 && docCount > 0) ||
-            (totSeqReceived > 0 && prevTotSeqReceived < totSeqReceived)) {
-            // if the totSeqReceived is equal to the one recorded earlier - check numMutationsToIndex
-            // to determine ingest stats, or else determine by checking totSeqReceived against
-            // the one recorded earlier.
+        if (angular.isDefined(numMutationsToIndex) && numMutationsToIndex > 0) {
             prog = "active";
         }
-
         $scope.progress = prog;
-        $scope.prevTotSeqReceived = $scope.totSeqReceived;
     }
 
     IndexCtrl($scope, http, $routeParams,
