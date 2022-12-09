@@ -40,10 +40,16 @@ cluster.collection[<sourceName>].fts!manage
 24579
 
 GET /api/stats
-cluster.bucket[].stats.fts!read
+cluster.bucket[].fts!read
+
+GET /api/nsstats
+cluster.bucket[].fts!read
+
+GET /api/stats/index/{indexName}/progress
+cluster.collection[<sourceName>].fts!read
 
 GET /api/stats/index/{indexName}
-cluster.collection[<sourceName>].stats.fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/stats/sourceStats/{indexName}
 cluster.collection[<sourceName>].stats.fts!read
