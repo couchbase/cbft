@@ -20,9 +20,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 )
 
-// TODO finalise the high/low cardinality stats.
 // highCardinalityStats enumerates a minimum essential subset of index
-//  level stats for ns_server/prometheus uses.
+// level stats for ns_server/prometheus uses.
 var prometheusStats = map[string]string{
 	"doc_count":                      "counter",
 	"total_grpc_internal_queries":    "counter",
@@ -120,7 +119,7 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 		return
 	}
 
-	nsIndexStats, err := gatherIndexStats(h.mgr, rd, true)
+	nsIndexStats, err := gatherIndexesStats(h.mgr, rd, true)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("error in retrieving defs: %v", err),
 			http.StatusInternalServerError)

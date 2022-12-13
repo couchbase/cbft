@@ -9,7 +9,6 @@
 package cbft
 
 // See: https://docs.google.com/document/d/1JXm4PXyli45KE5dyGvD5oQLb6MQPJSkubDR21JZQycQ/edit?ts=56b15d8f#
-//
 var restPermDefault = "cluster.fts!read"
 
 var restPerms = `
@@ -44,6 +43,9 @@ cluster.bucket[].fts!read
 
 GET /api/nsstats
 cluster.bucket[].fts!read
+
+GET /api/nsstats/index/{indexName}
+cluster.collection[<sourceName>].fts!read
 
 GET /api/stats/index/{indexName}/progress
 cluster.collection[<sourceName>].fts!read

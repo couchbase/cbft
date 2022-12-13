@@ -92,6 +92,97 @@ func NewNsStatsHandler(mgr *cbgt.Manager) *NsStatsHandler {
 	return &NsStatsHandler{mgr: mgr}
 }
 
+func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
+	initNsServerCaching(h.mgr)
+
+	rd := getRecentInfo()
+	if rd.err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	nsIndexStats, err := gatherIndexesStats(h.mgr, rd, false)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("error in retrieving defs: %v", err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {
+		go func() {
+			var buf bytes.Buffer
+			err := rest.WriteManagerStatsJSON(h.mgr, &buf, "")
+			if err != nil {
+				log.Warnf("error formatting managerStatsJSON for logs: %v", err)
+			} else {
+				log.Printf("managerStats: %s", buf.String())
+			}
+
+			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
+			if err != nil {
+				log.Warnf("error formatting JSON for logs: %v", err)
+				return
+			}
+			log.Printf("stats: %s", string(statsJSON))
+		}()
+	}
+
+	rest.MustEncode(w, nsIndexStats)
+}
+
+// IndexNsStatsHandler is a REST handler that provides stats/metrics for
+// for an index
+type IndexNsStatsHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewIndexNsStatsHandler(mgr *cbgt.Manager) *IndexNsStatsHandler {
+	return &IndexNsStatsHandler{mgr: mgr}
+}
+
+func (h *IndexNsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	initNsServerCaching(h.mgr)
+
+	indexName := rest.IndexNameLookup(req)
+	if indexName == "" {
+		rest.ShowError(w, req, "index name is required", http.StatusBadRequest)
+		return
+	}
+
+	indexDef, _, err := h.mgr.GetIndexDef(indexName, false)
+	if err != nil || indexDef == nil {
+		rest.ShowError(w, req,
+			fmt.Sprintf("unable to obtain index definition for `%v`, err: %v", indexName, err),
+			http.StatusBadRequest)
+		return
+	}
+
+	rd := getRecentInfo()
+	if rd.err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	var planPIndexes []*cbgt.PlanPIndex
+	if rd.planPIndexes != nil {
+		for _, planPIndex := range rd.planPIndexes.PlanPIndexes {
+			if planPIndex.IndexName != indexName {
+				continue
+			}
+			planPIndexes = append(planPIndexes, planPIndex)
+		}
+	}
+
+	nsIndexStat, _ := gatherIndexStats(h.mgr, indexDef, planPIndexes, nil)
+
+	rest.MustEncode(w, nsIndexStat)
+}
+
+// -----------------------------------------------------------------------------
+
 type NSIndexStats map[string]map[string]interface{}
 
 // MarshalJSON formats the index stats using the
@@ -208,7 +299,7 @@ func getRecentInfo() *recentInfo {
 	return (*recentInfo)(atomic.LoadPointer(&lastRecentInfo))
 }
 
-func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
+func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 	collAware bool) (NSIndexStats, error) {
 	if rd == nil || mgr == nil {
 		return nil, nil
@@ -233,199 +324,28 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 		}
 	}
 
-	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
-
 	// Keyed by sourceName, sub-key is source partition id.
 	sourceNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
-	// Keyed by indexName, sub-key is source partition id.
-	indexNameToDestPartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
-
 	for indexName, indexDef := range indexDefsMap {
-		nsIndexStat := NewIndexStat()
+		var key string
 		if collAware {
-			key := getNsIndexStatsKey(indexName, indexDef.SourceName, indexDef.Params)
-			nsIndexStats[key] = nsIndexStat
-			indexNameToSourceName[indexName] = key
+			key = getNsIndexStatsKey(indexName, indexDef.SourceName, indexDef.Params)
 		} else {
-			nsIndexStats[indexDef.SourceName+":"+indexName] = nsIndexStat
-			indexNameToSourceName[indexName] = indexDef.SourceName + ":" + indexName
+			key = indexDef.SourceName + ":" + indexName
 		}
-
-		focusStats := indexQueryPathStats.FocusStats(indexName)
-		if focusStats != nil {
-			totalQueries := atomic.LoadUint64(&focusStats.TotClientRequest)
-			nsIndexStat["total_queries"] = totalQueries
-			if totalQueries > 0 {
-				nsIndexStat["avg_queries_latency"] =
-					float64(atomic.LoadUint64(&focusStats.TotClientRequestTimeNS)/
-						totalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
-			}
-			totalInternalQueries := atomic.LoadUint64(&focusStats.TotInternalRequest)
-			nsIndexStat["total_internal_queries"] = totalInternalQueries
-			if totalInternalQueries > 0 {
-				nsIndexStat["avg_internal_queries_latency"] =
-					float64(atomic.LoadUint64(&focusStats.TotInternalRequestTimeNS)/
-						totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
-			}
-			nsIndexStat["total_request_time"] =
-				atomic.LoadUint64(&focusStats.TotRequestTimeNS)
-			nsIndexStat["total_queries_slow"] =
-				atomic.LoadUint64(&focusStats.TotRequestSlow)
-			nsIndexStat["total_queries_timeout"] =
-				atomic.LoadUint64(&focusStats.TotRequestTimeout)
-			nsIndexStat["total_queries_error"] =
-				atomic.LoadUint64(&focusStats.TotRequestErr)
-			nsIndexStat["total_bytes_query_results"] =
-				atomic.LoadUint64(&focusStats.TotResponseBytes)
-			nsIndexStat["num_pindexes_target"] =
-				uint64(len(indexNameToPlanPIndexes[indexName]))
+		nsIndexStat, err := gatherIndexStats(
+			mgr,
+			indexDef,
+			indexNameToPlanPIndexes[indexName],
+			sourceNameToSourcePartitionSeqs,
+		)
+		if err != nil {
+			continue
 		}
+		nsIndexStats[key] = nsIndexStat
+		indexNameToSourceName[indexName] = key
 
-		rpcFocusStats := GrpcPathStats.FocusStats(indexName)
-		if rpcFocusStats != nil {
-			totalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcRequest)
-			nsIndexStat["total_grpc_queries"] = totalQueries
-			if totalQueries > 0 {
-				nsIndexStat["avg_grpc_queries_latency"] =
-					float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS) /
-						totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
-			}
-			totalInternalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequest)
-			nsIndexStat["total_grpc_internal_queries"] = totalInternalQueries
-			if totalInternalQueries > 0 {
-				nsIndexStat["avg_grpc_internal_queries_latency"] =
-					float64(atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequestTimeNS)/
-						totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
-			}
-
-			nsIndexStat["total_grpc_request_time"] =
-				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS)
-			nsIndexStat["total_grpc_queries_slow"] =
-				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestSlow)
-			nsIndexStat["total_grpc_queries_timeout"] =
-				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeout)
-			nsIndexStat["total_grpc_queries_error"] =
-				atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestErr)
-		}
-
-		nsIndexStat["last_access_time"] =
-			querySupervisor.GetLastAccessTimeForIndex(indexName)
-
-		if _, exists := sourceNameToSourcePartitionSeqs[indexDef.SourceName]; !exists {
-			feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
-			if !exists || feedType == nil || feedType.PartitionSeqs == nil {
-				continue
-			}
-
-			partitionSeqs := GetSourcePartitionSeqs(SourceSpec{
-				SourceType:   indexDef.SourceType,
-				SourceName:   indexDef.SourceName,
-				SourceUUID:   indexDef.SourceUUID,
-				SourceParams: indexDef.SourceParams,
-				Server:       mgr.Server(),
-			})
-			if partitionSeqs != nil {
-				sourceNameToSourcePartitionSeqs[indexDef.SourceName] = partitionSeqs
-			}
-		}
-	}
-
-	feeds, pindexes := mgr.CurrentMaps()
-
-	var nsIndexName string
-
-	for _, pindex := range pindexes {
-		nsIndexName = indexNameToSourceName[pindex.IndexName]
-		nsIndexStat, ok := nsIndexStats[nsIndexName]
-		if ok {
-			// manually track num pindexes
-			oldValue, ok := nsIndexStat["num_pindexes_actual"]
-			if ok {
-				switch oldValue := oldValue.(type) {
-				case float64:
-					oldValue += float64(1)
-					nsIndexStat["num_pindexes_actual"] = oldValue
-				}
-			}
-
-			// automatically process all the pindex dest stats
-			err := addPIndexStats(pindex, nsIndexStat)
-			if err != nil {
-				return nil, fmt.Errorf("error processing PIndex stats: %v", err)
-			}
-
-			dest := pindex.Dest
-			if dest != nil {
-				destForwarder, ok := dest.(*cbgt.DestForwarder)
-				if !ok {
-					continue
-				}
-
-				partitionSeqsProvider, ok :=
-					destForwarder.DestProvider.(PartitionSeqsProvider)
-				if !ok {
-					continue
-				}
-
-				// obtain the first (non-empty) partition id here to be used in the next step
-				// to fetch the feed params, note that the feed params are common across all
-				// partitions
-				var firstPartitionId string
-				partitionSeqs, err := partitionSeqsProvider.PartitionSeqs()
-				if err == nil {
-					m := indexNameToDestPartitionSeqs[pindex.IndexName]
-					if m == nil {
-						m = map[string]cbgt.UUIDSeq{}
-						indexNameToDestPartitionSeqs[pindex.IndexName] = m
-					}
-
-					for partitionId, uuidSeq := range partitionSeqs {
-						if firstPartitionId == "" {
-							firstPartitionId = partitionId
-						}
-
-						m[partitionId] = uuidSeq
-					}
-				}
-			}
-		}
-	}
-
-	for _, feed := range feeds {
-		nsIndexName := indexNameToSourceName[feed.IndexName()]
-		nsIndexStat, ok := nsIndexStats[nsIndexName]
-		if ok {
-			// automatically process all the feed stats
-			err := addFeedStats(feed, nsIndexStat)
-			if err != nil {
-				return nil, fmt.Errorf("error processing Feed stats: %v", err)
-			}
-		}
-	}
-
-	for indexName, indexDef := range indexDefsMap {
-		nsIndexStat, ok := nsIndexStats[indexDef.SourceName+":"+indexName]
-		if ok {
-			src := sourceNameToSourcePartitionSeqs[indexDef.SourceName]
-			if src == nil {
-				continue
-			}
-
-			dst := indexNameToDestPartitionSeqs[indexName]
-			if dst == nil {
-				continue
-			}
-
-			totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
-				indexDef, src, dst)
-			if err != nil {
-				continue
-			}
-
-			nsIndexStat["tot_seq_received"] = totSeqReceived
-			nsIndexStat["num_mutations_to_index"] = numMutationsToIndex
-		}
 	}
 
 	nsIndexStats["regulatorStats"] = GetRegulatorStats()
@@ -435,6 +355,157 @@ func gatherIndexStats(mgr *cbgt.Manager, rd *recentInfo,
 	}
 
 	return nsIndexStats, nil
+}
+
+func gatherIndexStats(
+	mgr *cbgt.Manager,
+	indexDef *cbgt.IndexDef,
+	planPIndexes []*cbgt.PlanPIndex,
+	sourceNameToSourcePartitionSeqs map[string]map[string]cbgt.UUIDSeq,
+) (map[string]interface{}, error) {
+	if indexDef == nil {
+		return nil, fmt.Errorf("gatherIndexStats: indexDef cannot be nil")
+	}
+
+	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
+
+	nsIndexStat := NewIndexStat()
+	focusStats := indexQueryPathStats.FocusStats(indexDef.Name)
+	if focusStats != nil {
+		totalQueries := atomic.LoadUint64(&focusStats.TotClientRequest)
+		nsIndexStat["total_queries"] = totalQueries
+		if totalQueries > 0 {
+			nsIndexStat["avg_queries_latency"] =
+				float64(atomic.LoadUint64(&focusStats.TotClientRequestTimeNS)/
+					totalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+		}
+		totalInternalQueries := atomic.LoadUint64(&focusStats.TotInternalRequest)
+		nsIndexStat["total_internal_queries"] = totalInternalQueries
+		if totalInternalQueries > 0 {
+			nsIndexStat["avg_internal_queries_latency"] =
+				float64(atomic.LoadUint64(&focusStats.TotInternalRequestTimeNS)/
+					totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+		}
+		nsIndexStat["total_request_time"] =
+			atomic.LoadUint64(&focusStats.TotRequestTimeNS)
+		nsIndexStat["total_queries_slow"] =
+			atomic.LoadUint64(&focusStats.TotRequestSlow)
+		nsIndexStat["total_queries_timeout"] =
+			atomic.LoadUint64(&focusStats.TotRequestTimeout)
+		nsIndexStat["total_queries_error"] =
+			atomic.LoadUint64(&focusStats.TotRequestErr)
+		nsIndexStat["total_bytes_query_results"] =
+			atomic.LoadUint64(&focusStats.TotResponseBytes)
+		nsIndexStat["num_pindexes_target"] = uint64(len(planPIndexes))
+	}
+
+	rpcFocusStats := GrpcPathStats.FocusStats(indexDef.Name)
+	if rpcFocusStats != nil {
+		totalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcRequest)
+		nsIndexStat["total_grpc_queries"] = totalQueries
+		if totalQueries > 0 {
+			nsIndexStat["avg_grpc_queries_latency"] =
+				float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS) /
+					totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
+		}
+		totalInternalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequest)
+		nsIndexStat["total_grpc_internal_queries"] = totalInternalQueries
+		if totalInternalQueries > 0 {
+			nsIndexStat["avg_grpc_internal_queries_latency"] =
+				float64(atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequestTimeNS)/
+					totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+		}
+
+		nsIndexStat["total_grpc_request_time"] =
+			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS)
+		nsIndexStat["total_grpc_queries_slow"] =
+			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestSlow)
+		nsIndexStat["total_grpc_queries_timeout"] =
+			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeout)
+		nsIndexStat["total_grpc_queries_error"] =
+			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestErr)
+	}
+
+	nsIndexStat["last_access_time"] =
+		querySupervisor.GetLastAccessTimeForIndex(indexDef.Name)
+
+	feeds, pindexes := mgr.CurrentMaps()
+	for _, feed := range feeds {
+		if feed.IndexName() != indexDef.Name {
+			continue
+		}
+
+		// automatically process all the feed stats
+		_ = addFeedStats(feed, nsIndexStat)
+	}
+
+	srcPartitionSeqs, exists := sourceNameToSourcePartitionSeqs[indexDef.SourceName]
+	if !exists {
+		feedType, exists := cbgt.FeedTypes[indexDef.SourceType]
+		if !exists || feedType == nil || feedType.PartitionSeqs == nil {
+			return nsIndexStat, nil
+		}
+
+		srcPartitionSeqs = GetSourcePartitionSeqs(SourceSpec{
+			SourceType:   indexDef.SourceType,
+			SourceName:   indexDef.SourceName,
+			SourceUUID:   indexDef.SourceUUID,
+			SourceParams: indexDef.SourceParams,
+			Server:       mgr.Server(),
+		})
+		if srcPartitionSeqs != nil && sourceNameToSourcePartitionSeqs != nil {
+			sourceNameToSourcePartitionSeqs[indexDef.SourceName] = srcPartitionSeqs
+		}
+	}
+
+	destPartitionSeqs := map[string]cbgt.UUIDSeq{}
+	for _, pindex := range pindexes {
+		if pindex.IndexName != indexDef.Name {
+			continue
+		}
+
+		oldValue, ok := nsIndexStat["num_pindexes_actual"]
+		if ok {
+			switch oldValue := oldValue.(type) {
+			case float64:
+				oldValue += float64(1)
+				nsIndexStat["num_pindexes_actual"] = oldValue
+			}
+		}
+
+		// automatically process all the pindex dest stats
+		_ = addPIndexStats(pindex, nsIndexStat)
+
+		if pindex.Dest != nil {
+			destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder)
+			if !ok {
+				continue
+			}
+
+			partitionSeqsProvider, ok :=
+				destForwarder.DestProvider.(PartitionSeqsProvider)
+			if !ok {
+				continue
+			}
+
+			if partitionSeqs, err := partitionSeqsProvider.PartitionSeqs(); err == nil {
+				for partitionId, uuidSeq := range partitionSeqs {
+					destPartitionSeqs[partitionId] = uuidSeq
+				}
+			}
+		}
+	}
+
+	if totSeqReceived, numMutationsToIndex, err := obtainDestSeqsForIndex(
+		indexDef,
+		srcPartitionSeqs,
+		destPartitionSeqs,
+	); err == nil {
+		nsIndexStat["tot_seq_received"] = totSeqReceived
+		nsIndexStat["num_mutations_to_index"] = numMutationsToIndex
+	}
+
+	return nsIndexStat, nil
 }
 
 // Utility function obtains the following for an index definition from
@@ -621,46 +692,6 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	}
 
 	return topLevelStats
-}
-
-func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	currentStatsCount := atomic.AddInt64(&h.statsCount, 1)
-	initNsServerCaching(h.mgr)
-
-	rd := getRecentInfo()
-	if rd.err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err),
-			http.StatusInternalServerError)
-		return
-	}
-
-	nsIndexStats, err := gatherIndexStats(h.mgr, rd, false)
-	if err != nil {
-		rest.ShowError(w, req, fmt.Sprintf("error in retrieving defs: %v", err),
-			http.StatusInternalServerError)
-		return
-	}
-
-	if LogEveryNStats != 0 && currentStatsCount%int64(LogEveryNStats) == 0 {
-		go func() {
-			var buf bytes.Buffer
-			err := rest.WriteManagerStatsJSON(h.mgr, &buf, "")
-			if err != nil {
-				log.Warnf("error formatting managerStatsJSON for logs: %v", err)
-			} else {
-				log.Printf("managerStats: %s", buf.String())
-			}
-
-			statsJSON, err := json.MarshalIndent(nsIndexStats, "", "    ")
-			if err != nil {
-				log.Warnf("error formatting JSON for logs: %v", err)
-				return
-			}
-			log.Printf("stats: %s", string(statsJSON))
-		}()
-	}
-
-	rest.MustEncode(w, nsIndexStats)
 }
 
 func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
