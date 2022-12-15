@@ -56,3 +56,5 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 func CheckAccess(bucket, username string) (CheckResult, error) {
 	return CheckAccessNormal, nil
 }
+
+func RollbackRefund(pindex, sourceName string, bytesWrittenAtRollbackSeqno uint64) {}

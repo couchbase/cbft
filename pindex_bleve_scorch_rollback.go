@@ -66,6 +66,15 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 		if tryRevert {
 			log.Printf("pindex_bleve_scorch_rollback: trying revert, path: %s", t.path)
 
+			if ServerlessMode {
+				v := rollbackPoint.GetInternal([]byte("TotBytesWritten"))
+				if v == nil {
+					// what's the right thing to do here?
+					return false, err == nil, err
+				}
+
+				RollbackRefund(t.bindex.Name(), t.sourceName, binary.LittleEndian.Uint64(v))
+			}
 			err = scorch.Rollback(idxPath, rollbackPoint)
 			if err != nil {
 				log.Printf("pindex_bleve_scorch_rollback: Rollback failed, err: %v", err)

@@ -223,6 +223,27 @@ func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 	return err
 }
 
+func RollbackRefund(pindex, sourceName string, bytesWrittenAtRollbackSeqno uint64) {
+	bytesWrittenAtHighSeqno := reg.prevWBytes[pindex]
+	if bytesWrittenAtHighSeqno > bytesWrittenAtRollbackSeqno {
+		refundUnits, err := metering.SearchWriteToWU(bytesWrittenAtHighSeqno -
+			bytesWrittenAtRollbackSeqno)
+		if err != nil {
+			log.Errorf("metering: failed to fetch refund units corresponding"+
+				"to the rollback situation err: %v", err)
+			return
+		}
+		bucketCtx := regulator.NewBucketCtx(sourceName)
+		err = regulator.RefundUnits(bucketCtx, refundUnits)
+		if err != nil {
+			log.Errorf("metering: failed to refund the units corresponding "+
+				"to the rollback situation err: %v", err)
+		}
+	}
+
+	reg.prevWBytes[pindex] = bytesWrittenAtRollbackSeqno
+}
+
 func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
 	val float64) {
 	sr.m.Lock()
