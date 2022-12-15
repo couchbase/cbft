@@ -5,13 +5,13 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go v1.44.113
 	github.com/blevesearch/bleve-mapping-ui v0.5.1
-	github.com/blevesearch/bleve/v2 v2.3.6-0.20221111171245-56dc9b25507e
+	github.com/blevesearch/bleve/v2 v2.3.6
 	github.com/blevesearch/bleve_index_api v1.0.5
 	github.com/blevesearch/zapx/v11 v11.3.7
 	github.com/blevesearch/zapx/v12 v12.3.7
 	github.com/blevesearch/zapx/v13 v13.3.7
 	github.com/blevesearch/zapx/v14 v14.3.7
-	github.com/blevesearch/zapx/v15 v15.3.7
+	github.com/blevesearch/zapx/v15 v15.3.8
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.5
@@ -38,7 +38,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.2 // indirect
-	github.com/blevesearch/geo v0.1.15 // indirect
+	github.com/blevesearch/geo v0.1.16 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
 	github.com/blevesearch/gtreap v0.1.1 // indirect
