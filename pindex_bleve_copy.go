@@ -37,31 +37,30 @@ var IsCopyPartitionPreferred func(mgr *cbgt.Manager,
 	pindexName, path, sourceParams string) bool
 
 func HibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex,
-	sourceName, sourceType string) error {
+	sourceName, sourceType string) []error {
 	client := mgr.GetObjStoreClient()
 	if client == nil {
-		return fmt.Errorf("pindex_bleve_copy: failed to get S3 client")
+		return []error{fmt.Errorf("pindex_bleve_copy: failed to get S3 client")}
 	}
 
-	go func() {
-		ctx, cancel := mgr.GetHibernationContext()
+	ctx, cancel := mgr.GetHibernationContext()
+	var errs []error
 
-		for _, pindex := range pindexes {
-			hibernateParams := struct {
-				RemotePath string `json:"hibernate"`
-			}{}
-
-			err := json.Unmarshal([]byte(pindex.IndexParams), &hibernateParams)
-			if err != nil {
-				return
-			}
-
-			uploadPIndexFiles(mgr, client, hibernateParams.RemotePath, pindex.Name,
-				pindex.Path, ctx, cancel)
+	for _, pindex := range pindexes {
+		bleveParams, _, _, _, err := parseIndexParams(pindex.IndexParams)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
-	}()
 
-	return nil
+		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil)
+		pindex.Dest = &cbgt.DestForwarder{DestProvider: dest}
+
+		go uploadPIndexFiles(mgr, client, pindex.HibernationPath, pindex.Name, pindex.Path,
+			ctx, cancel)
+	}
+
+	return errs
 }
 
 func UnhibernatePartitions(mgr *cbgt.Manager, pindexes []*cbgt.PIndex, sourceName,
@@ -179,7 +178,7 @@ func downloadPIndexFiles(mgr *cbgt.Manager, kvConfig map[string]interface{},
 	totalObjSize, err := getS3BucketSize(client, bucket, prefix)
 	if err != nil {
 		atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
-		log.Errorf("pindex_bleve_copy: error getting bucket size: %e", err)
+		log.Errorf("pindex_bleve_copy: error getting bucket size: %v", err)
 		return err
 	}
 
@@ -196,7 +195,7 @@ func getHibernationBucketForPindex(indexParams string) (string, string, error) {
 	}
 	err := json.Unmarshal([]byte(indexParams), &hibernateParams)
 	if err != nil {
-		return "", "", fmt.Errorf("janitor: error getting bucket from index params: %e",
+		return "", "", fmt.Errorf("janitor: error getting bucket from index params: %v",
 			err)
 	}
 	bucket, key, err := GetRemoteBucketAndPathHook(hibernateParams.RemotePath)
@@ -208,7 +207,7 @@ func GetHibernationBucketForPindex(params string) (string, string, error) {
 	err := json.Unmarshal([]byte(params), &indexParams)
 	if err != nil {
 		return "", "", fmt.Errorf("pindex_bleve_copy: error unmarshalling "+
-			"index params: %e", err)
+			"index params: %v", err)
 	}
 	bucket, keyPrefix, err := getHibernationBucketForPindex(indexParams.Params)
 	return bucket, keyPrefix, err

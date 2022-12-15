@@ -41,7 +41,7 @@ func GetS3Client() (objcli.Client, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("s3_utils: error creating session: %e", err)
+		return nil, fmt.Errorf("s3_utils: error creating session: %v", err)
 	}
 
 	client := objaws.NewClient(objaws.ClientOptions{ServiceAPI: s3.New(session)})
@@ -94,7 +94,6 @@ func downloadFromBucket(c objcli.Client, bucket, prefix, pindexPath string,
 			log.Printf("s3_utils: downloading file: %s", filename)
 			file, err := os.Create(filename)
 			if err != nil {
-				atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
 				return err
 			}
 			defer file.Close()
@@ -110,7 +109,7 @@ func downloadFromBucket(c objcli.Client, bucket, prefix, pindexPath string,
 			if err != nil {
 				var awsErr awserr.Error
 				if errors.As(err, &awsErr) {
-					return fmt.Errorf("s3_utils: download error is :%s", awsErr.Message())
+					return fmt.Errorf("s3_utils: download error(AWS error) is :%s", awsErr.Message())
 				}
 				return err
 			}
@@ -130,7 +129,7 @@ func downloadFromBucket(c objcli.Client, bucket, prefix, pindexPath string,
 		return err
 	}
 
-	log.Printf("s3_utils: done downloading the files")
+	log.Printf("s3_utils: done downloading the files for path %s", pindexPath)
 	atomic.AddInt32(&copyStats.TotCopyPartitionFinished, 1)
 
 	return nil
@@ -236,7 +235,7 @@ func uploadToBucket(mgr *cbgt.Manager, c objcli.Client, bucket, pindexPath, keyP
 
 				file, err := ioutil.ReadFile(path)
 				if err != nil {
-					log.Errorf("s3_utils: unable to read file %s:%e",
+					log.Errorf("s3_utils: unable to read file %s:%v",
 						path, err)
 					// Skips the parent dir(for a non-dir)/current dir
 					// For other non-nil errors, Walk will stop entirely.
@@ -265,11 +264,11 @@ func uploadToBucket(mgr *cbgt.Manager, c objcli.Client, bucket, pindexPath, keyP
 					var awsErr awserr.Error
 					// update upload errors here
 					if errors.As(err, &awsErr) {
-						log.Errorf("s3_utils: error uploading: %s", awsErr.Message())
+						log.Errorf("s3_utils: error uploading: AWS error: %s", awsErr.Message())
 						atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
-						return fmt.Errorf("s3_utils: error uploading: %s", awsErr.Message())
+						return fmt.Errorf("s3_utils: error uploading: AWS error: %s", awsErr.Message())
 					}
-					log.Errorf("s3_utils: error uploading: %e", err)
+					log.Errorf("s3_utils: error uploading: %v", err)
 					atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
 					return err
 				}
@@ -306,7 +305,7 @@ func uploadPIndexFiles(mgr *cbgt.Manager, client objcli.Client, remotePath,
 		if dest, ok = destForwarder.DestProvider.(*BleveDest); ok {
 			totalObjSize, err := cbgt.GetDirectorySize(path)
 			if err != nil {
-				log.Errorf("s3_utils: error getting directory size: %e", err)
+				log.Errorf("s3_utils: error getting directory size: %v", err)
 				atomic.AddInt32(&dest.copyStats.TotCopyPartitionErrors, 1)
 				return
 			}
@@ -322,7 +321,7 @@ func uploadPIndexFiles(mgr *cbgt.Manager, client objcli.Client, remotePath,
 
 	bucket, keyPrefix, err := GetRemoteBucketAndPathHook(remotePath)
 	if err != nil {
-		log.Errorf("s3_utils: error getting bucket and key from remote path: %e", err)
+		log.Errorf("s3_utils: error getting bucket and key from remote path: %v", err)
 		atomic.AddInt32(&dest.copyStats.TotCopyPartitionErrors, 1)
 		return
 	}
