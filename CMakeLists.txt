@@ -74,9 +74,3 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
-
-GoInstall(TARGET mossScope
-  PACKAGE github.com/couchbase/mossScope
-  GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
-  INSTALL_PATH bin OUTPUT mossScope
-  GOVERSION 1.18)
