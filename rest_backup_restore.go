@@ -11,7 +11,7 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -139,7 +139,7 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 
 func processRemapRequest(req *http.Request, bucketName string) (
 	*cbgt.IndexDefs, error) {
-	requestBody, err := ioutil.ReadAll(req.Body)
+	requestBody, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read request body, err: %v", err)
 	}

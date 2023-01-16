@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -151,7 +150,7 @@ func (r *IndexClient) DocCount() (uint64, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, fmt.Errorf("remote: count error reading resp.Body,"+
 			" countURL: %s, resp: %#v, err: %v", r.CountURL, resp, err)
@@ -354,7 +353,7 @@ func (r *IndexClient) Query(buf []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("remote: query error reading resp.Body,"+
 			" queryURL: %s, resp: %#v, err: %v", r.QueryURL, resp, err)
@@ -475,7 +474,7 @@ func (r *IndexClient) HandleTask(in []byte) (*cbgt.TaskRequestStatus, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("remote: HandleTask error reading resp.Body,"+
 			" TaskRequestURL: %s, resp: %#v, err: %v", r.TaskRequestURL,

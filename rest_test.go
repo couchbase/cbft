@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -57,7 +56,7 @@ func (meh *TestMEH) OnRefreshManagerOptions(o map[string]string) {
 }
 
 func TestNewRESTRouter(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	ring, err := cbgt.NewMsgRing(os.Stderr, 1000)
@@ -151,7 +150,7 @@ func testRESTHandlers(t *testing.T,
 				URL:    &url.URL{Path: test.Path},
 				Form:   test.Params,
 				Header: make(http.Header),
-				Body:   ioutil.NopCloser(bytes.NewBuffer(test.Body)),
+				Body:   io.NopCloser(bytes.NewBuffer(test.Body)),
 			}
 			for key, val := range test.Header {
 				req.Header.Set(key, val)
@@ -167,7 +166,7 @@ func testRESTHandlers(t *testing.T,
 }
 
 func TestHandlersForRuntimeOps(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -260,7 +259,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 		return 0, nil
 	}
 
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
 		os.RemoveAll(emptyDir)
@@ -511,7 +510,7 @@ func TestHandlersForOneBleveIndexWithNILFeed(t *testing.T) {
 
 func testHandlersForOneBleveTypeIndexWithNILFeed(t *testing.T,
 	indexType string) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -897,7 +896,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
@@ -1229,7 +1228,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 					Form: url.Values{
 						"pindexUUID": []string{"not the right pindex UUID"},
 					},
-					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
+					Body: io.NopCloser(bytes.NewBuffer(body)),
 				}
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
@@ -1265,7 +1264,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 						Path: "/api/pindex/" + pindex.Name + "/query",
 					},
 					Form: url.Values{},
-					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
+					Body: io.NopCloser(bytes.NewBuffer(body)),
 				}
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
@@ -1301,7 +1300,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 						Path: "/api/pindex/" + pindex.Name + "/query",
 					},
 					Form: url.Values(nil),
-					Body: ioutil.NopCloser(bytes.NewBuffer(body)),
+					Body: io.NopCloser(bytes.NewBuffer(body)),
 				}
 				record := httptest.NewRecorder()
 				router.ServeHTTP(record, req)
@@ -1388,7 +1387,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 						Method: "POST",
 						URL:    &url.URL{Path: "/api/index/idx0/query"},
 						Form:   url.Values(nil),
-						Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+						Body:   io.NopCloser(bytes.NewBuffer(body)),
 					}
 					record := httptest.NewRecorder()
 					router.ServeHTTP(record, req)
@@ -1641,7 +1640,7 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 		return 0, nil
 	}
 
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 
 	defer func() {
 		os.RemoveAll(emptyDir)
@@ -1827,7 +1826,7 @@ func testHandlersWithOnePartitionPrimaryFeedRollback(t *testing.T) {
 						Method: "POST",
 						URL:    &url.URL{Path: "/api/index/idx0/query"},
 						Form:   url.Values(nil),
-						Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+						Body:   io.NopCloser(bytes.NewBuffer(body)),
 					}
 					record := httptest.NewRecorder()
 					router.ServeHTTP(record, req)
@@ -1896,8 +1895,8 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 
 	cfg := cbgt.NewCfgMem()
 
-	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir0, _ := os.MkdirTemp("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir0)
 	defer os.RemoveAll(emptyDir1)
 
@@ -1957,13 +1956,13 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 		req := &http.Request{
 			Method: "GET",
 			URL:    u,
-			Body:   ioutil.NopCloser(bytes.NewBuffer([]byte{})),
+			Body:   io.NopCloser(bytes.NewBuffer([]byte{})),
 		}
 		record := httptest.NewRecorder()
 		router1.ServeHTTP(record, req)
 		return &http.Response{
 			StatusCode: record.Code,
-			Body:       ioutil.NopCloser(record.Body),
+			Body:       io.NopCloser(record.Body),
 		}, nil
 	}
 
@@ -1977,13 +1976,13 @@ func TestCreateIndexTwoNodes(t *testing.T) {
 		req := &http.Request{
 			Method: "POST",
 			URL:    u,
-			Body:   ioutil.NopCloser(body),
+			Body:   io.NopCloser(body),
 		}
 		record := httptest.NewRecorder()
 		router1.ServeHTTP(record, req)
 		return &http.Response{
 			StatusCode: record.Code,
-			Body:       ioutil.NopCloser(record.Body),
+			Body:       io.NopCloser(record.Body),
 		}, nil
 	}
 
@@ -2194,7 +2193,7 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir0, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir0, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir0)
 		rest.RequestProxyStubFunc = nil
@@ -2241,13 +2240,13 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 		req := &http.Request{
 			Method: "GET",
 			URL:    u,
-			Body:   ioutil.NopCloser(bytes.NewBuffer([]byte{})),
+			Body:   io.NopCloser(bytes.NewBuffer([]byte{})),
 		}
 		record := httptest.NewRecorder()
 		router0.ServeHTTP(record, req)
 		return &http.Response{
 			StatusCode: record.Code,
-			Body:       ioutil.NopCloser(record.Body),
+			Body:       io.NopCloser(record.Body),
 		}, nil
 	}
 
@@ -2261,13 +2260,13 @@ func testCreateIndex1Node(t *testing.T, planParams []string,
 		req := &http.Request{
 			Method: "POST",
 			URL:    u,
-			Body:   ioutil.NopCloser(body),
+			Body:   io.NopCloser(body),
 		}
 		record := httptest.NewRecorder()
 		router0.ServeHTTP(record, req)
 		return &http.Response{
 			StatusCode: record.Code,
-			Body:       ioutil.NopCloser(record.Body),
+			Body:       io.NopCloser(record.Body),
 		}, nil
 	}
 
@@ -2377,7 +2376,7 @@ func TestCreateIndexAddNode(t *testing.T) {
 		t.Errorf("expected no err")
 	}
 
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
@@ -2469,7 +2468,7 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 		t.Errorf("expected no err")
 	}
 
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir1)
 
 	options := map[string]string{"enablePartitionNodeStickiness": "true"}
@@ -2565,7 +2564,7 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 		t.Errorf("expected no err")
 	}
 
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
@@ -2654,7 +2653,7 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 		t.Errorf("expected no err")
 	}
 
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
@@ -2735,7 +2734,7 @@ func TestNodePlanParams(t *testing.T) {
 		t.Errorf("expected no err")
 	}
 
-	emptyDir1, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir1, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir1)
 
 	meh1 := &TestMEH{}
@@ -2809,7 +2808,7 @@ func TestHandlersForIndexControl(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
@@ -3066,7 +3065,7 @@ func TestMultiFeedStats(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
@@ -3150,7 +3149,7 @@ func TestIndexDefWithJSON(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil

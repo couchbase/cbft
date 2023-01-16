@@ -12,7 +12,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -263,7 +263,7 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil || len(respBuf) == 0 {
 		return nil, fmt.Errorf("server_groups: error reading resp.Body,"+
 			" url: %s, resp: %#v, err: %v", url, resp, err)

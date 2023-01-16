@@ -10,7 +10,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -30,7 +29,7 @@ func DumpStack(dir, msg string) string {
 		}
 	}
 
-	files, err := ioutil.ReadDir(dumps_path)
+	files, err := os.ReadDir(dumps_path)
 	if err != nil {
 		return ""
 	}

@@ -11,7 +11,6 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -246,7 +245,7 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	}
 
 	pathMeta := filepath.Join(path, "PINDEX_BLEVE_META")
-	err = ioutil.WriteFile(pathMeta, []byte(indexParams), 0600)
+	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
 	}

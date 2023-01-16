@@ -10,7 +10,6 @@ package cbft
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -73,7 +72,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 		rest.RequestProxyStubFunc = nil
 	}()
 
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()

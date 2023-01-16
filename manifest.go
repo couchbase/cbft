@@ -11,7 +11,7 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"sync"
 	"time"
@@ -134,7 +134,7 @@ func obtainManifest(serverURL, bucket string) (*Manifest, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil || len(respBuf) == 0 {
 		return nil, fmt.Errorf("manifest: error reading resp.Body, err: %v", err)
 	}

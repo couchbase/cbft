@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"strings"
@@ -378,7 +378,7 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -508,12 +508,12 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 }
 
 func obtainIndexDefFromRequest(req *http.Request) (*cbgt.IndexDef, error) {
-	requestBody, err := ioutil.ReadAll(req.Body)
+	requestBody, err := io.ReadAll(req.Body)
 	if err != nil || len(requestBody) == 0 {
 		return nil, fmt.Errorf("limiter: failed to parse the req body %v", err)
 	}
 	defer func() {
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
+		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	}()
 
 	indexDef := cbgt.IndexDef{}

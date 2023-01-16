@@ -11,7 +11,6 @@ package cbft
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/blevesearch/bleve/v2/document"
@@ -49,7 +48,7 @@ func (h *AnalyzeDocHandler) ServeHTTP(
 
 	indexUUID := req.FormValue("indexUUID")
 
-	requestBody, err := ioutil.ReadAll(req.Body)
+	requestBody, err := io.ReadAll(req.Body)
 	if err != nil {
 		rest.ShowErrorBody(w, nil, fmt.Sprintf("bleve: AnalyzeDoc,"+
 			" could not read request body, indexName: %s",

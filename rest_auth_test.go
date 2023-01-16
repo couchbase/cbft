@@ -12,7 +12,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -183,7 +182,7 @@ func TestSourceNamesFromReq(t *testing.T) {
 		return false
 	}
 
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
@@ -363,7 +362,7 @@ func TestPreparePerms(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
@@ -573,7 +572,7 @@ func TestPreparePerms(t *testing.T) {
 
 		// set the request body again, as its been consumed :(
 		if test.body != nil {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(test.body))
+			req.Body = io.NopCloser(bytes.NewBuffer(test.body))
 		}
 
 		actualPerms, err := preparePerms(s, &restRequestParser{req: req}, test.method, test.path)
@@ -620,7 +619,7 @@ func TestFilteredListIndexes(t *testing.T) {
 		t.Fatalf("CBAuthSendForbidden unexpected")
 	}
 
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -726,7 +725,7 @@ func TestFilteredListIndexes(t *testing.T) {
 	h := &FilteredListIndexHandler{mgr: s, isCBAuth: true}
 	h.ServeHTTP(record, req)
 
-	resp, err := ioutil.ReadAll(record.Result().Body)
+	resp, err := io.ReadAll(record.Result().Body)
 	if err != nil {
 		t.Errorf("expected no err, got: %v", err)
 	}

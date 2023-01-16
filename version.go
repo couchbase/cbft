@@ -11,7 +11,7 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -202,7 +202,7 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, fmt.Errorf("version: error reading resp.Body,"+
 			" nsServerURL: %s, resp: %#v, err: %v", server, resp, err)

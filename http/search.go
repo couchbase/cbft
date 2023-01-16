@@ -11,7 +11,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/blevesearch/bleve/v2"
@@ -47,7 +47,7 @@ func (h *SearchHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// read the request body
-	requestBody, err := ioutil.ReadAll(req.Body)
+	requestBody, err := io.ReadAll(req.Body)
 	if err != nil {
 		showError(w, req, fmt.Sprintf("error reading request body: %v", err), 400)
 		return

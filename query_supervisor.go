@@ -12,7 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -288,7 +288,7 @@ func (qss *QuerySupervisorDetails) getSupervisorMaps(nodeDefs *cbgt.NodeDefs,
 					}
 					continue
 				}
-				data, derr := ioutil.ReadAll(res.Body)
+				data, derr := io.ReadAll(res.Body)
 				res.Body.Close()
 				if derr != nil {
 					responseCh <- &supervisorResp{
@@ -531,7 +531,7 @@ func (qk *QueryKiller) killQuery(queryID string, uuid string) (int, error) {
 			" request to node: %s failed, err: %v", uuid, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		respBytes, err := ioutil.ReadAll(resp.Body)
+		respBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("query abort:"+
 				" error while reading the response from node: %s err: %v",
@@ -552,7 +552,7 @@ func (qk *QueryKiller) ServeHTTP(
 		return
 	}
 
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		rest.ShowError(w, nil,
 			fmt.Sprintf("query abort: could not read request body"+

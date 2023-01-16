@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -114,7 +113,7 @@ func (h *PIndexContentHandler) ServeHTTP(
 func (h *PIndexContentHandler) streamPIndexContents(pindexName string,
 	w http.ResponseWriter, req *http.Request) {
 	pindexPath := h.mgr.PIndexPath(pindexName)
-	_, err := ioutil.ReadDir(pindexPath)
+	_, err := os.ReadDir(pindexPath)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 			" read failed for path: %s, err: %v", pindexPath, err),
@@ -141,7 +140,7 @@ func (h *PIndexContentHandler) streamTarArchive(pindexName string,
 	w http.ResponseWriter, req *http.Request) {
 	rootPath := h.mgr.PIndexPath(pindexName)
 	// temp dir for storing all memory segments and root bolt file.
-	tempPath, err := ioutil.TempDir(filepath.Dir(rootPath), "temp$$")
+	tempPath, err := os.MkdirTemp(filepath.Dir(rootPath), "temp$$")
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 			" dir err: %v, for path: %s", err, tempPath),

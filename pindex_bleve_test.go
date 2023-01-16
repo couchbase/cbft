@@ -11,7 +11,6 @@ package cbft
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -55,7 +54,7 @@ func WaitForPersistence(pindex *cbgt.PIndex, docCount float64) error {
 }
 
 func TestManagerRestart(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -127,7 +126,7 @@ func testPartitioning(t *testing.T,
 	expectedNumDests int,
 	andThen func(mgr *cbgt.Manager,
 		sf *cbgt.PrimaryFeed, pindexes map[string]*cbgt.PIndex)) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -454,7 +453,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 }
 
 func TestManagerIndexControl(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	cfg := cbgt.NewCfgMem()
@@ -626,7 +625,7 @@ func TestManagerIndexControl(t *testing.T) {
 }
 
 func TestNewPIndexEmptyBleveJSON(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	pindex, err := cbgt.NewPIndex(nil, "fake", "uuid",
@@ -640,7 +639,7 @@ func TestNewPIndexEmptyBleveJSON(t *testing.T) {
 }
 
 func TestNewPIndexBleveBadMapping(t *testing.T) {
-	emptyDir, _ := ioutil.TempDir("./tmp", "test")
+	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer os.RemoveAll(emptyDir)
 
 	pindex, err := cbgt.NewPIndex(nil, "fake", "uuid",

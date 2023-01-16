@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -119,7 +119,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 
 	perms, err := preparePerms(mgr, r, req.Method, path)
 	if err != nil {
-		requestBody, _ := ioutil.ReadAll(req.Body)
+		requestBody, _ := io.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: preparePerms,"+
 			" err: %v", err), http.StatusBadRequest)
 		return false, ""
@@ -132,7 +132,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 	addUserAgentHeaderToRequest(req)
 	creds, err := CBAuthWebCreds(req)
 	if err != nil {
-		requestBody, _ := ioutil.ReadAll(req.Body)
+		requestBody, _ := io.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
 			" err: %v", err), http.StatusForbidden)
 
@@ -147,7 +147,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 	for _, perm := range perms {
 		allowed, err = CBAuthIsAllowed(creds, perm)
 		if err != nil {
-			requestBody, _ := ioutil.ReadAll(req.Body)
+			requestBody, _ := io.ReadAll(req.Body)
 			rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.IsAllowed,"+
 				" err: %v", err), http.StatusForbidden)
 			return false, ""
@@ -173,7 +173,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 	username = creds.Name()
 
 	if ok, msg := processRequest(username, path, req); !ok {
-		requestBody, _ := ioutil.ReadAll(req.Body)
+		requestBody, _ := io.ReadAll(req.Body)
 		rest.PropagateError(w, requestBody, msg, http.StatusTooManyRequests)
 		return false, ""
 	}
@@ -325,14 +325,14 @@ func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
 	var requestBody []byte
 	var err error
 	if p.req.Body != nil {
-		requestBody, err = ioutil.ReadAll(p.req.Body)
+		requestBody, err = io.ReadAll(p.req.Body)
 		if err != nil {
 			return nil, fmt.Errorf("rest_auth: restRequestParser, err: %v", err)
 		}
 	}
 
 	// reset req.Body so it can be read later by the handler
-	p.req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+	p.req.Body = io.NopCloser(bytes.NewReader(requestBody))
 
 	var indexDef cbgt.IndexDef
 	if len(requestBody) > 0 {
@@ -355,14 +355,14 @@ func (p *restRequestParser) GetCollectionNames() ([]string, error) {
 	var requestBody []byte
 	var err error
 	if p.req.Body != nil {
-		requestBody, err = ioutil.ReadAll(p.req.Body)
+		requestBody, err = io.ReadAll(p.req.Body)
 		if err != nil {
 			return nil, fmt.Errorf("rest_auth: restRequestParser, err: %v", err)
 		}
 	}
 
 	// reset req.Body so it can be read later by the handler
-	p.req.Body = ioutil.NopCloser(bytes.NewReader(requestBody))
+	p.req.Body = io.NopCloser(bytes.NewReader(requestBody))
 
 	var rv []string
 	jsonparser.ArrayEach(requestBody, func(value []byte,
@@ -563,7 +563,7 @@ func (h *CBAuthBasicLogin) ServeHTTP(
 		addUserAgentHeaderToRequest(req)
 		creds, err := CBAuthWebCreds(req)
 		if err != nil {
-			requestBody, _ := ioutil.ReadAll(req.Body)
+			requestBody, _ := io.ReadAll(req.Body)
 			rest.PropagateError(w, requestBody, fmt.Sprintf("rest_auth: cbauth.AuthWebCreds,"+
 				" err: %v", err), http.StatusForbidden)
 			return

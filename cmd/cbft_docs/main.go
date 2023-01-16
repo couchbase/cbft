@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -50,7 +51,7 @@ func sampleRequest(router *mux.Router,
 		Method: method,
 		URL:    &url.URL{Path: urlPath},
 		Form:   url.Values(nil),
-		Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+		Body:   io.NopCloser(bytes.NewBuffer(body)),
 	}
 	record := httptest.NewRecorder()
 	router.ServeHTTP(record, req)
@@ -72,7 +73,7 @@ var skipSampleResponses = map[string]bool{
 func main() {
 	rand.Seed(0)
 
-	dataDir, _ := ioutil.TempDir("./tmp", "data")
+	dataDir, _ := os.MkdirTemp("./tmp", "data")
 	defer os.RemoveAll(dataDir)
 
 	cfg := cbgt.NewCfgMem()

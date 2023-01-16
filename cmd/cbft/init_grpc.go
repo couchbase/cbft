@@ -11,7 +11,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 
 	"net"
 	"strconv"
@@ -220,7 +220,7 @@ func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
 							caFile = cbgt.TLSCAFile
 						}
 
-						certInBytes, err = ioutil.ReadFile(caFile)
+						certInBytes, err = os.ReadFile(caFile)
 						if err != nil {
 							log.Fatalf("init_grpc: ReadFile of cacert, path: %v, err: %v",
 								caFile, err)

@@ -12,9 +12,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -214,7 +214,7 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
 								caFile = cbgt.TLSCAFile
 							}
 
-							certInBytes, err = ioutil.ReadFile(caFile)
+							certInBytes, err = os.ReadFile(caFile)
 							if err != nil {
 								log.Fatalf("init_http: ReadFile of cacert, path: %v, err: %v",
 									caFile, err)

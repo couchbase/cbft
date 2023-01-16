@@ -14,7 +14,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -144,7 +143,7 @@ func main() {
 		uuidPath :=
 			flags.DataDir + string(os.PathSeparator) + cmdName + ".uuid"
 
-		err = ioutil.WriteFile(uuidPath, []byte(uuid), 0600)
+		err = os.WriteFile(uuidPath, []byte(uuid), 0600)
 		if err != nil {
 			log.Fatalf("main: could not write uuidPath: %s,\n"+
 				"  err: %#v,\n"+

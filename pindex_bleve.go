@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -97,17 +96,18 @@ var defaultLimitingMaxTime = 120000
 
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
-//     {
-//        "mapping": {
-//           // See bleve.mapping.IndexMapping.
-//        },
-//        "store": {
-//           // See BleveParamsStore.
-//        },
-//        "doc_config": {
-//           // See BleveDocumentConfig.
-//        }
-//     }
+//
+//	{
+//	   "mapping": {
+//	      // See bleve.mapping.IndexMapping.
+//	   },
+//	   "store": {
+//	      // See BleveParamsStore.
+//	   },
+//	   "doc_config": {
+//	      // See BleveDocumentConfig.
+//	   }
+//	}
 type BleveParams struct {
 	Mapping   mapping.IndexMapping   `json:"mapping"`
 	Store     map[string]interface{} `json:"store"`
@@ -853,7 +853,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
-	err = ioutil.WriteFile(pathMeta, []byte(indexParams), 0600)
+	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -956,7 +956,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 	buf := []byte(indexParams)
 	var err error
 	if len(buf) == 0 {
-		buf, err = ioutil.ReadFile(path +
+		buf, err = os.ReadFile(path +
 			string(os.PathSeparator) + "PINDEX_BLEVE_META")
 		if err != nil {
 			return nil, nil, err
@@ -980,7 +980,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 
 	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
-			buf, err = ioutil.ReadFile(path +
+			buf, err = os.ReadFile(path +
 				string(os.PathSeparator) + "PINDEX_META")
 			if err != nil {
 				return nil, nil, err
@@ -1011,7 +1011,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 	}
 	log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
 
-	buf, err = ioutil.ReadFile(path +
+	buf, err = os.ReadFile(path +
 		string(os.PathSeparator) + "PINDEX_META")
 	if err != nil {
 		return nil, nil, err
@@ -1962,7 +1962,7 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		return nil
 	}
 
-	buf, err := ioutil.ReadFile(t.bdest.path +
+	buf, err := os.ReadFile(t.bdest.path +
 		string(os.PathSeparator) + "PINDEX_META")
 	if err != nil {
 		return err
@@ -2681,11 +2681,11 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 // preferences for the query serving index partitions spread across
 // the cluster.
 // PartitionSelectionStrategy recognized options are,
-// - ""              : primary partitions are selected
-// - local           : local partitions are favored, pseudorandom selection from remote
-// - random          : pseudorandom selection from available local and remote
-// - random_balanced : pseudorandom selection from available local and remote nodes by
-//                     equally distributing the query load across all nodes.
+//   - ""              : primary partitions are selected
+//   - local           : local partitions are favored, pseudorandom selection from remote
+//   - random          : pseudorandom selection from available local and remote
+//   - random_balanced : pseudorandom selection from available local and remote nodes by
+//     equally distributing the query load across all nodes.
 type PartitionSelectionStrategy string
 
 var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
@@ -3166,7 +3166,7 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 	}
 	defer resp.Body.Close()
 
-	respBuf, err := ioutil.ReadAll(resp.Body)
+	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

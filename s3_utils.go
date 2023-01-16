@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -233,7 +232,7 @@ func uploadToBucket(mgr *cbgt.Manager, c objcli.Client, bucket, pindexPath, keyP
 				!strings.HasSuffix(path, cbgt.PINDEX_META_FILENAME) {
 				startTime := time.Now()
 
-				file, err := ioutil.ReadFile(path)
+				file, err := os.ReadFile(path)
 				if err != nil {
 					log.Errorf("s3_utils: unable to read file %s:%v",
 						path, err)
