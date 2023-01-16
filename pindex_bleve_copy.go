@@ -44,7 +44,7 @@ func HibernatePartitions(mgr *cbgt.Manager, activePIndexes,
 		return []error{fmt.Errorf("pindex_bleve_copy: failed to get S3 client")}
 	}
 
-	ctx, cancel := mgr.GetHibernationContext()
+	ctx, _ := mgr.GetHibernationContext()
 	var errs []error
 
 	for _, pindex := range activePIndexes {
@@ -57,8 +57,8 @@ func HibernatePartitions(mgr *cbgt.Manager, activePIndexes,
 		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil)
 		pindex.Dest = &cbgt.DestForwarder{DestProvider: dest}
 
-		go uploadPIndexFiles(mgr, client, pindex.HibernationPath, pindex.Name, pindex.Path,
-			ctx, cancel)
+		go uploadPIndexFiles(mgr, client, pindex.HibernationPath, pindex.Name,
+			pindex.Path, ctx)
 	}
 
 	for _, pindex := range replicaPIndexes {
@@ -250,24 +250,16 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 // Downloads PIndex files for resumed index.
 func downloadPIndexFiles(mgr *cbgt.Manager, kvConfig map[string]interface{},
 	bucket, keyPrefix, pindexName, path string, copyStats *CopyPartitionStats) error {
-	prefix := keyPrefix + "/" + pindexName
+	pindexFilePath := keyPrefix + "/" + pindexName + ".tar.gz"
 	client := mgr.GetObjStoreClient()
 	if client == nil {
 		atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
 		return fmt.Errorf("pindex_bleve_copy: nil client, cannot download.")
 	}
-	totalObjSize, err := getS3BucketSize(client, bucket, prefix)
-	if err != nil {
-		atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
-		log.Errorf("pindex_bleve_copy: error getting bucket size: %v", err)
-		return err
-	}
-
-	resetCopyStats(copyStats, totalObjSize)
 
 	ctx, _ := mgr.GetHibernationContext()
 
-	return downloadFromBucket(client, bucket, prefix, path, copyStats, ctx)
+	return downloadFromBucket(client, bucket, pindexFilePath, path, copyStats, ctx)
 }
 
 func getHibernationBucketForPindex(indexParams string) (string, string, error) {
