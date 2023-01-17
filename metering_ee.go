@@ -47,6 +47,7 @@ type message struct {
 type regulatorStats struct {
 	TotalRUsMetered                uint64  `json:"total_RUs_metered"`
 	TotalWUsMetered                uint64  `json:"total_WUs_metered"`
+	TotalMeteringErrs              uint64  `json:"total_metering_errs"`
 	TotalReadOpsCapped             uint64  `json:"total_read_ops_capped"`
 	TotalReadOpsRejected           uint64  `json:"total_read_ops_rejected"`
 	TotalWriteOpsRejected          uint64  `json:"total_write_ops_rejected"`
@@ -66,7 +67,6 @@ type serviceRegulator struct {
 	messageChan chan *message
 	// pindex -> stats
 	prevWBytes map[string]uint64
-	prevRBytes map[string]uint64
 
 	m sync.RWMutex // Protects the fields that follow.
 	// bucket -> stats
@@ -91,7 +91,6 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 		mgr:         mgr,
 		messageChan: make(chan *message, 10),
 		prevWBytes:  make(map[string]uint64),
-		prevRBytes:  make(map[string]uint64),
 		stats:       make(map[string]*regulatorStats),
 	}
 	log.Printf("regulator: Metering and limiting of FTS read/write" +
@@ -119,14 +118,13 @@ func (sr *serviceRegulator) startMetering() {
 				err = sr.recordReads(msg.bucket, msg.index, msg.user, msg.bytes)
 			case write:
 				err = sr.recordWrites(msg.bucket, msg.index, msg.user, msg.bytes)
-			case compute:
-				// TODO
 			default:
 				// invalid op
 				return
 			}
 
 			if err != nil {
+				sr.updateRegulatorStats(msg.bucket, "total_metering_errs", 1)
 				log.Errorf("metering: error while metering the stats "+
 					"with regulator %v", err)
 			}
@@ -149,7 +147,7 @@ func (sr *serviceRegulator) meteringUtil(bucket, index string,
 	select {
 	case sr.messageChan <- msg:
 	case <-time.After(5 * time.Second):
-		reg.updateRegulatorStats(bucket, "total_ops_timed_out_while_metering", 1)
+		sr.updateRegulatorStats(bucket, "total_ops_timed_out_while_metering", 1)
 		log.Warnf("metering: message dropped, too much traffic on the "+
 			"channel %v", msg)
 	}
@@ -174,17 +172,12 @@ func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	reg.meteringUtil(bucket, index.Name(), analysisBytes, write)
 }
 
-func MeterReads(bucket string, index bleve.Index) {
+func MeterReads(bucket string, pindexName string, bytesRead uint64) {
 	if !ServerlessMode {
 		// no metering for non-serverless versions
 		return
 	}
-
-	scorchStats := index.StatsMap()
-	indexStats, _ := scorchStats["index"].(map[string]interface{})
-	bytesReadStat, _ := indexStats["num_bytes_read_at_query_time"].(uint64)
-
-	reg.meteringUtil(bucket, index.Name(), bytesReadStat, read)
+	reg.meteringUtil(bucket, pindexName, bytesRead, read)
 }
 
 func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
@@ -194,13 +187,13 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 	// so to ensure the correct delta (of the bytes written on disk stat)
 	// the prevWBytes is tracked per pindex
 	prevBytesMetered := sr.prevWBytes[pindexName]
-
 	if bytes <= prevBytesMetered {
 		if bytes < prevBytesMetered {
 			sr.prevWBytes[pindexName] = 0
 		}
 		return nil
 	}
+
 	wus, err := metering.SearchWriteToWU(bytes - prevBytesMetered)
 	if err != nil {
 		return err
@@ -208,58 +201,26 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 	context := regulator.NewBucketCtx(bucket)
 	sr.prevWBytes[pindexName] = bytes
 
-	sr.updateRegulatorStats(bucket, "total_WUs_metered", float64(wus.Whole()))
-	return regulator.RecordUnits(context, wus)
+	err = regulator.RecordUnits(context, wus)
+	if err == nil {
+		sr.updateRegulatorStats(bucket, "total_WUs_metered", float64(wus.Whole()))
+	}
+	return err
 }
 
 func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
 	bytes uint64) error {
-
-	// metering of read units is happening at a pindex level,
-	// each partition (can be either on coordinator or remote node)
-	// meters whatever bytes is read from it on its local node.
-	prevBytesMetered := sr.prevRBytes[pindexName]
-	if bytes <= prevBytesMetered {
-		if bytes < prevBytesMetered {
-			sr.prevRBytes[pindexName] = 0
-		}
-		return nil
-	}
-
-	rus, err := metering.SearchReadToRU(bytes - prevBytesMetered)
+	rus, err := metering.SearchReadToRU(bytes)
 	if err != nil {
 		return err
 	}
 	context := regulator.NewBucketCtx(bucket)
 
-	// Capping the RUs according to the ftsThrottleLimit for that bucket,
-	// fetched from regulator's GetConfiguredLimitForBucket API.
-	// The reasoning here is that currently the queries incur a very high
-	// first time cost in terms of the bytes read from the disk. In a scenario
-	// where there are multiple first time queries, the per second units
-	// metered would be extremely high, which can result in extremely
-	// high wait times.
-	// the formula for capping off ->
-	// 			ftsThrottleLimit/(#indexesPerTenant * #queriesAllowed)
-	throttleLimit := uint64(getThrottleLimit(context))
-	if rus.Whole() > throttleLimit {
-		maxIndexCountPerSource := 20
-		v, found := cbgt.ParseOptionsInt(sr.mgr.Options(), "maxIndexCountPerSource")
-		if found {
-			maxIndexCountPerSource = v
-		}
-		rus, err = regulator.NewUnits(regulator.Search, 0,
-			throttleLimit/(uint64(maxIndexCountPerSource)*10))
-		if err != nil {
-			return fmt.Errorf("metering: failed to cap the RUs %v\n", err)
-		}
-		sr.updateRegulatorStats(bucket, "total_read_ops_capped", 1)
+	err = regulator.RecordUnits(context, rus)
+	if err == nil {
+		sr.updateRegulatorStats(bucket, "total_RUs_metered", float64(rus.Whole()))
 	}
-
-	sr.prevRBytes[pindexName] = bytes
-
-	sr.updateRegulatorStats(bucket, "total_RUs_metered", float64(rus.Whole()))
-	return regulator.RecordUnits(context, rus)
+	return err
 }
 
 func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
@@ -295,6 +256,8 @@ func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
 			sr.stats[bucket].TotCheckAccessOpsRejects += uint64(val)
 		case "total_check_access_errs":
 			sr.stats[bucket].TotCheckAccessErrs += uint64(val)
+		case "total_metering_errs":
+			sr.stats[bucket].TotalMeteringErrs += uint64(val)
 		}
 	}
 }

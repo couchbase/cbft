@@ -31,7 +31,7 @@ func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	return
 }
 
-func MeterReads(bucket string, index bleve.Index) {
+func MeterReads(bucket string, pindexName string, bytes uint64) {
 	return
 }
 
