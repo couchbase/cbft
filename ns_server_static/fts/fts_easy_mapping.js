@@ -238,6 +238,26 @@ function newEasyMapping() {
         return fieldMapping;
     };
 
+    var newIPField = function(field) {
+        var fieldMapping = {};
+        fieldMapping.name = field.name;
+        fieldMapping.type = "IP";
+        if (field.store) {
+            fieldMapping.store = true;
+        }
+        fieldMapping.index = true;
+        if (field.highlight || field.phrase) {
+            fieldMapping.include_term_vectors = true;
+        }
+        if (field.includeInAll) {
+            fieldMapping.include_in_all = true;
+        }
+        if (field.sortFacet) {
+            fieldMapping.docvalues = true;
+        }
+        return fieldMapping;
+    };
+
     var addDocumentMappingFromPathField = function(mapping, path, field) {
         // split dotted-path into path elements
         var pathElements = path.split('.');
@@ -271,8 +291,10 @@ function newEasyMapping() {
             mapping.fields.push(newGeoPointField(field));
         } else if (field.type == "geoshape") {
             mapping.fields.push(newGeoShapeField(field));
-        }else if (field.type == "boolean") {
+        } else if (field.type == "boolean") {
             mapping.fields.push(newBooleanField(field));
+        } else if (field.type == "IP") {
+            mapping.fields.push(newIPField(field));
         }
     };
 
@@ -326,6 +348,8 @@ function newEasyMapping() {
                 editField.type = "geoshape";
             } else if (field.type == "boolean") {
                 editField.type = "boolean";
+            } else if (field.type == "IP") {
+                editField.type = "IP";
             }
 
             // finish some common settings

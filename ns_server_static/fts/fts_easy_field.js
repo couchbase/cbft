@@ -49,6 +49,8 @@ function newEditField() {
                     rv = "geoshape ";
             } else if (this.type == "boolean") {
                 rv = "boolean ";
+            } else if (this.type == "IP") {
+                rv = "IP ";
             }
             var supporting = [];
             if (this.store) {
