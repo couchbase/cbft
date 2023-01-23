@@ -92,11 +92,6 @@ func processRequest(username, path string, req *http.Request) (bool, string) {
 
 // Post-processing after a response is shipped for a request
 func completeRequest(username, path string, req *http.Request, egress int64) {
-	if ServerlessMode {
-		limiter.completeRequestProcessing(path, req)
-		return
-	}
-
 	if limiter == nil || !limiter.isActive() {
 		// rateLimiter not active
 		return
@@ -471,15 +466,6 @@ const (
 	CheckAccessError
 )
 
-func (e *rateLimiter) getIndexKeyLOCKED(indexName string) string {
-	for key, entry := range e.indexCache {
-		if _, ok := entry[indexName]; ok {
-			return key
-		}
-	}
-	return ""
-}
-
 func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
 	if err != nil {
@@ -548,19 +534,15 @@ func (e *rateLimiter) regulateRequest(username, path string,
 		return CheckResultNormal, 0, nil
 	}
 
-	indexName := rest.IndexNameLookup(req)
-	// need to see which bucket EXACTLY is this request for.
-	decorated, bucket, _, _ := checkAndSplitDecoratedIndexName(indexName)
-	if !decorated {
-		bucketScopeKey := e.getIndexKeyLOCKED(indexName)
-		bucket = strings.Split(bucketScopeKey, ":")[0]
-	}
-
 	if path == queryPath {
+		// index names on query paths are always decorated, otherwise
+		// there is a index not found error
+		_, bucket, _, _ := checkAndSplitDecoratedIndexName(rest.IndexNameLookup(req))
 		return CheckQuotaRead(bucket, username, req)
 	}
 
-	// path = indexPath
+	// using the indexDef of the request to obtain the necessary info,
+	// given that it is the only reliable source
 	indexDef, err := obtainIndexDefFromRequest(req)
 	if err != nil {
 		return CheckResultError, 0, fmt.Errorf("failed to get index "+
@@ -591,16 +573,6 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 	e.m.Lock()
 	defer e.m.Unlock()
 
-	if path == indexPath {
-		// Refresh the indexCache of the rateLimiter at this point,
-		// to track updates that have been received at other nodes.
-		//
-		// Also, pre-processing here for a DELETE INDEX request only
-		// (pre-processing for CREATE and UPDATE INDEX requests is handled
-		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef).
-		e.updateIndexCacheLOCKED(req)
-	}
-
 	action, _, err := e.regulateRequest(username, path, req)
 
 	switch action {
@@ -617,18 +589,6 @@ func (e *rateLimiter) processRequestForLimiting(username, path string,
 	}
 
 	return true, ""
-}
-
-// custom function just to check out the LMT.
-// can be removed and made part of the original rate Limiter later on, if necessary.
-func (e *rateLimiter) completeRequestProcessing(path string, req *http.Request) {
-	e.m.Lock()
-	defer e.m.Unlock()
-
-	if path == indexPath {
-		// post-processing for INDEX requests
-		e.completeIndexRequestLOCKED(req)
-	}
 }
 
 // -----------------------------------------------------------------------------
@@ -783,17 +743,7 @@ func (e *rateLimiter) completeIndexRequestLOCKED(req *http.Request) {
 		return
 	}
 
-	// This is invoked after an index introduction/update, so the index
-	// definition should be available in the system.
 	indexName := rest.IndexNameLookup(req)
-	if !strings.Contains(indexName, ".") {
-		bucketScope := e.pendingIndexes[indexName]
-		delete(e.pendingIndexes, indexName)
-		delimPos := strings.LastIndex(bucketScope, ":")
-		indexName = decorateIndexNameWithKeySpace(bucketScope[:delimPos],
-			bucketScope[delimPos+1:], indexName, false)
-	}
-
 	if _, indexDefsByName, err := e.mgr.GetIndexDefs(false); err == nil {
 		if indexDef, exists := indexDefsByName[indexName]; exists {
 			scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
