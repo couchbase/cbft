@@ -54,8 +54,17 @@ func WaitForPersistence(pindex *cbgt.PIndex, docCount float64) error {
 }
 
 func TestManagerRestart(t *testing.T) {
+	prevDataSourceUUID := cbgt.DataSourceUUID
+	cbgt.DataSourceUUID = func(sourceType, sourceName, sourceParams, server string,
+		options map[string]string) (string, error) {
+		return "123", nil
+	}
+
 	emptyDir, _ := os.MkdirTemp("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		cbgt.DataSourceUUID = prevDataSourceUUID
+		os.RemoveAll(emptyDir)
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	m := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),
@@ -126,8 +135,17 @@ func testPartitioning(t *testing.T,
 	expectedNumDests int,
 	andThen func(mgr *cbgt.Manager,
 		sf *cbgt.PrimaryFeed, pindexes map[string]*cbgt.PIndex)) {
+	prevDataSourceUUID := cbgt.DataSourceUUID
+	cbgt.DataSourceUUID = func(sourceType, sourceName, sourceParams, server string,
+		options map[string]string) (string, error) {
+		return "sourceUUID", nil
+	}
+
 	emptyDir, _ := os.MkdirTemp("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		cbgt.DataSourceUUID = prevDataSourceUUID
+		os.RemoveAll(emptyDir)
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	meh := &TestMEH{}
@@ -453,8 +471,17 @@ func TestFanInPartitioningMutations(t *testing.T) {
 }
 
 func TestManagerIndexControl(t *testing.T) {
+	prevDataSourceUUID := cbgt.DataSourceUUID
+	cbgt.DataSourceUUID = func(sourceType, sourceName, sourceParams, server string,
+		options map[string]string) (string, error) {
+		return "123", nil
+	}
+
 	emptyDir, _ := os.MkdirTemp("./tmp", "test")
-	defer os.RemoveAll(emptyDir)
+	defer func() {
+		cbgt.DataSourceUUID = prevDataSourceUUID
+		os.RemoveAll(emptyDir)
+	}()
 
 	cfg := cbgt.NewCfgMem()
 	m := cbgt.NewManager(cbgt.VERSION, cfg, cbgt.NewUUID(),

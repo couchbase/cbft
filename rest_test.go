@@ -140,6 +140,7 @@ func testRESTHandlers(t *testing.T,
 	defer func() {
 		rest.RequestProxyStubFunc = nil
 	}()
+
 	for _, test := range tests {
 		if test.Before != nil {
 			test.Before()
@@ -3149,8 +3150,16 @@ func TestIndexDefWithJSON(t *testing.T) {
 	rest.RequestProxyStubFunc = func() bool {
 		return false
 	}
+
+	prevDataSourceUUID := cbgt.DataSourceUUID
+	cbgt.DataSourceUUID = func(sourceType, sourceName, sourceParams, server string,
+		options map[string]string) (string, error) {
+		return "beefbeef", nil
+	}
+
 	emptyDir, _ := os.MkdirTemp("./tmp", "test")
 	defer func() {
+		cbgt.DataSourceUUID = prevDataSourceUUID
 		os.RemoveAll(emptyDir)
 		rest.RequestProxyStubFunc = nil
 	}()
