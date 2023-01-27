@@ -262,7 +262,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 					}
 
 					indexDef.Name = decorateIndexNameWithKeySpace(
-						indexDef.SourceName, scopeName, indexDef.Name, true)
+						indexDef.SourceName, scopeName, indexDef.Name)
 				}
 			} else {
 				if bname, ok := mappingRules[indexDef.SourceName]; ok {

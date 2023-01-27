@@ -37,11 +37,13 @@ const VersionTag = "version="
 
 // FeatureGeoSpatialVersion contains the spatial
 // indexing/query capabilities based on s2.
-var FeatureGeoSpatialVersion = "7.1.1"
+const FeatureGeoSpatialVersion = "7.1.1"
 
-var FeatureCollectionVersion = "7.0.0"
-var FeatureGrpcVersion = "6.5.0"
-var FeatureIndexNameDecor = "7.2.0"
+const FeatureCollectionVersion = "7.0.0"
+
+const FeatureGrpcVersion = "6.5.0"
+
+const FeatureScopedIndexNamesVersion = "7.5.0"
 
 func HandleAPIVersion(h string) (string, error) {
 	if len(h) <= 0 || h == "*/*" {

@@ -60,13 +60,12 @@ type AliasParamsTarget struct {
 }
 
 func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+	if indexDef == nil {
+		return nil, fmt.Errorf("PrepareAlias, indexDef is nil")
+	}
+
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
-
-	// No name decoration for a partially upgraded cluster
-	if !isClusterCompatibleFor(FeatureIndexNameDecor) {
-		return indexDef, nil
-	}
 
 	alias := &struct {
 		Targets map[string]interface{} `json:"targets"`
@@ -78,23 +77,48 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 	}
 
 	// map to track unique keyspaces (bucket.scope)
-	uniqueKeyspaces := map[string]struct{}{}
+	uniqueKeyspaces := map[string][]string{}
 	for target := range alias.Targets {
 		// obtain the keyspace from the sourceIndexName;
 		// a decorated index name would look like: `bucket.scope.name`
 		pos := strings.LastIndex(target, ".")
 		if pos < 0 {
-			// undecorated targets exist, skip name decoration for alias
+			// undecorated targets exist, ensure that the index def name is NOT decorated
+			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+			if len(bucketName) > 0 && len(scopeName) > 0 {
+				return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
+					" include unscoped index targets");
+			}
 			return indexDef, nil
 		}
 
-		uniqueKeyspaces[target[:pos]] = struct{}{}
+		uniqueKeyspaces[target[:pos]] = append(uniqueKeyspaces[target[:pos]], target)
 	}
 
 	// alias to multiple keyspaces NOT allowed in serverless mode
 	if len(uniqueKeyspaces) > 1 && ServerlessMode {
 		return nil, fmt.Errorf("PrepareAlias: multiple keyspaces NOT" +
 			" supported in serverless mode")
+	}
+
+	bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+	if len(bucketName) > 0 && len(scopeName) > 0 {
+		// No name decoration for a partially upgraded cluster
+		if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+			return nil, fmt.Errorf("PrepareAlias, scoped index aliases NOT" +
+				" supported in mixed version cluster")
+		}
+		scopedPrefix := bucketName + "." + scopeName
+		var errTargets []string
+		for k, v := range uniqueKeyspaces {
+			if k != scopedPrefix {
+				errTargets = append(errTargets, v...)
+			}
+		}
+		if len(errTargets) > 0 {
+			return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
+				" include %d targets", len(errTargets))
+		}
 	}
 
 	return indexDef, nil

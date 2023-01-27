@@ -464,7 +464,7 @@ func TestRemapIndexDefinions(t *testing.T) {
 	}
 
 	versionTracker = &clusterVersionTracker{}
-	versionTracker.version, _ = cbgt.CompatibilityVersion(FeatureIndexNameDecor)
+	versionTracker.version, _ = cbgt.CompatibilityVersion(FeatureScopedIndexNamesVersion)
 	versionTracker.clusterVersion = versionTracker.version
 	versionTracker.compatibleFeatures = make(map[string]struct{})
 

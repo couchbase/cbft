@@ -471,7 +471,7 @@ func init() {
 func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
 	if indexDef == nil {
-		return nil, fmt.Errorf("bleve: Prepare, indexDef is nil")
+		return nil, fmt.Errorf("PrepareIndex, indexDef is nil")
 	}
 
 	if CurrentNodeDefsFetcher == nil {
@@ -480,7 +480,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
 	if err != nil {
-		return nil, fmt.Errorf("bleve: Prepare, nodeDefs unavailable: err: %v", err)
+		return nil, fmt.Errorf("PrepareIndex, nodeDefs unavailable: err: %v", err)
 	}
 
 	var collectionsSupported, s2SpatialSupported bool
@@ -510,15 +510,14 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
 		if err != nil {
-			return nil, fmt.Errorf("bleve: Prepare, CleanseJSON,"+
-				" err: %v", err)
+			return nil, fmt.Errorf("PrepareIndex, CleanseJSON err: %v", err)
 		}
 
 		err = json.Unmarshal(b, bp)
 		if err != nil {
 			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
 				if typeErr.Type.String() == "map[string]json.RawMessage" {
-					return nil, fmt.Errorf("bleve: Prepare,"+
+					return nil, fmt.Errorf("PrepareIndex,"+
 						" JSON parse was expecting a string key/field-name"+
 						" but instead saw a %s", typeErr.Value)
 				}
@@ -545,14 +544,27 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// and perform the validation checks.
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if !collectionsSupported {
-				return nil, fmt.Errorf("bleve: Prepare, collections not supported" +
+				return nil, fmt.Errorf("PrepareIndex, collections not supported" +
 					" across all nodes in the cluster")
 			}
 
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
-				if _, err := validateScopeCollFromMappings(indexDef.SourceName,
-					im, false); err != nil {
+				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
+					im, false)
+				if err != nil {
 					return nil, err
+				}
+
+				bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+				if len(bucketName) > 0 && len(scopeName) > 0 {
+					if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+						return nil, fmt.Errorf("PrepareIndex, scoped indexes NOT" +
+							" supported in mixed version cluster")
+					}
+					if bucketName != indexDef.SourceName || scopeName != scope.Name {
+						return nil, fmt.Errorf("PrepareIndex, validation of bucket" +
+							" and/or scope names against index definition failed")
+					}
 				}
 			}
 		}
@@ -566,15 +578,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			if !segmentVersionSupported && int(zv) == BlevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
-				return nil, fmt.Errorf("bleve: Prepare, err: zap version %d isn't "+
+				return nil, fmt.Errorf("PrepareIndex, err: zap version %d isn't "+
 					"supported in mixed version cluster", int(zv))
 			}
 			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
-				return nil, fmt.Errorf("bleve: Prepare, err: zap version %d isn't "+
+				return nil, fmt.Errorf("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
 			}
 		} else {
-			return nil, fmt.Errorf("bleve: Prepare, err: segmentVersion %v "+
+			return nil, fmt.Errorf("PrepareIndex, err: segmentVersion %v "+
 				"should be a numeric value", v)
 		}
 	} else {
@@ -590,13 +602,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 	updatedParams, err := json.Marshal(bp)
 	if err != nil {
-		return nil, fmt.Errorf("bleve: Prepare Marshal,"+
-			" err: %v", err)
+		return nil, fmt.Errorf("PrepareIndex, Marshal err: %v", err)
 	}
 	indexDef.Params = string(updatedParams)
 
 	if err := checkSourceCompatability(mgr, indexDef.SourceName); err != nil {
-		return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
+		return nil, fmt.Errorf("PrepareIndex, err: %v", err)
 	}
 
 	return LimitIndexDef(mgr, indexDef)
@@ -614,7 +625,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 		nodeDefs, err := CurrentNodeDefsFetcher.Get()
 		if err != nil {
-			return fmt.Errorf("bleve: validation failed: err: %v", err)
+			return fmt.Errorf("ValidateIndex, nodeDefs unavailable: err: %v", err)
 		}
 
 		indexType := ""
@@ -624,7 +635,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 		// Validate indexType
 		if !cbgt.IsFeatureSupportedByCluster(featureIndexType+":"+indexType, nodeDefs) {
-			return fmt.Errorf("bleve: index validation failed:"+
+			return fmt.Errorf("ValidateIndex, index validation failed:"+
 				" indexType: %v not supported on all nodes in"+
 				" cluster", indexType)
 		}
@@ -692,13 +703,12 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 	err := validateIndexParams()
 	if err != nil {
-		return err
+		return fmt.Errorf("ValidateIndex, err: %v", err)
 	}
 
 	b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 	if err != nil {
-		return fmt.Errorf("bleve: validate CleanseJSON,"+
-			" err: %v", err)
+		return fmt.Errorf("ValidateIndex, CleanseJSON err: %v", err)
 	}
 
 	bp := NewBleveParams()
@@ -707,13 +717,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 	if err != nil {
 		if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
 			if typeErr.Type.String() == "map[string]json.RawMessage" {
-				return fmt.Errorf("bleve: validate params,"+
+				return fmt.Errorf("ValidateIndex, Params:"+
 					" JSON parse was expecting a string key/field-name"+
 					" but instead saw a %s", typeErr.Value)
 			}
 		}
 
-		return fmt.Errorf("bleve: validate params, err: %v", err)
+		return fmt.Errorf("ValidateIndex, Params err: %v", err)
 	}
 
 	// err out if there are no active type mapping.
@@ -727,13 +737,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			break
 		}
 		if !im.DefaultMapping.Enabled && !found {
-			return fmt.Errorf("bleve: validate params, no valid type mappings found")
+			return fmt.Errorf("ValidateIndex, Params: no valid type mappings found")
 		}
 	}
 
 	err = bp.Mapping.Validate()
 	if err != nil {
-		return fmt.Errorf("bleve: validate mapping, err: %v", err)
+		return fmt.Errorf("ValidateIndex, Mapping err: %v", err)
 	}
 
 	return nil
