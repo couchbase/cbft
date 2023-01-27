@@ -114,12 +114,6 @@ func setupStreamingEndpoint(mgr *cbgt.Manager, bucketName string,
 	bucketStreamingURI := mgr.Server() + "/pools/default/bucketsStreaming/" +
 		bucketName
 
-	u, err := cbgt.CBAuthURL(bucketStreamingURI)
-	if err != nil {
-		return 0, fmt.Errorf("bucket state: error adding credentials to url: %v",
-			err)
-	}
-
 	backoffStartSleepMS := 500
 	backoffFactor := float32(1.5)
 	backoffMaxSleepMS := 60000
@@ -130,16 +124,23 @@ func setupStreamingEndpoint(mgr *cbgt.Manager, bucketName string,
 	// keep retrying with backoff logic upon connection errors.
 	cbgt.ExponentialBackoffLoop("listening to "+bucketStreamingURI,
 		func() int {
+			u, err := cbgt.CBAuthURL(bucketStreamingURI)
+			if err != nil {
+				log.Warnf("bucket state: error adding credentials to url: %v",
+					err)
+				return 0
+			}
+
 			req, err := http.NewRequest("GET", u, nil)
 			if err != nil {
-				log.Printf("bucket state: req, err: %v", err)
+				log.Warnf("bucket state: req, err: %v", err)
 				return 0
 			}
 			req.Header.Add("Content-Type", "application/json")
 
 			resp, err = cbgt.HttpClient().Do(req)
-			if err != nil {
-				log.Printf("bucket state: http client, err: %v", err)
+			if err != nil || resp.StatusCode != 200 {
+				log.Warnf("bucket state: http client, response: %+v, err: %v", resp, err)
 				return 0
 			}
 

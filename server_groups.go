@@ -122,7 +122,7 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 			}
 
 			if !strings.Contains(resp.ServerGroupsUri, "v=") {
-				log.Printf("server_groups: no rev found %s",
+				log.Warnf("server_groups: no rev found %s",
 					resp.ServerGroupsUri)
 				continue
 			}
@@ -184,7 +184,7 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 							// retry if it was a CAS mismatch
 							continue
 						}
-						log.Printf("server_groups: CfgSetNodeDefs failed, for"+
+						log.Warnf("server_groups: CfgSetNodeDefs failed, for"+
 							" kind: %s, err: %v", kind, err)
 						break
 					}
@@ -295,12 +295,6 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 func listenStreamingEndpoint(msg, url string, decodeResponse func([]byte) (
 	interface{}, error), notify func(interface{}) error,
 	stopCh chan struct{}) error {
-	u, err := cbgt.CBAuthURL(url)
-	if err != nil {
-		return fmt.Errorf(msg+": auth for ns_server,"+
-			" server: %s, authType: %s, err: %v",
-			url, "cbauth", err)
-	}
 
 	backoffStartSleepMS := 500
 	backoffFactor := float32(1.5)
@@ -314,16 +308,24 @@ RECONNECT:
 		// keep retrying with backoff logic upon connection errors.
 		cbgt.ExponentialBackoffLoop(msg+" listening",
 			func() int {
+				u, err := cbgt.CBAuthURL(url)
+				if err != nil {
+					log.Warnf(msg+": auth for ns_server,"+
+						" server: %s, authType: %s, err: %v",
+						url, "cbauth", err)
+					return 0
+				}
+
 				req, err := http.NewRequest("GET", u, nil)
 				if err != nil {
-					log.Printf(msg+": req, err: %v", err)
+					log.Warnf(msg+": req, err: %v", err)
 					return 0
 				}
 				req.Header.Add("Content-Type", "application/json")
 
 				resp, err = cbgt.HttpClient().Do(req)
-				if err != nil {
-					log.Printf(msg+": http client, err: %v", err)
+				if err != nil || resp.StatusCode != 200 {
+					log.Warnf(msg+": http client, response: %+v, err: %v", resp, err)
 					return 0
 				}
 
@@ -347,7 +349,8 @@ RECONNECT:
 
 			resBytes, err := reader.ReadBytes('\n')
 			if err != nil {
-				log.Printf(msg+": reconnecting upon reader, err: %v", err)
+				log.Warnf(msg+": reconnecting upon reader, bytes read: %d, err: %v",
+					len(resBytes), err)
 				resp.Body.Close()
 				continue RECONNECT
 			}
@@ -357,13 +360,13 @@ RECONNECT:
 
 			res, err := decodeResponse(resBytes)
 			if err != nil {
-				log.Printf(msg+": decodeResponse, err: %v", err)
+				log.Warnf(msg+": decodeResponse, err: %v", err)
 				continue
 			}
 
 			err = notify(res)
 			if err != nil {
-				log.Printf(msg+": notify, err: %v", err)
+				log.Warnf(msg+": notify, err: %v", err)
 				continue
 			}
 		}
