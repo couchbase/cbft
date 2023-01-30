@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -89,9 +90,18 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 	// compute the node specific offset from the node index.
 	pos := 1
 	nodeDefs, _ := st.mgr.GetNodeDefs(cbgt.NODE_DEFS_KNOWN, false)
+
+	// Sorting the node UUIDs to have a consistent ordering across the nodes.
+	var sortedNodeUUID []string
 	if nodeDefs != nil {
 		for _, nodeDef := range nodeDefs.NodeDefs {
-			if nodeDef.UUID == st.mgr.UUID() {
+			sortedNodeUUID = append(sortedNodeUUID, nodeDef.UUID)
+		}
+
+		sort.Strings(sortedNodeUUID)
+
+		for _, nodeDefUUID := range sortedNodeUUID {
+			if nodeDefUUID == st.mgr.UUID() {
 				break
 			}
 			pos++
@@ -176,23 +186,23 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 					continue
 				}
 
-				for {
+				nodeDefsSetFunc := func() error {
 					_, err = cbgt.CfgSetNodeDefs(st.mgr.Cfg(), kind,
 						nodeDefs, cbgt.CFG_CAS_FORCE)
-					if err != nil {
-						if _, ok := err.(*cbgt.CfgCASError); ok {
-							// retry if it was a CAS mismatch
-							continue
-						}
-						log.Warnf("server_groups: CfgSetNodeDefs failed, for"+
-							" kind: %s, err: %v", kind, err)
-						break
-					}
+					return err
+				}
 
-					st.prevRev = rev
-					log.Printf("server_groups: nodeDefs updated for kind: %s", kind)
+				// Keep retrying till the node defs are successfully set.
+				err = cbgt.RetryOnCASMismatch(nodeDefsSetFunc, -1)
+				if err != nil {
+					log.Warnf("server_groups: CfgSetNodeDefs failed, for"+
+						" kind: %s, err: %v", kind, err)
 					break
 				}
+
+				st.prevRev = rev
+				log.Printf("server_groups: nodeDefs updated for kind: %s", kind)
+				break
 			}
 
 			if len(msgs) > 0 {
