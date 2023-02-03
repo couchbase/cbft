@@ -1430,3 +1430,29 @@ func (h *NsSearchResultRedirct) ServeHTTP(
 	source := planPIndex.SourceName
 	http.Redirect(w, req, "/ui/index.html#!/buckets/documents/"+docID+"?bucket="+source, http.StatusMovedPermanently)
 }
+
+type DCPAgentsStatsHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewDCPAgentsStatsHandler(mgr *cbgt.Manager) *DCPAgentsStatsHandler {
+	return &DCPAgentsStatsHandler{mgr: mgr}
+}
+
+func (h *DCPAgentsStatsHandler) ServeHTTP(w http.ResponseWriter,
+	req *http.Request) {
+	dcpAgentsStats := cbgt.DCPAgentsStatsMap()
+	if dcpAgentsStats == nil {
+		rest.ShowError(w, req, fmt.Sprintf("empty dcp agents stats map"),
+			http.StatusNoContent)
+		return
+	}
+	rv := struct {
+		Status           string                 `json:"status"`
+		DCPAgentStatsMap map[string]interface{} `json:"gocbcore_dcp_agents_stats"`
+	}{
+		Status:           "ok",
+		DCPAgentStatsMap: dcpAgentsStats,
+	}
+	rest.MustEncode(w, rv)
+}

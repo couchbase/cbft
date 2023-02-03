@@ -58,6 +58,9 @@ cluster.bucket[].fts!read
 GET /api/nsstats
 cluster.bucket[].fts!read
 
+GET /api/dcpAgentStats
+cluster.bucket[].fts!read
+
 GET /api/nsstats/index/{indexName}
 cluster.collection[<sourceName>].fts!read
 

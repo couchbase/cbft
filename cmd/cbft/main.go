@@ -575,6 +575,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/_prometheusMetrics", "GET",
 		cbft.NewPrometheusMetricsHandler(mgr))
 
+	handle(prefix+"/api/dcpAgentStats", "GET", cbft.NewDCPAgentsStatsHandler(mgr))
+	rest.RegisterDiagHandler(cbgt.DiagHandler{
+		Name:        prefix + "/api/dcpAgentStats",
+		Handler:     cbft.NewDCPAgentsStatsHandler(mgr),
+		HandlerFunc: nil,
+	})
+
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
 		return nil, err
