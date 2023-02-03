@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,7 +24,6 @@ import (
 	"time"
 
 	"github.com/couchbase/cbgt"
-	"github.com/couchbase/cbgt/hibernate"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/tools-common/objstore/objcli"
 	"github.com/couchbase/tools-common/objstore/objcli/objaws"
@@ -37,9 +35,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-func GetS3Client() (objcli.Client, error) {
+func GetS3Client(region string) (objcli.Client, error) {
 	session, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
+		Config: aws.Config{Region: &region},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("s3_utils: error creating session: %v", err)
@@ -81,7 +79,7 @@ func (pt *ProgressReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func decompress(src io.Reader, dst string, copyStats *CopyPartitionStats) error {
+func decompress(src io.Reader, dst string, ctx context.Context, copyStats *CopyPartitionStats) error {
 	customReader := &ProgressReader{
 		Reader:    src,
 		copyStats: copyStats,
@@ -96,6 +94,12 @@ func decompress(src io.Reader, dst string, copyStats *CopyPartitionStats) error 
 
 	// uncompress each element
 	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("s3_utils: context cancelled")
+		default:
+		}
+
 		header, err := tr.Next()
 		if err == io.EOF {
 			break // End of archive
@@ -164,7 +168,7 @@ func downloadFromBucket(c objcli.Client, bucket, key, pindexPath string,
 	resetCopyStats(copyStats, object.ObjectAttrs.Size)
 
 	// decompressing the tar.gz object and adding it to pindex path
-	err = decompress(object.Body, pindexPath, copyStats)
+	err = decompress(object.Body, pindexPath, ctx, copyStats)
 	if err != nil {
 		atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
 		return err
@@ -174,66 +178,38 @@ func downloadFromBucket(c objcli.Client, bucket, key, pindexPath string,
 	return nil
 }
 
-// This function returns the S3 bucket and path for index metadata.
-// The remote path is of the form: s3://<s3-bucket-name>/<key>
-func getBucketAndMetadataPath(remotePath string) (string, string, error) {
-	bucket, key, err := GetRemoteBucketAndPathHook(remotePath)
-	if err != nil {
-		return "", "", err
-	}
-	key = key + "/" + hibernate.INDEX_METADATA_PATH
-
-	return bucket, key, nil
-}
-
-func DownloadIndexMetadata(client objcli.Client, remotePath string) (
-	*cbgt.IndexDefs, error) {
-
+func DownloadMetadata(client objcli.Client, bucket, remotePath string) ([]byte, error) {
 	// Ref : https://stackoverflow.com/questions/46019484/buffer-implementing-io-writerat-in-go
 	buf := aws.NewWriteAtBuffer([]byte{})
-	bucket, indexMetadataPath, err := getBucketAndMetadataPath(remotePath)
-	if err != nil {
-		return nil, err
-	}
 	options := objutil.DownloadOptions{
 		Client: client,
 		Bucket: bucket,
-		Key:    indexMetadataPath,
+		Key:    remotePath,
 		Writer: buf,
 	}
-	err = objutil.Download(options)
+	log.Printf("s3_utils: downloading metadata from path %s", remotePath)
+	err := objutil.Download(options)
 	if err != nil {
 		return nil, err
 	}
-	indexDefs := new(cbgt.IndexDefs)
-	err = json.Unmarshal(buf.Bytes(), indexDefs)
-	if err != nil {
-		return nil, err
-	}
-	return indexDefs, err
+	return buf.Bytes(), nil
 }
 
-func UploadIndexDefs(client objcli.Client, ctx context.Context, data []byte,
-	remotePath string) error {
-
+func UploadMetadata(client objcli.Client, ctx context.Context, bucket,
+	remotePath string, data []byte) error {
 	// Upload a file without saving it - S3
 	// Ref: https://stackoverflow.com/questions/47621804/upload-object-to-aws-s3-without-creating-a-file-using-aws-sdk-go
 	reader := strings.NewReader(string(data))
 
-	bucket, uploadPath, err := getBucketAndMetadataPath(remotePath)
-	if err != nil {
-		return err
-	}
-
 	options := objutil.UploadOptions{
 		Client:  client,
 		Bucket:  bucket,
-		Key:     uploadPath,
+		Key:     remotePath,
 		Body:    reader,
 		Options: objutil.Options{Context: ctx},
 	}
-	log.Printf("s3_utils: uploading index metadata to path %s", uploadPath)
-	err = objutil.Upload(options)
+	log.Printf("s3_utils: uploading metadata to path %s", remotePath)
+	err := objutil.Upload(options)
 	var awsErr awserr.Error
 	if err != nil {
 		if errors.As(err, &awsErr) {

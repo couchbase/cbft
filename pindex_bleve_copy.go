@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -83,6 +82,10 @@ func TrackPauseBucketState(mgr *cbgt.Manager, sourceName, sourceType string) {
 	mgr.ResetBucketTrackedForHibernation()
 	mgr.UnregisterBucketTracker()
 
+	// Unset the task status here, since only after receiving bucket status is
+	// the task complete.
+	mgr.SetOption(cbgt.HIBERNATE_TASK, "", true)
+
 	if err != nil {
 		log.Errorf("pindex bleve copy: pause: error tracking bucket %s: %v",
 			sourceName, err)
@@ -116,64 +119,49 @@ func TrackPauseBucketState(mgr *cbgt.Manager, sourceName, sourceType string) {
 	}
 }
 
-func UnhibernatePartitions(mgr *cbgt.Manager, sourceName, sourceType string) {
+func TrackResumeBucketState(mgr *cbgt.Manager, sourceName, sourceType string) {
+	status, err := TrackBucketState(mgr, cbgt.UNHIBERNATE_TASK, sourceName)
 
-	mgr.RegisterHibernationBucketTracker(sourceName)
+	// Unsetting the bucket to be tracked since there is a conclusive bucket status
+	// and now, the bucket doesn't need to tracked further.
+	mgr.ResetBucketTrackedForHibernation()
+	mgr.UnregisterBucketTracker()
 
-	go func() {
-		status, err := TrackBucketState(mgr, cbgt.UNHIBERNATE_TASK, sourceName)
+	// Unset the task status here, since only after receiving bucket status is
+	// the task complete.
+	mgr.SetOption(cbgt.UNHIBERNATE_TASK, "", true)
 
-		mgr.UnregisterBucketTracker()
-		mgr.ResetBucketTrackedForHibernation()
+	if err != nil {
+		log.Errorf("pindex bleve copy: pause: error tracking bucket %s: %v",
+			sourceName, err)
+		return
+	}
 
-		if err != nil || status == -1 {
-			log.Errorf("pindex bleve copy: error tracking bucket state: %v, deleting "+
-				"all indexes from source %s", err, sourceName)
-			mgr.DeleteAllIndexFromSource(sourceType, sourceName, "")
+	if status == -1 {
+		log.Errorf("pindex bleve copy: unhibernation failed: %v, deleting "+
+			"all indexes from source %s", err, sourceName)
+		mgr.DeleteAllIndexFromSource(sourceType, sourceName, "")
+		return
+	} else if status == 1 {
+		log.Printf("pindex bleve copy: unhibernation has succeeded for "+
+			"bucket %s.", sourceName)
+
+		// indexes which were being resumed.
+		indexDefsToReset := cbgt.NewIndexDefs(mgr.Version())
+
+		indexDefs, _, err := cbgt.CfgGetIndexDefs(mgr.Cfg())
+		if err != nil {
 			return
 		}
 
-		log.Printf("pindex bleve copy: resuming pindexes of bucket %s", sourceName)
-
-		_, pindexes := mgr.CurrentMaps()
-
-		var wg sync.WaitGroup
-		for _, pindex := range pindexes {
-			if pindex.SourceName != sourceName {
-				continue
+		for _, index := range indexDefs.IndexDefs {
+			if index.SourceName == sourceName {
+				indexDefsToReset.IndexDefs[index.Name] = index
 			}
-
-			wg.Add(1)
-
-			go func(pindex *cbgt.PIndex) {
-				defer wg.Done()
-
-				if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
-					if bdest, ok := destForwarder.DestProvider.(*BleveDest); ok {
-						if _, ok := bdest.bindex.(*noopBleveIndex); ok {
-							impl, dest, err := OpenBlevePIndexImplUsing(pindex.IndexType,
-								pindex.Path, pindex.IndexParams, nil)
-							if err != nil {
-								log.Errorf("pindex bleve copy: error opening bleve pindex, "+
-									"deleting index: %v", err)
-								mgr.DeleteIndex(pindex.IndexName)
-								return
-							}
-
-							pindex.Impl = impl
-							pindex.Dest = dest
-
-							bdest.resetBIndex(impl.(bleve.Index))
-							http.RegisterIndexName(pindex.Name, impl.(bleve.Index))
-						}
-					}
-				}
-			}(pindex)
 		}
-		wg.Wait()
 
-		mgr.JanitorKick(fmt.Sprintf("feed init kick for pindexes on unhibernation"))
-	}()
+		hibernate.DropRemotePaths(mgr, indexDefsToReset)
+	}
 }
 
 // IsFeedable is an implementation of cbgt.Feedable interface.
@@ -229,6 +217,10 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 	destfwd = &cbgt.DestForwarder{DestProvider: dest}
 
 	if mgr.Options()[cbgt.UNHIBERNATE_TASK] == "true" {
+		bucketInHibernation, _ := mgr.GetHibernationBucketAndTask()
+
+		mgr.RegisterHibernationBucketTracker(bucketInHibernation)
+
 		go func() {
 			err := downloadPIndexFiles(mgr, kvConfig, bucket, keyPrefix,
 				pindexName, path, copyStats)
