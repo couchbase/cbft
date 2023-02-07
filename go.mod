@@ -1,6 +1,6 @@
 module github.com/couchbase/cbft
 
-go 1.18
+go 1.19
 
 require (
 	github.com/blevesearch/bleve-mapping-ui v0.4.0
