@@ -303,11 +303,7 @@ var NodesUtilStats = func(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
 var CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
 	stats, err := obtainNodeUtilStats(nodeDef)
 	if err != nil {
-		if nodeDef != nil {
-			log.Errorf("limits: unable to get node %s stats: %v", nodeDef.UUID, err)
-		} else {
-			log.Errorf("limits: unable to get node stats: %v", err)
-		}
+		log.Errorf("limits: unable to get stats for nodeDef: %+v, err: %v", nodeDef, err)
 		return false
 	}
 
@@ -361,13 +357,13 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 		return nil, fmt.Errorf("nodeDef unavailable")
 	}
 
-	hostPortURL := "http://" + nodeDef.HostPort
+	hostPortUrl := "http://" + nodeDef.HostPort
 	if cbgt.GetSecuritySetting().EncryptionEnabled {
 		if u, err := nodeDef.HttpsURL(); err == nil {
-			hostPortURL = u
+			hostPortUrl = u
 		}
 	}
-	url := hostPortURL + "/api/nsstats"
+	url := hostPortUrl + "/api/nsstats"
 
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
@@ -385,7 +381,7 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("limit: error getting /nsstats for node %s, status code: %v",
+		return nil, fmt.Errorf("GET /api/nsstats for node %s, status code: %v",
 			nodeDef.UUID, resp.StatusCode)
 	}
 
