@@ -37,8 +37,13 @@
             ng-change="queryChanged()"
             type="text"
             placeholder="search again...">
-        <button ng-click="runNewQuery(query)">
-          Search
+        <button class="icon"
+                ng-click="runNewQuery(query)">
+          <span class="icon fa-search"
+                uib-tooltip="Search index"
+                tooltip-trigger="mouseenter"
+                tooltip-append-to-body="true">
+          </span>
         </button>
       </div>
       <div>
@@ -55,10 +60,9 @@
   </form>
 
   <!-- second row help link **************** -->
-  <div
-      class="query-bar-help"
-      ng-if="queryHelp && queryHelp.length"
-      ng-bind-html="queryHelpSafe">
+  <div class="query-bar-help text-smaller"
+       ng-if="queryHelp && queryHelp.length"
+       ng-bind-html="queryHelpSafe">
   </div>
 
   <!-- hidden advanced query settings **************** -->
