@@ -766,13 +766,54 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             return
         }
 
-        $http.put('/api/index/' + indexName, rv.indexDef).
-        then(function(response) {
-            $location.path('/indexes/' + indexName);
-        }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
-            $scope.errorMessageFull = response.data;
-        });
+        function introduceTraditionalIndex() {
+            $http.put('/api/index/' + indexName, rv.indexDef).
+                then(function(response) {
+                    $location.path('/indexes/' + indexName);
+                }, function(response) {
+                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessageFull = response.data;
+                });
+        }
+
+        if ($scope.scopedIndexesSupport === true && rv.indexDef.uuid.length == 0) {
+            // Applicable to CREATEs ONLY
+            if (indexType == "fulltext-index" &&
+                angular.isDefined(rv.indexDef.params) &&
+                angular.isDefined(rv.indexDef.params.doc_config) &&
+                angular.isDefined(rv.indexDef.params.mapping)) {
+                var scopeName = $scope.getScopeForIndex(rv.indexDef.params.doc_config.mode, rv.indexDef.params.mapping);
+                $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
+                    then(function(response) {
+                        $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                    }, function(response) {
+                        $scope.errorMessage = errorMessage(response.data, response.code);
+                        $scope.errorMessageFull = response.data;
+                    });
+            } else if (indexType == "fulltext-alias" &&
+                angular.isDefined(rv.indexDef.params) &&
+                angular.isDefined(rv.indexDef.params.targets)) {
+                var bucketDotScope = $scope.getBucketScopeForAlias(rv.indexDef.params.targets);
+                var dotPos = bucketDotScope.lastIndexOf(".");
+                if (dotPos > 0) {
+                    let sourceName = bucketDotScope.substring(0, dotPos);
+                    let scopeName = bucketDotScope.substring(dotPos + 1, bucketDotScope.length);
+                    $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
+                        then(function(response) {
+                            $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                        }, function(response) {
+                            $scope.errorMessage = errorMessage(response.data, response.code);
+                            $scope.errorMessageFull = response.data;
+                        });
+                } else {
+                    introduceTraditionalIndex();
+                }
+            } else {
+                introduceTraditionalIndex();
+            }
+        } else {
+            introduceTraditionalIndex();
+        }
     };
 
     $scope.labelize = function(s) {

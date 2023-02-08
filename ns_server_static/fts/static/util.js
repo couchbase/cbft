@@ -91,6 +91,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         $scope.numReplicas = $scope.replicaOptions[0];
         $scope.numPIndexes = 0;
         $scope.collectionsSupport = false;
+        $scope.scopedIndexesSupport = false;
         $http.get('/api/conciseOptions').
         then(function(response) {
             var maxReplicasAllowed = parseInt(response.data.maxReplicasAllowed);
@@ -100,6 +101,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             }
 
             $scope.collectionsSupport = response.data.collectionsSupport;
+            $scope.scopedIndexesSupport = response.data.scopedIndexesSupport;
 
             if (response.data.bucketTypesAllowed != "") {
                 var bucketTypesAllowed = response.data.bucketTypesAllowed.split(":");
@@ -226,7 +228,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     var done = false;
     var previewPrev = "";
 
-    function getScopeName(docConfigMode, mapping) {
+    $scope.getScopeForIndex = function(docConfigMode, mapping) {
         if (docConfigMode.startsWith("scope.collection.")) {
             if (mapping.default_mapping.enabled) {
                 return "_default";
@@ -241,6 +243,24 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             return "";
         }
         return "_default";
+    }
+
+    $scope.getBucketScopeForAlias = function(targets) {
+        var rv = "";
+        for (let k in targets) {
+            let pos = k.lastIndexOf(".");
+            if (pos > 0) {
+                var bucketDotScope = k.substring(0, pos);
+                if (rv == "") {
+                    rv = bucketDotScope;
+                } else if (rv != bucketDotScope) {
+                    return "";
+                }
+            } else {
+                return "";
+            }
+        }
+        return rv;
     }
 
     function updatePreview() {
@@ -295,8 +315,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     angular.isDefined(rv.indexDef.params.doc_config) &&
                     angular.isDefined(rv.indexDef.params.mapping)) {
                     if (rv.indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
-                        let scopeName = getScopeName(rv.indexDef.params.doc_config.mode,
-                            rv.indexDef.params.mapping);
+                        let scopeName = $scope.getScopeForIndex(rv.indexDef.params.doc_config.mode, rv.indexDef.params.mapping);
                         if (scopeName.length > 0 && scopeName != $scope.newScopeName) {
                             $scope.errorMessage =
                                 "scope selected `" + $scope.newScopeName + "`, mappings use `" + scopeName + "`";

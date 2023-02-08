@@ -186,6 +186,11 @@ func (h *ConciseOptions) ServeHTTP(
 		}
 	}
 
+	var scopedIndexesSupport bool
+	if isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+		scopedIndexesSupport = true
+	}
+
 	rv := struct {
 		Status               string `json:"status"`
 		MaxReplicasAllowed   int    `json:"maxReplicasAllowed"`
@@ -194,6 +199,7 @@ func (h *ConciseOptions) ServeHTTP(
 		BleveMaxResultWindow int    `json:"bleveMaxResultWindow"`
 		BleveMaxClauseCount  int    `json:"bleveMaxClauseCount"`
 		DeploymentModel      string `json:"deploymentModel,omitempty"`
+		ScopedIndexesSupport bool   `json:"scopedIndexesSupport"`
 	}{
 		Status:               "ok",
 		MaxReplicasAllowed:   maxReplicasAllowed,
@@ -202,6 +208,7 @@ func (h *ConciseOptions) ServeHTTP(
 		BleveMaxResultWindow: bleveMaxResultWindow,
 		BleveMaxClauseCount:  bleveMaxClauseCount,
 		DeploymentModel:      deploymentModel,
+		ScopedIndexesSupport: scopedIndexesSupport,
 	}
 	rest.MustEncode(w, rv)
 }
