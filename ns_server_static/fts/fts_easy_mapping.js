@@ -324,6 +324,9 @@ function newEasyMapping() {
     var rebuildDynamicness = function(indexMapping) {
         if (indexMapping.dynamic) {
             let analyzer = indexMapping.default_analyzer;
+            if (!angular.isDefined(analyzer)) {
+                analyzer = "standard";
+            }
             let obj = {
                 analyzer: analyzer,
                 name: "(dynamic - " + analyzer + ")",
@@ -433,10 +436,12 @@ function newEasyMapping() {
         dynamicAnalyzer: function() {
             if (angular.isDefined(mapping["*dynamic*"])) {
                 let rv = mapping["*dynamic*"].analyzer;
-                if (rv.length == 0) {
-                    rv = "standard"
+                if (angular.isDefined(rv)) {
+                    if (rv.length == 0) {
+                        rv = "standard"
+                    }
+                    return rv;
                 }
-                return rv;
             }
             return "";
         },

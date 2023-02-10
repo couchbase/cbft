@@ -86,8 +86,8 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 			// undecorated targets exist, ensure that the index def name is NOT decorated
 			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
 			if len(bucketName) > 0 && len(scopeName) > 0 {
-				return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
-					" include unscoped index targets");
+				return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT" +
+					" include unscoped index targets")
 			}
 			return indexDef, nil
 		}
