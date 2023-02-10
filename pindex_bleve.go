@@ -567,6 +567,14 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					}
 				}
 			}
+		} else {
+			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+			if len(bucketName) > 0 && len(scopeName) > 0 {
+				if bucketName != indexDef.SourceName || scopeName != "_default" {
+					return nil, fmt.Errorf("PrepareIndex, validation of bucket" +
+						" and/or scope names against index definition failed")
+				}
+			}
 		}
 	}
 
@@ -875,6 +883,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}, nil
 }
 
+// To be called ONLY when docConfig.Mode has "scope.collection" prefix
 func initMetaFieldValCache(indexName, sourceName string,
 	im *mapping.IndexMappingImpl) map[uint32]*collMetaField {
 	if im == nil {
