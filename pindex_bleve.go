@@ -937,14 +937,15 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 	}
 
 	kvConfig := map[string]interface{}{
-		"create_if_missing":      true,
-		"error_if_exists":        true,
-		"unsafe_batch":           true,
-		"eventCallbackName":      "scorchEventCallbacks",
-		"asyncErrorCallbackName": "scorchAsyncErrorCallbacks",
-		"numSnapshotsToKeep":     3,
-		"forceSegmentType":       "zap",
-		"bolt_timeout":           "30s",
+		"create_if_missing":        true,
+		"error_if_exists":          true,
+		"unsafe_batch":             true,
+		"eventCallbackName":        "scorchEventCallbacks",
+		"asyncErrorCallbackName":   "scorchAsyncErrorCallbacks",
+		"numSnapshotsToKeep":       3,
+		"rollbackSamplingInterval": "10m",
+		"forceSegmentType":         "zap",
+		"bolt_timeout":             "30s",
 	}
 	for k, v := range bleveParams.Store {
 		if k == "segmentVersion" {
@@ -2043,7 +2044,6 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateBeg, 1)
 
 	t.m.Lock()
-
 	if t.batch == nil {
 		t.m.Unlock()
 		atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)

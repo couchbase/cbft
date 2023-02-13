@@ -54,10 +54,8 @@ github.com/bits-and-blooms/bitset v1.2.2 h1:J5gbX05GpMdBjCvQ9MteIg2KKDExr7DrgK+Y
 github.com/bits-and-blooms/bitset v1.2.2/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=
 github.com/blevesearch/bleve-mapping-ui v0.5.1 h1:cug++UhuXcwrSZlt55P76YdvDG3Ez28qfqSXpkm78Xg=
 github.com/blevesearch/bleve-mapping-ui v0.5.1/go.mod h1:Agu2zDUz33czsCSzm5pbI5qvdiOoU+I0NBq88BS1J1g=
-github.com/blevesearch/bleve/v2 v2.3.7-0.20230125233038-b43d98406224 h1:Q2FbYGIW0VwagiFTKt1IiYrBNvazU0zNKNE6kbuMaNc=
-github.com/blevesearch/bleve/v2 v2.3.7-0.20230125233038-b43d98406224/go.mod h1:5ELIwhdOHFVCwBGOr3W8UKHxE38hTMc5X8vlNvvFIUU=
-github.com/blevesearch/bleve/v2 v2.3.7-0.20230221173335-9c16559e8bc9 h1:XyKfUHl3jCsfrJyh42Q3kqJHgrGHX94CpTOYKV++sAE=
-github.com/blevesearch/bleve/v2 v2.3.7-0.20230221173335-9c16559e8bc9/go.mod h1:yzAqXJiaNNcLx0aFiZl1SI+0/6rMuu3gCEPMoMGTj4M=
+github.com/blevesearch/bleve/v2 v2.3.7-0.20230302173430-51444f000080 h1:AlUmGCrYmtR2bje/OPllvzn+YqiWnVKeekS645g1SY8=
+github.com/blevesearch/bleve/v2 v2.3.7-0.20230302173430-51444f000080/go.mod h1:iBnLLAKRXOUFIhxnxz0fEpKAdCZqeRz7AdLph3Phw68=
 github.com/blevesearch/bleve_index_api v1.0.5 h1:Lc986kpC4Z0/n1g3gg8ul7H+lxgOQPcXb9SxvQGu+tw=
 github.com/blevesearch/bleve_index_api v1.0.5/go.mod h1:YXMDwaXFFXwncRS8UobWs7nvo0DmusriM1nztTlj1ms=
 github.com/blevesearch/geo v0.1.17 h1:AguzI6/5mHXapzB0gE9IKWo+wWPHZmXZoscHcjFgAFA=
@@ -89,8 +87,6 @@ github.com/blevesearch/zapx/v13 v13.3.7 h1:igIQg5eKmjw168I7av0Vtwedf7kHnQro/M+ub
 github.com/blevesearch/zapx/v13 v13.3.7/go.mod h1:yyrB4kJ0OT75UPZwT/zS+Ru0/jYKorCOOSY5dBzAy+s=
 github.com/blevesearch/zapx/v14 v14.3.7 h1:gfe+fbWslDWP/evHLtp/GOvmNM3sw1BbqD7LhycBX20=
 github.com/blevesearch/zapx/v14 v14.3.7/go.mod h1:9J/RbOkqZ1KSjmkOes03AkETX7hrXT0sFMpWH4ewC4w=
-github.com/blevesearch/zapx/v15 v15.3.8 h1:q4uMngBHzL1IIhRc8AJUEkj6dGOE3u1l3phLu7hq8uk=
-github.com/blevesearch/zapx/v15 v15.3.8/go.mod h1:m7Y6m8soYUvS7MjN9eKlz1xrLCcmqfFadmu7GhWIrLY=
 github.com/blevesearch/zapx/v15 v15.3.9 h1:/s9zqKxFaZKQTTcMO2b/Tup0ch5MSztlvw+frVDfIBk=
 github.com/blevesearch/zapx/v15 v15.3.9/go.mod h1:m7Y6m8soYUvS7MjN9eKlz1xrLCcmqfFadmu7GhWIrLY=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
