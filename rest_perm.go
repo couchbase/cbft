@@ -15,14 +15,28 @@ var restPerms = `
 GET /api/index
 cluster.bucket{}.fts!read
 
+GET /api/bucket/{bucketName}/scope/{scopeName}/index
+cluster.bucket{}.fts!read
+
 GET /api/index/{indexName}
+cluster.collection[<sourceName>].fts!read
+
+GET /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}
 cluster.collection[<sourceName>].fts!read
 
 PUT /api/index/{indexName}
 cluster.collection[<sourceName>].fts!write
 24577
 
+PUT /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}
+cluster.collection[<sourceName>].fts!write
+24577
+
 DELETE /api/index/{indexName}
+cluster.collection[<sourceName>].fts!write
+24576
+
+DELETE /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}
 cluster.collection[<sourceName>].fts!write
 24576
 
@@ -60,6 +74,9 @@ GET /api/index/{indexName}/count
 cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/query
+cluster.collection[<sourceName>].fts!read
+
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query
 cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/analyzeDoc
