@@ -27,6 +27,23 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 
 	cbft.ServerlessMode = true
 
+	// serverless index and partition limits
+	cbft.IndexLimitPerSource = 20
+	cbft.ActivePartitionLimit = 1
+	cbft.ReplicaPartitionLimit = 1
+
+	// re-configure index and query quota fractions to better match the low/high watermarks
+	defaultFTSMemIndexingFraction = 0.70
+	defaultFTSMemQueryingFraction = 0.80
+
+	// raise gocbcore DCP agent share limit per source to 10; meaning 10
+	// partitions residing on the same node can share a single DCP agent.
+	//
+	// This number is chosen to ideally* be able to limit a user to the
+	// use of 4 DCP agents if they've deployed 20 indexes (maximum) for
+	// their bucket - which would deploy 20 active + 20 replica partitions.
+	options["maxFeedsPerDCPAgent"] = "10"
+
 	// enable partition node stickiness, to disable default node
 	// weight normalisation
 	options["enablePartitionNodeStickiness"] = "true"
@@ -88,8 +105,8 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 
 // -----------------------------------------------------------------------------
 
-const defaultHighWaterMark = "0.8"
-const defaultLowWaterMark = "0.5"
+const defaultHighWaterMark = "0.9"
+const defaultLowWaterMark = "0.75"
 const defaultUnderUtilizationWaterMark = "0.3"
 
 const minNodeWeight = -100000

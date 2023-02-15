@@ -201,15 +201,12 @@ func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 	return indexDef, nil
 }
 
-const serverlessActivePartitionLimit = 1
-const serverlessReplicaPartitionLimit = 1
-
 // limitIndexDefInServerlessMode to be invoked ONLY when deploymentModel is
 // "serverless".
 func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
-	if indexDef.PlanParams.IndexPartitions != serverlessActivePartitionLimit ||
-		indexDef.PlanParams.NumReplicas != serverlessReplicaPartitionLimit {
+	if indexDef.PlanParams.IndexPartitions != ActivePartitionLimit ||
+		indexDef.PlanParams.NumReplicas != ReplicaPartitionLimit {
 		return nil, fmt.Errorf("limitIndexDef: support for indexes with" +
 			" 1 active + 1 replica partitions only in serverless mode")
 	}
@@ -227,7 +224,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				delete(nodeDefs.NodeDefs, nodeUUID)
 			}
 
-			if len(nodeDefs.NodeDefs) < (serverlessReplicaPartitionLimit + 1) {
+			if len(nodeDefs.NodeDefs) < (ReplicaPartitionLimit + 1) {
 				// at least 2 nodes with usage below HWM needed to allow this index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 					" index request: %v, resource utilization over limit(s)", indexDef.Name)
@@ -239,7 +236,7 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				serverGroups[nodeDef.Container] = struct{}{}
 			}
 
-			if len(serverGroups) < (serverlessReplicaPartitionLimit + 1) {
+			if len(serverGroups) < (ReplicaPartitionLimit + 1) {
 				// nodes from at least 2 server groups needed to allow index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 					" index request: %v, at least 2 nodes in separate server groups"+
@@ -479,6 +476,10 @@ func (e *rateLimiter) reset() {
 
 var ServerlessMode bool
 
+var IndexLimitPerSource = math.MaxInt
+var ActivePartitionLimit = math.MaxInt
+var ReplicaPartitionLimit = 3
+
 type CheckResult uint
 
 const (
@@ -497,10 +498,10 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 		return CheckResultError, fmt.Errorf("failed to retrieve index defs")
 	}
 
-	maxIndexCountPerSource := 20
-	v, found := cbgt.ParseOptionsInt(e.mgr.Options(), "maxIndexCountPerSource")
-	if found {
-		maxIndexCountPerSource = v
+	maxIndexCountPerSource, found :=
+		cbgt.ParseOptionsInt(e.mgr.Options(), "maxIndexCountPerSource")
+	if !found {
+		maxIndexCountPerSource = IndexLimitPerSource
 	}
 
 	indexCount := 0

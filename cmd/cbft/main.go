@@ -325,6 +325,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return nil, fmt.Errorf("error: server URL required (-server)")
 	}
 
+	if options == nil {
+		options = map[string]string{}
+	}
+
 	// register remote http/gRPC clients for cbauth security notifications
 	cbft.RegisterRemoteClientsForSecurity()
 
@@ -370,6 +374,14 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if err = cbft.InitSystemStats(); err != nil {
 		return nil, err
 	}
+
+	// Force OSO Backfills for ingest while using the gocbcore sourceType
+	options["useOSOBackfill"] = "true"
+
+	// Set DCP connection sharing for gocbcore feeds to 6
+	options["maxFeedsPerDCPAgent"] = "6"
+
+	options = registerServerlessHooks(options)
 
 	if err = initMemOptions(options); err != nil {
 		return nil, err
@@ -484,14 +496,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 				"memStatsLoggingInterval: %v", options["memStatsLoggingInterval"])
 		}
 	}
-
-	// Force OSO Backfills for ingest while using the gocbcore sourceType
-	options["useOSOBackfill"] = "true"
-
-	// Set DCP connection sharing for gocbcore feeds to 6
-	options["maxFeedsPerDCPAgent"] = "6"
-
-	options = registerServerlessHooks(options)
 
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
