@@ -169,6 +169,14 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
     $scope.statsRefresh = null;
     $scope.warnings = null;
 
+    $scope.dropDotsInIndexName = function(indexName) {
+        // necessary because "." is an illegal element for clipboard actions.
+        try {
+          return indexName.replaceAll(".", "");
+        } catch (e) {}
+        return indexName;
+    };
+
     $scope.tab = $routeParams.tabName;
     if ($scope.tab === undefined || $scope.tab === "") {
         $scope.tab = "summary";

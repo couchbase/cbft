@@ -208,11 +208,11 @@
                 <div
                     ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
                     class="row items-top json-content">
-                  <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
+                  <pre id="indexDefStr_details-{{dropDotsInIndexName(indexName)}}">{{indexDefStr}}</pre>
                   <button
-                      class="outline"
-                      ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
-                    Copy to Clipboard
+                      class="outline copy-to-clipboard"
+                      ngclipboard data-clipboard-target="#indexDefStr_details-{{dropDotsInIndexName(indexName)}}">
+                      Copy to Clipboard
                   </button>
                 </div>
 
@@ -220,12 +220,12 @@
                 <div
                     ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                     class="json-content row items-top">
-                  <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
+                  <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">curl -XPUT -H "Content-Type: application/json" \
 -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
 '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                   <button
                       class="outline copy-to-clipboard"
-                      ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                      ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
                     Copy to Clipboard
                   </button>
                 </div>
@@ -390,10 +390,10 @@
                   <div
                       ng-show="showJSON[indexName] && !showJSONCurl[indexName]"
                       class="json-content row items-top">
-                    <pre id="indexDefStr_details-{{indexName}}">{{indexDefStr}}</pre>
+                    <pre id="indexDefStr_details-{{dropDotsInIndexName(indexName)}}">{{indexDefStr}}</pre>
                     <button
                         class="outline copy-to-clipboard"
-                        ngclipboard data-clipboard-target="#indexDefStr_details-{{indexName}}">
+                        ngclipboard data-clipboard-target="#indexDefStr_details-{{dropDotsInIndexName(indexName)}}">
                       Copy to Clipboard
                     </button>
                   </div>
@@ -402,12 +402,12 @@
                   <div
                       ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                       class="json-content row items-top">
-                    <pre id="indexDefStr_details_curl-{{indexName}}">curl -XPUT -H "Content-Type: application/json" \
+                    <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">curl -XPUT -H "Content-Type: application/json" \
   -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
   '{{escapeCmdLineParam(indexDefStr)}}'</pre>
                     <button
                         class="outline copy-to-clipboard"
-                        ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{indexName}}">
+                        ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
                       Copy to Clipboard
                     </button>
                   </div>
