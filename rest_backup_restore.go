@@ -261,8 +261,11 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 						scopeName = scope.Name
 					}
 
-					indexDef.Name = decorateIndexNameWithKeySpace(
+					indexDef.Name, err = decorateIndexNameWithKeySpace(
 						indexDef.SourceName, scopeName, indexDef.Name)
+					if err != nil {
+						return nil, fmt.Errorf("rest_backup_restore: err: %v", err)
+					}
 				}
 			} else {
 				if bname, ok := mappingRules[indexDef.SourceName]; ok {
@@ -280,6 +283,31 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 	}
 
 	return rv, nil
+}
+
+// decorateIndexNameWithKeySpace updates the indexname
+// by prefixing the $bucketName.$scopeName keyspace.
+func decorateIndexNameWithKeySpace(sourceName, scopeName,
+	indexName string) (string, error) {
+	sourceName = sourceName + "."
+	scopeName = scopeName + "."
+	// note: '.' is a valid character only for bucket name;
+	// if the index name was already decorated - then the "undecorated"
+	// index name starts after the last '.';
+	// if strings.LastIndex returns -1 then the name was undecorated already
+	undecoratedIndexName := indexName[strings.LastIndex(indexName, ".")+1:]
+	if len(undecoratedIndexName) == 0 {
+		// bad index name, trailing "."
+		return "", fmt.Errorf("invalid index name: %s", indexName)
+	}
+
+	if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+		// no name decoration for a partially upgraded cluster
+		return undecoratedIndexName, nil
+	}
+
+	// re-decorate index name
+	return sourceName + scopeName + undecoratedIndexName, nil
 }
 
 func remapTypeMappings(typeMappings map[string]*mapping.DocumentMapping,

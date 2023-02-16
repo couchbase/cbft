@@ -438,7 +438,7 @@ func TestRemapIndexDefinions(t *testing.T) {
 			mappingRules: map[string]string{
 				"travel-sample.inventory": "beer-sample.brewery",
 			},
-			resIndexName:    "DemoIndex",
+			resIndexName:    "beer-sample.brewery.DemoIndex",
 			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
 			testDescription: "remap an index defn with both bucket and scope name remapped",
 		},
@@ -472,17 +472,19 @@ func TestRemapIndexDefinions(t *testing.T) {
 		var indexDefs cbgt.IndexDefs
 		err := json.Unmarshal(test.indexDefBytes, &indexDefs)
 		if err != nil {
-			t.Errorf("test %d, json err: %v", i, err)
+			t.Fatalf("test %d, json err: %v", i, err)
 		}
 
 		resIndexDefs, err := remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
 		if err != nil {
 			t.Errorf("test %d, remapIndexDefinitions failed, err: %v", i, err)
+			continue
 		}
 
 		if len(resIndexDefs.IndexDefs) != 1 {
 			t.Errorf("test %d remapIndexDefinitions, multiple index defns found: %+v",
 				i, resIndexDefs.IndexDefs)
+			continue
 		}
 
 		var res *cbgt.IndexDef
@@ -490,6 +492,7 @@ func TestRemapIndexDefinions(t *testing.T) {
 		if res, found = resIndexDefs.IndexDefs[test.resIndexName]; !found {
 			t.Errorf("test %d remapIndexDefinitions, no index defn found for: %s, %+v",
 				i, test.resIndexName, resIndexDefs.IndexDefs)
+			continue
 		}
 
 		for _, mappingName := range test.resMappings {

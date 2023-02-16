@@ -340,30 +340,6 @@ func multiCollection(colls []Collection) bool {
 	return len(hash) > 1
 }
 
-// decorateIndexNameWithKeySpace updates the indexname
-// by prefixing the $bucketName.$scopeName keyspace.
-func decorateIndexNameWithKeySpace(sourceName, scopeName,
-	indexName string) string {
-	// No name decoration for a partially upgraded cluster
-	if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-		return indexName
-	}
-
-	// '.' is a valid character only for bucket name.
-	sourceName = sourceName + "."
-	scopeName = scopeName + "."
-
-	// check whether the name is already decorated or not.
-	pos := strings.LastIndex(indexName, ".")
-	if pos < 0 {
-		// no decoration during the restore paths.
-		return indexName
-	}
-
-	// decorated index name.
-	return sourceName + scopeName + indexName[pos+1:]
-}
-
 // getKeyspaceFromScopedIndexName gets the bucket and
 // scope names from an index name if available
 func getKeyspaceFromScopedIndexName(indexName string) (string, string) {
