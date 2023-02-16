@@ -15,7 +15,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,8 +27,24 @@ import (
 
 const bytesPerMB = 1048576
 const windowLength = 1 * time.Minute
-const indexPath = "/api/index/{indexName}"
-const queryPath = "/api/index/{indexName}/query"
+
+var indexPaths = map[string]bool{
+	"/api/index/{indexName}": true,
+	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}": true,
+}
+
+var queryPaths = map[string]bool{
+	"/api/index/{indexName}/query":                                       true,
+	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query": true,
+}
+
+func isIndexPath(path string) bool {
+	return indexPaths[path]
+}
+
+func isQueryPath(path string) bool {
+	return queryPaths[path]
+}
 
 // -----------------------------------------------------------------------------
 
@@ -69,7 +84,7 @@ func SubscribeToLimits(mgr *cbgt.Manager) {
 // Pre-processing for a request
 func processRequest(username, path string, req *http.Request) (bool, string) {
 	if ServerlessMode {
-		if path != indexPath && path != queryPath {
+		if !isIndexPath(path) && !isQueryPath(path) {
 			return true, ""
 		}
 		return limiter.processRequestForLimiting(username, path, req)
@@ -80,10 +95,9 @@ func processRequest(username, path string, req *http.Request) (bool, string) {
 		return true, ""
 	}
 
-	// evaluate requests at endpoints ..
-	//     index creation/update/deletion: /api/index/{indexName}
-	//     search request:                 /api/index/{indexName}/query
-	if path != indexPath && path != queryPath {
+	// evaluate requests at index create/update/delete endpoints
+	// and search request endpoints
+	if !isIndexPath(path) && !isQueryPath(path) {
 		return true, ""
 	}
 
@@ -97,10 +111,9 @@ func completeRequest(username, path string, req *http.Request, egress int64) {
 		return
 	}
 
-	// evaluate request completion at endpoints ..
-	//     index creation/update/deletion: /api/index/{indexName}
-	//     search request:                 /api/index/{indexName}/query
-	if path != indexPath && path != queryPath {
+	// evaluate request completion at index create/update/delete endpoints
+	// and search request endpoints
+	if !isIndexPath(path) && !isQueryPath(path) {
 		return
 	}
 
@@ -505,7 +518,7 @@ func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 	return CheckResultNormal, nil
 }
 
-func obtainIndexDefFromRequest(req *http.Request) (*cbgt.IndexDef, error) {
+func (e *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.IndexDef, error) {
 	requestBody, err := io.ReadAll(req.Body)
 	if err != nil || len(requestBody) == 0 {
 		return nil, fmt.Errorf("limiter: failed to parse the req body %v", err)
@@ -523,16 +536,26 @@ func obtainIndexDefFromRequest(req *http.Request) (*cbgt.IndexDef, error) {
 	return &indexDef, nil
 }
 
-func checkAndSplitDecoratedIndexName(indexName string) (bool, string, string, string) {
-	if strings.Contains(indexName, ".") {
-		uIndexPos := strings.LastIndex(indexName, ".")
-		userIndex := indexName[uIndexPos+1:]
-		scopeIndex := strings.LastIndex(indexName[:uIndexPos], ".")
-		bucket := indexName[:scopeIndex]
-
-		return true, bucket, indexName[scopeIndex+1 : uIndexPos], userIndex
+func (e *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) (string, error) {
+	bucket := rest.BucketNameLookup(req)
+	if len(bucket) > 0 {
+		// query request is to a scoped index
+		return bucket, nil
 	}
-	return false, "", "", indexName
+
+	indexName := rest.IndexNameLookup(req)
+	if bucket, _ = getKeyspaceFromScopedIndexName(indexName); len(bucket) > 0 {
+		// indexName is a scoped index name
+		return bucket, nil
+	}
+
+	// else obtain bucket from index definition for index
+	indexDef, _, err := e.mgr.GetIndexDef(indexName, false)
+	if err != nil || indexDef == nil {
+		return "", fmt.Errorf("limiter: failed to retrieve index def, err: %v", err)
+	}
+
+	return indexDef.SourceName, nil
 }
 
 func (e *rateLimiter) regulateRequest(username, path string,
@@ -546,16 +569,20 @@ func (e *rateLimiter) regulateRequest(username, path string,
 		return CheckResultNormal, 0, nil
 	}
 
-	if path == queryPath {
+	if isQueryPath(path) {
 		// index names on query paths are always decorated, otherwise
 		// there is a index not found error
-		_, bucket, _, _ := checkAndSplitDecoratedIndexName(rest.IndexNameLookup(req))
+		bucket, err := e.obtainIndexSourceForQueryRequest(req)
+		if err != nil {
+			return CheckResultError, 0, fmt.Errorf("failed to get index "+
+				"source for request %v", err)
+		}
 		return CheckQuotaRead(bucket, username, req)
 	}
 
 	// using the indexDef of the request to obtain the necessary info,
 	// given that it is the only reliable source
-	indexDef, err := obtainIndexDefFromRequest(req)
+	indexDef, err := e.obtainIndexDefFromIndexRequest(req)
 	if err != nil {
 		return CheckResultError, 0, fmt.Errorf("failed to get index "+
 			"info from request %v", err)
@@ -611,7 +638,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 	e.m.Lock()
 	defer e.m.Unlock()
 
-	if path == indexPath {
+	if isIndexPath(path) {
 		// Refresh the indexCache of the rateLimiter at this point,
 		// to track updates that have been received at other nodes.
 		//
@@ -639,7 +666,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 
 		if now.Sub(entry.stamp) < windowLength {
 			maxQueriesPerMin, _ := limits["num_queries_per_min"]
-			if path == queryPath && maxQueriesPerMin > 0 &&
+			if isQueryPath(path) && maxQueriesPerMin > 0 &&
 				entry.countSinceStamp >= maxQueriesPerMin {
 				// reject, surpassed the queries per minute limit
 				return false, fmt.Sprintf("num_queries_per_min: %v, limit: %v",
@@ -670,7 +697,7 @@ func (e *rateLimiter) processRequest(username, path string, req *http.Request) (
 	}
 
 	entry.live++
-	if path == queryPath {
+	if isQueryPath(path) {
 		entry.countSinceStamp++
 	}
 	entry.ingressBytesSinceStamp += ingress
@@ -682,7 +709,7 @@ func (e *rateLimiter) completeRequest(username, path string, req *http.Request, 
 	e.m.Lock()
 	defer e.m.Unlock()
 
-	if path == indexPath {
+	if isIndexPath(path) {
 		// post-processing for INDEX requests
 		e.completeIndexRequestLOCKED(req)
 	}
