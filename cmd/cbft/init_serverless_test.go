@@ -31,7 +31,7 @@ func Test_serverlessPlannerHook_addIndex(t *testing.T) {
 	// End: 4 Nodes, 4 Index defs to be executed (same source)
 	input := cbgt.PlannerHookInfo{
 		PlannerHookPhase: "indexDef.split",
-		PlanPIndexesPrev: &cbgt.PlanPIndexes{
+		ExistingPlans: &cbgt.PlanPIndexes{
 			PlanPIndexes: map[string]*cbgt.PlanPIndex{
 				"one_12345": &cbgt.PlanPIndex{
 					IndexName:  "one",
@@ -73,6 +73,23 @@ func Test_serverlessPlannerHook_addIndex(t *testing.T) {
 					},
 				},
 			},
+		},
+		NumPlanPIndexes: 3,
+		NodeSourceReplicas: map[string]int{
+			"n_0:x": 1,
+			"n_1:x": 2,
+		},
+		NodeSourceActives: map[string]int{
+			"n_0:x": 2,
+			"n_1:x": 1,
+		},
+		NodeTotalActives: map[string]int{
+			"n_0": 2,
+			"n_1": 1,
+		},
+		NodePartitionCount: map[string]int{
+			"n_0": 3,
+			"n_1": 3,
 		},
 		NodeDefs: &cbgt.NodeDefs{
 			NodeDefs: map[string]*cbgt.NodeDef{
@@ -130,11 +147,228 @@ func Test_serverlessPlannerHook_addIndex(t *testing.T) {
 		t.Fatalf("skip: %v, err: %v", skip, err)
 	}
 
-	if output.NodeWeights["n_0"] < output.NodeWeights["n_2"] ||
-		output.NodeWeights["n_0"] < output.NodeWeights["n_3"] ||
-		output.NodeWeights["n_1"] < output.NodeWeights["n_2"] ||
-		output.NodeWeights["n_1"] < output.NodeWeights["n_3"] {
-		t.Fatalf("Expect node weights of n_0 and n_1 to be higher for index `four`")
+	// Attempt to populate emptier nodes since the other nodes have existing partitions.
+	if output.NodeWeights["n_2"] < output.NodeWeights["n_0"] ||
+		output.NodeWeights["n_2"] < output.NodeWeights["n_1"] ||
+		output.NodeWeights["n_3"] < output.NodeWeights["n_0"] ||
+		output.NodeWeights["n_3"] < output.NodeWeights["n_1"] {
+		t.Fatalf("Expect node weights of n_2 and n_3 to be higher for index `four`")
+	}
+}
+
+// Test where an index is introduced into a 2-node cluster, one of which already
+// has an active of the same source.
+func Test_serverlessPlannerHook_addIndex2(t *testing.T) {
+	prevCanNodeAccommodateRequest := cbft.CanNodeAccommodateRequest
+	cbft.CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
+		return true
+	}
+	defer func() {
+		cbft.CanNodeAccommodateRequest = prevCanNodeAccommodateRequest
+	}()
+
+	input := cbgt.PlannerHookInfo{
+		PlannerHookPhase: "indexDef.split",
+		ExistingPlans: &cbgt.PlanPIndexes{
+			PlanPIndexes: map[string]*cbgt.PlanPIndex{
+				"one_12345": &cbgt.PlanPIndex{
+					IndexName:  "one",
+					IndexUUID:  "1",
+					SourceName: "x",
+					Nodes: map[string]*cbgt.PlanPIndexNode{
+						"n_0": &cbgt.PlanPIndexNode{
+							Priority: 0,
+						},
+						"n_1": &cbgt.PlanPIndexNode{
+							Priority: 1,
+						},
+					},
+				},
+				"two_12345": &cbgt.PlanPIndex{
+					IndexName:  "two",
+					IndexUUID:  "2",
+					SourceName: "y",
+					Nodes: map[string]*cbgt.PlanPIndexNode{
+						"n_0": &cbgt.PlanPIndexNode{
+							Priority: 1,
+						},
+						"n_1": &cbgt.PlanPIndexNode{
+							Priority: 0,
+						},
+					},
+				},
+			},
+		},
+		NodeDefs: &cbgt.NodeDefs{
+			NodeDefs: map[string]*cbgt.NodeDef{
+				"n_0": &cbgt.NodeDef{
+					UUID:      "n_0",
+					Container: "group1",
+				},
+				"n_1": &cbgt.NodeDef{
+					UUID:      "n_1",
+					Container: "group2",
+				},
+			},
+		},
+		IndexDefs: &cbgt.IndexDefs{
+			IndexDefs: map[string]*cbgt.IndexDef{
+				"one": &cbgt.IndexDef{
+					Name:       "one",
+					UUID:       "1",
+					SourceName: "x",
+				},
+				"two": &cbgt.IndexDef{
+					Name:       "two",
+					UUID:       "2",
+					SourceName: "y",
+				},
+			},
+		},
+		IndexDef: &cbgt.IndexDef{
+			Name:       "three",
+			UUID:       "3",
+			SourceName: "x",
+		},
+	}
+
+	output, skip, err := serverlessPlannerHook(input)
+	if err != nil || skip {
+		t.Fatalf("skip: %v, err: %v", skip, err)
+	}
+
+	// The active for index "three" should be introduced on n_0 since
+	// it has lesser actives of the same source.
+	if output.NodeWeights["n_0"] < output.NodeWeights["n_1"] {
+		t.Fatalf("Expect node weight of n_0 to be higher than that of n_1")
+	}
+}
+
+// Test to determine active and replica placement in a 2 node
+// cluster which has existing partitions from different sources.
+// n_0 -> active of x, replicas of y and a
+// n_1 -> active of y and a, replica of x
+// Introducing index of source z should position partitions in
+// such a way that there are equal partitions on all nodes after planning.
+func Test_serverlessPlannerHook_addInde_differentSource(t *testing.T) {
+	prevCanNodeAccommodateRequest := cbft.CanNodeAccommodateRequest
+	cbft.CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
+		return true
+	}
+	defer func() {
+		cbft.CanNodeAccommodateRequest = prevCanNodeAccommodateRequest
+	}()
+
+	input := cbgt.PlannerHookInfo{
+		PlannerHookPhase: "indexDef.split",
+		ExistingPlans: &cbgt.PlanPIndexes{
+			PlanPIndexes: map[string]*cbgt.PlanPIndex{
+				"one_12345": &cbgt.PlanPIndex{
+					IndexName:  "one",
+					IndexUUID:  "1",
+					SourceName: "x",
+					Nodes: map[string]*cbgt.PlanPIndexNode{
+						"n_0": &cbgt.PlanPIndexNode{
+							Priority: 0,
+						},
+						"n_1": &cbgt.PlanPIndexNode{
+							Priority: 1,
+						},
+					},
+				},
+				"two_12345": &cbgt.PlanPIndex{
+					IndexName:  "two",
+					IndexUUID:  "2",
+					SourceName: "y",
+					Nodes: map[string]*cbgt.PlanPIndexNode{
+						"n_1": &cbgt.PlanPIndexNode{
+							Priority: 0,
+						},
+						"n_0": &cbgt.PlanPIndexNode{
+							Priority: 1,
+						},
+					},
+				},
+				"four_12345": &cbgt.PlanPIndex{
+					IndexName:  "four",
+					IndexUUID:  "4",
+					SourceName: "a",
+					Nodes: map[string]*cbgt.PlanPIndexNode{
+						"n_1": &cbgt.PlanPIndexNode{
+							Priority: 0,
+						},
+						"n_0": &cbgt.PlanPIndexNode{
+							Priority: 1,
+						},
+					},
+				},
+			},
+		},
+		NodeDefs: &cbgt.NodeDefs{
+			NodeDefs: map[string]*cbgt.NodeDef{
+				"n_0": &cbgt.NodeDef{
+					UUID:      "n_0",
+					Container: "group1",
+				},
+				"n_1": &cbgt.NodeDef{
+					UUID:      "n_1",
+					Container: "group2",
+				},
+			},
+		},
+		NodeSourceReplicas: map[string]int{
+			"n_0:x": 1,
+			"n_1:y": 1,
+			"n_0:a": 1,
+		},
+		NodeSourceActives: map[string]int{
+			"n_0:x": 1,
+			"n_1:y": 1,
+			"n_1:a": 1,
+		},
+		NodeTotalActives: map[string]int{
+			"n_0": 1,
+			"n_1": 2,
+		},
+		NodePartitionCount: map[string]int{
+			"n_0": 3,
+			"n_1": 3,
+		},
+		NumPlanPIndexes: 3,
+		IndexDefs: &cbgt.IndexDefs{
+			IndexDefs: map[string]*cbgt.IndexDef{
+				"one": &cbgt.IndexDef{
+					Name:       "one",
+					UUID:       "1",
+					SourceName: "x",
+				},
+				"two": &cbgt.IndexDef{
+					Name:       "two",
+					UUID:       "2",
+					SourceName: "y",
+				},
+				"four": &cbgt.IndexDef{
+					Name:       "four",
+					UUID:       "2",
+					SourceName: "a",
+				},
+			},
+		},
+		IndexDef: &cbgt.IndexDef{
+			Name:       "three",
+			UUID:       "3",
+			SourceName: "z",
+		},
+	}
+
+	output, skip, err := serverlessPlannerHook(input)
+	if err != nil || skip {
+		t.Fatalf("skip: %v, err: %v", skip, err)
+	}
+
+	// Prefer n_0 for the active since it has fewer total actives.
+	if output.NodeWeights["n_0"] < output.NodeWeights["n_1"] {
+		t.Fatalf("Expected node weight of n_0 to be greater than that of n_1")
 	}
 }
 

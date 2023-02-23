@@ -117,8 +117,7 @@ const minNodeWeight = -100000
 // deployment model to adjust node weights and be able to group index
 // partitions belonging to the same tenant/bucket as possible.
 func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool, error) {
-	if in.PlanPIndexesPrev == nil || len(in.PlanPIndexesPrev.PlanPIndexes) == 0 ||
-		in.NodeDefs == nil || len(in.NodeDefs.NodeDefs) == 0 {
+	if in.NodeDefs == nil || len(in.NodeDefs.NodeDefs) == 0 {
 		return in, false, nil
 	}
 
@@ -145,42 +144,37 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 
 		// New index introduction, influence location for it's partitions
 
-		numPlanPIndexes := len(in.PlanPIndexesPrev.PlanPIndexes)
-		nodePartitionCount := make(map[string]int) // nodeUUID to partition count
 		nodeWeights := make(map[string]int)
 		for _, nodeDef := range in.NodeDefs.NodeDefs {
-			// Initialize to (0 - total number of existing index partitions in the system)
-			nodeWeights[nodeDef.UUID] = -(numPlanPIndexes * 4)
-			nodePartitionCount[nodeDef.UUID] = 0 // initialize
+			nodeWeights[nodeDef.UUID] = 0
 		}
 
-		nodeAssignments := make(map[string]struct{}) // nodeUUID+sourceName
-
-		for _, pindex := range in.PlanPIndexesPrev.PlanPIndexes {
-			for nodeUUID := range pindex.Nodes {
-				nodePartitionCount[nodeUUID]++
-				nodeAssignments[nodeUUID+pindex.SourceName] = struct{}{}
-			}
-		}
-
-		// Check if there're nodes out there that already hold index
-		// partitions whose source is the same as the current index definition
-		for uuid, count := range nodePartitionCount {
+		for uuid := range in.NodeDefs.NodeDefs {
 			if !cbft.CanNodeAccommodateRequest(in.NodeDefs.NodeDefs[uuid]) {
 				nodeWeights[uuid] = minNodeWeight // this node is very high on usage
 			} else {
-				// Higher the resident partition count, lower the node weight
-				if _, exists := nodeAssignments[uuid+in.IndexDef.SourceName]; exists {
-					// Increase weight to prioritize this node, which holds
-					// partitions sharing the source with the current index
-					nodeWeights[uuid] = -count
-					continue
-				}
+				// Deprioritise nodes with a large number of actives of the same source.
+				nodeWeights[uuid] += 4 * (4*in.NumPlanPIndexes - in.NodeSourceActives[uuid+":"+in.IndexDef.SourceName])
 
-				// No node available with index partitions sharing the same source with
-				// the current index, so prefer a node whose partition count is lesser
-				nodeWeights[uuid] -= count
+				// Deprioritise nodes with a large number of actives of another source.
+				nodeWeights[uuid] += 3 * (4*in.NumPlanPIndexes - (in.NodeTotalActives[uuid] -
+					in.NodeSourceActives[uuid+":"+in.IndexDef.SourceName]))
+
+				// Prioritise nodes with replicas of the same source to maximise connection sharing.
+				nodeWeights[uuid] += 2 * in.NodeSourceReplicas[uuid+":"+in.IndexDef.SourceName]
+
+				nodeWeights[uuid] += (in.NumPlanPIndexes - in.NodePartitionCount[uuid])
 			}
+		}
+
+		// picking out nodes suitable for replica partitions in a decreasing
+		// order so that it's applicable even if Elixir decides to have >1 replica
+		for uuid := range in.NodeDefs.NodeDefs {
+			nodeWeights[uuid] += in.NodeSourceActives[uuid+":"+in.IndexDef.SourceName]
+
+			nodeWeights[uuid] += in.NodeSourceReplicas[uuid+":"+in.IndexDef.SourceName]
+
+			nodeWeights[uuid] += (in.NumPlanPIndexes - in.NodePartitionCount[uuid])
 		}
 
 		in.NodeWeights = nodeWeights
@@ -190,6 +184,22 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 		return in, false, nil
 
 	case "indexDef.balanced":
+		// Updating the maps here since we know which partition has been
+		// assigned to which node.
+		for name, pindex := range in.PlanPIndexesForIndex {
+			for nodeUUID, planNode := range pindex.Nodes {
+				in.NodePartitionCount[nodeUUID]++
+				if planNode.Priority == 0 {
+					in.NodeSourceActives[nodeUUID+":"+pindex.SourceName]++
+					in.NodeTotalActives[nodeUUID]++
+				} else {
+					in.NodeSourceReplicas[nodeUUID+":"+pindex.SourceName]++
+				}
+			}
+			in.ExistingPlans.PlanPIndexes[name] = pindex
+		}
+		in.NumPlanPIndexes += len(in.PlanPIndexesForIndex)
+
 		return in, false, nil
 
 	case "end":
