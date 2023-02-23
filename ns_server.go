@@ -488,12 +488,27 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	return totDestSeq, 0, nil
 }
 
+
+func getMemoryUtilization(memStats runtime.MemStats) uint64 {
+	// Memory utilization to account for:
+	// - memory alloced for the process
+	// - memory released by process back to the OS
+	// - memory freed by the process but NOT released back to the OS just yet
+	//
+	// Per https://pkg.go.dev/runtime#MemStats
+	// - Sys is the total bytes of memory obtained from the OS.
+	// - (HeapIdle-HeapReleased) estimates the amount of memory that
+	//   could be returned to the OS.
+	// - HeapReleased is bytes of physical memory returned to the OS.
+	// So our equation here should be ..
+	//   Sys - (HeapIdle - HeapReleased) - HeapReleased
+	return memStats.Sys - memStats.HeapIdle
+}
+
 func gatherTopLevelStats(rd *recentInfo) map[string]interface{} {
 	topLevelStats := map[string]interface{}{}
-	// (Sys - HeapReleased) is the estimate the cbft process can make that
-	// best represents the process RSS; this accounts for memory that has been
-	// acquired by the process and the amount that has been released back.
-	topLevelStats["num_bytes_used_ram"] = rd.memStats.Sys - rd.memStats.HeapReleased
+
+	topLevelStats["num_bytes_used_ram"] = getMemoryUtilization(rd.memStats)
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
@@ -1151,18 +1166,8 @@ func FetchCurMemoryUsed() uint64 {
 	return atomic.LoadUint64(&currentMemoryUsed)
 }
 
-func UpdateCurMemoryUsed() uint64 {
-	var memStats *runtime.MemStats
-	runtime.ReadMemStats(memStats)
-	return setCurMemoryUsedWith(memStats)
-}
-
 func setCurMemoryUsedWith(memStats *runtime.MemStats) uint64 {
-	// (Sys - HeapIdle) best represents the amount of memory that the go process
-	// is consuming at the moment that is not reusable; the go process has
-	// as idle memory component that it holds on to which can be reused;
-	// HeapIdle includes memory that is idle and the part that has been released.
-	curMemoryUsed := memStats.Sys - memStats.HeapIdle
+	curMemoryUsed := getMemoryUtilization(*memStats)
 	atomic.StoreUint64(&currentMemoryUsed, curMemoryUsed)
 	return curMemoryUsed
 }

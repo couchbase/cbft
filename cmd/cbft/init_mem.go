@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -49,6 +50,13 @@ func initMemOptions(options map[string]string) (err error) {
 		}
 		options["ftsMemoryQuota"] = strconv.Itoa(int(memQuota))
 		log.Printf("init_mem: the FTS memory quota is: %s bytes", options["ftsMemoryQuota"])
+
+		// Set soft memory limit for golang's runtime.
+		// The runtime undertakes several processes to try to respect this memory
+		// limit, including adjustments to the frequency of garbage collections
+		// and returning memory to the underlying system more aggressively.
+		// See: https://pkg.go.dev/runtime/debug#SetMemoryLimit
+		debug.SetMemoryLimit(int64(memQuota))
 	}
 
 	var memCheckInterval time.Duration
