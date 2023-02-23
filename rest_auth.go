@@ -23,6 +23,7 @@ import (
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	log "github.com/couchbase/clog"
 	audit "github.com/couchbase/goutils/go-cbaudit"
 )
 
@@ -165,6 +166,16 @@ func checkAPIAuth(avh *AuthVersionHandler,
 				d := GetAuditEventData(AuditAccessDeniedEvent, req)
 				go adtSvc.Write(AuditAccessDeniedEvent, d)
 			}
+
+			requestBody, _ := io.ReadAll(req.Body)
+			// TODO: Should perhaps change this to DEBUG soon(?), created for MB-55606
+			log.Warnf("rest_auth: Permission denied for request from user: %v,"+
+				" (perm: %v) over path: %v, requestBody: `%v`, requires perm: %v",
+				log.Tag(log.UserData, creds.Name()),
+				log.Tag(log.UserData, perm),
+				path,
+				string(requestBody),
+				log.Tag(log.UserData, split))
 
 			return false, ""
 		}
