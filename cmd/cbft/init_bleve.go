@@ -234,8 +234,7 @@ func init() {
 //
 // Example with expvarmon tool, with cbft listening on port 9200...
 //
-//   expvarmon -ports=9200 -vars="stats.a_TotUpdates,stats.a_TotDeletes,stats.b_TotBatches,stats.b_TotBatchesEmpty,stats.d_CurExecuteBatch,stats.h_CurOnBatchExecuteStart,stats.h_CurWaiting,stats.i_CurIntroduceSegment,stats.i_CurIntroduceMerge,stats.i_TotIntroducedItems,stats.i_TotIntroducedSegmentsBatch,stats.i_TotIntroducedSegmentsMerge,duration:stats.b_AvgBatchIntroTime,duration:stats.b_MaxBatchIntroTime,stats.p_CurPersisterSlowMergerPaused,stats.p_CurOnDiskFiles,stats.p_CurMemMerge,duration:stats.p_AvgMemMergeZapTime,duration:stats.p_MaxMemMergeZapTime,stats.m_CurFileMergePlanTasks,duration:stats.m_AvgFileMergeZapTime,duration:stats.m_MaxFileMergeZapTime"
-//
+//	expvarmon -ports=9200 -vars="stats.a_TotUpdates,stats.a_TotDeletes,stats.b_TotBatches,stats.b_TotBatchesEmpty,stats.d_CurExecuteBatch,stats.h_CurOnBatchExecuteStart,stats.h_CurWaiting,stats.i_CurIntroduceSegment,stats.i_CurIntroduceMerge,stats.i_TotIntroducedItems,stats.i_TotIntroducedSegmentsBatch,stats.i_TotIntroducedSegmentsMerge,duration:stats.b_AvgBatchIntroTime,duration:stats.b_MaxBatchIntroTime,stats.p_CurPersisterSlowMergerPaused,stats.p_CurOnDiskFiles,stats.p_CurMemMerge,duration:stats.p_AvgMemMergeZapTime,duration:stats.p_MaxMemMergeZapTime,stats.m_CurFileMergePlanTasks,duration:stats.m_AvgFileMergeZapTime,duration:stats.m_MaxFileMergeZapTime"
 func runBleveExpvarsCooker(mgr *cbgt.Manager) {
 	tickCh := time.Tick(5 * time.Second)
 	for {

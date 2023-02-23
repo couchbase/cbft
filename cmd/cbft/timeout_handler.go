@@ -34,7 +34,6 @@ import (
 // (If msg is empty, a suitable default message will be sent.)
 // After such a timeout, writes by h to its ResponseWriter will return
 // ErrHandlerTimeout.
-//
 func newTimeoutHandler(h http.Handler, dt time.Duration, msg string) http.Handler {
 	return &timeoutHandler{
 		handler: h,
