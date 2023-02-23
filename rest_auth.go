@@ -386,7 +386,7 @@ var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
 	indexName, _ := rp.GetIndexName()
-	_, indexDefsByName, err := mgr.GetIndexDefs(false)
+	_, indexDefsByName, err := mgr.GetIndexDefs(true)
 	if err != nil {
 		return nil, err
 	}
