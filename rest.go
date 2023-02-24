@@ -233,3 +233,9 @@ func (w *ResponseWriterEx) Write(b []byte) (n int, err error) {
 func (w *ResponseWriterEx) Length() int64 {
 	return w.length
 }
+
+func (w *ResponseWriterEx) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}

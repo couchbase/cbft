@@ -64,6 +64,9 @@ POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/queryControl/{
 cluster.collection[<sourceName>].fts!manage
 24579
 
+GET /api/statsStream
+cluster.bucket[].fts!read
+
 GET /api/stats
 cluster.bucket[].fts!read
 

@@ -353,6 +353,8 @@ func wrapTimeoutHandler(h http.Handler,
 			// use the httpHandlerTimeout for the /api/index/{indexName}/query
 			// endpoint to not override the ctl timeout.
 			timeoutHandler = http.TimeoutHandler(h, httpHandlerTimeout, timeoutMsg)
+		} else if strings.HasPrefix(r.URL.Path, "/api/statsStream") {
+			timeoutHandler = h
 		} else {
 			// keeping httpWriteTimeout for all other endpoints.
 			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, timeoutMsg)

@@ -567,6 +567,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/nsstats/index/{indexName}", "GET",
 		cbft.NewIndexNsStatsHandler(mgr))
 
+	handle(prefix+"/api/statsStream", "GET",
+		cbft.NewStatsStreamHandler(mgr))
+
 	handle(prefix+"/api/stats/index/{indexName}/progress", "GET",
 		cbft.NewProgressStatsHandler(mgr))
 
