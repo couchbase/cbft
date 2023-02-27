@@ -167,8 +167,7 @@ func checkAPIAuth(avh *AuthVersionHandler,
 				go adtSvc.Write(AuditAccessDeniedEvent, d)
 			}
 
-			// TODO: Should perhaps change this to DEBUG soon(?), created for MB-55606
-			log.Warnf("rest_auth: Permission denied for request from user: %v,"+
+			log.Debugf("rest_auth: Permission denied for request from user: %v,"+
 				" (perm: %v) over path: %v",
 				log.Tag(log.UserData, creds.Name()), log.Tag(log.UserData, perm), path)
 
