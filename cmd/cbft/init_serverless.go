@@ -9,6 +9,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/couchbase/cbauth/service"
@@ -378,6 +379,11 @@ func defragmentationUtilizationHook(nodeDefs *cbgt.NodeDefs) (
 				"memoryBytes":       sumMemoryUsage / samples,
 				"cpuPercent":        sumCpuUsage / samples,
 			}
+		}
+
+		if out, err := json.Marshal(nodesUtilStats); err == nil {
+			log.Printf("defragmentationUtilizationHook: service could benefit"+
+				" from a rebalance, nodeUtilStats: %s", string(out))
 		}
 	} else {
 		// Either a rebalance is NOT necessary, or there aren't resources
