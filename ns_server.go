@@ -634,8 +634,19 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 
 	topLevelStats["utilization:billableUnitsRate"] = DetermineNewAverage(
 		"totalUnitsMetered", totalUnitsMetered)
+
+	// Memory utilization to also account for memory freed by the process
+	// but NOT released back to the OS just yet.
+	//
+	// Per https://pkg.go.dev/runtime#MemStats
+	// - Sys is the total bytes of memory obtained from the OS.
+	// - (HeapIdle-HeapReleased) estimates the amount of memory that
+	//   could be returned to the OS.
+	// - HeapReleased is bytes of physical memory returned to the OS.
+	// So our equation here should be ..
+	// 	Sys - (HeapIdle - HeapReleased) - HeapReleased
 	topLevelStats["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", rd.memStats.Sys-rd.memStats.HeapReleased)
+		"memoryBytes", rd.memStats.Sys-rd.memStats.HeapIdle)
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
