@@ -11,13 +11,14 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
+
 	"github.com/couchbase/cbauth"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 type gRPCAuthKeyType string
@@ -72,7 +73,8 @@ func tryBasicAuth(req interface{}, ctx context.Context,
 	user, passwd := cs[:s], cs[s+1:]
 	creds, err := cbauth.Auth(user, passwd)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Unauthenticated,
+			"error authenticating with cbauth%v", err)
 	}
 
 	var authFunc gRPCAuthHandler
