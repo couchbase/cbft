@@ -205,6 +205,13 @@ func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 // "serverless".
 func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
+	if indexDef.PlanParams.IndexPartitions == 0 {
+		indexDef.PlanParams.IndexPartitions = ActivePartitionLimit
+	}
+	if indexDef.PlanParams.NumReplicas == 0 {
+		indexDef.PlanParams.NumReplicas = ReplicaPartitionLimit
+	}
+
 	if indexDef.PlanParams.IndexPartitions != ActivePartitionLimit ||
 		indexDef.PlanParams.NumReplicas != ReplicaPartitionLimit {
 		return nil, fmt.Errorf("limitIndexDef: support for indexes with" +
