@@ -571,8 +571,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
 			if len(bucketName) > 0 && len(scopeName) > 0 {
 				if bucketName != indexDef.SourceName || scopeName != "_default" {
-					return nil, fmt.Errorf("PrepareIndex, validation of bucket" +
-						" and/or scope names against index definition failed")
+					return nil, fmt.Errorf("PrepareIndex, changing a scoped index's" +
+						" bucket/scope name is NOT allowed")
 				}
 			}
 		}
