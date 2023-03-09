@@ -567,10 +567,20 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 
 func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
 	topLevelStats := map[string]interface{}{}
-	// (Sys - HeapReleased) is the estimate the cbft process can make that
-	// best represents the process RSS; this accounts for memory that has been
-	// acquired by the process and the amount that has been released back.
-	topLevelStats["num_bytes_used_ram"] = rd.memStats.Sys - rd.memStats.HeapReleased
+
+	// Memory utilization to account for:
+	// - memory alloced for the process
+	// - memory released by process back to the OS
+	// - memory freed by the process but NOT released back to the OS just yet
+	//
+	// Per https://pkg.go.dev/runtime#MemStats
+	// - Sys is the total bytes of memory obtained from the OS.
+	// - (HeapIdle-HeapReleased) estimates the amount of memory that
+	//   could be returned to the OS.
+	// - HeapReleased is bytes of physical memory returned to the OS.
+	// So our equation here should be ..
+	// 	Sys - (HeapIdle - HeapReleased) - HeapReleased
+	topLevelStats["num_bytes_used_ram"] = rd.memStats.Sys - rd.memStats.HeapIdle
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
