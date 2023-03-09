@@ -222,24 +222,17 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		return in, nil
 	}
 
-	if in.BegPlanPIndexes == nil || len(in.BegPlanPIndexes.PlanPIndexes) == 0 {
+	if in.ExistingPlanPIndexes == nil || len(in.ExistingPlanPIndexes.PlanPIndexes) == 0 {
 		// No plan pindexes in the system (yet), no need to adjust node weights.
 		return in, nil
 	}
 
-	nodeUUIDsWithUsageOverHWM := cbft.NodeUUIDsWithUsageOverHWM(in.BegNodeDefs)
-
-	if len(in.NodeUUIDsToRemove) == 0 {
-		// Possibly a rebalance-in operation or auto-rebalance;
-		// Only when resource usage on all nodes is below HWM, we don't need to edit the
-		// node weights here because with enableNodePartitionStickiness set to true -
-		// the resident index partitions will be favored to remain where they are.
-		if len(nodeUUIDsWithUsageOverHWM) == 0 {
-			return in, nil
-		}
+	// Early exit path for scale out.
+	if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
+		return in, nil
 	}
 
-	numPlanPIndexes := len(in.BegPlanPIndexes.PlanPIndexes)
+	numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
 	nodePartitionCount := make(map[string]int) // nodeUUID to partition count
 	nodeWeights := make(map[string]int)
 	for _, nodeUUID := range in.NodeUUIDsAll {
@@ -251,7 +244,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	nodeAssignments := make(map[string]struct{}) // nodeUUID+sourceName
 	indexNodeUUIDs := make(map[string]struct{})  // nodeUUIDs that hold current index
 
-	for _, pindex := range in.BegPlanPIndexes.PlanPIndexes {
+	for _, pindex := range in.ExistingPlanPIndexes.PlanPIndexes {
 		for nodeUUID := range pindex.Nodes {
 			nodePartitionCount[nodeUUID]++
 			nodeAssignments[nodeUUID+pindex.SourceName] = struct{}{}
@@ -261,32 +254,26 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		}
 	}
 
-	// Rebalance to be applicable on affected indexes ONLY
-	var indexAffected bool
-	for _, nodeUUID := range in.NodeUUIDsToRemove {
-		if _, exists := indexNodeUUIDs[nodeUUID]; exists {
-			indexAffected = true
-			// Remove this nodeUUID from the index map, so we don't
-			// attempt to keep this partition on the same node.
-			delete(indexNodeUUIDs, nodeUUID)
+	// Only applicable for a scale-in.
+	if len(in.NodeUUIDsToRemove) > 0 && len(in.NodeUUIDsToAdd) == 0 {
+		// Rebalance to be applicable on affected indexes ONLY
+		var indexAffected bool
+		for _, nodeUUID := range in.NodeUUIDsToRemove {
+			if _, exists := indexNodeUUIDs[nodeUUID]; exists {
+				indexAffected = true
+				// Remove this nodeUUID from the index map, so we don't
+				// attempt to keep this partition on the same node.
+				delete(indexNodeUUIDs, nodeUUID)
+			}
 		}
-	}
-	// Also, check if current index is resident on nodes showing usage over HWM
-	for _, nodeUUID := range nodeUUIDsWithUsageOverHWM {
-		if _, exists := indexNodeUUIDs[nodeUUID]; exists {
-			indexAffected = true
-			// Remove this nodeUUID from the index map, so we don't
-			// attempt to keep this partition on the same node.
-			delete(indexNodeUUIDs, nodeUUID)
+
+		if !indexAffected {
+			// No need to adjust any node weights, favor stickiness
+			return in, nil
 		}
 	}
 
-	if !indexAffected {
-		// No need to adjust any node weights, favor stickiness
-		return in, nil
-	}
-
-	if len(in.NodeUUIDsToAdd) == len(in.NodeUUIDsToRemove) {
+	if len(in.NodeUUIDsToAdd) == len(in.NodeUUIDsToRemove) && len(in.NodeUUIDsToAdd) > 0 {
 		// SWAP REBALANCE;
 		// p.s. This only comes into play when there's no node
 		// at the beginning of rebalance without resident pindexes
@@ -296,6 +283,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 			nodeWeights[nodeUUID] = 1
 		}
 	} else {
+		// Auto rebalance case.
 		// Check if there are nodes out there that already hold index
 		// partitions whose source is the same as the current index definition
 		for uuid, count := range nodePartitionCount {
@@ -314,16 +302,6 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 				// the current index, so prefer a node whose partition count is lesser
 				nodeWeights[uuid] -= count
 			}
-		}
-	}
-
-	// Boost weight of the nodes holding the index's partitions that
-	// were untouched by the rebalance, to keep the already resident
-	// partitions where they are only if node's usage is within
-	// permissible limits.
-	for nodeUUID := range indexNodeUUIDs {
-		if nodeWeights[nodeUUID] != minNodeWeight {
-			nodeWeights[nodeUUID] = 2
 		}
 	}
 

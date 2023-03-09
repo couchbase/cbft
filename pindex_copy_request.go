@@ -284,7 +284,7 @@ func getNodesHostingPIndex(uuids []string,
 
 				if _, exists := pindexesData.PIndexes[pindex]; exists {
 					log.Printf("pindex_copy_request: pindex: %s found on node:"+
-						" %s", reqs.url, pindex)
+						" %s", pindex, reqs.uuid)
 
 					responseCh <- &statsResp{
 						uuid:   reqs.uuid,
