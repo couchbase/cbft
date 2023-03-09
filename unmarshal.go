@@ -613,5 +613,14 @@ func parseQuery(input []byte) (query.Query, error) {
 		}
 		return &rv, nil
 	}
+	_, hasCidr := tmp["cidr"]
+	if hasCidr {
+		var rv query.IPRangeQuery
+		err := jsoniter.Unmarshal(input, &rv)
+		if err != nil {
+			return nil, err
+		}
+		return &rv, nil
+	}
 	return nil, fmt.Errorf("unknown query type")
 }
