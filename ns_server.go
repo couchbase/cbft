@@ -565,9 +565,7 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	return totDestSeq, 0, nil
 }
 
-func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
-	topLevelStats := map[string]interface{}{}
-
+func getMemoryUtilization(memStats runtime.MemStats) uint64 {
 	// Memory utilization to account for:
 	// - memory alloced for the process
 	// - memory released by process back to the OS
@@ -580,7 +578,13 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	// - HeapReleased is bytes of physical memory returned to the OS.
 	// So our equation here should be ..
 	// 	Sys - (HeapIdle - HeapReleased) - HeapReleased
-	topLevelStats["num_bytes_used_ram"] = rd.memStats.Sys - rd.memStats.HeapIdle
+	return memStats.Sys - memStats.HeapIdle
+}
+
+func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
+	topLevelStats := map[string]interface{}{}
+
+	topLevelStats["num_bytes_used_ram"] = getMemoryUtilization(rd.memStats)
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
@@ -645,18 +649,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["utilization:billableUnitsRate"] = DetermineNewAverage(
 		"totalUnitsMetered", totalUnitsMetered)
 
-	// Memory utilization to also account for memory freed by the process
-	// but NOT released back to the OS just yet.
-	//
-	// Per https://pkg.go.dev/runtime#MemStats
-	// - Sys is the total bytes of memory obtained from the OS.
-	// - (HeapIdle-HeapReleased) estimates the amount of memory that
-	//   could be returned to the OS.
-	// - HeapReleased is bytes of physical memory returned to the OS.
-	// So our equation here should be ..
-	// 	Sys - (HeapIdle - HeapReleased) - HeapReleased
 	topLevelStats["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", rd.memStats.Sys-rd.memStats.HeapIdle)
+		"memoryBytes", getMemoryUtilization(rd.memStats))
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
