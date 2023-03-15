@@ -890,8 +890,14 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	rest.GetNumSourcePartitionsForBucket = func(string, string) (int, error) {
 		return 0, nil
 	}
+	prevObtainUniqueKeyspaces := obtainUniqueKeyspaces
+	obtainUniqueKeyspaces = func(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
+		rv map[string]int) (map[string]int, error) {
+		return rv, nil
+	}
 	defer func() {
 		rest.GetNumSourcePartitionsForBucket = getNumSourcePartitionsForBucket
+		obtainUniqueKeyspaces = prevObtainUniqueKeyspaces
 	}()
 
 	rest.RequestProxyStubFunc = func() bool {

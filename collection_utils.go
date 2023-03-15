@@ -296,8 +296,9 @@ func metaFieldMapping() *mapping.FieldMapping {
 // provided index definition.
 func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 	scope string, collections []string, err error) {
-	if indexDef == nil {
-		return "", nil, fmt.Errorf("no index-def provided")
+	if indexDef == nil || indexDef.Type != "fulltext-index" {
+		return "", nil,
+			fmt.Errorf("no fulltext-index definition provided")
 	}
 
 	bp := NewBleveParams()
@@ -338,6 +339,101 @@ func multiCollection(colls []Collection) bool {
 		}
 	}
 	return len(hash) > 1
+}
+
+// -----------------------------------------------------------------------------
+
+// obtainIndexSourceFromDefinition obtains the source name from the index definition
+// and recursively if the index definition is an alias.
+// - input argument `rv` will be updated to contain a map of source names (buckets).
+func obtainIndexSourceFromDefinition(mgr *cbgt.Manager, indexName string,
+	rv map[string]struct{}) (map[string]struct{}, error) {
+	if rv == nil {
+		rv = make(map[string]struct{})
+	}
+
+	if bucket, _ := getKeyspaceFromScopedIndexName(indexName); len(bucket) > 0 {
+		// indexName is a scoped index name
+		rv[bucket] = struct{}{}
+		return rv, nil
+	}
+
+	// else obtain bucket from definition of index
+	indexDef, _, err := mgr.GetIndexDef(indexName, false)
+	if err != nil || indexDef == nil {
+		return rv, fmt.Errorf("failed to retrieve index def for `%v`, err: %v",
+			indexName, err)
+	}
+
+	if indexDef.Type == "fulltext-index" {
+		rv[indexDef.SourceName] = struct{}{}
+		return rv, nil
+	} else if indexDef.Type == "fulltext-alias" {
+		params := AliasParams{}
+		err := UnmarshalJSON([]byte(indexDef.Params), &params)
+		if err == nil {
+			for idxName := range params.Targets {
+				if rv, err = obtainIndexSourceFromDefinition(mgr, idxName, rv); err != nil {
+					return rv, err
+				}
+			}
+		}
+	} else {
+		// unrecognized index type
+		return rv, fmt.Errorf("unrecognized index type %v", indexDef.Type)
+	}
+
+	return rv, nil
+}
+
+// obtainIndexBucketScopesForDefinition obtains the bucket.scope sources for the
+// index definition and if it's alias - by recursively looking through the targets.
+// - input argument `rv` will be updated to contain a map of source names
+// (bucket.scope) to number of indexes.
+func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
+	rv map[string]int) (map[string]int, error) {
+	if rv == nil {
+		rv = make(map[string]int)
+	}
+
+	bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+	if len(bucketName) > 0 && len(scopeName) > 0 {
+		// indexName is a scoped index name
+		key := bucketName + "." + scopeName
+		rv[key]++
+		return rv, nil
+	}
+
+	// else obtain bucket & scope from definition of index
+	if indexDef.Type == "fulltext-index" {
+		scope, _, err := GetScopeCollectionsFromIndexDef(indexDef)
+		if err != nil {
+			return rv, err
+		}
+		key := indexDef.SourceName + "." + scope
+		rv[key]++
+		return rv, nil
+	} else if indexDef.Type == "fulltext-alias" {
+		params := AliasParams{}
+		err := UnmarshalJSON([]byte(indexDef.Params), &params)
+		if err == nil {
+			for idxName := range params.Targets {
+				idxDef, _, err := mgr.GetIndexDef(idxName, true)
+				if err != nil || indexDef == nil {
+					return rv, fmt.Errorf("failed to retrieve index def for `%v`, err: %v",
+						idxName, err)
+				}
+				if rv, err = obtainIndexBucketScopesForDefinition(mgr, idxDef, rv); err != nil {
+					return rv, err
+				}
+			}
+		}
+	} else {
+		// unrecognized index type
+		return rv, fmt.Errorf("unrecognized index type %v", indexDef.Type)
+	}
+
+	return rv, nil
 }
 
 // getKeyspaceFromScopedIndexName gets the bucket and

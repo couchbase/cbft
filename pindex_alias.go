@@ -10,7 +10,6 @@ package cbft
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -59,6 +58,9 @@ type AliasParamsTarget struct {
 	IndexUUID string `json:"indexUUID"` // Optional.
 }
 
+// Overrideable for test-ability
+var obtainUniqueKeyspaces = obtainIndexBucketScopesForDefinition
+
 func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("PrepareAlias, indexDef is nil")
@@ -67,32 +69,13 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
 
-	alias := &struct {
-		Targets map[string]interface{} `json:"targets"`
-	}{}
-
-	err := json.Unmarshal([]byte(indexDef.Params), alias)
-	if err != nil {
-		return indexDef, err
-	}
-
 	// map to track unique keyspaces (bucket.scope)
-	uniqueKeyspaces := map[string][]string{}
-	for target := range alias.Targets {
-		// obtain the keyspace from the sourceIndexName;
-		// a decorated index name would look like: `bucket.scope.name`
-		pos := strings.LastIndex(target, ".")
-		if pos < 0 {
-			// undecorated targets exist, ensure that the index def name is NOT decorated
-			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
-			if len(bucketName) > 0 && len(scopeName) > 0 {
-				return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT" +
-					" include unscoped index targets")
-			}
-			return indexDef, nil
-		}
-
-		uniqueKeyspaces[target[:pos]] = append(uniqueKeyspaces[target[:pos]], target)
+	var uniqueKeyspaces map[string]int
+	var err error
+	if uniqueKeyspaces, err = obtainUniqueKeyspaces(
+		mgr, indexDef, uniqueKeyspaces); err != nil {
+		return nil,
+			fmt.Errorf("PrepareAlias, unable to obtain source(s) for index")
 	}
 
 	// alias to multiple keyspaces NOT allowed in serverless mode
@@ -109,15 +92,15 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 				" supported in mixed version cluster")
 		}
 		scopedPrefix := bucketName + "." + scopeName
-		var errTargets []string
+		var numErrTargets int
 		for k, v := range uniqueKeyspaces {
 			if k != scopedPrefix {
-				errTargets = append(errTargets, v...)
+				numErrTargets += v
 			}
 		}
-		if len(errTargets) > 0 {
+		if numErrTargets > 0 {
 			return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
-				" include %d targets", len(errTargets))
+				" include %d targets", numErrTargets)
 		}
 	}
 
@@ -126,20 +109,30 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 
 func ValidateAlias(indexType, indexName, indexParams string) error {
 	params := AliasParams{}
-	err := UnmarshalJSON([]byte(indexParams), &params)
-	if err == nil {
-		if len(params.Targets) == 0 {
-			return fmt.Errorf("ValidateAlias: cannot create index alias" +
-				" because no index targets were specified")
-		}
+	if err := UnmarshalJSON([]byte(indexParams), &params); err != nil {
+		return err
 	}
-	return err
+
+	if len(params.Targets) == 0 {
+		return fmt.Errorf("ValidateAlias: cannot create index alias" +
+			" because no index targets were specified")
+	}
+
+	return nil
 }
 
 func CountAlias(mgr *cbgt.Manager,
 	indexName, indexUUID string) (uint64, error) {
-	alias, _, err := bleveIndexAliasForUserIndexAlias(mgr,
-		indexName, indexUUID, false, nil, nil, false, "")
+	alias, _, err := bleveIndexAliasForUserIndexAlias(
+		mgr,
+		indexName,
+		indexUUID,
+		false,
+		nil,
+		nil,
+		false,
+		"",
+	)
 	if err != nil {
 		return 0, fmt.Errorf("alias: CountAlias indexAlias error,"+
 			" indexName: %s, indexUUID: %s, err: %v",

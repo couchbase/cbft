@@ -544,26 +544,28 @@ func (e *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.I
 	return &indexDef, nil
 }
 
-func (e *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) (string, error) {
+func (e *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) ([]string, error) {
 	bucket := rest.BucketNameLookup(req)
 	if len(bucket) > 0 {
 		// query request is to a scoped index
-		return bucket, nil
+		return []string{bucket}, nil
 	}
 
 	indexName := rest.IndexNameLookup(req)
-	if bucket, _ = getKeyspaceFromScopedIndexName(indexName); len(bucket) > 0 {
-		// indexName is a scoped index name
-		return bucket, nil
+
+	var sources map[string]struct{}
+	var err error
+	if sources, err = obtainIndexSourceFromDefinition(
+		e.mgr, indexName, sources); err != nil || len(sources) == 0 {
+		return nil, fmt.Errorf("limiter: failed to obtain source(s) for index")
 	}
 
-	// else obtain bucket from index definition for index
-	indexDef, _, err := e.mgr.GetIndexDef(indexName, false)
-	if err != nil || indexDef == nil {
-		return "", fmt.Errorf("limiter: failed to retrieve index def, err: %v", err)
+	var rv []string
+	for source := range sources {
+		rv = append(rv, source)
 	}
 
-	return indexDef.SourceName, nil
+	return rv, nil
 }
 
 func (e *rateLimiter) regulateRequest(username, path string,
@@ -580,12 +582,17 @@ func (e *rateLimiter) regulateRequest(username, path string,
 	if isQueryPath(path) {
 		// index names on query paths are always decorated, otherwise
 		// there is a index not found error
-		bucket, err := e.obtainIndexSourceForQueryRequest(req)
+		buckets, err := e.obtainIndexSourceForQueryRequest(req)
 		if err != nil {
-			return CheckResultError, 0, fmt.Errorf("failed to get index "+
-				"source for request %v", err)
+			return CheckResultError, 0, fmt.Errorf("failed to get index"+
+				" source for request %v", err)
 		}
-		return CheckQuotaRead(bucket, username, req)
+		if len(buckets) > 1 {
+			// index alias over indexes against multiple buckets
+			return CheckResultError, 0, fmt.Errorf("querying indexes over " +
+				" multiple buckets is not allowed")
+		}
+		return CheckQuotaRead(buckets[0], username, req)
 	}
 
 	// using the indexDef of the request to obtain the necessary info,
