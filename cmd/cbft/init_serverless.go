@@ -166,16 +166,12 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 
 				nodeWeights[uuid] += (in.NumPlanPIndexes - in.NodePartitionCount[uuid])
 			}
-		}
 
-		// picking out nodes suitable for replica partitions in a decreasing
-		// order so that it's applicable even if Elixir decides to have >1 replica
-		for uuid := range in.NodeDefs.NodeDefs {
+			// picking out nodes suitable for replica partitions in a decreasing
+			// order so that it's applicable even if Elixir decides to have >1 replica
 			nodeWeights[uuid] += in.NodeSourceActives[uuid+":"+in.IndexDef.SourceName]
-
 			nodeWeights[uuid] += in.NodeSourceReplicas[uuid+":"+in.IndexDef.SourceName]
-
-			nodeWeights[uuid] += (in.NumPlanPIndexes - in.NodePartitionCount[uuid])
+			nodeWeights[uuid] += in.NumPlanPIndexes - in.NodePartitionCount[uuid]
 		}
 
 		in.NodeWeights = nodeWeights
