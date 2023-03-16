@@ -229,6 +229,8 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 
 	// Early exit path for scale out.
 	if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
+		log.Printf("serverlessRebalanceHook: scale out operation,"+
+			" not moving index: %s", in.IndexDef.Name)
 		return in, nil
 	}
 
@@ -283,7 +285,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 			nodeWeights[nodeUUID] = 1
 		}
 	} else {
-		// Auto rebalance case.
+		// Auto rebalance case or scale-in case
 		// Check if there are nodes out there that already hold index
 		// partitions whose source is the same as the current index definition
 		for uuid, count := range nodePartitionCount {
@@ -307,7 +309,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 
 	in.NodeWeights = nodeWeights
 
-	log.Debugf("serverlessRebalanceHook: index: %v, proposed NodeWeights: %+v",
+	log.Debugf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
 		in.IndexDef.Name, nodeWeights)
 	return in, nil
 }
