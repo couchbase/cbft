@@ -76,6 +76,9 @@ cluster.collection[<sourceName>].stats.fts!read
 GET /api/index/{indexName}/count
 cluster.collection[<sourceName>].fts!read
 
+GET /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/count
+cluster.collection[<sourceName>].fts!read
+
 POST /api/index/{indexName}/query
 cluster.collection[<sourceName>].fts!read
 
