@@ -20,7 +20,7 @@ import (
 
 var maxDumps = 5
 
-func DumpStack(dir, msg string) string {
+func dumpStack(dir, msg string) string {
 	dumps_path := filepath.Join(dir, "dumps")
 	if _, err := os.Stat(dumps_path); os.IsNotExist(err) {
 		err = os.Mkdir(dumps_path, 0700)

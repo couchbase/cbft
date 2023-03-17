@@ -104,14 +104,14 @@ func initBleveOptions(options map[string]string) error {
 		ftsHerder.ScorchHerderOnEvent()
 
 	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
-		func(err error) {
+		func(err error, path string) {
 			var stackDump string
 			if flags.DataDir != "" {
-				stackDump = DumpStack(flags.DataDir,
-					fmt.Sprintf("scorch AsyncError, treating this as fatal, err: %v", err))
+				stackDump = dumpStack(flags.DataDir,
+					fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
 			}
-			log.Fatalf("scorch AsyncError, treating this as fatal, err: %v,"+
-				" stack dump: %s", err, stackDump)
+			log.Fatalf("scorch AsyncError, path: %v, treating this as fatal, err: %v,"+
+				" stack dump: %s", path, err, stackDump)
 		}
 
 	blevePersisterNapTimeMSec := options["blevePersisterNapTimeMSec"]
