@@ -223,45 +223,36 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		return in, nil
 	}
 
-	// Early exit path for scale out.
 	if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
+		// SCALE OUT;
+		// Early exit, no need to adjust node weights.
 		log.Printf("serverlessRebalanceHook: scale out operation,"+
 			" not moving index: %s", in.IndexDef.Name)
 		return in, nil
 	}
 
 	numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
-	nodePartitionCount := make(map[string]int) // nodeUUID to partition count
 	nodeWeights := make(map[string]int)
 	for _, nodeUUID := range in.NodeUUIDsAll {
-		// Initialize to (0 - total number of existing index partitions in the system)
-		nodeWeights[nodeUUID] = -(numPlanPIndexes * 4)
-		nodePartitionCount[nodeUUID] = 0 // init
+		nodeWeights[nodeUUID] = 1
 	}
 
-	nodeAssignments := make(map[string]struct{}) // nodeUUID+sourceName
-	indexNodeUUIDs := make(map[string]struct{})  // nodeUUIDs that hold current index
-
+	indexNodeUUIDs := make(map[string]struct{}) // nodeUUIDs that hold current index
 	for _, pindex := range in.ExistingPlanPIndexes.PlanPIndexes {
 		for nodeUUID := range pindex.Nodes {
-			nodePartitionCount[nodeUUID]++
-			nodeAssignments[nodeUUID+pindex.SourceName] = struct{}{}
 			if pindex.IndexUUID == in.IndexDef.UUID {
 				indexNodeUUIDs[nodeUUID] = struct{}{}
 			}
 		}
 	}
 
-	// Only applicable for a scale-in.
 	if len(in.NodeUUIDsToRemove) > 0 && len(in.NodeUUIDsToAdd) == 0 {
+		// SCALE IN;
 		// Rebalance to be applicable on affected indexes ONLY
 		var indexAffected bool
 		for _, nodeUUID := range in.NodeUUIDsToRemove {
 			if _, exists := indexNodeUUIDs[nodeUUID]; exists {
 				indexAffected = true
-				// Remove this nodeUUID from the index map, so we don't
-				// attempt to keep this partition on the same node.
-				delete(indexNodeUUIDs, nodeUUID)
 			}
 		}
 
@@ -275,38 +266,22 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		// SWAP REBALANCE;
 		// p.s. This only comes into play when there's no node
 		// at the beginning of rebalance without resident pindexes
-
 		for _, nodeUUID := range in.NodeUUIDsToAdd {
 			// Prioritize moving partition from outbound node(s) to inbound node(s)
-			nodeWeights[nodeUUID] = 1
+			nodeWeights[nodeUUID] = 10
 		}
 	} else {
-		// Auto rebalance case or scale-in case
-		// Check if there are nodes out there that already hold index
-		// partitions whose source is the same as the current index definition
-		for uuid, count := range nodePartitionCount {
-			if !cbft.CanNodeAccommodateRequest(in.BegNodeDefs.NodeDefs[uuid]) {
-				nodeWeights[uuid] = minNodeWeight // this node is very high on usage
-			} else {
-				// Higher the resident partition count, lower the node weight
-				if _, exists := nodeAssignments[uuid+in.IndexDef.SourceName]; exists {
-					// Increase weight to prioritize this node, which holds
-					// partitions sharing the source with the current index
-					nodeWeights[uuid] = -count
-					continue
-				}
-
-				// No node available with index partitions sharing the same source with
-				// the current index, so prefer a node whose partition count is lesser
-				nodeWeights[uuid] -= count
-			}
-		}
+		// AUTO REBALANCE / SCALE IN;
+		// Simply normalize node weights
+		nodeWeights = cbgt.NormaliseNodeWeights(nodeWeights,
+			in.EndPlanPIndexes, numPlanPIndexes)
 	}
 
 	in.NodeWeights = nodeWeights
 
-	log.Debugf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
+	log.Printf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
 		in.IndexDef.Name, nodeWeights)
+
 	return in, nil
 }
 
