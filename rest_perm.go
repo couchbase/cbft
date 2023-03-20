@@ -44,11 +44,23 @@ POST /api/index/{indexName}/ingestControl/{op}
 cluster.collection[<sourceName>].fts!manage
 24579
 
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/ingestControl/{op}
+cluster.collection[<sourceName>].fts!manage
+24579
+
 POST /api/index/{indexName}/planFreezeControl/{op}
 cluster.collection[<sourceName>].fts!manage
 24579
 
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/planFreezeControl/{op}
+cluster.collection[<sourceName>].fts!manage
+24579
+
 POST /api/index/{indexName}/queryControl/{op}
+cluster.collection[<sourceName>].fts!manage
+24579
+
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/queryControl/{op}
 cluster.collection[<sourceName>].fts!manage
 24579
 
@@ -90,6 +102,21 @@ cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/tasks
 cluster.bucket[<sourceName>].fts!write
+
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/tasks
+cluster.bucket[<sourceName>].fts!write
+
+GET /api/index/{indexName}/status
+cluster.collection[<sourceName>].fts!read
+
+GET /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/status
+cluster.collection[<sourceName>].fts!read
+
+POST /api/index/{indexName}/pindexLookup
+cluster.collection[<sourceName>].fts!read
+
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/pindexLookup
+cluster.collection[<sourceName>].fts!read
 
 GET /api/cfg
 cluster.settings.fts!read
