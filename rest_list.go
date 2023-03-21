@@ -11,6 +11,7 @@ package cbft
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -33,6 +34,13 @@ func NewFilteredListIndexHandler(mgr *cbgt.Manager) *FilteredListIndexHandler {
 
 func (h *FilteredListIndexHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
+	var scopedPrefix string
+	bucketName := rest.BucketNameLookup(req)
+	scopeName := rest.ScopeNameLookup(req)
+	if len(bucketName) > 0 && len(scopeName) > 0 {
+		scopedPrefix = bucketName + "." + scopeName + "."
+	}
+
 	indexDefs, indexDefsByName, err := h.mgr.GetIndexDefs(false)
 	if err != nil {
 		rest.PropagateError(w, nil, fmt.Sprintf("rest_list: filteredListIndex,"+
@@ -87,6 +95,12 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 				for _, sourceName := range sourceNames {
 					if !allowSourceName(sourceName) {
 						continue OUTER
+					}
+				}
+
+				if len(scopedPrefix) > 0 {
+					if !strings.HasPrefix(indexName, scopedPrefix) {
+						continue
 					}
 				}
 

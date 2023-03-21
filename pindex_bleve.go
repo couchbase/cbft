@@ -2882,6 +2882,12 @@ func BleveInitRouter(r *mux.Router, phase string,
 			NewFilteredListIndexHandler(mgr)).
 			Methods("GET").Name(prefix + "/api/index")
 		BleveRouteMethods[prefix+"/api/index"] = "GET"
+		r.Handle(prefix+"/api/bucket/{bucketName}/scope/{scopeName}/index",
+			NewFilteredListIndexHandler(mgr)).
+			Methods("GET").Name(prefix +
+			"/api/bucket/{bucketName}/scope/{scopeName}/index")
+		BleveRouteMethods[prefix+
+			"/api/bucket/{bucketName}/scope/{scopeName}/index"] = "GET"
 	}
 
 	if phase == "manager.after" {
