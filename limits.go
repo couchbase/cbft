@@ -227,14 +227,17 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 		nodesOverHWM := NodeUUIDsWithUsageOverHWM(nodeDefs)
 		if len(nodesOverHWM) != 0 {
-			for _, nodeUUID := range nodesOverHWM {
-				delete(nodeDefs.NodeDefs, nodeUUID)
+			for _, nodeInfo := range nodesOverHWM {
+				delete(nodeDefs.NodeDefs, nodeInfo.NodeUUID)
 			}
 
 			if len(nodeDefs.NodeDefs) < (ReplicaPartitionLimit + 1) {
+				nodes, _ := json.Marshal(nodesOverHWM)
+
 				// at least 2 nodes with usage below HWM needed to allow this index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
-					" index request: %v, resource utilization over limit(s)", indexDef.Name)
+					" index request: %v, resource utilization over limit(s) for nodes: %s",
+					indexDef.Name, nodes)
 			}
 
 			// now track number of server groups in nodes with usage below HWM
@@ -244,10 +247,13 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 
 			if len(serverGroups) < (ReplicaPartitionLimit + 1) {
+				nodes, _ := json.Marshal(nodesOverHWM)
+
 				// nodes from at least 2 server groups needed to allow index request
 				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
 					" index request: %v, at least 2 nodes in separate server groups"+
-					" with resource utilization below limit(s) needed", indexDef.Name)
+					" with resource utilization below limit(s) needed, nodes above HWM: %s",
+					indexDef.Name, nodes)
 			}
 
 		}
@@ -257,18 +263,29 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 }
 
 // -----------------------------------------------------------------------------
+type nodeDetails struct {
+	NodeUUID  string
+	NodeStats *UtilizationStats
+}
 
-func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []string {
+func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []*nodeDetails {
 	nodesStats := NodesUtilStats(nodeDefs)
 
 	if len(nodesStats) == 0 {
 		return nil
 	}
 
-	nodesOverHWM := []string{}
+	nodesOverHWM := []*nodeDetails{}
 	for k, v := range nodesStats {
 		if v.IsUtilizationOverHWM() {
-			nodesOverHWM = append(nodesOverHWM, k)
+			nodesOverHWM = append(nodesOverHWM, &nodeDetails{
+				NodeUUID: k,
+				NodeStats: &UtilizationStats{
+					DiskUsage:   v.DiskUsage,
+					MemoryUsage: v.MemoryUsage,
+					CPUUsage:    v.CPUUsage,
+				},
+			})
 		} else {
 			// remove entries of nodes whose usage is within limits
 			delete(nodesStats, k)
@@ -327,15 +344,20 @@ var CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
 	return !stats.IsUtilizationOverHWM()
 }
 
+type UtilizationStats struct {
+	DiskUsage   uint64 `json:"utilization:diskBytes"`
+	MemoryUsage uint64 `json:"utilization:memoryBytes"`
+	CPUUsage    uint64 `json:"utilization:cpuPercent"`
+}
+
 type NodeUtilStats struct {
+	UtilizationStats
+
 	HighWaterMark             float64 `json:"resourceUtilizationHighWaterMark"`
 	LowWaterMark              float64 `json:"resourceUtilizationLowWaterMark"`
 	UnderUtilizationWaterMark float64 `json:"resourceUnderUtilizationWaterMark"`
 
 	BillableUnitsRate uint64 `json:"utilization:billableUnitsRate"`
-	DiskUsage         uint64 `json:"utilization:diskBytes"`
-	MemoryUsage       uint64 `json:"utilization:memoryBytes"`
-	CPUUsage          uint64 `json:"utilization:cpuPercent"`
 
 	LimitBillableUnitsRate uint64 `json:"limits:billableUnitsRate"`
 	LimitDiskUsage         uint64 `json:"limits:diskBytes"`
