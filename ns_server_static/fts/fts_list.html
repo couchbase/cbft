@@ -38,6 +38,7 @@
     <h4 class="margin-bottom-half">Full Text Indexes</h4>
     <table class="fts-indexes-list table-stroked">
       <tr>
+        <th width="5%">scoped access</th>
         <th>index name</th>
         <th>bucket</th>
         <th>scope</th>
@@ -67,12 +68,16 @@
                        'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                        'no-stroke': detailsOpened[node.hostname]
                        }">
+          <td class="break-word">
+            <span ng-if="isScopedIndexName"
+                  class="icon fa-check"></span>
+          </td>
           <td class="cbui-tablerow-title ellipsis">
             <span uib-tooltip="{{indexName}}"
                   tooltip-trigger="mouseenter"
                   tooltip-placement="auto top"
                   tooltip-append-to-body="true">
-              {{indexName}}
+              {{undecoratedIndexName}}
             </span>
           </td>
           <td class="break-word">
@@ -105,7 +110,7 @@
         </tr>
         <!-- index details area ************************* -->
         <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
-          <td colspan="6">
+          <td colspan="7">
             <div class="fts-index-details">
               <div class="margin-bottom1">
                 <form class="forms">
@@ -220,9 +225,18 @@
                 <div
                     ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                     class="json-content row items-top">
-                  <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">curl -XPUT -H "Content-Type: application/json" \
--u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
-'{{escapeCmdLineParam(indexDefStr)}}'</pre>
+                  <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
+                    <span ng-if="indexName == scopedIndexUndecoratedName(indexName)">
+curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+'{{escapeCmdLineParam(indexDefStr)}}'
+                    </span>
+                    <span ng-if="indexName != scopedIndexUndecoratedName(indexName)">
+curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}{{api_base}}/api/bucket/{{scopedIndexBucketName(indexName)}}/scope/{{scopedIndexScopeName(indexName)}}/index/{{scopedIndexUndecoratedName(indexName)}} -d \
+'{{escapeCmdLineParam(indexDefStr)}}'
+                    </span>
+                  </pre>
                   <button
                       class="outline copy-to-clipboard"
                       ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
@@ -286,6 +300,7 @@
     </div>
     <table class="fts-indexes-list table-stroked">
       <tr>
+        <th width="5%">scoped access</th>
         <th>alias name</th>
         <th>target indexes</th>
       </tr>
@@ -297,12 +312,16 @@
                        'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                        'no-stroke': detailsOpened[node.hostname]
                        }">
+          <td class="break-word">
+            <span ng-if="indexName != scopedIndexUndecoratedName(indexName)"
+                  class="icon fa-check"></span>
+          </td>
           <td class="cbui-tablerow-title ellipsis">
             <span uib-tooltip="{{indexName}}"
                   tooltip-trigger="mouseenter"
                   tooltip-placement="auto top"
                   tooltip-append-to-body="true">
-              {{indexName}}
+              {{scopedIndexUndecoratedName(indexName)}}
             </span>
           </td>
           <td class="alias-targets">
@@ -313,7 +332,7 @@
         </tr>
         <!-- alias details area ************************* -->
         <tr class="grayblue-bg-5" ng-if="detailsOpened[indexName]">
-          <td colspan="2">
+          <td colspan="3">
             <div class="fts-index-details">
               <form>
                 <div class="row margin-bottom-1">
@@ -402,9 +421,18 @@
                   <div
                       ng-show="showJSONCurl[indexName] && showJSON[indexName]"
                       class="json-content row items-top">
-                    <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">curl -XPUT -H "Content-Type: application/json" \
-  -u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
-  '{{escapeCmdLineParam(indexDefStr)}}'</pre>
+                    <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
+                      <span ng-if="indexName == scopedIndexUndecoratedName(indexName)">
+curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}{{api_base}}/api/index/{{indexName}} -d \
+'{{escapeCmdLineParam(indexDefStr)}}'
+                      </span>
+                      <span ng-if="indexName != scopedIndexUndecoratedName(indexName)">
+curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}{{api_base}}/api/bucket/{{scopedIndexBucketName(indexName)}}/scope/{{scopedIndexScopeName(indexName)}}/index/{{scopedIndexUndecoratedName(indexName)}} -d \
+'{{escapeCmdLineParam(indexDefStr)}}'
+                      </span>
+                    </pre>
                     <button
                         class="outline copy-to-clipboard"
                         ngclipboard data-clipboard-target="#indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">

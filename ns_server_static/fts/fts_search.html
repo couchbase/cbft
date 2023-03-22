@@ -104,9 +104,18 @@
       </button>
     </div>
     <div ng-show="curl_example_toggle" class="json-content row items-top margin-bottom1">
-      <pre id="jsonQueryCurlContent">curl -XPOST -H "Content-Type: application/json" \
--u &lt;username&gt;:&lt;password&gt; {{protocol}}://{{hostPort}}/api/index/{{indexName}}/query \
--d '{{jsonQuery}}'</pre>
+      <pre id="jsonQueryCurlContent">
+        <span ng-if="indexName == scopedIndexUndecoratedName(indexName)">
+curl -XPOST -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}/api/index/{{indexName}}/query \
+-d '{{jsonQuery}}'
+        </span>
+        <span ng-if="indexName != scopedIndexUndecoratedName(indexName)">
+curl -XPOST -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
+{{protocol}}://{{hostPort}}/api/bucket/{{scopedIndexBucketName(indexName)}}/scope/{{scopedIndexScopeName(indexName)}}/index/{{indexName}}/query \
+-d '{{jsonQuery}}'
+        </span>
+      </pre>
       <button class="outline copy-to-clipboard" ngclipboard data-clipboard-target="#jsonQueryCurlContent">
         Copy to Clipboard
       </button>
@@ -114,7 +123,14 @@
   </div>
 
   <!-- results title, no-results msg, and results **************** -->
-  <h3 class="fts-query-results-title">Results for {{indexName}}</h3>
+  <h3 class="fts-query-results-title">Results from:
+    {{undecoratedIndexName}}
+  </h3>
+  <div ng-if="isScopedIndexName"
+       class="text-small">
+      [scoped access - bucket:<b>{{indexBucketName}}</b>; scope:<b>{{indexScopeName}}</b>]
+  </div>
+  <hr>
   <div ng-show="results && !results.total_hits">
     <p>No results found for your query.<br>Please check your search term(s) and/or use the syntax help link under the search field.</p>
   </div>

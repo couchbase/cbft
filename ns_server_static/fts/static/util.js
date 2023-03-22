@@ -11,7 +11,7 @@ import initBleveIndexMappingController from "../static-bleve-mapping/js/mapping/
 import confirmDialogTemplate from "../confirm_dialog.html";
 import alertDialogTemplate from "../alert_dialog.html";
 
-export {errorMessage, confirmDialog, alertDialog};
+export {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName};
 export {blevePIndexInitController, blevePIndexDoneController};
 
 function errorMessage(errorMessageFull, code) {
@@ -445,4 +445,31 @@ function getBucketScopeFromMapping(mapping) {
         return scopeCollType[0];
     }
     return "";
+}
+
+// -------------------------------------------------------
+
+// obtainBucketScopeUndecoratedIndexName retrieves the bucket, scope
+// and the user chosen name for the index from a scoped index name.
+// If the index were a global one, just the name is returned.
+function obtainBucketScopeUndecoratedIndexName(indexName) {
+    if (!angular.isDefined(indexName)) {
+        return ["", "", indexName];
+    }
+
+    let lastDotIndex = indexName.lastIndexOf(".");
+    if (lastDotIndex < 0) {
+        return ["", "", indexName];
+    }
+
+    let secondDotIndex = indexName.lastIndexOf(".", lastDotIndex - 1);
+    if (secondDotIndex < 0) {
+        return ["", "", indexName];
+    }
+
+    return [
+        indexName.slice(0, secondDotIndex),
+        indexName.slice(secondDotIndex + 1, lastDotIndex),
+        indexName.slice(lastDotIndex + 1)
+    ];
 }

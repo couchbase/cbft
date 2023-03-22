@@ -6,7 +6,8 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 import {errorMessage, confirmDialog,
-        blevePIndexInitController, blevePIndexDoneController} from "./util.js";
+        blevePIndexInitController, blevePIndexDoneController,
+        obtainBucketScopeUndecoratedIndexName} from "./util.js";
 import { queryMonitor } from "./query.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
@@ -146,6 +147,18 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
         $location.path('/indexes/' + name + '/_clone');
     }
 
+    $scope.scopedIndexBucketName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[0];
+    };
+
+    $scope.scopedIndexScopeName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[1];
+    }
+
+    $scope.scopedIndexUndecoratedName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[2];
+    };
+
     $scope.refreshIndexNames();
 }
 
@@ -159,6 +172,12 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
     $scope.nodeAddrsArr = null;
 
     $scope.indexName = $routeParams.indexName;
+    let rv = obtainBucketScopeUndecoratedIndexName($scope.indexName);
+    $scope.indexBucketName = rv[0];
+    $scope.indexScopeName = rv[1];
+    $scope.undecoratedIndexName = rv[2];
+    $scope.isScopedIndexName = ($scope.indexName != $scope.undecoratedIndexName);
+
     $scope.indexDocCount = 0;
     $scope.indexDefStr = "";
     $scope.indexParamsStr = "";

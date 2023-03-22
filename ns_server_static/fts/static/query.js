@@ -5,7 +5,7 @@
 //  in that file, in accordance with the Business Source License, use of this
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
-import {confirmDialog, errorMessage} from "./util.js";
+import {confirmDialog, errorMessage, obtainBucketScopeUndecoratedIndexName} from "./util.js";
 import {timer}   from "rxjs";
 import { takeWhile } from 'rxjs/operators';
 export default QueryCtrl;
@@ -163,7 +163,18 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
         $scope.resultsSuccessPct = 100;
 
         var req = createQueryRequest();
-        $http.post('/api/index/' + $scope.indexName + '/query', req).
+
+        let reqUrl = "/api/index/" + $scope.indexName + "/query";
+        if ($scope.isScopedIndexName &&
+            angular.isDefined($scope.indexBucketName) &&
+            angular.isDefined($scope.indexScopeName) &&
+            angular.isDefined($scope.undecoratedIndexName)) {
+            reqUrl = "/api/bucket/" + $scope.indexBucketName +
+                "/scope/" + $scope.indexScopeName +
+                "/index/" + $scope.undecoratedIndexName + "/query";
+        }
+
+        $http.post(reqUrl, req).
         then(function(response) {
             var data = response.data;
             lastQueryIndex = $scope.indexName;
@@ -378,6 +389,19 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             $location.search('q', lastQueryReq.q);
         }
     }
+
+    $scope.scopedIndexBucketName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[0];
+    };
+
+    $scope.scopedIndexScopeName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[1];
+    }
+
+    $scope.scopedIndexUndecoratedName = function(name) {
+        return obtainBucketScopeUndecoratedIndexName(name)[2];
+    };
+
 }
 
 function queryMonitor($scope, $uibModal, $http){

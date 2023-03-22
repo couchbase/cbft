@@ -34,7 +34,7 @@ import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-
 import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
-import {errorMessage, confirmDialog, alertDialog} from "./static/util.js";
+import {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName} from "./static/util.js";
 import QueryCtrl from "./static/query.js";
 import uiTree from "angular-ui-tree";
 
@@ -937,6 +937,11 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
   var $routeParams = $stateParams;
 
   $scope.indexName = $stateParams.indexName;
+  let rv = obtainBucketScopeUndecoratedIndexName($scope.indexName);
+  $scope.indexBucketName = rv[0];
+  $scope.indexScopeName = rv[1];
+  $scope.undecoratedIndexName = rv[2];
+  $scope.isScopedIndexName = ($scope.indexName != $scope.undecoratedIndexName);
 
   $scope.indexDefs = null;
   $httpPrefixed.get('/api/index').then(function(rsp) {
@@ -1028,6 +1033,11 @@ function IndexDetailsCtrlFT_NS($scope, $http, $stateParams,
     var http = prefixedHttp($http, '/../_p/' + ftsPrefix);
 
     $scope.indexName = $stateParams.indexName;
+    let rv = obtainBucketScopeUndecoratedIndexName($scope.indexName);
+    $scope.indexBucketName = rv[0];
+    $scope.indexScopeName = rv[1];
+    $scope.undecoratedIndexName = rv[2];
+    $scope.isScopedIndexName = ($scope.indexName != $scope.undecoratedIndexName);
 
     $scope.jsonDetails = false;
     $scope.curlDetails = false;

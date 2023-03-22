@@ -102,6 +102,8 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 					if !strings.HasPrefix(indexName, scopedPrefix) {
 						continue
 					}
+					// Drop the scopedIndexName prefix.
+					indexDef.Name = indexDef.Name[len(scopedPrefix):]
 				}
 
 				out.IndexDefs[indexName] = indexDef
