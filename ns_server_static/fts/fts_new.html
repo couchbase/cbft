@@ -117,7 +117,13 @@
           <!-- IF INDEX ALIAS > this instead of type identifiers/mapping/analyzers/advanced/etc.  -->
           <div class="formrow width-480 margin-bottom2"
                ng-show="newIndexType && newIndexType == 'fulltext-alias' && aliasTargets">
-            <label for="inputTargetIndexes">Targets</label>
+            <label for="inputTargetIndexes" class="inline">Targets</label>
+            <span class="fa-stack icon-info raised"
+                  uib-tooltip="Scoped index targets carry a 'bucket.scope' prefix."
+                  tooltip-placement="auto right">
+                <span class="icon fa-circle-thin fa-stack-2x"></span>
+                <span class="icon fa-info fa-stack-1x"></span>
+            </span>
             <select id="inputTargetIndexes"
                     multiple="true"
                     ng-model="$parent.selectedTargetIndexes"
