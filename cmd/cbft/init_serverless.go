@@ -234,7 +234,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
 	nodeWeights := make(map[string]int)
 	for _, nodeUUID := range in.NodeUUIDsAll {
-		nodeWeights[nodeUUID] = 1
+		nodeWeights[nodeUUID] = -1
 	}
 
 	indexNodeUUIDs := make(map[string]struct{}) // nodeUUIDs that hold current index
