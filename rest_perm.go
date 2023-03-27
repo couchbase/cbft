@@ -70,6 +70,9 @@ cluster.bucket[].fts!read
 GET /api/nsstats
 cluster.bucket[].fts!read
 
+GET /api/nodeUtilStats
+cluster.bucket[].fts!read
+
 GET /api/dcpAgentStats
 cluster.bucket[].fts!read
 

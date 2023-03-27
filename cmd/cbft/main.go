@@ -563,6 +563,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		HandlerFunc: nil,
 	})
 
+	handle(prefix+"/api/nodeUtilStats", "GET", cbft.NewNodeUtilStatsHandler(mgr))
+
 	handle(prefix+"/api/nsstats/index/{indexName}", "GET",
 		cbft.NewIndexNsStatsHandler(mgr))
 

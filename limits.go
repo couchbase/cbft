@@ -364,19 +364,23 @@ type NodeUtilStats struct {
 	LimitMemoryUsage       uint64 `json:"limits:memoryBytes"`
 }
 
+type nodeUtilStatsHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewNodeUtilStatsHandler(mgr *cbgt.Manager) *nodeUtilStatsHandler {
+	return &nodeUtilStatsHandler{mgr: mgr}
+}
+
+func (nh *nodeUtilStatsHandler) ServeHTTP(w http.ResponseWriter,
+	req *http.Request) {
+	rv := make(map[string]interface{})
+	gatherNodeUtilStats(nh.mgr, rv)
+
+	rest.MustEncode(w, rv)
+}
+
 func (ns *NodeUtilStats) IsUtilizationOverHWM() bool {
-	if ns.LimitBillableUnitsRate > 0 &&
-		ns.BillableUnitsRate >= uint64(ns.HighWaterMark*float64(ns.LimitBillableUnitsRate)) {
-		// billableUnitsRate exceeds limit
-		return true
-	}
-
-	if ns.LimitDiskUsage > 0 &&
-		ns.DiskUsage >= uint64(ns.HighWaterMark*float64(ns.LimitDiskUsage)) {
-		// disk usage exceeds limit
-		return true
-	}
-
 	if ns.LimitMemoryUsage > 0 &&
 		ns.MemoryUsage >= uint64(ns.HighWaterMark*float64(ns.LimitMemoryUsage)) {
 		// memory usage exceeds limit
@@ -402,7 +406,7 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 			hostPortUrl = u
 		}
 	}
-	url := hostPortUrl + "/api/nsstats"
+	url := hostPortUrl + "/api/nodeUtilStats"
 
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
@@ -420,7 +424,7 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("GET /api/nsstats for node %s, status code: %v",
+		return nil, fmt.Errorf("GET /api/nodeUtilStats for node %s, status code: %v",
 			nodeDef.UUID, resp.StatusCode)
 	}
 

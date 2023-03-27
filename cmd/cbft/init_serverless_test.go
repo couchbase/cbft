@@ -559,49 +559,52 @@ func Test_defragmentationUtilizationHook(t *testing.T) {
 	cbft.NodesUtilStats = func(nodeDefs *cbgt.NodeDefs) map[string]*cbft.NodeUtilStats {
 		return map[string]*cbft.NodeUtilStats{
 			"n_0": &cbft.NodeUtilStats{
-				HighWaterMark:          0.8,
-				BillableUnitsRate:      600,
-				LimitBillableUnitsRate: 1000,
+				HighWaterMark:     0.8,
+				BillableUnitsRate: 600,
 				UtilizationStats: cbft.UtilizationStats{
-					DiskUsage:   850,
+					CPUUsage:    85,
+					DiskUsage:   750,
 					MemoryUsage: 700,
 				},
-				LimitDiskUsage: 1000,
-
-				LimitMemoryUsage: 1000,
+				LimitDiskUsage:         1000,
+				LimitBillableUnitsRate: 1000,
+				LimitMemoryUsage:       1000,
 			},
 			"n_1": &cbft.NodeUtilStats{
-				HighWaterMark:          0.8,
-				BillableUnitsRate:      700,
-				LimitBillableUnitsRate: 1000,
+				HighWaterMark:     0.8,
+				BillableUnitsRate: 700,
 				UtilizationStats: cbft.UtilizationStats{
-					DiskUsage:   850,
+					CPUUsage:    85,
+					DiskUsage:   700,
 					MemoryUsage: 600,
 				},
-				LimitDiskUsage:   1000,
-				LimitMemoryUsage: 1000,
+				LimitBillableUnitsRate: 1000,
+				LimitDiskUsage:         1000,
+				LimitMemoryUsage:       1000,
 			},
 			"n_2": &cbft.NodeUtilStats{
-				HighWaterMark:          0.8,
-				BillableUnitsRate:      500,
-				LimitBillableUnitsRate: 1000,
+				HighWaterMark:     0.8,
+				BillableUnitsRate: 500,
 				UtilizationStats: cbft.UtilizationStats{
+					CPUUsage:    50,
 					DiskUsage:   500,
 					MemoryUsage: 300,
 				},
-				LimitDiskUsage:   1000,
-				LimitMemoryUsage: 1000,
+				LimitBillableUnitsRate: 1000,
+				LimitDiskUsage:         1000,
+				LimitMemoryUsage:       1000,
 			},
 			"n_3": &cbft.NodeUtilStats{
-				HighWaterMark:          0.8,
-				BillableUnitsRate:      400,
-				LimitBillableUnitsRate: 1000,
+				HighWaterMark:     0.8,
+				BillableUnitsRate: 400,
 				UtilizationStats: cbft.UtilizationStats{
-					DiskUsage:   500,
+					CPUUsage:    50,
+					DiskUsage:   450,
 					MemoryUsage: 200,
 				},
-				LimitDiskUsage:   1000,
-				LimitMemoryUsage: 1000,
+				LimitBillableUnitsRate: 1000,
+				LimitDiskUsage:         1000,
+				LimitMemoryUsage:       1000,
 			},
 		}
 	}
@@ -636,16 +639,16 @@ func Test_defragmentationUtilizationHook(t *testing.T) {
 
 	expectBytes := []byte(`{
 		"n_0:9200": {
-			"billableUnitsRate":550,"diskBytes":675,"memoryBytes":450,"cpuPercent":0
+			"billableUnitsRate":550,"diskBytes":600,"memoryBytes":450,"cpuPercent":67
 		},
 		"n_1:9202": {
-			"billableUnitsRate":550,"diskBytes":675,"memoryBytes":450,"cpuPercent":0
+			"billableUnitsRate":550,"diskBytes":600,"memoryBytes":450,"cpuPercent":67
 		},
 		"n_2:9204": {
-			"billableUnitsRate":550,"diskBytes":675,"memoryBytes":450,"cpuPercent":0
+			"billableUnitsRate":550,"diskBytes":600,"memoryBytes":450,"cpuPercent":67
 		},
 		"n_3:9206": {
-			"billableUnitsRate":550,"diskBytes":675,"memoryBytes":450,"cpuPercent":0
+			"billableUnitsRate":550,"diskBytes":600,"memoryBytes":450,"cpuPercent":67
 		}
 	}`)
 
