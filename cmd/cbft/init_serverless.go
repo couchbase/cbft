@@ -226,8 +226,8 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 	if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
 		// SCALE OUT;
 		// Early exit, no need to adjust node weights.
-		log.Printf("serverlessRebalanceHook: scale out operation,"+
-			" not moving index: %s", in.IndexDef.Name)
+		log.Printf("serverlessRebalanceHook: scale out operation (adding: %v),"+
+			" not moving index: %s", in.NodeUUIDsToAdd, in.IndexDef.Name)
 		return in, nil
 	}
 
