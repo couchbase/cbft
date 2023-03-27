@@ -72,5 +72,7 @@ install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-
 install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-ui-tree"
   DESTINATION lib/fts/static/lib)
 
+INSTALL (FILES etc/metrics_metadata.json DESTINATION "etc/couchbase/fts")
+
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")

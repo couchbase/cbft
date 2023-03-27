@@ -1,0 +1,428 @@
+{
+     "fts_total_queries": {
+       "type": "counter",
+       "help": "The number of full text queries per second for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Query Rate"
+     },
+     "fts_total_internal_queries": {
+       "type": "counter",
+       "help": "The number of internal queries from the co-ordinating node to other nodes, per unit time for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_num_mutations_to_index": {
+       "type": "gauge",
+       "help": "DCP sequence numbers yet to be indexed for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Mutations Remaining"
+     },
+     "fts_doc_count": {
+       "type": "counter",
+       "help": "Number of documents in the index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Docs"
+     },
+     "fts_total_bytes_indexed": {
+       "type": "gauge",
+       "help": "Rate of bytes indexed for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Index Rate"
+     },
+     "fts_total_request_time": {
+       "type": "counter",
+       "help": "Total time spent processing query requests for an index",
+       "unit": "nanoseconds",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_num_recs_to_persist": {
+       "type": "gauge",
+       "help": "The number of entries (terms, records, dictionary rows, etc) by Bleve not yet persisted to storage",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Records to Persist"
+     },
+     "fts_num_bytes_used_disk": {
+       "type": "gauge",
+       "help": "The number of bytes used on disk by the index",
+       "unit": "bytes",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Disk Size"
+     },
+     "fts_num_bytes_used_disk_by_root": {
+       "type": "gauge",
+       "help": "The number of bytes used on disk by the root segment",
+       "unit": "bytes",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_num_root_memorysegments": {
+       "type": "gauge",
+       "help": "The number of memory segments in the root segment",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Memory Segments"
+     },
+     "fts_num_root_filesegments": {
+       "type": "gauge",
+       "help": "The number of file segments in the root segment",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Disk Segments"
+     },
+     "fts_num_pindexes_actual": {
+       "type": "gauge",
+       "help": "Total number of pindexes currently",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Partitions"
+     },
+     "fts_num_pindexes_target": {
+       "type": "gauge",
+       "help": "Planned/expected number of pindexes",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Partitions Expected"
+     },
+     "fts_total_compaction_written_bytes": {
+       "type": "counter",
+       "help": "Number of bytes written to disk as a result of compaction",
+       "unit": "bytes",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Compaction Rate"
+     },
+     "fts_avg_queries_latency": {
+       "type": "gauge",
+       "help": "Average latency of queries per unit time for an index",
+       "unit": "milliseconds",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Query Latency"
+     },
+     "fts_avg_internal_queries_latency": {
+       "type": "gauge",
+       "help": "Average latency of inter-node queries per unit time for an index",
+       "unit": "milliseconds",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_total_queries_slow": {
+       "type": "counter",
+       "help": "The number of FTS queries in the slow query log",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Slow Queries"
+     },
+     "fts_total_queries_timeout": {
+       "type": "counter",
+       "help": "The number of FTS queries for an index that exceeded the timeout",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Query Timeout Rate"
+     },
+     "fts_total_queries_error": {
+       "type": "counter",
+       "help": "The number of FTS queries for an index that resulted in an error",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Query Error Rate"
+     },
+     "fts_total_bytes_query_results": {
+       "type": "counter",
+       "help": "Size of results coming back from full text queries for search results, including the entire size of the JSON sent",
+       "unit": "bytes",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Result Rate"
+     },
+     "fts_total_term_searchers": {
+       "type": "counter",
+       "help": "Number of bleve term searchers",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "notes": "This is a bleve level statistic. Each query will require one or more term searchers to be satisfied, with more complex queries typically requiring more term searchers. This value is therefore a additional way to look at query load that approximates how complex a \"query\" is (query may break down to many different term searchers)",
+       "uiName": "Term Searchers Start Rate"
+     },
+     "fts_total_term_searchers_finished": {
+       "type": "counter",
+       "help": "Total term searchers that have finished serving a query",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_num_files_on_disk": {
+       "type": "gauge",
+       "help": "The number of files on disk for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ],
+       "uiName": "Search Disk Files"
+     },
+     "fts_num_bytes_used_ram": {
+       "type": "gauge",
+       "help": "The number of bytes used in memory",
+       "unit": "bytes",
+       "notes": "Process level statistic from the Go runtime",
+       "uiName": "RAM Used by Search"
+     },
+     "fts_total_gc": {
+       "type": "counter",
+       "help": "The number of garbage collection events triggered",
+       "notes": "Process level statistic from the Go runtime"
+     },
+     "fts_pct_cpu_gc": {
+       "type": "gauge",
+       "help": "The percentage of CPU time spent by an index in garbage collection",
+       "unit": "percent",
+       "notes": "Process level statistic from the Go runtime"
+     },
+     "fts_total_grpc_internal_queries": {
+       "type": "counter",
+       "help": "The number of internal gRPC requests from the co-ordinating node for the query to other nodes, for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_total_grpc_queries": {
+       "type": "counter",
+       "help": "The total number of queries, using gRPC for streaming, for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_total_grpc_queries_slow": {
+       "type": "counter",
+       "help": "The number of queries in the slow query log, using gRPC for streaming, for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_total_grpc_queries_timeout": {
+       "type": "counter",
+       "help": "The number of queries that exceeded the timeout, using gRPC for streaming, for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_avg_grpc_queries_latency": {
+       "type": "gauge",
+       "help": "Average latency per query, using gRPC for streaming, for an index",
+       "unit": "milliseconds",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_total_grpc_queries_error": {
+       "type": "counter",
+       "help": "The number of queries that resulted in an error, using gRPC for streaming, for an index",
+       "labels": [
+         "bucket",
+         "scope",
+         "collection",
+         "index"
+       ]
+     },
+     "fts_tot_bleve_dest_opened": {
+       "type": "counter",
+       "help": "The number of times Bleve destinations opened",
+       "notes": "Each Bleve destination corresponds to a Bleve index."
+     },
+     "fts_total_queries_rejected_by_herder": {
+       "type": "counter",
+       "help": "The number of queries rejected by the app herder when the memory used exceeds the application's query quota",
+       "uiName": "Rejected Queries"
+     },
+     "fts_curr_batches_blocked_by_herder": {
+       "type": "gauge",
+       "help": "The difference between the number of batches that have been indexed and the number of batches yet to be indexed",
+       "notes": "The app herder blocks indexing of batches till there is sufficient memory i.e. the memory used is below the memory quota",
+       "uiName": "DCP Batches Blocked"
+     },
+     "fts_tot_queryreject_on_memquota": {
+       "type": "counter",
+       "help": "Total number of queries rejected due to the memory quota being lesser than the estimated memory required for merging search results from all partitions from the query"
+     },
+     "fts_tot_grpc_queryreject_on_memquota": {
+       "type": "counter",
+       "help": "Total number of gRPC queries rejected due to the memory quota being lesser than the estimated memory required for merging search results from all partitions from the query"
+     },
+     "fts_batch_bytes_added": {
+       "type": "counter",
+       "help": "Total number of bytes from batches yet to be indexed.",
+       "unit": "bytes"
+     },
+     "fts_tot_grpcs_listeners_closed": {
+       "type": "counter",
+       "help": "Total number of gRPC SSL listeners closed"
+     },
+     "fts_tot_remote_http": {
+       "type": "counter",
+       "help": "Total number of remote(i.e. different node) HTTP requests"
+     },
+     "fts_tot_remote_http2": {
+       "type": "counter",
+       "help": "Total number of remote(i.e. different node) HTTP SSL requests"
+     },
+     "fts_tot_batches_flushed_on_maxops": {
+       "type": "counter",
+       "help": "Total number of batches executed due to the batch size being greater than the maximum number of operations per batch"
+     },
+     "fts_tot_batches_flushed_on_timer": {
+       "type": "counter",
+       "help": "Total number of batches executed at regular intervals"
+     },
+     "fts_tot_bleve_dest_closed": {
+       "type": "counter",
+       "help": "Total number of times Bleve destinations closed"
+     },
+     "fts_tot_remote_grpc": {
+       "type": "counter",
+       "help": "Total number of remote(i.e. different node) gRPC requests"
+     },
+     "fts_tot_remote_grpc_tls": {
+       "type": "counter",
+       "help": "Total number of remote(i.e. different node) gRPC SSL requests when adding clients."
+     },
+     "fts_batch_bytes_removed": {
+       "type": "counter",
+       "help": "Total number of bytes from batches which have been indexed.",
+       "unit": "bytes",
+       "notes": "This stat is associated with the fts_batch_bytes_added stat, in that they represent the completion and queuing of an indexing operation respectively."
+     },
+     "fts_tot_grpc_listeners_opened": {
+       "type": "counter",
+       "help": "Total number of gRPC listeners opened"
+     },
+     "fts_tot_grpcs_listeners_opened": {
+       "type": "counter",
+       "help": "Total number of gRPC SSL listeners opened"
+     },
+     "fts_tot_http_limitlisteners_closed": {
+       "type": "counter",
+       "help": "Total number of HTTP limit listeners closed"
+     },
+     "fts_tot_https_limitlisteners_closed": {
+       "type": "counter",
+       "help": "Total number of HTTPS limit listeners closed"
+     },
+     "fts_tot_https_limitlisteners_opened": {
+       "type": "counter",
+       "help": "Total number of HTTPS limit listeners opened"
+     },
+     "fts_tot_http_limitlisteners_opened": {
+       "type": "counter",
+       "help": "Total number of HTTP limit listeners opened"
+     }
+   }
