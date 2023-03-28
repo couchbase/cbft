@@ -202,13 +202,27 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 		if err != nil {
 			return nil, fmt.Errorf("error expanding fulltext-alias: %v", err)
 		}
-		for aliasIndexName := range aliasParams.Targets {
-			aliasIndexDef, exists := indexDefsByName[aliasIndexName]
+		aliasBucket, _ := getKeyspaceFromScopedIndexName(name)
+		for aliasTarget := range aliasParams.Targets {
+			// Check if this is a scoped alias target, in which case
+			// the source name can be retrieved from the name.
+			bucket, _ := getKeyspaceFromScopedIndexName(aliasTarget)
+			if len(bucket) > 0 {
+				rv = append(rv, bucket)
+				continue
+			} else if len(aliasBucket) > 0 {
+				// If the alias is scoped, then the alias target is scoped
+				// to the same keyspace as the alias during the PREPARE phase.
+				rv = append(rv, aliasBucket)
+				continue
+			}
+
+			aliasIndexDef, exists := indexDefsByName[aliasTarget]
 			// if alias target doesn't exist, do nothing
 			if exists {
 				if aliasIndexDef.Type == "fulltext-alias" {
 					// handle nested aliases with recursive call
-					nestedSources, err := sourceNamesForAlias(aliasIndexName,
+					nestedSources, err := sourceNamesForAlias(aliasTarget,
 						indexDefsByName, depth+1)
 					if err != nil {
 						return nil, err
@@ -385,6 +399,14 @@ var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
 	indexName, _ := rp.GetIndexName()
+
+	if !isIndexPath(path) {
+		// Check for scoped index name, only if not an index path.
+		if bucket, _ := getKeyspaceFromScopedIndexName(indexName); len(bucket) > 0 {
+			return []string{bucket}, nil
+		}
+	}
+
 	_, indexDefsByName, err := mgr.GetIndexDefs(false)
 	if err != nil {
 		return nil, err

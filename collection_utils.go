@@ -396,16 +396,16 @@ func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.Inde
 		rv = make(map[string]int)
 	}
 
-	bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
-	if len(bucketName) > 0 && len(scopeName) > 0 {
-		// indexName is a scoped index name
-		key := bucketName + "." + scopeName
-		rv[key]++
-		return rv, nil
-	}
-
 	// else obtain bucket & scope from definition of index
 	if indexDef.Type == "fulltext-index" {
+		bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+		if len(bucketName) > 0 && len(scopeName) > 0 {
+			// indexName is a scoped index name
+			key := bucketName + "." + scopeName
+			rv[key]++
+			return rv, nil
+		}
+
 		scope, _, err := GetScopeCollectionsFromIndexDef(indexDef)
 		if err != nil {
 			return rv, err
@@ -414,10 +414,17 @@ func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.Inde
 		rv[key]++
 		return rv, nil
 	} else if indexDef.Type == "fulltext-alias" {
-		params := AliasParams{}
-		err := UnmarshalJSON([]byte(indexDef.Params), &params)
+		params, err := parseAliasParams(indexDef.Params)
 		if err == nil {
 			for idxName := range params.Targets {
+				bucketName, scopeName := getKeyspaceFromScopedIndexName(idxName)
+				if len(bucketName) > 0 && len(scopeName) > 0 {
+					// indexName is a scoped index name
+					key := bucketName + "." + scopeName
+					rv[key]++
+					continue
+				}
+
 				idxDef, _, err := mgr.GetIndexDef(idxName, true)
 				if err != nil || indexDef == nil {
 					return rv, fmt.Errorf("failed to retrieve index def for `%v`, err: %v",

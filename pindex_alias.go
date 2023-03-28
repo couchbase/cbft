@@ -55,7 +55,7 @@ type AliasParams struct {
 }
 
 type AliasParamsTarget struct {
-	IndexUUID string `json:"indexUUID"` // Optional.
+	IndexUUID string `json:"indexUUID,omitempty"` // Optional.
 }
 
 // Overrideable for test-ability
@@ -68,6 +68,26 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
+
+	// In case of a scoped index alias, decorate any undecorated index targets
+	if pos := strings.LastIndex(indexDef.Name, "."); pos > 0 {
+		params, err := parseAliasParams(indexDef.Params)
+		if err == nil {
+			for idxName := range params.Targets {
+				if !strings.Contains(idxName, ".") {
+					// Remove unscoped index target
+					delete(params.Targets, idxName)
+					// Replace with scoped index target
+					params.Targets[indexDef.Name[:pos]+"."+idxName] = &AliasParamsTarget{}
+				}
+			}
+		}
+		paramsBytes, err := MarshalJSON(params)
+		if err != nil {
+			return nil, fmt.Errorf("PrepareAlias, unable to marshal params")
+		}
+		indexDef.Params = string(paramsBytes)
+	}
 
 	// map to track unique keyspaces (bucket.scope)
 	var uniqueKeyspaces map[string]int
@@ -100,7 +120,7 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 		}
 		if numErrTargets > 0 {
 			return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
-				" include %d targets", numErrTargets)
+				" include %d target(s)", numErrTargets)
 		}
 	}
 
