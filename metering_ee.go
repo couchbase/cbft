@@ -408,6 +408,9 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, batchExec bool,
 			regulator.CheckResultThrottleRetry:
 			reg.updateRegulatorStats(bucket, "total_write_ops_rejected", 1)
 		case regulator.CheckResultProceed:
+			if utilStatsTracker.isClusterIdle() {
+				utilStatsTracker.spawnNodeUtilStatsTracker()
+			}
 		default:
 			log.Warnf("limiting/metering: unindentified result from "+
 				"regulator, result: %v\n", action)
@@ -425,6 +428,9 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, batchExec bool,
 		}
 		switch CheckResult(action) {
 		case CheckResultProceed:
+			if utilStatsTracker.isClusterIdle() {
+				utilStatsTracker.spawnNodeUtilStatsTracker()
+			}
 			return CheckResult(action), duration, err
 		case CheckResultThrottleProceed:
 			time.Sleep(duration)
@@ -541,6 +547,9 @@ func CheckQuotaRead(bucket, user string,
 		regulator.CheckResultThrottleRetry:
 		reg.updateRegulatorStats(bucket, "total_read_ops_rejected", 1)
 	case regulator.CheckResultProceed:
+		if utilStatsTracker.isClusterIdle() {
+			utilStatsTracker.spawnNodeUtilStatsTracker()
+		}
 	default:
 		log.Warnf("limiting/metering: unindentified result from "+
 			"regulator, result: %v\n", result)

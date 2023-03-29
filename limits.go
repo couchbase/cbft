@@ -395,10 +395,13 @@ var NodesUtilStats = func(nodeDefs *cbgt.NodeDefs) map[string]*NodeUtilStats {
 
 // Override-able for unit testing
 var CanNodeAccommodateRequest = func(nodeDef *cbgt.NodeDef) bool {
-	stats, err := obtainNodeUtilStats(nodeDef)
-	if err != nil {
-		log.Errorf("limits: unable to get stats for nodeDef: %+v, err: %v", nodeDef, err)
-		return false
+	stats := utilStatsTracker.getStats(nodeDef.UUID)
+
+	// the stats are nil only during the very first time the tracker
+	// is started, and we know that during that time the system won't be
+	// under any load, so we can safely return true
+	if stats == nil {
+		return true
 	}
 
 	return !stats.IsUtilizationOverHWM()
@@ -429,6 +432,11 @@ type nodeUtilStatsHandler struct {
 }
 
 func NewNodeUtilStatsHandler(mgr *cbgt.Manager) *nodeUtilStatsHandler {
+	utilStatsTracker = &nodeUtilStatsTracker{
+		mgr:           mgr,
+		nodeUtilStats: make(map[string]*NodeUtilStats),
+	}
+	utilStatsTracker.spawnNodeUtilStatsTracker()
 	return &nodeUtilStatsHandler{mgr: mgr}
 }
 
