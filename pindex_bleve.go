@@ -763,8 +763,11 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 	}
 
 	// Reset focusStats of the index
-	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
-	indexQueryPathStats.ResetFocusStats(indexDef.Name)
+	for k := range queryPaths {
+		if indexQueryPathStats, exists := MapRESTPathStats[k]; exists {
+			indexQueryPathStats.ResetFocusStats(indexDef.Name)
+		}
+	}
 
 	// Reset gRPC focusStats of the index
 	GrpcPathStats.ResetFocusStats(indexDef.Name)

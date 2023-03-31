@@ -21,11 +21,34 @@ import (
 	"github.com/couchbase/goutils/go-cbaudit"
 )
 
-const RESTIndexQueryPath = "/api/index/{indexName}/query"
-
 // MapRESTPathStats is keyed by path spec strings.
-var MapRESTPathStats = map[string]*rest.RESTPathStats{
-	RESTIndexQueryPath: {},
+var MapRESTPathStats map[string]*rest.RESTPathStats
+
+var indexPaths = map[string]bool{
+	"/api/index/{indexName}": true,
+	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}": true,
+}
+
+var queryPaths = map[string]bool{
+	"/api/index/{indexName}/query":                                       true,
+	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query": true,
+}
+
+func isIndexPath(path string) bool {
+	return indexPaths[path]
+}
+
+func isQueryPath(path string) bool {
+	return queryPaths[path]
+}
+
+// -----------------------------------------------------------------------------
+
+func InitRESTPathStats() {
+	MapRESTPathStats = make(map[string]*rest.RESTPathStats)
+	for k := range queryPaths {
+		MapRESTPathStats[k] = &rest.RESTPathStats{}
+	}
 }
 
 func InitStaticRouter(staticDir, staticETag string,

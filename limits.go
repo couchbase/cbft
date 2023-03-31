@@ -28,24 +28,6 @@ import (
 const bytesPerMB = 1048576
 const windowLength = 1 * time.Minute
 
-var indexPaths = map[string]bool{
-	"/api/index/{indexName}": true,
-	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}": true,
-}
-
-var queryPaths = map[string]bool{
-	"/api/index/{indexName}/query":                                       true,
-	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query": true,
-}
-
-func isIndexPath(path string) bool {
-	return indexPaths[path]
-}
-
-func isQueryPath(path string) bool {
-	return queryPaths[path]
-}
-
 // -----------------------------------------------------------------------------
 
 var indexPartitionsLimit = uint32(math.MaxUint32)
@@ -87,7 +69,7 @@ func processRequest(username, path string, req *http.Request) (bool, string) {
 		if !isIndexPath(path) && !isQueryPath(path) {
 			return true, ""
 		}
-		return limiter.processRequestForLimiting(username, path, req)
+		return limiter.processRequestInServerless(username, path, req)
 	}
 
 	if limiter == nil || !limiter.isActive() {
@@ -648,7 +630,7 @@ func (e *rateLimiter) regulateRequest(username, path string,
 
 // custom function just to check out the LMT.
 // can be removed and made part of the original rate Limiter later on, if necessary.
-func (e *rateLimiter) processRequestForLimiting(username, path string,
+func (e *rateLimiter) processRequestInServerless(username, path string,
 	req *http.Request) (bool, string) {
 	e.m.Lock()
 	defer e.m.Unlock()

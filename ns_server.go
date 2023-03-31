@@ -367,37 +367,49 @@ func gatherIndexStats(
 		return nil, fmt.Errorf("gatherIndexStats: indexDef cannot be nil")
 	}
 
-	indexQueryPathStats := MapRESTPathStats[RESTIndexQueryPath]
-
 	nsIndexStat := NewIndexStat()
-	focusStats := indexQueryPathStats.FocusStats(indexDef.Name)
-	if focusStats != nil {
-		totalQueries := atomic.LoadUint64(&focusStats.TotClientRequest)
-		nsIndexStat["total_queries"] = totalQueries
-		if totalQueries > 0 {
-			nsIndexStat["avg_queries_latency"] =
-				float64(atomic.LoadUint64(&focusStats.TotClientRequestTimeNS)/
-					totalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
+
+	var totalQueries, totalInternalQueries uint64
+	var totClientRequestTimeNS, totInternalRequestTimeNS uint64
+	var totRequestTimeNS, totRequestSlow, totRequestTimeout, totRequestErr, totResponseBytes uint64
+
+	for k := range queryPaths {
+		// Obtain focus stats for all query paths supported
+		indexQueryPathStats := MapRESTPathStats[k]
+
+		focusStats := indexQueryPathStats.FocusStats(indexDef.Name)
+		if focusStats != nil {
+			totalQueries += atomic.LoadUint64(&focusStats.TotClientRequest)
+			totClientRequestTimeNS += atomic.LoadUint64(&focusStats.TotClientRequestTimeNS)
+			totalInternalQueries += atomic.LoadUint64(&focusStats.TotInternalRequest)
+			totInternalRequestTimeNS += atomic.LoadUint64(&focusStats.TotInternalRequestTimeNS)
+			totRequestTimeNS += atomic.LoadUint64(&focusStats.TotRequestTimeNS)
+			totRequestSlow += atomic.LoadUint64(&focusStats.TotRequestSlow)
+			totRequestTimeout += atomic.LoadUint64(&focusStats.TotRequestTimeout)
+			totRequestErr += atomic.LoadUint64(&focusStats.TotRequestErr)
+			totResponseBytes += atomic.LoadUint64(&focusStats.TotResponseBytes)
 		}
-		totalInternalQueries := atomic.LoadUint64(&focusStats.TotInternalRequest)
-		nsIndexStat["total_internal_queries"] = totalInternalQueries
-		if totalInternalQueries > 0 {
-			nsIndexStat["avg_internal_queries_latency"] =
-				float64(atomic.LoadUint64(&focusStats.TotInternalRequestTimeNS)/
-					totalInternalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
-		}
-		nsIndexStat["total_request_time"] =
-			atomic.LoadUint64(&focusStats.TotRequestTimeNS)
-		nsIndexStat["total_queries_slow"] =
-			atomic.LoadUint64(&focusStats.TotRequestSlow)
-		nsIndexStat["total_queries_timeout"] =
-			atomic.LoadUint64(&focusStats.TotRequestTimeout)
-		nsIndexStat["total_queries_error"] =
-			atomic.LoadUint64(&focusStats.TotRequestErr)
-		nsIndexStat["total_bytes_query_results"] =
-			atomic.LoadUint64(&focusStats.TotResponseBytes)
-		nsIndexStat["num_pindexes_target"] = uint64(len(planPIndexes))
 	}
+
+	nsIndexStat["total_queries"] = totalQueries
+	if totalQueries > 0 {
+		// Convert from nanosecs to millisecs for avg_queries_latency.
+		nsIndexStat["avg_queries_latency"] =
+			float64(totClientRequestTimeNS/totalQueries) / 1000000.0
+	}
+	nsIndexStat["total_internal_queries"] = totalInternalQueries
+	if totalInternalQueries > 0 {
+		// Convert from nanosecs to millisecs for avg_internal_queries_latency.
+		nsIndexStat["avg_internal_queries_latency"] =
+			float64(totInternalRequestTimeNS/totalInternalQueries) / 1000000.0
+	}
+	nsIndexStat["total_request_time"] = totRequestTimeNS
+	nsIndexStat["total_queries_slow"] = totRequestSlow
+	nsIndexStat["total_queries_timeout"] = totRequestTimeout
+	nsIndexStat["total_queries_error"] = totRequestErr
+	nsIndexStat["total_bytes_query_results"] = totResponseBytes
+
+	nsIndexStat["num_pindexes_target"] = uint64(len(planPIndexes))
 
 	rpcFocusStats := GrpcPathStats.FocusStats(indexDef.Name)
 	if rpcFocusStats != nil {

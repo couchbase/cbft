@@ -19,7 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/blevesearch/bleve/v2/search/query"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -197,19 +196,6 @@ func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error)
 	}
 
 	return opts, nil
-}
-
-func parseStringTime(t string) (time.Time, error) {
-	dateTimeParser, err := cache.DateTimeParserNamed(query.QueryDateTimeParser)
-	if err != nil {
-		return time.Time{}, err
-	}
-	var ti time.Time
-	ti, err = dateTimeParser.ParseDateTime(t)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return ti, nil
 }
 
 // GRPCPathStats represents the stats for a gRPC path spec.
