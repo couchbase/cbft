@@ -74,7 +74,8 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 			var sourceNames []string
 		OUTER:
 			for indexName, indexDef := range indexDefsByName {
-				if indexDef.Type == "fulltext-alias" {
+				var indexDefCopy = *indexDef
+				if indexDefCopy.Type == "fulltext-alias" {
 					sourceNames, err =
 						sourceNamesForAlias(indexName, indexDefsByName, 0)
 					if err != nil {
@@ -84,7 +85,7 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 						return
 					}
 				} else {
-					sourceNames, err = getSourceNamesFromIndexDef(indexDef)
+					sourceNames, err = getSourceNamesFromIndexDef(&indexDefCopy)
 					if err != nil {
 						rest.PropagateError(w, nil,
 							fmt.Sprintf("rest_list: filteredListIndex, getSourceNamesFromIndexDef,"+
@@ -103,10 +104,10 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 						continue
 					}
 					// Drop the scopedIndexName prefix.
-					indexDef.Name = indexDef.Name[len(scopedPrefix):]
+					indexDefCopy.Name = indexDefCopy.Name[len(scopedPrefix):]
 				}
 
-				out.IndexDefs[indexName] = indexDef
+				out.IndexDefs[indexName] = &indexDefCopy
 			}
 
 			indexDefs = &out
