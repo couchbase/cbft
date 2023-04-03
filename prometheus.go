@@ -52,8 +52,10 @@ var prometheusStats = map[string]string{
 	"tot_grpcs_listeners_opened":     "counter",
 	"tot_grpcs_listeners_closed":     "counter",
 
+	"tot_remote_http_ssl":              "counter",
 	"tot_remote_http2":                 "counter",
 	"tot_remote_grpc":                  "counter",
+	"tot_remote_grpc_ssl":              "counter",
 	"tot_remote_grpc_tls":              "counter",
 	"tot_queryreject_on_memquota":      "counter",
 	"tot_https_limitlisteners_opened":  "counter",
