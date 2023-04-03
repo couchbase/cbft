@@ -943,13 +943,9 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 
 	gone, indexUUID, er := dcpFeed.VerifySourceNotExists()
 	log.Printf("main: meh.OnFeedError, VerifySourceNotExists,"+
-		" srcType: %s, gone: %t, indexUUID: %s",
-		srcType, gone, indexUUID)
+		" srcType: %s, gone: %t, indexUUID: %s, err: %v",
+		srcType, gone, indexUUID, er)
 	if !gone {
-		if er != nil {
-			log.Warnf("main: meh.OnFeedError, VerifySourceNotExists err: %v", er)
-		}
-
 		// If we get an EOF error from the feeds and the bucket is still alive,
 		// then there could at the least two potential error scenarios.
 		//
