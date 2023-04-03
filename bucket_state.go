@@ -21,7 +21,7 @@ import (
 
 type streamingResponse struct {
 	Name             string `json:"name,omitempty"`
-	HibernationState string `json:"hibernation_state,omitempty"`
+	HibernationState string `json:"hibernationState,omitempty"`
 }
 
 func pauseHandleFunc(reader *bufio.Reader) (int, error) {

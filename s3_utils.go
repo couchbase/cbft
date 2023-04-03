@@ -25,14 +25,17 @@ import (
 
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
+	"github.com/couchbase/tools-common/ioiface"
 	"github.com/couchbase/tools-common/objstore/objcli"
 	"github.com/couchbase/tools-common/objstore/objcli/objaws"
 	"github.com/couchbase/tools-common/objstore/objutil"
+	"github.com/couchbase/tools-common/ratelimit"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"golang.org/x/time/rate"
 )
 
 func GetS3Client(region string) (objcli.Client, error) {
@@ -80,8 +83,10 @@ func (pt *ProgressReader) Read(p []byte) (int, error) {
 }
 
 func decompress(src io.Reader, dst string, ctx context.Context, copyStats *CopyPartitionStats) error {
+	rateLimitedZr := newRateLimitedReader(ctx, src)
+
 	customReader := &ProgressReader{
-		Reader:    src,
+		Reader:    rateLimitedZr,
 		copyStats: copyStats,
 	}
 
@@ -178,14 +183,15 @@ func downloadFromBucket(c objcli.Client, bucket, key, pindexPath string,
 	return nil
 }
 
-func DownloadMetadata(client objcli.Client, bucket, remotePath string) ([]byte, error) {
+func DownloadMetadata(client objcli.Client, ctx context.Context, bucket, remotePath string) ([]byte, error) {
 	// Ref : https://stackoverflow.com/questions/46019484/buffer-implementing-io-writerat-in-go
 	buf := aws.NewWriteAtBuffer([]byte{})
+
 	options := objutil.DownloadOptions{
 		Client: client,
 		Bucket: bucket,
 		Key:    remotePath,
-		Writer: buf,
+		Writer: newRateLimitedWriterAt(ctx, buf),
 	}
 	log.Printf("s3_utils: downloading metadata from path %s", remotePath)
 	err := objutil.Download(options)
@@ -193,6 +199,27 @@ func DownloadMetadata(client objcli.Client, bucket, remotePath string) ([]byte, 
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func newRateLimitedReader(ctx context.Context, reader io.Reader) *ratelimit.RateLimitedReader {
+	rateLimit := ctx.Value("rateLimit").(uint64)
+	// Limit to 'rateLimit' bytes per second.
+	rateLimiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(rateLimit)), int(rateLimit))
+	return ratelimit.NewRateLimitedReader(ctx, reader, rateLimiter)
+}
+
+func newRateLimitedReadAtSeeker(ctx context.Context, reader ioiface.ReadAtSeeker) *ratelimit.RateLimitedReadAtSeeker {
+	rateLimit := ctx.Value("rateLimit").(uint64)
+	// Limit to 'rateLimit' bytes per second.
+	rateLimiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(rateLimit)), int(rateLimit))
+	return ratelimit.NewRateLimitedReadAtSeeker(ctx, reader, rateLimiter)
+}
+
+func newRateLimitedWriterAt(ctx context.Context, writer io.WriterAt) *ratelimit.RateLimitedWriterAt {
+	rateLimit := ctx.Value("rateLimit").(uint64)
+	// Limit to 'rateLimit' bytes per second.
+	rateLimiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(rateLimit)), int(rateLimit))
+	return ratelimit.NewRateLimitedWriterAt(ctx, writer, rateLimiter)
 }
 
 func UploadMetadata(client objcli.Client, ctx context.Context, bucket,
@@ -205,7 +232,7 @@ func UploadMetadata(client objcli.Client, ctx context.Context, bucket,
 		Client:  client,
 		Bucket:  bucket,
 		Key:     remotePath,
-		Body:    reader,
+		Body:    newRateLimitedReadAtSeeker(ctx, reader),
 		Options: objutil.Options{Context: ctx},
 	}
 	log.Printf("s3_utils: uploading metadata to path %s", remotePath)
@@ -341,7 +368,7 @@ func compressUploadUtil(src string, ctx context.Context, mpUploader *objutil.MPU
 			}
 
 			buf := bytes.NewReader(slice[:pos])
-			err := mpUploader.Upload(buf)
+			err := mpUploader.Upload(newRateLimitedReadAtSeeker(ctx, buf))
 			if err != nil {
 				appendToErrs(fmt.Errorf("s3_utils: error MP upload: %v", err))
 				return
