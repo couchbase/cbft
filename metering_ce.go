@@ -41,12 +41,12 @@ func RefreshRegulatorStats() {
 
 func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	req interface{}) (CheckResult, time.Duration, error) {
-	return CheckResultNormal, 0, nil
+	return CheckResultProceed, 0, nil
 }
 
 func CheckQuotaRead(bucket, user string,
 	req interface{}) (CheckResult, time.Duration, error) {
-	return CheckResultNormal, 0, nil
+	return CheckResultProceed, 0, nil
 }
 
 func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64) {

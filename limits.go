@@ -151,10 +151,11 @@ func (r *rateLimiter) limitIndexDefInServerlessMode(indexDef *cbgt.IndexDef) (
 type CheckResult uint
 
 const (
-	CheckResultNormal CheckResult = iota
-	CheckResultThrottle
+	CheckResultProceed CheckResult = iota
+	CheckResultThrottleProceed
 	CheckResultReject
 	CheckResultError
+	CheckResultThrottleRetry
 	CheckAccessNormal
 	CheckAccessNoIngress
 	CheckAccessError
@@ -184,7 +185,7 @@ func (r *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
 			}
 		}
 	}
-	return CheckResultNormal, nil
+	return CheckResultProceed, nil
 }
 
 func (r *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.IndexDef, error) {
@@ -237,7 +238,7 @@ func (r *rateLimiter) regulateRequest(username, path string,
 	// which basically displays the index definition, since it doesn't impact the
 	// disk usage in the system.
 	if req.Method == "DELETE" || req.Method == "GET" {
-		return CheckResultNormal, 0, nil
+		return CheckResultProceed, 0, nil
 	}
 
 	if isQueryPath(path) {
@@ -266,11 +267,11 @@ func (r *rateLimiter) regulateRequest(username, path string,
 
 	// Regulator applicable to full text indexes ONLY
 	if indexDef.Type != "fulltext-index" {
-		return CheckResultNormal, 0, nil
+		return CheckResultProceed, 0, nil
 	}
 
 	action, duration, err := CheckQuotaWrite(nil, indexDef.SourceName, username, false, req)
-	if action == CheckResultNormal {
+	if action == CheckResultProceed {
 		action, err = CheckAccess(indexDef.SourceName, username)
 		if indexDef.UUID == "" {
 			// This is a CREATE INDEX request and NOT an UPDATE INDEX request.
@@ -291,7 +292,7 @@ func (r *rateLimiter) processRequestInServerless(username, path string,
 	// support only limiting of indexing and query requests at the request
 	// admission layer. Furthermore, reject those indexing requests if the
 	// tenant has hit a storage limit.
-	case CheckResultReject, CheckResultThrottle, CheckAccessNoIngress:
+	case CheckResultReject, CheckResultThrottleProceed, CheckAccessNoIngress:
 		return false, fmt.Sprintf("limiting/throttling: the request has been "+
 			"rejected according to regulator, msg: %v", err)
 	case CheckResultError, CheckAccessError:

@@ -345,22 +345,15 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	if !ServerlessMode || reg.disableLimitingThrottling() {
 		// no throttle/limiting checks for non-serverless versions
 		// and when regulator's disabled.
-		return CheckResultNormal, 0, nil
+		return CheckResultProceed, 0, nil
 	}
 
 	context := regulator.NewBucketCtx(bucket)
-	estimatedUnits, err := regulator.NewUnits(regulator.Search,
-		regulator.Write, uint64(0))
-	if err != nil {
-		return CheckResultError, 0, fmt.Errorf("limiting/throttling: failed to "+
-			"create estimated units err: %v", err)
-	}
-
 	checkQuotaOps := &regulator.CheckQuotaOpts{
-		NoThrottle:        false,
-		NoReject:          false,
-		EstimatedDuration: time.Duration(0),
-		EstimatedUnits:    []regulator.Units{estimatedUnits},
+		NoThrottle:          false,
+		NoReject:            false,
+		EstimatedDuration:   time.Duration(0),
+		EstimatedUnitsMulti: []regulator.Units{},
 	}
 
 	reg.initialiseRegulatorStats(bucket)
@@ -373,15 +366,15 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 
 		// index create and update requests at the request admission layer
 		// are only limited, not throttled
-		case regulator.CheckResultReject, regulator.CheckResultThrottle:
+		case regulator.CheckResultReject, regulator.CheckResultThrottleProceed:
 			reg.updateRegulatorStats(bucket, "total_write_ops_rejected", 1)
-		case regulator.CheckResultNormal:
+		case regulator.CheckResultProceed:
 		default:
 			log.Warnf("limiting/metering: unindentified result from "+
 				"regulator, result: %v\n", action)
 
 			// allowing normal execution for unidentified actions for now
-			return CheckResultNormal, 0, nil
+			return CheckResultProceed, 0, nil
 		}
 		return CheckResult(action), duration, err
 	}
@@ -392,20 +385,30 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 				"was closed, ignoring its limting and throttling")
 		}
 		switch CheckResult(action) {
-		case CheckResultNormal:
+		case CheckResultProceed:
 			return CheckResult(action), duration, err
-		case CheckResultThrottle:
+		case CheckResultThrottleProceed:
 			time.Sleep(duration)
 			reg.updateRegulatorStats(bucket, "total_write_throttle_seconds",
 				float64(duration)/float64(time.Second))
-			action = regulator.CheckResultNormal
+			action = regulator.CheckResultProceed
+		case CheckResultThrottleRetry:
+			time.Sleep(duration)
+			reg.updateRegulatorStats(bucket, "total_write_throttle_seconds",
+				float64(duration)/float64(time.Second))
+			action, duration, err = regulator.CheckQuota(context, checkQuotaOps)
+			if err != nil {
+				log.Errorf("limiting/throttling: error while checking quota "+
+					"err: %v", err)
+				return CheckResultError, 0, err
+			}
 
 		case CheckResultReject:
 			minTime, maxTime := serverlessLimitingBounds()
 			nextSleepMS := minTime
 			backoffFactor := 2
 
-			// Should return -1 when regulator returns CheckResultNormal/Throttle
+			// Should return -1 when regulator returns CheckResultProceed/Throttle
 			// since the system can definitely make progress.
 			// For CheckResultReject, should return 0 since
 			// no progress has been made and needs a retry.
@@ -447,7 +450,7 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 			if CheckResult(action) == CheckResultReject {
 				// If the request is still limited after the exponential backoff,
 				// accept it.
-				action = regulator.CheckResultNormal
+				action = regulator.CheckResultProceed
 			}
 
 		// as of now this case only corresponds to CheckResultError
@@ -455,7 +458,7 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 			reg.updateRegulatorStats(bucket, "total_write_ops_metering_errs", 1)
 			log.Errorf("limiting/throttling: error while limiting/throttling "+
 				"the request %v\n", err)
-			action = regulator.CheckResultNormal
+			action = regulator.CheckResultProceed
 		}
 	}
 }
@@ -477,21 +480,15 @@ func CheckQuotaRead(bucket, user string,
 	if !ServerlessMode || reg.disableLimitingThrottling() {
 		// no throttle/limiting checks for non-serverless versions
 		// and when regulator's disabled.
-		return CheckResultNormal, 0, nil
+		return CheckResultProceed, 0, nil
 	}
 
 	context := regulator.NewBucketCtx(bucket)
-	estimatedUnits, err := regulator.NewUnits(regulator.Search,
-		regulator.Write, uint64(0))
-	if err != nil {
-		return CheckResultError, 0, fmt.Errorf("limiting/throttling: failed to "+
-			"create estimated units err: %v", err)
-	}
 	checkQuotaOps := &regulator.CheckQuotaOpts{
-		NoThrottle:        true,
-		NoReject:          false,
-		EstimatedDuration: time.Duration(0),
-		EstimatedUnits:    []regulator.Units{estimatedUnits},
+		NoThrottle:          true,
+		NoReject:            false,
+		EstimatedDuration:   time.Duration(0),
+		EstimatedUnitsMulti: []regulator.Units{},
 	}
 
 	reg.initialiseRegulatorStats(bucket)
@@ -503,13 +500,13 @@ func CheckQuotaRead(bucket, user string,
 
 	// query requests are not throttled, only limited at the
 	// request admission layer
-	case regulator.CheckResultReject, regulator.CheckResultThrottle:
+	case regulator.CheckResultReject, regulator.CheckResultThrottleProceed:
 		reg.updateRegulatorStats(bucket, "total_read_ops_rejected", 1)
-	case regulator.CheckResultNormal:
+	case regulator.CheckResultProceed:
 	default:
 		log.Warnf("limiting/metering: unindentified result from "+
 			"regulator, result: %v\n", result)
-		return CheckResultNormal, 0, nil
+		return CheckResultProceed, 0, nil
 	}
 	return CheckResult(result), duration, err
 }
