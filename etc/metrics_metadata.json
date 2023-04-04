@@ -363,6 +363,10 @@
        "help": "Total number of bytes from batches yet to be indexed.",
        "unit": "bytes"
      },
+     "fts_num_batches_introduced": {
+       "type": "counter",
+       "help": "Total number of batches introduced as part of indexing."
+     },
      "fts_tot_grpcs_listeners_closed": {
        "type": "counter",
        "help": "Total number of gRPC SSL listeners closed"
@@ -404,6 +408,10 @@
      "fts_tot_grpc_listeners_opened": {
        "type": "counter",
        "help": "Total number of gRPC listeners opened"
+     },
+     "fts_tot_grpc_listeners_closed": {
+       "type": "counter",
+       "help": "Total number of gRPC listeners closed"
      },
      "fts_tot_grpcs_listeners_opened": {
        "type": "counter",
