@@ -29,8 +29,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.4.0
-	golang.org/x/net v0.0.0-20220923203811-8be639271d50
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
+	golang.org/x/net v0.8.0
+	golang.org/x/sys v0.6.0
 	google.golang.org/grpc v1.49.0
 )
 
@@ -53,7 +53,7 @@ require (
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
-	github.com/couchbase/gocbcore/v10 v10.1.7 // indirect
+	github.com/couchbase/gocbcore/v10 v10.2.3-0.20230404070112-cab6da1895ae // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
 	github.com/couchbase/gomemcached v0.2.1 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
@@ -77,12 +77,12 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	google.golang.org/genproto v0.0.0-20220923205249-dd2d53f1fffc // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
