@@ -503,9 +503,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		extras, bindHTTP, dataDir, server, meh, options)
 	meh.mgr = mgr
 
-	if authType == "cbauth" {
-		// subscribe for notifications on limits' changes
-		cbft.SubscribeToLimits(mgr)
+	if cbft.ServerlessMode {
+		// Initialize the rate limiter, only if in serverless mode;
+		// above variable set in registerServerlessHooks(..) above.
+		_ = cbft.InitRateLimiter(mgr)
 	}
 
 	// start the effective cluster tracker.

@@ -16,97 +16,64 @@ import (
 	"math"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 )
 
-const bytesPerMB = 1048576
-const windowLength = 1 * time.Minute
-
-// -----------------------------------------------------------------------------
-
-var indexPartitionsLimit = uint32(math.MaxUint32)
-var indexReplicasLimit = uint32(math.MaxUint32)
-
-func getIndexPartitionsLimit() uint32 {
-	return atomic.LoadUint32(&indexPartitionsLimit)
+type rateLimiter struct {
+	mgr *cbgt.Manager
 }
 
-func setIndexPartitionsLimit(to uint32) {
-	atomic.StoreUint32(&indexPartitionsLimit, to)
-}
+var limiter *rateLimiter
 
-func getIndexReplicasLimit() uint32 {
-	return atomic.LoadUint32(&indexReplicasLimit)
-}
-
-func setIndexReplicasLimit(to uint32) {
-	atomic.StoreUint32(&indexReplicasLimit, to)
-}
-
-// -----------------------------------------------------------------------------
-
-func SubscribeToLimits(mgr *cbgt.Manager) {
-	limiter = &rateLimiter{
-		mgr:            mgr,
-		requestCache:   make(map[string]*requestStats),
-		indexCache:     make(map[string]map[string]struct{}),
-		pendingIndexes: make(map[string]string),
+// To be set on process init ONLY
+func InitRateLimiter(mgr *cbgt.Manager) error {
+	if mgr == nil {
+		return fmt.Errorf("manager not available")
 	}
-	cbgt.RegisterConfigRefreshCallback("fts/limits", limiter.refreshLimits)
+	limiter = &rateLimiter{mgr: mgr}
+	return nil
 }
+
+// To be set on process init ONLY
+var ServerlessMode bool
+var IndexLimitPerSource = math.MaxInt
+var ActivePartitionLimit = math.MaxInt
+var ReplicaPartitionLimit = 3
 
 // -----------------------------------------------------------------------------
 
 // Pre-processing for a request
 func processRequest(username, path string, req *http.Request) (bool, string) {
-	if ServerlessMode {
-		if !isIndexPath(path) && !isQueryPath(path) {
-			return true, ""
-		}
-		return limiter.processRequestInServerless(username, path, req)
-	}
-
-	if limiter == nil || !limiter.isActive() {
-		// rateLimiter not active
+	if limiter == nil || !ServerlessMode {
+		// rateLimiter not initialized or non-serverless mode
 		return true, ""
 	}
 
-	// evaluate requests at index create/update/delete endpoints
-	// and search request endpoints
 	if !isIndexPath(path) && !isQueryPath(path) {
 		return true, ""
 	}
 
-	return limiter.processRequest(username, path, req)
+	return limiter.processRequestInServerless(username, path, req)
 }
 
 // Post-processing after a response is shipped for a request
 func completeRequest(username, path string, req *http.Request, egress int64) {
-	if limiter == nil || !limiter.isActive() {
-		// rateLimiter not active
-		return
-	}
-
-	// evaluate request completion at index create/update/delete endpoints
-	// and search request endpoints
-	if !isIndexPath(path) && !isQueryPath(path) {
-		return
-	}
-
-	limiter.completeRequest(username, path, req, egress)
+	// no-op
+	return
 }
-
-// -----------------------------------------------------------------------------
 
 // Limits index definitions from being introduced into the system based on
 // the rateLimiter settings
 func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
+	if limiter == nil || !ServerlessMode {
+		// rateLimiter not initialized or non-serverless mode
+		return indexDef, nil
+	}
+
 	if indexDef == nil {
 		return nil, fmt.Errorf("indexDef not available")
 	}
@@ -116,76 +83,15 @@ func LimitIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, 
 		return indexDef, nil
 	}
 
-	if ServerlessMode {
-		return limitIndexDefInServerlessMode(mgr, indexDef)
-	}
+	return limiter.limitIndexDefInServerlessMode(indexDef)
 
-	if limiter == nil || !limiter.isActive() {
-		// rateLimiter not active
-		return indexDef, nil
-	}
-
-	partitionsLimit := int(getIndexPartitionsLimit())
-	if indexDef.PlanParams.IndexPartitions > partitionsLimit {
-		return nil,
-			fmt.Errorf("partition limit exceeded (%v > %v)",
-				indexDef.PlanParams.IndexPartitions, partitionsLimit)
-	}
-
-	replicasLimit := int(getIndexReplicasLimit())
-	if indexDef.PlanParams.NumReplicas > replicasLimit {
-		return nil,
-			fmt.Errorf("replica limit exceeded (%v > %v)",
-				indexDef.PlanParams.NumReplicas, replicasLimit)
-	}
-
-	bucket := indexDef.SourceName
-	scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
-	numIndexesLimit, err := obtainIndexesLimitForScope(limiter.mgr, bucket, scope)
-	if err != nil {
-		return nil, err
-	}
-
-	key := getBucketScopeKey(bucket, scope)
-
-	limiter.m.Lock()
-	defer limiter.m.Unlock()
-
-	entry, exists := limiter.indexCache[key]
-	if !exists {
-		limiter.indexCache[key] = make(map[string]struct{})
-		limiter.pendingIndexes[indexDef.Name] = key
-		return indexDef, nil
-	}
-
-	if _, exists := entry[indexDef.Name]; exists {
-		// allow index update
-		return indexDef, nil
-	}
-
-	numActiveIndexes := len(entry)
-	numPendingIndexes := 0
-	for _, v := range limiter.pendingIndexes {
-		if v == key {
-			numPendingIndexes++
-		}
-	}
-
-	if numIndexesLimit > 0 &&
-		(numActiveIndexes >= numIndexesLimit ||
-			(numActiveIndexes+numPendingIndexes) >= numIndexesLimit) {
-		return nil, fmt.Errorf("Exceeds indexes limit for scope: %s,"+
-			" num_fts_indexes (active + pending): (%v + %v), limit: %v",
-			scope, numActiveIndexes, numPendingIndexes, numIndexesLimit)
-	}
-	limiter.pendingIndexes[indexDef.Name] = key
-
-	return indexDef, nil
 }
+
+// -----------------------------------------------------------------------------
 
 // limitIndexDefInServerlessMode to be invoked ONLY when deploymentModel is
 // "serverless".
-func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
+func (r *rateLimiter) limitIndexDefInServerlessMode(indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
 	if indexDef.PlanParams.IndexPartitions == 0 {
 		indexDef.PlanParams.IndexPartitions = ActivePartitionLimit
@@ -200,51 +106,205 @@ func limitIndexDefInServerlessMode(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			" 1 active + 1 replica partitions only in serverless mode")
 	}
 
-	if mgr != nil {
-		nodeDefs, err := mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, false)
-		if err != nil || nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
-			return nil, fmt.Errorf("limitIndexDef: GetNodeDefs,"+
-				" nodeDefs: %+v, err: %v", nodeDefs, err)
+	nodeDefs, err := r.mgr.GetNodeDefs(cbgt.NODE_DEFS_WANTED, false)
+	if err != nil || nodeDefs == nil || len(nodeDefs.NodeDefs) == 0 {
+		return nil, fmt.Errorf("limitIndexDef: GetNodeDefs,"+
+			" nodeDefs: %+v, err: %v", nodeDefs, err)
+	}
+
+	nodesOverHWM := NodeUUIDsWithUsageOverHWM(nodeDefs)
+	if len(nodesOverHWM) != 0 {
+		for _, nodeInfo := range nodesOverHWM {
+			delete(nodeDefs.NodeDefs, nodeInfo.NodeUUID)
 		}
 
-		nodesOverHWM := NodeUUIDsWithUsageOverHWM(nodeDefs)
-		if len(nodesOverHWM) != 0 {
-			for _, nodeInfo := range nodesOverHWM {
-				delete(nodeDefs.NodeDefs, nodeInfo.NodeUUID)
-			}
+		if len(nodeDefs.NodeDefs) < (ReplicaPartitionLimit + 1) {
+			nodes, _ := json.Marshal(nodesOverHWM)
 
-			if len(nodeDefs.NodeDefs) < (ReplicaPartitionLimit + 1) {
-				nodes, _ := json.Marshal(nodesOverHWM)
-
-				// at least 2 nodes with usage below HWM needed to allow this index request
-				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
-					" index request: %v, resource utilization over limit(s) for nodes: %s",
-					indexDef.Name, nodes)
-			}
-
-			// now track number of server groups in nodes with usage below HWM
-			serverGroups := map[string]struct{}{}
-			for _, nodeDef := range nodeDefs.NodeDefs {
-				serverGroups[nodeDef.Container] = struct{}{}
-			}
-
-			if len(serverGroups) < (ReplicaPartitionLimit + 1) {
-				nodes, _ := json.Marshal(nodesOverHWM)
-
-				// nodes from at least 2 server groups needed to allow index request
-				return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
-					" index request: %v, at least 2 nodes in separate server groups"+
-					" with resource utilization below limit(s) needed, nodes above HWM: %s",
-					indexDef.Name, nodes)
-			}
-
+			// at least 2 nodes with usage below HWM needed to allow this index request
+			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
+				" index request: %v, resource utilization over limit(s) for nodes: %s",
+				indexDef.Name, nodes)
 		}
+
+		// now track number of server groups in nodes with usage below HWM
+		serverGroups := map[string]struct{}{}
+		for _, nodeDef := range nodeDefs.NodeDefs {
+			serverGroups[nodeDef.Container] = struct{}{}
+		}
+
+		if len(serverGroups) < (ReplicaPartitionLimit + 1) {
+			nodes, _ := json.Marshal(nodesOverHWM)
+
+			// nodes from at least 2 server groups needed to allow index request
+			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
+				" index request: %v, at least 2 nodes in separate server groups"+
+				" with resource utilization below limit(s) needed, nodes above HWM: %s",
+				indexDef.Name, nodes)
+		}
+
 	}
 
 	return indexDef, nil
 }
 
+type CheckResult uint
+
+const (
+	CheckResultNormal CheckResult = iota
+	CheckResultThrottle
+	CheckResultReject
+	CheckResultError
+	CheckAccessNormal
+	CheckAccessNoIngress
+	CheckAccessError
+)
+
+func (r *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
+	_, indexDefsByName, err := r.mgr.GetIndexDefs(false)
+	if err != nil {
+		return CheckResultError, fmt.Errorf("failed to retrieve index defs")
+	}
+
+	maxIndexCountPerSource, found :=
+		cbgt.ParseOptionsInt(r.mgr.Options(), "maxIndexCountPerSource")
+	if !found {
+		maxIndexCountPerSource = IndexLimitPerSource
+	}
+
+	indexCount := 0
+	for _, indexDef := range indexDefsByName {
+		if bucket == indexDef.SourceName {
+			indexCount++
+			// compare the index count of existing indexes
+			// in system with the threshold.
+			if indexCount >= maxIndexCountPerSource {
+				return CheckResultReject, fmt.Errorf("rejecting create " +
+					"request since index count limit per database has been reached")
+			}
+		}
+	}
+	return CheckResultNormal, nil
+}
+
+func (r *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.IndexDef, error) {
+	requestBody, err := io.ReadAll(req.Body)
+	if err != nil || len(requestBody) == 0 {
+		return nil, fmt.Errorf("limiter: failed to parse the req body %v", err)
+	}
+	defer func() {
+		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+	}()
+
+	indexDef := cbgt.IndexDef{}
+	if err := json.Unmarshal(requestBody, &indexDef); err != nil {
+		return nil, fmt.Errorf("limiter: failed to unmarshal "+
+			"the req body %v", err)
+	}
+
+	return &indexDef, nil
+}
+
+func (r *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) ([]string, error) {
+	bucket := rest.BucketNameLookup(req)
+	if len(bucket) > 0 {
+		// query request is to a scoped index
+		return []string{bucket}, nil
+	}
+
+	indexName := rest.IndexNameLookup(req)
+
+	var sources map[string]struct{}
+	var err error
+	if sources, err = obtainIndexSourceFromDefinition(
+		r.mgr, indexName, sources); err != nil || len(sources) == 0 {
+		return nil, fmt.Errorf("limiter: failed to obtain source(s) for index")
+	}
+
+	var rv []string
+	for source := range sources {
+		rv = append(rv, source)
+	}
+
+	return rv, nil
+}
+
+func (r *rateLimiter) regulateRequest(username, path string,
+	req *http.Request) (CheckResult, time.Duration, error) {
+	// No need to throttle/limit the request incase of delete op
+	// Since it ultimately leads to cleaning up of resources.
+	// Furthermore, no need to throttle/limit the GET request of index listing
+	// which basically displays the index definition, since it doesn't impact the
+	// disk usage in the system.
+	if req.Method == "DELETE" || req.Method == "GET" {
+		return CheckResultNormal, 0, nil
+	}
+
+	if isQueryPath(path) {
+		// index names on query paths are always decorated, otherwise
+		// there is a index not found error
+		buckets, err := r.obtainIndexSourceForQueryRequest(req)
+		if err != nil {
+			return CheckResultError, 0, fmt.Errorf("failed to get index"+
+				" source for request %v", err)
+		}
+		if len(buckets) > 1 {
+			// index alias over indexes against multiple buckets
+			return CheckResultError, 0, fmt.Errorf("querying indexes over " +
+				" multiple buckets is not allowed")
+		}
+		return CheckQuotaRead(buckets[0], username, req)
+	}
+
+	// using the indexDef of the request to obtain the necessary info,
+	// given that it is the only reliable source
+	indexDef, err := r.obtainIndexDefFromIndexRequest(req)
+	if err != nil {
+		return CheckResultError, 0, fmt.Errorf("failed to get index "+
+			"info from request %v", err)
+	}
+
+	// Regulator applicable to full text indexes ONLY
+	if indexDef.Type != "fulltext-index" {
+		return CheckResultNormal, 0, nil
+	}
+
+	action, duration, err := CheckQuotaWrite(nil, indexDef.SourceName, username, false, req)
+	if action == CheckResultNormal {
+		action, err = CheckAccess(indexDef.SourceName, username)
+		if indexDef.UUID == "" {
+			// This is a CREATE INDEX request and NOT an UPDATE INDEX request.
+			createReqResult, err := r.limitIndexCount(indexDef.SourceName)
+			return createReqResult, 0, err
+		}
+	}
+	return action, duration, err
+}
+
+// custom function just to check out the LMT.
+// can be removed and made part of the original rate Limiter later on, if necessary.
+func (r *rateLimiter) processRequestInServerless(username, path string,
+	req *http.Request) (bool, string) {
+	action, _, err := r.regulateRequest(username, path, req)
+
+	switch action {
+	// support only limiting of indexing and query requests at the request
+	// admission layer. Furthermore, reject those indexing requests if the
+	// tenant has hit a storage limit.
+	case CheckResultReject, CheckResultThrottle, CheckAccessNoIngress:
+		return false, fmt.Sprintf("limiting/throttling: the request has been "+
+			"rejected according to regulator, msg: %v", err)
+	case CheckResultError, CheckAccessError:
+		return false, fmt.Sprintf("limiting/throttling: failed to regulate the "+
+			"request err: %v", err)
+	default:
+	}
+
+	return true, ""
+}
+
 // -----------------------------------------------------------------------------
+
 type nodeDetails struct {
 	NodeUUID  string
 	NodeStats *UtilizationStats
@@ -425,438 +485,4 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	}
 
 	return stats, nil
-}
-
-// -----------------------------------------------------------------------------
-
-type requestStats struct {
-	live                   int
-	stamp                  time.Time
-	countSinceStamp        int
-	ingressBytesSinceStamp int64
-	egressBytesSinceStamp  int64
-}
-
-type rateLimiter struct {
-	active uint32
-
-	mgr *cbgt.Manager
-
-	m sync.Mutex // Protects the fields that follow.
-
-	// Cache of request stats mapped at a user level.
-	requestCache map[string]*requestStats
-
-	// Cache of index names mapped at bucket:scope level.
-	// (use getBucketScopeKey(..) for map lookup)
-	indexCache map[string]map[string]struct{}
-
-	// Pending index names mapped to bucket:scope.
-	pendingIndexes map[string]string
-}
-
-var limiter *rateLimiter
-
-// -----------------------------------------------------------------------------
-
-func (e *rateLimiter) isActive() bool {
-	return atomic.LoadUint32(&e.active) != 0
-}
-
-func (e *rateLimiter) refreshLimits(status int) error {
-	if status&cbgt.AuthChange_limits != 0 {
-		ss := cbgt.GetSecuritySetting()
-		if ss.EnforceLimits {
-			atomic.StoreUint32(&e.active, 1)
-			setIndexPartitionsLimit(1) // allow only single partition
-			setIndexReplicasLimit(0)   // do not allow replica partitions
-		} else {
-			atomic.StoreUint32(&e.active, 0)
-			setIndexPartitionsLimit(math.MaxUint32)
-			setIndexReplicasLimit(math.MaxUint32)
-			e.reset()
-		}
-	}
-	return nil
-}
-
-func (e *rateLimiter) reset() {
-	e.m.Lock()
-	e.requestCache = make(map[string]*requestStats)
-	e.indexCache = make(map[string]map[string]struct{})
-	e.m.Unlock()
-}
-
-// -----------------------------------------------------------------------------
-
-var ServerlessMode bool
-
-var IndexLimitPerSource = math.MaxInt
-var ActivePartitionLimit = math.MaxInt
-var ReplicaPartitionLimit = 3
-
-type CheckResult uint
-
-const (
-	CheckResultNormal CheckResult = iota
-	CheckResultThrottle
-	CheckResultReject
-	CheckResultError
-	CheckAccessNormal
-	CheckAccessNoIngress
-	CheckAccessError
-)
-
-func (e *rateLimiter) limitIndexCount(bucket string) (CheckResult, error) {
-	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
-	if err != nil {
-		return CheckResultError, fmt.Errorf("failed to retrieve index defs")
-	}
-
-	maxIndexCountPerSource, found :=
-		cbgt.ParseOptionsInt(e.mgr.Options(), "maxIndexCountPerSource")
-	if !found {
-		maxIndexCountPerSource = IndexLimitPerSource
-	}
-
-	indexCount := 0
-	for _, indexDef := range indexDefsByName {
-		if bucket == indexDef.SourceName {
-			indexCount++
-			// compare the index count of existing indexes
-			// in system with the threshold.
-			if indexCount >= maxIndexCountPerSource {
-				return CheckResultReject, fmt.Errorf("rejecting create " +
-					"request since index count limit per database has been reached")
-			}
-		}
-	}
-	return CheckResultNormal, nil
-}
-
-func (e *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.IndexDef, error) {
-	requestBody, err := io.ReadAll(req.Body)
-	if err != nil || len(requestBody) == 0 {
-		return nil, fmt.Errorf("limiter: failed to parse the req body %v", err)
-	}
-	defer func() {
-		req.Body = io.NopCloser(bytes.NewBuffer(requestBody))
-	}()
-
-	indexDef := cbgt.IndexDef{}
-	if err := json.Unmarshal(requestBody, &indexDef); err != nil {
-		return nil, fmt.Errorf("limiter: failed to unmarshal "+
-			"the req body %v", err)
-	}
-
-	return &indexDef, nil
-}
-
-func (e *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) ([]string, error) {
-	bucket := rest.BucketNameLookup(req)
-	if len(bucket) > 0 {
-		// query request is to a scoped index
-		return []string{bucket}, nil
-	}
-
-	indexName := rest.IndexNameLookup(req)
-
-	var sources map[string]struct{}
-	var err error
-	if sources, err = obtainIndexSourceFromDefinition(
-		e.mgr, indexName, sources); err != nil || len(sources) == 0 {
-		return nil, fmt.Errorf("limiter: failed to obtain source(s) for index")
-	}
-
-	var rv []string
-	for source := range sources {
-		rv = append(rv, source)
-	}
-
-	return rv, nil
-}
-
-func (e *rateLimiter) regulateRequest(username, path string,
-	req *http.Request) (CheckResult, time.Duration, error) {
-	// No need to throttle/limit the request incase of delete op
-	// Since it ultimately leads to cleaning up of resources.
-	// Furthermore, no need to throttle/limit the GET request of index listing
-	// which basically displays the index definition, since it doesn't impact the
-	// disk usage in the system.
-	if req.Method == "DELETE" || req.Method == "GET" {
-		return CheckResultNormal, 0, nil
-	}
-
-	if isQueryPath(path) {
-		// index names on query paths are always decorated, otherwise
-		// there is a index not found error
-		buckets, err := e.obtainIndexSourceForQueryRequest(req)
-		if err != nil {
-			return CheckResultError, 0, fmt.Errorf("failed to get index"+
-				" source for request %v", err)
-		}
-		if len(buckets) > 1 {
-			// index alias over indexes against multiple buckets
-			return CheckResultError, 0, fmt.Errorf("querying indexes over " +
-				" multiple buckets is not allowed")
-		}
-		return CheckQuotaRead(buckets[0], username, req)
-	}
-
-	// using the indexDef of the request to obtain the necessary info,
-	// given that it is the only reliable source
-	indexDef, err := e.obtainIndexDefFromIndexRequest(req)
-	if err != nil {
-		return CheckResultError, 0, fmt.Errorf("failed to get index "+
-			"info from request %v", err)
-	}
-
-	// Regulator applicable to full text indexes ONLY
-	if indexDef.Type != "fulltext-index" {
-		return CheckResultNormal, 0, nil
-	}
-
-	action, duration, err := CheckQuotaWrite(nil, indexDef.SourceName, username, false, req)
-	if action == CheckResultNormal {
-		action, err = CheckAccess(indexDef.SourceName, username)
-		if indexDef.UUID == "" {
-			// This is a CREATE INDEX request and NOT an UPDATE INDEX request.
-			createReqResult, err := e.limitIndexCount(indexDef.SourceName)
-			return createReqResult, 0, err
-		}
-	}
-	return action, duration, err
-}
-
-// custom function just to check out the LMT.
-// can be removed and made part of the original rate Limiter later on, if necessary.
-func (e *rateLimiter) processRequestInServerless(username, path string,
-	req *http.Request) (bool, string) {
-	e.m.Lock()
-	defer e.m.Unlock()
-
-	action, _, err := e.regulateRequest(username, path, req)
-
-	switch action {
-	// support only limiting of indexing and query requests at the request
-	// admission layer. Furthermore, reject those indexing requests if the
-	// tenant has hit a storage limit.
-	case CheckResultReject, CheckResultThrottle, CheckAccessNoIngress:
-		return false, fmt.Sprintf("limiting/throttling: the request has been "+
-			"rejected according to regulator, msg: %v", err)
-	case CheckResultError, CheckAccessError:
-		return false, fmt.Sprintf("limiting/throttling: failed to regulate the "+
-			"request err: %v", err)
-	default:
-	}
-
-	return true, ""
-}
-
-// -----------------------------------------------------------------------------
-
-func (e *rateLimiter) processRequest(username, path string, req *http.Request) (bool, string) {
-	limits, _ := cbauth.GetUserLimits(username, "local", "fts")
-
-	e.m.Lock()
-	defer e.m.Unlock()
-
-	if isIndexPath(path) {
-		// Refresh the indexCache of the rateLimiter at this point,
-		// to track updates that have been received at other nodes.
-		//
-		// Also, pre-processing here for a DELETE INDEX request only
-		// (pre-processing for CREATE and UPDATE INDEX requests is handled
-		//  within PrepareIndexDef callback for the IndexDef via limitIndexDef).
-		e.updateIndexCacheLOCKED(req)
-	}
-
-	now := time.Now()
-	ingress := req.ContentLength
-
-	entry, exists := e.requestCache[username]
-	if !exists {
-		entry = &requestStats{stamp: now}
-		e.requestCache[username] = entry
-	} else {
-		maxConcurrentRequests, _ := limits["num_concurrent_requests"]
-		if maxConcurrentRequests > 0 &&
-			entry.live >= maxConcurrentRequests {
-			// reject, surpassed the concurrency limit
-			return false, fmt.Sprintf("num_concurrent_requests: %v, limit: %v",
-				entry.live, maxConcurrentRequests)
-		}
-
-		if now.Sub(entry.stamp) < windowLength {
-			maxQueriesPerMin, _ := limits["num_queries_per_min"]
-			if isQueryPath(path) && maxQueriesPerMin > 0 &&
-				entry.countSinceStamp >= maxQueriesPerMin {
-				// reject, surpassed the queries per minute limit
-				return false, fmt.Sprintf("num_queries_per_min: %v, limit: %v",
-					entry.countSinceStamp, maxQueriesPerMin)
-			}
-
-			maxIngressPerMin := int64(limits["ingress_mib_per_min"] * bytesPerMB)
-			if maxIngressPerMin > 0 &&
-				entry.ingressBytesSinceStamp >= maxIngressPerMin {
-				// reject, surpassed the ingress per minute limit
-				return false, fmt.Sprintf("ingress_mib_per_min: %v, limit: %v",
-					entry.ingressBytesSinceStamp, maxIngressPerMin)
-			}
-
-			maxEgressPerMin := int64(limits["egress_mib_per_min"] * bytesPerMB)
-			if maxEgressPerMin > 0 &&
-				entry.egressBytesSinceStamp >= maxEgressPerMin {
-				// reject, surpassed the egress per minute limit
-				return false, fmt.Sprintf("egress_mib_per_min: %v, limit: %v",
-					entry.egressBytesSinceStamp, maxEgressPerMin)
-			}
-		} else {
-			entry.stamp = now
-			entry.countSinceStamp = 0
-			entry.ingressBytesSinceStamp = 0
-			entry.egressBytesSinceStamp = 0
-		}
-	}
-
-	entry.live++
-	if isQueryPath(path) {
-		entry.countSinceStamp++
-	}
-	entry.ingressBytesSinceStamp += ingress
-
-	return true, ""
-}
-
-func (e *rateLimiter) completeRequest(username, path string, req *http.Request, egress int64) {
-	e.m.Lock()
-	defer e.m.Unlock()
-
-	if isIndexPath(path) {
-		// post-processing for INDEX requests
-		e.completeIndexRequestLOCKED(req)
-	}
-
-	entry, exists := e.requestCache[username]
-	if !exists {
-		return
-	}
-
-	now := time.Now()
-
-	if entry.live > 0 {
-		entry.live--
-	}
-
-	if now.Sub(entry.stamp) < windowLength {
-		entry.egressBytesSinceStamp += egress
-	} else {
-		entry.stamp = now
-		entry.countSinceStamp = 0
-		entry.ingressBytesSinceStamp = 0
-		entry.egressBytesSinceStamp = 0
-	}
-}
-
-// -----------------------------------------------------------------------------
-
-func (e *rateLimiter) updateIndexCacheLOCKED(req *http.Request) {
-	// GetIndexDefs(..) without a refresh should be a fast operation
-	_, indexDefsByName, err := e.mgr.GetIndexDefs(false)
-	if err != nil {
-		return
-	}
-
-	// Clear out the indexCache entries for all bucket:scope keys;
-	// This cache is updated with the latest subsequently.
-	e.indexCache = make(map[string]map[string]struct{})
-
-	for indexName, indexDef := range indexDefsByName {
-		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
-		key := getBucketScopeKey(indexDef.SourceName, scope)
-		if _, exists := e.indexCache[key]; !exists {
-			e.indexCache[key] = map[string]struct{}{indexName: struct{}{}}
-		} else {
-			e.indexCache[key][indexName] = struct{}{}
-		}
-	}
-
-	// Update index cache if request received was for deleting an index
-	// definition.
-	if req.Method != "DELETE" {
-		return
-	}
-	// This is invoked prior to the index deletion, so the index definition
-	// should still be available in the system.
-
-	indexName := rest.IndexNameLookup(req)
-	if indexDef, exists := indexDefsByName[indexName]; exists {
-		scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
-		key := getBucketScopeKey(indexDef.SourceName, scope)
-		if entry, exists := e.indexCache[key]; exists {
-			delete(entry, indexName)
-		}
-	}
-}
-
-func (e *rateLimiter) completeIndexRequestLOCKED(req *http.Request) {
-	if req.Method != "PUT" {
-		// skip GET, DELETE
-		return
-	}
-
-	indexName := rest.IndexNameLookup(req)
-	if _, indexDefsByName, err := e.mgr.GetIndexDefs(false); err == nil {
-		if indexDef, exists := indexDefsByName[indexName]; exists {
-			scope, _, _ := GetScopeCollectionsFromIndexDef(indexDef)
-			key := getBucketScopeKey(indexDef.SourceName, scope)
-			entry, exists := e.indexCache[key]
-			if !exists {
-				e.indexCache[key] = map[string]struct{}{indexName: struct{}{}}
-			} else {
-				// adds or updates index entry
-				entry[indexName] = struct{}{}
-			}
-		}
-		// whether index creation was successful or not, the pending
-		// entry will need to be removed
-		delete(e.pendingIndexes, indexName)
-	}
-}
-
-// -----------------------------------------------------------------------------
-
-// Generates key to use for rateLimiter's indexCache map.
-func getBucketScopeKey(bucket, scope string) string {
-	return bucket + ":" + scope
-}
-
-// -----------------------------------------------------------------------------
-
-func obtainIndexesLimitForScope(mgr *cbgt.Manager, bucket, scope string) (int, error) {
-	if mgr == nil {
-		return 0, fmt.Errorf("manager is nil")
-	}
-
-	if len(bucket) == 0 || len(scope) == 0 {
-		return 0, fmt.Errorf("bucket/scope not available")
-	}
-
-	manifest, err := GetBucketManifest(bucket)
-	if err != nil {
-		return 0, err
-	}
-
-	for i := range manifest.Scopes {
-		if manifest.Scopes[i].Name == scope {
-			numIndexesLimit := 0
-			if limits, exists := manifest.Scopes[i].Limits["fts"]; exists {
-				numIndexesLimit = limits["num_fts_indexes"]
-			}
-
-			return numIndexesLimit, nil
-		}
-	}
-
-	return 0, fmt.Errorf("scope not found")
 }
