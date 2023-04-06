@@ -108,9 +108,28 @@ func initBleveOptions(options map[string]string) error {
 			var stackDump string
 			if flags.DataDir != "" {
 				stackDump = dumpStack(flags.DataDir,
-					fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
+					fmt.Sprintf("scorch AsyncError, path: %s, err: %v", path, err))
 			}
-			log.Fatalf("scorch AsyncError, path: %v, treating this as fatal, err: %v,"+
+
+			if len(path) > 0 {
+				indexName := extractIndexNameFromPindexPath(path)
+				if len(indexName) > 0 {
+					// Pause ingest for index;
+					// p.s. We could end up attempting to pause ingest for the same index
+					// multiple times, depending on the number of partitions.
+					er := bleveAsyncIndexControlCallback(indexName, "", "", "pause", "")
+					if er == nil {
+						log.Warnf("scorch AsyncError, paused ingest for index: %s"+
+							" on err: %v, path: %s", indexName, err, path)
+						return
+					}
+					log.Warnf("scorch AsyncError, failed to pause ingest for index: %s", indexName)
+					// pause ingest failed, fall through to fatal error
+				}
+				// index not found based on path, fall through to fatal error
+			}
+
+			log.Fatalf("scorch AsyncError, path: %s, treating this as fatal, err: %v,"+
 				" stack dump: %s", path, err, stackDump)
 		}
 
@@ -145,6 +164,23 @@ func initBleveOptions(options map[string]string) error {
 	}
 
 	return nil
+}
+
+// ---------------------------------------------------------------
+
+func extractIndexNameFromPindexPath(pindexPath string) string {
+	// For sample path:
+	// "/data/@fts/travel-sample._default.travel_2ec9ca0f3d2d8328_4c1c5584.pindex/store"
+	// Index name is "travel-sample._default.travel"
+	ftsDirectory := "@fts/"
+	indexNameStartPos := strings.Index(pindexPath, ftsDirectory) + len(ftsDirectory)
+	indexNameEndPos := strings.LastIndex(pindexPath[:strings.LastIndex(pindexPath, "_")], "_")
+	return pindexPath[indexNameStartPos:indexNameEndPos]
+}
+
+var bleveAsyncIndexControlCallback = func(
+	indexName, indexUUID, readOp, writeOp, planFreezeOp string) error {
+	return fmt.Errorf("bleveAsyncIndexControlCallback not set")
 }
 
 // ---------------------------------------------------------------
