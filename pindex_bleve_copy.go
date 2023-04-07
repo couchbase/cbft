@@ -49,8 +49,27 @@ func (t *BleveDest) IsFeedable() (bool, error) {
 		" index for pindex: %s", cbgt.PIndexNameFromPath(t.path))
 }
 
+func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
+	rollback func()) *BleveDest {
+
+	noopImpl := &noopBleveIndex{name: pindexName}
+	dest := &BleveDest{
+		path:           path,
+		bleveDocConfig: bleveParams.DocConfig,
+		rollback:       rollback,
+		bindex:         noopImpl,
+		partitions:     make(map[string]*BleveDestPartition),
+		stats:          cbgt.NewPIndexStoreStats(),
+		copyStats:      &CopyPartitionStats{},
+		stopCh:         make(chan struct{}),
+	}
+	dest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+
+	return dest
+}
+
 func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
-	mgr *cbgt.Manager, restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	mgr *cbgt.Manager, rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	pindexName := cbgt.PIndexNameFromPath(path)
 	// validate the index params and exit early on errors.
 	bleveParams, kvConfig, bleveIndexType, _, err := parseIndexParams(indexParams)
@@ -61,7 +80,7 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	if CopyPartition == nil || IsCopyPartitionPreferred == nil ||
 		bleveIndexType == "upside_down" ||
 		!IsCopyPartitionPreferred(mgr, pindexName, path, sourceParams) {
-		return NewBlevePIndexImpl(indexType, indexParams, path, restart)
+		return NewBlevePIndexImpl(indexType, indexParams, path, rollback)
 	}
 
 	if path != "" {
@@ -78,22 +97,11 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	}
 
 	// create a noop index and wrap that inside the dest.
-	noopImpl := &noopBleveIndex{name: pindexName}
-	dest := &BleveDest{
-		path:           path,
-		bleveDocConfig: bleveParams.DocConfig,
-		restart:        restart,
-		bindex:         noopImpl,
-		partitions:     make(map[string]*BleveDestPartition),
-		stats:          cbgt.NewPIndexStoreStats(),
-		copyStats:      &CopyPartitionStats{},
-		stopCh:         make(chan struct{}),
-	}
-	dest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
 	destfwd := &cbgt.DestForwarder{DestProvider: dest}
 
 	go tryCopyBleveIndex(indexType, indexParams, path, kvConfig,
-		restart, dest, mgr)
+		rollback, dest, mgr)
 
 	return nil, destfwd, nil
 }
@@ -101,7 +109,7 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 // tryCopyBleveIndex tries to copy the pindex files and open it,
 // and upon errors falls back to a fresh index creation.
 func tryCopyBleveIndex(indexType, indexParams, path string,
-	kvConfig map[string]interface{}, restart func(),
+	kvConfig map[string]interface{}, rollback func(),
 	dest *BleveDest, mgr *cbgt.Manager) (err error) {
 	pindexName := cbgt.PIndexNameFromPath(path)
 
@@ -109,7 +117,7 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 		// fallback to fresh new creation upon errors.
 		if err != nil {
 			createNewBleveIndex(indexType, indexParams,
-				path, restart, dest, mgr)
+				path, rollback, dest, mgr)
 			return
 		}
 	}()
@@ -189,7 +197,7 @@ func openBleveIndex(path string, kvConfig map[string]interface{}) (
 }
 
 func createNewBleveIndex(indexType, indexParams, path string,
-	restart func(), dest *BleveDest, mgr *cbgt.Manager) {
+	rollback func(), dest *BleveDest, mgr *cbgt.Manager) {
 	pindexName := cbgt.PIndexNameFromPath(path)
 	// check whether the dest is already closed.
 	if isClosed(dest.stopCh) {
@@ -203,7 +211,7 @@ func createNewBleveIndex(indexType, indexParams, path string,
 		return
 	}
 
-	impl, destWrapper, err := NewBlevePIndexImpl(indexType, indexParams, path, restart)
+	impl, destWrapper, err := NewBlevePIndexImpl(indexType, indexParams, path, rollback)
 	if err != nil {
 		var ok bool
 		var pi *cbgt.PIndex

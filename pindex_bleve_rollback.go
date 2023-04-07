@@ -27,27 +27,31 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	wasClosed, wasPartial, err := t.partialRollbackLOCKED(partition,
-		vBucketUUID, rollbackSeq)
+	// The BleveDest may be closed due to another partition(BleveDestPartition) of
+	// the same pindex being rolled back earlier.
+	if t.bindex != nil {
+		wasClosed, wasPartial, err := t.partialRollbackLOCKED(partition,
+			vBucketUUID, rollbackSeq)
 
-	log.Printf("pindex_bleve_rollback: path: %s,"+
-		" wasClosed: %t, wasPartial: %t, err: %v",
-		t.path, wasClosed, wasPartial, err)
+		log.Printf("pindex_bleve_rollback: path: %s,"+
+			" wasClosed: %t, wasPartial: %t, err: %v",
+			t.path, wasClosed, wasPartial, err)
 
-	if !wasClosed {
-		t.closeLOCKED()
+		if !wasClosed {
+			t.closeLOCKED()
+		}
+
+		if !wasPartial {
+			atomic.AddUint64(&TotRollbackFull, 1)
+			os.RemoveAll(t.path) // Full rollback to zero.
+		} else {
+			atomic.AddUint64(&TotRollbackPartial, 1)
+		}
+
+		// Whether partial or full rollback, restart the BleveDest so that
+		// feeds are restarted.
+		t.rollback()
 	}
-
-	if !wasPartial {
-		atomic.AddUint64(&TotRollbackFull, 1)
-		os.RemoveAll(t.path) // Full rollback to zero.
-	} else {
-		atomic.AddUint64(&TotRollbackPartial, 1)
-	}
-
-	// Whether partial or full rollback, restart the BleveDest so that
-	// feeds are restarted.
-	t.restart()
 
 	return nil
 }
