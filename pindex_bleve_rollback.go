@@ -26,38 +26,42 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	pindexName := t.bindex.Name()
-	wasClosed, wasPartial, err := t.partialRollbackLOCKED(partition,
-		vBucketUUID, rollbackSeq)
+	// The BleveDest may be closed due to another partition(BleveDestPartition) of
+	// the same pindex being rolled back earlier.
+	if t.bindex != nil {
+		pindexName := t.bindex.Name()
+		wasClosed, wasPartial, err := t.partialRollbackLOCKED(partition,
+			vBucketUUID, rollbackSeq)
 
-	log.Printf("pindex_bleve_rollback: path: %s,"+
-		" wasClosed: %t, wasPartial: %t, err: %v",
-		t.path, wasClosed, wasPartial, err)
+		log.Printf("pindex_bleve_rollback: path: %s,"+
+			" wasClosed: %t, wasPartial: %t, err: %v",
+			t.path, wasClosed, wasPartial, err)
 
-	if !wasClosed {
-		t.closeLOCKED()
-	}
-
-	if !wasPartial {
-		atomic.AddUint64(&TotRollbackFull, 1)
-		if ServerlessMode {
-			// this is a full rollback, so the paritition is going to be
-			// rebuilt a fresh. The reason we are refunding over here is
-			// because this is not a end-user problem, but rather a
-			// couchbase cluster problem. So, once the partition is built
-			// afresh, we would essentially any loss of cost by charging
-			// for 0 - original high seq no. and after that we will
-			// actually start costing the user.
-			RollbackRefund(pindexName, t.sourceName, 0)
+		if !wasClosed {
+			t.closeLOCKED()
 		}
-		os.RemoveAll(t.path) // Full rollback to zero.
-	} else {
-		atomic.AddUint64(&TotRollbackPartial, 1)
-	}
 
-	// Whether partial or full rollback, restart the BleveDest so that
-	// feeds are restarted.
-	t.restart()
+		if !wasPartial {
+			atomic.AddUint64(&TotRollbackFull, 1)
+			if ServerlessMode {
+				// this is a full rollback, so the paritition is going to be
+				// rebuilt a fresh. The reason we are refunding over here is
+				// because this is not a end-user problem, but rather a
+				// couchbase cluster problem. So, once the partition is built
+				// afresh, we would essentially any loss of cost by charging
+				// for 0 - original high seq no. and after that we will
+				// actually start costing the user.
+				RollbackRefund(pindexName, t.sourceName, 0)
+			}
+			os.RemoveAll(t.path) // Full rollback to zero.
+		} else {
+			atomic.AddUint64(&TotRollbackPartial, 1)
+		}
+
+		// Whether partial or full rollback, restart the BleveDest so that
+		// feeds are restarted.
+		t.rollback()
+	}
 
 	return nil
 }

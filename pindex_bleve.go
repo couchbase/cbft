@@ -296,8 +296,8 @@ type BleveDest struct {
 
 	bleveDocConfig BleveDocumentConfig
 
-	// Invoked when mgr should restart this BleveDest, like on rollback.
-	restart func()
+	// Invoked when mgr should rollback this BleveDest
+	rollback func()
 
 	stats     *cbgt.PIndexStoreStats
 	copyStats *CopyPartitionStats
@@ -339,12 +339,12 @@ type batchRequest struct {
 }
 
 func NewBleveDestEx(path string, bindex bleve.Index,
-	restart func(), bleveDocConfig BleveDocumentConfig, sourceName string) *BleveDest {
+	rollback func(), bleveDocConfig BleveDocumentConfig, sourceName string) *BleveDest {
 
 	bleveDest := &BleveDest{
 		path:           path,
 		bleveDocConfig: bleveDocConfig,
-		restart:        restart,
+		rollback:       rollback,
 		bindex:         bindex,
 		partitions:     make(map[string]*BleveDestPartition),
 		stats:          cbgt.NewPIndexStoreStats(),
@@ -363,12 +363,12 @@ func NewBleveDestEx(path string, bindex bleve.Index,
 }
 
 func NewBleveDest(path string, bindex bleve.Index,
-	restart func(), bleveDocConfig BleveDocumentConfig) *BleveDest {
+	rollback func(), bleveDocConfig BleveDocumentConfig) *BleveDest {
 
 	bleveDest := &BleveDest{
 		path:           path,
 		bleveDocConfig: bleveDocConfig,
-		restart:        restart,
+		rollback:       rollback,
 		bindex:         bindex,
 		partitions:     make(map[string]*BleveDestPartition),
 		stats:          cbgt.NewPIndexStoreStats(),
@@ -440,6 +440,7 @@ func init() {
 
 		New:       NewBlevePIndexImpl,
 		NewEx:     NewBlevePIndexImplEx,
+		Rollback:  RollbackBleve,
 		Open:      OpenBlevePIndexImpl,
 		OpenUsing: OpenBlevePIndexImplUsing,
 
@@ -846,7 +847,7 @@ func parseIndexParams(indexParams string) (
 }
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
-	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	bleveParams, kvConfig, bleveIndexType, kvStoreName, err :=
 		parseIndexParams(indexParams)
 	if err != nil {
@@ -880,9 +881,49 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDestEx(path, bindex, restart, bleveParams.DocConfig,
+		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,
 			tmp.SourceName),
 	}, nil
+}
+
+func RollbackBleve(indexType, indexParams, sourceParams, path string,
+	mgr *cbgt.Manager, rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	bleveParams, kvConfig, bleveIndexType, kvStoreName, err :=
+		parseIndexParams(indexParams)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if bleveIndexType == "upside_down" {
+		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
+			" uses index type upside_down which is no longer supported", path)
+	}
+
+	pindexName := cbgt.PIndexNameFromPath(path)
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
+
+	go func() {
+		bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
+			bleveIndexType, kvStoreName, kvConfig)
+		if err != nil {
+			log.Errorf("bleve: new index, path: %s,"+
+				" kvStoreName: %s, kvConfig: %#v, err: %s",
+				path, kvStoreName, kvConfig, err)
+			return
+		}
+
+		pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
+		err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
+		if err != nil {
+			log.Printf("error writing index params to %s: %v", pathMeta, err)
+			return
+		}
+
+		updateBleveIndex(pindexName, mgr, bindex, dest)
+	}()
+
+	destfwd := &cbgt.DestForwarder{DestProvider: dest}
+	return nil, destfwd, nil
 }
 
 // To be called ONLY when docConfig.Mode has "scope.collection" prefix
@@ -926,8 +967,8 @@ func initMetaFieldValCache(indexName, sourceName string,
 }
 
 func OpenBlevePIndexImpl(indexType, path string,
-	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
-	return OpenBlevePIndexImplUsing(indexType, path, "", restart)
+	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	return OpenBlevePIndexImplUsing(indexType, path, "", rollback)
 }
 
 func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
@@ -968,7 +1009,7 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 }
 
 func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
-	restart func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
+	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	buf := []byte(indexParams)
 	var err error
 	if len(buf) == 0 {
@@ -1043,7 +1084,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 	}
 
 	return bindex, &cbgt.DestForwarder{
-		DestProvider: NewBleveDestEx(path, bindex, restart, bleveParams.DocConfig,
+		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,
 			tmp.SourceName),
 	}, nil
 }
