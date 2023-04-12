@@ -97,8 +97,10 @@ func (c *manifestCache) monitor() {
 			if !ok {
 				return
 			}
-
-			for bucket, old := range c.mCache {
+			c.m.RLock()
+			manifestCache := c.mCache
+			c.m.RUnlock()
+			for bucket, old := range manifestCache {
 				curr, err := c.fetchCollectionManifest(bucket)
 				if err != nil {
 					log.Debugf("manifest: manifest refresh failed for bucket %s, err: %v",

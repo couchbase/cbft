@@ -354,6 +354,10 @@ func wrapTimeoutHandler(h http.Handler,
 		} else {
 			// keeping httpWriteTimeout for all other endpoints.
 			timeoutHandler = http.TimeoutHandler(h, httpWriteTimeout, timeoutMsg)
+			if options["deploymentModel"] == "serverless" {
+				timeoutHandler = http.TimeoutHandler(h, httpWriteTimeoutServerless,
+					timeoutMsg)
+			}
 		}
 		timeoutHandler.ServeHTTP(w, r)
 	}
