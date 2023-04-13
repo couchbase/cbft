@@ -37,6 +37,8 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	defaultFTSMemIndexingFraction = 0.70
 	defaultFTSMemQueryingFraction = 0.80
 
+	cbgt.GocbcoreConnectionBufferSize = uint(16 * 1024) // 16KB for high tenant density
+
 	// raise gocbcore DCP agent share limit per source to 10; meaning 10
 	// partitions residing on the same node can share a single DCP agent.
 	//
