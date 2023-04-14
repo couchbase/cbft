@@ -387,7 +387,8 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 
 		// index create and update requests at the request admission layer
 		// are only limited, not throttled
-		case regulator.CheckResultReject, regulator.CheckResultThrottleProceed:
+		case regulator.CheckResultReject, regulator.CheckResultThrottleProceed,
+			regulator.CheckResultThrottleRetry:
 			reg.updateRegulatorStats(bucket, "total_write_ops_rejected", 1)
 		case regulator.CheckResultProceed:
 		default:
@@ -513,7 +514,6 @@ func CheckQuotaRead(bucket, user string,
 	}
 
 	reg.initialiseRegulatorStats(bucket)
-
 	result, duration, err := regulator.CheckQuota(context, checkQuotaOps)
 	switch result {
 	case regulator.CheckResultError:
@@ -521,7 +521,8 @@ func CheckQuotaRead(bucket, user string,
 
 	// query requests are not throttled, only limited at the
 	// request admission layer
-	case regulator.CheckResultReject, regulator.CheckResultThrottleProceed:
+	case regulator.CheckResultReject, regulator.CheckResultThrottleProceed,
+		regulator.CheckResultThrottleRetry:
 		reg.updateRegulatorStats(bucket, "total_read_ops_rejected", 1)
 	case regulator.CheckResultProceed:
 	default:

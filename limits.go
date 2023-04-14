@@ -47,7 +47,8 @@ var ReplicaPartitionLimit = 3
 // -----------------------------------------------------------------------------
 
 // Pre-processing for a request
-func processRequest(username, path string, req *http.Request) (bool, string) {
+func processRequest(username, path string, req interface{}) (bool, string) {
+
 	if limiter == nil || !ServerlessMode {
 		// rateLimiter not initialized or non-serverless mode
 		return true, ""
@@ -206,14 +207,26 @@ func (r *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.I
 	return &indexDef, nil
 }
 
-func (r *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) ([]string, error) {
-	bucket := rest.BucketNameLookup(req)
-	if len(bucket) > 0 {
-		// query request is to a scoped index
-		return []string{bucket}, nil
-	}
+func (r *rateLimiter) obtainIndexSourceForQueryRequest(req interface{}) ([]string, error) {
 
-	indexName := rest.IndexNameLookup(req)
+	reqH, isHTTP := req.(*http.Request)
+	var indexName string
+	if isHTTP {
+		bucket := rest.BucketNameLookup(reqH)
+		if len(bucket) > 0 {
+			// query request is to a scoped index
+			return []string{bucket}, nil
+		}
+		indexName = rest.IndexNameLookup(reqH)
+	} else {
+		reqG, _ := req.(*rpcRequestParser)
+		var err error
+		indexName, err = reqG.GetIndexName()
+		if err != nil {
+			return nil, fmt.Errorf("limiter: failed to obtain index name from " +
+				"the grpc request")
+		}
+	}
 
 	var sources map[string]struct{}
 	var err error
@@ -231,13 +244,16 @@ func (r *rateLimiter) obtainIndexSourceForQueryRequest(req *http.Request) ([]str
 }
 
 func (r *rateLimiter) regulateRequest(username, path string,
-	req *http.Request) (CheckResult, time.Duration, error) {
+	req interface{}) (CheckResult, time.Duration, error) {
+
+	reqH, isHTTP := req.(*http.Request)
+
 	// No need to throttle/limit the request incase of delete op
 	// Since it ultimately leads to cleaning up of resources.
 	// Furthermore, no need to throttle/limit the GET request of index listing
 	// which basically displays the index definition, since it doesn't impact the
 	// disk usage in the system.
-	if req.Method == "DELETE" || req.Method == "GET" {
+	if isHTTP && (reqH.Method == "DELETE" || reqH.Method == "GET") {
 		return CheckResultProceed, 0, nil
 	}
 
@@ -259,7 +275,7 @@ func (r *rateLimiter) regulateRequest(username, path string,
 
 	// using the indexDef of the request to obtain the necessary info,
 	// given that it is the only reliable source
-	indexDef, err := r.obtainIndexDefFromIndexRequest(req)
+	indexDef, err := r.obtainIndexDefFromIndexRequest(reqH)
 	if err != nil {
 		return CheckResultError, 0, fmt.Errorf("failed to get index "+
 			"info from request %v", err)
@@ -285,14 +301,15 @@ func (r *rateLimiter) regulateRequest(username, path string,
 // custom function just to check out the LMT.
 // can be removed and made part of the original rate Limiter later on, if necessary.
 func (r *rateLimiter) processRequestInServerless(username, path string,
-	req *http.Request) (bool, string) {
+	req interface{}) (bool, string) {
 	action, _, err := r.regulateRequest(username, path, req)
 
 	switch action {
 	// support only limiting of indexing and query requests at the request
 	// admission layer. Furthermore, reject those indexing requests if the
 	// tenant has hit a storage limit.
-	case CheckResultReject, CheckResultThrottleProceed, CheckAccessNoIngress:
+	case CheckResultReject, CheckResultThrottleProceed,
+		CheckResultThrottleRetry, CheckAccessNoIngress:
 		return false, fmt.Sprintf("limiting/throttling: the request has been "+
 			"rejected according to regulator, msg: %v", err)
 	case CheckResultError, CheckAccessError:

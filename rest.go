@@ -17,8 +17,7 @@ import (
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-
-	"github.com/couchbase/goutils/go-cbaudit"
+	audit "github.com/couchbase/goutils/go-cbaudit"
 )
 
 // MapRESTPathStats is keyed by path spec strings.
@@ -32,6 +31,7 @@ var indexPaths = map[string]bool{
 var queryPaths = map[string]bool{
 	"/api/index/{indexName}/query":                                       true,
 	"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query": true,
+	"/Search": true, // grpc requests from n1fty
 }
 
 func isIndexPath(path string) bool {
