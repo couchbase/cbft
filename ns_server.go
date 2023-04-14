@@ -132,6 +132,34 @@ func (h *NsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	rest.MustEncode(w, nsIndexStats)
 }
 
+// BucketsNsStatsHandler is a REST handler that provides the list
+// of buckets which have partitions on the current node.
+type BucketsNsStatsHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewBucketsNsStatsHandler(mgr *cbgt.Manager) *BucketsNsStatsHandler {
+	return &BucketsNsStatsHandler{mgr: mgr}
+}
+
+func (h *BucketsNsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	_, pindexes := h.mgr.CurrentMaps()
+	bucketsMap := make(map[string]struct{})
+
+	for _, pindex := range pindexes {
+		bucketsMap[pindex.SourceName] = struct{}{}
+	}
+
+	result := struct {
+		IndexSourceNames map[string]struct{} `json:"indexSourceNames"`
+	}{
+		IndexSourceNames: bucketsMap,
+	}
+
+	rest.MustEncode(w, result)
+}
+
 // IndexNsStatsHandler is a REST handler that provides stats/metrics for
 // for an index
 type IndexNsStatsHandler struct {

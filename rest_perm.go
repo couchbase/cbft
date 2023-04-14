@@ -67,6 +67,9 @@ cluster.collection[<sourceName>].fts!manage
 GET /api/stats
 cluster.bucket[].fts!read
 
+GET /api/nsstats/buckets
+cluster.bucket[].fts!read
+
 GET /api/nsstats
 cluster.bucket[].fts!read
 
