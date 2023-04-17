@@ -112,7 +112,7 @@ curl -XPOST -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password
         </span>
         <span ng-if="indexName != scopedIndexUndecoratedName(indexName)">
 curl -XPOST -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&gt; \
-{{protocol}}://{{hostPort}}/api/bucket/{{scopedIndexBucketName(indexName)}}/scope/{{scopedIndexScopeName(indexName)}}/index/{{indexName}}/query \
+{{protocol}}://{{hostPort}}/api/bucket/{{scopedIndexBucketName(indexName)}}/scope/{{scopedIndexScopeName(indexName)}}/index/{{scopedIndexUndecoratedName(indexName)}}/query \
 -d '{{jsonQuery}}'
         </span>
       </pre>
