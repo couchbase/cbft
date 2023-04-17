@@ -21,7 +21,6 @@ var httpMaxConnections = 100000
 var httpReadTimeout = 20 * time.Second
 var httpReadHeaderTimeout = 5 * time.Second
 var httpWriteTimeout = 60 * time.Second
-var httpWriteTimeoutServerless = 120 * time.Second
 var httpIdleTimeout = 60 * time.Second
 var httpHandlerTimeout = 300 * time.Minute
 

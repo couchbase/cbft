@@ -11,6 +11,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
@@ -27,6 +28,9 @@ func registerServerlessHooks(options map[string]string) map[string]string {
 	}
 
 	cbft.ServerlessMode = true
+
+	// raise the default http write timeout to 120s
+	httpWriteTimeout = 120 * time.Second
 
 	// serverless index and partition limits
 	cbft.IndexLimitPerSource = 20
