@@ -53,7 +53,7 @@ require (
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
-	github.com/couchbase/gocbcore/v10 v10.2.3-0.20230404070112-cab6da1895ae // indirect
+	github.com/couchbase/gocbcore/v10 v10.2.3 // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
 	github.com/couchbase/gomemcached v0.2.1 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
