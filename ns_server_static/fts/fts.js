@@ -581,6 +581,15 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
     });
 
     function updateProgress() {
+        try {
+            if (angular.isDefined($scope.indexDef.planParams.nodePlanParams[""][""].canWrite)) {
+                if (!$scope.indexDef.planParams.nodePlanParams[""][""].canWrite) {
+                    $scope.progress = "paused";
+                    return;
+                }
+            }
+        } catch (e) {}
+
         var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
         let prog = "idle";
         if (angular.isDefined(numMutationsToIndex) && numMutationsToIndex > 0) {
