@@ -372,13 +372,21 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	}
 	if indexName != "" {
 		indexDef, exists := indexDefsByName[indexName]
-		if !exists || indexDef == nil {
-			if method == "PUT" {
-				// Special case where PUT represents an index creation
-				// when there's no indexDef.
-				return findCouchbaseSourceNames(rp, indexName, indexDefsByName)
+		if !exists {
+			// Force refresh of indexDefs and try again.
+			_, indexDefsByName, err = mgr.GetIndexDefs(true)
+			if err != nil {
+				return nil, err
 			}
-			return nil, errIndexNotFound
+			indexDef, exists = indexDefsByName[indexName]
+			if !exists || indexDef == nil {
+				if method == "PUT" {
+					// Special case where PUT represents an index creation
+					// when there's no indexDef.
+					return findCouchbaseSourceNames(rp, indexName, indexDefsByName)
+				}
+				return nil, errIndexNotFound
+			}
 		}
 
 		var sourceNames []string
@@ -428,7 +436,15 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 		return nil, errPIndexNotFound
 	}
 
-	indexDef, _ := indexDefsByName[pindex.IndexName]
+	indexDef, exists := indexDefsByName[pindex.IndexName]
+	if !exists {
+		// Force refresh of indexDefs and try again.
+		_, indexDefsByName, err = mgr.GetIndexDefs(true)
+		if err != nil {
+			return nil, err
+		}
+		indexDef, _ = indexDefsByName[pindex.IndexName]
+	}
 	if indexDef != nil {
 		return getSourceNamesFromIndexDef(indexDef)
 	}
