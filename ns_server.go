@@ -748,7 +748,9 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
 	topLevelStats["num_gocbcore_stats_agents"] = cbgt.NumStatsAgents()
 
-	gatherNodeUtilStats(mgr, topLevelStats)
+	if ServerlessMode {
+		gatherNodeUtilStats(mgr, topLevelStats)
+	}
 
 	return topLevelStats
 }
