@@ -123,7 +123,8 @@ func initBleveOptions(options map[string]string) error {
 							" on err: %v, path: %s", indexName, err, path)
 						return
 					}
-					log.Warnf("scorch AsyncError, failed to pause ingest for index: %s", indexName)
+					log.Warnf("scorch AsyncError, failed to pause ingest for index: %s,"+
+						" er: %v", indexName, er)
 					// pause ingest failed, fall through to fatal error
 				}
 				// index not found based on path, fall through to fatal error
