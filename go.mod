@@ -48,7 +48,7 @@ require (
 	github.com/blevesearch/vellum v1.0.8 // indirect
 	github.com/couchbase/blance v0.1.1 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
-	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
+	github.com/couchbase/gocbcore/v9 v9.1.10 // indirect
 	github.com/couchbase/gomemcached v0.1.4 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
 	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
