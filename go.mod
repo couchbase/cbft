@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/aws/aws-sdk-go v1.44.113
 	github.com/blevesearch/bleve-mapping-ui v0.5.1
-	github.com/blevesearch/bleve/v2 v2.3.8-0.20230405142240-0c48a9e6c298
+	github.com/blevesearch/bleve/v2 v2.3.8
 	github.com/blevesearch/bleve_index_api v1.0.5
 	github.com/blevesearch/zapx/v11 v11.3.7
 	github.com/blevesearch/zapx/v12 v12.3.7
 	github.com/blevesearch/zapx/v13 v13.3.7
 	github.com/blevesearch/zapx/v14 v14.3.7
-	github.com/blevesearch/zapx/v15 v15.3.9
+	github.com/blevesearch/zapx/v15 v15.3.10
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.10
@@ -28,7 +28,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.6.0
 	google.golang.org/grpc v1.49.0
@@ -63,7 +63,7 @@ require (
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
