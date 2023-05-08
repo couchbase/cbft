@@ -20,15 +20,15 @@ func TestMainStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	router, err := mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
+	err = mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
 		"bad data dir", "./static", "etag", "", "", mr, nil)
-	if router != nil || err == nil {
+	if err == nil {
 		t.Errorf("expected empty server string to fail mainStart()")
 	}
 
-	router, err = mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
+	err = mainStart(nil, cbgt.NewUUID(), nil, "", 1, "", ":1000",
 		"bad data dir", "./static", "etag", "bad server", "", mr, nil)
-	if router != nil || err == nil {
+	if err == nil {
 		t.Errorf("expected bad server string to fail mainStart()")
 	}
 }

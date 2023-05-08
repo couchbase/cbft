@@ -38,17 +38,18 @@ func setupHTTPListenersAndServe(routerInUse http.Handler) {
 		// responsible for updating the listeners on refresh
 		handleConfigChanges := func(status int) error {
 			// restart the servers in case of a refresh
-			setupHTTPListeners(bindHTTPList, bindHTTPSList, status)
+			setupHTTPListeners(bindHTTPList, bindHTTPSList, status, routerInUse)
 			return nil
 		}
 		cbgt.RegisterConfigRefreshCallback("fts/http,https", handleConfigChanges)
 	}
 
 	setupHTTPListeners(bindHTTPList, bindHTTPSList,
-		cbgt.AuthChange_nonSSLPorts|cbgt.AuthChange_certificates)
+		cbgt.AuthChange_nonSSLPorts|cbgt.AuthChange_certificates, routerInUse)
 }
 
-func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error {
+func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int,
+	routerInUse http.Handler) error {
 	if status&cbgt.AuthChange_nonSSLPorts != 0 {
 		// close any previously opened http servers
 		serversCache.shutdownHttpServers(false)
@@ -60,13 +61,13 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 			for _, bindHTTP := range bindHTTPList {
 				if strings.HasPrefix(bindHTTP, "0.0.0.0:") ||
 					strings.HasPrefix(bindHTTP, "[::]:") {
-					mainServeHTTP("http", bindHTTP, nil)
+					mainServeHTTP("http", bindHTTP, nil, routerInUse)
 					anyHostPorts[bindHTTP] = true
 				}
 			}
 
 			for i := len(bindHTTPList) - 1; i >= 1; i-- {
-				mainServeHTTP("http", bindHTTPList[i], anyHostPorts)
+				mainServeHTTP("http", bindHTTPList[i], anyHostPorts, routerInUse)
 			}
 		} else if ss.DisableNonSSLPorts {
 			// Only listen on 127.0.0.1:8094 or [::1]:8094 (based on address family)
@@ -75,8 +76,8 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 				portIndex := strings.LastIndex(bindHTTPList[0], ":") + 1
 				if portIndex > 0 && portIndex < len(bindHTTPList[0]) {
 					port := bindHTTPList[0][portIndex:]
-					mainServeHTTP("http", "127.0.0.1:"+port, nil)
-					mainServeHTTP("http", "[::1]:"+port, nil)
+					mainServeHTTP("http", "127.0.0.1:"+port, nil, routerInUse)
+					mainServeHTTP("http", "[::1]:"+port, nil, routerInUse)
 				}
 			}
 		}
@@ -91,13 +92,13 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 		for _, bindHTTPS := range bindHTTPSList {
 			if strings.HasPrefix(bindHTTPS, "0.0.0.0:") ||
 				strings.HasPrefix(bindHTTPS, "[::]:") {
-				mainServeHTTP("https", bindHTTPS, nil)
+				mainServeHTTP("https", bindHTTPS, nil, routerInUse)
 				anyHostPorts[bindHTTPS] = true
 			}
 		}
 
 		for _, bindHTTPS := range bindHTTPSList {
-			mainServeHTTP("https", bindHTTPS, anyHostPorts)
+			mainServeHTTP("https", bindHTTPS, anyHostPorts, routerInUse)
 		}
 	}
 
@@ -106,7 +107,8 @@ func setupHTTPListeners(bindHTTPList, bindHTTPSList []string, status int) error 
 
 // mainServeHTTP starts the http/https servers for cbft.
 // The proto may be "http" or "https".
-func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool) {
+func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
+	routerInUse http.Handler) {
 	if len(bindHTTP) == 0 {
 		return
 	}

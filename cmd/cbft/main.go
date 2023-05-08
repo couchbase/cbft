@@ -50,9 +50,6 @@ var defaultCtlVerbose = 3
 
 var expvars = expvar.NewMap("stats")
 
-// http router in use
-var routerInUse http.Handler
-
 // AuthType used for SSL servers/listeners
 var authType string
 
@@ -248,12 +245,11 @@ func main() {
 	// register for the cbauth's security callbacks
 	cbgt.RegisterSecurityNotifications()
 
-	routerInUse, err = mainStart(cfg, uuid, tagsArr,
+	if err = mainStart(cfg, uuid, tagsArr,
 		flags.Container, flags.Weight, flags.Extras,
 		bindHTTPList[0], flags.DataDir,
 		flags.StaticDir, flags.StaticETag,
-		flags.Server, flags.Register, mr, options)
-	if err != nil {
+		flags.Server, flags.Register, mr, options); err != nil {
 		log.Fatal(err)
 	}
 
@@ -266,8 +262,6 @@ func main() {
 		platform.HideConsole(true)
 		defer platform.HideConsole(false)
 	}
-
-	setupHTTPListenersAndServe(routerInUse)
 
 	err = cbgt.PublishSystemEvent(cbgt.NewSystemEvent(
 		cbgt.ServiceStartEventID,
@@ -319,10 +313,9 @@ func mainWelcome(flagAliases map[string][]string) {
 
 func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	weight int, extras, bindHTTP, dataDir, staticDir, staticETag, server string,
-	register string, mr *cbgt.MsgRing, options map[string]string) (
-	http.Handler, error) {
+	register string, mr *cbgt.MsgRing, options map[string]string) error {
 	if server == "" {
-		return nil, fmt.Errorf("error: server URL required (-server)")
+		return fmt.Errorf("error: server URL required (-server)")
 	}
 
 	if options == nil {
@@ -334,7 +327,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extrasMap, err := cbft.ParseExtras(extras)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	extrasMap["features"] = cbgt.NodeFeatureLeanPlan +
@@ -366,13 +359,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	extrasJSON, err := json.Marshal(extrasMap)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	extras = string(extrasJSON)
 
 	if err = cbft.InitSystemStats(); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Force OSO Backfills for ingest while using the gocbcore sourceType
@@ -384,21 +377,21 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	options = registerServerlessHooks(options)
 
 	if err = initMemOptions(options); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = initCPUOptions(options); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = initBleveOptions(options); err != nil {
-		return nil, err
+		return err
 	}
 
 	if options["logStatsEvery"] != "" {
 		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if logStatsEvery >= 0 {
 			cbft.LogEveryNStats = logStatsEvery
@@ -406,11 +399,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	if err = cbft.InitResultCacheOptions(options); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = cbft.InitBleveResultCacheOptions(options); err != nil {
-		return nil, err
+		return err
 	}
 
 	exitCode := mainTool(cfg, uuid, tags, flags, options)
@@ -423,7 +416,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		if err != nil {
 			if !strings.HasPrefix(server, "http://") &&
 				!strings.HasPrefix(server, "https://") {
-				return nil, fmt.Errorf("error: not a URL, server: %q\n"+
+				return fmt.Errorf("error: not a URL, server: %q\n"+
 					"  Please check that your -server parameter"+
 					" is a valid URL\n"+
 					"  (http://HOST:PORT),"+
@@ -432,7 +425,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 					server)
 			}
 
-			return nil, fmt.Errorf("error: could not connect"+
+			return fmt.Errorf("error: could not connect"+
 				" to server (%q), err: %v\n"+
 				"  Please check that your -server parameter (%q)\n"+
 				"  is correct, the couchbase server is accessible,\n"+
@@ -446,7 +439,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if logLevelStr != "" {
 		logLevel, exists := cbft.LogLevels[logLevelStr]
 		if !exists {
-			return nil, fmt.Errorf("error: invalid entry for"+
+			return fmt.Errorf("error: invalid entry for"+
 				" logLevel: %v", logLevelStr)
 		}
 		log.SetLevel(log.LogLevel(logLevel))
@@ -459,7 +452,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if options["maxReplicasAllowed"] != "" {
 		_, err = strconv.Atoi(options["maxReplicasAllowed"])
 		if err != nil {
-			return nil, fmt.Errorf("error: invalid entry for"+
+			return fmt.Errorf("error: invalid entry for"+
 				"maxReplicasAllowed: %v", options["maxReplicasAllowed"])
 		}
 	}
@@ -470,7 +463,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		var gcMinThreshold int
 		gcMinThreshold, err = strconv.Atoi(options["gcMinThreshold"])
 		if err != nil || gcMinThreshold < 0 {
-			return nil, fmt.Errorf("error: invalid entry for"+
+			return fmt.Errorf("error: invalid entry for"+
 				"gcMinThreshold: %v", options["gcMinThreshold"])
 		}
 	}
@@ -481,7 +474,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		var gcTriggerPct int
 		gcTriggerPct, err = strconv.Atoi(options["gcTriggerPct"])
 		if err != nil || gcTriggerPct < 0 {
-			return nil, fmt.Errorf("error: invalid entry for"+
+			return fmt.Errorf("error: invalid entry for"+
 				"gcTriggerPct: %v", options["gcTriggerPct"])
 		}
 	}
@@ -492,7 +485,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		var memStatsLoggingInterval int
 		memStatsLoggingInterval, err = strconv.Atoi(options["memStatsLoggingInterval"])
 		if err != nil || memStatsLoggingInterval < 0 {
-			return nil, fmt.Errorf("error: invalid entry for"+
+			return fmt.Errorf("error: invalid entry for"+
 				"memStatsLoggingInterval: %v", options["memStatsLoggingInterval"])
 		}
 	}
@@ -538,14 +531,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
-	setupGRPCListenersAndServe(mgr)
-
 	cbft.InitRESTPathStats()
 
 	muxrouter, _, err :=
 		cbft.NewRESTRouter(version, mgr, staticDir, staticETag, mr, adtSvc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// register handlers needed by ns_server
@@ -595,13 +586,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	nsStatusHandler, err := cbft.NewNsStatusHandler(mgr, server)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	handle(prefix+"/api/nsstatus", "GET", nsStatusHandler)
 
 	nsSearchResultRedirectHandler, err := cbft.NsSearchResultRedirctHandler(mgr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	handle(prefix+"/api/nsSearchResultRedirect/{pindexName}/{docID}",
 		"GET",
@@ -609,7 +600,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	cbAuthBasicLoginHadler, err := cbft.CBAuthBasicLoginHandler(mgr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
@@ -693,6 +684,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	// ------------------------------------------------
 
+	// Register gRPC and HTTP listeners
+	setupGRPCListenersAndServe(mgr)
+	setupHTTPListenersAndServe(router)
+
+	// ------------------------------------------------
+
 	tagsMap := mgr.TagsMap()
 	if tagsMap != nil && tagsMap["cbauth_service"] {
 		dryRun := false
@@ -700,7 +697,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		if dryRunV != "" {
 			dryRun, err = strconv.ParseBool(dryRunV)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -709,7 +706,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		if waitForMemberNodesV != "" {
 			waitForMemberNodes, err = strconv.Atoi(waitForMemberNodesV)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -718,7 +715,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		if verboseV != "" {
 			verbose, err = strconv.Atoi(verboseV)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -743,7 +740,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			Manager:                            mgr,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("main: ctl.StartCtl, err: %v", err)
+			return fmt.Errorf("main: ctl.StartCtl, err: %v", err)
 		}
 
 		// deferred start of the mgr after the ctl initialisations, as
@@ -751,7 +748,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		// self-registeration to cfg.
 		err = mgr.Start(register)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		nodeInfo := &service.NodeInfo{
@@ -760,7 +757,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 		err = cfg.Refresh()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		ctlMgr := ctl.NewCtlMgr(nodeInfo, c)
@@ -789,7 +786,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	go runBleveExpvarsCooker(mgr)
 
-	return router, err
+	return err
 }
 
 // -------------------------------------------------------
