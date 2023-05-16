@@ -46,23 +46,6 @@ type message struct {
 	operation uint
 }
 
-type regulatorStats struct {
-	TotalRUsMetered                uint64  `json:"total_RUs_metered"`
-	TotalWUsMetered                uint64  `json:"total_WUs_metered"`
-	TotalMeteringErrs              uint64  `json:"total_metering_errs"`
-	TotalReadOpsCapped             uint64  `json:"total_read_ops_capped"`
-	TotalReadOpsRejected           uint64  `json:"total_read_ops_rejected"`
-	TotalWriteOpsRejected          uint64  `json:"total_write_ops_rejected"`
-	TotalWriteThrottleSeconds      float64 `json:"total_write_throttle_seconds"`
-	TotalCheckQuotaReadErrs        uint64  `json:"total_read_ops_metering_errs"`
-	TotalCheckQuotaWriteErrs       uint64  `json:"total_write_ops_metering_errs"`
-	TotalOpsTimedOutWhileMetering  uint64  `json:"total_ops_timed_out_while_metering"`
-	TotalBatchLimitingTimeOuts     uint64  `json:"total_batch_limiting_timeouts"`
-	TotalBatchRejectionBackoffTime uint64  `json:"total_batch_rejection_backoff_time_ms"`
-	TotCheckAccessOpsRejects       uint64  `json:"total_check_access_rejects"`
-	TotCheckAccessErrs             uint64  `json:"total_check_access_errs"`
-}
-
 type serviceRegulator struct {
 	mgr         *cbgt.Manager
 	handler     regulator.StatsHttpHandler

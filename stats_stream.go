@@ -54,8 +54,7 @@ func (h *statsStreamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	tickerCh := time.NewTicker(time.Second).C
 
-	stats := make(map[string]interface{})
-	nsStats := []string{
+	nsStatsToStream := []string{
 		"batch_bytes_added",
 		"batch_bytes_removed",
 		"curr_batches_blocked_by_herder",
@@ -79,11 +78,21 @@ func (h *statsStreamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		"utilization:memoryBytes",
 	}
 
+	serverlessStatsToStream := []string{
+		"limits:billableUnitsRate",
+		"limits:diskBytes",
+		"limits:memoryBytes",
+		"resourceUnderUtilizationWaterMark",
+		"resourceUtilizationHighWaterMark",
+		"resourceUtilizationLowWaterMark",
+	}
+
 	for {
 		select {
 		case <-cn.CloseNotify():
 			return
 		case <-tickerCh:
+			stats := make(map[string]interface{})
 			rd := getRecentInfo()
 			if rd.err != nil {
 				rest.ShowError(w, req, fmt.Sprintf("could not retrieve defs: %v", rd.err), http.StatusInternalServerError)
@@ -95,7 +104,40 @@ func (h *statsStreamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 				return
 			}
 
-			for _, stat := range nsStats {
+			if ServerlessMode {
+
+				for statType, nsStats := range nsIndexStats {
+					if statType == "regulatorStats" {
+						for key, value := range nsStats {
+
+							if key == "total_units_metered" {
+								stats[key] = value
+							} else if bucketStats, ok := value.(*regulatorStats); ok {
+								stats[key+":total_RUs_metered"] = bucketStats.TotalRUsMetered
+								stats[key+":total_WUs_metered"] = bucketStats.TotalWUsMetered
+								stats[key+":total_metering_errs"] = bucketStats.TotalMeteringErrs
+								stats[key+":total_read_ops_capped"] = bucketStats.TotalReadOpsCapped
+								stats[key+":total_read_ops_rejected"] = bucketStats.TotalReadOpsRejected
+								stats[key+":total_write_ops_rejected"] = bucketStats.TotalWriteOpsRejected
+								stats[key+":total_write_throttle_seconds"] = bucketStats.TotalWriteThrottleSeconds
+								stats[key+":total_read_ops_metering_errs"] = bucketStats.TotalCheckQuotaReadErrs
+								stats[key+":total_write_ops_metering_errs"] = bucketStats.TotalCheckQuotaWriteErrs
+								stats[key+":total_ops_timed_out_while_metering"] = bucketStats.TotalOpsTimedOutWhileMetering
+								stats[key+":total_batch_limiting_timeouts"] = bucketStats.TotalBatchLimitingTimeOuts
+								stats[key+":total_batch_rejection_backoff_time_ms"] = bucketStats.TotalBatchRejectionBackoffTime
+								stats[key+":total_check_access_rejects"] = bucketStats.TotCheckAccessOpsRejects
+								stats[key+":total_check_access_errs"] = bucketStats.TotCheckAccessErrs
+							}
+						}
+					}
+				}
+
+				for _, stat := range serverlessStatsToStream {
+					stats[stat] = nsIndexStats[""][stat]
+				}
+			}
+
+			for _, stat := range nsStatsToStream {
 				stats[stat] = nsIndexStats[""][stat]
 			}
 
