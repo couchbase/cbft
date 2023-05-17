@@ -23,13 +23,15 @@ IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "enterprise")
 ENDIF(BUILD_ENTERPRISE)
 
+SET (GOVERSION SUPPORTED_NEWER)
+
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
   DEPENDS sigar
-  GOVERSION 1.19)
+  GOVERSION ${GOVERSION})
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
@@ -37,7 +39,7 @@ GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin
   DEPENDS sigar
-  GOVERSION 1.19)
+  GOVERSION ${GOVERSION})
 
 # Build the UI and copy the files to the correct place
 ADD_SUBDIRECTORY(ns_server_static)
