@@ -111,14 +111,16 @@ func (a *appHerder) awakeWaiters(msg string) {
 }
 
 func (a *appHerder) awakeWaitersLOCKED(msg string) {
-	if a.waiting > 0 && (a.waitingPrev != int64(a.waiting) ||
-		a.indexesPrev != int64(len(a.indexes))) {
+	if a.waiting > 0 {
+		if a.waitingPrev != int64(a.waiting) ||
+			a.indexesPrev != int64(len(a.indexes)) {
 
-		log.Printf("app_herder: %s, indexes: %d, waiting: %d", msg,
-			len(a.indexes), a.waiting)
+			log.Printf("app_herder: %s, indexes: %d, waiting: %d", msg,
+				len(a.indexes), a.waiting)
 
-		a.waitingPrev = int64(a.waiting)
-		a.indexesPrev = int64(len(a.indexes))
+			a.waitingPrev = int64(a.waiting)
+			a.indexesPrev = int64(len(a.indexes))
+		}
 
 		a.waitCond.Broadcast()
 	}
