@@ -63,7 +63,12 @@ func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
 		}
 		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
 			if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
-				_ = initMetaFieldValCache(indexDef.Name, indexDef.SourceName, im)
+				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
+					im, false)
+				if err != nil {
+					return
+				}
+				_ = initMetaFieldValCache(indexDef.Name, indexDef.SourceName, im, scope)
 			}
 		}
 	}

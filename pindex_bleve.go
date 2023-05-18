@@ -838,7 +838,7 @@ func parseIndexParams(indexParams string) (
 			}
 
 			bleveParams.DocConfig.CollPrefixLookup =
-				initMetaFieldValCache(ip.IndexName, ip.SourceName, im)
+				initMetaFieldValCache(ip.IndexName, ip.SourceName, im, scope)
 		}
 	}
 
@@ -928,12 +928,8 @@ func RollbackBleve(indexType, indexParams, sourceParams, path string,
 
 // To be called ONLY when docConfig.Mode has "scope.collection" prefix
 func initMetaFieldValCache(indexName, sourceName string,
-	im *mapping.IndexMappingImpl) map[uint32]*collMetaField {
+	im *mapping.IndexMappingImpl, scope *Scope) map[uint32]*collMetaField {
 	if im == nil {
-		return nil
-	}
-	scope, err := validateScopeCollFromMappings(sourceName, im, false)
-	if err != nil {
 		return nil
 	}
 	rv := make(map[uint32]*collMetaField, 1)
@@ -1051,9 +1047,14 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 			if err != nil {
 				return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 			}
+			scope, err := validateScopeCollFromMappings(tmp.SourceName,
+				am, false)
+			if err != nil {
+				return nil, nil, fmt.Errorf("bleve: validate scope/collection: %v", err)
+			}
 			// populate the collection meta field look up cache.
 			bleveParams.DocConfig.CollPrefixLookup =
-				initMetaFieldValCache(tmp.IndexName, tmp.SourceName, am)
+				initMetaFieldValCache(tmp.IndexName, tmp.SourceName, am, scope)
 		}
 	}
 
