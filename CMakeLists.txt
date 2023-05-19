@@ -23,6 +23,8 @@ IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "cbftx")
 ENDIF(BUILD_ENTERPRISE)
 
+SET (GOVERSION SUPPORTED_NEWER)
+
 GoPrivateMod(MODULE cbftx)
 
 GoPrivateMod(MODULE hebrew)
@@ -32,12 +34,12 @@ GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
-  GOVERSION 1.19)
+  GOVERSION ${GOVERSION})
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
-  GOVERSION 1.19)
+  GOVERSION ${GOVERSION})
 
 ADD_DEPENDENCIES(cbft sigar)
 
@@ -83,4 +85,4 @@ GoInstall(TARGET mossScope
   PACKAGE github.com/couchbase/mossScope
   GOPATH "${CMAKE_SOURCE_DIR}/goproj" "${GODEPSDIR}"
   INSTALL_PATH bin OUTPUT mossScope
-  GOVERSION 1.19)
+  GOVERSION ${GOVERSION})
