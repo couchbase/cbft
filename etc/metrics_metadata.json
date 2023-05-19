@@ -432,5 +432,170 @@
      "fts_tot_http_limitlisteners_opened": {
        "type": "counter",
        "help": "Total number of HTTP limit listeners opened"
+     },
+     "fts_throttle_seconds_total": {
+       "type": "counter",
+       "help": "The total time spent throttling (in seconds).",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for"
+       ]
+     },
+     "fts_throttle_count_total": {
+       "type": "counter",
+       "help": "The number of times Regulator instructed an operation to throttle.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for"
+       ]
+     },
+     "fts_reject_count_total": {
+       "type": "counter",
+       "help": "The number of times Regulator instructed an operation to be rejected.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for"
+       ]
+     },
+     "fts_op_count_total": {
+       "type": "counter",
+       "help": "The number of distinct operations recorded with Regulator.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for"
+       ]
+     },
+     "fts_meter_cu_total": {
+       "type": "counter",
+       "help": "The number of Compute Units (CUs) recorded.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "unbilled",
+         "variant"
+       ]
+     },
+     "fts_credit_cu_total": {
+       "type": "counter",
+       "help": "The number of Compute Units (CUs) refunded.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "variant"
+       ]
+     },
+     "fts_counter_cu_total": {
+       "type": "counter",
+       "help": "The number of distinct operations recording Compute Units (CUs) with Regulator.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "unbilled",
+         "variant"
+       ]
+     },
+     "fts_meter_wu_total": {
+     "type": "counter",
+     "help": "The number of Write Units (WUs) recorded.",
+     "unit": "seconds",
+     "added": "7.5.0",
+     "notes": "This is a metric specific to serverless.",
+     "labels": [
+       "bucket",
+       "for",
+       "unbilled",
+       "variant"
+     ]
+   },
+     "fts_credit_wu_total": {
+       "type": "counter",
+       "help": "The number of Write Units (WUs) refunded.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "variant"
+       ]
+     },
+     "fts_counter_wu_total": {
+       "type": "counter",
+       "help": "The number of distinct operations recording Write Units (WUs) with Regulator.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "unbilled",
+         "variant"
+       ]
+     },
+     "fts_meter_ru_total": {
+       "type": "counter",
+       "help": "The number of Read Units (RUs) recorded.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "unbilled",
+         "variant"
+       ]
+     },
+     "fts_credit_ru_total": {
+       "type": "counter",
+       "help": "The number of Read Units (RUs) refunded.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "variant"
+       ]
+     },
+     "fts_counter_ru_total": {
+       "type": "counter",
+       "help": "The number of distinct operations recording Read Units (RUs) with Regulator.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless.",
+       "labels": [
+         "bucket",
+         "for",
+         "unbilled",
+         "variant"
+       ]
+     },
+    "fts_boot_timestamp_seconds": {
+       "type": "gauge",
+       "help": "The time the service booted in fractional seconds since Unix epoch.",
+       "unit": "seconds",
+       "added": "7.5.0",
+       "notes": "This is a metric specific to serverless."
      }
    }

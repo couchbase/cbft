@@ -19,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blevesearch/bleve/v2"
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -539,7 +538,7 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 		// non-serverless builds.
 		return
 	}
-	reg.handler.WriteMetrics(w)
+	reg.handler.WriteStats(w)
 
 	statName := "num_disk_bytes_used_per_bucket"
 	for bucket, storageBytes := range storageStats {
