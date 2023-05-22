@@ -519,10 +519,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	cbft.CurrentNodeDefsFetcher = &cbft.NodeDefsFetcher{}
 	cbft.CurrentNodeDefsFetcher.SetManager(mgr)
 
-	// set bleveAsyncIndexControlCallback to mgr.IndexControl for bleve
-	// to be able to pause index ingest on any async error
-	bleveAsyncIndexControlCallback = mgr.IndexControl
-
 	var adtSvc *audit.AuditSvc
 	if options["cbaudit"] == "true" {
 		adtSvc, err = audit.NewAuditSvc(server)
