@@ -3217,7 +3217,7 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 		return fmt.Errorf("source name not provided")
 	}
 
-	url := mgr.Server() + "/pools/default/buckets/" + url.QueryEscape(sourceName)
+	url := mgr.Server() + "/pools/default/b/" + url.QueryEscape(sourceName)
 	u, err := cbgt.CBAuthURL(url)
 	if err != nil {
 		return err
