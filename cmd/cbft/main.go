@@ -368,8 +368,11 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return err
 	}
 
-	// Force OSO Backfills for ingest while using the gocbcore sourceType
-	options["useOSOBackfill"] = "true"
+	if val, exists := options["useOSOBackfill"]; !exists || val != "false" {
+		// Force OSO Backfills for ingest while using the gocbcore sourceType,
+		// if option is explicitly not set to "false".
+		options["useOSOBackfill"] = "true"
+	}
 
 	// Set DCP connection sharing for gocbcore feeds to 6
 	options["maxFeedsPerDCPAgent"] = "6"
