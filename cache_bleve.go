@@ -21,6 +21,7 @@ import (
 	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/blevesearch/bleve/v2/index/scorch/mergeplan"
 	"github.com/blevesearch/bleve/v2/mapping"
+	"github.com/blevesearch/bleve/v2/search"
 	index "github.com/blevesearch/bleve_index_api"
 
 	"github.com/couchbase/cbgt"
@@ -107,13 +108,23 @@ func (m *cacheBleveIndex) Search(req *bleve.SearchRequest) (
 
 func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	req *bleve.SearchRequest) (*bleve.SearchResult, error) {
+
+	a := NewAggregateRecorder(m.pindex.SourceName)
+
+	aggRecCallback := func(msg search.SearchIncrementalCostCallbackMsg,
+		unitType search.SearchQueryType, bytes uint64) {
+		AggregateRecorderCallback(a, msg, unitType, bytes)
+	}
+
+	ctx = context.WithValue(ctx, search.SearchIncrementalCostKey,
+		search.SearchIncrementalCostCallbackFn(aggRecCallback))
+
 	if !ResultCache.enabled() {
 		res, err := m.bindex.SearchInContext(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 
-		MeterReads(m.pindex.SourceName, m.bindex.Name(), res.BytesRead)
 		return res, nil
 	}
 
@@ -137,7 +148,6 @@ func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 		return nil, err
 	}
 
-	MeterReads(m.pindex.SourceName, m.bindex.Name(), res.BytesRead)
 	if len(res.Hits) < BleveResultCacheMaxHits { // Don't cache overly large results.
 		ResultCache.encache(key, func() []byte {
 			// TODO: Use something better than JSON to copy a search result.

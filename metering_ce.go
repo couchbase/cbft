@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/search"
 	"github.com/couchbase/cbgt"
 )
 
@@ -28,10 +29,6 @@ func GetRegulatorStats() map[string]interface{} {
 }
 
 func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
-	return
-}
-
-func MeterReads(bucket string, pindexName string, bytes uint64) {
 	return
 }
 
@@ -55,6 +52,15 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 
 func CheckAccess(bucket, username string) (CheckResult, error) {
 	return CheckAccessNormal, nil
+}
+
+func NewAggregateRecorder(string) interface{} {
+	return nil
+}
+
+func AggregateRecorderCallback(recorder interface{},
+	msg search.SearchIncrementalCostCallbackMsg, unitType search.SearchQueryType, bytes uint64) {
+
 }
 
 func RollbackRefund(pindex, sourceName string, bytesWrittenAtRollbackSeqno uint64) {}

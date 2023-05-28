@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/search"
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -28,6 +29,7 @@ import (
 	"github.com/couchbase/regulator/factory"
 	"github.com/couchbase/regulator/metering"
 	"github.com/couchbase/regulator/utils"
+	"github.com/couchbase/regulator/variants"
 )
 
 const (
@@ -114,8 +116,6 @@ func (sr *serviceRegulator) startMetering() {
 		case msg := <-sr.messageChan:
 			var err error
 			switch msg.operation {
-			case read:
-				err = sr.recordReads(msg.bucket, msg.index, msg.user, msg.bytes)
 			case write:
 				err = sr.recordWrites(msg.bucket, msg.index, msg.user, msg.bytes)
 			default:
@@ -176,15 +176,11 @@ func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	reg.meteringUtil(bucket, index.Name(), analysisBytes, write)
 }
 
-func MeterReads(bucket string, pindexName string, bytesRead uint64) {
-	if !ServerlessMode {
-		// no metering for non-serverless versions
-		return
-	}
-	reg.meteringUtil(bucket, pindexName, bytesRead, read)
-}
-
 func (sr *serviceRegulator) getWUs(pindexName string, bytes uint64) (regulator.Units, error) {
+
+	// metering of write units is happening at a pindex level,
+	// so to ensure the correct delta (of the bytes written on disk stat)
+	// the prevWBytes is tracked per pindex
 	sr.m.RLock()
 	prevBytesMetered := sr.prevWBytes[pindexName]
 	sr.m.RUnlock()
@@ -222,21 +218,6 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 	err = regulator.RecordUnits(context, wus)
 	if err == nil {
 		sr.updateRegulatorStats(bucket, "total_WUs_metered", float64(wus.Whole()))
-	}
-	return err
-}
-
-func (sr *serviceRegulator) recordReads(bucket, pindexName, user string,
-	bytes uint64) error {
-	rus, err := metering.SearchReadToRU(bytes)
-	if err != nil {
-		return err
-	}
-	context := regulator.NewBucketCtx(bucket)
-
-	err = regulator.RecordUnits(context, rus)
-	if err == nil {
-		sr.updateRegulatorStats(bucket, "total_RUs_metered", float64(rus.Whole()))
 	}
 	return err
 }
@@ -588,6 +569,43 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 		w.Write(bline)
 	}
 
+}
+
+func NewAggregateRecorder(bucket string) interface{} {
+	ctx := regulator.NewBucketCtx(bucket)
+	options := &regulator.AggregationOptions{
+		Unbilled:         false,
+		DeferredMetering: true,
+	}
+	return regulator.StartAggregateRecorder(ctx, regulator.Search, regulator.Read, options)
+}
+
+func getVariantType(queryType search.SearchQueryType) regulator.UnitType {
+	switch queryType {
+	case search.Geo:
+		return variants.SearchGeoReadVariant
+	case search.Numeric:
+		return variants.SearchNumericReadVariant
+	case search.Term:
+		fallthrough
+	default:
+		return variants.SearchTextReadVariant
+
+	}
+}
+
+func AggregateRecorderCallback(costRecorder interface{},
+	msg search.SearchIncrementalCostCallbackMsg, queryType search.SearchQueryType, bytes uint64) {
+	recorder := costRecorder.(regulator.AggregateRecorder)
+	switch msg {
+	case search.DoneM:
+		recorder.Commit()
+	case search.AbortM:
+		recorder.Abort()
+	default:
+		variant := getVariantType(queryType)
+		recorder.AddVariantBytes(bytes, variant)
+	}
 }
 
 func CheckAccess(bucket, username string) (CheckResult, error) {
