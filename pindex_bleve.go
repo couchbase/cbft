@@ -2549,7 +2549,8 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 		return
 	}
 
-	result, _, err := CheckQuotaWrite(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, "", true, nil)
+	result, _, err := CheckQuotaWrite(bdp[0].bdest.stopCh,
+		bdp[0].bdest.sourceName, "", true, index)
 
 	// NOTE: At this point, it's guaranteed that the action is either
 	// CheckResultError (which is the case when the bdp's bleve index is closed)

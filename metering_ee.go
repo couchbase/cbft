@@ -167,6 +167,10 @@ func MeterWrites(stopCh chan struct{}, bucket string, index bleve.Index) {
 	}
 	scorchStats := index.StatsMap()
 	indexStats, _ := scorchStats["index"].(map[string]interface{})
+	if indexStats == nil {
+		log.Warnf("metering: index stats missing")
+		return
+	}
 	analysisBytes, _ := indexStats["num_bytes_written_at_index_time"].(uint64)
 
 	reg.meteringUtil(bucket, index.Name(), analysisBytes, write)
@@ -180,21 +184,35 @@ func MeterReads(bucket string, pindexName string, bytesRead uint64) {
 	reg.meteringUtil(bucket, pindexName, bytesRead, read)
 }
 
+func (sr *serviceRegulator) getWUs(pindexName string, bytes uint64) (regulator.Units, error) {
+	sr.m.RLock()
+	prevBytesMetered := sr.prevWBytes[pindexName]
+	sr.m.RUnlock()
+	if bytes <= prevBytesMetered {
+		if bytes < prevBytesMetered {
+			sr.m.Lock()
+			sr.prevWBytes[pindexName] = 0
+			sr.m.Unlock()
+		}
+		rv, _ := regulator.NewUnits(regulator.Search, regulator.Write, 0)
+		return rv, nil
+	}
+
+	wus, err := metering.SearchWriteToWU(bytes - prevBytesMetered)
+	if err != nil {
+		rv, _ := regulator.NewUnits(regulator.Search, regulator.Write, 0)
+		return rv, err
+	}
+	return wus, nil
+}
+
 func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 	bytes uint64) error {
 
 	// metering of write units is happening at a pindex level,
 	// so to ensure the correct delta (of the bytes written on disk stat)
 	// the prevWBytes is tracked per pindex
-	prevBytesMetered := sr.prevWBytes[pindexName]
-	if bytes <= prevBytesMetered {
-		if bytes < prevBytesMetered {
-			sr.prevWBytes[pindexName] = 0
-		}
-		return nil
-	}
-
-	wus, err := metering.SearchWriteToWU(bytes - prevBytesMetered)
+	wus, err := sr.getWUs(pindexName, bytes)
 	if err != nil {
 		return err
 	}
@@ -361,7 +379,7 @@ func getThrottleLimit(ctx regulator.Ctx) utils.Limit {
 // Note: keeping the throttle/limiting of read and write separate,
 // so that further experiments or observations may lead to
 // them behaving differently from each other based on the request passed
-func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
+func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, batchExec bool,
 	req interface{}) (CheckResult, time.Duration, error) {
 	if !ServerlessMode || reg.disableLimitingThrottling() {
 		// no throttle/limiting checks for non-serverless versions
@@ -378,9 +396,27 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 	}
 
 	reg.initialiseRegulatorStats(bucket)
-
+	if batchExec {
+		bindex := req.(bleve.Index)
+		if bindex == nil {
+			return CheckResultError, 0, fmt.Errorf("limiting/throttling: " +
+				"index missing")
+		}
+		scorchStats := bindex.StatsMap()
+		indexStats, _ := scorchStats["index"].(map[string]interface{})
+		if indexStats == nil {
+			return CheckResultError, 0, fmt.Errorf("limiting/throttling: " +
+				"index stats missing")
+		}
+		bytes, _ := indexStats["num_bytes_written_at_index_time"].(uint64)
+		wus, err := reg.getWUs(bindex.Name(), bytes)
+		if err != nil {
+			return CheckResultError, 0, err
+		}
+		checkQuotaOps.EstimatedUnits = wus
+	}
 	action, duration, err := regulator.CheckQuota(context, checkQuotaOps)
-	if !retry {
+	if !batchExec {
 		switch action {
 		case regulator.CheckResultError:
 			reg.updateRegulatorStats(bucket, "total_write_ops_metering_errs", 1)
@@ -429,7 +465,6 @@ func CheckQuotaWrite(stopCh chan struct{}, bucket, user string, retry bool,
 			minTime, maxTime := serverlessLimitingBounds()
 			nextSleepMS := minTime
 			backoffFactor := 2
-
 			// Should return -1 when regulator returns CheckResultProceed/Throttle
 			// since the system can definitely make progress.
 			// For CheckResultReject, should return 0 since
