@@ -196,7 +196,7 @@ func buildCopyPartitionRequestUtil(planPIndexes *cbgt.PlanPIndexes,
 		return &CopyPartitionRequest{
 			SourceNodes:      sourceNodes,
 			SourcePIndexName: planPIndex.Name,
-			SourceUUID:       planPIndex.UUID,
+			SourceUUID:       planPIndex.SourceUUID,
 			Stats:            stats,
 			CancelCh:         stopCh,
 		}, nil
@@ -394,9 +394,6 @@ func (ns *srcPartitionSorter) Less(i, j int) bool {
 	sj := ns.Score(j)
 	if si > sj {
 		return true
-	}
-	if si > sj {
-		return false
 	}
 
 	return false
