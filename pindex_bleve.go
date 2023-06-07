@@ -336,6 +336,7 @@ type batchRequest struct {
 	bdp    *BleveDestPartition
 	bindex bleve.Index
 	batch  *bleve.Batch
+	seqMax uint64 // a local copy of seqMax
 }
 
 func NewBleveDestEx(path string, bindex bleve.Index,
@@ -2392,8 +2393,9 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 	// fetch the needed parameters and remain unlocked until requestCh
 	// is ready to accommodate this request
 	bindex := t.bindex
+	seqMax := atomic.LoadUint64(&t.seqMax)
 	seqMaxBuf := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqMaxBuf, t.seqMax)
+	binary.BigEndian.PutUint64(seqMaxBuf, seqMax)
 	t.batch.SetInternal(t.partitionBytes, seqMaxBuf)
 	batch := t.batch
 	t.batch = t.bindex.NewBatch()
@@ -2414,7 +2416,7 @@ func (t *BleveDestPartition) submitAsyncBatchRequestLOCKED() (bool, error) {
 
 	reqChIndex := partition % asyncBatchWorkerCount
 	br := &batchRequest{bdp: t, bindex: bindex,
-		batch: batch,
+		batch: batch, seqMax: seqMax,
 	}
 	select {
 	case <-stopCh:
@@ -2482,7 +2484,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
 				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
-				bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
+				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.seqMax)
 				batchReq.bdp.m.Unlock()
 				executeBatch(bdp, bdpMaxSeqNums, batchReq.bindex, batchReq.batch)
 				break
@@ -2493,7 +2495,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 				bdpMaxSeqNums = bdpMaxSeqNums[:0]
 				batchReq.bdp.m.Lock()
 				bdp = append(bdp, batchReq.bdp)
-				bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
+				bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.seqMax)
 				batchReq.bdp.m.Unlock()
 				bindex = batchReq.bindex
 				targetBatch = batchReq.batch
@@ -2505,7 +2507,7 @@ func runBatchWorker(requestCh chan *batchRequest, stopCh chan struct{},
 			atomic.AddUint64(&TotBatchesMerged, 1)
 			batchReq.bdp.m.Lock()
 			bdp = append(bdp, batchReq.bdp)
-			bdpMaxSeqNums = append(bdpMaxSeqNums, atomic.LoadUint64(&batchReq.bdp.seqMax))
+			bdpMaxSeqNums = append(bdpMaxSeqNums, batchReq.seqMax)
 			batchReq.bdp.m.Unlock()
 
 		case <-tickerCh:
