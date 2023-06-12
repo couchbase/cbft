@@ -617,7 +617,7 @@ func getMemoryUtilization(memStats runtime.MemStats) uint64 {
 	//   could be returned to the OS.
 	// - HeapReleased is bytes of physical memory returned to the OS.
 	// So our equation here should be ..
-	// 	Sys - (HeapIdle - HeapReleased) - HeapReleased
+	//   Sys - (HeapIdle - HeapReleased) - HeapReleased
 	return memStats.Sys - memStats.HeapIdle
 }
 
@@ -1289,18 +1289,8 @@ func FetchCurMemoryUsed() uint64 {
 	return atomic.LoadUint64(&currentMemoryUsed)
 }
 
-func UpdateCurMemoryUsed() uint64 {
-	var memStats *runtime.MemStats
-	runtime.ReadMemStats(memStats)
-	return setCurMemoryUsedWith(memStats)
-}
-
 func setCurMemoryUsedWith(memStats *runtime.MemStats) uint64 {
-	// (Sys - HeapIdle) best represents the amount of memory that the go process
-	// is consuming at the moment that is not reusable; the go process has
-	// as idle memory component that it holds on to which can be reused;
-	// HeapIdle includes memory that is idle and the part that has been released.
-	curMemoryUsed := memStats.Sys - memStats.HeapIdle
+	curMemoryUsed := getMemoryUtilization(*memStats)
 	atomic.StoreUint64(&currentMemoryUsed, curMemoryUsed)
 	return curMemoryUsed
 }
