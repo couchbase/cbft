@@ -49,6 +49,8 @@ type cbftFlags struct {
 
 	ClientCertFile string
 	ClientKeyFile  string
+
+	RegulatorSettingsFile string
 }
 
 var flags cbftFlags
@@ -221,6 +223,10 @@ func initFlags(flags *cbftFlags) map[string][]string {
 	s(&flags.ClientKeyFile,
 		[]string{"clientKeyFile"}, "PATH", "",
 		"Client key file (for internal TLS connections).")
+
+	s(&flags.RegulatorSettingsFile,
+		[]string{"regulatorSettingsFile"}, "PATH", "",
+		"Regulator settings file.")
 
 	flag.Usage = func() {
 		if !flags.Help {
