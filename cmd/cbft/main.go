@@ -242,6 +242,10 @@ func main() {
 		options["bindGRPCSSL"] = bindGRPCList[0]
 	}
 
+	if flags.RegulatorSettingsFile != "" {
+		options["regulatorSettingsFile"] = flags.RegulatorSettingsFile
+	}
+
 	// register for the cbauth's security callbacks
 	cbgt.RegisterSecurityNotifications()
 

@@ -83,8 +83,9 @@ func MeteringEndpointHandler(mgr *cbgt.Manager) (string,
 }
 func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 	regOps := regulator.InitSettings{
-		NodeID:  service.NodeID(mgr.UUID()),
-		Service: regulator.Search,
+		NodeID:       service.NodeID(mgr.UUID()),
+		Service:      regulator.Search,
+		SettingsFile: mgr.Options()["regulatorSettingsFile"],
 	}
 
 	regHandler := factory.InitRegulator(regOps)
