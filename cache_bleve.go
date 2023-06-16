@@ -109,15 +109,17 @@ func (m *cacheBleveIndex) Search(req *bleve.SearchRequest) (
 func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	req *bleve.SearchRequest) (*bleve.SearchResult, error) {
 
-	a := NewAggregateRecorder(m.pindex.SourceName)
+	if ServerlessMode {
+		a := NewAggregateRecorder(m.pindex.SourceName)
 
-	aggRecCallback := func(msg search.SearchIncrementalCostCallbackMsg,
+		aggRecCallback := func(msg search.SearchIncrementalCostCallbackMsg,
 		unitType search.SearchQueryType, bytes uint64) {
-		AggregateRecorderCallback(a, msg, unitType, bytes)
-	}
+			AggregateRecorderCallback(a, msg, unitType, bytes)
+		}
 
-	ctx = context.WithValue(ctx, search.SearchIncrementalCostKey,
-		search.SearchIncrementalCostCallbackFn(aggRecCallback))
+		ctx = context.WithValue(ctx, search.SearchIncrementalCostKey,
+			search.SearchIncrementalCostCallbackFn(aggRecCallback))
+	}
 
 	if !ResultCache.enabled() {
 		res, err := m.bindex.SearchInContext(ctx, req)
