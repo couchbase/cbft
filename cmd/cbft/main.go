@@ -566,7 +566,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	handle(prefix+"/api/nsstats/indexSourceNames", "GET", cbft.NewBucketsNsStatsHandler(mgr))
 
-	handle(prefix+"/api/nodeUtilStats", "GET", cbft.NewNodeUtilStatsHandler(mgr))
+	if cbft.ServerlessMode {
+		handle(prefix+"/api/nodeUtilStats", "GET", cbft.NewNodeUtilStatsHandler(mgr))
+	}
 
 	handle(prefix+"/api/nsstats/index/{indexName}", "GET",
 		cbft.NewIndexNsStatsHandler(mgr))
