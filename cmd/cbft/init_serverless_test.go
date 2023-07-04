@@ -387,6 +387,7 @@ func Test_serverlessRebalanceHook_addNodes(t *testing.T) {
 	}()
 
 	input := rebalance.RebalanceHookInfo{
+		Phase: rebalance.RebalanceHookPhaseAdjustNodeWeights,
 		BegNodeDefs: &cbgt.NodeDefs{
 			NodeDefs: map[string]*cbgt.NodeDef{
 				"n_0": &cbgt.NodeDef{
@@ -447,7 +448,7 @@ func Test_serverlessRebalanceHook_addNodes(t *testing.T) {
 		},
 	}
 
-	output, err := serverlessRebalanceHook(input)
+	output, _, err := serverlessRebalanceHook(input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,6 +476,7 @@ func Test_serverlessRebalanceHook_removeNode(t *testing.T) {
 	}()
 
 	input := rebalance.RebalanceHookInfo{
+		Phase: rebalance.RebalanceHookPhaseAdjustNodeWeights,
 		BegNodeDefs: &cbgt.NodeDefs{
 			NodeDefs: map[string]*cbgt.NodeDef{
 				"n_0": &cbgt.NodeDef{
@@ -540,7 +542,7 @@ func Test_serverlessRebalanceHook_removeNode(t *testing.T) {
 		},
 	}
 
-	output, err := serverlessRebalanceHook(input)
+	output, _, err := serverlessRebalanceHook(input)
 	if err != nil {
 		t.Fatal(err)
 	}

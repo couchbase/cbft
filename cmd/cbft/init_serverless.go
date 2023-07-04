@@ -216,79 +216,93 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 // -----------------------------------------------------------------------------
 
 // serverlessRebalanceHook is intended to be invoked in the serverless
-// deployment model to adjust node weights to be able to influence
-// partition positioning for the current index during rebalance.
+// deployment model to be able to
+//
+// - decide (in init phase) if a rebalance is necessary
+//
+// - adjust node weights to be able to influence partition positioning for the
+// current index during rebalance.
 func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
-	out rebalance.RebalanceHookInfo, err error) {
-	if in.BegNodeDefs == nil || len(in.BegNodeDefs.NodeDefs) == 0 {
-		return in, nil
-	}
-
-	if in.ExistingPlanPIndexes == nil || len(in.ExistingPlanPIndexes.PlanPIndexes) == 0 {
-		// No plan pindexes in the system (yet), no need to adjust node weights.
-		return in, nil
-	}
-
-	if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
-		// SCALE OUT;
-		// Early exit, no need to adjust node weights.
-		log.Printf("serverlessRebalanceHook: scale out operation (adding: %v),"+
-			" not moving index: %s", in.NodeUUIDsToAdd, in.IndexDef.Name)
-		return in, nil
-	}
-
-	numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
-	nodeWeights := make(map[string]int)
-	for _, nodeUUID := range in.NodeUUIDsAll {
-		nodeWeights[nodeUUID] = -1
-	}
-
-	indexNodeUUIDs := make(map[string]struct{}) // nodeUUIDs that hold current index
-	for _, pindex := range in.ExistingPlanPIndexes.PlanPIndexes {
-		for nodeUUID := range pindex.Nodes {
-			if pindex.IndexUUID == in.IndexDef.UUID {
-				indexNodeUUIDs[nodeUUID] = struct{}{}
-			}
+	rebalance.RebalanceHookInfo, bool, error) {
+	switch in.Phase {
+	case rebalance.RebalanceHookPhaseInit:
+		// In serverless, for cases like auto-rebalance, we may benefit from
+		// moving partitions even when there is no fts topology change.
+		// Thus, we are not skipping the rebalance.
+		return in, false, nil
+	case rebalance.RebalanceHookPhaseAdjustNodeWeights:
+		if in.BegNodeDefs == nil || len(in.BegNodeDefs.NodeDefs) == 0 {
+			return in, false, nil
 		}
-	}
 
-	if len(in.NodeUUIDsToRemove) > 0 && len(in.NodeUUIDsToAdd) == 0 {
-		// SCALE IN;
-		// Rebalance to be applicable on affected indexes ONLY
-		var indexAffected bool
-		for _, nodeUUID := range in.NodeUUIDsToRemove {
-			if _, exists := indexNodeUUIDs[nodeUUID]; exists {
-				indexAffected = true
+		if in.ExistingPlanPIndexes == nil || len(in.ExistingPlanPIndexes.PlanPIndexes) == 0 {
+			// No plan pindexes in the system (yet), no need to adjust node weights.
+			return in, false, nil
+		}
+
+		if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
+			// SCALE OUT;
+			// Early exit, no need to adjust node weights.
+			log.Printf("serverlessRebalanceHook: scale out operation (adding: %v),"+
+				" not moving index: %s", in.NodeUUIDsToAdd, in.IndexDef.Name)
+			return in, false, nil
+		}
+
+		numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
+		nodeWeights := make(map[string]int)
+		for _, nodeUUID := range in.NodeUUIDsAll {
+			nodeWeights[nodeUUID] = -1
+		}
+
+		indexNodeUUIDs := make(map[string]struct{}) // nodeUUIDs that hold current index
+		for _, pindex := range in.ExistingPlanPIndexes.PlanPIndexes {
+			for nodeUUID := range pindex.Nodes {
+				if pindex.IndexUUID == in.IndexDef.UUID {
+					indexNodeUUIDs[nodeUUID] = struct{}{}
+				}
 			}
 		}
 
-		if !indexAffected {
-			// No need to adjust any node weights, favor stickiness
-			return in, nil
+		if len(in.NodeUUIDsToRemove) > 0 && len(in.NodeUUIDsToAdd) == 0 {
+			// SCALE IN;
+			// Rebalance to be applicable on affected indexes ONLY
+			var indexAffected bool
+			for _, nodeUUID := range in.NodeUUIDsToRemove {
+				if _, exists := indexNodeUUIDs[nodeUUID]; exists {
+					indexAffected = true
+				}
+			}
+
+			if !indexAffected {
+				// No need to adjust any node weights, favor stickiness
+				return in, false, nil
+			}
 		}
-	}
 
-	if len(in.NodeUUIDsToAdd) == len(in.NodeUUIDsToRemove) && len(in.NodeUUIDsToAdd) > 0 {
-		// SWAP REBALANCE;
-		// p.s. This only comes into play when there's no node
-		// at the beginning of rebalance without resident pindexes
-		for _, nodeUUID := range in.NodeUUIDsToAdd {
-			// Prioritize moving partition from outbound node(s) to inbound node(s)
-			nodeWeights[nodeUUID] = 10
+		if len(in.NodeUUIDsToAdd) == len(in.NodeUUIDsToRemove) && len(in.NodeUUIDsToAdd) > 0 {
+			// SWAP REBALANCE;
+			// p.s. This only comes into play when there's no node
+			// at the beginning of rebalance without resident pindexes
+			for _, nodeUUID := range in.NodeUUIDsToAdd {
+				// Prioritize moving partition from outbound node(s) to inbound node(s)
+				nodeWeights[nodeUUID] = 10
+			}
+		} else {
+			// AUTO REBALANCE / SCALE IN;
+			// Simply normalize node weights
+			nodeWeights = cbgt.NormaliseNodeWeights(nodeWeights,
+				in.EndPlanPIndexes, numPlanPIndexes)
 		}
-	} else {
-		// AUTO REBALANCE / SCALE IN;
-		// Simply normalize node weights
-		nodeWeights = cbgt.NormaliseNodeWeights(nodeWeights,
-			in.EndPlanPIndexes, numPlanPIndexes)
+
+		in.NodeWeights = nodeWeights
+
+		log.Printf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
+			in.IndexDef.Name, nodeWeights)
+
+		return in, false, nil
+	default:
+		return in, false, fmt.Errorf("unrecognized rebalance hook phase: %v", in.Phase)
 	}
-
-	in.NodeWeights = nodeWeights
-
-	log.Printf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
-		in.IndexDef.Name, nodeWeights)
-
-	return in, nil
 }
 
 // -----------------------------------------------------------------------------
