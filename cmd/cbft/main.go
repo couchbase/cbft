@@ -497,6 +497,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	cbgt.StreamingEndpointListener = cbft.ListenStreamingEndpoint
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
