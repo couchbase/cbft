@@ -334,9 +334,11 @@ RECONNECT:
 				req.Header.Add("Content-Type", "application/json")
 
 				resp, err = cbgt.HttpClient().Do(req)
-				if err != nil || resp.StatusCode != 200 {
+				if err != nil || (resp.StatusCode != 200 && resp.StatusCode != 404) {
 					log.Warnf(msg+": http client, response: %+v, err: %v", resp, err)
 					return 0
+				} else if resp.StatusCode == 404 {
+					return -1
 				}
 
 				log.Printf(msg + ": pool streaming started")

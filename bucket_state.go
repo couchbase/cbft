@@ -190,9 +190,12 @@ func setupStreamingEndpoint(mgr *cbgt.Manager, bucketStreamingURI, bucketName st
 			req.Header.Add("Content-Type", "application/json")
 
 			resp, err = cbgt.HttpClient().Do(req)
-			if err != nil || resp.StatusCode != 200 {
+			if err != nil || (resp.StatusCode != 200 && resp.StatusCode != 404) {
 				log.Warnf("bucket state: http client, response: %+v, err: %v", resp, err)
 				return 0
+			} else if resp.StatusCode == 404 {
+				status = -1
+				return -1
 			}
 
 			log.Printf("bucket state: pool streaming started for bucket %s",
@@ -203,7 +206,9 @@ func setupStreamingEndpoint(mgr *cbgt.Manager, bucketStreamingURI, bucketName st
 	)
 
 	reader := bufio.NewReader(resp.Body)
-
+	if status == -1 {
+		return status, fmt.Errorf("bucket state: endpoint not found for bucket %s", bucketName)
+	}
 	status = 0
 
 	for status == 0 {
