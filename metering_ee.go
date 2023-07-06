@@ -50,12 +50,10 @@ type serviceRegulator struct {
 	mgr         *cbgt.Manager
 	handler     regulator.StatsHttpHandler
 	messageChan chan *message
-	// pindex -> stats
-	prevWBytes map[string]uint64
 
-	m sync.RWMutex // Protects the fields that follow.
-	// bucket -> stats
-	stats map[string]*regulatorStats
+	m          sync.RWMutex               // Protects the fields that follow.
+	prevWBytes map[string]uint64          // pindex -> stats
+	stats      map[string]*regulatorStats // bucket -> stats
 }
 
 var reg *serviceRegulator
@@ -197,7 +195,9 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 		return err
 	}
 	context := regulator.NewBucketCtx(bucket)
+	sr.m.Lock()
 	sr.prevWBytes[pindexName] = bytes
+	sr.m.Unlock()
 
 	err = regulator.RecordUnits(context, wus)
 	if err == nil {
@@ -207,7 +207,10 @@ func (sr *serviceRegulator) recordWrites(bucket, pindexName, user string,
 }
 
 func RollbackRefund(pindex, sourceName string, bytesWrittenAtRollbackSeqno uint64) {
+	reg.m.RLock()
 	bytesWrittenAtHighSeqno := reg.prevWBytes[pindex]
+	reg.m.RUnlock()
+
 	if bytesWrittenAtHighSeqno > bytesWrittenAtRollbackSeqno {
 		refundUnits, err := metering.SearchWriteToWU(bytesWrittenAtHighSeqno -
 			bytesWrittenAtRollbackSeqno)
@@ -224,7 +227,9 @@ func RollbackRefund(pindex, sourceName string, bytesWrittenAtRollbackSeqno uint6
 		}
 	}
 
+	reg.m.Lock()
 	reg.prevWBytes[pindex] = bytesWrittenAtRollbackSeqno
+	reg.m.Unlock()
 }
 
 func (sr *serviceRegulator) updateRegulatorStats(bucket, statName string,
