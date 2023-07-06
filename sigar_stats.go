@@ -21,6 +21,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 var stats *systemStats
@@ -70,7 +71,7 @@ func GetMemoryLimit() (uint64, error) {
 	return memTotal, nil
 }
 
-// currentCPUPercent returns current CPU (percent) used by process.
+// currentCPUPercent returns current CPU percent used by process.
 func currentCPUPercent() (float64, error) {
 	cpu, err := stats.processCPUPercent()
 	if err != nil {
@@ -90,6 +91,9 @@ var (
 type systemStats struct {
 	handle *C.sigar_t
 	pid    C.sigar_pid_t
+
+	lastCPU     float64
+	lastCPUTime time.Time
 }
 
 // newSystemStats returns a new systemStats after populating handler and PID.
@@ -103,6 +107,14 @@ func newSystemStats() (*systemStats, error) {
 	s := &systemStats{}
 	s.handle = handle
 	s.pid = C.sigar_pid_get(handle)
+
+	var cpu C.sigar_proc_cpu_t
+	if err := C.sigar_proc_cpu_get(s.handle, s.pid, &cpu); err != C.SIGAR_OK {
+		return nil, fmt.Errorf("failed to get CPU, err: %w",
+			C.sigar_strerror(s.handle, err))
+	}
+	s.lastCPU = float64(cpu.user + cpu.sys)
+	s.lastCPUTime = time.Now()
 
 	return s, nil
 }
@@ -119,12 +131,13 @@ func (s *systemStats) systemTotalMem() (uint64, error) {
 		return uint64(0), fmt.Errorf("failed to get total memory, err: %v",
 			C.sigar_strerror(s.handle, err))
 	}
+
 	return uint64(mem.total), nil
 }
 
 // processCPUPercent gets the percent CPU and is in range
-// of [0, GOMAXPROCS] * 100. So a value of 123.4 means it is consuming
-// 1.234 CPU cores.
+// of [0, GOMAXPROCS] * 100.
+// So a value of 123.4 means it is consuming 1.234 CPU cores.
 func (s *systemStats) processCPUPercent() (float64, error) {
 	var cpu C.sigar_proc_cpu_t
 	if err := C.sigar_proc_cpu_get(s.handle, s.pid, &cpu); err != C.SIGAR_OK {
@@ -132,10 +145,19 @@ func (s *systemStats) processCPUPercent() (float64, error) {
 			C.sigar_strerror(s.handle, err))
 	}
 
-	// Despite its name, cpu.percent is not a percent.
-	// It is in range [0, GOMAXPROCS] so needs * 100 to convert it to a percent.
-	// It is a double in sigar (C++ equivalent of Go float64).
-	return float64(cpu.percent) * 100, nil
+	totalCPU := float64(cpu.user + cpu.sys)
+	currentTime := time.Now()
+	timeDiffInMilliseconds := float64(currentTime.Sub(s.lastCPUTime).Milliseconds())
+	if timeDiffInMilliseconds <= 0 {
+		// Avoid divide by zero.
+		timeDiffInMilliseconds = 1
+	}
+
+	cpuPercent := (totalCPU - s.lastCPU) / timeDiffInMilliseconds
+	s.lastCPU = totalCPU
+	s.lastCPUTime = currentTime
+
+	return cpuPercent * 100, nil
 }
 
 // sigarControlGroupInfo represents the subset of the cgroup info statistics
