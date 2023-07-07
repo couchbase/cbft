@@ -33,7 +33,7 @@
             <span
                 class="cbui-tablerow padding-left-0 padding-right-0 cursor-pointer"
                 ng-show="isEdit"
-                uib-tooltip="{{newIndexName}}"
+                uib-tooltip="{{fullIndexName}}"
                 tooltip-placement="auto top"
                 tooltip-trigger="mouseenter">
               <span class="cbui-table-cell text-small">{{newIndexName}}</span>
@@ -315,7 +315,7 @@
         <hr>
         <div class="row flex-left">
           <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit)"
                   ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0) || (scopeMismatch)"
                   type="submit">
             <span ng-show="!isEdit">
@@ -326,7 +326,7 @@
             </span>
           </button>
           <button ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
+                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit)"
                   ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)"
                   type="submit">
             <span ng-show="!isEdit">

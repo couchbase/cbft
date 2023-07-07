@@ -502,6 +502,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
     $scope.errorMessageFull = null;
 
     $scope.newIndexName = "";
+    $scope.fullIndexName = "";
     $scope.newIndexType = $routeParams.indexType || "";
     $scope.newIndexParams = {};
     $scope.newSourceType = $routeParams.sourceType || "";
@@ -604,10 +605,17 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             then(function(response) {
                 var data = response.data;
 
-                $scope.newIndexName = data.indexDef.name;
-                if ($scope.isClone) {
-                    $scope.newIndexName = data.indexDef.name + "-copy";
+                let indexNameSuffix = data.indexDef.name;
+                let pos = indexNameSuffix.lastIndexOf(".");
+                if (pos > 0 && pos+1 < indexNameSuffix.length) {
+                    indexNameSuffix = indexNameSuffix.slice(pos+1);
                 }
+
+                $scope.newIndexName = indexNameSuffix;
+                if ($scope.isClone) {
+                    $scope.newIndexName = indexNameSuffix + "-copy";
+                }
+                $scope.fullIndexName= data.indexDef.name;
 
                 $scope.newIndexType = data.indexDef.type;
                 $scope.newIndexParams[data.indexDef.type] =

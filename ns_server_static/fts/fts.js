@@ -908,7 +908,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                        newIndexType, newIndexParams,
                                        newSourceType, newSourceName,
                                        newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID) {
+                                       newPlanParams, prevIndexUUID, isEdit) {
+                if (isEdit) {
+                    newIndexName = $scope.fullIndexName;
+                }
                 $scope.errorFields = {};
                 $scope.errorMessage = null;
                 $scope.errorMessageFull = null;
@@ -1184,9 +1187,11 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
                          newSourceType, newSourceName,
                          newSourceUUID, newSourceParams,
                          newPlanParams, prevIndexUUID,
-                         selectedTargetIndexes) {
+                         selectedTargetIndexes, isEdit) {
                     var aliasTargets = {};
-
+                    if (isEdit) {
+                        newIndexName=$scope.fullIndexName;
+                    }
                     for (var i = 0; i < selectedTargetIndexes.length; i++) {
                         var selectedTargetIndex = selectedTargetIndexes[i];
 
