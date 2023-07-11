@@ -189,15 +189,14 @@ func checkAPIAuth(avh *AuthVersionHandler,
 // --------------------------------------------------------
 
 func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
-	depth int) ([]string, error) {
-	if depth > 50 {
-		return nil, errAliasExpansionTooDeep
-	}
-
+	visitedAliases map[string]bool) ([]string, error) {
 	var rv []string
-
+	if visitedAliases == nil {
+		visitedAliases = make(map[string]bool)
+	}
 	indexDef, exists := indexDefsByName[name]
 	if exists && indexDef != nil && indexDef.Type == "fulltext-alias" {
+		visitedAliases[name] = true
 		aliasParams, err := parseAliasParams(indexDef.Params)
 		if err != nil {
 			return nil, fmt.Errorf("error expanding fulltext-alias: %v", err)
@@ -221,9 +220,12 @@ func sourceNamesForAlias(name string, indexDefsByName map[string]*cbgt.IndexDef,
 			// if alias target doesn't exist, do nothing
 			if exists {
 				if aliasIndexDef.Type == "fulltext-alias" {
+					if visitedAliases[aliasTarget] {
+						continue
+					}
 					// handle nested aliases with recursive call
 					nestedSources, err := sourceNamesForAlias(aliasTarget,
-						indexDefsByName, depth+1)
+						indexDefsByName, visitedAliases)
 					if err != nil {
 						return nil, err
 					}
@@ -394,7 +396,6 @@ func (p *restRequestParser) GetCollectionNames() ([]string, error) {
 
 var errIndexNotFound = fmt.Errorf("index not found")
 var errPIndexNotFound = fmt.Errorf("pindex not found")
-var errAliasExpansionTooDeep = fmt.Errorf("alias expansion too deep")
 
 func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
@@ -434,7 +435,8 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 		var currSourceNames []string
 		if indexDef.Type == "fulltext-alias" {
 			// this finds the sources in current definition
-			currSourceNames, err = sourceNamesForAlias(indexName, indexDefsByName, 0)
+			var visitedAliases map[string]bool
+			currSourceNames, err = sourceNamesForAlias(indexName, indexDefsByName, visitedAliases)
 			if err != nil {
 				return nil, err
 			}
@@ -578,8 +580,8 @@ func findCouchbaseSourceNames(r requestParser, indexName string,
 			futureIndexDefsByName[k] = v
 		}
 		futureIndexDefsByName[indexName] = indexDef
-
-		return sourceNamesForAlias(indexName, futureIndexDefsByName, 0)
+		var visitedAliases map[string]bool
+		return sourceNamesForAlias(indexName, futureIndexDefsByName, visitedAliases)
 	}
 
 	return nil, nil

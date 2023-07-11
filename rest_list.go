@@ -76,8 +76,8 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 			for indexName, indexDef := range indexDefsByName {
 				var indexDefCopy = *indexDef
 				if indexDefCopy.Type == "fulltext-alias" {
-					sourceNames, err =
-						sourceNamesForAlias(indexName, indexDefsByName, 0)
+					var visitedAliases map[string]bool
+					sourceNames, err = sourceNamesForAlias(indexName, indexDefsByName, visitedAliases)
 					if err != nil {
 						rest.PropagateError(w, nil,
 							fmt.Sprintf("rest_list: filteredListIndex, sourceNamesForAlias,"+
@@ -90,6 +90,7 @@ func (h *FilteredListIndexHandler) ServeHTTP(
 						rest.PropagateError(w, nil,
 							fmt.Sprintf("rest_list: filteredListIndex, getSourceNamesFromIndexDef,"+
 								" err: %v", err), http.StatusInternalServerError)
+						return
 					}
 				}
 

@@ -391,16 +391,25 @@ func obtainIndexSourceFromDefinition(mgr *cbgt.Manager, indexName string,
 	return rv, nil
 }
 
+const maxAliasDepth = 50
+
 // obtainIndexBucketScopesForDefinition obtains the bucket.scope sources for the
 // index definition and if it's alias - by recursively looking through the targets.
-// - input argument `rv` will be updated to contain a map of source names
-// (bucket.scope) to number of indexes.
-func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
-	rv map[string]int) (map[string]int, error) {
+// it also performs a check for alias cycles, returning an error if an alias“
+// cycle is detected. Cycle detection in the directed alias graph is done using the
+// three color DFS algorithm from CLRS.
+func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager,
+	indexDef *cbgt.IndexDef, rv map[string]int, visitedAndInPath map[string]bool,
+	depth int) (map[string]int, error) {
 	if rv == nil {
 		rv = make(map[string]int)
 	}
-
+	if visitedAndInPath == nil {
+		visitedAndInPath = make(map[string]bool)
+	}
+	if depth > maxAliasDepth {
+		return rv, fmt.Errorf("alias expansion depth exceeded, maxAliasDepth allowed is %v", maxAliasDepth)
+	}
 	// else obtain bucket & scope from definition of index
 	if indexDef.Type == "fulltext-index" {
 		bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
@@ -419,26 +428,48 @@ func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.Inde
 		rv[key]++
 		return rv, nil
 	} else if indexDef.Type == "fulltext-alias" {
+		visitedAndInPath[indexDef.Name] = true
 		params, err := parseAliasParams(indexDef.Params)
 		if err == nil {
 			for idxName := range params.Targets {
+				inPath, visited := visitedAndInPath[idxName]
+				if inPath && visited {
+					return rv, fmt.Errorf("cyclic index alias %s "+
+						"detected in alias path", idxName)
+				}
+				if visited {
+					continue
+				}
+				idxDef, err := mgr.CheckAndGetIndexDef(idxName, true)
+				if err != nil {
+					return rv, fmt.Errorf("failed to retrieve index defs for `%v`, err: %v",
+						idxDef.Name, err)
+				}
 				bucketName, scopeName := getKeyspaceFromScopedIndexName(idxName)
 				if len(bucketName) > 0 && len(scopeName) > 0 {
 					// indexName is a scoped index name
 					key := bucketName + "." + scopeName
 					rv[key]++
+					if idxDef == nil {
+						return rv, fmt.Errorf("scoped index target %v not found", idxName)
+					}
+					if idxDef.Type == "fulltext-alias" {
+						err := detectIndexAliasCycle(mgr, idxDef, visitedAndInPath, depth+1)
+						if err != nil {
+							return rv, err
+						}
+					}
 					continue
 				}
-
-				idxDef, _, err := mgr.GetIndexDef(idxName, true)
-				if err != nil || indexDef == nil {
-					return rv, fmt.Errorf("failed to retrieve index def for `%v`, err: %v",
-						idxName, err)
+				// global alias or non-scoped index target does not exist
+				if idxDef == nil {
+					continue
 				}
-				if rv, err = obtainIndexBucketScopesForDefinition(mgr, idxDef, rv); err != nil {
+				if rv, err = obtainIndexBucketScopesForDefinition(mgr, idxDef, rv, visitedAndInPath, depth+1); err != nil {
 					return rv, err
 				}
 			}
+			visitedAndInPath[indexDef.Name] = false
 		}
 	} else {
 		// unrecognized index type
@@ -446,6 +477,56 @@ func obtainIndexBucketScopesForDefinition(mgr *cbgt.Manager, indexDef *cbgt.Inde
 	}
 
 	return rv, nil
+}
+
+func detectIndexAliasCycle(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
+	visitedAndInPath map[string]bool, depth int) error {
+	// Detect cycle in the alias graph using an iterative DFS
+	type stackEntry struct {
+		indexDef *cbgt.IndexDef
+		depth    int
+	}
+	var stack []*stackEntry
+	stack = append(stack, &stackEntry{indexDef: indexDef, depth: depth})
+	for len(stack) > 0 {
+		indexDef = stack[len(stack)-1].indexDef
+		currentDepth := stack[len(stack)-1].depth
+		if stack[len(stack)-1].depth > maxAliasDepth {
+			return fmt.Errorf("alias expansion depth exceeded, maxAliasDepth allowed is %v", maxAliasDepth)
+		}
+		if visitedAndInPath[indexDef.Name] {
+			visitedAndInPath[indexDef.Name] = false
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		visitedAndInPath[indexDef.Name] = true
+		params, err := parseAliasParams(indexDef.Params)
+		if err != nil {
+			return err
+		}
+		for target := range params.Targets {
+			targetIndexDef, err := mgr.CheckAndGetIndexDef(target, false)
+			if err != nil {
+				return fmt.Errorf("failed to retrieve index defs for `%v`, err: %v",
+					targetIndexDef.Name, err)
+			}
+			if targetIndexDef == nil {
+				return fmt.Errorf("scoped index target %v not found", targetIndexDef.Name)
+			}
+			inPath, visited := visitedAndInPath[targetIndexDef.Name]
+			if inPath && visited {
+				return fmt.Errorf("cyclic index alias %s "+
+					"detected in alias path", targetIndexDef.Name)
+			}
+			if visited {
+				continue
+			}
+			if targetIndexDef.Type == "fulltext-alias" {
+				stack = append(stack, &stackEntry{indexDef: targetIndexDef, depth: currentDepth + 1})
+			}
+		}
+	}
+	return nil
 }
 
 // getKeyspaceFromScopedIndexName gets the bucket and

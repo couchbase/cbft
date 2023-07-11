@@ -892,7 +892,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 	}
 	prevObtainUniqueKeyspaces := obtainUniqueKeyspaces
 	obtainUniqueKeyspaces = func(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
-		rv map[string]int) (map[string]int, error) {
+		rv map[string]int, visited map[string]bool, depth int) (map[string]int, error) {
 		return rv, nil
 	}
 	defer func() {

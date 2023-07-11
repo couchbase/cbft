@@ -129,8 +129,8 @@ func TestSourceNamesForAlias(t *testing.T) {
 		},
 		// alias with loop
 		{
-			alias: "a4",
-			err:   errAliasExpansionTooDeep,
+			alias:   "a4",
+			sources: []string{"s2"},
 		},
 		// alias to a single index
 		{
@@ -152,7 +152,8 @@ func TestSourceNamesForAlias(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		actualNames, err := sourceNamesForAlias(test.alias, testIndexDefsByName, 0)
+		var visitedAliases map[string]bool
+		actualNames, err := sourceNamesForAlias(test.alias, testIndexDefsByName, visitedAliases)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got err %v", i, test.err, err)
 		}

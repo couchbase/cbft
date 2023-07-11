@@ -91,11 +91,11 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 
 	// map to track unique keyspaces (bucket.scope)
 	var uniqueKeyspaces map[string]int
+	var visitedIndexNames map[string]bool
 	var err error
 	if uniqueKeyspaces, err = obtainUniqueKeyspaces(
-		mgr, indexDef, uniqueKeyspaces); err != nil {
-		return nil,
-			fmt.Errorf("PrepareAlias, unable to obtain source(s) for index")
+		mgr, indexDef, uniqueKeyspaces, visitedIndexNames, 0); err != nil {
+		return nil, fmt.Errorf("PrepareAlias, %v", err)
 	}
 
 	// alias to multiple keyspaces NOT allowed in serverless mode
@@ -291,6 +291,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 	}
 
 	num := 0
+	seenTargets := make(map[string]bool)
 	var multiCollIndex bool
 	var fillAlias func(aliasName, aliasUUID string) error
 
@@ -328,7 +329,6 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 
 			if num > maxAliasTargets {
 				return fmt.Errorf("alias: too many alias targets,"+
-					" perhaps there's a cycle,"+
 					" aliasName: %s, indexName: %s",
 					aliasName, indexName)
 			}
@@ -350,21 +350,34 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 
 			// TODO: Convert to registered callbacks instead of if-else-if.
 			if targetDef.Type == "fulltext-alias" {
+				inPath, visited := seenTargets[targetName]
+				if visited && inPath {
+					return fmt.Errorf("alias: cyclic index alias %s "+
+						"detected in alias path, indexName: %s", targetName, indexName)
+				}
+				if visited {
+					continue
+				}
+				seenTargets[targetName] = true
 				err = fillAlias(targetName, targetSpec.IndexUUID)
 				if err != nil {
 					return err
 				}
+				seenTargets[targetName] = false
 			} else if strings.HasPrefix(targetDef.Type, "fulltext-index") {
-				var subAlias bleve.IndexAlias
-				subAlias, _, _, err = bleveIndexAlias(mgr,
-					targetName, targetSpec.IndexUUID, ensureCanRead,
-					consistencyParams, cancelCh, true, nil,
-					partitionSelection, getRemoteClients(mgr))
-				if err != nil {
-					return err
+				if !seenTargets[targetName] {
+					var subAlias bleve.IndexAlias
+					subAlias, _, _, err = bleveIndexAlias(mgr,
+						targetName, targetSpec.IndexUUID, ensureCanRead,
+						consistencyParams, cancelCh, true, nil,
+						partitionSelection, getRemoteClients(mgr))
+					if err != nil {
+						return err
+					}
+					alias.Add(subAlias)
+					seenTargets[targetName] = true
+					num += 1
 				}
-				alias.Add(subAlias)
-				num += 1
 			} else {
 				return fmt.Errorf("alias: unsupported target type: %s,"+
 					" targetName: %s, aliasName: %s, indexName: %s",
@@ -374,7 +387,7 @@ func bleveIndexAliasForUserIndexAlias(mgr *cbgt.Manager,
 
 		return nil
 	}
-
+	seenTargets[indexName] = true
 	err = fillAlias(indexName, indexUUID)
 	if err != nil {
 		return nil, false, err
