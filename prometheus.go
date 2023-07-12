@@ -237,8 +237,16 @@ func (h *PrometheusMetricsHandler) ServeHTTP(w http.ResponseWriter,
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	stats := gatherTopLevelStats(h.mgr, rd)
-	for k, v := range stats {
+	stats, err := gatherIndexesStats(h.mgr, rd, false)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("error in retrieving defs: %v", err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	topLevelStats := stats[""]
+
+	for k, v := range topLevelStats {
 		b, err := json.Marshal(v)
 		if err != nil {
 			rest.ShowError(w, req, fmt.Sprintf("json marshal err: %v", err),

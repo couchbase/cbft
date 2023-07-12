@@ -203,7 +203,7 @@ func (h *IndexNsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 		}
 	}
 
-	nsIndexStat, _ := gatherIndexStats(h.mgr, indexDef, planPIndexes, nil)
+	nsIndexStat, _ := gatherIndexStats(h.mgr, indexDef, planPIndexes, nil, nil)
 
 	rest.MustEncode(w, nsIndexStat)
 }
@@ -311,6 +311,51 @@ var statkeys = []string{
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
 }
 
+// stats aggregated across all indexes
+type aggrIndexesStats struct {
+	// focus stats aggregated across all indexes
+	focusStats *rest.RESTFocusStats
+
+	// bleveStats aggregated across all partitions of all indexes
+	numBytesUsedDisk float64
+	numFilesOnDisk   float64
+}
+
+func (ais *aggrIndexesStats) getStatsMap() map[string]interface{} {
+	rv := make(map[string]interface{})
+
+	// # Focus Stats
+	totalQueries := ais.focusStats.TotClientRequest
+	rv["total_queries"] = totalQueries
+	if totalQueries > 0 {
+		// Convert from nanosecs to millisecs for avg_queries_latency.
+		rv["avg_queries_latency"] =
+			float64(ais.focusStats.TotClientRequestTimeNS/totalQueries) /
+				1000000.0
+	}
+
+	totalInternalQueries := ais.focusStats.TotInternalRequest
+	rv["total_internal_queries"] = totalInternalQueries
+	if totalInternalQueries > 0 {
+		// Convert from nanosecs to millisecs for avg_internal_queries_latency.
+		rv["avg_internal_queries_latency"] =
+			float64(ais.focusStats.TotInternalRequestTimeNS/
+				totalInternalQueries) / 1000000.0
+	}
+
+	rv["total_request_time"] = ais.focusStats.TotRequestTimeNS
+	rv["total_queries_slow"] = ais.focusStats.TotRequestSlow
+	rv["total_queries_timeout"] = ais.focusStats.TotRequestTimeout
+	rv["total_queries_error"] = ais.focusStats.TotRequestErr
+	rv["total_bytes_query_results"] = ais.focusStats.TotResponseBytes
+
+	// # Bleve Stats
+	rv["num_bytes_used_disk"] = ais.numBytesUsedDisk
+	rv["num_files_on_disk"] = ais.numFilesOnDisk
+
+	return rv
+}
+
 // NewIndexStat ensures that all index stats
 // have the same shape and 0 values to
 // prevent seeing N/A in ns_server UI
@@ -354,6 +399,10 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 	// Keyed by sourceName, sub-key is source partition id.
 	sourceNameToSourcePartitionSeqs := map[string]map[string]cbgt.UUIDSeq{}
 
+	ais := &aggrIndexesStats{
+		focusStats: &rest.RESTFocusStats{},
+	}
+
 	for indexName, indexDef := range indexDefsMap {
 		var key string
 		if collAware {
@@ -366,6 +415,7 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 			indexDef,
 			indexNameToPlanPIndexes[indexName],
 			sourceNameToSourcePartitionSeqs,
+			ais,
 		)
 		if err != nil {
 			continue
@@ -381,6 +431,11 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		nsIndexStats[""] = gatherTopLevelStats(mgr, rd)
 	}
 
+	// insert aggregated stats as top level stats
+	for k, v := range ais.getStatsMap() {
+		nsIndexStats[""][k] = v
+	}
+
 	return nsIndexStats, nil
 }
 
@@ -389,6 +444,7 @@ func gatherIndexStats(
 	indexDef *cbgt.IndexDef,
 	planPIndexes []*cbgt.PlanPIndex,
 	sourceNameToSourcePartitionSeqs map[string]map[string]cbgt.UUIDSeq,
+	aggrIdxStats *aggrIndexesStats,
 ) (map[string]interface{}, error) {
 	if indexDef == nil {
 		return nil, fmt.Errorf("gatherIndexStats: indexDef cannot be nil")
@@ -416,6 +472,19 @@ func gatherIndexStats(
 			totRequestErr += atomic.LoadUint64(&focusStats.TotRequestErr)
 			totResponseBytes += atomic.LoadUint64(&focusStats.TotResponseBytes)
 		}
+	}
+
+	// update aggregator map
+	if aggrIdxStats != nil {
+		aggrIdxStats.focusStats.TotClientRequest += totalQueries
+		aggrIdxStats.focusStats.TotClientRequestTimeNS += totClientRequestTimeNS
+		aggrIdxStats.focusStats.TotInternalRequest += totalInternalQueries
+		aggrIdxStats.focusStats.TotInternalRequestTimeNS += totInternalRequestTimeNS
+		aggrIdxStats.focusStats.TotRequestTimeNS += totRequestTimeNS
+		aggrIdxStats.focusStats.TotRequestSlow += totRequestSlow
+		aggrIdxStats.focusStats.TotRequestTimeout += totRequestTimeout
+		aggrIdxStats.focusStats.TotRequestErr += totRequestErr
+		aggrIdxStats.focusStats.TotResponseBytes += totResponseBytes
 	}
 
 	nsIndexStat["total_queries"] = totalQueries
@@ -513,8 +582,7 @@ func gatherIndexStats(
 		}
 
 		// automatically process all the pindex dest stats
-		_ = addPIndexStats(pindex, nsIndexStat)
-
+		_ = addPIndexStats(pindex, nsIndexStat, aggrIdxStats)
 		if pindex.Dest != nil {
 			destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder)
 			if !ok {
@@ -763,47 +831,65 @@ func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
 	return massageStats(buffer, nsIndexStat)
 }
 
-func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{}) error {
+func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) error {
 	if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
 		if bp, ok := destForwarder.DestProvider.(*BleveDest); ok {
 			bpsm, err := bp.StatsMap()
 			if err != nil {
 				return err
 			}
-			return extractStats(bpsm, nsIndexStat)
+			return extractStats(bpsm, nsIndexStat, aggrIdxStats)
 		}
 	}
 	return nil
 }
 
-func updateStat(name string, val float64, nsIndexStat map[string]interface{}) {
+func updateAggregateStats(ais *aggrIndexesStats, statName string, val float64) {
+	if ais != nil {
+		switch statName {
+		case "num_bytes_used_disk":
+			ais.numBytesUsedDisk += val
+		case "num_files_on_disk":
+			ais.numFilesOnDisk += val
+		}
+	}
+}
+
+func updateStat(name string, val float64, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) {
 	oldValue, ok := nsIndexStat[name]
 	if ok {
 		switch oldValue := oldValue.(type) {
 		case float64:
 			oldValue += val
 			nsIndexStat[name] = oldValue
+			updateAggregateStats(aggrIdxStats, name, val)
 		}
 	}
 }
 
-func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
+func extractStats(bpsm, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) error {
 	// common stats across different index types
 	v := gojson.Get(bpsm, "/DocCount")
 	if vuint64, ok := v.(uint64); ok {
-		updateStat("doc_count", float64(vuint64), nsIndexStat)
+		updateStat("doc_count", float64(vuint64), nsIndexStat, aggrIdxStats)
 	}
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
 	if vuint64, ok := v.(uint64); ok {
-		updateStat("total_term_searchers", float64(vuint64), nsIndexStat)
+		updateStat("total_term_searchers", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
 	}
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_finished")
 	if vuint64, ok := v.(uint64); ok {
-		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat)
+		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
 	}
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
-		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat)
+		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
 	}
 
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/kv")
@@ -811,24 +897,24 @@ func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 		// see if metrics are enabled, they would always be at the top-level
 		v = gojson.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
 		if metrics, ok := v.(map[string]interface{}); ok {
-			extractMetricsStats(metrics, nsIndexStat)
+			extractMetricsStats(metrics, nsIndexStat, aggrIdxStats)
 			// look for kv stats
 			v = gojson.Get(bpsm, "/bleveIndexStats/index/kv/kv")
 			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
+				extractKVStats(kvStats, nsIndexStat, aggrIdxStats)
 			}
 		} else {
 			// look for kv here
 			v = gojson.Get(bpsm, "/bleveIndexStats/index/kv")
 			if kvStats, ok := v.(map[string]interface{}); ok {
-				extractKVStats(kvStats, nsIndexStat)
+				extractKVStats(kvStats, nsIndexStat, aggrIdxStats)
 			}
 		}
 	} else {
 		// scorch stats are available at bleveIndexStats/index
 		v = gojson.Get(bpsm, "/bleveIndexStats/index")
 		if sstats, ok := v.(map[string]interface{}); ok {
-			extractScorchStats(sstats, nsIndexStat)
+			extractScorchStats(sstats, nsIndexStat, aggrIdxStats)
 		}
 	}
 
@@ -846,11 +932,12 @@ var metricStats = map[string]string{
 	"/writer_execute_batch/count":   "writer_execute_batch_count",
 }
 
-func extractMetricsStats(metrics, nsIndexStat map[string]interface{}) error {
+func extractMetricsStats(metrics, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) error {
 	for path, statname := range metricStats {
 		v := gojson.Get(metrics, path)
 		if vint64, ok := v.(int64); ok {
-			updateStat(statname, float64(vint64), nsIndexStat)
+			updateStat(statname, float64(vint64), nsIndexStat, aggrIdxStats)
 		}
 	}
 	return nil
@@ -862,13 +949,14 @@ var kvStats = map[string]string{
 	"/num_files":                      "num_files_on_disk",
 }
 
-func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
+func extractKVStats(kvs, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) error {
 	for path, statname := range kvStats {
 		v := gojson.Get(kvs, path)
 		if vint, ok := v.(int); ok {
-			updateStat(statname, float64(vint), nsIndexStat)
+			updateStat(statname, float64(vint), nsIndexStat, aggrIdxStats)
 		} else if vuint64, ok := v.(uint64); ok {
-			updateStat(statname, float64(vuint64), nsIndexStat)
+			updateStat(statname, float64(vuint64), nsIndexStat, aggrIdxStats)
 		}
 	}
 	return nil
@@ -889,13 +977,14 @@ var scorchStats = map[string]string{
 	"/num_bytes_written_at_index_time":         "num_bytes_written_at_index_time",
 }
 
-func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
+func extractScorchStats(sstats, nsIndexStat map[string]interface{},
+	aggrIdxStats *aggrIndexesStats) error {
 	for path, statname := range scorchStats {
 		v := gojson.Get(sstats, path)
 		if vuint64, ok := v.(uint64); ok {
-			updateStat(statname, float64(vuint64), nsIndexStat)
+			updateStat(statname, float64(vuint64), nsIndexStat, aggrIdxStats)
 		} else if fuint64, ok := v.(float64); ok {
-			updateStat(statname, float64(fuint64), nsIndexStat)
+			updateStat(statname, float64(fuint64), nsIndexStat, aggrIdxStats)
 		}
 	}
 
