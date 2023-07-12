@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/aws/aws-sdk-go v1.44.170
 	github.com/blevesearch/bleve-mapping-ui v0.5.1
-	github.com/blevesearch/bleve/v2 v2.3.9-0.20230615140129-63e7a2fa1613
+	github.com/blevesearch/bleve/v2 v2.3.9
 	github.com/blevesearch/bleve_index_api v1.0.5
-	github.com/blevesearch/zapx/v11 v11.3.8
-	github.com/blevesearch/zapx/v12 v12.3.8
-	github.com/blevesearch/zapx/v13 v13.3.8
-	github.com/blevesearch/zapx/v14 v14.3.8
-	github.com/blevesearch/zapx/v15 v15.3.11
+	github.com/blevesearch/zapx/v11 v11.3.9
+	github.com/blevesearch/zapx/v12 v12.3.9
+	github.com/blevesearch/zapx/v13 v13.3.9
+	github.com/blevesearch/zapx/v14 v14.3.9
+	github.com/blevesearch/zapx/v15 v15.3.12
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.10
@@ -48,7 +48,7 @@ require (
 	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/blevesearch/upsidedown_store_api v1.0.2 // indirect
-	github.com/blevesearch/vellum v1.0.9 // indirect
+	github.com/blevesearch/vellum v1.0.10 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/couchbase/blance v0.1.3 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
