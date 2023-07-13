@@ -383,7 +383,7 @@ func copyBleveIndex(pindexName, path string, dest *BleveDest,
 		log.Printf("pindex_bleve_copy: buildCopyPartitionRequest,"+
 			" no source nodes found for partition: %s, err: %v",
 			pindexName, err)
-		return err
+		return fmt.Errorf("copyBleveIndex, req: %v, err: %v", req != nil, err)
 	}
 
 	err = CopyPartition(mgr, req)
