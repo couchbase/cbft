@@ -25,11 +25,11 @@ import (
 
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
-	"github.com/couchbase/tools-common/ioiface"
-	"github.com/couchbase/tools-common/objstore/objcli"
-	"github.com/couchbase/tools-common/objstore/objcli/objaws"
-	"github.com/couchbase/tools-common/objstore/objutil"
-	"github.com/couchbase/tools-common/ratelimit"
+	"github.com/couchbase/tools-common/cloud/objstore/objcli"
+	"github.com/couchbase/tools-common/cloud/objstore/objcli/objaws"
+	"github.com/couchbase/tools-common/cloud/objstore/objutil"
+	"github.com/couchbase/tools-common/types/iface"
+	"github.com/couchbase/tools-common/types/ratelimit"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -208,7 +208,7 @@ func newRateLimitedReader(ctx context.Context, reader io.Reader) *ratelimit.Rate
 	return ratelimit.NewRateLimitedReader(ctx, reader, rateLimiter)
 }
 
-func newRateLimitedReadAtSeeker(ctx context.Context, reader ioiface.ReadAtSeeker) *ratelimit.RateLimitedReadAtSeeker {
+func newRateLimitedReadAtSeeker(ctx context.Context, reader iface.ReadAtSeeker) *ratelimit.RateLimitedReadAtSeeker {
 	rateLimit := ctx.Value("rateLimit").(uint64)
 	// Limit to 'rateLimit' bytes per second.
 	rateLimiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(rateLimit)), int(rateLimit))
