@@ -23,7 +23,10 @@ import (
 var manifestsCache *manifestCache
 
 func init() {
-	manifestsCache = &manifestCache{mCache: make(map[string]*Manifest, 10)}
+	manifestsCache = &manifestCache{
+		mCache: make(map[string]*Manifest, 10),
+		stopCh: make(chan struct{}),
+	}
 }
 
 type Collection struct {
@@ -47,10 +50,11 @@ type Manifest struct {
 // TODO manifestCache needs to be refreshed from the future
 // streaming APIs from the ns_server in real time
 type manifestCache struct {
-	once   sync.Once
-	m      sync.RWMutex
-	stopCh chan struct{}
-	mCache map[string]*Manifest // bucketName<=>Manifest
+	once           sync.Once
+	m              sync.RWMutex
+	stopCh         chan struct{}
+	mCache         map[string]*Manifest // bucketName<=>Manifest
+	monitorRunning bool
 }
 
 func GetBucketManifest(bucketName string) (*Manifest, error) {
@@ -83,11 +87,24 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 	return obtainManifest(CurrentNodeDefsFetcher.GetManager().Server(), bucket)
 }
 
+func removeBucketFromManifestCache(bucket string) {
+	manifestsCache.m.Lock()
+	delete(manifestsCache.mCache, bucket)
+	if len(manifestsCache.mCache) == 0 && manifestsCache.monitorRunning {
+		manifestsCache.stopCh <- struct{}{}
+		manifestsCache.once = sync.Once{}
+		manifestsCache.monitorRunning = false
+	}
+	manifestsCache.m.Unlock()
+}
+
 func (c *manifestCache) monitor() {
 	// TODO - until the streaming endpoints from ns_server
 	mTicker := time.NewTicker(1 * time.Second)
 	defer mTicker.Stop()
-
+	c.m.Lock()
+	c.monitorRunning = true
+	c.m.Unlock()
 	for {
 		select {
 		case <-c.stopCh:

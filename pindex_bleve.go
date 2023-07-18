@@ -786,6 +786,11 @@ func OnDeleteIndex(indexDef *cbgt.IndexDef) {
 	// to index deletions, in which case the stale regulator stats
 	// needs to be removed.
 	RefreshRegulatorStats()
+
+	// When deleting an index, remove the corresponding bucket from the manifest cache.
+	// If other indexes still use the same bucket, the cache will be refreshed as needed.
+	// Otherwise, unnecessary monitoring of the bucket can be avoided.
+	removeBucketFromManifestCache(indexDef.SourceName)
 }
 
 func parseIndexParams(indexParams string) (
