@@ -19,11 +19,11 @@ require (
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
 	github.com/couchbase/go-couchbase v0.1.1
+	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
 	github.com/couchbase/tools-common/cloud v1.0.0
 	github.com/couchbase/tools-common/types v1.0.0
-	github.com/dustin/go-jsonpointer v0.0.0-20140810065344-75939f54b39e
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
@@ -53,7 +53,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/couchbase/blance v0.1.3 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
-	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
 	github.com/couchbase/gocbcore/v10 v10.2.5 // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
@@ -67,7 +66,6 @@ require (
 	github.com/couchbase/tools-common/testing v1.0.0 // indirect
 	github.com/couchbase/tools-common/utils v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dustin/gojson v0.0.0-20150115165335-af16e0e771e2 // indirect
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect

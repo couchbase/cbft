@@ -27,11 +27,10 @@ import (
 	"unicode"
 	"unsafe"
 
-	log "github.com/couchbase/clog"
-
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
-	"github.com/dustin/go-jsonpointer"
+	log "github.com/couchbase/clog"
+	gojson "github.com/couchbase/go_json"
 )
 
 // Dump stats to log once every 5min. This stat is configurable
@@ -790,44 +789,44 @@ func updateStat(name string, val float64, nsIndexStat map[string]interface{}) {
 
 func extractStats(bpsm, nsIndexStat map[string]interface{}) error {
 	// common stats across different index types
-	v := jsonpointer.Get(bpsm, "/DocCount")
+	v := gojson.Get(bpsm, "/DocCount")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("doc_count", float64(vuint64), nsIndexStat)
 	}
-	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_term_searchers", float64(vuint64), nsIndexStat)
 	}
-	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/term_searchers_finished")
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_finished")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat)
 	}
-	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat)
 	}
 
-	v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/kv")
 	if _, ok := v.(map[string]interface{}); ok {
 		// see if metrics are enabled, they would always be at the top-level
-		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
+		v = gojson.Get(bpsm, "/bleveIndexStats/index/kv/metrics")
 		if metrics, ok := v.(map[string]interface{}); ok {
 			extractMetricsStats(metrics, nsIndexStat)
 			// look for kv stats
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv/kv")
+			v = gojson.Get(bpsm, "/bleveIndexStats/index/kv/kv")
 			if kvStats, ok := v.(map[string]interface{}); ok {
 				extractKVStats(kvStats, nsIndexStat)
 			}
 		} else {
 			// look for kv here
-			v = jsonpointer.Get(bpsm, "/bleveIndexStats/index/kv")
+			v = gojson.Get(bpsm, "/bleveIndexStats/index/kv")
 			if kvStats, ok := v.(map[string]interface{}); ok {
 				extractKVStats(kvStats, nsIndexStat)
 			}
 		}
 	} else {
 		// scorch stats are available at bleveIndexStats/index
-		v = jsonpointer.Get(bpsm, "/bleveIndexStats/index")
+		v = gojson.Get(bpsm, "/bleveIndexStats/index")
 		if sstats, ok := v.(map[string]interface{}); ok {
 			extractScorchStats(sstats, nsIndexStat)
 		}
@@ -849,7 +848,7 @@ var metricStats = map[string]string{
 
 func extractMetricsStats(metrics, nsIndexStat map[string]interface{}) error {
 	for path, statname := range metricStats {
-		v := jsonpointer.Get(metrics, path)
+		v := gojson.Get(metrics, path)
 		if vint64, ok := v.(int64); ok {
 			updateStat(statname, float64(vint64), nsIndexStat)
 		}
@@ -865,7 +864,7 @@ var kvStats = map[string]string{
 
 func extractKVStats(kvs, nsIndexStat map[string]interface{}) error {
 	for path, statname := range kvStats {
-		v := jsonpointer.Get(kvs, path)
+		v := gojson.Get(kvs, path)
 		if vint, ok := v.(int); ok {
 			updateStat(statname, float64(vint), nsIndexStat)
 		} else if vuint64, ok := v.(uint64); ok {
@@ -892,7 +891,7 @@ var scorchStats = map[string]string{
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
 	for path, statname := range scorchStats {
-		v := jsonpointer.Get(sstats, path)
+		v := gojson.Get(sstats, path)
 		if vuint64, ok := v.(uint64); ok {
 			updateStat(statname, float64(vuint64), nsIndexStat)
 		} else if fuint64, ok := v.(float64); ok {
@@ -905,7 +904,7 @@ func extractScorchStats(sstats, nsIndexStat map[string]interface{}) error {
 
 func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) error {
 	statsBytes := buffer.Bytes()
-	pointers, err := jsonpointer.ListPointers(statsBytes)
+	pointers, err := gojson.ListPointers(statsBytes)
 	if err != nil {
 		return err
 	}
@@ -919,7 +918,7 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 		}
 	}
 
-	countValueMap, err := jsonpointer.FindMany(statsBytes, countPointers)
+	countValueMap, err := gojson.FindMany(statsBytes, countPointers)
 	if err != nil {
 		return err
 	}

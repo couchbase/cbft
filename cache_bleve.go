@@ -113,7 +113,7 @@ func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 		a := NewAggregateRecorder(m.pindex.SourceName)
 
 		aggRecCallback := func(msg search.SearchIncrementalCostCallbackMsg,
-		unitType search.SearchQueryType, bytes uint64) {
+			unitType search.SearchQueryType, bytes uint64) {
 			AggregateRecorderCallback(a, msg, unitType, bytes)
 		}
 
