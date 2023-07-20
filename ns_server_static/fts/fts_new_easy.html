@@ -421,7 +421,7 @@
       <footer class="footer-save">
         <button
             ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID)"
+            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit)"
             type="submit"
             ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)">
           <span ng-show="!isEdit">
@@ -434,7 +434,7 @@
 
         <button
             ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-            ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes)"
+            ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit)"
             type="submit">
           <span ng-show="!isEdit">
             Create Index Alias

@@ -1954,7 +1954,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                                        newIndexType, newIndexParams,
                                        newSourceType, newSourceName,
                                        newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID) {
+                                       newPlanParams, prevIndexUUID, isEdit) {
+                if (isEdit) {
+                    newIndexName=$scope.fullIndexName;
+                }
                 $scope.errorFields = {};
                 $scope.errorMessage = null;
                 $scope.errorMessageFull = null;
