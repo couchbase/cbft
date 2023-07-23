@@ -409,19 +409,12 @@ func parseQuery(input []byte) (query.Query, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, isMatchQuery := tmp["match"]
 	_, hasFuzziness := tmp["fuzziness"]
-	if hasFuzziness && !isMatchQuery {
+	_, isMatchQuery := tmp["match"]
+	_, isMatchPhraseQuery := tmp["match_phrase"]
+	_, hasTerms := tmp["terms"]
+	if hasFuzziness && !isMatchQuery && !isMatchPhraseQuery && !hasTerms {
 		var rv query.FuzzyQuery
-		err := jsoniter.Unmarshal(input, &rv)
-		if err != nil {
-			return nil, err
-		}
-		return &rv, nil
-	}
-	_, isTermQuery := tmp["term"]
-	if isTermQuery {
-		var rv query.TermQuery
 		err := jsoniter.Unmarshal(input, &rv)
 		if err != nil {
 			return nil, err
@@ -436,9 +429,31 @@ func parseQuery(input []byte) (query.Query, error) {
 		}
 		return &rv, nil
 	}
-	_, isMatchPhraseQuery := tmp["match_phrase"]
 	if isMatchPhraseQuery {
 		var rv query.MatchPhraseQuery
+		err := jsoniter.Unmarshal(input, &rv)
+		if err != nil {
+			return nil, err
+		}
+		return &rv, nil
+	}
+	if hasTerms {
+		var rv query.PhraseQuery
+		err := jsoniter.Unmarshal(input, &rv)
+		if err != nil {
+			// now try multi-phrase
+			var rv2 query.MultiPhraseQuery
+			err = jsoniter.Unmarshal(input, &rv2)
+			if err != nil {
+				return nil, err
+			}
+			return &rv2, nil
+		}
+		return &rv, nil
+	}
+	_, isTermQuery := tmp["term"]
+	if isTermQuery {
+		var rv query.TermQuery
 		err := jsoniter.Unmarshal(input, &rv)
 		if err != nil {
 			return nil, err
@@ -453,21 +468,6 @@ func parseQuery(input []byte) (query.Query, error) {
 		err := jsoniter.Unmarshal(input, &rv)
 		if err != nil {
 			return nil, err
-		}
-		return &rv, nil
-	}
-	_, hasTerms := tmp["terms"]
-	if hasTerms {
-		var rv query.PhraseQuery
-		err := jsoniter.Unmarshal(input, &rv)
-		if err != nil {
-			// now try multi-phrase
-			var rv2 query.MultiPhraseQuery
-			err = jsoniter.Unmarshal(input, &rv2)
-			if err != nil {
-				return nil, err
-			}
-			return &rv2, nil
 		}
 		return &rv, nil
 	}
