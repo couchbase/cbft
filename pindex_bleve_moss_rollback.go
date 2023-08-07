@@ -93,7 +93,7 @@ func (t *BleveDest) partialMossRollbackLOCKED(kvstore store.KVStore,
 
 			// Close the bleve index, but keep our ref-counts on the
 			// underlying store and snapshot until after the revert.
-			t.closeLOCKED()
+			t.closeLOCKED(false)
 
 			err = store.SnapshotRevert(ss)
 

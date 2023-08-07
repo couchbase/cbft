@@ -98,17 +98,18 @@ var BlevePreferredZapVersion = int(15)
 
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
-//     {
-//        "mapping": {
-//           // See bleve.mapping.IndexMapping.
-//        },
-//        "store": {
-//           // See BleveParamsStore.
-//        },
-//        "doc_config": {
-//           // See BleveDocumentConfig.
-//        }
-//     }
+//
+//	{
+//	   "mapping": {
+//	      // See bleve.mapping.IndexMapping.
+//	   },
+//	   "store": {
+//	      // See BleveParamsStore.
+//	   },
+//	   "doc_config": {
+//	      // See BleveDocumentConfig.
+//	   }
+//	}
 type BleveParams struct {
 	Mapping   mapping.IndexMapping   `json:"mapping"`
 	Store     map[string]interface{} `json:"store"`
@@ -361,6 +362,7 @@ type BleveDest struct {
 	rev         uint64 // Incremented whenever bindex changes.
 	batchReqChs []chan *batchRequest
 	stopCh      chan struct{}
+	removeCh    chan struct{}
 }
 
 // Used to track state for a single partition.
@@ -404,6 +406,7 @@ func NewBleveDest(path string, bindex bleve.Index,
 		stats:          cbgt.NewPIndexStoreStats(),
 		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
+		removeCh:       make(chan struct{}),
 	}
 
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
@@ -1597,14 +1600,24 @@ func (t *BleveDest) getPartitionLOCKED(partition string) (
 
 // ---------------------------------------------------------
 
-func (t *BleveDest) Close() error {
+func (t *BleveDest) Close(remove bool) error {
 	t.m.Lock()
-	err := t.closeLOCKED()
+	err := t.closeLOCKED(remove)
 	t.m.Unlock()
 	return err
 }
 
-func (t *BleveDest) closeLOCKED() error {
+func (t *BleveDest) removeLOCKED() {
+	if _, ok := t.bindex.(*noopBleveIndex); ok {
+		if !isClosed(t.removeCh) {
+			close(t.removeCh)
+		}
+	} else {
+		os.RemoveAll(t.path)
+	}
+}
+
+func (t *BleveDest) closeLOCKED(remove bool) error {
 	if t.bindex == nil {
 		return nil // Already closed.
 	}
@@ -1617,6 +1630,9 @@ func (t *BleveDest) closeLOCKED() error {
 	t.partitions = make(map[string]*BleveDestPartition)
 
 	t.bindex.Close()
+	if remove {
+		t.removeLOCKED()
+	}
 	t.bindex = nil
 
 	go func() {
@@ -2089,8 +2105,8 @@ func (t *BleveDest) PartitionSeqs() (map[string]cbgt.UUIDSeq, error) {
 
 // ---------------------------------------------------------
 
-func (t *BleveDestPartition) Close() error {
-	return t.bdest.Close()
+func (t *BleveDestPartition) Close(remove bool) error {
+	return t.bdest.Close(remove)
 }
 
 func (t *BleveDestPartition) PrepareFeedParams(partition string,
@@ -2795,11 +2811,11 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 // preferences for the query serving index partitions spread across
 // the cluster.
 // PartitionSelectionStrategy recognized options are,
-// - ""              : primary partitions are selected
-// - local           : local partitions are favored, pseudorandom selection from remote
-// - random          : pseudorandom selection from available local and remote
-// - random_balanced : pseudorandom selection from available local and remote nodes by
-//                     equally distributing the query load across all nodes.
+//   - ""              : primary partitions are selected
+//   - local           : local partitions are favored, pseudorandom selection from remote
+//   - random          : pseudorandom selection from available local and remote
+//   - random_balanced : pseudorandom selection from available local and remote nodes by
+//     equally distributing the query load across all nodes.
 type PartitionSelectionStrategy string
 
 var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
