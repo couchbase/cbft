@@ -758,7 +758,18 @@ func gatherNodeUtilStats(mgr *cbgt.Manager,
 func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
 	topLevelStats := map[string]interface{}{}
 
-	topLevelStats["num_bytes_used_ram"] = getMemoryUtilization(rd.memStats)
+	memUtil := getMemoryUtilization(rd.memStats)
+	var ftsMemoryQuota uint64
+	if val, exists := mgr.Options()["ftsMemoryQuota"]; exists {
+		if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
+			ftsMemoryQuota = valUint64
+		}
+	}
+	topLevelStats["num_bytes_used_ram"] = memUtil
+	topLevelStats["num_bytes_ram_quota"] = ftsMemoryQuota
+	topLevelStats["pct_used_ram"] =
+		(float64(memUtil) / float64(ftsMemoryQuota)) * 100
+
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)

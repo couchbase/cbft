@@ -71,6 +71,8 @@ var prometheusStats = map[string]string{
 
 	"pct_cpu_gc":                     "gauge",
 	"num_bytes_used_ram":             "gauge",
+	"num_bytes_ram_quota":            "gauge",
+	"pct_used_ram":                   "gauge",
 	"avg_grpc_queries_latency":       "gauge",
 	"num_files_on_disk":              "gauge",
 	"num_pindexes_actual":            "gauge",
