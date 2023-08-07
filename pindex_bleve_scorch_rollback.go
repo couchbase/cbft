@@ -42,7 +42,7 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
 	}()
 
 	// close the scorch index as rollback works in offline.
-	err := t.closeLOCKED()
+	err := t.closeLOCKED(false)
 	if err != nil {
 		return false, false, err
 	}

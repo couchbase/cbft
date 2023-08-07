@@ -192,6 +192,7 @@ func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
 		stats:          cbgt.NewPIndexStoreStats(),
 		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
+		removeCh:       make(chan struct{}),
 	}
 	dest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
@@ -455,6 +456,13 @@ func createNewBleveIndex(indexType, indexParams, path string,
 	// stop the old workers.
 	if fwder, ok := destWrapper.(*cbgt.DestForwarder); ok {
 		if bdest, ok := fwder.DestProvider.(*BleveDest); ok {
+			closed, remove := isDestClosedAndNeedsToBeRemoved(bdest)
+			if closed {
+				log.Printf("pindex_bleve_copy: createNewBleveIndex pindex: %s"+
+					" dest closed", pindexName)
+				closeBleveIndex(bdest.bindex, bdest, remove)
+				return
+			}
 			bdest.stopBatchWorkers()
 		}
 	}
@@ -468,8 +476,35 @@ func createNewBleveIndex(indexType, indexParams, path string,
 	}
 }
 
+// helper function that returns if the BleveDest is closed and needs to be removed
+func isDestClosedAndNeedsToBeRemoved(dest *BleveDest) (bool, bool) {
+	dest.m.Lock()
+	defer dest.m.Unlock()
+	return isClosed(dest.stopCh), isClosed(dest.removeCh)
+}
+
+// to be called when bleve dest is closed, to close the newly created bleve
+// index and optionally remove the files of the bleve dest; during the asynchronous
+// copy partition and rollback operations.
+func closeBleveIndex(index bleve.Index, dest *BleveDest, remove bool) {
+	index.Close()
+	if remove {
+		_ = os.RemoveAll(dest.path)
+
+		dest.m.Lock()
+		dest.removeCh = make(chan struct{})
+		dest.m.Unlock()
+	}
+}
 func updateBleveIndex(pindexName string, mgr *cbgt.Manager,
 	index bleve.Index, dest *BleveDest) {
+	log.Printf("pindex_bleve_copy: updateBleveIndex pindex: %s", pindexName)
+	closed, remove := isDestClosedAndNeedsToBeRemoved(dest)
+	if closed {
+		log.Printf("pindex_bleve_copy: updateBleveIndex pindex: %s dest closed", pindexName)
+		closeBleveIndex(index, dest, remove)
+		return
+	}
 	dest.resetBIndex(index)
 	dest.startBatchWorkers()
 	http.RegisterIndexName(pindexName, index)

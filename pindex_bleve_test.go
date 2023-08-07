@@ -99,7 +99,7 @@ func TestManagerRestart(t *testing.T) {
 			feeds, pindexes)
 	}
 	for _, pindex := range pindexes {
-		pindex.Dest.Close()
+		pindex.Dest.Close(false)
 		if m.GetPIndex(pindex.Name) != pindex {
 			t.Errorf("expected GetPIndex() to match")
 		}

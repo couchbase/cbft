@@ -38,7 +38,7 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 			t.path, wasClosed, wasPartial, err)
 
 		if !wasClosed {
-			t.closeLOCKED()
+			t.closeLOCKED(false)
 		}
 
 		if !wasPartial {
