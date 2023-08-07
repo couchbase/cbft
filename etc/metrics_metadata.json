@@ -393,6 +393,10 @@
 		"type": "counter",
 		"help": "Total number of remote(i.e. different node) HTTP SSL requests"
 	},
+	"fts_tot_remote_http_ssl": {
+		"type": "counter",
+		"help": "Total number of remote(i.e. different node) HTTP SSL requests"
+	},
 	"fts_tot_batches_flushed_on_maxops": {
 		"type": "counter",
 		"help": "Total number of batches executed due to the batch size being greater than the maximum number of operations per batch"
@@ -410,6 +414,10 @@
 		"help": "Total number of remote(i.e. different node) gRPC requests"
 	},
 	"fts_tot_remote_grpc_tls": {
+		"type": "counter",
+		"help": "Total number of remote(i.e. different node) gRPC SSL requests when adding clients."
+	},
+	"fts_tot_remote_grpc_ssl": {
 		"type": "counter",
 		"help": "Total number of remote(i.e. different node) gRPC SSL requests when adding clients."
 	},
