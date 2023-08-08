@@ -903,29 +903,63 @@ func RollbackBleve(indexType, indexParams, sourceParams, path string,
 	}
 
 	pindexName := cbgt.PIndexNameFromPath(path)
+
+	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
+	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
+	destfwd := &cbgt.DestForwarder{DestProvider: dest}
 
 	go func() {
+		// Check if the pindex is closed before building it.
+		if isClosed(dest.stopCh) {
+			// Check if the pindex still exists.
+			_, pindexes := mgr.CurrentMaps()
+			pi, ok := pindexes[pindexName]
+			if !ok {
+				log.Printf("pindex_bleve: pindex: %s"+
+					" no longer exists", pindexName)
+				return
+			}
+
+			// Remove the pindex if it's still live.
+			// No need to create a new bleve index if the underlying
+			// pindex isn't live.
+			_ = mgr.RemovePIndex(pi)
+			return
+		}
+
 		bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
 			bleveIndexType, kvStoreName, kvConfig)
 		if err != nil {
 			log.Errorf("bleve: new index, path: %s,"+
 				" kvStoreName: %s, kvConfig: %#v, err: %s",
 				path, kvStoreName, kvConfig, err)
-			return
-		}
+			// If there's an error creating the bleve index,
+			// remove the directory and attempt to re-rollback.
+			_ = os.RemoveAll(path)
 
-		pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
-		err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
-		if err != nil {
-			log.Printf("error writing index params to %s: %v", pathMeta, err)
+			_, pindexes := mgr.CurrentMaps()
+			pi, ok := pindexes[pindexName]
+			if !ok {
+				log.Printf("pindex_bleve: pindex: %s"+
+					" no longer exists", pindexName)
+				return
+			}
+
+			// Will be a full rollback since the path was removed.
+			// As part of rollback, the pindex will be closed
+			mgr.JanitorRollbackKick("rollback:"+pi.Name, pi)
+
 			return
 		}
 
 		updateBleveIndex(pindexName, mgr, bindex, dest)
 	}()
 
-	destfwd := &cbgt.DestForwarder{DestProvider: dest}
 	return nil, destfwd, nil
 }
 
