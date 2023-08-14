@@ -371,6 +371,22 @@ func getRecentInfo() *recentInfo {
 	return (*recentInfo)(atomic.LoadPointer(&lastRecentInfo))
 }
 
+func gatherQueryErrorsStats() map[string]interface{} {
+	rv := make(map[string]interface{})
+	rv["total_queries_search_in_context_error"] =
+		atomic.LoadUint64(&totQuerySearchInContextErr)
+	rv["total_queries_bad_request_error"] =
+		atomic.LoadUint64(&totQueryBadRequestErr)
+	rv["total_queries_consistency_error"] =
+		atomic.LoadUint64(&totQueryConsistencyErr)
+	rv["total_queries_max_result_window_exceeded_error"] =
+		atomic.LoadUint64(&totQueryMaxResultWindowExceededErr)
+	rv["total_queries_partial_results_error"] =
+		atomic.LoadUint64(&totQueryPartialResultsErr)
+
+	return rv
+}
+
 func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 	collAware bool) (NSIndexStats, error) {
 	if rd == nil || mgr == nil {
@@ -431,8 +447,17 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		nsIndexStats[""] = gatherTopLevelStats(mgr, rd)
 	}
 
+	if nsIndexStats[""] == nil {
+		nsIndexStats[""] = make(map[string]interface{})
+	}
+
 	// insert aggregated stats as top level stats
 	for k, v := range ais.getStatsMap() {
+		nsIndexStats[""][k] = v
+	}
+
+	// insert query errors stats as top level stats
+	for k, v := range gatherQueryErrorsStats() {
 		nsIndexStats[""][k] = v
 	}
 

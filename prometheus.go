@@ -41,6 +41,12 @@ var prometheusStats = map[string]string{
 	"total_grpc_queries_error":       "counter",
 	"total_term_searchers_finished":  "counter",
 
+	"total_queries_search_in_context_error":          "counter",
+	"total_queries_bad_request_error":                "counter",
+	"total_queries_consistency_error":                "counter",
+	"total_queries_max_result_window_exceeded_error": "counter",
+	"total_queries_partial_results_error":            "counter",
+
 	"tot_batches_flushed_on_maxops":  "counter",
 	"tot_batches_flushed_on_timer":   "counter",
 	"tot_bleve_dest_opened":          "counter",

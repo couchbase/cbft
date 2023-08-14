@@ -1192,10 +1192,23 @@ func indexPartitions(bic BleveIndexCollector) (handlers []cbgt.TaskRequestHandle
 }
 
 // ---------------------------------------------------------
+// Query Error Counters, use atomic/Sync* for access
+var (
+	// totQueryRejectOnNotEnoughQuota tracks the number of rejected
+	// search requests on hitting the memory threshold for query
+	totQueryRejectOnNotEnoughQuota uint64
 
-// totQueryRejectOnNotEnoughQuota tracks the number of rejected
-// search requests on hitting the memory threshold for query
-var totQueryRejectOnNotEnoughQuota uint64
+	// bleve.IndexAlias's SearchInContext() failed
+	totQuerySearchInContextErr uint64
+	// requested query could not not be parsed, bad syntax
+	totQueryBadRequestErr uint64
+	// requested query could not meet consistency requirements
+	totQueryConsistencyErr uint64
+	// (Query.From + Query.Size) exceeded bleveMaxResultWindow
+	totQueryMaxResultWindowExceededErr uint64
+	// requested query could not be executed by some pindex(es)
+	totQueryPartialResultsErr uint64
+)
 
 // QueryPIndexes defines the part of the JSON query request that
 // allows the client to specify which pindexes the server should
@@ -1233,6 +1246,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 	err := UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
+		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryCtlParams, err: %v", err)
 	}
@@ -1240,6 +1254,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	queryPIndexes := QueryPIndexes{}
 	err = UnmarshalJSON(req, &queryPIndexes)
 	if err != nil {
+		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing queryPIndexes, err: %v", err)
 	}
@@ -1247,11 +1262,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	var sr *SearchRequest
 	err = UnmarshalJSON(req, &sr)
 	if err != nil {
+		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
 	}
 	searchRequest, err := sr.ConvertToBleveSearchRequest()
 	if err != nil {
+		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
 	}
@@ -1266,6 +1283,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
+			atomic.AddUint64(&totQueryConsistencyErr, 1)
 			return fmt.Errorf("bleve: QueryBleve"+
 				" validating consistency, err: %v", err)
 		}
@@ -1283,6 +1301,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		if (searchRequest.From+searchRequest.Size > bleveMaxResultWindow) ||
 			(searchRequest.Size > bleveMaxResultWindow &&
 				(searchRequest.SearchAfter != nil || searchRequest.SearchBefore != nil)) {
+			atomic.AddUint64(&totQueryMaxResultWindowExceededErr, 1)
 			return fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
 				" from: %d, size: %d, bleveMaxResultWindow: %d",
 				searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
@@ -1342,6 +1361,9 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	defer querySupervisor.DeleteEntry(id)
 
 	searchResult, err := alias.SearchInContext(ctx, searchRequest)
+	if err != nil {
+		atomic.AddUint64(&totQuerySearchInContextErr, 1)
+	}
 	if searchResult != nil {
 		// if the query decoration happens for collection targeted or docID
 		// queries for multi collection indexes, then restore the original
@@ -1356,6 +1378,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			len(searchResult.Status.Errors) > 0 &&
 			queryCtlParams.Ctl.Consistency != nil &&
 			queryCtlParams.Ctl.Consistency.Results == "complete" {
+			atomic.AddUint64(&totQueryPartialResultsErr, 1)
+
 			// complete results expected, do not propagate partial results
 			return fmt.Errorf("bleve: results weren't retrieved from some"+
 				" index partitions: %d", len(searchResult.Status.Errors))
@@ -1447,6 +1471,7 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 		}
 		// if we had any explicitly returned consistency errors, return those
 		if len(remoteConsistencyWaitError.StartEndSeqs) > 0 {
+			atomic.AddUint64(&totQueryConsistencyErr, 1)
 			return &remoteConsistencyWaitError
 		}
 
@@ -1456,6 +1481,7 @@ func processSearchResult(queryCtlParams *cbgt.QueryCtlParams, indexName string,
 		if queryCtlParams.Ctl.Consistency != nil &&
 			len(queryCtlParams.Ctl.Consistency.Vectors) > 0 &&
 			numRemoteSilent > 0 {
+			atomic.AddUint64(&totQueryConsistencyErr, 1)
 			return &remoteConsistencyWaitError
 		}
 

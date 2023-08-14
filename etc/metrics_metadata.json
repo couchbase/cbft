@@ -210,6 +210,31 @@
 		],
 		"uiName": "Search Query Error Rate"
 	},
+	"fts_total_queries_search_in_context_error": {
+		"type": "counter",
+		"help": "The number of FTS queries that resulted in an error while searching in context",
+		"uiName": "Search Query Error SearchInContext"
+	},
+	"fts_total_queries_bad_request_error": {
+		"type": "counter",
+		"help": "The number of FTS queries that resulted in an error due to a bad request",
+		"uiName": "Search Query Error BadRequest"
+	},
+	"fts_total_queries_consistency_error": {
+		"type": "counter",
+		"help": "The number of FTS queries that resulted in an error due to a failure to meet consistency requirements",
+		"uiName": "Search Query Error DissatisfiedConsistency"
+	},
+	"fts_total_queries_max_result_window_exceeded_error": {
+		"type": "counter",
+		"help": "The number of FTS queries that resulted in an error due to exceeding the maximum result window",
+		"uiName": "Search Query Error MaxResultWindowExceeded"
+	},
+	"fts_total_queries_partial_results_error": {
+		"type": "counter",
+		"help": "The number of FTS queries that resulted in an error due to only partial results being returned",
+		"uiName": "Search Query Error PartialResults"
+	},
 	"fts_total_bytes_query_results": {
 		"type": "counter",
 		"help": "Size of results coming back from full text queries for search results, including the entire size of the JSON sent",
