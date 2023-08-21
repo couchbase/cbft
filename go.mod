@@ -54,7 +54,7 @@ require (
 	github.com/couchbase/blance v0.1.3 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
-	github.com/couchbase/gocbcore/v10 v10.2.5 // indirect
+	github.com/couchbase/gocbcore/v10 v10.2.6-0.20230821173641-a343c19faafa // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
 	github.com/couchbase/gomemcached v0.2.2-0.20230407174933-7d7ce13da8cc // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
