@@ -32,6 +32,7 @@ import BleveDatetimeParserModalCtrl from "./static-bleve-mapping/js/mapping/anal
 import BleveTokenFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
 import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenizer.js";
 import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
+import {bleveIndexMappingScrub} from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
 import {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName} from "./static/util.js";
@@ -48,6 +49,7 @@ import ftsNewTemplate from "./fts_new.html";
 import ftsNewEasyTemplate from "./fts_new_easy.html";
 import ftsSearchTemplate from "./fts_search.html";
 import ftsDetailsTemplate from "./fts_details.html";
+import indexImportTemplate from "./import_index.html";
 
 export default ftsAppName;
 
@@ -937,6 +939,868 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                     newPlanParams, prevIndexUUID);
             };
         }
+    }
+
+    var ImportIndexCtrl = function($scope, $uibModalInstance) {
+
+        $scope.cancel = function() {
+            $uibModalInstance.close({})
+        }
+
+        $scope.add = function(indexJSON) {
+            if (isJSON(indexJSON)) {
+                if ($scope.$parent.newIndexType == "fulltext-index") {
+                    $scope.resetIndexDef()
+                    $scope.errorMsg = ""
+                    $scope.parseIndexJSON(indexJSON)
+                    if ($scope.errorMsg == "") {
+                        $scope.$parent.showCustomizeIndex = true
+                        $scope.cancel()
+                    } else {
+                        $scope.resetIndexDef()
+                    }
+                } else if ($scope.$parent.newIndexType == "fulltext-alias") {
+                    $scope.resetAliasDef()
+                    $scope.errorMsg = ""
+                    $scope.parseAliasJSON(indexJSON)
+                    if ($scope.errorMsg == "") {
+                        $scope.$parent.showCustomizeIndex = true
+                        $scope.cancel()
+                    } else {
+                        $scope.resetAliasDef()
+                    }
+                } else {
+                    $scope.errorMsg = "Invalid index type"
+                }
+            } else {
+                $scope.errorMsg = "Invalid JSON input"
+            }
+        }
+
+        function isJSON(string) {
+            try {
+                JSON.parse(string)
+            } catch (e) {
+                return false
+            }
+            return true
+        }
+
+        $scope.resetAliasDef = function() {
+
+            $scope.$parent.newIndexName = ""
+
+            $scope.$selectedTargetIndexes = []
+        }
+
+        $scope.parseAliasJSON = function(aliasJSON) {
+
+            var indexParsed = JSON.parse(aliasJSON)
+
+            if ("name" in indexParsed) {
+                $scope.$parent.newIndexName = indexParsed.name.split(".").pop()
+            }
+
+            if ("params" in indexParsed) {
+                if ("targets" in indexParsed.params) {
+                    for (const [k, val] of Object.entries(indexParsed.params.targets)) {
+                        $scope.parseTarget(k)
+
+                        if ($scope.errorMsg != "") {
+                            return
+                        }
+                    }
+                }
+            }
+        }
+
+        $scope.parseTarget = function(key) {
+            if ($scope.$parent.aliasTargets.includes(key)) {
+                $scope.selectedTargetIndexes.push(key)
+            } else {
+                $scope.errorMsg = ""
+            }
+        }
+
+        $scope.resetIndexDef = function() {
+
+            $scope.$parent.newIndexName = ""
+
+            $scope.$parent.indexMapping.analysis.char_filters = {}
+            $scope.$parent.indexMapping.analysis.tokenizers = {}
+            $scope.$parent.indexMapping.analysis.token_maps = {}
+            $scope.$parent.indexMapping.analysis.token_filters = {}
+            $scope.$parent.indexMapping.analysis.date_time_parsers = {}
+            $scope.$parent.indexMapping.analysis.analyzers = {}
+            $scope.$parent.indexMapping.default_analyzer = "standard"
+            $scope.$parent.indexMapping.default_datetime_parser = "dateTimeOptional"
+            $scope.$parent.indexMapping.default_field = "_all"
+            $scope.$parent.indexMapping.default_mapping = {
+                "enabled": true,
+                "dynamic": true
+            }
+            $scope.$parent.indexMapping.default_type = "_default"
+            $scope.$parent.indexMapping.docvalues_dynamic = false
+            $scope.$parent.indexMapping.index_dynamic = true
+            $scope.$parent.indexMapping.store_dynamic = false
+
+
+            while ($scope.$parent.mappings.length > 1) {
+                $scope.$parent.mappings.shift()
+            }
+
+            $scope.$parent.mappings[0].dynamic = true
+            $scope.$parent.mappings[0].enabled = true
+            $scope.$parent.mappings[0].fields = []
+
+            while ($scope.$parent.mappings[0].mappings.length > 0) {
+                $scope.$parent.mappings[0].mappings.pop()
+            }
+
+            delete $scope.$parent.mappings[0].date_format
+            delete $scope.$parent.mappings[0].default_analyzer
+
+            $scope.$parent.docConfigMode = "type_field"
+            $scope.$parent.ftsDocConfig = {
+                docid_prefix_delim: "",
+                docid_regexp: "",
+                mode: "type_field",
+                type_field: "type"
+            }
+
+            $scope.$parent.newSourceParams = $scope.$parent.sourceParamsCopy
+            $scope.$parent.numReplicas = 0
+            $scope.$parent.numPIndexes = 1
+        }
+
+        $scope.parseIndexJSON = function(indexJSON) {
+
+            var indexParsed = JSON.parse(indexJSON)
+            if ("name" in indexParsed) {
+                $scope.$parent.newIndexName = indexParsed.name.split(".").pop()
+            }
+
+            if ("params" in indexParsed) {
+                if ("mapping" in indexParsed.params) {
+
+                    if ("analysis" in indexParsed.params.mapping) {
+
+                        if ("char_filters" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.char_filters)) {
+                                $scope.parseCharFilter(k, val)
+
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+
+                        if ("tokenizers" in indexParsed.params.mapping.analysis) {
+                            $scope.parseTokenizers(indexParsed.params.mapping.analysis.tokenizers)
+
+                            if ($scope.errorMsg != "") {
+                                return
+                            }
+                        }
+
+                        if ("token_maps" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.token_maps)) {
+                                $scope.parseTokenMap(k, val)
+
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+
+                        if ("token_filters" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.token_filters)) {
+                                $scope.parseTokenFilter(k, val)
+
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+
+                        if ("date_time_parsers" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.date_time_parsers)) {
+                                $scope.parseDateTimeParser(k, val)
+
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+
+                        if ("analyzers" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.analyzers)) {
+                                $scope.parseAnalyzer(k, val)
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+                    }
+
+                    if ("default_mapping" in indexParsed.params.mapping) {
+
+                        var mapping = $scope.$parent.mappings[0]
+
+                        if ("enabled" in indexParsed.params.mapping.default_mapping) {
+                            if (indexParsed.params.mapping.default_mapping.enabled == true || indexParsed.params.mapping.default_mapping.enabled == false) {
+                                mapping.enabled = indexParsed.params.mapping.default_mapping.enabled
+                            }
+                        }
+
+                        if ("dynamic" in indexParsed.params.mapping.default_mapping) {
+                            if (indexParsed.params.mapping.default_mapping.dynamic == true || indexParsed.params.mapping.default_mapping.dynamic == false) {
+                                mapping.dynamic = indexParsed.params.mapping.default_mapping.dynamic
+                            }
+                        }
+
+                        if ("default_analyzer" in indexParsed.params.mapping.default_mapping) {
+                            if ($scope.analyzerNames.includes(indexParsed.params.mapping.default_mapping.default_analyzer)) {
+                                mapping.default_analyzer = indexParsed.params.mapping.default_mapping.default_analyzer
+                            } else {
+                                $scope.errorMsg = "default_mapping has invalid value for field 'default_analyzer'"
+                                return
+                            }
+                        }
+
+                        if ("properties" in indexParsed.params.mapping.default_mapping) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.default_mapping.properties)) {
+                                $scope.parseMapping(k, val, mapping)
+
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
+                    }
+
+                    if ("types" in indexParsed.params.mapping) {
+                        for (const [key, value] of Object.entries(indexParsed.params.mapping.types)) {
+                            $scope.parseMapping(key, value, null)
+                        }
+                    }
+
+                    if ("default_type" in indexParsed.params.mapping) {
+                        $scope.$parent.indexMapping.default_type = indexParsed.params.mapping.default_type
+                    }
+
+                    if ("default_analyzer" in indexParsed.params.mapping) {
+                        if ($scope.analyzerNames.includes(indexParsed.params.mapping.default_analyzer)) {
+                            $scope.$parent.indexMapping.default_analyzer = indexParsed.params.mapping.default_analyzer
+                        } else {
+                            $scope.errorMsg = "Unknown value for default_analyzer"
+                            return
+                        }
+                    }
+
+                    if ("default_datetime_parser" in indexParsed.params.mapping) {
+                        if ($scope.dateTimeParserNames.includes(indexParsed.params.mapping.default_datetime_parser)) {
+                            $scope.$parent.indexMapping.default_datetime_parser = indexParsed.params.mapping.default_datetime_parser
+                        } else {
+                            $scope.errorMsg = "Unknown value for default_datetime_parser"
+                            return
+                        }
+                    }
+
+                    if ("default_field" in indexParsed.params.mapping) {
+                        $scope.$parent.indexMapping.default_field = indexParsed.params.mapping.default_field
+                    }
+
+                    if ("store_dynamic" in indexParsed.params.mapping) {
+                        if (indexParsed.params.mapping.store_dynamic == true || indexParsed.params.mapping.store_dynamic == false) {
+                            $scope.$parent.indexMapping.store_dynamic = indexParsed.params.mapping.store_dynamic
+                        }
+                    }
+
+                    if ("index_dynamic" in indexParsed.params.mapping) {
+                        if (indexParsed.params.mapping.index_dynamic == true || indexParsed.params.mapping.index_dynamic == false) {
+                            $scope.$parent.indexMapping.index_dynamic = indexParsed.params.mapping.index_dynamic
+                        }
+                    }
+
+                    if ("docvalues_dynamic" in indexParsed.params.mapping) {
+                        if (indexParsed.params.mapping.docvalues_dynamic == true || indexParsed.params.mapping.docvalues_dynamic == false) {
+                            $scope.$parent.indexMapping.docvalues_dynamic = indexParsed.params.mapping.docvalues_dynamic
+                        }
+                    }
+                }
+                if ("doc_config" in indexParsed.params) {
+                    if ("mode" in indexParsed.params.doc_config) {
+                        if (indexParsed.params.doc_config.mode == "type_field" ||
+                            indexParsed.params.doc_config.mode == "docid_prefix" ||
+                            indexParsed.params.doc_config.mode == "docid_regexp") {
+                                $scope.$parent.docConfigMode = indexParsed.params.doc_config.mode
+                                $scope.$parent.typeIdentifierChanged()
+                            }
+                    } else {
+                        $scope.errorMsg = "mode is a required field in doc_config"
+                        return
+                    }
+
+                    switch (indexParsed.params.doc_config.mode) {
+                        case "type_field":
+                            if ("type_field" in indexParsed.params.doc_config) {
+                                $scope.$parent.ftsDocConfig.type_field = indexParsed.params.doc_config.type_field
+                            } else {
+                                $scope.errorMsg = "type_field is a required field in doc_config if mode is 'type_field'"
+                                return
+                            }
+                            break
+                        case "docid_prefix":
+                            if ("docid_prefix_delim" in indexParsed.params.doc_config) {
+                                $scope.$parent.ftsDocConfig.docid_prefix_delim = indexParsed.params.doc_config.docid_prefix_delim
+                            } else {
+                                $scope.errorMsg = "docid_prefix_delim is a required field in doc_config if mode is 'docid_prefix'"
+                                return
+                            }
+                            break
+                        case "docid_regexp":
+                            if ("docid_regexp" in indexParsed.params.doc_config) {
+                                $scope.$parent.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
+                            } else {
+                                $scope.errorMsg = "docid_regexp is a required field in doc_config if mode is 'docid_regexp'"
+                                return
+                            }
+                            break
+                    }
+                }
+            }
+
+            if ("sourceName" in indexParsed) {
+                if ($scope.$parent.bucketNames.includes(indexParsed.sourceName)) {
+                    $scope.$parent.newSourceName = indexParsed.sourceName
+                    $scope.updateBucketDetails(indexParsed.sourceName)
+                } else {
+                    $scope.errorMsg = "Unknown source name '" + indexParsed.sourceName + "'"
+                    return
+                }
+            }
+
+            if ("sourceParams" in indexParsed) {
+                $scope.$parent.newSourceParams = indexParsed.sourceParams
+            }
+
+            if ("planParams" in indexParsed) {
+                if ("numReplicas" in indexParsed.planParams) {
+                    if ($scope.$parent.ftsNodes.length > indexParsed.planParams.numReplicas && indexParsed.planParams.numReplicas <= 3 && indexParsed.planParams.numReplicas >= 0) {
+                        $scope.$parent.numReplicas = indexParsed.planParams.numReplicas
+                    } else {
+                        $scope.errorMsg = "Invalid number of replicas"
+                        return
+                    }
+                } else {
+                    $scope.$parent.numReplicas = 0
+                }
+                if ("indexPartitions" in indexParsed.planParams) {
+                    if (indexParsed.planParams.indexPartitions >= 1) {
+                        $scope.$parent.numPIndexes = indexParsed.planParams.indexPartitions
+                    } else {
+                        $scope.errorMsg = "indexPartitions must be a positive number"
+                        return
+                    }
+                } else {
+                    $scope.$parent.numPIndexes = 1
+                }
+            }
+        }
+
+        $scope.parseCharFilter = function(key, val) {
+
+            var err = $scope.validateCharFilter(key, val, $scope.$parent.indexMapping.analysis.char_filters)
+            if (err == "") {
+                $scope.$parent.indexMapping.analysis.char_filters[key] = val
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateCharFilter = function (name, newCharFilter, charFilters) {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            if (!name) {
+                return "Name is required"
+            }
+
+            if (name != "" && charFilters[name]) {
+                return "Character filter named '" + name + "' already exists"
+            }
+
+            let testFilters = {}
+            testFilters[name] = newCharFilter
+
+            let testMapping = {
+                "analysis": {
+                    "char_filters": testFilters
+                }
+            }
+
+            http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+            then(function() {}, function(response) {
+                $scope.errorMsg = response.data
+            })
+
+            return ""
+        }
+
+        $scope.parseTokenizers = function(tokenizers) {
+            var err = $scope.validateAllTokenizers(tokenizers, $scope.$parent.indexMapping.analysis.tokenizers)
+            if (err == "") {
+                for (var t in tokenizers) {
+                    $scope.$parent.indexMapping.analysis.tokenizers[t] = tokenizers[t]
+                }
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateAllTokenizers = function (newTokenizers, tokenizers) {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            for (const name in Object.keys(newTokenizers)) {
+                if (!name) {
+                    return "Tokenizer name is required"
+                }
+            }
+
+            for (var t in tokenizers) {
+                newTokenizers[t] = tokenizers[t]
+            }
+
+            let testMapping = {
+                "analysis": {
+                    "tokenizers": newTokenizers
+                }
+            }
+
+            http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+            then(function() {}, function(response) {
+                $scope.errorMsg = response.data
+            })
+
+            return ""
+        }
+
+        $scope.parseTokenMap = function(key, val) {
+
+            var err = $scope.validateTokenMap(key, val, $scope.$parent.indexMapping.analysis.token_maps)
+            if (err == "") {
+                $scope.$parent.indexMapping.analysis.token_maps[key] = val
+                $scope.tokenMapNames.push(key)
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateTokenMap = function (name, newTokenMap, tokenMaps) {
+
+            if (!name) {
+                return "Name is required"
+            }
+
+            if (name != "" && tokenMaps[name]) {
+                return "Word list named '" + name + "' already exists"
+            }
+
+            if (Object.keys(newTokenMap).length != 2) {
+                return "Word list named '" + name + "' must only have type and token fields"
+            }
+
+            if (!("type" in newTokenMap) || !("tokens" in newTokenMap)) {
+                return "Word list named '" + name + "' must have type and token fields"
+            }
+
+            if (newTokenMap.type != "custom") {
+                return "Word list named '" + name + "' must have type 'custom'"
+            }
+
+            return ""
+        }
+
+        $scope.parseTokenFilter = function (key, val) {
+
+            var err = $scope.validateTokenFilter(key, val, $scope.$parent.indexMapping.analysis.token_filters, $scope.$parent.indexMapping.analysis.token_maps)
+            if (err == "") {
+                $scope.$parent.indexMapping.analysis.token_filters[key] = val
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+
+        $scope.validateTokenFilter = function (name, newTokenFilter, tokenFilters, tokenMaps) {
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            if (!name) {
+                return "Name is required"
+            }
+
+            if (name != "" && tokenFilters[name]) {
+                return "Token filter named '" + name + "' already exists"
+            }
+
+            if (!("type" in newTokenFilter)) {
+                return "Token filter named '" + name + "' must have a type"
+            }
+
+            switch (newTokenFilter.type) {
+                case "dict_compound":
+                    if (!("dict_token_map" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'dict_token_map'"
+                    }
+                    if (!($scope.tokenMapNames.includes(newTokenFilter.dict_token_map))) {
+                        return "Token filter named '" + name + "' has unknown token sub words map"
+                    }
+                    break
+                case "edge_ngram":
+                    if (!("back" in newTokenFilter) || !("min" in newTokenFilter) || !("max" in newTokenFilter) || Object.keys(newTokenFilter).length != 4) {
+                        return "Token filter named '" + name + "' must have fields 'type', 'back', 'min' and 'max'"
+                    }
+
+                    if (newTokenFilter.min > newTokenFilter.max) {
+                        return "Token filter named '" + name + "' must have max >= min"
+                    }
+                    break
+                case "elision":
+                    if (!("articles_token_map" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'articles_token_map'"
+                    }
+
+                    if (!($scope.tokenMapNames.includes(newTokenFilter.articles_token_map))) {
+                        return "Token filter named '" + name + "' has unknown article map"
+                    }
+                    break
+                case "keyword_marker":
+                    if (!("keywords_token_map" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'keywords_token_map'"
+                    }
+
+                    if (!($scope.tokenMapNames.includes(newTokenFilter.keywords_token_map))) {
+                        return "Token filter named '" + name + "' has unknown keyword map"
+                    }
+                    break
+                case "length":
+                    if (!("min" in newTokenFilter) || !("max" in newTokenFilter) || Object.keys(newTokenFilter).length != 3) {
+                        return "Token filter named '" + name + "' must have fields 'type', 'min' and 'max'"
+                    }
+
+                    if (newTokenFilter.min > newTokenFilter.max) {
+                        return "Token filter named '" + name + "' must have max >= min"
+                    }
+                    break
+                case "ngram":
+                    if (!("min" in newTokenFilter) || !("max" in newTokenFilter) || Object.keys(newTokenFilter).length != 3) {
+                        return "Token filter named '" + name + "' must have fields 'type', 'min' and 'max'"
+                    }
+
+                    if (newTokenFilter.min > newTokenFilter.max) {
+                        return "Token filter named '" + name + "' must have max >= min"
+                    }
+                    break
+                case "normalize_unicode":
+                    if (!("form" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'form'"
+                    }
+
+                    if (!(newTokenFilter.form == "nfc" || newTokenFilter.form == "nfd" || newTokenFilter.form == "nfkc" || newTokenFilter.form == "nfkd")) {
+                        return "Token filter named '" + name + "' must have form value be nfc, nfd, nfkc or nfkd"
+                    }
+                    break
+                case "shingle":
+                    if (!("min" in newTokenFilter) || !("max" in newTokenFilter) || !("output_original" in newTokenFilter) || !("separator" in newTokenFilter) || !("filler" in newTokenFilter) || Object.keys(newTokenFilter).length != 6) {
+                        return "Token filter named '" + name + "' must have fields 'min', 'max', 'output_original', 'separator', 'filter' and 'type'"
+                    }
+
+                    if (newTokenFilter.min > newTokenFilter.max) {
+                        return "Token filter named '" + name + "' must have max >= min"
+                    }
+                    break
+                case "normalize_unicode":
+                    if (!("form" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'form'"
+                    }
+
+                    if (!(newTokenFilter.form == "nfc" || newTokenFilter.form == "nfd" || newTokenFilter.form == "nfkc" || newTokenFilter.form == "nfkd")) {
+                        return "Token filter named '" + name + "' must have form value be nfc, nfd, nfkc or nfkd"
+                    }
+                    break
+                case "stop_tokens":
+                    if (!("stop_token_map" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'keywords_token_map'"
+                    }
+
+                    if (!($scope.tokenMapNames.includes(newTokenFilter.stop_token_map))) {
+                        return "Token filter named '" + name + "' has unknown keyword map"
+                    }
+                    break
+                case "truncate_token":
+                    if (!("length" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
+                        return "Token filter named '" + name + "' must have fields 'type' and 'keywords_token_map'"
+                    }
+
+                    if (newTokenFilter.length <= 0) {
+                        return "Token filter named '" + name + "' must have positive length"
+                    }
+                    break
+                default:
+                    return "Token filter named '" + name + "' has unknown type"
+                    break
+            }
+
+            let tokenfilters = {};
+            tokenfilters[name] = $scope.tokenfilter;
+
+            let testMapping = {
+                "analysis": {
+                    "token_filters": tokenfilters,
+                    "token_maps": tokenMaps
+                }
+            };
+
+            http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+            then(function() {}, function(response) {
+                $scope.errorMsg = response.data
+            })
+
+            return ""
+        }
+
+        $scope.parseDateTimeParser = function(key, val) {
+            var err = $scope.validateDateTimeParser(key, val, $scope.$parent.indexMapping.analysis.date_time_parsers)
+            if (err == "") {
+                $scope.$parent.indexMapping.analysis.date_time_parsers[key] = val
+                $scope.dateTimeParserNames.push(key)
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateDateTimeParser = function(name, newDateTimeParser, dateTimeParsers) {
+            if (!name) {
+                return "Date time parser name is required"
+            }
+
+            if (name != "" && dateTimeParsers[name]) {
+                return "Date time parser named '" + name + "' already exists"
+            }
+
+            if (!("layouts" in newDateTimeParser)) {
+                return "Date time parser named '" + name + "' must have atleast one layout"
+            }
+
+            if (newDateTimeParser.layouts.length <= 0) {
+                return "Date time parser named '" + name + "' must have atleast one layout"
+            }
+
+            return ""
+        }
+
+        $scope.parseAnalyzer = function (key, val) {
+
+            var err = $scope.validateAnalyzer(key, val, $scope.$parent.indexMapping.analysis)
+            if (err == "") {
+                $scope.$parent.indexMapping.analysis.analyzers[key] = val
+                $scope.analyzerNames.push(key)
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateAnalyzer = function (name, newAnalyzer, analysis) {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            if (!name) {
+                return "Analyzer name is required"
+            }
+
+            if (name != "" && analysis.analyzers[name]) {
+                return "Analyzer named '" + name + "' already exists"
+            }
+
+            let testAnalysis = {}
+            for (var ak in analysis) {
+                testAnalysis[ak] = analysis[ak]
+            }
+
+            let testAnalyzers = {}
+            testAnalyzers[name] = newAnalyzer
+            testAnalysis["analyzers"] = testAnalyzers;
+
+            let testMapping = {
+                "analysis": testAnalysis
+            };
+
+            http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
+            then(function() {}, function(response) {
+                $scope.errorMsg = response.data
+            })
+
+            return ""
+        }
+
+        $scope.parseMapping = function(name, value, parentMapping) {
+
+            if (parentMapping == null) {
+                $scope.$parent.addChildMapping(null)
+                var mapping = $scope.$parent.mappings[0]
+            } else {
+                if ("fields" in value) {
+                    $scope.$parent.addChildField(parentMapping)
+                    var mapping = parentMapping.fields[0]
+                } else {
+                    $scope.$parent.addChildMapping(parentMapping)
+                    var mapping = parentMapping.mappings[0]
+                }
+            }
+
+            if ("fields" in value) {
+                for (let i = 0; i < value.fields.length; i++) {
+
+                    mapping.property = name
+                    $scope.$parent.changedProperty(mapping, parentMapping)
+                    if ("name" in value.fields[i]) {
+                        mapping.name = value.fields[i].name
+                        $scope.$parent.validateField(mapping, parentMapping)
+                    }
+
+                    if ("type" in value.fields[i]) {
+                        if ($scope.$parent.fieldTypes.includes(value.fields[0].type)) {
+                            mapping.type = value.fields[0].type
+                        } else {
+                            $scope.errorMsg = "Field named '" + name + "' has invalid value for field type"
+                            return
+                        }
+                    }
+
+                    if ("analyzer" in value.fields[i] && mapping.type == "text") {
+                        if ($scope.analyzerNames.includes(value.default_analyzer)) {
+                            mapping.analyzer = value.fields[0].analyzer
+                        } else {
+                            $scope.errorMsg = "Field named '" + name + "' has invalid value for field analyzer"
+                            return
+                        }
+                    }
+
+                    if ("date_format" in value.fields[i] && mapping.type == "datetime") {
+                        if ($scope.dateTimeParserNames.includes(value.default_analyzer)) {
+                            mapping.date_format = value.fields[i].date_format
+                        } else {
+                            $scope.errorMsg = "Field named '" + name + "' has invalid value for field date_format"
+                            return
+                        }
+                    }
+
+                    if ("store" in value.fields[i]) {
+                        mapping.store = value.fields[i].store
+                    }
+
+                    if ("index" in value.fields[i]) {
+                        mapping.index = value.fields[i].index
+                    }
+
+                    if ("include_term_vectors" in value.fields[i] && mapping.type == "text") {
+                        mapping.include_term_vectors = value.fields[i].include_term_vectors
+                    }
+
+                    if ("include_in_all" in value.fields[i]) {
+                        mapping.include_in_all = value.fields[i].include_in_all
+                    }
+
+
+                    if ("docvalues" in value.fields[i] && !(mapping.type == "geopoint" || mapping.type == "geoshape")) {
+                        mapping.docvalues = value.fields[i].docvalues
+                    }
+
+                    $scope.$parent.editAttrsDone(mapping, true)
+
+                    if (i + 1 < value.fields.length) {
+                        $scope.$parent.addChildField(parentMapping)
+                        mapping = parentMapping.fields[0]
+                    }
+                }
+            } else {
+                mapping.name = name
+
+                if ("default_analyzer" in value) {
+                    if ($scope.analyzerNames.includes(value.default_analyzer)) {
+                        mapping.default_analyzer = value.default_analyzer
+                    }
+                }
+
+                $scope.$parent.editAttrsDone(mapping, true)
+            }
+
+            if ("properties" in value && mapping._kind != "field") {
+                for (const [k, val] of Object.entries(value.properties)) {
+                    $scope.parseMapping(k, val, mapping)
+                }
+            }
+        }
+
+        $scope.loadTokenMapNames = function() {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            http.post('/api/_tokenMapNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            then(function(response) {
+                $scope.tokenMapNames = response.data.token_maps
+            }, function(response) {
+                $scope.errorMsg = response.data
+            })
+        }
+
+        $scope.loadAnalyzerNames = function() {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            http.post('/api/_analyzerNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            then(function(response) {
+                $scope.analyzerNames = response.data.analyzers
+            }, function(response) {
+                $scope.errorMsg = response.data
+            })
+        }
+
+        $scope.loadDatetimeParserNames = function() {
+
+            var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
+
+            http.post('/api/_datetimeParserNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            then(function(response) {
+                $scope.dateTimeParserNames = response.data.datetime_parsers
+            }, function(response) {
+                $scope.errorMsg = response.data
+            })
+        }
+
+        $scope.loadAnalyzerNames()
+        $scope.loadDatetimeParserNames()
+        $scope.loadTokenMapNames()
+    }
+
+    $scope.importIndexJSON = function() {
+
+        $scope.errorMsg = ""
+        var modalInstance = $uibModal.open({
+            template: indexImportTemplate,
+            animation: $scope.animationsEnabled,
+            scope: $scope,
+            controller: ImportIndexCtrl,
+            resolve: {
+                errorMsg: function() {
+                    return $scope.errorMsg
+                }
+            }
+        })
+
+        modalInstance.result.then(function(){})
     }
 }
 

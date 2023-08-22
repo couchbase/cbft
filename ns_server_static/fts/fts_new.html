@@ -76,7 +76,6 @@
 
         <label class="disclosure"
                ng-class="{disclosed: showCustomizeIndex}"
-               ng-init="showCustomizeIndex = isEdit"
                ng-click="showCustomizeIndex = !showCustomizeIndex">
           <span ng-if="newIndexType != 'fulltext-alias'">
             Customize Index
@@ -85,7 +84,7 @@
             Customize Alias
           </span>
         </label>
-        <div ng-show="showCustomizeIndex"
+        <div ng-if="showCustomizeIndex"
              style="display: inline-block; width: 100%; border: 1px solid #dae2ea; padding: 5px;">
           <div class="items-top formrow width-480">
             <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport">
@@ -343,11 +342,20 @@
       </div>
 
       <!-- definition preview sidebar ********************* -->
-      <div ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}"
+      <div
            style="margin-left: 2.5rem;
                   padding: 1rem .5rem;
                   width: 360px;
                   flex: 0 0 auto">
+        <div class="row"
+             style="float: right;"
+             ng-if="!isEdit">
+          <button ng-click="importIndexJSON()">
+            Import
+          </button>
+        </div>
+        <br>
+        <div ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}">
         <div class="row">
           <label>Index Definition Preview</label>
           <a href=""
@@ -366,6 +374,7 @@
                     padding-bottom: .5rem;">
           <pre id="index_def_preview">{{indexEditorPreview[newIndexType]}}</pre>
         </div>
+      </div>
       </div>
     </div>
   </form>

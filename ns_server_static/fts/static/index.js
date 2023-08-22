@@ -518,6 +518,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
 
     $scope.isEdit = $location.path().match(/_edit$/);
     $scope.isClone = $location.path().match(/_clone$/);
+    $scope.showCustomizeIndex = $scope.isEdit
 
     origIndexName = $routeParams.indexName;
 
@@ -666,7 +667,9 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 $scope.errorMessageFull = response.data;
             })
         }
-    });
+    })
+
+    $scope.sourceParamsCopy = $scope.newSourceParams
 
     $scope.prepareIndex = function(indexName, indexType, indexParams,
                                    sourceType, sourceName,
