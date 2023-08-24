@@ -409,12 +409,28 @@ func TestFanInPartitioningMutations(t *testing.T) {
 				t.Errorf("expected no error to rollback, err: %v", err)
 			}
 			runtime.Gosched()
-			mgr.Kick("after-rollback")
-			mgr.PlannerNOOP("after-rollback")
-			mgr.JanitorNOOP("after-rollback")
-			runtime.Gosched()
-			mgr.PlannerNOOP("after-rollback")
-			mgr.JanitorNOOP("after-rollback")
+
+			// wait till the feed is created after rollback
+			feedAllotment := mgr.GetOptions()[cbgt.FeedAllotmentOption]
+			pindex0_0_Feed := cbgt.FeedNameForPIndex(pindex0_0, feedAllotment)
+
+			// Adding a sleep since the feed is created async
+			// Should be a sufficienty large sleep to ensure the feed is created
+			time.Sleep(2 * time.Second)
+
+			foundFeed := false
+			for i := 0; i < 1000; i++ {
+				feeds, _ := mgr.CurrentMaps()
+
+				if _, exists := feeds[pindex0_0_Feed]; exists {
+					foundFeed = true
+					break
+				}
+			}
+			if !foundFeed {
+				t.Errorf("rollback taking too long")
+			}
+
 			feeds, pindexes := mgr.CurrentMaps()
 			if len(feeds) != 1 {
 				t.Errorf("expected to be 1 feed, got feeds: %+v", feeds)
@@ -443,29 +459,38 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			if pindex1 == nil {
 				t.Errorf("expected pindex1")
 			}
-			bindex0, ok = pindex0_0.Impl.(bleve.Index)
-			if !ok || bindex0 == nil {
-				t.Errorf("expected bleve.Index")
+			if destForwarder, ok := pindex0_0.Dest.(*cbgt.DestForwarder); ok {
+				if bp, ok := destForwarder.DestProvider.(*BleveDest); ok {
+					bindex0, ok := bp.bindex.(bleve.Index)
+					if !ok || bindex0 == nil {
+						t.Errorf("expected bleve.Index")
+					}
+					n, err := bindex0.DocCount()
+					if err != nil {
+						t.Errorf("error getting doc count: %v", err)
+					}
+					if n != 0 {
+						t.Errorf("expected 0 docs in bindex0 after rollback,"+
+							" got: %d", n)
+					}
+				}
 			}
-			bindex1, ok = pindex1.Impl.(bleve.Index)
-			if !ok || bindex1 == nil {
-				t.Errorf("expected bleve.Index")
-			}
-			n, err = bindex0.DocCount()
-			if err != nil {
-				t.Errorf("error getting doc count: %v", err)
-			}
-			if n != 0 {
-				t.Errorf("expected 0 docs in bindex0 after rollback,"+
-					" got: %d", n)
-			}
-			n, err = bindex1.DocCount()
-			if err != nil {
-				t.Errorf("error getting doc count: %v", err)
-			}
-			if n != 1 {
-				t.Errorf("expected 1 docs in bindex1 after rollback,"+
-					" got: %d", n)
+
+			if destForwarder, ok := pindex1.Dest.(*cbgt.DestForwarder); ok {
+				if bp, ok := destForwarder.DestProvider.(*BleveDest); ok {
+					bindex1, ok := bp.bindex.(bleve.Index)
+					if !ok || bindex1 == nil {
+						t.Errorf("expected bleve.Index")
+					}
+					n, err := bindex1.DocCount()
+					if err != nil {
+						t.Errorf("error getting doc count: %v", err)
+					}
+					if n != 1 {
+						t.Errorf("expected 1 docs in bindex1 after rollback,"+
+							" got: %d", n)
+					}
+				}
 			}
 		})
 }
