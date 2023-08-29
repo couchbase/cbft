@@ -49,28 +49,19 @@ func StartServerGroupTracker(mgr *cbgt.Manager) {
 }
 
 func (st *serverGroupTracker) listen() {
-	decodeJson := func(resp []byte) (interface{}, error) {
+	decodeAndNotifyResponse := func(resp []byte) error {
 		sg := &streamingPoolResponse{}
 		err := json.Unmarshal(resp, &sg)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return sg, err
-	}
-
-	notifyUpdates := func(res interface{}) error {
-		var ok bool
-		var notif *streamingPoolResponse
-		if notif, ok = res.(*streamingPoolResponse); !ok {
-			return fmt.Errorf("server_groups: invalid stream response %v", res)
-		}
-		st.notifCh <- notif
+		st.notifCh <- sg
 		return nil
 	}
 
 	st.handleServerGroupUpdates()
 
-	err := listenStreamingEndpoint("server_groups", st.url, decodeJson, notifyUpdates, nil)
+	err := ListenStreamingEndpoint("server_groups", st.url, decodeAndNotifyResponse, nil)
 	if err != nil {
 		log.Errorf("server_groups: listenStreamingEndpoint, err: %v", err)
 	}
@@ -302,9 +293,8 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 // listenStreamingEndpoint is a generic stream endpoint listen
 // utility function which accepts callback methods for decoding the
 // stream response, notify methods and a stop signalling channel.
-func listenStreamingEndpoint(msg, url string, decodeResponse func([]byte) (
-	interface{}, error), notify func(interface{}) error,
-	stopCh chan struct{}) error {
+func ListenStreamingEndpoint(msg, url string,
+	decodeAndNotifyResponse func([]byte) error, stopCh chan struct{}) error {
 
 	backoffStartSleepMS := 500
 	backoffFactor := float32(1.5)
@@ -313,6 +303,7 @@ func listenStreamingEndpoint(msg, url string, decodeResponse func([]byte) (
 RECONNECT:
 	for {
 
+		stopCh2 := make(chan struct{})
 		var resp *http.Response
 
 		// keep retrying with backoff logic upon connection errors.
@@ -346,7 +337,7 @@ RECONNECT:
 			},
 			backoffStartSleepMS, backoffFactor, backoffMaxSleepMS,
 		)
-
+		terminator(stopCh, stopCh2, resp.Body)
 		reader := bufio.NewReader(resp.Body)
 
 		for {
@@ -354,6 +345,7 @@ RECONNECT:
 				select {
 				case <-stopCh:
 					resp.Body.Close()
+					log.Warnf(msg + ": terminating pool streaming")
 					return nil
 				default:
 				}
@@ -363,6 +355,7 @@ RECONNECT:
 			if err != nil {
 				log.Warnf(msg+": reconnecting upon reader, bytes read: %d, err: %v",
 					len(resBytes), err)
+				close(stopCh2)
 				resp.Body.Close()
 				continue RECONNECT
 			}
@@ -370,17 +363,29 @@ RECONNECT:
 				continue
 			}
 
-			res, err := decodeResponse(resBytes)
-			if err != nil {
-				log.Warnf(msg+": decodeResponse, err: %v", err)
-				continue
-			}
-
-			err = notify(res)
+			err = decodeAndNotifyResponse(resBytes)
 			if err != nil {
 				log.Warnf(msg+": notify, err: %v", err)
 				continue
 			}
 		}
 	}
+}
+
+// terminator is a routine that would listen to stop channel parallely to the
+// streaming endpoint listener. essentially, this aids in immediate cleanup of the
+// routine, especially when the streaming endpoint doesn't send anything (no change
+// was detected in that endpoint).
+func terminator(stopCh, stopCh2 chan struct{}, respBody io.ReadCloser) {
+	go func(stopCh, stopCh2 chan struct{}, respBody io.ReadCloser) {
+		if stopCh != nil {
+			select {
+			case <-stopCh:
+				respBody.Close()
+				return
+			case <-stopCh2:
+				return
+			}
+		}
+	}(stopCh, stopCh2, respBody)
 }
