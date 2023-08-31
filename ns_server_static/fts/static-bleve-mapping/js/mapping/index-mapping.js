@@ -70,17 +70,19 @@ function initBleveIndexMappingController(
     }
 
     $scope.dateTimeParserNames = options.dateTimeParserNames || [];
+    $scope.dateTimeLayoutStyles = options.dateTimeLayoutStyles || [];
     $scope.loadDatetimeParserNames = function() {
         $http.post('/api/_datetimeParserNames', $scope.indexMappingResult()).
         then(function(response) {
             var data = response.data;
             $scope.dateTimeParserNames = data.datetime_parsers;
+            $scope.dateTimeLayoutStyles = data.datetime_layout_formats;
         }, function(response) {
             var data = response.data;
             $scope.errorMessage = data;
         });
     };
-    if (options.dateTimeParserNames == null) {
+    if (options.dateTimeParserNames == null || options.dateTimeLayoutStyles == null) {
         $scope.loadDatetimeParserNames();
     }
 

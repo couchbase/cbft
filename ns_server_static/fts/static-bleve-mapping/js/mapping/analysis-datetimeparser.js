@@ -9,12 +9,13 @@ export default BleveDatetimeParserModalCtrl;
 BleveDatetimeParserModalCtrl.$inject = ["$scope", "$modalInstance",
                                         "name", "layouts", "mapping", "static_prefix"];
 function BleveDatetimeParserModalCtrl($scope, $modalInstance,
-                                      name, layouts, mapping, static_prefix) {
+                                      name, value, mapping, static_prefix) {
     $scope.name = name;
     $scope.origName = name;
     $scope.errorMessage = "";
     $scope.formdata = {};
-    $scope.layouts = layouts.slice(0); // create copy
+    $scope.layouts = value.layouts.slice(0); // create copy
+    $scope.dateTimeLayoutStyle = value.type
     $scope.selectedLayouts = [];
     $scope.mapping = mapping;
     $scope.static_prefix = static_prefix;
@@ -46,6 +47,10 @@ function BleveDatetimeParserModalCtrl($scope, $modalInstance,
         $scope.selectedLayouts = [];
     };
 
+    $scope.updateLayoutStyle = function(i) {
+        $scope.dateTimeLayoutStyle = i;
+    };
+
     $scope.build = function(name) {
         if (!name) {
             $scope.errorMessage = "Name is required";
@@ -61,7 +66,7 @@ function BleveDatetimeParserModalCtrl($scope, $modalInstance,
 
         let result = {};
         result[name] = {
-            "type": "flexiblego",
+            "type":    $scope.dateTimeLayoutStyle,
             "layouts": $scope.layouts
         };
 

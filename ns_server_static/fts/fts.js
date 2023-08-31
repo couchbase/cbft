@@ -1981,7 +1981,7 @@ angular.module(ftsAppName).
                 "name", "words", "mapping", "static_prefix", BleveWordListModalCtrl_NS]).
     controller('BleveDatetimeParserModalCtrl',
                ["$scope", "$uibModalInstance",
-                "name", "layouts", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]);
+                "name", "value", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]);
 
 // ----------------------------------------------
 
@@ -2020,9 +2020,9 @@ function BleveWordListModalCtrl_NS($scope, $uibModalInstance,
 }
 
 function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
-                                         name, layouts, mapping, static_prefix) {
+                                         name, value, mapping, static_prefix) {
     return BleveDatetimeParserModalCtrl($scope, $uibModalInstance,
-                                        name, layouts, mapping, static_prefix);
+                                        name, value, mapping, static_prefix);
 }
 
 // ----------------------------------------------

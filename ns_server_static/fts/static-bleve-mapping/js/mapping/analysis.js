@@ -518,7 +518,7 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
 
     $scope.newDatetimeParser = function() {
         return $scope.editDatetimeParser("", {
-            "type": "flexiblego",
+            "type": "sanitizedgo",
             "layouts": []
         });
     };
@@ -623,8 +623,8 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
             name: function() {
                 return name;
             },
-            layouts: function() {
-                return value.layouts;
+            value: function() {
+                return value;
             },
             mapping: function() {
                 return $scope.indexMapping;

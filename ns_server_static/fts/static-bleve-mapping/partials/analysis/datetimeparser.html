@@ -32,6 +32,17 @@ licenses/APL2.txt.
         </div>
 
         <div class="formrow">
+          <label>Layout Style</label>
+          <mn-select
+            ng-disabled="viewOnlyModal"
+            ng-model="dateTimeLayoutStyle"
+            values="dateTimeLayoutStyles"
+            on-select="updateLayoutStyle(selectedOption)"
+            id="layoutStyle">
+          </mn-select>
+        </div>
+
+        <div class="formrow">
           <label for="layouts">Layouts</label>
           <select ng-disabled="viewOnlyModal"
                   ng-model="selectedLayouts" multiple ng-multiple="true"
@@ -50,7 +61,7 @@ licenses/APL2.txt.
                     type="button"
                     class="outline">Remove</button>
             <button ng-click="addLayout()"
-                    ng-disabled="formdata.newLayout.length < 1"
+                    ng-disabled="formdata.newLayout.length < 1 || viewOnlyModal"
                     type="submit"
                     class="outline">+ Add</button>
           </span>
