@@ -34,10 +34,12 @@
         <input
             id="query_bar_input"
             ng-model="query"
+            ng-disabled="queryEditMode"
             ng-change="queryChanged()"
             type="text"
             placeholder="search again...">
         <button class="icon"
+                ng-disabled="queryEditMode"
                 ng-click="runNewQuery(query)">
           <span class="icon fa-search"
                 uib-tooltip="Search index"
@@ -49,6 +51,7 @@
       <div>
         <input
             ng-model="query_advanced_toggle"
+            ng-disabled="queryEditMode"
             ng-change="queryChanged()"
             type="checkbox"
             id="for-search-advanced-fts">
@@ -72,18 +75,21 @@
       <input
           type="number" min=0
           oninput="validity.valid||(value='');"
+          ng-disabled="queryEditMode"
           ng-model="timeout" id="timeout"
                              ng-change="queryChanged()">
     </div>
     <div class="formrow form-inline">
       <label class="checkbox">Consistency Level</label>
       <input ng-model="consistencyLevel" id="consistencyLevel"
+                                         ng-disabled="queryEditMode"
                                          ng-change="queryChanged()"
                                          type="text">
     </div>
     <div class="formrow form-inline margin-bottom2">
       <label class="checkbox">Consistency Vectors</label>
       <input ng-model="consistencyVectors" id="consistencyVectors"
+                                           ng-disabled="queryEditMode"
                                            ng-change="queryChanged()"
                                            type="text">
     </div>
@@ -91,6 +97,7 @@
     <span class="curl_example_toggle">
       <input ng-model="curl_example_toggle"
              ng-change="queryChanged()"
+             ng-disabled="queryEditMode"
              type="checkbox"
              id="for-search-curl-fts">
       <label for="for-search-curl-fts">
@@ -98,10 +105,39 @@
       </label>
     </span>
     <div ng-show="!curl_example_toggle" class="json-content row items-top margin-bottom1">
-      <pre id="jsonQueryContent">{{jsonQuery}}</pre>
-      <button class="outline copy-to-clipboard" ngclipboard data-clipboard-target="#jsonQueryContent">
-        Copy to Clipboard
-      </button>
+      <!-- Ace editor -------------------------------------------------------------->
+      <div class="wb-ace-editor CodeMirror width-9" ng-if="queryEditMode"
+        ui-ace="{
+                  onLoad: aceLoaded,
+                  useWrapMode: true,
+                  showGutter: true,
+                  mode: 'json',
+                  require: ['ace/ext/language_tools'],
+                  advanced: {
+                              enableSnippets: true,
+                              autoScrollEditorIntoView: true,
+                              tabSize: 2,
+                              useSoftTabs: true
+                            }
+                }">
+      </div>
+      <pre id="jsonQueryContent" ng-if="!queryEditMode">{{jsonQuery}}</pre>
+      <div class="row flex-column">
+        <!-- Toggle Buttons ---------------------------------------------------------->
+        <button ng-if="!queryEditMode" class="outline" style="width:175px;" ng-click="editQuery()">
+          Edit
+        </button>
+        <button ng-if="queryEditMode" ng-disabled="editorError" style="width:175px;" ng-click="executeQuery()">
+          Execute
+        </button>
+        <button ng-if="!queryEditMode"  class="outline copy-to-clipboard margin-top-1 margin-left-0" style="width:175px;" ngclipboard data-clipboard-target="#jsonQueryContent">
+          Copy to Clipboard
+        </button>
+        <button ng-if="queryEditMode" class="outline margin-top-1 margin-left-0" style="width:175px;" ng-click="cancelQuery()" >
+          Cancel
+        </button>
+        <div class="alert alert-warning margin-top-1" ng-if="editorError">{{editorError}}</div>
+      </div>
     </div>
     <div ng-show="curl_example_toggle" class="json-content row items-top margin-bottom1">
       <pre id="jsonQueryCurlContent">
