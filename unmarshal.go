@@ -106,7 +106,7 @@ func decodeBleveQueryTime(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		return
 	}
 	t := query.BleveQueryTime{}
-	t.Time, err = dateTimeParser.ParseDateTime(timeString)
+	t.Time, _, err = dateTimeParser.ParseDateTime(timeString)
 	if err != nil {
 		iter.Error = err
 		return

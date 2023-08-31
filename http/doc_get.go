@@ -11,7 +11,6 @@ package http
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/blevesearch/bleve/v2/document"
 	index "github.com/blevesearch/bleve_index_api"
@@ -83,9 +82,13 @@ func (h *DocGetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				newval = n
 			}
 		case *document.DateTimeField:
-			d, err := field.DateTime()
+			d, layout, err := field.DateTime()
 			if err == nil {
-				newval = d.Format(time.RFC3339Nano)
+				if layout == "" {
+					newval = d.UnixNano()
+				} else {
+					newval = d.Format(layout)
+				}
 			}
 		}
 		existing, existed := rv.Fields[field.Name()]
