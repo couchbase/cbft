@@ -51,12 +51,14 @@ import ftsSearchTemplate from "./fts_search.html";
 import ftsDetailsTemplate from "./fts_details.html";
 import indexImportTemplate from "./import_index.html";
 
+import uiAce from "ui-ace";
+
 export default ftsAppName;
 
 angular
     .module(ftsAppName,
             [uiRouter, ngClipboard, mnPermissions, uiTree, ngSortable, mnStatisticsNewService,
-                uiCodemirror, mnDocumentsService, mnSelect])
+                uiCodemirror, mnDocumentsService, mnSelect, uiAce])
     .config(["$stateProvider", function($stateProvider) {
       addFtsStates("app.admin.search");
 

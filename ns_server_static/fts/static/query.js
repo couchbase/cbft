@@ -57,6 +57,8 @@ QueryCtrl.$inject = ["$scope", "$http", "$routeParams", "$log", "$sce", "$locati
 function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogService) {
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
+    $scope.editorError = null
+
     $scope.query = null;
     $scope.queryHelp = null;
     $scope.queryHelpSafe = null;
@@ -71,6 +73,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
     $scope.jsonQuery = "";
+    $scope.queryEditMode = false;
+    $scope.editor = null;
 
     $scope.hostPort = $location.host();
     if ($location.port()) {
@@ -218,13 +222,13 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
         }
     };
 
-  $scope.manualEscapeHtmlExceptHighlighting = function(orig) {
-    // escape HTML tags
-    let updated = orig.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
-    // find escaped <mark> and </mark> and put them back
-    updated = updated.replace(/&lt;mark&gt;/g, "<mark>").replace(/&lt;\/mark&gt;/g, "</mark>")
-    return updated
-  }
+    $scope.manualEscapeHtmlExceptHighlighting = function(orig) {
+        // escape HTML tags
+        let updated = orig.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+        // find escaped <mark> and </mark> and put them back
+        updated = updated.replace(/&lt;mark&gt;/g, "<mark>").replace(/&lt;\/mark&gt;/g, "</mark>")
+        return updated
+    }
 
     $scope.setupPager = function(results) {
         if (!results.total_hits) {
@@ -402,6 +406,46 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
         return obtainBucketScopeUndecoratedIndexName(name)[2];
     };
 
+    $scope.aceLoaded = function(editor) {
+        editor.renderer.setPrintMarginColumn(false);
+        editor.setSelectionStyle("text");
+        editor.getSession().on("changeAnnotation", function() {
+            var annot_list = editor.getSession().getAnnotations();
+            if (annot_list && annot_list.length) for (var i=0; i < annot_list.length; i++)
+              if (annot_list[i].type == "error") {
+                $scope.editorError = "Error on row: " + annot_list[i].row + ": " + annot_list[i].text;
+                return;
+              }
+            if (editor) {
+                $scope.editorError = null;
+            }
+          });
+        if (/^((?!chrome).)*safari/i.test(navigator.userAgent))
+          editor.renderer.scrollBarV.width = 20; // fix for missing scrollbars in Safari
+        editor.setValue($scope.jsonQuery, -1) // moves cursor to the start
+        $scope.editor = editor;
+    }
+
+    $scope.editQuery = function(){
+        $scope.queryEditMode = true;
+    }
+
+    $scope.executeQuery = function(){
+        var editorValue = $scope.editor.getValue();
+        let qr = JSON.parse(editorValue || "{}");
+        $scope.query = editorValue;
+        $scope.timeout = qr.ctl && qr.ctl.timeout ? qr.ctl.timeout : 0;
+        $scope.consistencyLevel = qr.ctl && qr.ctl.consistency && qr.ctl.consistency.level ? qr.ctl.consistency.level : "";
+        $scope.consistencyVectors = qr.ctl && qr.ctl.consistency && qr.ctl.consistency.vectors ? JSON.stringify(qr.ctl.consistency.vectors) : "{}";
+        var j = JSON.stringify(PrepQueryRequest($scope), null, 2);
+        $scope.jsonQuery = j;
+        $scope.runNewQuery($scope.query);
+        $scope.queryEditMode = false;
+    }
+
+    $scope.cancelQuery = function(){
+        $scope.queryEditMode = false;
+    }
 }
 
 function queryMonitor($scope, $uibModal, $http){
