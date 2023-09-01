@@ -342,8 +342,7 @@
       </div>
 
       <!-- definition preview sidebar ********************* -->
-      <div
-           style="margin-left: 2.5rem;
+      <div style="margin-left: 2.5rem;
                   padding: 1rem .5rem;
                   width: 360px;
                   flex: 0 0 auto">
@@ -354,7 +353,10 @@
             Import
           </button>
         </div>
-        <br>
+        <div ng-if="!isEdit">
+          <br>
+          <br>
+        </div>
         <div ng-style="{'visibility': indexEditorPreview[newIndexType] ? 'visible' : 'hidden'}">
         <div class="row">
           <label>Index Definition Preview</label>
