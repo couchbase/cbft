@@ -941,7 +941,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
     }
 
-    var ImportIndexCtrl = function($scope, $uibModalInstance) {
+    function ImportIndexCtrl($uibModalInstance) {
 
         $scope.cancel = function() {
             $uibModalInstance.close({})
@@ -949,22 +949,22 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.add = function(indexJSON) {
             if (isJSON(indexJSON)) {
-                if ($scope.$parent.newIndexType == "fulltext-index") {
+                if ($scope.newIndexType == "fulltext-index") {
                     $scope.resetIndexDef()
                     $scope.errorMsg = ""
                     $scope.parseIndexJSON(indexJSON)
                     if ($scope.errorMsg == "") {
-                        $scope.$parent.showCustomizeIndex = true
+                        $scope.showCustomizeIndex = true
                         $scope.cancel()
                     } else {
                         $scope.resetIndexDef()
                     }
-                } else if ($scope.$parent.newIndexType == "fulltext-alias") {
+                } else if ($scope.newIndexType == "fulltext-alias") {
                     $scope.resetAliasDef()
                     $scope.errorMsg = ""
                     $scope.parseAliasJSON(indexJSON)
                     if ($scope.errorMsg == "") {
-                        $scope.$parent.showCustomizeIndex = true
+                        $scope.showCustomizeIndex = true
                         $scope.cancel()
                     } else {
                         $scope.resetAliasDef()
@@ -988,9 +988,9 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.resetAliasDef = function() {
 
-            $scope.$parent.newIndexName = ""
+            $scope.newIndexName = ""
 
-            $scope.$selectedTargetIndexes = []
+            $scope.selectedTargetIndexes = []
         }
 
         $scope.parseAliasJSON = function(aliasJSON) {
@@ -998,7 +998,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             var indexParsed = JSON.parse(aliasJSON)
 
             if ("name" in indexParsed) {
-                $scope.$parent.newIndexName = indexParsed.name.split(".").pop()
+                $scope.newIndexName = indexParsed.name.split(".").pop()
             }
 
             if ("params" in indexParsed) {
@@ -1015,69 +1015,69 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.parseTarget = function(key) {
-            if ($scope.$parent.aliasTargets.includes(key)) {
+            if ($scope.aliasTargets.includes(key)) {
                 $scope.selectedTargetIndexes.push(key)
             } else {
                 $scope.errorMsg = ""
             }
-        }
+        };
 
         $scope.resetIndexDef = function() {
 
-            $scope.$parent.newIndexName = ""
+            $scope.newIndexName = ""
 
-            $scope.$parent.indexMapping.analysis.char_filters = {}
-            $scope.$parent.indexMapping.analysis.tokenizers = {}
-            $scope.$parent.indexMapping.analysis.token_maps = {}
-            $scope.$parent.indexMapping.analysis.token_filters = {}
-            $scope.$parent.indexMapping.analysis.date_time_parsers = {}
-            $scope.$parent.indexMapping.analysis.analyzers = {}
-            $scope.$parent.indexMapping.default_analyzer = "standard"
-            $scope.$parent.indexMapping.default_datetime_parser = "dateTimeOptional"
-            $scope.$parent.indexMapping.default_field = "_all"
-            $scope.$parent.indexMapping.default_mapping = {
+            $scope.indexMapping.analysis.char_filters = {}
+            $scope.indexMapping.analysis.tokenizers = {}
+            $scope.indexMapping.analysis.token_maps = {}
+            $scope.indexMapping.analysis.token_filters = {}
+            $scope.indexMapping.analysis.date_time_parsers = {}
+            $scope.indexMapping.analysis.analyzers = {}
+            $scope.indexMapping.default_analyzer = "standard"
+            $scope.indexMapping.default_datetime_parser = "dateTimeOptional"
+            $scope.indexMapping.default_field = "_all"
+            $scope.indexMapping.default_mapping = {
                 "enabled": true,
                 "dynamic": true
             }
-            $scope.$parent.indexMapping.default_type = "_default"
-            $scope.$parent.indexMapping.docvalues_dynamic = false
-            $scope.$parent.indexMapping.index_dynamic = true
-            $scope.$parent.indexMapping.store_dynamic = false
+            $scope.indexMapping.default_type = "_default"
+            $scope.indexMapping.docvalues_dynamic = false
+            $scope.indexMapping.index_dynamic = true
+            $scope.indexMapping.store_dynamic = false
 
 
-            while ($scope.$parent.mappings.length > 1) {
-                $scope.$parent.mappings.shift()
+            while ($scope.mappings.length > 1) {
+                $scope.mappings.shift()
             }
 
-            $scope.$parent.mappings[0].dynamic = true
-            $scope.$parent.mappings[0].enabled = true
-            $scope.$parent.mappings[0].fields = []
+            $scope.mappings[0].dynamic = true
+            $scope.mappings[0].enabled = true
+            $scope.mappings[0].fields = []
 
-            while ($scope.$parent.mappings[0].mappings.length > 0) {
-                $scope.$parent.mappings[0].mappings.pop()
+            while ($scope.mappings[0].mappings.length > 0) {
+                $scope.mappings[0].mappings.pop()
             }
 
-            delete $scope.$parent.mappings[0].date_format
-            delete $scope.$parent.mappings[0].default_analyzer
+            delete $scope.mappings[0].date_format
+            delete $scope.mappings[0].default_analyzer
 
-            $scope.$parent.docConfigMode = "type_field"
-            $scope.$parent.ftsDocConfig = {
+            $scope.docConfigMode = "type_field"
+            $scope.ftsDocConfig = {
                 docid_prefix_delim: "",
                 docid_regexp: "",
                 mode: "type_field",
                 type_field: "type"
             }
 
-            $scope.$parent.newSourceParams = $scope.$parent.sourceParamsCopy
-            $scope.$parent.numReplicas = 0
-            $scope.$parent.numPIndexes = 1
+            $scope.newSourceParams = $scope.sourceParamsCopy
+            $scope.numReplicas = 0
+            $scope.numPIndexes = 1
         }
 
         $scope.parseIndexJSON = function(indexJSON) {
 
             var indexParsed = JSON.parse(indexJSON)
             if ("name" in indexParsed) {
-                $scope.$parent.newIndexName = indexParsed.name.split(".").pop()
+                $scope.newIndexName = indexParsed.name.split(".").pop()
             }
 
             if ("params" in indexParsed) {
@@ -1145,7 +1145,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                     if ("default_mapping" in indexParsed.params.mapping) {
 
-                        var mapping = $scope.$parent.mappings[0]
+                        var mapping = $scope.mappings[0]
 
                         if ("enabled" in indexParsed.params.mapping.default_mapping) {
                             if (indexParsed.params.mapping.default_mapping.enabled == true || indexParsed.params.mapping.default_mapping.enabled == false) {
@@ -1186,12 +1186,12 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("default_type" in indexParsed.params.mapping) {
-                        $scope.$parent.indexMapping.default_type = indexParsed.params.mapping.default_type
+                        $scope.indexMapping.default_type = indexParsed.params.mapping.default_type
                     }
 
                     if ("default_analyzer" in indexParsed.params.mapping) {
                         if ($scope.analyzerNames.includes(indexParsed.params.mapping.default_analyzer)) {
-                            $scope.$parent.indexMapping.default_analyzer = indexParsed.params.mapping.default_analyzer
+                            $scope.indexMapping.default_analyzer = indexParsed.params.mapping.default_analyzer
                         } else {
                             $scope.errorMsg = "Unknown value for default_analyzer"
                             return
@@ -1200,7 +1200,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                     if ("default_datetime_parser" in indexParsed.params.mapping) {
                         if ($scope.dateTimeParserNames.includes(indexParsed.params.mapping.default_datetime_parser)) {
-                            $scope.$parent.indexMapping.default_datetime_parser = indexParsed.params.mapping.default_datetime_parser
+                            $scope.indexMapping.default_datetime_parser = indexParsed.params.mapping.default_datetime_parser
                         } else {
                             $scope.errorMsg = "Unknown value for default_datetime_parser"
                             return
@@ -1208,24 +1208,24 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("default_field" in indexParsed.params.mapping) {
-                        $scope.$parent.indexMapping.default_field = indexParsed.params.mapping.default_field
+                        $scope.indexMapping.default_field = indexParsed.params.mapping.default_field
                     }
 
                     if ("store_dynamic" in indexParsed.params.mapping) {
                         if (indexParsed.params.mapping.store_dynamic == true || indexParsed.params.mapping.store_dynamic == false) {
-                            $scope.$parent.indexMapping.store_dynamic = indexParsed.params.mapping.store_dynamic
+                            $scope.indexMapping.store_dynamic = indexParsed.params.mapping.store_dynamic
                         }
                     }
 
                     if ("index_dynamic" in indexParsed.params.mapping) {
                         if (indexParsed.params.mapping.index_dynamic == true || indexParsed.params.mapping.index_dynamic == false) {
-                            $scope.$parent.indexMapping.index_dynamic = indexParsed.params.mapping.index_dynamic
+                            $scope.indexMapping.index_dynamic = indexParsed.params.mapping.index_dynamic
                         }
                     }
 
                     if ("docvalues_dynamic" in indexParsed.params.mapping) {
                         if (indexParsed.params.mapping.docvalues_dynamic == true || indexParsed.params.mapping.docvalues_dynamic == false) {
-                            $scope.$parent.indexMapping.docvalues_dynamic = indexParsed.params.mapping.docvalues_dynamic
+                            $scope.indexMapping.docvalues_dynamic = indexParsed.params.mapping.docvalues_dynamic
                         }
                     }
                 }
@@ -1234,8 +1234,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         if (indexParsed.params.doc_config.mode == "type_field" ||
                             indexParsed.params.doc_config.mode == "docid_prefix" ||
                             indexParsed.params.doc_config.mode == "docid_regexp") {
-                                $scope.$parent.docConfigMode = indexParsed.params.doc_config.mode
-                                $scope.$parent.typeIdentifierChanged()
+                                $scope.docConfigMode = indexParsed.params.doc_config.mode;
+                                $scope.typeIdentifierChanged()
                             }
                     } else {
                         $scope.errorMsg = "mode is a required field in doc_config"
@@ -1245,7 +1245,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     switch (indexParsed.params.doc_config.mode) {
                         case "type_field":
                             if ("type_field" in indexParsed.params.doc_config) {
-                                $scope.$parent.ftsDocConfig.type_field = indexParsed.params.doc_config.type_field
+                                $scope.ftsDocConfig.type_field = indexParsed.params.doc_config.type_field
                             } else {
                                 $scope.errorMsg = "type_field is a required field in doc_config if mode is 'type_field'"
                                 return
@@ -1253,7 +1253,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                             break
                         case "docid_prefix":
                             if ("docid_prefix_delim" in indexParsed.params.doc_config) {
-                                $scope.$parent.ftsDocConfig.docid_prefix_delim = indexParsed.params.doc_config.docid_prefix_delim
+                                $scope.ftsDocConfig.docid_prefix_delim = indexParsed.params.doc_config.docid_prefix_delim
                             } else {
                                 $scope.errorMsg = "docid_prefix_delim is a required field in doc_config if mode is 'docid_prefix'"
                                 return
@@ -1261,7 +1261,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                             break
                         case "docid_regexp":
                             if ("docid_regexp" in indexParsed.params.doc_config) {
-                                $scope.$parent.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
+                                $scope.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
                             } else {
                                 $scope.errorMsg = "docid_regexp is a required field in doc_config if mode is 'docid_regexp'"
                                 return
@@ -1272,8 +1272,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             }
 
             if ("sourceName" in indexParsed) {
-                if ($scope.$parent.bucketNames.includes(indexParsed.sourceName)) {
-                    $scope.$parent.newSourceName = indexParsed.sourceName
+                if ($scope.bucketNames.includes(indexParsed.sourceName)) {
+                    $scope.newSourceName = indexParsed.sourceName
                     $scope.updateBucketDetails(indexParsed.sourceName)
                 } else {
                     $scope.errorMsg = "Unknown source name '" + indexParsed.sourceName + "'"
@@ -1282,38 +1282,38 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             }
 
             if ("sourceParams" in indexParsed) {
-                $scope.$parent.newSourceParams = indexParsed.sourceParams
+                $scope.newSourceParams = indexParsed.sourceParams;
             }
 
             if ("planParams" in indexParsed) {
                 if ("numReplicas" in indexParsed.planParams) {
-                    if ($scope.$parent.ftsNodes.length > indexParsed.planParams.numReplicas && indexParsed.planParams.numReplicas <= 3 && indexParsed.planParams.numReplicas >= 0) {
-                        $scope.$parent.numReplicas = indexParsed.planParams.numReplicas
+                    if ($scope.ftsNodes.length > indexParsed.planParams.numReplicas && indexParsed.planParams.numReplicas <= 3 && indexParsed.planParams.numReplicas >= 0) {
+                        $scope.numReplicas = indexParsed.planParams.numReplicas
                     } else {
                         $scope.errorMsg = "Invalid number of replicas"
                         return
                     }
                 } else {
-                    $scope.$parent.numReplicas = 0
+                    $scope.numReplicas = 0
                 }
                 if ("indexPartitions" in indexParsed.planParams) {
                     if (indexParsed.planParams.indexPartitions >= 1) {
-                        $scope.$parent.numPIndexes = indexParsed.planParams.indexPartitions
+                        $scope.numPIndexes = indexParsed.planParams.indexPartitions
                     } else {
                         $scope.errorMsg = "indexPartitions must be a positive number"
                         return
                     }
                 } else {
-                    $scope.$parent.numPIndexes = 1
+                    $scope.numPIndexes = 1
                 }
             }
         }
 
         $scope.parseCharFilter = function(key, val) {
 
-            var err = $scope.validateCharFilter(key, val, $scope.$parent.indexMapping.analysis.char_filters)
+            var err = $scope.validateCharFilter(key, val, $scope.indexMapping.analysis.char_filters)
             if (err == "") {
-                $scope.$parent.indexMapping.analysis.char_filters[key] = val
+                $scope.indexMapping.analysis.char_filters[key] = val
             } else {
                 $scope.errorMsg = err
             }
@@ -1349,10 +1349,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.parseTokenizers = function(tokenizers) {
-            var err = $scope.validateAllTokenizers(tokenizers, $scope.$parent.indexMapping.analysis.tokenizers)
+            var err = $scope.validateAllTokenizers(tokenizers, $scope.indexMapping.analysis.tokenizers)
             if (err == "") {
                 for (var t in tokenizers) {
-                    $scope.$parent.indexMapping.analysis.tokenizers[t] = tokenizers[t]
+                    $scope.indexMapping.analysis.tokenizers[t] = tokenizers[t]
                 }
             } else {
                 $scope.errorMsg = err
@@ -1389,9 +1389,9 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.parseTokenMap = function(key, val) {
 
-            var err = $scope.validateTokenMap(key, val, $scope.$parent.indexMapping.analysis.token_maps)
+            var err = $scope.validateTokenMap(key, val, $scope.indexMapping.analysis.token_maps)
             if (err == "") {
-                $scope.$parent.indexMapping.analysis.token_maps[key] = val
+                $scope.indexMapping.analysis.token_maps[key] = val
                 $scope.tokenMapNames.push(key)
             } else {
                 $scope.errorMsg = err
@@ -1425,9 +1425,9 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.parseTokenFilter = function (key, val) {
 
-            var err = $scope.validateTokenFilter(key, val, $scope.$parent.indexMapping.analysis.token_filters, $scope.$parent.indexMapping.analysis.token_maps)
+            var err = $scope.validateTokenFilter(key, val, $scope.indexMapping.analysis.token_filters, $scope.indexMapping.analysis.token_maps)
             if (err == "") {
-                $scope.$parent.indexMapping.analysis.token_filters[key] = val
+                $scope.indexMapping.analysis.token_filters[key] = val
             } else {
                 $scope.errorMsg = err
             }
@@ -1550,18 +1550,17 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     break
                 default:
                     return "Token filter named '" + name + "' has unknown type"
-                    break
             }
 
-            let tokenfilters = {};
-            tokenfilters[name] = $scope.tokenfilter;
+            let tokenfilters = {}
+            tokenfilters[name] = $scope.tokenfilter
 
             let testMapping = {
                 "analysis": {
                     "token_filters": tokenfilters,
                     "token_maps": tokenMaps
                 }
-            };
+            }
 
             http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
             then(function() {}, function(response) {
@@ -1572,9 +1571,9 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.parseDateTimeParser = function(key, val) {
-            var err = $scope.validateDateTimeParser(key, val, $scope.$parent.indexMapping.analysis.date_time_parsers)
+            var err = $scope.validateDateTimeParser(key, val, $scope.indexMapping.analysis.date_time_parsers)
             if (err == "") {
-                $scope.$parent.indexMapping.analysis.date_time_parsers[key] = val
+                $scope.indexMapping.analysis.date_time_parsers[key] = val
                 $scope.dateTimeParserNames.push(key)
             } else {
                 $scope.errorMsg = err
@@ -1603,9 +1602,9 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.parseAnalyzer = function (key, val) {
 
-            var err = $scope.validateAnalyzer(key, val, $scope.$parent.indexMapping.analysis)
+            var err = $scope.validateAnalyzer(key, val, $scope.indexMapping.analysis)
             if (err == "") {
-                $scope.$parent.indexMapping.analysis.analyzers[key] = val
+                $scope.indexMapping.analysis.analyzers[key] = val
                 $scope.analyzerNames.push(key)
             } else {
                 $scope.errorMsg = err
@@ -1631,11 +1630,11 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
             let testAnalyzers = {}
             testAnalyzers[name] = newAnalyzer
-            testAnalysis["analyzers"] = testAnalyzers;
+            testAnalysis["analyzers"] = testAnalyzers
 
             let testMapping = {
                 "analysis": testAnalysis
-            };
+            }
 
             http.post('/api/_validateMapping', bleveIndexMappingScrub(testMapping)).
             then(function() {}, function(response) {
@@ -1648,14 +1647,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.parseMapping = function(name, value, parentMapping) {
 
             if (parentMapping == null) {
-                $scope.$parent.addChildMapping(null)
-                var mapping = $scope.$parent.mappings[0]
+                $scope.addChildMapping(null)
+                var mapping = $scope.mappings[0]
             } else {
                 if ("fields" in value) {
-                    $scope.$parent.addChildField(parentMapping)
+                    $scope.addChildField(parentMapping)
                     var mapping = parentMapping.fields[0]
                 } else {
-                    $scope.$parent.addChildMapping(parentMapping)
+                    $scope.addChildMapping(parentMapping)
                     var mapping = parentMapping.mappings[0]
                 }
             }
@@ -1664,14 +1663,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 for (let i = 0; i < value.fields.length; i++) {
 
                     mapping.property = name
-                    $scope.$parent.changedProperty(mapping, parentMapping)
+                    $scope.changedProperty(mapping, parentMapping)
                     if ("name" in value.fields[i]) {
                         mapping.name = value.fields[i].name
-                        $scope.$parent.validateField(mapping, parentMapping)
+                        $scope.validateField(mapping, parentMapping)
                     }
 
                     if ("type" in value.fields[i]) {
-                        if ($scope.$parent.fieldTypes.includes(value.fields[0].type)) {
+                        if ($scope.fieldTypes.includes(value.fields[0].type)) {
                             mapping.type = value.fields[0].type
                         } else {
                             $scope.errorMsg = "Field named '" + name + "' has invalid value for field type"
@@ -1718,10 +1717,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         mapping.docvalues = value.fields[i].docvalues
                     }
 
-                    $scope.$parent.editAttrsDone(mapping, true)
+                    $scope.editAttrsDone(mapping, true)
 
                     if (i + 1 < value.fields.length) {
-                        $scope.$parent.addChildField(parentMapping)
+                        $scope.addChildField(parentMapping)
                         mapping = parentMapping.fields[0]
                     }
                 }
@@ -1734,7 +1733,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
                 }
 
-                $scope.$parent.editAttrsDone(mapping, true)
+                $scope.editAttrsDone(mapping, true)
             }
 
             if ("properties" in value && mapping._kind != "field") {
@@ -1748,7 +1747,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
             var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
 
-            http.post('/api/_tokenMapNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            http.post('/api/_tokenMapNames', bleveIndexMappingScrub($scope.indexMapping)).
             then(function(response) {
                 $scope.tokenMapNames = response.data.token_maps
             }, function(response) {
@@ -1760,7 +1759,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
             var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
 
-            http.post('/api/_analyzerNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            http.post('/api/_analyzerNames', bleveIndexMappingScrub($scope.indexMapping)).
             then(function(response) {
                 $scope.analyzerNames = response.data.analyzers
             }, function(response) {
@@ -1772,7 +1771,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
             var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
 
-            http.post('/api/_datetimeParserNames', bleveIndexMappingScrub($scope.$parent.indexMapping)).
+            http.post('/api/_datetimeParserNames', bleveIndexMappingScrub($scope.indexMapping)).
             then(function(response) {
                 $scope.dateTimeParserNames = response.data.datetime_parsers
             }, function(response) {
@@ -1788,7 +1787,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
     $scope.importIndexJSON = function() {
 
         $scope.errorMsg = ""
-        var modalInstance = $uibModal.open({
+        $uibModal.open({
             template: indexImportTemplate,
             animation: $scope.animationsEnabled,
             scope: $scope,
@@ -1798,9 +1797,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     return $scope.errorMsg
                 }
             }
-        })
-
-        modalInstance.result.then(function(){})
+        }).result.then(function(){})
     }
 }
 
