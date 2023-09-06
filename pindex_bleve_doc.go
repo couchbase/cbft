@@ -11,7 +11,6 @@ package cbft
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -76,7 +75,7 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		DocIDRegexp:      docIDRegexp,
 		CollPrefixLookup: b.CollPrefixLookup,
 	}
-	err := json.Unmarshal(data, &tmp)
+	err := UnmarshalJSON(data, &tmp)
 	if err != nil {
 		return err
 	}
@@ -132,7 +131,7 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 		DocIDPrefixDelim: b.DocIDPrefixDelim,
 		DocIDRegexp:      docIDRegexp,
 	}
-	return json.Marshal(&tmp)
+	return MarshalJSON(&tmp)
 }
 
 func (b *BleveDocumentConfig) multiCollection() bool {
@@ -148,7 +147,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	}
 
 	var v map[string]interface{}
-	err := json.Unmarshal(val, &v)
+	err := UnmarshalJSON(val, &v)
 	if err != nil || v == nil {
 		v = map[string]interface{}{}
 	}
@@ -183,7 +182,7 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 func (b *BleveDocumentConfig) BuildDocument(key, val []byte,
 	defaultType string) (*BleveDocument, error) {
 	var v interface{}
-	err := json.Unmarshal(val, &v)
+	err := UnmarshalJSON(val, &v)
 	if err != nil {
 		v = map[string]interface{}{}
 	}

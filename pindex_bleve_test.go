@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"runtime"
@@ -718,7 +717,7 @@ func TestSearchRequestExt(t *testing.T) {
 
 	for i, req := range reqs {
 		var sr *SearchRequest
-		err := json.Unmarshal(req, &sr)
+		err := UnmarshalJSON(req, &sr)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -787,7 +786,7 @@ func TestCollectionSearchRequest(t *testing.T) {
 	}
 
 	var sr *SearchRequest
-	err := json.Unmarshal([]byte(`{"query": {"query": "california"}, "size": 4, "from": 5}`), &sr)
+	err := UnmarshalJSON([]byte(`{"query": {"query": "california"}, "size": 4, "from": 5}`), &sr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -889,7 +888,7 @@ func TestCollectionSearchRequestDocIDQuery(t *testing.T) {
 	for _, test := range tests {
 		var sr *SearchRequest
 		queryStr := fmt.Sprintf("{\"query\": %s, \"size\": 4, \"from\": 5}", test.queryParams)
-		err := json.Unmarshal([]byte(queryStr), &sr)
+		err := UnmarshalJSON([]byte(queryStr), &sr)
 		if err != nil {
 			t.Fatal(err)
 		}

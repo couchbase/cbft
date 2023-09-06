@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -211,7 +210,7 @@ func getEffectiveClusterVersion(server string) (uint64, error) {
 	}
 
 	rv := &cbgt.NsServerResponse{}
-	err = json.Unmarshal(respBuf, rv)
+	err = UnmarshalJSON(respBuf, rv)
 	if err != nil {
 		return 0, fmt.Errorf("version: error parsing respBuf: %s,"+
 			" server: %s, err: %v", respBuf, server, err)
