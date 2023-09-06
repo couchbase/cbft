@@ -377,7 +377,7 @@ func decodeFacetRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	}
 
 	for _, dr := range temp.DateTimeRanges {
-		fr.AddDateTimeRangeString(dr.Name, dr.Start, dr.End)
+		fr.AddDateTimeRangeStringWithParser(dr.Name, dr.Start, dr.End, dr.DateTimeParser)
 	}
 	*((*bleve.FacetRequest)(ptr)) = *fr
 }
@@ -522,7 +522,7 @@ func parseQuery(input []byte) (query.Query, error) {
 	_, hasStart := tmp["start"]
 	_, hasEnd := tmp["end"]
 	if hasStart || hasEnd {
-		var rv query.DateRangeQuery
+		var rv query.DateRangeStringQuery
 		err := jsoniter.Unmarshal(input, &rv)
 		if err != nil {
 			return nil, err

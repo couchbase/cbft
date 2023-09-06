@@ -82,23 +82,33 @@ func encodeBleveIndexErrMap(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 
 func encodeBleveDateTimeRange(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	type temp struct {
-		Name        string    `json:"name,omitempty"`
-		Start       time.Time `json:"start,omitempty"`
-		End         time.Time `json:"end,omitempty"`
-		startString *string
-		endString   *string
+		Name           string    `json:"name,omitempty"`
+		Start          time.Time `json:"start,omitempty"`
+		End            time.Time `json:"end,omitempty"`
+		DateTimeParser string    `json:"datetime_parser,omitempty"`
+		startString    *string
+		endString      *string
 	}
 	dr := *((*temp)(ptr))
+
 	rv := map[string]interface{}{
-		"name":  dr.Name,
-		"start": dr.Start,
-		"end":   dr.End,
+		"name": dr.Name,
 	}
-	if dr.Start.IsZero() && dr.startString != nil {
+
+	if !dr.Start.IsZero() {
+		rv["start"] = dr.Start
+	} else if dr.startString != nil {
 		rv["start"] = dr.startString
 	}
-	if dr.End.IsZero() && dr.endString != nil {
+
+	if !dr.End.IsZero() {
+		rv["end"] = dr.End
+	} else if dr.endString != nil {
 		rv["end"] = dr.endString
+	}
+
+	if dr.DateTimeParser != "" {
+		rv["datetime_parser"] = dr.DateTimeParser
 	}
 
 	stream.WriteVal(rv)
