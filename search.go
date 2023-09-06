@@ -26,9 +26,10 @@ type numericRange struct {
 }
 
 type dateTimeRange struct {
-	Name  string  `json:"name,omitempty"`
-	Start *string `json:"start,omitempty"`
-	End   *string `json:"end,omitempty"`
+	Name           string  `json:"name,omitempty"`
+	Start          *string `json:"start,omitempty"`
+	End            *string `json:"end,omitempty"`
+	DateTimeParser string  `json:"datetime_parser,omitempty"`
 }
 
 // A facetRequest describes a facet or aggregation
