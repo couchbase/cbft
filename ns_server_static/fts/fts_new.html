@@ -89,7 +89,7 @@
           <div class="items-top formrow width-480">
             <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport">
               <input type="checkbox" id="subscribe-to-collections"
-                                     ng-model="$parent.$parent.docConfigCollections"
+                                     ng-model="$parent.$parent.$parent.docConfigCollections"
                                      ng-change="typeIdentifierChanged()">
               <label for="subscribe-to-collections">Use non-default scope/collection(s)</label>
               <span class="fa-stack icon-info"
@@ -100,7 +100,7 @@
               </span>
             </div>
           </div>
-          <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport && $parent.docConfigCollections"
+          <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport && $parent.$parent.docConfigCollections"
                class="row items-top formrow width-480">
             <div class="column width-12">
               <label for="inputSourceName">Scope</label>
