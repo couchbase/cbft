@@ -54,8 +54,8 @@ github.com/bits-and-blooms/bitset v1.2.2 h1:J5gbX05GpMdBjCvQ9MteIg2KKDExr7DrgK+Y
 github.com/bits-and-blooms/bitset v1.2.2/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=
 github.com/blevesearch/bleve-mapping-ui v0.5.1 h1:cug++UhuXcwrSZlt55P76YdvDG3Ez28qfqSXpkm78Xg=
 github.com/blevesearch/bleve-mapping-ui v0.5.1/go.mod h1:Agu2zDUz33czsCSzm5pbI5qvdiOoU+I0NBq88BS1J1g=
-github.com/blevesearch/bleve/v2 v2.3.10-0.20230831160706-ff8c83812f37 h1:pR1V9nB68XxmFba7aYLOrw7TF7v5CFCusk2KsvQVhQo=
-github.com/blevesearch/bleve/v2 v2.3.10-0.20230831160706-ff8c83812f37/go.mod h1:6Kl/R4VSaK86/pIE283GFz3PEnHYzLkQqWo2WwQbDAs=
+github.com/blevesearch/bleve/v2 v2.3.10-0.20230911135941-3c4461c1955b h1:ouq+zqMLu0WCtxputjFev/r0jlX8QVFQQp4+rXWGhPk=
+github.com/blevesearch/bleve/v2 v2.3.10-0.20230911135941-3c4461c1955b/go.mod h1:RJzeoeHC+vNHsoLR54+crS1HmOWpnH87fL70HAUCzIA=
 github.com/blevesearch/bleve_index_api v1.0.6 h1:gyUUxdsrvmW3jVhhYdCVL6h9dCjNT/geNU7PxGn37p8=
 github.com/blevesearch/bleve_index_api v1.0.6/go.mod h1:YXMDwaXFFXwncRS8UobWs7nvo0DmusriM1nztTlj1ms=
 github.com/blevesearch/geo v0.1.18 h1:Np8jycHTZ5scFe7VEPLrDoHnnb9C4j636ue/CGrhtDw=
@@ -75,6 +75,8 @@ github.com/blevesearch/segment v0.9.1 h1:+dThDy+Lvgj5JMxhmOVlgFfkUtZV2kw49xax4+j
 github.com/blevesearch/segment v0.9.1/go.mod h1:zN21iLm7+GnBHWTao9I+Au/7MBiL8pPFtJBJTsk6kQw=
 github.com/blevesearch/snowballstem v0.9.0 h1:lMQ189YspGP6sXvZQ4WZ+MLawfV8wOmPoD/iWeNXm8s=
 github.com/blevesearch/snowballstem v0.9.0/go.mod h1:PivSj3JMc8WuaFkTSRDW2SlrulNWPl4ABg1tC/hlgLs=
+github.com/blevesearch/stempel v0.2.0 h1:CYzVPaScODMvgE9o+kf6D4RJ/VRomyi9uHF+PtB+Afc=
+github.com/blevesearch/stempel v0.2.0/go.mod h1:wjeTHqQv+nQdbPuJ/YcvOjTInA2EIc6Ks1FoSUzSLvc=
 github.com/blevesearch/upsidedown_store_api v1.0.2 h1:U53Q6YoWEARVLd1OYNc9kvhBMGZzVrdmaozG2MfoB+A=
 github.com/blevesearch/upsidedown_store_api v1.0.2/go.mod h1:M01mh3Gpfy56Ps/UXHjEO/knbqyQ1Oamg8If49gRwrQ=
 github.com/blevesearch/vellum v1.0.10 h1:HGPJDT2bTva12hrHepVT3rOyIKFFF4t7Gf6yMxyMIPI=

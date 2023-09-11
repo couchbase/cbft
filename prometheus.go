@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -142,7 +141,7 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 	storageStats := make(map[string]uint64)
 	for k, nsis := range nsIndexStats {
 		for nsik, nsiv := range nsis {
-			b, err := json.Marshal(nsiv)
+			b, err := MarshalJSON(nsiv)
 			if err != nil {
 				rest.ShowError(w, req, fmt.Sprintf("json marshal err: %v", err),
 					http.StatusInternalServerError)
@@ -172,7 +171,7 @@ func scopeCollNames(params, sourceName string) (string, []string) {
 		Mapping mapping.IndexMapping `json:"mapping"`
 	}{Mapping: bleve.NewIndexMapping()}
 
-	err := json.Unmarshal([]byte(params), &tmp)
+	err := UnmarshalJSON([]byte(params), &tmp)
 	if err != nil {
 		return "", nil
 	}
@@ -255,7 +254,7 @@ func (h *PrometheusMetricsHandler) ServeHTTP(w http.ResponseWriter,
 	topLevelStats := stats[""]
 
 	for k, v := range topLevelStats {
-		b, err := json.Marshal(v)
+		b, err := MarshalJSON(v)
 		if err != nil {
 			rest.ShowError(w, req, fmt.Sprintf("json marshal err: %v", err),
 				http.StatusInternalServerError)

@@ -9,7 +9,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"runtime/pprof"
@@ -17,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/couchbase/clog"
-
+	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
+	log "github.com/couchbase/clog"
 )
 
 type toolDefHandler func(cfg cbgt.Cfg, uuid string, tags []string,
@@ -126,7 +125,7 @@ func toolPartitionSeqs(cfg cbgt.Cfg, uuid string, tags []string,
 		return 1
 	}
 
-	b, err := json.Marshal(partitionSeqs)
+	b, err := cbft.MarshalJSON(partitionSeqs)
 	if err != nil {
 		fmt.Printf("tool: partitionSeqs: json marshal, err: %v\n", err)
 	}

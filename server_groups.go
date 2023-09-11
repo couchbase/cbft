@@ -10,7 +10,6 @@ package cbft
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +50,7 @@ func StartServerGroupTracker(mgr *cbgt.Manager) {
 func (st *serverGroupTracker) listen() {
 	decodeAndNotifyResponse := func(resp []byte) error {
 		sg := &streamingPoolResponse{}
-		err := json.Unmarshal(resp, &sg)
+		err := UnmarshalJSON(resp, &sg)
 		if err != nil {
 			return err
 		}
@@ -271,7 +270,7 @@ func fetchServerGroupDetails(mgr *cbgt.Manager, uuids []string) (
 	}
 
 	var sg serverGroups
-	err = json.Unmarshal(respBuf, &sg)
+	err = UnmarshalJSON(respBuf, &sg)
 	if err != nil {
 		return nil, fmt.Errorf("server_groups: error parsing respBuf: %s,"+
 			" url: %s, err: %v", respBuf, url, err)

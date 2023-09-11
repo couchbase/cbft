@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,7 +23,7 @@ import (
 func setVBucketFailoverLog(feed *cbgt.PrimaryFeed, partition string) {
 	flog := make([][]uint64, 1)
 	flog[0] = []uint64{0, 100}
-	buf, _ := json.Marshal(flog)
+	buf, _ := MarshalJSON(flog)
 	feed.OpaqueSet(partition, buf)
 }
 

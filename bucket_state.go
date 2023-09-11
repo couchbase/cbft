@@ -38,7 +38,7 @@ func pauseHandleFunc(reader *bufio.Reader) (int, error) {
 	}
 
 	sg := &streamingResponse{}
-	err = json.Unmarshal(resBytes, &sg)
+	err = UnmarshalJSON(resBytes, &sg)
 	if err != nil {
 		return 0, err
 	}
@@ -70,7 +70,7 @@ func resumeHandleFunc(reader *bufio.Reader) (int, error) {
 	}
 
 	sg := &streamingResponse{}
-	err = json.Unmarshal(resBytes, &sg)
+	err = UnmarshalJSON(resBytes, &sg)
 	if err != nil {
 		// Failure since failure to unmarshal indicates that the bucket
 		// is deleted. Ref: VerifySourceNotExists()

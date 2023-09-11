@@ -12,7 +12,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -557,7 +556,7 @@ func WriteRegulatorMetrics(w http.ResponseWriter, storageStats map[string]uint64
 
 	statName := "num_disk_bytes_used_per_bucket"
 	for bucket, storageBytes := range storageStats {
-		b, err := json.Marshal(storageBytes)
+		b, err := MarshalJSON(storageBytes)
 		if err != nil {
 			return
 		}

@@ -8,14 +8,10 @@
 
 package cbft
 
-import (
-	"encoding/json"
-)
-
 func ParseExtras(s string) (map[string]string, error) {
 	rv := map[string]string{}
 
-	err := json.Unmarshal([]byte(s), &rv)
+	err := UnmarshalJSON([]byte(s), &rv)
 	if err != nil {
 		// Early versions of cbft-to-ns_server integration had a
 		// simple, non-JSON "host:port" format for the nodeDef.Extras,

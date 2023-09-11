@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"reflect"
 	"sort"
 	"strings"
@@ -231,7 +230,7 @@ func testIndexDefn(t *testing.T, bucketName, scopeName string, colMode bool,
 		im.TypeMapping[typ] = bleve.NewDocumentMapping()
 	}
 
-	pBytes, err := json.Marshal(bp)
+	pBytes, err := MarshalJSON(bp)
 	if err != nil {
 		t.Errorf("testIndexDefn, json err: %v", err)
 	}
@@ -470,7 +469,7 @@ func TestRemapIndexDefinions(t *testing.T) {
 
 	for i, test := range tests {
 		var indexDefs cbgt.IndexDefs
-		err := json.Unmarshal(test.indexDefBytes, &indexDefs)
+		err := UnmarshalJSON(test.indexDefBytes, &indexDefs)
 		if err != nil {
 			t.Fatalf("test %d, json err: %v", i, err)
 		}

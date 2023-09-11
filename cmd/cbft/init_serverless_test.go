@@ -9,7 +9,6 @@
 package main
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -659,16 +658,16 @@ func Test_defragmentationUtilizationHook(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outputBytes, err := json.Marshal(output)
+	outputBytes, err := cbft.MarshalJSON(output)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var expect, got interface{}
-	if err := json.Unmarshal(expectBytes, &expect); err != nil {
+	if err := cbft.UnmarshalJSON(expectBytes, &expect); err != nil {
 		t.Fatal(err)
 	}
-	if err := json.Unmarshal(outputBytes, &got); err != nil {
+	if err := cbft.UnmarshalJSON(outputBytes, &got); err != nil {
 		t.Fatal(err)
 	}
 

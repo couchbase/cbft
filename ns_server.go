@@ -226,7 +226,7 @@ func (n NSIndexStats) MarshalJSON() ([]byte, error) {
 			}
 		}
 	}
-	return json.Marshal(rv)
+	return MarshalJSON(rv)
 }
 
 var statkeys = []string{
@@ -1051,7 +1051,7 @@ func massageStats(buffer *bytes.Buffer, nsIndexStat map[string]interface{}) erro
 	for k, v := range countValueMap {
 		statName := convertStatName(k)
 		var statValue float64
-		err := json.Unmarshal(v, &statValue)
+		err := UnmarshalJSON(v, &statValue)
 		if err != nil {
 			return err
 		}

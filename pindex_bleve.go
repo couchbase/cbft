@@ -35,12 +35,11 @@ import (
 	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	"github.com/blevesearch/bleve/v2/search"
 	"github.com/blevesearch/bleve/v2/search/query"
+
 	ftsHttp "github.com/couchbase/cbft/http"
-
-	log "github.com/couchbase/clog"
-
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
+	log "github.com/couchbase/clog"
 )
 
 // Use sync/atomic to access these stats
@@ -612,7 +611,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 	}
 
-	updatedParams, err := json.Marshal(bp)
+	updatedParams, err := MarshalJSON(bp)
 	if err != nil {
 		return nil, fmt.Errorf("PrepareIndex, Marshal err: %v", err)
 	}
@@ -658,7 +657,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 	// Validate token filters in indexParams
 	validateIndexParams := func() error {
 		var iParams map[string]interface{}
-		err := json.Unmarshal([]byte(indexParams), &iParams)
+		err := UnmarshalJSON([]byte(indexParams), &iParams)
 		if err != nil {
 			// Ignore the JSON unmarshalling error, if in the case
 			// indexParams isn't JSON.
@@ -800,7 +799,7 @@ func parseIndexParams(indexParams string) (
 	bleveParams *BleveParams, kvConfig map[string]interface{},
 	bleveIndexType string, kvStoreName string, err error) {
 	var ip cbgt.IndexPrepParams
-	err = json.Unmarshal([]byte(indexParams), &ip)
+	err = UnmarshalJSON([]byte(indexParams), &ip)
 	if err != nil {
 		return nil, nil, "", "",
 			fmt.Errorf("bleve: new index, json marshal"+
@@ -816,7 +815,7 @@ func parseIndexParams(indexParams string) (
 				fmt.Errorf("bleve: cleanse params, err: %v", err)
 		}
 
-		err = json.Unmarshal(buf, bleveParams)
+		err = UnmarshalJSON(buf, bleveParams)
 		if err != nil {
 			return nil, nil, "", "",
 				fmt.Errorf("bleve: parse params, err: %v", err)
@@ -837,7 +836,7 @@ func parseIndexParams(indexParams string) (
 				if err != nil {
 					return nil, nil, "", "", err
 				}
-				ipBytes, err := json.Marshal(bleveParams)
+				ipBytes, err := MarshalJSON(bleveParams)
 				if err != nil {
 					return nil, nil, "", "",
 						fmt.Errorf("bleve: new , json marshal,"+
@@ -885,7 +884,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		SourceName string `json:"sourceName"`
 	}{}
 
-	err = json.Unmarshal([]byte(indexParams), &tmp)
+	err = UnmarshalJSON([]byte(indexParams), &tmp)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
@@ -1069,7 +1068,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 			return nil, nil, fmt.Errorf("bleve: cleanse params, err: %v", err)
 		}
 
-		err = json.Unmarshal(buf, bleveParams)
+		err = UnmarshalJSON(buf, bleveParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 		}
@@ -1087,7 +1086,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 				IndexName  string `json:"indexName"`
 			}{}
 
-			err = json.Unmarshal(buf, &tmp)
+			err = UnmarshalJSON(buf, &tmp)
 			if err != nil {
 				return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 			}
@@ -1123,7 +1122,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		IndexName  string `json:"indexName"`
 	}{}
 
-	err = json.Unmarshal(buf, &tmp)
+	err = UnmarshalJSON(buf, &tmp)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
@@ -1197,7 +1196,7 @@ func SubmitTaskRequest(mgr *cbgt.Manager, indexName, indexUUID string,
 	if uuid == "" && op != "get" {
 		uuid = cbgt.NewUUID()
 		reqMap["uuid"] = uuid
-		requestBody, err = json.Marshal(reqMap)
+		requestBody, err = MarshalJSON(reqMap)
 		if err != nil {
 			return nil, err
 		}
@@ -1868,7 +1867,7 @@ func (t *BleveDest) AddError(op, partition string,
 		Err:       fmt.Sprintf("%v", err),
 	}
 
-	buf, err := json.Marshal(&e)
+	buf, err := MarshalJSON(&e)
 	if err == nil {
 		t.stats.AddError(string(buf))
 	}
@@ -2116,7 +2115,7 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		IndexParams string `json:"indexParams"`
 		SourceName  string `json:"sourceName"`
 	}{}
-	err = json.Unmarshal(buf, &in)
+	err = UnmarshalJSON(buf, &in)
 	if err != nil {
 		return fmt.Errorf("bleve: parse params: %v", err)
 	}
@@ -2125,7 +2124,7 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		Mapping mapping.IndexMapping `json:"mapping"`
 	}{Mapping: bleve.NewIndexMapping()}
 
-	err = json.Unmarshal([]byte(in.IndexParams), &tmp)
+	err = UnmarshalJSON([]byte(in.IndexParams), &tmp)
 	if err != nil {
 		return fmt.Errorf("bleve: parse params: %v", err)
 	}
@@ -2182,7 +2181,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 		t.incRev()
 	}
 	if errv != nil {
-		t.bdest.AddError("json.Unmarshal", partition, key, seq, val, errv)
+		t.bdest.AddError("UnmarshalJSON", partition, key, seq, val, errv)
 	}
 	if erri != nil {
 		t.bdest.AddError("batch.Index", partition, key, seq, val, erri)
@@ -3136,7 +3135,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 		// make it a json unmarshal-able string
 		paramPrev = "{}"
 	}
-	err := json.Unmarshal([]byte(paramPrev), bpPrev)
+	err := UnmarshalJSON([]byte(paramPrev), bpPrev)
 	if err != nil {
 		return false
 	}
@@ -3146,7 +3145,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 		// make it a json unmarshal-able string
 		paramCur = "{}"
 	}
-	err = json.Unmarshal([]byte(paramCur), bpCur)
+	err = UnmarshalJSON([]byte(paramCur), bpCur)
 	if err != nil {
 		return false
 	}
@@ -3189,7 +3188,7 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 	}
 
 	var prevMap map[string]interface{}
-	err := json.Unmarshal([]byte(paramPrev), &prevMap)
+	err := UnmarshalJSON([]byte(paramPrev), &prevMap)
 	if err != nil {
 		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
 			" json parse paramPrev: %s, err: %v",
@@ -3203,7 +3202,7 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 	}
 
 	var curMap map[string]interface{}
-	err = json.Unmarshal([]byte(paramCur), &curMap)
+	err = UnmarshalJSON([]byte(paramCur), &curMap)
 	if err != nil {
 		log.Printf("pindex_bleve: reloadableSourceParamsChange"+
 			" json parse paramCur: %s, err: %v",

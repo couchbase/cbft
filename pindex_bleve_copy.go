@@ -9,7 +9,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -259,7 +258,7 @@ func getHibernationBucketForPindex(indexParams string) (string, string, error) {
 	var hibernateParams struct {
 		RemotePath string `json:"hibernate"`
 	}
-	err := json.Unmarshal([]byte(indexParams), &hibernateParams)
+	err := UnmarshalJSON([]byte(indexParams), &hibernateParams)
 	if err != nil {
 		return "", "", fmt.Errorf("janitor: error getting bucket from index params: %v",
 			err)
@@ -270,7 +269,7 @@ func getHibernationBucketForPindex(indexParams string) (string, string, error) {
 
 func GetHibernationBucketForPindex(params string) (string, string, error) {
 	var indexParams cbgt.IndexPrepParams
-	err := json.Unmarshal([]byte(params), &indexParams)
+	err := UnmarshalJSON([]byte(params), &indexParams)
 	if err != nil {
 		return "", "", fmt.Errorf("pindex_bleve_copy: error unmarshalling "+
 			"index params: %v", err)
