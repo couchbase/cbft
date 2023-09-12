@@ -843,8 +843,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["tot_rollback_partial"] = atomic.LoadUint64(&TotRollbackPartial)
 
 	topLevelStats["curr_batches_blocked_by_herder"] =
-		atomic.LoadUint64(&TotHerderOnBatchExecuteStartEnd) -
-			atomic.LoadUint64(&TotHerderOnBatchExecuteStartBeg)
+		atomic.LoadUint64(&TotHerderOnBatchExecuteStartBeg) -
+			atomic.LoadUint64(&TotHerderOnBatchExecuteStartEnd)
 	topLevelStats["total_queries_rejected_by_herder"] =
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 
