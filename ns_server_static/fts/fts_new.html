@@ -51,7 +51,7 @@
                 ng-show="bucketNames && bucketNames.length >= 0"
                 ng-model="$parent.newSourceName"
                 values="bucketNames"
-                on-select="updateBucketDetails(selectedOption)"
+                on-select="updateBucketDetails(selectedOption, false)"
                 has-search="true">
             </mn-select>
           </div>
@@ -240,7 +240,7 @@
                 <span class="icon fa-info fa-stack-1x"></span>
               </span>
               <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
-              <select ng-model="$parent.numReplicas"
+              <select ng-model="$parent.$parent.numReplicas"
                       class="narrow"
                       ng-options="item for item in replicaOptions"
                       ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
@@ -255,7 +255,7 @@
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>
               </span>
-              <input ng-model="$parent.numPIndexes"
+              <input ng-model="$parent.$parent.numPIndexes"
                      type="number"
                      class="width-1">
             </div>

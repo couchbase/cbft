@@ -722,9 +722,11 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             return "";
         }
 
-        $scope.updateBucketDetails = function(selectedBucket) {
+        $scope.updateBucketDetails = function(selectedBucket, keepScope) {
             listScopesForBucket(selectedBucket || $scope.newSourceName).then(function (scopes) {
-                $scope.newScopeName = initScopeName($scope.newIndexParams['fulltext-index']);
+                if (!keepScope) {
+                    $scope.newScopeName = initScopeName($scope.newIndexParams['fulltext-index']);
+                }
                 $scope.scopeNames = scopes;
                 if ($scope.scopeNames.length > 0) {
                     if ($scope.newScopeName == "" || $scope.scopeNames.indexOf($scope.newScopeName) < 0) {
@@ -991,6 +993,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.newIndexName = ""
 
             $scope.selectedTargetIndexes = []
+            $scope.indexEditorPreview["fulltext-alias"] = null
         }
 
         $scope.parseAliasJSON = function(aliasJSON) {
@@ -1024,7 +1027,11 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.resetIndexDef = function() {
 
+            $scope.indexEditorPreview["fulltext-index"] = null
             $scope.newIndexName = ""
+            $scope.docConfigCollections = false
+            $scope.newScopeName = ""
+            $scope.updateScopeDetails($scope.newScopeName)
 
             $scope.indexMapping.analysis.char_filters = {}
             $scope.indexMapping.analysis.tokenizers = {}
@@ -1043,7 +1050,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.indexMapping.docvalues_dynamic = false
             $scope.indexMapping.index_dynamic = true
             $scope.indexMapping.store_dynamic = false
-
 
             while ($scope.mappings.length > 1) {
                 $scope.mappings.shift()
@@ -1080,7 +1086,63 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 $scope.newIndexName = indexParsed.name.split(".").pop()
             }
 
+            if ("sourceName" in indexParsed) {
+                if ($scope.bucketNames.includes(indexParsed.sourceName)) {
+                    $scope.newSourceName = indexParsed.sourceName
+                    $scope.updateBucketDetails(indexParsed.sourceName, true)
+                } else {
+                    $scope.errorMsg = "Unknown source name '" + indexParsed.sourceName + "'"
+                    return
+                }
+            }
+
             if ("params" in indexParsed) {
+                if ("doc_config" in indexParsed.params) {
+                    if ("mode" in indexParsed.params.doc_config) {
+                        if (indexParsed.params.doc_config.mode.startsWith("scope.collection.")) {
+                            $scope.docConfigCollections = true
+                            indexParsed.params.doc_config.mode = indexParsed.params.doc_config.mode.slice(17)
+                        }
+
+                        if (indexParsed.params.doc_config.mode == "type_field" ||
+                            indexParsed.params.doc_config.mode == "docid_prefix" ||
+                            indexParsed.params.doc_config.mode == "docid_regexp") {
+                                $scope.docConfigMode = indexParsed.params.doc_config.mode;
+                                $scope.typeIdentifierChanged()
+                            }
+                    } else {
+                        $scope.errorMsg = "mode is a required field in doc_config"
+                        return
+                    }
+
+                    switch (indexParsed.params.doc_config.mode) {
+                        case "type_field":
+                            if ("type_field" in indexParsed.params.doc_config) {
+                                $scope.ftsDocConfig.type_field = indexParsed.params.doc_config.type_field
+                            } else {
+                                $scope.errorMsg = "type_field is a required field in doc_config if mode is 'type_field'"
+                                return
+                            }
+                            break
+                        case "docid_prefix":
+                            if ("docid_prefix_delim" in indexParsed.params.doc_config) {
+                                $scope.ftsDocConfig.docid_prefix_delim = indexParsed.params.doc_config.docid_prefix_delim
+                            } else {
+                                $scope.errorMsg = "docid_prefix_delim is a required field in doc_config if mode is 'docid_prefix'"
+                                return
+                            }
+                            break
+                        case "docid_regexp":
+                            if ("docid_regexp" in indexParsed.params.doc_config) {
+                                $scope.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
+                            } else {
+                                $scope.errorMsg = "docid_regexp is a required field in doc_config if mode is 'docid_regexp'"
+                                return
+                            }
+                            break
+                    }
+                }
+
                 if ("mapping" in indexParsed.params) {
 
                     if ("analysis" in indexParsed.params.mapping) {
@@ -1181,6 +1243,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                     if ("types" in indexParsed.params.mapping) {
                         for (const [key, value] of Object.entries(indexParsed.params.mapping.types)) {
+                            $scope.parseScope(key)
                             $scope.parseMapping(key, value, null)
                         }
                     }
@@ -1228,56 +1291,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                             $scope.indexMapping.docvalues_dynamic = indexParsed.params.mapping.docvalues_dynamic
                         }
                     }
-                }
-                if ("doc_config" in indexParsed.params) {
-                    if ("mode" in indexParsed.params.doc_config) {
-                        if (indexParsed.params.doc_config.mode == "type_field" ||
-                            indexParsed.params.doc_config.mode == "docid_prefix" ||
-                            indexParsed.params.doc_config.mode == "docid_regexp") {
-                                $scope.docConfigMode = indexParsed.params.doc_config.mode;
-                                $scope.typeIdentifierChanged()
-                            }
-                    } else {
-                        $scope.errorMsg = "mode is a required field in doc_config"
-                        return
-                    }
-
-                    switch (indexParsed.params.doc_config.mode) {
-                        case "type_field":
-                            if ("type_field" in indexParsed.params.doc_config) {
-                                $scope.ftsDocConfig.type_field = indexParsed.params.doc_config.type_field
-                            } else {
-                                $scope.errorMsg = "type_field is a required field in doc_config if mode is 'type_field'"
-                                return
-                            }
-                            break
-                        case "docid_prefix":
-                            if ("docid_prefix_delim" in indexParsed.params.doc_config) {
-                                $scope.ftsDocConfig.docid_prefix_delim = indexParsed.params.doc_config.docid_prefix_delim
-                            } else {
-                                $scope.errorMsg = "docid_prefix_delim is a required field in doc_config if mode is 'docid_prefix'"
-                                return
-                            }
-                            break
-                        case "docid_regexp":
-                            if ("docid_regexp" in indexParsed.params.doc_config) {
-                                $scope.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
-                            } else {
-                                $scope.errorMsg = "docid_regexp is a required field in doc_config if mode is 'docid_regexp'"
-                                return
-                            }
-                            break
-                    }
-                }
-            }
-
-            if ("sourceName" in indexParsed) {
-                if ($scope.bucketNames.includes(indexParsed.sourceName)) {
-                    $scope.newSourceName = indexParsed.sourceName
-                    $scope.updateBucketDetails(indexParsed.sourceName)
-                } else {
-                    $scope.errorMsg = "Unknown source name '" + indexParsed.sourceName + "'"
-                    return
                 }
             }
 
@@ -1642,6 +1655,20 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             })
 
             return ""
+        }
+
+        $scope.parseScope = function(name) {
+            var scopeCollection = name.split(".")
+            if (scopeCollection.length == 2 && $scope.docConfigCollections) {
+                $scope.newScopeName = scopeCollection[0]
+                if ($scope.collectionsSelected) {
+                    if (!$scope.collectionsSelected.includes(scopeCollection[1])) {
+                        $scope.collectionsSelected.push(scopeCollection[1])
+                    }
+                } else {
+                    $scope.collectionsSelected = [scopeCollection[1]]
+                }
+            }
         }
 
         $scope.parseMapping = function(name, value, parentMapping) {
