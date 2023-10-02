@@ -2046,6 +2046,18 @@ var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 var prefixCopyPartitionStats = []byte(`,"copyPartitionStats":`)
 
+var prefixHerderStats = []byte(`,"herderStats":`)
+
+func writeHerderStatsJSON(w io.Writer) {
+	t := atomic.LoadUint64(&TotHerderWaitingIn)
+	stats := fmt.Sprintf(`{"TotWaitingIn":%d`, t)
+	t = atomic.LoadUint64(&TotHerderWaitingOut)
+	stats += fmt.Sprintf(`,"TotWaitingOut":%d`, t)
+
+	w.Write([]byte(stats))
+	w.Write(cbgt.JsonCloseBrace)
+}
+
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var vbstats, verbose bool
 	var indexDef *cbgt.IndexDef
@@ -2201,12 +2213,47 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 	t.copyStats.WriteJSON(w)
 
+	_, err = w.Write(prefixHerderStats)
+	if err != nil {
+		return err
+	}
+
+	// Since herder and its stats are unique to cbft, writing these stats here
+	// instead of in cbgt/rest.
+	writeHerderStatsJSON(w)
+
 	_, err = w.Write(cbgt.JsonCloseBrace)
 	if err != nil {
 		return
 	}
 
 	return nil
+}
+
+func CustomSeqTimeoutCheck(pindex string, data []byte) bool {
+	m := struct {
+		PIndexes map[string]struct {
+			HerderStats struct {
+				TotWaitingIn  uint64 `json:"TotWaitingIn,omitempty"`
+				TotWaitingOut uint64 `json:"TotWaitingOut,omitempty"`
+			} `json:"herderStats,omitempty"`
+		} `json:"pindexes"`
+	}{}
+
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return false
+	}
+
+	// true since batches blocked by herder for this node's cbft process.
+	if m.PIndexes[pindex].HerderStats.TotWaitingIn > 0 &&
+		m.PIndexes[pindex].HerderStats.TotWaitingIn >
+			m.PIndexes[pindex].HerderStats.TotWaitingOut {
+		return true
+	}
+
+	// Return false since none of the batches/index are blocked.
+	return false
 }
 
 func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {

@@ -761,6 +761,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			EnableReplicaCatchup:               true, // enabling replica partition catchup by default
 			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
 			Manager:                            mgr,
+			// Registering a callback for each node's cbft process
+			SkipSeqChecksCallback: cbft.CustomSeqTimeoutCheck,
 		})
 		if err != nil {
 			return fmt.Errorf("main: ctl.StartCtl, err: %v", err)

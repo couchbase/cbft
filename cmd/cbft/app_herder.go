@@ -200,6 +200,8 @@ func (a *appHerder) checkAndBlockIndex() {
 		defer a.m.Unlock()
 	}
 	for isOverQuota {
+		atomic.AddUint64(&cbft.TotHerderWaitingIn, 1)
+
 		a.waitingMutations++
 		if a.overQuotaCh != nil {
 			a.overQuotaCh <- struct{}{}
@@ -207,6 +209,8 @@ func (a *appHerder) checkAndBlockIndex() {
 		a.waitCond.Wait()
 		a.waitingMutations--
 		isOverQuota, _, _ = a.overMemQuotaForIndexing()
+
+		atomic.AddUint64(&cbft.TotHerderWaitingOut, 1)
 	}
 }
 
