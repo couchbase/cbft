@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -2425,8 +2426,8 @@ func TestCreateIndexAddNode(t *testing.T) {
 			casPrev, casCurr)
 	}
 	if cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		planPIndexesPrevJS, _ := MarshalJSON(planPIndexesPrev)
-		planPIndexesCurrJS, _ := MarshalJSON(planPIndexesCurr)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected diff plans,"+
 			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
@@ -2518,8 +2519,8 @@ func TestCreateIndex1PIndexAddNode(t *testing.T) {
 		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
 	}
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		planPIndexesPrevJS, _ := MarshalJSON(planPIndexesPrev)
-		planPIndexesCurrJS, _ := MarshalJSON(planPIndexesCurr)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans,"+
 			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
@@ -2611,8 +2612,8 @@ func TestCreateIndexPlanFrozenAddNode(t *testing.T) {
 		t.Errorf("expected same casPrev: %d, casCurr: %d", casPrev, casCurr)
 	}
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		planPIndexesPrevJS, _ := MarshalJSON(planPIndexesPrev)
-		planPIndexesCurrJS, _ := MarshalJSON(planPIndexesCurr)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans,"+
 			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
@@ -2702,8 +2703,8 @@ func TestCreateIndexThenFreezePlanThenAddNode(t *testing.T) {
 			casPrev, casCurr)
 	}
 	if !cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		planPIndexesPrevJS, _ := MarshalJSON(planPIndexesPrev)
-		planPIndexesCurrJS, _ := MarshalJSON(planPIndexesCurr)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected same plans, planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)
 	}
@@ -2783,8 +2784,8 @@ func TestNodePlanParams(t *testing.T) {
 			casPrev, casCurr)
 	}
 	if cbgt.SamePlanPIndexes(planPIndexesPrev, planPIndexesCurr) {
-		planPIndexesPrevJS, _ := MarshalJSON(planPIndexesPrev)
-		planPIndexesCurrJS, _ := MarshalJSON(planPIndexesCurr)
+		planPIndexesPrevJS, _ := json.Marshal(planPIndexesPrev)
+		planPIndexesCurrJS, _ := json.Marshal(planPIndexesCurr)
 		t.Errorf("expected diff plans,"+
 			" planPIndexesPrev: %s, planPIndexesCurr: %s",
 			planPIndexesPrevJS, planPIndexesCurrJS)

@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -119,7 +120,7 @@ func (r *rateLimiter) limitIndexDefInServerlessMode(indexDef *cbgt.IndexDef) (
 		}
 
 		if len(nodeDefs.NodeDefs) < (ReplicaPartitionLimit + 1) {
-			nodes, _ := MarshalJSON(nodesOverHWM)
+			nodes, _ := json.Marshal(nodesOverHWM)
 
 			// at least 2 nodes with usage below HWM needed to allow this index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
@@ -134,7 +135,7 @@ func (r *rateLimiter) limitIndexDefInServerlessMode(indexDef *cbgt.IndexDef) (
 		}
 
 		if len(serverGroups) < (ReplicaPartitionLimit + 1) {
-			nodes, _ := MarshalJSON(nodesOverHWM)
+			nodes, _ := json.Marshal(nodesOverHWM)
 
 			// nodes from at least 2 server groups needed to allow index request
 			return nil, fmt.Errorf("limitIndexDef: Cannot accommodate"+
@@ -215,7 +216,7 @@ func (r *rateLimiter) obtainIndexDefFromIndexRequest(req *http.Request) (*cbgt.I
 	}()
 
 	indexDef := cbgt.IndexDef{}
-	if err := UnmarshalJSON(requestBody, &indexDef); err != nil {
+	if err := json.Unmarshal(requestBody, &indexDef); err != nil {
 		return nil, fmt.Errorf("limiter: failed to unmarshal "+
 			"the req body %v", err)
 	}
@@ -369,7 +370,7 @@ func NodeUUIDsWithUsageOverHWM(nodeDefs *cbgt.NodeDefs) []*nodeDetails {
 	}
 
 	if len(nodesOverHWM) > 0 {
-		if out, err := MarshalJSON(nodesStats); err == nil {
+		if out, err := json.Marshal(nodesStats); err == nil {
 			log.Warnf("Nodes showing resource utilization higher than HWM: %s",
 				string(out))
 		}
@@ -522,7 +523,7 @@ func obtainNodeUtilStats(nodeDef *cbgt.NodeDef) (*NodeUtilStats, error) {
 	}
 
 	var stats *NodeUtilStats
-	if err := UnmarshalJSON(respBuf, &stats); err != nil {
+	if err := json.Unmarshal(respBuf, &stats); err != nil {
 		return nil, err
 	}
 

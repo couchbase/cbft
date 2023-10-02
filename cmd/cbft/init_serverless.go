@@ -9,6 +9,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -351,7 +352,7 @@ func defragmentationUtilizationHook(nodeDefs *cbgt.NodeDefs) (
 			}
 		}
 
-		if out, err := cbft.MarshalJSON(nodesUtilStats); err == nil {
+		if out, err := json.Marshal(nodesUtilStats); err == nil {
 			log.Printf("defragmentationUtilizationHook: service could benefit"+
 				" from a rebalance, nodeUtilStats: %s", string(out))
 		}

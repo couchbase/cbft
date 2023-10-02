@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -145,7 +146,7 @@ func processRemapRequest(req *http.Request, bucketName string) (
 
 	indexDefs := &cbgt.IndexDefs{}
 	if len(requestBody) > 0 {
-		err := UnmarshalJSON(requestBody, indexDefs)
+		err := json.Unmarshal(requestBody, indexDefs)
 		if err != nil {
 			return nil, fmt.Errorf("requestBody: %s, json unmarshal err: %v", requestBody, err)
 		}
@@ -215,7 +216,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 					"remap errs: %v", indexDef.Name, err)
 			}
 
-			err = UnmarshalJSON(buf, bleveParams)
+			err = json.Unmarshal(buf, bleveParams)
 			if err != nil {
 				return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
 					"json unmarshal errs: %v", indexDef.Name, err)
@@ -236,7 +237,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 					}
 
 					im.TypeMapping = remappedTypeMapping
-					ipBytes, err := MarshalJSON(bleveParams)
+					ipBytes, err := json.Marshal(bleveParams)
 					if err != nil {
 						return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
 							"json marshal errs: %v", indexDef.Name, err)
@@ -643,7 +644,7 @@ func parseSourceNamesFromIndexDefs(indexDef *cbgt.IndexDef) []string {
 			}
 
 			mapping := bleve.NewIndexMapping()
-			err = UnmarshalJSON(bmapping, mapping)
+			err = json.Unmarshal(bmapping, mapping)
 			if err != nil {
 				return nil
 			}

@@ -11,6 +11,7 @@ package cbft
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -443,7 +444,7 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 // HandleTask is an implementation of the cbgt.TaskRequestHandler interface
 func (r *IndexClient) HandleTask(in []byte) (*cbgt.TaskRequestStatus, error) {
 	var treq cbgt.TaskRequest
-	err := UnmarshalJSON(in, &treq)
+	err := json.Unmarshal(in, &treq)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +485,7 @@ func (r *IndexClient) HandleTask(in []byte) (*cbgt.TaskRequestStatus, error) {
 	defer r.lastMutex.Unlock()
 
 	rv := &cbgt.TaskRequestStatus{Errors: make(map[string]error)}
-	err = UnmarshalJSON(respBuf, rv)
+	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return completeTaskStatus(&treq, err, r.PIndexNames), nil
 	}

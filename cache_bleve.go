@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -49,7 +50,7 @@ func InitBleveResultCacheOptions(options map[string]string) error {
 func (m *cacheBleveIndex) bleveSearchRequestToCacheKey(
 	req *bleve.SearchRequest) (string, error) {
 	// TODO: Might be a faster way to stringify a request than JSON.
-	j, err := MarshalJSON(req)
+	j, err := json.Marshal(req)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +139,7 @@ func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	if err == nil && len(resBytes) > 0 {
 		// TODO: Use something better than JSON to copy a search result.
 		var res bleve.SearchResult
-		err = UnmarshalJSON(resBytes, &res)
+		err = json.Unmarshal(resBytes, &res)
 		if err == nil {
 			return &res, nil
 		}
@@ -152,7 +153,7 @@ func (m *cacheBleveIndex) SearchInContext(ctx context.Context,
 	if len(res.Hits) < BleveResultCacheMaxHits { // Don't cache overly large results.
 		ResultCache.encache(key, func() []byte {
 			// TODO: Use something better than JSON to copy a search result.
-			resBytes, err = MarshalJSON(res)
+			resBytes, err = json.Marshal(res)
 			if err != nil {
 				return nil
 			}
@@ -278,11 +279,11 @@ func (m *cacheBleveIndex) forceMerge(req *cbgt.TaskRequest) (
 
 	mpo := mergeplan.SingleSegmentMergePlanOptions
 	if v, ok := req.Contents["scorchMergePlanOptions"]; ok {
-		b, err := MarshalJSON(v)
+		b, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
 		}
-		err = UnmarshalJSON(b, &mpo)
+		err = json.Unmarshal(b, &mpo)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +330,7 @@ func (m *cacheBleveIndex) forceMerge(req *cbgt.TaskRequest) (
 func (m *cacheBleveIndex) HandleTask(req []byte) (
 	*cbgt.TaskRequestStatus, error) {
 	var task cbgt.TaskRequest
-	err := UnmarshalJSON(req, &task)
+	err := json.Unmarshal(req, &task)
 	if err != nil {
 		return nil, err
 	}

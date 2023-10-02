@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -158,7 +159,7 @@ func obtainManifest(serverURL, bucket string) (*Manifest, error) {
 	}
 
 	rv := &Manifest{}
-	err = UnmarshalJSON(respBuf, rv)
+	err = json.Unmarshal(respBuf, rv)
 	if err != nil {
 		return nil, fmt.Errorf("manifest: error parsing respBuf, err: %v", err)
 	}
