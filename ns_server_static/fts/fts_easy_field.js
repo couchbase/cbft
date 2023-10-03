@@ -56,6 +56,8 @@ function newEditField() {
                 rv = "boolean ";
             } else if (this.type == "IP") {
                 rv = "IP ";
+            } else if (this.type == "vector") {
+                rv = "vector (dims: " + this.dims + "; metric: " + this.similarity + ")";
             }
 
             var supporting = [];

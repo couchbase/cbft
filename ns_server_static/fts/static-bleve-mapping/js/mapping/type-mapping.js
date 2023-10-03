@@ -51,7 +51,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     var mappings = bleveConvertFromTypeMapping(typeMappingIn);
 
 
-    $scope.fieldTypes = ['text', 'number', 'datetime', 'boolean', 'disabled', 'geopoint', 'geoshape', 'IP'];
+    $scope.fieldTypes = ['text', 'number', 'datetime', 'boolean', 'disabled', 'geopoint', 'geoshape', 'IP', 'vector'];
 
     var kindAttrs = {
         "field": {
@@ -65,6 +65,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             'include_in_all': null,
             'docvalues': null,
             'date_format': null,
+            'dims': null,
+            'similarity': null,
         },
         "mapping": {
             'name': null,

@@ -268,6 +268,23 @@ function newEasyMapping() {
         return fieldMapping;
     };
 
+    var newVectorField = function(field) {
+        var fieldMapping = {};
+        fieldMapping.name = field.name;
+        fieldMapping.type = "vector";
+        if (field.store) {
+            fieldMapping.store = true;
+        }
+        fieldMapping.index = true;
+        if (field.dims != null) {
+            fieldMapping.dims = field.dims;
+        }
+        if (field.similarity != null) {
+            fieldMapping.similarity = field.similarity;
+        }
+        return fieldMapping;
+    };
+
     var addDocumentMappingFromPathField = function(mapping, path, field) {
         // split dotted-path into path elements
         var pathElements = path.split('.');
@@ -310,6 +327,8 @@ function newEasyMapping() {
             mapping.fields.push(newBooleanField(field));
         } else if (field.type == "IP") {
             mapping.fields.push(newIPField(field));
+        } else if (field.type == "vector") {
+            mapping.fields.push(newVectorField(field));
         }
     };
 
@@ -359,6 +378,8 @@ function newEasyMapping() {
             editField.phrase = false;
             editField.includeInAll = false;
             editField.sortFacet = false;
+            editField.dims = null;
+            editField.similarity = null;
 
             if (field.type == "text") {
                 editField.type = "text";
@@ -379,6 +400,8 @@ function newEasyMapping() {
                 editField.type = "boolean";
             } else if (field.type == "IP") {
                 editField.type = "IP";
+            } else if (field.type == "vector") {
+                editField.type = "vector";
             }
 
             // finish some common settings
@@ -394,6 +417,14 @@ function newEasyMapping() {
             }
             if (field.docvalues) {
                 editField.sortFacet = true;
+            }
+
+            if (field.dims != null) {
+                editField.dims = field.dims;
+            }
+
+            if (field.similarity != null) {
+                editField.similarity = field.similarity;
             }
 
             mapping[editField.path] = editField;

@@ -87,7 +87,7 @@ const BleveDefaultZapVersion = int(11)
 // BlevePreferredZapVersion is the recommended zap version for newer indexes.
 // This version needs to be bumped to reflect the latest recommended zap
 // version in any given release.
-var BlevePreferredZapVersion = int(15)
+var BlevePreferredZapVersion = int(16)
 
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
@@ -230,6 +230,7 @@ type SearchRequest struct {
 	Limit            *int                    `json:"limit,omitempty"`
 	Offset           *int                    `json:"offset,omitempty"`
 	Collections      []string                `json:"collections,omitempty"`
+	KNN              json.RawMessage         `json:"knn,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -283,6 +284,10 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if r, err = interpretKNNForRequest(sr.KNN, r); err != nil {
+		return nil, err
 	}
 
 	return r, r.Validate()
@@ -578,6 +583,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				}
 			}
 		}
+
+		if !isClusterCompatibleFor(FeatureVectorSupportVersion) {
+			// Vector indexing & search is NOT supported on this cluster
+			// (lower version or mixed lower version)
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields "+
+					"not supported in mixed version cluster")
+			}
+		}
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -621,6 +635,49 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	}
 
 	return LimitIndexDef(mgr, indexDef)
+}
+
+// Utility function check if a "vector" typed field is present within
+// the index mapping
+func vectorFieldsExistWithinIndexMapping(m mapping.IndexMapping) bool {
+	im, ok := m.(*mapping.IndexMappingImpl)
+	if !ok {
+		// cannot interpret index mapping
+		return false
+	}
+
+	var vectorFieldExistsWithinDocMapping func(*mapping.DocumentMapping) bool
+	vectorFieldExistsWithinDocMapping = func(d *mapping.DocumentMapping) bool {
+		if d != nil && d.Enabled {
+			for _, v := range d.Properties {
+				if vectorFieldExistsWithinDocMapping(v) {
+					return true
+				}
+			}
+
+			for _, field := range d.Fields {
+				if field.Type == "vector" {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	// Check DefaultMapping
+	if vectorFieldExistsWithinDocMapping(im.DefaultMapping) {
+		return true
+	}
+
+	// Iterate over TypeMapping(s)
+	for _, d := range im.TypeMapping {
+		if vectorFieldExistsWithinDocMapping(d) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {

@@ -252,7 +252,7 @@
                   <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages">
                   </select>
                 </div>
-                <div>
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'">
                   <input
                       type="checkbox" id="field-is-stored"
                                       ng-model="editField.store"
@@ -305,7 +305,7 @@
                   </span>
                 </div>
 
-                <div>
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'">
                   <input
                       type="checkbox"
                       id="field-include-in-all"
@@ -322,7 +322,8 @@
                   </span>
                 </div>
 
-                <div class="formrow">
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'"
+                     class="formrow">
                   <input
                       type="checkbox"
                       id="field-is-sort-facet"
@@ -338,7 +339,27 @@
                     <span class="icon fa-info fa-stack-1x"></span>
                   </span>
                 </div>
-
+                <div ng-if="editField.type == 'vector'">
+                  <div class="formrow">
+                    <label for="dims">Dimension</label>
+                    <div class="row">
+                      <input
+                          id="dims"
+                          type="number"
+                          placeholder="please enter vectors' dimension"
+                          ng-model="editField.dims">
+                    </div>
+                  </div>
+                  <div class="formrow">
+                    <label for="similarity-metric">Similarity Metric</label>
+                    <div class="row">
+                      <select ng-model="editField.similarity">
+                        <option value="dot_product">dot_product</option>
+                        <option value="l2_norm">l2_norm</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
                 <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
                   <label for="searchable-as">Searchable As</label>
                   <div class="row">
@@ -365,7 +386,6 @@
                   </span>
                 </button>
               </div>
-
             </div>
           </div>
         </div>

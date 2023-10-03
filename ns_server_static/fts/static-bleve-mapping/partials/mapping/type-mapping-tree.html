@@ -237,6 +237,23 @@ licenses/APL2.txt.
                 </select>
               </label>
             </div>
+            <div ng-if="field.type == 'vector'">
+               <label>
+                <span ng-class="{'invalid': field._invalid}">dimension</span>
+                <input type="number"
+                       placeholder="enter vectors' dimension"
+                       ng-model="field.dims"/>
+              </label>
+            </div>
+            <div ng-if="field.type == 'vector'">
+              <label>
+                <span ng-class="{'invalid': field._invalid}">similarity metric</span>
+                <select ng-model="field.similarity">
+                  <option value="dot_product">dot_product</option>
+                  <option value="l2_norm">l2_norm</option>
+                </select>
+              </label>
+            </div>
             <div
                ng-if="field.type != 'disabled'"
                class="editAreaFieldCheckboxes">
@@ -244,13 +261,15 @@ licenses/APL2.txt.
               <label for="field-index">index</label>
               <input type="checkbox" ng-model="field.store" id="field-store">
               <label for="field-store">store</label>
-              <input type="checkbox" ng-model="field.include_in_all" id="field-includeall">
-              <label for="field-includeall">include in <i>_all</i> field</label>
+              <span ng-if="field.type != 'vector'">
+                <input type="checkbox" ng-model="field.include_in_all" id="field-includeall">
+                <label for="field-includeall">include in <i>_all</i> field</label>
+              </span>
               <span ng-if="field.type == 'text'">
                 <input type="checkbox" ng-model="field.include_term_vectors" id="field-term">
-              <label for="field-term">include term vectors</label>
+                <label for="field-term">include term vectors</label>
               </span>
-              <span ng-if="field.type != 'geopoint' && field.type != 'geoshape'">
+              <span ng-if="field.type != 'geopoint' && field.type != 'geoshape' && field.type != 'vector'">
                 <input type="checkbox" ng-model="field.docvalues" id="field-docvalues">
                 <label for="field-docvalues">docvalues</label>
               </span>

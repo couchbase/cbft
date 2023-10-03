@@ -58,7 +58,7 @@ func init() {
 
 	cbgt.CfgMetaKvPrefix = "/fts/cbgt/cfg/"
 
-	cbgt.CfgAppVersion = "7.5.0"
+	cbgt.CfgAppVersion = "7.6.0"
 }
 
 func main() {
@@ -341,7 +341,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		"," + cbft.FeatureCollections +
 		"," + cbft.FeatureBlevePreferredSegmentVersion +
 		"," + cbft.FeatureFileTransferRebalance +
-		"," + cbft.FeatureGeoSpatial
+		"," + cbft.FeatureGeoSpatial +
+		"," + cbft.FeatureVectorSupportVersion
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
