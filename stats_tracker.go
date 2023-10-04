@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sync"
@@ -209,7 +210,7 @@ func (nh *nodeUtilStatsTracker) gatherStats() error {
 
 	currNodeStats := make(map[string]interface{})
 	gatherNodeUtilStats(nh.mgr, currNodeStats)
-	byteStats, err := MarshalJSON(currNodeStats)
+	byteStats, err := json.Marshal(currNodeStats)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func (nh *nodeUtilStatsTracker) gatherStats() error {
 	nh.m.RUnlock()
 
 	nodeUtilStats[nh.mgr.UUID()] = &NodeUtilStats{}
-	err = UnmarshalJSON(byteStats, nodeUtilStats[nh.mgr.UUID()])
+	err = json.Unmarshal(byteStats, nodeUtilStats[nh.mgr.UUID()])
 	if err != nil {
 		return err
 	}

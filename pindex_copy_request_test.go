@@ -8,6 +8,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"reflect"
 	"sort"
 	"testing"
@@ -34,7 +35,7 @@ func mockNodeDefs() *cbgt.NodeDefs {
 		"implVersion":"5.0.0"}`)
 
 	nodeDefs := &cbgt.NodeDefs{}
-	err := UnmarshalJSON(value, nodeDefs)
+	err := json.Unmarshal(value, nodeDefs)
 	if err != nil {
 		return nil
 	}
@@ -61,7 +62,7 @@ func mockPlanPIndex() *cbgt.PlanPIndex {
         }}`)
 
 	planPIndex := &cbgt.PlanPIndex{}
-	err := UnmarshalJSON(value, planPIndex)
+	err := json.Unmarshal(value, planPIndex)
 	if err != nil {
 		return nil
 	}

@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -356,7 +357,7 @@ func (p *restRequestParser) GetIndexDef() (*cbgt.IndexDef, error) {
 
 	var indexDef cbgt.IndexDef
 	if len(requestBody) > 0 {
-		err := UnmarshalJSON(requestBody, &indexDef)
+		err := json.Unmarshal(requestBody, &indexDef)
 		if err != nil {
 			return nil, fmt.Errorf("rest_auth: restRequestParser, unmarshal err: %v", err)
 		}

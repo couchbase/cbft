@@ -21,7 +21,6 @@ import (
 	"github.com/blevesearch/bleve/v2/index/scorch"
 	bleveMapping "github.com/blevesearch/bleve/v2/mapping"
 	bleveSearcher "github.com/blevesearch/bleve/v2/search/searcher"
-	"github.com/blevesearch/bleve/v2/util"
 
 	"github.com/couchbase/cbft"
 	"github.com/couchbase/cbgt"
@@ -31,9 +30,6 @@ import (
 var initAnalysisQueue sync.Once
 
 func initBleveOptions(options map[string]string) error {
-	util.MarshalJSON = cbft.MarshalJSON
-	util.UnmarshalJSON = cbft.UnmarshalJSON
-
 	bleveMapping.StoreDynamic = false
 	bleveMapping.MappingJSONStrict = true
 

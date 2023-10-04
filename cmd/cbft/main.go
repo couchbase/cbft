@@ -413,9 +413,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return err
 	}
 
-	cbgt.MarshalJSON = cbft.MarshalJSON
-	cbgt.UnmarshalJSON = cbft.UnmarshalJSON
-
 	exitCode := mainTool(cfg, uuid, tags, flags, options)
 	if exitCode >= 0 {
 		os.Exit(exitCode)

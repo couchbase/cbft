@@ -9,6 +9,7 @@ package cbft
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -274,7 +275,7 @@ func getNodesHostingPIndex(uuids []string,
 						" grab stats for pindex: %s, err: %v", reqs.url, err)
 					continue
 				}
-				err = UnmarshalJSON(data, &pindexesData)
+				err = json.Unmarshal(data, &pindexesData)
 				if err != nil {
 					log.Printf("pindex_copy_request: getNodesHostingPIndex,"+
 						" get stats for pindex: %s, err: %v", reqs.url, err)

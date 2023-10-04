@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -734,7 +735,7 @@ func TestFilteredListIndexes(t *testing.T) {
 		Status    string          `json:"status"`
 		IndexDefs *cbgt.IndexDefs `json:"indexDefs"`
 	}
-	err = UnmarshalJSON(resp, &got)
+	err = json.Unmarshal(resp, &got)
 	if err != nil {
 		t.Errorf("expected no json err, got: %v, resp: %s", err, resp)
 	}

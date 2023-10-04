@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -54,7 +55,7 @@ func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
 
 	bleveParams := NewBleveParams()
 	for _, indexDef := range indexDefs.IndexDefs {
-		err := UnmarshalJSON([]byte(indexDef.Params), bleveParams)
+		err := json.Unmarshal([]byte(indexDef.Params), bleveParams)
 		if err != nil {
 			log.Printf("collection_utils: refreshMetaFieldValCache,"+
 				" indexName: %v, err: %v", indexDef.Name, err)
@@ -307,7 +308,7 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
-		if err = UnmarshalJSON([]byte(indexDef.Params), bp); err != nil {
+		if err = json.Unmarshal([]byte(indexDef.Params), bp); err != nil {
 			return "", nil, err
 		}
 
