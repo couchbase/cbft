@@ -15,8 +15,10 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 )
@@ -51,15 +53,61 @@ type collMetaField struct {
 	value        string   // _$<scope_id>_$<collection_id>
 }
 
+type typeForFilter struct {
+	typ    string
+	filter IndexFilter
+}
+
 type BleveDocumentConfig struct {
-	Mode             string         `json:"mode"`
-	TypeField        string         `json:"type_field"`
-	DocIDPrefixDelim string         `json:"docid_prefix_delim"`
-	DocIDRegexp      *regexp.Regexp `json:"docid_regexp"`
+	Mode             string                 `json:"mode"`
+	TypeField        string                 `json:"type_field"`
+	DocIDPrefixDelim string                 `json:"docid_prefix_delim"`
+	DocIDRegexp      *regexp.Regexp         `json:"docid_regexp"`
+	DocumentFilter   map[string]IndexFilter `json:"doc_filter"`
+	sortedFilters    []*typeForFilter
 	CollPrefixLookup map[uint32]*collMetaField
 	legacyMode       bool
 }
 
+func (bd *BleveDocumentConfig) Validate(idxMapping mapping.IndexMapping) error {
+	if bd.DocumentFilter != nil {
+		for _, filter := range bd.DocumentFilter {
+			err := filter.Validate(idxMapping, true, 0)
+			if err != nil {
+				return err
+			}
+		}
+		keys := make([]string, 0, len(bd.DocumentFilter))
+		for key := range bd.DocumentFilter {
+			keys = append(keys, key)
+		}
+
+		// ensure that none of the filters have the same order
+		// as the order is used to sort the filters
+		seenOrders := make(map[int]struct{})
+		for _, key := range keys {
+			order := bd.DocumentFilter[key].GetOrder()
+			if _, ok := seenOrders[order]; ok {
+				return fmt.Errorf("filter %s has the same order as another filter", key)
+			}
+			seenOrders[order] = struct{}{}
+		}
+
+		// Sort the keys based on the filter's order
+		sort.SliceStable(keys, func(i, j int) bool {
+			return bd.DocumentFilter[keys[i]].GetOrder() < bd.DocumentFilter[keys[j]].GetOrder()
+		})
+
+		bd.sortedFilters = make([]*typeForFilter, len(keys))
+		for i, key := range keys {
+			bd.sortedFilters[i] = &typeForFilter{
+				typ:    key,
+				filter: bd.DocumentFilter[key],
+			}
+		}
+	}
+	return nil
+}
 func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 	docIDRegexp := ""
 	if b.DocIDRegexp != nil {
@@ -69,10 +117,11 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		b.CollPrefixLookup = make(map[uint32]*collMetaField, 1)
 	}
 	tmp := struct {
-		Mode             string `json:"mode"`
-		TypeField        string `json:"type_field"`
-		DocIDPrefixDelim string `json:"docid_prefix_delim"`
-		DocIDRegexp      string `json:"docid_regexp"`
+		Mode             string                     `json:"mode"`
+		TypeField        string                     `json:"type_field"`
+		DocIDPrefixDelim string                     `json:"docid_prefix_delim"`
+		DocIDRegexp      string                     `json:"docid_regexp"`
+		DocumentFilter   map[string]json.RawMessage `json:"doc_filter"`
 		CollPrefixLookup map[uint32]*collMetaField
 	}{
 		Mode:             b.Mode,
@@ -114,6 +163,20 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 		} else {
 			return fmt.Errorf("with mode docid_regexp, docid_regexp cannot be empty")
 		}
+	case "scope.collection.custom":
+		fallthrough
+	case "custom":
+		if tmp.DocumentFilter != nil {
+			b.DocumentFilter = make(map[string]IndexFilter, len(tmp.DocumentFilter))
+			for k, v := range tmp.DocumentFilter {
+				b.DocumentFilter[k], err = ParseDocumentFilter(v)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("with mode custom, doc_filter cannot be empty")
+		}
 	default:
 		return fmt.Errorf("unknown mode: %s", tmp.Mode)
 	}
@@ -127,15 +190,24 @@ func (b *BleveDocumentConfig) MarshalJSON() ([]byte, error) {
 		docIDRegexp = b.DocIDRegexp.String()
 	}
 	tmp := struct {
-		Mode             string `json:"mode"`
-		TypeField        string `json:"type_field"`
-		DocIDPrefixDelim string `json:"docid_prefix_delim"`
-		DocIDRegexp      string `json:"docid_regexp"`
+		Mode             string                     `json:"mode"`
+		TypeField        string                     `json:"type_field"`
+		DocIDPrefixDelim string                     `json:"docid_prefix_delim"`
+		DocIDRegexp      string                     `json:"docid_regexp"`
+		DocumentFilter   map[string]json.RawMessage `json:"doc_filter,omitempty"`
 	}{
 		Mode:             b.Mode,
 		TypeField:        b.TypeField,
 		DocIDPrefixDelim: b.DocIDPrefixDelim,
 		DocIDRegexp:      docIDRegexp,
+	}
+	tmp.DocumentFilter = make(map[string]json.RawMessage, len(b.DocumentFilter))
+	for k, v := range b.DocumentFilter {
+		jsonBytes, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		tmp.DocumentFilter[k] = jsonBytes
 	}
 	return json.Marshal(&tmp)
 }
@@ -326,7 +398,7 @@ func (b *BleveDocumentConfig) findTypeUtil(key []byte, v interface{},
 	defaultType, mode string) string {
 	switch mode {
 	case "type_field":
-		typ, ok := mustString(lookupPropertyPath(v, b.TypeField))
+		typ, ok := mustString(lookupPropertyPath(v, b.TypeField, false))
 		if ok {
 			return typ
 		}
@@ -340,17 +412,23 @@ func (b *BleveDocumentConfig) findTypeUtil(key []byte, v interface{},
 		if typ != nil {
 			return string(typ)
 		}
+	case "custom":
+		for _, docFilter := range b.sortedFilters {
+			if docFilter.filter.IsSatisfied(v) {
+				return docFilter.typ
+			}
+		}
 	}
 	return defaultType
 }
 
 // utility functions copied from bleve/reflect.go
-func lookupPropertyPath(data interface{}, path string) interface{} {
+func lookupPropertyPath(data interface{}, path string, checkSlice bool) interface{} {
 	pathParts := decodePath(path)
 
 	current := data
 	for _, part := range pathParts {
-		current = lookupPropertyPathPart(current, part)
+		current = lookupPropertyPathPart(current, part, checkSlice)
 		if current == nil {
 			break
 		}
@@ -359,7 +437,7 @@ func lookupPropertyPath(data interface{}, path string) interface{} {
 	return current
 }
 
-func lookupPropertyPathPart(data interface{}, part string) interface{} {
+func lookupPropertyPathPart(data interface{}, part string, checkSlice bool) interface{} {
 	val := reflect.ValueOf(data)
 	if !val.IsValid() {
 		return nil
@@ -381,22 +459,37 @@ func lookupPropertyPathPart(data interface{}, part string) interface{} {
 		if field.IsValid() && field.CanInterface() {
 			return field.Interface()
 		}
+	case reflect.Slice:
+		if checkSlice {
+			rv := make([]interface{}, 0, val.Len())
+			for i := 0; i < val.Len(); i++ {
+				if val.Index(i).CanInterface() {
+					fieldVal := val.Index(i).Interface()
+					rv = append(rv, lookupPropertyPathPart(fieldVal, part, checkSlice))
+				}
+			}
+			return flattenNestedSlice(rv)
+		}
 	}
 	return nil
+}
+
+func flattenNestedSlice(slice []interface{}) []interface{} {
+	var result []interface{}
+	for _, item := range slice {
+		switch item := item.(type) {
+		case []interface{}:
+			flattened := flattenNestedSlice(item)
+			result = append(result, flattened...)
+		case interface{}:
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 const pathSeparator = "."
 
 func decodePath(path string) []string {
 	return strings.Split(path, pathSeparator)
-}
-
-func mustString(data interface{}) (string, bool) {
-	if data != nil {
-		str, ok := data.(string)
-		if ok {
-			return str, true
-		}
-	}
-	return "", false
 }

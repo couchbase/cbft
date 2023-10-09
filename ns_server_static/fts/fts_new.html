@@ -194,7 +194,7 @@
                          class="input-small">
                 </div>
               </div>
-              <div class="row width-480">
+              <div class="row width-480 margin-bottom-half">
                 <div class="width-5">
                   <input type="radio"
                          value="docid_regexp"
@@ -209,6 +209,26 @@
                          type="text"
                          placeholder="regular expression"
                          class="input-small">
+                </div>
+              </div>
+              <div class="row width-480 margin-bottom-half">
+                <div class="width-5">
+                  <input type="radio"
+                         value="custom"
+                         id="for-custom"
+                         ng-model="$parent.$parent.$parent.docConfigMode"
+                         ng-change="typeIdentifierChanged()">
+                  <label for="for-custom">Custom</label>
+                </div>
+              </div>
+              <div ng-show="$parent.$parent.$parent.docConfigMode == 'custom'">
+                <div class="row min-height-2 margin-bottom-half indent-1">
+                  <label>
+                    Document Filters
+                  </label>
+                </div>
+                <div class="indent-1 margin-bottom1">
+                  <div ng-include src="static_prefix + '/partials/analysis/documentfilters.html'"></div>
                 </div>
               </div>
             </div>

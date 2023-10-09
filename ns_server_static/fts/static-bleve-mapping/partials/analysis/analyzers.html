@@ -50,7 +50,7 @@ licenses/APL2.txt.
         </a>
       </td>
     </tr>
-    <tr ng-show="Utils.keys(indexMapping.analysis.analyzers).length < 1">
+    <tr ng-show="isObjectEmpty(indexMapping.analysis.analyzers)">
       <td colspan="2">None</td>
     </tr>
   </tbody>

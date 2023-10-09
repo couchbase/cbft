@@ -45,10 +45,11 @@ const (
 	featureIndexType   = "indexType"
 	FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 
-	FeatureCollections  = cbgt.SOURCE_GOCBCORE + ":collections"
-	FeatureGeoSpatial   = "geoSpatial"
-	featureVectorSearch = "vectors"
-	FeatureXattrs       = "xattrs"
+	FeatureCollections        = cbgt.SOURCE_GOCBCORE + ":collections"
+	FeatureGeoSpatial         = "geoSpatial"
+	featureVectorSearch       = "vectors"
+	FeatureXattrs             = "xattrs"
+	FeatureIndexCustomFilters = "indexCustomFilters"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -608,6 +609,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
+		if bp.DocConfig.Mode == "scope.collection.custom" || bp.DocConfig.Mode == "custom" {
+			if !cbgt.IsFeatureSupportedByCluster(FeatureIndexCustomFilters, nodeDefs) {
+				// Document Filters are NOT supported on this cluster
+				// (lower version or mixed lower version)
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: custom index filters " +
+					"not supported in this cluster")
+			}
+		}
+
 		indexVectorPicture = vectorPictureFromIndexMapping(bp.Mapping)
 		if indexVectorPicture.fields != noVectorFields && !vectorSearchSupported {
 			// Vector indexing & search is NOT supported on this cluster
@@ -860,6 +870,11 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 		return cbgt.NewBadRequestError("ValidateIndex, Mapping err: %v", err)
 	}
 
+	err = bp.DocConfig.Validate(bp.Mapping)
+	if err != nil {
+		return fmt.Errorf("ValidateIndex, DocConfig err: %v", err)
+	}
+
 	return nil
 }
 
@@ -922,6 +937,12 @@ func parseIndexParams(indexParams string) (
 		if err != nil {
 			return nil, nil, "", "",
 				fmt.Errorf("bleve: parse params, err: %v", err)
+		}
+
+		err = bleveParams.DocConfig.Validate(bleveParams.Mapping)
+		if err != nil {
+			return nil, nil, "", "",
+				fmt.Errorf("bleve: doc config, err: %v", err)
 		}
 	}
 

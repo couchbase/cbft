@@ -60,8 +60,7 @@ licenses/APL2.txt.
                  ng-model="mapping.name"
                  ng-change="validateMapping(mapping, mappings)"
                  ng-class="{'invalid': mapping._invalid}"
-                 style="min-width:240px;">
-          </input>
+                 style="min-width:240px;"/>
           <span ng-if="$parent.docConfigCollections && mapping.name"
                 class="fa-stack icon-info"
                 uib-tooltip="Format: scope.collection[.<type_value>]"

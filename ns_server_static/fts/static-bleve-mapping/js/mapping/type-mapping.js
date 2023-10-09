@@ -289,6 +289,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             field.dims = null;
             field.vector_index_optimized_for = null;
         }
+        field.date_format = null;
+        field.analyzer = null;
         field.include_in_all = null;
         field.store = null;
         field.include_term_vectors = null;

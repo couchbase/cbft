@@ -45,7 +45,7 @@ licenses/APL2.txt.
         </a>
       </td>
     </tr>
-    <tr ng-show="Utils.keys(indexMapping.analysis.token_maps).length < 1">
+    <tr ng-show="isObjectEmpty(indexMapping.analysis.token_maps)">
       <td colspan="3">None</td>
     </tr>
   </tbody>

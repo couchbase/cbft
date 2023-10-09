@@ -1,5 +1,5 @@
 <!--
-Copyright 2017-Present Couchbase, Inc.
+Copyright 2023-Present Couchbase, Inc.
 
 Use of this software is governed by the Business Source License included in
 the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
@@ -11,36 +11,35 @@ licenses/APL2.txt.
 <table class="table">
   <thead>
     <tr>
-      <th>date/time parser name</th>
+      <th>document filter name</th>
       <th class="text-right">
         <button
-          ng-if="!viewOnlyModal && showDatetimeParser"
-          ng-click="newDatetimeParser()" type="button"
-                                         ng-show="showDatetimeParser"
+          ng-if="!viewOnlyModal"
+          ng-click="newDocumentFilter()" type="button"
                                          class="outline"
                                          style="width:200px;">
-          + Add Date/Time Parser
+          + Add Document Filter
         </button>
       </th>
     </tr>
   </thead>
   <tbody>
-    <tr ng-repeat="(aname,aval) in indexMapping.analysis.date_time_parsers">
-      <td><a ng-click="editDatetimeParser(aname, aval, true)">{{aname}}</a></td>
+    <tr ng-repeat="(aname,aval) in ftsDocConfig.doc_filter">
+      <td><a ng-click="editDocumentFilter(aname, aval, true)">{{aname}}</a></td>
       <td class="controls">
         <a href=""
            ng-if="!viewOnlyModal"
-           ng-click="editDatetimeParser(aname, aval)">
+           ng-click="editDocumentFilter(aname, aval)">
           Edit
         </a>
         <a href=""
            ng-if="!viewOnlyModal"
-           ng-click="deleteDatetimeParser(aname)">
+           ng-click="deleteDocumentFilter(aname)">
           Delete
         </a>
       </td>
     </tr>
-    <tr ng-show="isObjectEmpty(indexMapping.analysis.date_time_parsers)">
+    <tr ng-show="isObjectEmpty(ftsDocConfig.doc_filter)">
       <td colspan="2">None</td>
     </tr>
   </tbody>

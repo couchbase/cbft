@@ -17,6 +17,7 @@ import tokenizerTemplate from '../../partials/analysis/tokenizer.html';
 import tokenfilterTemplate from '../../partials/analysis/tokenfilter.html';
 import datetimeparserTemplate from '../../partials/analysis/datetimeparser.html';
 import testAnalyzerTemplate from '../../partials/analysis/test_analyzer.html';
+import documentfilterTemplate from '../../partials/analysis/documentfilter.html';
 
 export default BleveAnalysisCtrl;
 BleveAnalysisCtrl.$inject = ["$scope", "$http", "$log", "$uibModal"];
@@ -690,5 +691,74 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
           $scope.viewOnlyModal = false;
           $log.info('Modal dismissed at: ' + new Date());
         });
+    };
+
+    // document filters
+    $scope.newDocumentFilter = function() {
+        return $scope.editDocumentFilter("", {});
+    };
+
+    $scope.deleteDocumentFilter = function(type) {
+        confirmDialog(
+            $scope, $uibModal,
+            "Confirm Delete Document Filter",
+            "Are you sure you want to delete the document filter '" + type + "'?",
+            "Delete Document Filter"
+        ).then(function success() {
+            delete($scope.ftsDocConfig.doc_filter[type]);
+        });
+    };
+
+    $scope.editDocumentFilter = function(type, value, viewOnlyIn) {
+        var viewOnlyModal = $scope.viewOnlyModal = viewOnlyIn || viewOnly;
+        var modalInstance = $uibModal.open({
+          scope: $scope,
+          animation: $scope.animationsEnabled,
+          template: documentfilterTemplate,
+          controller: 'BleveDocumentFilterModalCtrl',
+          resolve: {
+            type: function() {
+                return type;
+            },
+            value: function() {
+                return value;
+            },
+            docConfig: function() {
+                return $scope.ftsDocConfig;
+            },
+            mapping: function() {
+                return $scope.indexMapping;
+            },
+            viewOnlyModal: function() {
+                return viewOnlyModal;
+            }
+          }
+        });
+
+        modalInstance.result.then(function(result) {
+            $scope.viewOnlyModal = false;
+            if ($scope.isObjectEmpty($scope.ftsDocConfig.doc_filter)) {
+                $scope.ftsDocConfig.doc_filter = {};
+            }
+            // add this result to the mapping
+            for (var resultKey in result) {
+                if (type !== "" && resultKey != type) {
+                    // remove the old type
+                    delete $scope.ftsDocConfig.doc_filter[type];
+                }
+                $scope.ftsDocConfig.doc_filter[resultKey] =
+                    result[resultKey];
+            }
+        }, function() {
+          $scope.viewOnlyModal = false;
+          $log.info('Modal dismissed at: ' + new Date());
+        });
+    };
+
+    $scope.isObjectEmpty = function(obj){
+        if (obj == null) {
+            return true;
+        }
+        return Object.keys(obj).length === 0;
     };
 }

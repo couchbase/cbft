@@ -26,6 +26,7 @@ import mnStatisticsNewService from "mn_admin/mn_statistics_service";
 import mnDocumentsService from "mn_admin/mn_documents_service";
 import mnSelect from "components/directives/mn_select/mn_select";
 
+import BleveDocumentFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-documentfilter.js";
 import BleveAnalyzerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-analyzer.js";
 import BleveCharFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-charfilter.js";
 import BleveDatetimeParserModalCtrl from "./static-bleve-mapping/js/mapping/analysis-datetimeparser.js";
@@ -787,7 +788,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.typeIdentifierChanged = function() {
                 if ($scope.docConfigMode == "type_field" ||
                     $scope.docConfigMode == "docid_prefix" ||
-                    $scope.docConfigMode == "docid_regexp") {
+                    $scope.docConfigMode == "docid_regexp" ||
+                    $scope.docConfigMode == "custom") {
                     if ($scope.docConfigCollections) {
                         $scope.ftsDocConfig.mode = "scope.collection." + $scope.docConfigMode;
                     } else {
@@ -799,8 +801,27 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
                 } else if ($scope.docConfigMode == "scope.collection.type_field" ||
                     $scope.docConfigMode == "scope.collection.docid_prefix" ||
-                    $scope.docConfigMode == "scope.collection.docid_regexp") {
+                    $scope.docConfigMode == "scope.collection.docid_regexp" ||
+                    $scope.docConfigMode == "scope.collection.custom") {
                     $scope.ftsDocConfig.mode = $scope.docConfigMode;
+                }
+                // Remove unrelated configurations
+                if ($scope.ftsDocConfig.mode.includes("type_field")) {
+                    delete $scope.ftsDocConfig.docid_regexp;
+                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                    delete $scope.ftsDocConfig.doc_filter;
+                } else if ($scope.docConfigMode.includes("docid_prefix")) {
+                    delete $scope.ftsDocConfig.type_field;
+                    delete $scope.ftsDocConfig.docid_regexp;
+                    delete $scope.ftsDocConfig.doc_filter;
+                } else if ($scope.docConfigMode.includes("docid_regexp")) {
+                    delete $scope.ftsDocConfig.type_field;
+                    delete $scope.ftsDocConfig.docid_prefix_delim;
+                    delete $scope.ftsDocConfig.doc_filter;
+                } else if ($scope.docConfigMode.includes("custom")) {
+                    delete $scope.ftsDocConfig.type_field;
+                    delete $scope.ftsDocConfig.docid_regexp;
+                    delete $scope.ftsDocConfig.docid_prefix_delim;
                 }
             }
 
@@ -845,6 +866,17 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     if (!readOnly) {
                         delete $scope.ftsDocConfig.type_field;
                         delete $scope.ftsDocConfig.docid_prefix_delim;
+                    }
+                  break;
+
+                  case "custom":
+                  case "scope.collection.custom":
+                    if (!$scope.ftsDocConfig.doc_filter) {
+                        errs.push("doc_filter is required");
+                    }
+                    if (!readOnly) {
+                        delete $scope.ftsDocConfig.docid_prefix_delim;
+                        delete $scope.ftsDocConfig.docid_regexp;
                     }
                   break;
                 }
@@ -1132,7 +1164,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                         if (indexParsed.params.doc_config.mode == "type_field" ||
                             indexParsed.params.doc_config.mode == "docid_prefix" ||
-                            indexParsed.params.doc_config.mode == "docid_regexp") {
+                            indexParsed.params.doc_config.mode == "docid_regexp" || 
+                            indexParsed.params.doc_config.mode == "custom") {
                                 $scope.docConfigMode = indexParsed.params.doc_config.mode;
                                 $scope.typeIdentifierChanged()
                             }
@@ -1163,6 +1196,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                 $scope.ftsDocConfig.docid_regexp = indexParsed.params.doc_config.docid_regexp
                             } else {
                                 $scope.errorMsg = "docid_regexp is a required field in doc_config if mode is 'docid_regexp'"
+                                return
+                            }
+                            break
+                        case "custom":
+                            if ("doc_filter" in indexParsed.params.doc_config) {
+                                $scope.ftsDocConfig.doc_filter = indexParsed.params.doc_config.doc_filter
+                            } else {
+                                $scope.errorMsg = "doc_filter is a required field in doc_config if mode is 'custom'"
                                 return
                             }
                             break
@@ -2014,7 +2055,10 @@ angular.module(ftsAppName).
                 "name", "words", "mapping", "static_prefix", BleveWordListModalCtrl_NS]).
     controller('BleveDatetimeParserModalCtrl',
                ["$scope", "$uibModalInstance",
-                "name", "value", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]);
+                "name", "value", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]).
+    controller('BleveDocumentFilterModalCtrl',
+                ["$scope", "$uibModalInstance",
+                 "type", "value", "docConfig","mapping", BleveDocumentFilterModalCtrl_NS]);
 
 // ----------------------------------------------
 
@@ -2056,6 +2100,12 @@ function BleveDatetimeParserModalCtrl_NS($scope, $uibModalInstance,
                                          name, value, mapping, static_prefix) {
     return BleveDatetimeParserModalCtrl($scope, $uibModalInstance,
                                         name, value, mapping, static_prefix);
+}
+
+function BleveDocumentFilterModalCtrl_NS($scope, $uibModalInstance,
+                                            type, value, docConfig, mapping) {
+        return BleveDocumentFilterModalCtrl($scope, $uibModalInstance,
+                                            type, value, docConfig, mapping);
 }
 
 // ----------------------------------------------

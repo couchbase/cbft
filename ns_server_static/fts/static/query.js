@@ -528,7 +528,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
 
     $scope.aceLoaded = function(editor) {
         editor.renderer.setPrintMarginColumn(false);
-        editor.setSelectionStyle("text");
+        editor.setSelectionStyle("json");
         editor.getSession().on("changeAnnotation", function() {
             var annot_list = editor.getSession().getAnnotations();
             if (annot_list && annot_list.length) for (var i=0; i < annot_list.length; i++)
