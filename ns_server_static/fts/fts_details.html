@@ -34,11 +34,13 @@ licenses/APL2.txt.
 
   <div class="tabs">
     <button ng-class="{ active: isIndexTab(1) }"
-            ng-click="setIndexTab(1)">
+            ng-click="setIndexTab(1)"
+            ng-style="{'background-color': isIndexTab(1)?'#30619c':''}">
       Partition Layout
     </button>
     <button ng-class="{ active: isIndexTab(2) }"
-            ng-click="setIndexTab(2)">
+            ng-click="setIndexTab(2)"
+            ng-style="{'background-color': isIndexTab(2)?'#30619c':''}">
       Query Monitor
     </button>
     <!-- <button ng-class="{ active: isIndexTab(3) }"

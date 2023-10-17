@@ -75,6 +75,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.jsonQuery = "";
     $scope.queryEditMode = false;
     $scope.editor = null;
+    $scope.queryTab = 1
 
     $scope.hostPort = $location.host();
     if ($location.port()) {
@@ -328,6 +329,13 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             }
         }
 
+        if ($scope.results.facets) {
+            $scope.facets = []
+            for (const [key, value] of Object.entries($scope.results.facets)) {
+                $scope.facets.push(key)
+            }
+        }
+
         for(var i in $scope.results.hits) {
             var hit = $scope.results.hits[i];
             for(var ff in hit.fragments) {
@@ -446,6 +454,16 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.cancelQuery = function(){
         $scope.queryEditMode = false;
     }
+
+    $scope.setQueryTab = function(newTab) {
+        $scope.queryTab = newTab;
+    }
+
+    $scope.isQueryTab = function(tabNum) {
+        return $scope.queryTab === tabNum
+    }
+
+
 }
 
 function queryMonitor($scope, $uibModal, $http){

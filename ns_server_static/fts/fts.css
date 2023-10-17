@@ -692,3 +692,15 @@ select.midwide {
   border: 2px solid white;
   background-color: rgba(0, 0, 0, .5);
 }
+
+.query-facets-table .query-facets-tr .query-facets-td  {
+  border: 1px solid grey;
+  border-collapse: collapse;
+}
+
+.query-facets-table tr:nth-child(odd) {
+  background-color: #f1f1f1;
+}
+.query-facets-table tr:nth-child(even) {
+  background-color: #ffffff;
+}
