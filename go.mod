@@ -46,7 +46,7 @@ require (
 	github.com/blevesearch/segment v0.9.0 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/blevesearch/vellum v1.0.8 // indirect
-	github.com/couchbase/blance v0.1.1 // indirect
+	github.com/couchbase/blance v0.1.5 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/gocbcore/v9 v9.1.10 // indirect
 	github.com/couchbase/gomemcached v0.1.4 // indirect
