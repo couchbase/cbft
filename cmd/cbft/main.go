@@ -499,6 +499,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	cbgt.StreamingEndpointListener = cbft.ListenStreamingEndpoint
 
+	if strings.HasPrefix(flags.CfgConnect, "metakv") {
+		options["cfg"] = cbgt.CFG_METAKV
+	}
+
 	meh := &mainHandlers{}
 	mgr := cbgt.NewManagerEx(cbgt.VERSION, cfg,
 		uuid, tags, container, weight,
