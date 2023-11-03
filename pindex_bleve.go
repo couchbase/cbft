@@ -87,7 +87,7 @@ const BleveDefaultZapVersion = int(11)
 // BlevePreferredZapVersion is the recommended zap version for newer indexes.
 // This version needs to be bumped to reflect the latest recommended zap
 // version in any given release.
-var BlevePreferredZapVersion = int(16)
+var BlevePreferredZapVersion = int(15)
 
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
