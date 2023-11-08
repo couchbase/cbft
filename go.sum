@@ -32,8 +32,11 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.1 h1:SEy2xmstIphdPwNBUi7uhvjyjhVKISfwjfOJmuy7kg4=
+github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.1/go.mod h1:bjGvMhVMb+EEm3VRNQawDMUyMMjo+S5ewNjflkep/0Q=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 h1:sXr+ck84g/ZlZUOZiNELInmMgOsuGwdjjVkEIde0OtY=
+github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0/go.mod h1:okt5dMMTOFjX/aovMlrjvvXoPMBVSPzk9185BT0+eZM=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 h1:u/LLAOFgsMv7HmNL4Qufg58y+qElGOt5qv0z1mURkRY=
+github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0/go.mod h1:2e8rMJtl2+2j+HXbTBwnyGpm5Nou7KhvSfxOq8JpTag=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/RoaringBitmap/roaring v1.2.3 h1:yqreLINqIrX22ErkKI0vY47/ivtJr6n+kMhVOVmhWBY=
@@ -118,8 +121,8 @@ github.com/couchbase/ghistogram v0.1.0/go.mod h1:s1Jhy76zqfEecpNWJfWUiKZookAFaiG
 github.com/couchbase/gocb/v2 v2.5.4 h1:7aWoVvg/C6OL3QZyZXzTNuMLbtYhipJV/QOkyqR4jqY=
 github.com/couchbase/gocb/v2 v2.5.4/go.mod h1:alZpkl4KFJc9fhCmeftbIewDdQiIh5hoMUpjiE+dM2g=
 github.com/couchbase/gocbcore/v10 v10.1.6/go.mod h1:qkPnOBziCs0guMEEvd0cRFo+AjOW0yEL99cU3I4n3Ao=
-github.com/couchbase/gocbcore/v10 v10.2.6-0.20230821173641-a343c19faafa h1:aCVe//kUxw8pU7U5aciirZCqe24OYiRGR7KQrc2l1sU=
-github.com/couchbase/gocbcore/v10 v10.2.6-0.20230821173641-a343c19faafa/go.mod h1:lYQIIk+tzoMcwtwU5GzPbDdqEkwkH3isI2rkSpfL0oM=
+github.com/couchbase/gocbcore/v10 v10.2.9 h1:zph/+ceu3JtZEDKhJMTRc6lGrahq+mnlQY/1dSepJuE=
+github.com/couchbase/gocbcore/v10 v10.2.9/go.mod h1:lYQIIk+tzoMcwtwU5GzPbDdqEkwkH3isI2rkSpfL0oM=
 github.com/couchbase/gocbcore/v9 v9.1.8 h1:79VOjo+lOJpEG99vA6AIQCuwMizYe1TUDK2ynaDNHqQ=
 github.com/couchbase/gocbcore/v9 v9.1.8/go.mod h1:jOSQeBSECyNvD7aS4lfuaw+pD5t6ciTOf8hrDP/4Nus=
 github.com/couchbase/moss v0.3.0 h1:7NCCtyk6iGCr0egU6mxnx5wLqDSlRKkJJXOJp3seHMI=
@@ -129,9 +132,11 @@ github.com/couchbase/tools-common/cloud v1.0.0/go.mod h1:6KVlRpbcnDWrvickUJ+xpqC
 github.com/couchbase/tools-common/core v1.0.0 h1:pHz0xN+qhAd/OchSDPQKsZvIulJzFoLK95RVPLbeEBY=
 github.com/couchbase/tools-common/core v1.0.0/go.mod h1:jzRm/z2CehQ8xcUAlNL7wRz6EN3o7OPrAgncFiEEA6s=
 github.com/couchbase/tools-common/errors v1.0.0 h1:lEPRdPrk7iHOiZIJspEH7OnywxRR+SKlrG78KkOWnXA=
+github.com/couchbase/tools-common/errors v1.0.0/go.mod h1:9or/a3TpNd/1aZIUr/a8y0uF03O9hachXFCnu6Y3sjM=
 github.com/couchbase/tools-common/fs v1.0.0 h1:HFA4xCF/r3BtZShFJUxzVvGuXtDkqGnaPzYJP3Kp1mw=
 github.com/couchbase/tools-common/fs v1.0.0/go.mod h1:se8Dr4gDPfy2A8qYnsv3TX1lyBn0Nn9+4Y9xNaFpubU=
 github.com/couchbase/tools-common/functional v1.0.0 h1:/YSEx372JKQ809qB62JVfeV2OfFQysS2NwxlKgHcU4Q=
+github.com/couchbase/tools-common/functional v1.0.0/go.mod h1:CpNRePfo9gTjkVaqD56pvEn10RnQSW7+Od1eO4za5j4=
 github.com/couchbase/tools-common/strings v1.0.0 h1:GSP3nA/dDkoLbBPt4Zezfl0KJxLiPyw61PoWrNBsK5g=
 github.com/couchbase/tools-common/strings v1.0.0/go.mod h1:946T46RH9TQ9BwDag7oJsKCJrPguvYFeLlfMir7DFAY=
 github.com/couchbase/tools-common/sync v1.0.0 h1:J+xuTE6qom/eZyldaFJ3txiCZJcAbfBAa90w55sMY/8=
@@ -216,7 +221,9 @@ github.com/google/go-cmp v0.5.1/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
+github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/gofuzz v1.2.0 h1:xRy4A+RhZaiKjJ1bPfwQ8sedCA+YS2YcCHW6ec7JMi0=
+github.com/google/gofuzz v1.2.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/martian/v3 v3.0.0/go.mod h1:y5Zk1BBys9G+gd6Jrk0W3cC1+ELVxBWuIGO+w/tUAp0=
 github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
@@ -619,6 +626,7 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
+gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
 gopkg.in/errgo.v2 v2.1.0/go.mod h1:hNsd1EY+bozCKY1Ytp96fpM3vjJbqLJn88ws8XvfDNI=
 gopkg.in/fsnotify.v1 v1.4.7 h1:xOHLXZwVvI9hhs+cLKq5+I5onOuwQLhQwiu63xxlHs4=
 gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
