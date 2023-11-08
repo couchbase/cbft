@@ -473,16 +473,20 @@ func init() {
 func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	*cbgt.IndexDef, error) {
 	if indexDef == nil {
-		return nil, fmt.Errorf("PrepareIndex, indexDef is nil")
+		return nil, cbgt.NewBadRequestError("PrepareIndex, indexDef is nil")
 	}
 
 	if CurrentNodeDefsFetcher == nil {
-		return LimitIndexDef(mgr, indexDef)
+		rv, err := LimitIndexDef(mgr, indexDef)
+		if err != nil {
+			return rv, cbgt.NewBadRequestError("%v", err)
+		}
+		return rv, nil
 	}
 
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
 	if err != nil {
-		return nil, fmt.Errorf("PrepareIndex, nodeDefs unavailable: err: %v", err)
+		return nil, cbgt.NewInternalServerError("PrepareIndex, nodeDefs unavailable: err: %v", err)
 	}
 
 	var collectionsSupported, s2SpatialSupported bool
@@ -512,19 +516,19 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
 		if err != nil {
-			return nil, fmt.Errorf("PrepareIndex, CleanseJSON err: %v", err)
+			return nil, cbgt.NewBadRequestError("PrepareIndex, CleanseJSON err: %v", err)
 		}
 
 		err = json.Unmarshal(b, bp)
 		if err != nil {
 			if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
 				if typeErr.Type.String() == "map[string]json.RawMessage" {
-					return nil, fmt.Errorf("PrepareIndex,"+
+					return nil, cbgt.NewBadRequestError("PrepareIndex,"+
 						" JSON parse was expecting a string key/field-name"+
 						" but instead saw a %s", typeErr.Value)
 				}
 			}
-			return nil, fmt.Errorf("bleve: Prepare, err: %v", err)
+			return nil, cbgt.NewBadRequestError("bleve: Prepare, err: %v", err)
 		}
 
 		if indexType, ok := bp.Store["indexType"].(string); ok {
@@ -546,7 +550,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// and perform the validation checks.
 		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
 			if !collectionsSupported {
-				return nil, fmt.Errorf("PrepareIndex, collections not supported" +
+				return nil, cbgt.NewBadRequestError("PrepareIndex, collections not supported" +
 					" across all nodes in the cluster")
 			}
 
@@ -554,17 +558,17 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
 					im, false)
 				if err != nil {
-					return nil, err
+					return nil, cbgt.NewBadRequestError("%v", err)
 				}
 
 				bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
 				if len(bucketName) > 0 && len(scopeName) > 0 {
 					if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-						return nil, fmt.Errorf("PrepareIndex, scoped indexes NOT" +
+						return nil, cbgt.NewBadRequestError("PrepareIndex, scoped indexes NOT" +
 							" supported in mixed version cluster")
 					}
 					if bucketName != indexDef.SourceName || scopeName != scope.Name {
-						return nil, fmt.Errorf("PrepareIndex, validation of bucket" +
+						return nil, cbgt.NewBadRequestError("PrepareIndex, validation of bucket" +
 							" and/or scope names against index definition failed")
 					}
 				}
@@ -573,7 +577,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
 			if len(bucketName) > 0 && len(scopeName) > 0 {
 				if bucketName != indexDef.SourceName || scopeName != "_default" {
-					return nil, fmt.Errorf("PrepareIndex, changing a scoped index's" +
+					return nil, cbgt.NewBadRequestError("PrepareIndex, changing a scoped index's" +
 						" bucket/scope name is NOT allowed")
 				}
 			}
@@ -588,15 +592,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			if !segmentVersionSupported && int(zv) == BlevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
-				return nil, fmt.Errorf("PrepareIndex, err: zap version %d isn't "+
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported in mixed version cluster", int(zv))
 			}
 			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
-				return nil, fmt.Errorf("PrepareIndex, err: zap version %d isn't "+
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
 			}
 		} else {
-			return nil, fmt.Errorf("PrepareIndex, err: segmentVersion %v "+
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
 				"should be a numeric value", v)
 		}
 	} else {
@@ -612,15 +616,19 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 	updatedParams, err := json.Marshal(bp)
 	if err != nil {
-		return nil, fmt.Errorf("PrepareIndex, Marshal err: %v", err)
+		return nil, cbgt.NewBadRequestError("PrepareIndex, Marshal err: %v", err)
 	}
 	indexDef.Params = string(updatedParams)
 
 	if err := checkSourceCompatability(mgr, indexDef.SourceName); err != nil {
-		return nil, fmt.Errorf("PrepareIndex, err: %v", err)
+		return nil, cbgt.NewInternalServerError("PrepareIndex, err: %v", err)
 	}
 
-	return LimitIndexDef(mgr, indexDef)
+	rv, err := LimitIndexDef(mgr, indexDef)
+	if err != nil {
+		return rv, cbgt.NewInternalServerError("%v", err)
+	}
+	return rv, nil
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {
@@ -635,7 +643,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 		nodeDefs, err := CurrentNodeDefsFetcher.Get()
 		if err != nil {
-			return fmt.Errorf("ValidateIndex, nodeDefs unavailable: err: %v", err)
+			return cbgt.NewInternalServerError("ValidateIndex, nodeDefs unavailable: err: %v", err)
 		}
 
 		indexType := ""
@@ -645,7 +653,7 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 		// Validate indexType
 		if !cbgt.IsFeatureSupportedByCluster(featureIndexType+":"+indexType, nodeDefs) {
-			return fmt.Errorf("ValidateIndex, index validation failed:"+
+			return cbgt.NewBadRequestError("ValidateIndex, index validation failed:"+
 				" indexType: %v not supported on all nodes in"+
 				" cluster", indexType)
 		}
@@ -694,13 +702,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			switch param["type"] {
 			case "edge_ngram", "length", "ngram", "shingle":
 				if param["min"].(float64) > param["max"].(float64) {
-					return fmt.Errorf("bleve: token_filter validation failed"+
+					return cbgt.NewBadRequestError("bleve: token_filter validation failed"+
 						" for %v => min(%v) > max(%v)", param["type"],
 						param["min"], param["max"])
 				}
 			case "truncate_token":
 				if param["length"].(float64) < 0 {
-					return fmt.Errorf("bleve: token_filter validation failed"+
+					return cbgt.NewBadRequestError("bleve: token_filter validation failed"+
 						" for %v => length(%v) < 0", param["type"], param["length"])
 				}
 			default:
@@ -713,12 +721,12 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 
 	err := validateIndexParams()
 	if err != nil {
-		return fmt.Errorf("ValidateIndex, err: %v", err)
+		return cbgt.NewBadRequestError("ValidateIndex, err: %v", err)
 	}
 
 	b, err := bleveMappingUI.CleanseJSON([]byte(indexParams))
 	if err != nil {
-		return fmt.Errorf("ValidateIndex, CleanseJSON err: %v", err)
+		return cbgt.NewBadRequestError("ValidateIndex, CleanseJSON err: %v", err)
 	}
 
 	bp := NewBleveParams()
@@ -727,13 +735,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 	if err != nil {
 		if typeErr, ok := err.(*json.UnmarshalTypeError); ok {
 			if typeErr.Type.String() == "map[string]json.RawMessage" {
-				return fmt.Errorf("ValidateIndex, Params:"+
+				return cbgt.NewBadRequestError("ValidateIndex, Params:"+
 					" JSON parse was expecting a string key/field-name"+
 					" but instead saw a %s", typeErr.Value)
 			}
 		}
 
-		return fmt.Errorf("ValidateIndex, Params err: %v", err)
+		return cbgt.NewBadRequestError("ValidateIndex, Params err: %v", err)
 	}
 
 	// err out if there are no active type mapping.
@@ -747,13 +755,13 @@ func ValidateBleve(indexType, indexName, indexParams string) error {
 			break
 		}
 		if !im.DefaultMapping.Enabled && !found {
-			return fmt.Errorf("ValidateIndex, Params: no valid type mappings found")
+			return cbgt.NewBadRequestError("ValidateIndex, Params: no valid type mappings found")
 		}
 	}
 
 	err = bp.Mapping.Validate()
 	if err != nil {
-		return fmt.Errorf("ValidateIndex, Mapping err: %v", err)
+		return cbgt.NewBadRequestError("ValidateIndex, Mapping err: %v", err)
 	}
 
 	return nil

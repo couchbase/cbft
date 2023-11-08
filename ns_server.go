@@ -461,6 +461,16 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		nsIndexStats[""][k] = v
 	}
 
+	// insert create index error stats as top level stats
+	for k, v := range rest.GatherCreateIndexStats() {
+		nsIndexStats[""][k] = v
+	}
+
+	// insert delete index error stats as top level stats
+	for k, v := range rest.GatherDeleteIndexStats() {
+		nsIndexStats[""][k] = v
+	}
+
 	return nsIndexStats, nil
 }
 

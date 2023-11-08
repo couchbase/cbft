@@ -63,7 +63,7 @@ var obtainUniqueKeyspaces = obtainIndexBucketScopesForDefinition
 
 func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, error) {
 	if indexDef == nil {
-		return nil, fmt.Errorf("PrepareAlias, indexDef is nil")
+		return nil, cbgt.NewBadRequestError("PrepareAlias, indexDef is nil")
 	}
 
 	// Reset plan params for a full-text alias
@@ -84,7 +84,7 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 		}
 		paramsBytes, err := MarshalJSON(params)
 		if err != nil {
-			return nil, fmt.Errorf("PrepareAlias, unable to marshal params")
+			return nil, cbgt.NewBadRequestError("PrepareAlias, unable to marshal params")
 		}
 		indexDef.Params = string(paramsBytes)
 	}
@@ -95,12 +95,12 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 	var err error
 	if uniqueKeyspaces, err = obtainUniqueKeyspaces(
 		mgr, indexDef, uniqueKeyspaces, visitedIndexNames, 0); err != nil {
-		return nil, fmt.Errorf("PrepareAlias, %v", err)
+		return nil, cbgt.NewBadRequestError("PrepareAlias, %v", err)
 	}
 
 	// alias to multiple keyspaces NOT allowed in serverless mode
 	if len(uniqueKeyspaces) > 1 && ServerlessMode {
-		return nil, fmt.Errorf("PrepareAlias: multiple keyspaces NOT" +
+		return nil, cbgt.NewBadRequestError("PrepareAlias: multiple keyspaces NOT" +
 			" supported in serverless mode")
 	}
 
@@ -108,7 +108,7 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 	if len(bucketName) > 0 && len(scopeName) > 0 {
 		// No name decoration for a partially upgraded cluster
 		if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-			return nil, fmt.Errorf("PrepareAlias, scoped index aliases NOT" +
+			return nil, cbgt.NewBadRequestError("PrepareAlias, scoped index aliases NOT" +
 				" supported in mixed version cluster")
 		}
 		scopedPrefix := bucketName + "." + scopeName
@@ -119,7 +119,7 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 			}
 		}
 		if numErrTargets > 0 {
-			return nil, fmt.Errorf("PrepareAlias, scoped index alias CANNOT"+
+			return nil, cbgt.NewBadRequestError("PrepareAlias, scoped index alias CANNOT"+
 				" include %d target(s)", numErrTargets)
 		}
 	}
@@ -130,11 +130,11 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 func ValidateAlias(indexType, indexName, indexParams string) error {
 	params := AliasParams{}
 	if err := UnmarshalJSON([]byte(indexParams), &params); err != nil {
-		return err
+		return cbgt.NewBadRequestError("%v", err)
 	}
 
 	if len(params.Targets) == 0 {
-		return fmt.Errorf("ValidateAlias: cannot create index alias" +
+		return cbgt.NewBadRequestError("ValidateAlias: cannot create index alias" +
 			" because no index targets were specified")
 	}
 

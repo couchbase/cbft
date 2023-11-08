@@ -440,7 +440,7 @@ func TestHandlersForEmptyManager(t *testing.T) {
 				"sourceType": []string{"couchbase"},
 			},
 			Body:   nil,
-			Status: 400,
+			Status: 500,
 			ResponseMatch: map[string]bool{
 				`failed to connect`: true,
 			},
@@ -939,7 +939,7 @@ func TestHandlersWithOnePartitionPrimaryFeedIndex(t *testing.T) {
 				"sourceParams": []string{"-}totally n0t json{-"},
 			},
 			Body:   nil,
-			Status: 400,
+			Status: 500,
 			ResponseMatch: map[string]bool{
 				`could not parse sourceParams`: true,
 			},
