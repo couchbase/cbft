@@ -87,7 +87,12 @@ const BleveDefaultZapVersion = int(11)
 // BlevePreferredZapVersion is the recommended zap version for newer indexes.
 // This version needs to be bumped to reflect the latest recommended zap
 // version in any given release.
-var BlevePreferredZapVersion = int(15)
+const BlevePreferredZapVersion = int(15)
+
+// Preview ZapVersion for indexes that come with vector search support.
+// FIXME: This is a temporary placeholder which will be removed once the
+// BlevePreferredZapVersion is updated to this. See: MB-59918
+const BleveVectorZapVersion = int(16)
 
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
@@ -230,6 +235,8 @@ type SearchRequest struct {
 	Limit            *int                    `json:"limit,omitempty"`
 	Offset           *int                    `json:"offset,omitempty"`
 	Collections      []string                `json:"collections,omitempty"`
+	KNN              json.RawMessage         `json:"knn,omitempty"`
+	KNNOperator      json.RawMessage         `json:"knn_operator,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -283,6 +290,10 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if r, err = interpretKNNForRequest(sr.KNN, sr.KNNOperator, r); err != nil {
+		return nil, err
 	}
 
 	return r, r.Validate()
@@ -582,6 +593,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				}
 			}
 		}
+
+		if !isClusterCompatibleFor(FeatureVectorSupportVersion) {
+			// Vector indexing & search is NOT supported on this cluster
+			// (lower version or mixed lower version)
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields " +
+					"not supported in mixed version cluster")
+			}
+		}
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -589,13 +609,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	// if segment version is specified then perform the validations.
 	if v, ok := bp.Store["segmentVersion"]; ok {
 		if zv, ok := v.(float64); ok {
-			if !segmentVersionSupported && int(zv) == BlevePreferredZapVersion {
+			if !segmentVersionSupported && int(zv) >= BlevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported in mixed version cluster", int(zv))
 			}
-			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
+			if int(zv) > BleveVectorZapVersion || int(zv) < BleveDefaultZapVersion {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
 			}
@@ -608,7 +628,11 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
-			bp.Store["segmentVersion"] = BlevePreferredZapVersion
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+				bp.Store["segmentVersion"] = BleveVectorZapVersion
+			} else {
+				bp.Store["segmentVersion"] = BlevePreferredZapVersion
+			}
 		} else {
 			bp.Store["segmentVersion"] = BleveDefaultZapVersion
 		}
@@ -629,6 +653,49 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return rv, cbgt.NewInternalServerError("%v", err)
 	}
 	return rv, nil
+}
+
+// Utility function check if a "vector" typed field is present within
+// the index mapping
+func vectorFieldsExistWithinIndexMapping(m mapping.IndexMapping) bool {
+	im, ok := m.(*mapping.IndexMappingImpl)
+	if !ok {
+		// cannot interpret index mapping
+		return false
+	}
+
+	var vectorFieldExistsWithinDocMapping func(*mapping.DocumentMapping) bool
+	vectorFieldExistsWithinDocMapping = func(d *mapping.DocumentMapping) bool {
+		if d != nil && d.Enabled {
+			for _, v := range d.Properties {
+				if vectorFieldExistsWithinDocMapping(v) {
+					return true
+				}
+			}
+
+			for _, field := range d.Fields {
+				if field.Type == "vector" {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	// Check DefaultMapping
+	if vectorFieldExistsWithinDocMapping(im.DefaultMapping) {
+		return true
+	}
+
+	// Iterate over TypeMapping(s)
+	for _, d := range im.TypeMapping {
+		if vectorFieldExistsWithinDocMapping(d) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {
@@ -1035,6 +1102,7 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"rollbackSamplingInterval": "10m",
 		"forceSegmentType":         "zap",
 		"bolt_timeout":             "30s",
+		// enable_concurrency will be added here.
 	}
 	for k, v := range bleveParams.Store {
 		if k == "segmentVersion" {

@@ -19,8 +19,13 @@ SET (FTS_DEFAULT "server")
 
 INCLUDE (FindCouchbaseGo)
 
+SET (FTS_DEPENDS sigar)
 IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "enterprise")
+    IF (CB_USE_FAISS)
+      SET (BUILD_TAG "${BUILD_TAG} vectors")
+      LIST (APPEND FTS_DEPENDS faiss_c)
+    ENDIF ()
 ENDIF(BUILD_ENTERPRISE)
 
 SET (GOVERSION SUPPORTED_NEWER)
@@ -30,7 +35,7 @@ GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
-  DEPENDS sigar
+  DEPENDS ${FTS_DEPENDS}
   GOVERSION ${GOVERSION})
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
@@ -38,7 +43,7 @@ GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
   CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin
-  DEPENDS sigar
+  DEPENDS ${FTS_DEPENDS}
   GOVERSION ${GOVERSION})
 
 # Build the UI and copy the files to the correct place

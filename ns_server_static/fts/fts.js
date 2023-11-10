@@ -1739,9 +1739,18 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         mapping.include_in_all = value.fields[i].include_in_all
                     }
 
-
                     if ("docvalues" in value.fields[i] && !(mapping.type == "geopoint" || mapping.type == "geoshape")) {
                         mapping.docvalues = value.fields[i].docvalues
+                    }
+
+                    if (mapping.type == "vector") {
+                        if ("dims" in value.fields[i]) {
+                            mapping.dims = value.fields[i].dims
+                        }
+
+                        if ("similarity" in value.fields[i]) {
+                            mapping.similarity = value.fields[i].similarity
+                        }
                     }
 
                     $scope.editAttrsDone(mapping, true)
@@ -2499,6 +2508,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.includeInAll = false;
                 $scope.editField.sortFacet = false;
                 $scope.editField.date_format = "dateTimeOptional";
+                $scope.editField.dims = null;
+                $scope.editField.similarity = null;
                 if (valType === "boolean") {
                     $scope.editField.type = "boolean";
                 } else if (valType === "number") {
@@ -2507,6 +2518,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "geoshape";
                 } else if (valType === "IP") {
                     $scope.editField.type = "IP";
+                } else if (valType === "vector") {
+                    $scope.editField.type = "vector";
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";
