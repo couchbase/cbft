@@ -152,8 +152,10 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 				if nsik == "num_bytes_used_disk" {
 					start := strings.Index(k, "bucket=") + len("bucket=")
 					end := strings.Index(k, ",scope=")
-					storageBytes, _ := nsiv.(float64)
-					storageStats[k[start+1:end-1]] += uint64(storageBytes)
+					if start+1 <= end-1 && end != -1 {
+						storageBytes, _ := nsiv.(float64)
+						storageStats[k[start+1:end-1]] += uint64(storageBytes)
+					}
 				}
 				w.Write([]byte(fmt.Sprintf("# TYPE fts_%s %s\n", nsik, typ)))
 				w.Write(append([]byte("fts_"+nsik+k+" "), b...))
