@@ -17,7 +17,7 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
-func interpretKNNForRequest(knn json.RawMessage, r *bleve.SearchRequest) (
+func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	// Not supported
 	return r, nil

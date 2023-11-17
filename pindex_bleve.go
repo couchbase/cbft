@@ -231,6 +231,7 @@ type SearchRequest struct {
 	Offset           *int                    `json:"offset,omitempty"`
 	Collections      []string                `json:"collections,omitempty"`
 	KNN              json.RawMessage         `json:"knn,omitempty"`
+	KNNOperator      json.RawMessage         `json:"knn_operator,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -286,7 +287,7 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		}
 	}
 
-	if r, err = interpretKNNForRequest(sr.KNN, r); err != nil {
+	if r, err = interpretKNNForRequest(sr.KNN, sr.KNNOperator, r); err != nil {
 		return nil, err
 	}
 
@@ -592,7 +593,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
-				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields "+
+				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
 		}
@@ -1092,6 +1093,7 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"rollbackSamplingInterval": "10m",
 		"forceSegmentType":         "zap",
 		"bolt_timeout":             "30s",
+		// enable_concurrency will be added here.
 	}
 	for k, v := range bleveParams.Store {
 		if k == "segmentVersion" {

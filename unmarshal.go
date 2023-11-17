@@ -299,6 +299,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		IncludeLocations bool                    `json:"includeLocations"`
 		Score            string                  `json:"score"`
 		KNN              json.RawMessage         `json:"knn"`
+		KNNOperator      json.RawMessage         `json:"knn_operator"`
 	}
 
 	r := &bleve.SearchRequest{}
@@ -349,7 +350,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		r.From = 0
 	}
 
-	if r, err = interpretKNNForRequest(temp.KNN, r); err != nil {
+	if r, err = interpretKNNForRequest(temp.KNN, temp.KNNOperator, r); err != nil {
 		return
 	}
 

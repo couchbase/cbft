@@ -17,10 +17,15 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
-func interpretKNNForRequest(knn json.RawMessage, r *bleve.SearchRequest) (
+func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
 		if err := UnmarshalJSON(knn, &r.KNN); err != nil {
+			return nil, err
+		}
+	}
+	if knnOperator != nil && r != nil {
+		if err := UnmarshalJSON(knnOperator, &r.KNNOperator); err != nil {
 			return nil, err
 		}
 	}
