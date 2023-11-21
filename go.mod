@@ -3,7 +3,7 @@ module github.com/couchbase/cbft
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.44.299
+	github.com/aws/aws-sdk-go v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
 	github.com/blevesearch/bleve/v2 v2.3.11-0.20231110152011-9440161a83b1
 	github.com/blevesearch/bleve_index_api v1.1.2
