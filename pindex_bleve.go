@@ -65,6 +65,8 @@ var FeatureVectorSearch = "vectors"
 
 var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
 
+var xAttrsMappingName = "_$xattrs"
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
@@ -622,6 +624,23 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"not supported in mixed version cluster")
 			}
 		}
+
+		var sourceParams map[string]interface{}
+		err = json.Unmarshal([]byte(indexDef.SourceParams), &sourceParams)
+		if err != nil {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
+				", err: %v", err)
+		}
+
+		sourceParams["IncludeXAttrs"] = hasXAttrs(bp)
+
+		updatedSourceParams, err := json.Marshal(sourceParams)
+		if err != nil {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
+				", err: %v", err)
+		}
+
+		indexDef.SourceParams = string(updatedSourceParams)
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -3500,6 +3519,27 @@ func isGeoPointFieldInMapping(bp *BleveParams) bool {
 			for _, dm := range im.TypeMapping {
 				res := findGeoPoint(dm)
 				if res {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func hasXAttrs(bp *BleveParams) bool {
+
+	if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+		if im.DefaultMapping.Enabled {
+			if _, ok := im.DefaultMapping.Properties[xAttrsMappingName]; ok {
+				return true
+			}
+		}
+
+		for _, tm := range im.TypeMapping {
+			if tm.Enabled {
+				if _, ok := tm.Properties[xAttrsMappingName]; ok {
 					return true
 				}
 			}

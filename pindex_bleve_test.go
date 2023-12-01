@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/blevesearch/bleve/v2/search/query"
 
 	"github.com/couchbase/cbgt"
@@ -913,6 +914,92 @@ func TestCollectionSearchRequestDocIDQuery(t *testing.T) {
 		// in the index unless it is a collection targetted query.
 		if len(decoratedQuery.IDs) != test.targetDocIDCount {
 			t.Errorf("Expected %d docIDs after decoration, but got: %+v", test.targetDocIDCount, bsr.Query)
+		}
+
+	}
+}
+
+func TestHasXAttrs(t *testing.T) {
+
+	tests := []struct {
+		bleveParams     *BleveParams
+		indexMapping    *mapping.IndexMappingImpl
+		fields          map[string]interface{}
+		typeMappingName string
+		xattrs          bool
+	}{
+		{
+			bleveParams:  NewBleveParams(),
+			indexMapping: bleve.NewIndexMapping(),
+			fields: map[string]interface{}{
+				"key": map[string]interface{}{
+					"value": struct{}{},
+				},
+			},
+			typeMappingName: "",
+			xattrs:          false,
+		},
+		{
+			bleveParams:  NewBleveParams(),
+			indexMapping: bleve.NewIndexMapping(),
+			fields: map[string]interface{}{
+				xAttrsMappingName: map[string]interface{}{
+					"value": struct{}{},
+				},
+			},
+			typeMappingName: "",
+			xattrs:          true,
+		},
+		{
+			bleveParams:  NewBleveParams(),
+			indexMapping: bleve.NewIndexMapping(),
+			fields: map[string]interface{}{
+				"key": map[string]interface{}{
+					xAttrsMappingName: struct{}{},
+				},
+			},
+			typeMappingName: "type",
+			xattrs:          false,
+		},
+		{
+			bleveParams:  NewBleveParams(),
+			indexMapping: bleve.NewIndexMapping(),
+			fields: map[string]interface{}{
+				"key": map[string]interface{}{
+					"value": struct{}{},
+				},
+			},
+			typeMappingName: xAttrsMappingName,
+			xattrs:          false,
+		},
+	}
+
+	var res bool
+	for _, test := range tests {
+
+		docMapping := bleve.NewDocumentMapping()
+		for outerName, val := range test.fields {
+
+			docMapping.AddFieldMappingsAt(outerName, bleve.NewTextFieldMapping())
+			if inner, ok := val.(map[string]interface{}); ok {
+				for innerName, _ := range inner {
+					docMapping.Properties[outerName].AddFieldMappingsAt(
+						innerName, bleve.NewTextFieldMapping(),
+					)
+				}
+			}
+		}
+
+		if test.typeMappingName == "" {
+			test.indexMapping.DefaultMapping = docMapping
+		} else {
+			test.indexMapping.TypeMapping[test.typeMappingName] = docMapping
+		}
+		test.bleveParams.Mapping = test.indexMapping
+		res = hasXAttrs(test.bleveParams)
+		if res != test.xattrs {
+			t.Errorf("Expected %v as output of hasXAttrs, but got %v. Fields - %+v",
+				test.xattrs, res, test.fields)
 		}
 
 	}
