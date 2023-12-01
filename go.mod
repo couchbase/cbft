@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aws/aws-sdk-go v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.3.11-0.20231201204936-81e98987ecff
+	github.com/blevesearch/bleve/v2 v2.3.11-0.20231201223325-fcd85c86cf26
 	github.com/blevesearch/bleve_index_api v1.1.4
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
