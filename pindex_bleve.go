@@ -87,7 +87,12 @@ const BleveDefaultZapVersion = int(11)
 // BlevePreferredZapVersion is the recommended zap version for newer indexes.
 // This version needs to be bumped to reflect the latest recommended zap
 // version in any given release.
-var BlevePreferredZapVersion = int(16)
+const BlevePreferredZapVersion = int(15)
+
+// Preview ZapVersion for indexes that come with vector search support.
+// FIXME: This is a temporary placeholder which will be removed once the
+// BlevePreferredZapVersion is updated to this. See: MB-59918
+const BleveVectorZapVersion = int(16)
 
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
@@ -604,13 +609,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	// if segment version is specified then perform the validations.
 	if v, ok := bp.Store["segmentVersion"]; ok {
 		if zv, ok := v.(float64); ok {
-			if !segmentVersionSupported && int(zv) == BlevePreferredZapVersion {
+			if !segmentVersionSupported && int(zv) >= BlevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported in mixed version cluster", int(zv))
 			}
-			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
+			if int(zv) > BleveVectorZapVersion || int(zv) < BleveDefaultZapVersion {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
 			}
@@ -623,7 +628,11 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
-			bp.Store["segmentVersion"] = BlevePreferredZapVersion
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+				bp.Store["segmentVersion"] = BleveVectorZapVersion
+			} else {
+				bp.Store["segmentVersion"] = BlevePreferredZapVersion
+			}
 		} else {
 			bp.Store["segmentVersion"] = BleveDefaultZapVersion
 		}
