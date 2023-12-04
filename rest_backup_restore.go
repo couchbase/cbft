@@ -301,13 +301,22 @@ func decorateIndexNameWithKeySpace(sourceName, scopeName,
 		return "", fmt.Errorf("invalid index name: %s", indexName)
 	}
 
-	if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-		// no name decoration for a partially upgraded cluster
+	if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) ||
+		len(undecoratedIndexName) == len(indexName) {
+		// no name decoration for a partially upgraded cluster, or if the index
+		// name was earlier undecorated.
 		return undecoratedIndexName, nil
 	}
 
 	// re-decorate index name
-	return sourceName + scopeName + undecoratedIndexName, nil
+	decoratedIndexName := sourceName + scopeName + undecoratedIndexName
+	if len(decoratedIndexName) > cbgt.MaxIndexNameLength {
+		return "", fmt.Errorf("decorated index name %s has a length of %d, which "+
+			"is longer than the maximum permissible length %d", decoratedIndexName,
+			len(decoratedIndexName), cbgt.MaxIndexNameLength)
+	}
+
+	return decoratedIndexName, nil
 }
 
 func remapTypeMappings(typeMappings map[string]*mapping.DocumentMapping,
