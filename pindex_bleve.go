@@ -2295,9 +2295,10 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 	return nil
 }
 
-func (t *BleveDestPartition) DataUpdate(partition string,
+func (t *BleveDestPartition) dataUpdate(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
-	extrasType cbgt.DestExtrasType, extras []byte) error {
+	extrasType cbgt.DestExtrasType, req *cbgt.GocbcoreDCPExtras, extras []byte) error {
+
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateBeg, 1)
 
 	t.m.Lock()
@@ -2313,7 +2314,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	}
 
 	cbftDoc, key, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
-		defaultType, extrasType, extras)
+		defaultType, extrasType, req, extras)
 
 	erri := t.batch.Index(string(key), cbftDoc)
 
@@ -2333,6 +2334,24 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
 	return err
+}
+
+func (t *BleveDestPartition) DataUpdate(partition string,
+	key []byte, seq uint64, val []byte, cas uint64,
+	extrasType cbgt.DestExtrasType, extras []byte) error {
+
+	return t.dataUpdate(partition, key, seq, val, cas, extrasType, nil, extras)
+}
+
+func (t *BleveDestPartition) DataUpdateEx(partition string,
+	key []byte, seq uint64, val []byte, cas uint64,
+	extrasType cbgt.DestExtrasType, req interface{}) error {
+	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+	if !ok {
+		return fmt.Errorf("bleve: DataUpdateEx unable to typecast GocbcoreDCPExtras")
+	}
+
+	return t.dataUpdate(partition, key, seq, val, cas, extrasType, &dcpExtras, nil)
 }
 
 func (t *BleveDestPartition) DataDelete(partition string,
@@ -2366,6 +2385,22 @@ func (t *BleveDestPartition) DataDelete(partition string,
 
 	atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
 	return err
+}
+
+func (t *BleveDestPartition) DataDeleteEx(partition string, key []byte, seq uint64,
+	cas uint64,
+	extrasType cbgt.DestExtrasType, req interface{}) error {
+
+	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+	if !ok {
+		return fmt.Errorf("bleve: DataDeleteEx unable to typecast GocbcoreDCPExtras")
+	}
+
+	extras := make([]byte, 8)
+	binary.LittleEndian.PutUint32(extras[0:], dcpExtras.ScopeId)
+	binary.LittleEndian.PutUint32(extras[4:], dcpExtras.CollectionId)
+
+	return t.DataDelete(partition, key, seq, cas, extrasType, extras)
 }
 
 // ---------------------------------------------------------
