@@ -401,13 +401,6 @@ func sourceNamesFromReq(mgr definitionLookuper, rp requestParser,
 	method, path string) ([]string, error) {
 	indexName, _ := rp.GetIndexName()
 
-	if !isIndexPath(path) {
-		// Check for scoped index name, only if not an index path.
-		if bucket, _ := getKeyspaceFromScopedIndexName(indexName); len(bucket) > 0 {
-			return []string{bucket}, nil
-		}
-	}
-
 	_, indexDefsByName, err := mgr.GetIndexDefs(false)
 	if err != nil {
 		return nil, err
