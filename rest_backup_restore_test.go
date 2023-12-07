@@ -10,8 +10,10 @@ package cbft
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"testing"
@@ -397,12 +399,15 @@ func getTypeNames(tm map[string]*mapping.DocumentMapping) []string {
 }
 
 func TestRemapIndexDefinions(t *testing.T) {
+	requiredVersion, _ := cbgt.CompatibilityVersion(FeatureScopedIndexNamesVersion)
+
 	tests := []struct {
 		indexDefBytes   []byte
 		mappingRules    map[string]string
 		resIndexName    string
 		resMappings     []string
 		testDescription string
+		version         uint64
 	}{
 		// verify an index name and mappings remap for the keyspaced index.
 		{
@@ -422,8 +427,11 @@ func TestRemapIndexDefinions(t *testing.T) {
 			resIndexName:    "beer-sample.brewery.DemoIndex",
 			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
 			testDescription: "remap an index defn with both bucket and scope name remapped",
+			version:         requiredVersion,
 		},
 		// verify an index name and mappings remap for the restored index.
+		// The index name isn't decorated, though the cluster is compatible since
+		// it's originally undecorated.
 		{
 			indexDefBytes: []byte(`{"uuid":"34483a9bd6044df7","indexDefs":{"DemoIndex":
 			{"type":"fulltext-index","name":"DemoIndex","uuid":"","sourceType":
@@ -438,9 +446,11 @@ func TestRemapIndexDefinions(t *testing.T) {
 			mappingRules: map[string]string{
 				"travel-sample.inventory": "beer-sample.brewery",
 			},
-			resIndexName:    "beer-sample.brewery.DemoIndex",
-			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
-			testDescription: "remap an index defn with both bucket and scope name remapped",
+			resIndexName: "DemoIndex",
+			resMappings:  []string{"brewery.hotel", "brewery.landmark"},
+			testDescription: "remap an undecorated index defn without the bucket " +
+				"and scope name",
+			version: requiredVersion,
 		},
 		// verify an index name and mappings remap to the default index.
 		{
@@ -460,12 +470,31 @@ func TestRemapIndexDefinions(t *testing.T) {
 			resIndexName:    "beer-sample._default.DemoIndex",
 			resMappings:     []string{"_default.hotel", "_default.landmark"},
 			testDescription: "remap an index defn with both bucket and scope name remapped",
+			version:         requiredVersion,
+		},
+		// verify if decoration of the remapped name is not done if the cluster
+		// isn't compatible
+		{
+			indexDefBytes: []byte(`{"uuid":"34483a9bd6044df7","indexDefs":{"DemoIndex":
+			{"type":"fulltext-index","name":"DemoIndex","uuid":"","sourceType":
+			"gocbcore","sourceName":"travel-sample","planParams":{"maxPartitionsPerPIndex":1024,"indexPartitions":1},
+			"params":{"doc_config":{"docid_prefix_delim":"","docid_regexp":"","mode":"scope.collection.type_field",
+			"type_field":"type"},"mapping":{"analysis":{},"default_analyzer":"standard","default_datetime_parser":
+			"dateTimeOptional","default_field":"_all","default_mapping":{"dynamic":true,"enabled":false},
+			"default_type":"_default","docvalues_dynamic":false,"index_dynamic":true,"store_dynamic":false,
+			"type_field":"_type","types":{"inventory.hotel":{"dynamic":true,"enabled":true},"inventory.landmark":
+			{"dynamic":true,"enabled":true}}},"store":{"indexType":"scorch","segmentVersion":15}},"sourceParams":{}}},
+			"implVersion":"5.6.0"}`),
+			mappingRules: map[string]string{
+				"travel-sample.inventory": "beer-sample._default",
+			},
+			resIndexName:    "DemoIndex",
+			resMappings:     []string{"_default.hotel", "_default.landmark"},
+			testDescription: "remap an index defn with both bucket and scope name remapped",
 		},
 	}
 
 	versionTracker = &clusterVersionTracker{}
-	versionTracker.version, _ = cbgt.CompatibilityVersion(FeatureScopedIndexNamesVersion)
-	versionTracker.clusterVersion = versionTracker.version
 	versionTracker.compatibleFeatures = make(map[string]struct{})
 
 	for i, test := range tests {
@@ -474,6 +503,9 @@ func TestRemapIndexDefinions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("test %d, json err: %v", i, err)
 		}
+
+		versionTracker.version = test.version
+		versionTracker.clusterVersion = versionTracker.version
 
 		resIndexDefs, err := remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
 		if err != nil {
@@ -500,6 +532,67 @@ func TestRemapIndexDefinions(t *testing.T) {
 				t.Errorf("test %d remapIndexDefinitions, no mapping found for: %s",
 					i, mappingName)
 			}
+		}
+	}
+
+	versionTracker = nil
+}
+
+func TestRemapIndexDefinionsErrors(t *testing.T) {
+	// Starting with a decorated index name
+	x := "travel-sample.inventory."
+	for i := 0; i < cbgt.MaxIndexNameLength+10; i++ {
+		x += strconv.Itoa(i)
+	}
+
+	tests := []struct {
+		indexDefBytes   []byte
+		mappingRules    map[string]string
+		resIndexName    string
+		resMappings     []string
+		testDescription string
+		errDescription  string
+	}{
+		// verify an index throwing an error after the remapped-restored name is
+		// longer than permissible.
+		{
+			indexDefBytes: []byte(fmt.Sprintf(`{"uuid":"34483a9bd6044df7","indexDefs":{"%s":
+			{"type":"fulltext-index","name":"%s","uuid":"","sourceType":
+			"gocbcore","sourceName":"travel-sample","planParams":{"maxPartitionsPerPIndex":1024,"indexPartitions":1},
+			"params":{"doc_config":{"docid_prefix_delim":"","docid_regexp":"","mode":"scope.collection.type_field",
+			"type_field":"type"},"mapping":{"analysis":{},"default_analyzer":"standard","default_datetime_parser":
+			"dateTimeOptional","default_field":"_all","default_mapping":{"dynamic":true,"enabled":false},
+			"default_type":"_default","docvalues_dynamic":false,"index_dynamic":true,"store_dynamic":false,
+			"type_field":"_type","types":{"inventory.hotel":{"dynamic":true,"enabled":true},"inventory.landmark":
+			{"dynamic":true,"enabled":true}}},"store":{"indexType":"scorch","segmentVersion":15}},"sourceParams":{}}},
+			"implVersion":"5.6.0"}`, x, x)),
+			mappingRules: map[string]string{
+				"travel-sample.inventory": "beer-sample.brewery",
+			},
+			resIndexName:    "beer-sample.brewery." + x,
+			resMappings:     []string{"brewery.hotel", "brewery.landmark"},
+			testDescription: "remap an index defn with both bucket and scope name remapped",
+			errDescription:  "longer than the maximum permissible length",
+		},
+	}
+
+	versionTracker = &clusterVersionTracker{}
+	versionTracker.version, _ = cbgt.CompatibilityVersion(FeatureScopedIndexNamesVersion)
+	versionTracker.clusterVersion = versionTracker.version
+	versionTracker.compatibleFeatures = make(map[string]struct{})
+
+	for i, test := range tests {
+		var indexDefs cbgt.IndexDefs
+		err := json.Unmarshal(test.indexDefBytes, &indexDefs)
+		if err != nil {
+			t.Fatalf("test %d, json err: %v", i, err)
+		}
+
+		_, err = remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
+
+		if err == nil || !strings.Contains(err.Error(), test.errDescription) {
+			t.Fatalf("test %d: expected err: %s, got: %v", i, test.errDescription,
+				err)
 		}
 	}
 
