@@ -493,7 +493,7 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/a1/count",
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a1"},
-			perms:  []string{},
+			perms:  []string{"cluster.bucket[s1].fts!read"},
 		},
 		// case with valid alias, and this operation DOES expand alias
 		{
@@ -501,7 +501,7 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/a5/count",
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a5"},
-			perms:  []string{},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
 		},
 		// case with valid alias (multi), and this operation DOES expand alias
 		{
@@ -509,7 +509,7 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/a2/count",
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a2"},
-			perms:  []string{},
+			perms:  []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read"},
 		},
 		// case with valid alias (containing another alias),
 		// and this operation DOES expand alias
@@ -518,7 +518,10 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/a7/count",
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a7"},
-			perms: []string{},
+			perms: []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read",
+				"cluster.collection[bucket2:scope1:collection1].fts!read",
+				"cluster.collection[bucket2:scope1:collection2].fts!read",
+				"cluster.collection[bucket2:scope1:collection3].fts!read"},
 		},
 		// case with valid alias (containing another alias),
 		// and this operation DOES expand alias
@@ -527,7 +530,7 @@ func TestPreparePerms(t *testing.T) {
 			uri:    "/api/index/a3/count",
 			path:   "/api/index/{indexName}/count",
 			vars:   map[string]string{"indexName": "a3"},
-			perms:  []string{},
+			perms:  []string{"cluster.bucket[s1].fts!read", "cluster.bucket[s2].fts!read"},
 		},
 		// test special case for creating new index
 		{
@@ -576,9 +579,6 @@ func TestPreparePerms(t *testing.T) {
 		actualPerms, err := preparePerms(s, &restRequestParser{req: req}, test.method, test.path)
 		if err != test.err {
 			t.Errorf("test %d, expected err %v, got %v", i, test.err, err)
-		}
-		if len(test.perms) == 0 && len(actualPerms) == 0 {
-			continue
 		}
 		sort.Strings(actualPerms)
 		if !reflect.DeepEqual(actualPerms, test.perms) {

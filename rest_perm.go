@@ -86,7 +86,7 @@ GET /api/nsstats/index/{indexName}
 cluster.collection[<sourceName>].fts!read
 
 GET /api/stats/index/{indexName}/progress
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/stats/index/{indexName}
 cluster.collection[<sourceName>].fts!read
@@ -95,19 +95,19 @@ GET /api/stats/sourceStats/{indexName}
 cluster.collection[<sourceName>].stats.fts!read
 
 GET /api/index/{indexName}/count
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 GET /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/count
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/query
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/analyzeDoc
-cluster.bucket{}.fts!read
+cluster.collection[<sourceName>].fts!read
 
 POST /api/index/{indexName}/tasks
 cluster.bucket[<sourceName>].fts!write
