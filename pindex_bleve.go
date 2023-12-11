@@ -598,7 +598,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
-				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields " +
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
 		}
