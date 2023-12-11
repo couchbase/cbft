@@ -30,6 +30,7 @@ function parseDocument(doc) {
     var rowTypes = [];
     var count = 0;
     var valsSincePop = 0;
+    var dims = {};
 
     var replacer = function (key, value) {
         // on closing brace, pop stack, duplicate last entry for rowpaths
@@ -126,6 +127,23 @@ function parseDocument(doc) {
                 }
             }
 
+            // check whether the object is a vector
+            if (rowTypes[col] === "object") {
+                var numDims = 0
+                var path = rowPaths[col]
+                for (let i = col; i < rowTypes.length; i++) {
+                    if (rowPaths[i] == path) {
+                        numDims++
+                    } else {
+                        break
+                    }
+                }
+                if (numDims > 2) {
+                    dims[col] = numDims - 2
+                    return "vector"
+                }
+            }
+
             return rowTypes[col];
         },
         getDocument: function () {
@@ -138,6 +156,9 @@ function parseDocument(doc) {
                 }
             }
             return 1;
+        },
+        getDims: function (col) {
+            return dims[col]
         }
     };
 }

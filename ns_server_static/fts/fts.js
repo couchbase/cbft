@@ -2520,6 +2520,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "IP";
                 } else if (valType === "vector") {
                     $scope.editField.type = "vector";
+                    $scope.editField.dims = parsedDoc.getDims(newRow)
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";
