@@ -259,9 +259,9 @@ licenses/APL2.txt.
                class="editAreaFieldCheckboxes">
               <input type="checkbox" ng-model="field.index" id="field-index">
               <label for="field-index">index</label>
-              <input type="checkbox" ng-model="field.store" id="field-store">
-              <label for="field-store">store</label>
               <span ng-if="field.type != 'vector'">
+                <input type="checkbox" ng-model="field.store" id="field-store">
+                <label for="field-store">store</label>
                 <input type="checkbox" ng-model="field.include_in_all" id="field-includeall">
                 <label for="field-includeall">include in <i>_all</i> field</label>
               </span>
