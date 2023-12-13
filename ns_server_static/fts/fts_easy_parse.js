@@ -131,7 +131,7 @@ function parseDocument(doc) {
             if (rowTypes[col] === "object") {
                 var numDims = 0
                 var path = rowPaths[col]
-                for (let i = col; i < rowTypes.length; i++) {
+                for (let i = col; i < rowTypes.length - 1; i++) {
                     if (rowPaths[i] == path) {
                         numDims++
                     } else {
