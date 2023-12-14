@@ -995,7 +995,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.newIndexName = ""
 
             $scope.selectedTargetIndexes = []
-            $scope.indexEditorPreview["fulltext-alias"] = null
         }
 
         $scope.parseAliasJSON = function(aliasJSON) {
@@ -1029,7 +1028,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         $scope.resetIndexDef = function() {
 
-            $scope.indexEditorPreview["fulltext-index"] = null
             $scope.newIndexName = ""
             $scope.docConfigCollections = false
             $scope.newScopeName = ""
@@ -1536,15 +1534,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         return "Token filter named '" + name + "' must have max >= min"
                     }
                     break
-                case "normalize_unicode":
-                    if (!("form" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
-                        return "Token filter named '" + name + "' must have fields 'type' and 'form'"
-                    }
-
-                    if (!(newTokenFilter.form == "nfc" || newTokenFilter.form == "nfd" || newTokenFilter.form == "nfkc" || newTokenFilter.form == "nfkd")) {
-                        return "Token filter named '" + name + "' must have form value be nfc, nfd, nfkc or nfkd"
-                    }
-                    break
                 case "stop_tokens":
                     if (!("stop_token_map" in newTokenFilter) || Object.keys(newTokenFilter).length != 2) {
                         return "Token filter named '" + name + "' must have fields 'type' and 'keywords_token_map'"
@@ -1708,7 +1697,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("analyzer" in value.fields[i] && mapping.type == "text") {
-                        if ($scope.analyzerNames.includes(value.default_analyzer)) {
+                        if ($scope.analyzerNames.includes(value.fields[0].analyzer)) {
                             mapping.analyzer = value.fields[0].analyzer
                         } else {
                             $scope.errorMsg = "Field named '" + name + "' has invalid value for field analyzer"
@@ -1717,7 +1706,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("date_format" in value.fields[i] && mapping.type == "datetime") {
-                        if ($scope.dateTimeParserNames.includes(value.default_analyzer)) {
+                        if ($scope.dateTimeParserNames.includes(value.fields[i].date_format)) {
                             mapping.date_format = value.fields[i].date_format
                         } else {
                             $scope.errorMsg = "Field named '" + name + "' has invalid value for field date_format"
@@ -2522,6 +2511,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "IP";
                 } else if (valType === "vector") {
                     $scope.editField.type = "vector";
+                    $scope.editField.dims = parsedDoc.getDims(newRow);
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";

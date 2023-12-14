@@ -89,6 +89,9 @@ const BleveDefaultZapVersion = int(11)
 // version in any given release.
 const BlevePreferredZapVersion = int(16)
 
+// ZapVersion where Vector support was introduced.
+const BleveVectorZapVersion = int(16)
+
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
 
@@ -593,7 +596,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
-				return nil, fmt.Errorf("PrepareIndex, err: vector typed fields " +
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
 		}
@@ -613,6 +616,11 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
+			}
+
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
+					"supported for vectors' datatype and search", int(zv))
 			}
 		} else {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
