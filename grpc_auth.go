@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blevesearch/bleve/v2/search"
 	"github.com/couchbase/cbauth"
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
@@ -84,6 +85,21 @@ func tryBasicAuth(req interface{}, ctx context.Context,
 
 	nctx := context.WithValue(ctx, gRPCAuthHandlerKey, authFunc)
 	return nctx, nil
+}
+
+func extractOptionalHeader(ctx context.Context, header string) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+	headerValue, ok := md[header]
+	if !ok {
+		return ""
+	}
+	if len(headerValue) != 1 {
+		return ""
+	}
+	return headerValue[0]
 }
 
 func extractMetaHeader(ctx context.Context, header string) (string, error) {
@@ -196,6 +212,11 @@ func (rp *rpcRequestParser) GetPIndexName() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("missing pindexName")
+}
+
+// returns true if the scatter gather request is a pre-search
+func isPreSearch(ctx context.Context) bool {
+	return extractOptionalHeader(ctx, search.PreSearchKey) == clusterActionScatterGatherPreSearch
 }
 
 func verifyRPCAuth(ctx context.Context, indexName string, req interface{}) error {

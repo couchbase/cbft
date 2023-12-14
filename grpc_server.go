@@ -200,6 +200,11 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		onlyPIndexes = cbgt.StringsToMap(queryPIndexes.PIndexNames)
 	}
 
+	// check if current scatter gather is a presearch
+	if isPreSearch(stream.Context()) {
+		ctx = context.WithValue(ctx, search.PreSearchKey, true)
+	}
+
 	alias, remoteClients, numPIndexes, er := bleveIndexAlias(s.mgr, req.IndexName,
 		req.IndexUUID, true, queryCtlParams.Ctl.Consistency, cancelCh, true,
 		onlyPIndexes, queryCtlParams.Ctl.PartitionSelection, addGrpcClients)
