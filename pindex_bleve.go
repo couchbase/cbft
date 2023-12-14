@@ -619,6 +619,11 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", int(zv))
 			}
+
+			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
+					"supported for vectors' datatype and search", int(zv))
+			}
 		} else {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
 				"should be a numeric value", v)
