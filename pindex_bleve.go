@@ -235,6 +235,7 @@ type SearchRequest struct {
 	Collections      []string                `json:"collections,omitempty"`
 	KNN              json.RawMessage         `json:"knn,omitempty"`
 	KNNOperator      json.RawMessage         `json:"knn_operator,omitempty"`
+	PreSearchData    json.RawMessage         `json:"pre_search_data,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -255,6 +256,12 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 	r.Query, err = query.ParseQuery(sr.Q)
 	if err != nil {
 		return nil, err
+	}
+	if sr.PreSearchData != nil {
+		r.PreSearchData, err = query.ParsePreSearchData(sr.PreSearchData)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if sr.Size == nil {

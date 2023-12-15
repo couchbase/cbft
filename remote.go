@@ -30,6 +30,7 @@ import (
 )
 
 const clusterActionScatterGather = "fts/scatter-gather"
+const clusterActionScatterGatherPreSearch = "fts/scatter-gather_pre-search"
 
 func RegisterRemoteClientsForSecurity() {
 	cbgt.RegisterHttpClient()

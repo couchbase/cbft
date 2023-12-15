@@ -300,6 +300,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		Score            string                  `json:"score"`
 		KNN              json.RawMessage         `json:"knn"`
 		KNNOperator      json.RawMessage         `json:"knn_operator"`
+		PreSearchData    json.RawMessage         `json:"pre_search_data"`
 	}
 
 	r := &bleve.SearchRequest{}
@@ -348,6 +349,13 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	}
 	if r.From < 0 {
 		r.From = 0
+	}
+	if temp.PreSearchData != nil {
+		r.PreSearchData, err = parsePreSearchData(temp.PreSearchData)
+		if err != nil {
+			iter.Error = err
+			return
+		}
 	}
 
 	if r, err = interpretKNNForRequest(temp.KNN, temp.KNNOperator, r); err != nil {
@@ -631,4 +639,34 @@ func parseQuery(input []byte) (query.Query, error) {
 		return &rv, nil
 	}
 	return nil, fmt.Errorf("unknown query type")
+}
+
+// parsePreSearchData deserializes a JSON representation of
+// a preSearchData object.
+func parsePreSearchData(input []byte) (map[string]interface{}, error) {
+	var rv map[string]interface{}
+
+	var tmp map[string]json.RawMessage
+	err := jsoniter.Unmarshal(input, &tmp)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range tmp {
+		switch k {
+		case search.KnnPreSearchDataKey:
+			var value []*search.DocumentMatch
+			if v != nil {
+				err := jsoniter.Unmarshal(v, &value)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if rv == nil {
+				rv = make(map[string]interface{})
+			}
+			rv[search.KnnPreSearchDataKey] = value
+		}
+	}
+	return rv, nil
 }

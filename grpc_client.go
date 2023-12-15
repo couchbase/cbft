@@ -325,6 +325,13 @@ func (g *GrpcClient) Query(ctx context.Context,
 	nctx := metadata.AppendToOutgoingContext(ctx,
 		rpcClusterActionKey, clusterActionScatterGather)
 
+	// check if the scatter gather query is a pre-search query
+	// if so add an optional header to the outgoing context
+	if _, ok := ctx.Value(search.PreSearchKey).(bool); ok {
+		nctx = metadata.AppendToOutgoingContext(nctx,
+			search.PreSearchKey, clusterActionScatterGatherPreSearch)
+	}
+
 	result, er := g.SearchRPC(nctx, req, scatterGatherReq)
 	if st, ok := status.FromError(er); ok {
 		g.lastSearchStatus = httpStatusCodes(st.Code())
