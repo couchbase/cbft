@@ -57,8 +57,8 @@ github.com/bits-and-blooms/bitset v1.2.2 h1:J5gbX05GpMdBjCvQ9MteIg2KKDExr7DrgK+Y
 github.com/bits-and-blooms/bitset v1.2.2/go.mod h1:gIdJ4wp64HaoK2YrL1Q5/N7Y16edYb8uY+O0FJTyyDA=
 github.com/blevesearch/bleve-mapping-ui v0.5.2 h1:L6Irz3B14+L2WxIEVtkTi25Aps+uydKNAyt7IAlZOeE=
 github.com/blevesearch/bleve-mapping-ui v0.5.2/go.mod h1:D/HnjXhQdlSi0GU/xOWrh0LL/0XfmTSVuJZNQCy/Mqs=
-github.com/blevesearch/bleve/v2 v2.3.11-0.20231214183213-ff9c69b53678 h1:n6/oDH8h0Gq9Z80yGYpqUnV1JH0LoSzihTSIJ6Z03bY=
-github.com/blevesearch/bleve/v2 v2.3.11-0.20231214183213-ff9c69b53678/go.mod h1:YTJcG3hc6VJwhVSHgW7AaU+wkCyWDpeVGAzhySCNgDA=
+github.com/blevesearch/bleve/v2 v2.3.11-0.20231215161722-ba3fe9904583 h1:p1UssxhOuXf/XJgRhWuY/zKvwPu6gf43h9Bo4Mkt2Ec=
+github.com/blevesearch/bleve/v2 v2.3.11-0.20231215161722-ba3fe9904583/go.mod h1:6BV/U0udDd76ZOhbCmR0LyEyMZmVoUI5yaLeZ/vRegk=
 github.com/blevesearch/bleve_index_api v1.1.4 h1:n9Ilxlb80g9DAhchR95IcVrzohamDSri0wPnkKnva50=
 github.com/blevesearch/bleve_index_api v1.1.4/go.mod h1:PbcwjIcRmjhGbkS/lJCpfgVSMROV6TRubGGAODaK1W8=
 github.com/blevesearch/geo v0.1.18 h1:Np8jycHTZ5scFe7VEPLrDoHnnb9C4j636ue/CGrhtDw=
@@ -96,8 +96,8 @@ github.com/blevesearch/zapx/v14 v14.3.10 h1:SG6xlsL+W6YjhX5N3aEiL/2tcWh3DO75Bnz7
 github.com/blevesearch/zapx/v14 v14.3.10/go.mod h1:qqyuR0u230jN1yMmE4FIAuCxmahRQEOehF78m6oTgns=
 github.com/blevesearch/zapx/v15 v15.3.13 h1:6EkfaZiPlAxqXz0neniq35my6S48QI94W/wyhnpDHHQ=
 github.com/blevesearch/zapx/v15 v15.3.13/go.mod h1:Turk/TNRKj9es7ZpKK95PS7f6D44Y7fAFy8F4LXQtGg=
-github.com/blevesearch/zapx/v16 v16.0.1-0.20231214180044-86b116167ea9 h1:gjfaxTmsDqTvS33Y68U72bS7acoDWCxoGKEceqjP3oY=
-github.com/blevesearch/zapx/v16 v16.0.1-0.20231214180044-86b116167ea9/go.mod h1:WIOW42mP6pIF9TyeUYG3u7KIhy0ml8Hnt3R5O925tjI=
+github.com/blevesearch/zapx/v16 v16.0.1-0.20231215153441-18737168eeaf h1:7+PlR8PP6if2xSJ5e+dZNIK0oSm04vSIyEfFjydYIBo=
+github.com/blevesearch/zapx/v16 v16.0.1-0.20231215153441-18737168eeaf/go.mod h1:WIOW42mP6pIF9TyeUYG3u7KIhy0ml8Hnt3R5O925tjI=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
