@@ -63,6 +63,8 @@ var FeatureGeoSpatial = "geoSpatial"
 
 var FeatureVectorSearch = "vectors"
 
+var FeatureXattrs = "Xattrs"
+
 var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
 
 var xAttrsMappingName = "_$xattrs"
@@ -623,6 +625,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
+		}
+
+		if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) && hasXAttrs(bp) {
+			// XAttrs is NOT supported on this cluster
+			// (lower version or mixed lower version)
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
+				"and properties not supported in mixed version cluster")
 		}
 
 		var sourceParams map[string]interface{}
