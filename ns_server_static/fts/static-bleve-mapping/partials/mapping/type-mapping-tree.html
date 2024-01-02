@@ -70,12 +70,15 @@ licenses/APL2.txt.
             <span class="icon fa-info fa-stack-1x"></span>
           </span>
         </span>
-        <input ng-if="mapping._kind == 'mapping'"
+        <input ng-if="mapping._kind == 'mapping' && !mapping._xattrs"
                type="text" placeholder="please enter a property name"
                            ng-model="mapping.name"
                            ng-change="validateMapping(mapping, mappings)"
                            ng-class="{'invalid': mapping._invalid}"
                            style="min-width:240px;">
+        <span ng-if="mapping._kind == 'mapping' && mapping._xattrs">
+          <i>_$xattrs</i>
+        </span>
       </span>
       <span ng-if="mapping.enabled && mapping._editing">
         <label>Analyzer:</label>
@@ -85,7 +88,6 @@ licenses/APL2.txt.
           <option value="">inherit</option>
         </select>
       </span>
-
       <div
          ng-if="mapping._editing"
          class="editArea editAreaMapping"
@@ -120,6 +122,10 @@ licenses/APL2.txt.
             <div>
               <a ng-click="addChildMapping(mapping)">
                 insert child mapping</a>
+            </div>
+            <div ng-if="mapping._isroot && !mapping._hasXattrChild">
+              <a ng-click="addChildXAttrsMapping(mapping)">
+                insert xattrs mapping</a>
             </div>
             <div>
               <a ng-click="addChildField(mapping)">
