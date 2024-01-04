@@ -57,16 +57,18 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 		}
 
 		// Validate maxReplicasAllowed
-		if options["maxReplicasAllowed"] != mgr.Options()["maxReplicasAllowed"] {
+		maxReplicasAllowed := mgr.GetOption("maxReplicasAllowed")
+		if options["maxReplicasAllowed"] != maxReplicasAllowed {
 			return nil, fmt.Errorf("maxReplicasAllowed setting is at '%v',"+
-				" but request is for '%v'", mgr.Options()["maxReplicasAllowed"],
+				" but request is for '%v'", maxReplicasAllowed,
 				options["maxReplicasAllowed"])
 		}
 
 		// Validate bucketTypesAllowed
-		if options["bucketTypesAllowed"] != mgr.Options()["bucketTypesAllowed"] {
+		bucketTypesAllowed := mgr.GetOption("bucketTypesAllowed")
+		if options["bucketTypesAllowed"] != bucketTypesAllowed {
 			return nil, fmt.Errorf("bucketTypesAllowed setting is at '%v',"+
-				" but request is for: '%v'", mgr.Options()["bucketTypesAllowed"],
+				" but request is for: '%v'", bucketTypesAllowed,
 				options["bucketTypesAllowed"])
 		}
 
@@ -135,14 +137,14 @@ func (h *ManagerOptionsExt) ServeHTTP(
 	h.mgrOptions.ServeHTTP(w, req)
 
 	// Update log level if requested.
-	logLevelStr := h.mgr.Options()["logLevel"]
+	logLevelStr := h.mgr.GetOption("logLevel")
 	if logLevelStr != "" {
 		logLevel, _ := LogLevels[logLevelStr]
 		log.SetLevel(log.LogLevel(logLevel))
 	}
 
 	// Update bleveMaxClauseCount if requested.
-	bleveMaxClauseCountStr := h.mgr.Options()["bleveMaxClauseCount"]
+	bleveMaxClauseCountStr := h.mgr.GetOption("bleveMaxClauseCount")
 	if bleveMaxClauseCountStr != "" {
 		bleveMaxClauseCount, _ := strconv.Atoi(bleveMaxClauseCountStr)
 		bleveSearcher.DisjunctionMaxClauseCount = bleveMaxClauseCount

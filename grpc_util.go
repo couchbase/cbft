@@ -272,7 +272,7 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 			atomic.AddUint64(&focusStats.TotGrpcRequestTimeNS,
 				uint64(time.Now().Sub(startTime)))
 
-			slowQueryLogTimeoutV := mgr.Options()["slowQueryLogTimeout"]
+			slowQueryLogTimeoutV := mgr.GetOption("slowQueryLogTimeout")
 			if slowQueryLogTimeoutV != "" {
 				var slowQueryLogTimeout time.Duration
 				slowQueryLogTimeout, err = time.ParseDuration(slowQueryLogTimeoutV)

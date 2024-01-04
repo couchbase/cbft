@@ -28,7 +28,7 @@ type FilteredListIndexHandler struct {
 func NewFilteredListIndexHandler(mgr *cbgt.Manager) *FilteredListIndexHandler {
 	return &FilteredListIndexHandler{
 		mgr:      mgr,
-		isCBAuth: mgr != nil && mgr.Options()["authType"] == "cbauth",
+		isCBAuth: mgr != nil && mgr.GetOption("authType") == "cbauth",
 	}
 }
 

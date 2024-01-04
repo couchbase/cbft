@@ -41,9 +41,9 @@ func (p *CustomJSONImpl) SetManager(mgr *cbgt.Manager) {
 	p.mgr = mgr
 }
 
-// GetManagerOptions gets the manager options
-func (p *CustomJSONImpl) GetManagerOptions() map[string]string {
-	return p.mgr.GetOptions()
+// GetManagerOption gets the requested manager option
+func (p *CustomJSONImpl) GetManagerOption(key string) string {
+	return p.mgr.GetOption(key)
 }
 
 // GetParserType returns the custom parser type
@@ -63,7 +63,7 @@ func (p *CustomJSONImpl) Decode(r io.Reader, v interface{}) error {
 
 // UnmarshalJSON abstracts the underlying json lib used
 func UnmarshalJSON(b []byte, v interface{}) error {
-	if JSONImpl != nil && JSONImpl.GetManagerOptions()["jsonImpl"] != "std" {
+	if JSONImpl != nil && JSONImpl.GetManagerOption("jsonImpl") != "std" {
 		return JSONImpl.Unmarshal(b, v)
 	}
 	return json.Unmarshal(b, v)

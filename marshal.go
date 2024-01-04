@@ -40,7 +40,7 @@ func (p *CustomJSONImpl) Encode(w io.Writer, v interface{}) error {
 
 // MarshalJSON abstracts the underlying json lib used
 func MarshalJSON(v interface{}) ([]byte, error) {
-	if JSONImpl != nil && JSONImpl.GetManagerOptions()["jsonImpl"] != "std" {
+	if JSONImpl != nil && JSONImpl.GetManagerOption("jsonImpl") != "std" {
 		return JSONImpl.Marshal(v)
 	}
 	return json.Marshal(v)

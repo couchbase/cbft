@@ -164,8 +164,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	// always check for bleveMaxResultWindow, as there is a
 	// third case of TopN and Streamed results.
-	v, exists := s.mgr.Options()["bleveMaxResultWindow"]
-	if exists {
+	if v := s.mgr.GetOption("bleveMaxResultWindow"); len(v) > 0 {
 		var bleveMaxResultWindow int
 		bleveMaxResultWindow, err = strconv.Atoi(v)
 		if err != nil {

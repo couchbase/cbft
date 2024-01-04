@@ -217,7 +217,7 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 	dest.copyStats = copyStats
 	destfwd = &cbgt.DestForwarder{DestProvider: dest}
 
-	if mgr.Options()[cbgt.UNHIBERNATE_TASK] == "true" {
+	if mgr.GetOption(cbgt.UNHIBERNATE_TASK) == "true" {
 		bucketInHibernation, _ := mgr.GetHibernationBucketAndTask()
 
 		mgr.RegisterHibernationBucketTracker(bucketInHibernation)

@@ -104,8 +104,8 @@ func checkAPIAuth(avh *AuthVersionHandler,
 		adtSvc = avh.adtSvc
 	}
 
-	if mgr != nil && mgr.Options() != nil {
-		authType = mgr.Options()["authType"]
+	if mgr != nil {
+		authType = mgr.GetOption("authType")
 	}
 
 	if authType == "" {
@@ -593,8 +593,8 @@ func CBAuthBasicLoginHandler(mgr *cbgt.Manager) (*CBAuthBasicLogin, error) {
 func (h *CBAuthBasicLogin) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	authType := ""
-	if h.mgr != nil && h.mgr.Options() != nil {
-		authType = h.mgr.Options()["authType"]
+	if h.mgr != nil {
+		authType = h.mgr.GetOption("authType")
 	}
 
 	if authType == "cbauth" {

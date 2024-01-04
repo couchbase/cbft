@@ -66,7 +66,7 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 	regOps := regulator.InitSettings{
 		NodeID:       service.NodeID(mgr.UUID()),
 		Service:      regulator.Search,
-		SettingsFile: mgr.Options()["regulatorSettingsFile"],
+		SettingsFile: mgr.GetOption("regulatorSettingsFile"),
 	}
 
 	regHandler := factory.InitRegulator(regOps)
@@ -84,7 +84,7 @@ func NewMeteringHandler(mgr *cbgt.Manager) regulator.StatsHttpHandler {
 }
 
 func (sr *serviceRegulator) disableLimitingThrottling() bool {
-	if v, ok := sr.mgr.Options()["disableRegulatorControl"]; ok {
+	if v := sr.mgr.GetOption("disableRegulatorControl"); len(v) > 0 {
 		if val, err := strconv.ParseBool(v); err == nil {
 			return val
 		}
@@ -317,7 +317,7 @@ func GetRegulatorStats() map[string]interface{} {
 func serverlessLimitingBounds() (int, int) {
 	var err error
 	minTime := defaultLimitingMinTime
-	if min, exists := reg.mgr.Options()["minBackoffTimeForBatchLimitingMS"]; exists {
+	if min, exists := reg.mgr.GetOption("minBackoffTimeForBatchLimitingMS"); exists {
 		minTime, err = strconv.Atoi(min)
 		if err != nil {
 			log.Errorf("limiting/throttling: error parsing minimum time for "+
@@ -327,7 +327,7 @@ func serverlessLimitingBounds() (int, int) {
 	}
 
 	maxTime := defaultLimitingMaxTime
-	if max, exists := reg.mgr.Options()["maxBackoffTimeForBatchLimitingMS"]; exists {
+	if max, exists := reg.mgr.GetOption("maxBackoffTimeForBatchLimitingMS"); exists {
 		maxTime, err = strconv.Atoi(max)
 		if err != nil {
 			log.Errorf("limiting/throttling: error parsing maximum time for "+

@@ -130,7 +130,7 @@ type authWrapper struct {
 func (a *authWrapper) authenticate(r requestParser) (bool, error) {
 	var authType string
 	if a.mgr != nil && a.mgr.Options() != nil {
-		authType = a.mgr.Options()["authType"]
+		authType = a.mgr.GetOption("authType")
 	}
 
 	if authType == "" {

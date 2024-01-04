@@ -382,7 +382,7 @@ func (r *IndexClient) Advanced() (index.Index, error) {
 
 func (r *IndexClient) AuthType() string {
 	if r.mgr != nil {
-		return r.mgr.Options()["authType"]
+		return r.mgr.GetOption("authType")
 	}
 	return ""
 }
@@ -407,7 +407,7 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 		if !exists {
 			prefix := ""
 			if client.mgr != nil {
-				prefix = client.mgr.Options()["urlPrefix"]
+				prefix = client.mgr.GetOption("urlPrefix")
 			}
 
 			proto := "http://"

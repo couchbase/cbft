@@ -513,8 +513,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			cbgt.IsFeatureSupportedByCluster(FeatureGeoSpatial, nodeDefs)
 
 		// check whether the spatial plugin usage is disabled for geo points.
-		if v, ok := mgr.Options()["disableGeoPointSpatialPlugin"]; ok &&
-			v == "true" {
+		if v := mgr.GetOption("disableGeoPointSpatialPlugin"); v == "true" {
 			s2SpatialSupported = false
 		}
 
@@ -1413,13 +1412,11 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 	}
 
-	v, exists := mgr.Options()["bleveMaxResultWindow"]
-	if exists {
+	if v := mgr.GetOption("bleveMaxResultWindow"); len(v) > 0 {
 		var bleveMaxResultWindow int
 		bleveMaxResultWindow, err = strconv.Atoi(v)
 		if err != nil {
-			return fmt.Errorf("bleve: QueryBleve"+
-				" atoi: %v, err: %v", v, err)
+			return fmt.Errorf("bleve: QueryBleve atoi: %v, err: %v", v, err)
 		}
 
 		if (searchRequest.From+searchRequest.Size > bleveMaxResultWindow) ||
@@ -2852,7 +2849,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 	remotePlanPIndexes []*cbgt.RemotePlanPIndex, consistencyParams *cbgt.ConsistencyParams,
 	onlyPIndexes map[string]bool, collector BleveIndexCollector,
 	groupByNode bool) ([]RemoteClient, error) {
-	prefix := mgr.Options()["urlPrefix"]
+	prefix := mgr.GetOption("urlPrefix")
 	remoteClients := make([]*IndexClient, 0, len(remotePlanPIndexes))
 	rv := make([]RemoteClient, 0, len(remotePlanPIndexes))
 	ss := cbgt.GetSecuritySetting()
@@ -3062,7 +3059,7 @@ func BleveInitRouter(r *mux.Router, phase string,
 	mgr *cbgt.Manager) {
 	prefix := ""
 	if mgr != nil {
-		prefix = mgr.Options()["urlPrefix"]
+		prefix = mgr.GetOption("urlPrefix")
 	}
 
 	if phase == "static.before" {
@@ -3336,7 +3333,7 @@ func RestartOnIndexDefChanges(
 }
 
 func mustEncode(w io.Writer, i interface{}) {
-	if JSONImpl != nil && JSONImpl.GetManagerOptions()["jsonImpl"] != "std" {
+	if JSONImpl != nil && JSONImpl.GetManagerOption("jsonImpl") != "std" {
 		MustEncodeWithParser(w, i)
 	} else {
 		rest.MustEncode(w, i)

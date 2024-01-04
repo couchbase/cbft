@@ -137,7 +137,7 @@ func buildCopyPartitionRequest(pindexName string, stats *CopyPartitionStats,
 	// check explicitly whether the requested pindex resides in those
 	// nodes, and if so gives back a set of potential source node uuids.
 	sourceUUIDs := getNodesHostingPIndex(uuids, pindexName,
-		mgr.Options()["authType"], nodeDefs)
+		mgr.GetOption("authType"), nodeDefs)
 	if len(sourceUUIDs) == 0 {
 		atomic.StoreInt32(&stats.TotCopyPartitionSkipped, int32(1))
 		return nil, nil
