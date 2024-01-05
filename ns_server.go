@@ -795,7 +795,7 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 
 	memUtil := getMemoryUtilization(rd.memStats)
 	var ftsMemoryQuota uint64
-	if val, exists := mgr.Options()["ftsMemoryQuota"]; exists {
+	if val := mgr.GetOption("ftsMemoryQuota"); len(val) > 0 {
 		if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
 			ftsMemoryQuota = valUint64
 		}
@@ -1473,7 +1473,7 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 
 	tickCh := time.Tick(1 * time.Second)
 
-	memStatsLoggingInterval, _ := strconv.Atoi(mgr.Options()["memStatsLoggingInterval"])
+	memStatsLoggingInterval, _ := strconv.Atoi(mgr.GetOption("memStatsLoggingInterval"))
 	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
 
 	var prevMemoryUsed uint64
@@ -1515,9 +1515,9 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 
 		// Check memory quota if golang's GC needs to be triggered.
-		ftsMemoryQuota, _ := strconv.Atoi(mgr.Options()["ftsMemoryQuota"])
-		gcMinThreshold, _ := strconv.Atoi(mgr.Options()["gcMinThreshold"])
-		gcTriggerPct, _ := strconv.Atoi(mgr.Options()["gcTriggerPct"])
+		ftsMemoryQuota, _ := strconv.Atoi(mgr.GetOption("ftsMemoryQuota"))
+		gcMinThreshold, _ := strconv.Atoi(mgr.GetOption("gcMinThreshold"))
+		gcTriggerPct, _ := strconv.Atoi(mgr.GetOption("gcTriggerPct"))
 
 		if gcTriggerPct > 0 {
 			allocedBytes := rd.memStats.Alloc

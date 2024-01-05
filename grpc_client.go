@@ -355,7 +355,7 @@ func (g *GrpcClient) Advanced() (index.Index, error) {
 
 func (g *GrpcClient) AuthType() string {
 	if g.Mgr != nil {
-		return g.Mgr.Options()["authType"]
+		return g.Mgr.GetOption("authType")
 	}
 	return ""
 }

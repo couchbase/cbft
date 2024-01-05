@@ -265,7 +265,7 @@ func getRemoteClients(mgr *cbgt.Manager) addRemoteClients {
 		addRemClients = addGrpcClients
 	}
 
-	if _, ok := mgr.Options()["SkipScatterGatherOverGrpc"]; ok ||
+	if v := mgr.GetOption("SkipScatterGatherOverGrpc"); len(v) > 0 ||
 		addRemClients == nil {
 		addRemClients = addIndexClients
 	}

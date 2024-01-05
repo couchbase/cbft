@@ -550,7 +550,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 
 	// register handlers needed by ns_server
-	prefix := mgr.Options()["urlPrefix"]
+	prefix := mgr.GetOption("urlPrefix")
 
 	handle := func(path string, method string, h http.Handler) {
 		dh := cbft.NewAuthVersionHandler(mgr, adtSvc,
@@ -708,7 +708,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	tagsMap := mgr.TagsMap()
 	if tagsMap != nil && tagsMap["cbauth_service"] {
 		dryRun := false
-		dryRunV := mgr.Options()["cbauth_service.dryRun"]
+		dryRunV := mgr.GetOption("cbauth_service.dryRun")
 		if dryRunV != "" {
 			dryRun, err = strconv.ParseBool(dryRunV)
 			if err != nil {
@@ -717,7 +717,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		waitForMemberNodes := 30 // In seconds.
-		waitForMemberNodesV := mgr.Options()["cbauth_service.waitForMemberNodes"]
+		waitForMemberNodesV := mgr.GetOption("cbauth_service.waitForMemberNodes")
 		if waitForMemberNodesV != "" {
 			waitForMemberNodes, err = strconv.Atoi(waitForMemberNodesV)
 			if err != nil {
@@ -726,7 +726,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 
 		verbose := defaultCtlVerbose
-		verboseV := mgr.Options()["cbauth_service.verbose"]
+		verboseV := mgr.GetOption("cbauth_service.verbose")
 		if verboseV != "" {
 			verbose, err = strconv.Atoi(verboseV)
 			if err != nil {

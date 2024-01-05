@@ -411,7 +411,7 @@ func TestFanInPartitioningMutations(t *testing.T) {
 			runtime.Gosched()
 
 			// wait till the feed is created after rollback
-			feedAllotment := mgr.GetOptions()[cbgt.FeedAllotmentOption]
+			feedAllotment := mgr.GetOption(cbgt.FeedAllotmentOption)
 			pindex0_0_Feed := cbgt.FeedNameForPIndex(pindex0_0, feedAllotment)
 
 			// Adding a sleep since the feed is created async

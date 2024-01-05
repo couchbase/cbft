@@ -58,7 +58,7 @@ func InitStaticRouter(staticDir, staticETag string,
 
 	prefix := ""
 	if mgr != nil {
-		prefix = mgr.Options()["urlPrefix"]
+		prefix = mgr.GetOption("urlPrefix")
 	}
 
 	hfsStaticX := http.FileServer(assetFS())
