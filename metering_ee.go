@@ -317,7 +317,7 @@ func GetRegulatorStats() map[string]interface{} {
 func serverlessLimitingBounds() (int, int) {
 	var err error
 	minTime := defaultLimitingMinTime
-	if min, exists := reg.mgr.GetOption("minBackoffTimeForBatchLimitingMS"); exists {
+	if min := reg.mgr.GetOption("minBackoffTimeForBatchLimitingMS"); len(min) > 0 {
 		minTime, err = strconv.Atoi(min)
 		if err != nil {
 			log.Errorf("limiting/throttling: error parsing minimum time for "+
@@ -327,7 +327,7 @@ func serverlessLimitingBounds() (int, int) {
 	}
 
 	maxTime := defaultLimitingMaxTime
-	if max, exists := reg.mgr.GetOption("maxBackoffTimeForBatchLimitingMS"); exists {
+	if max := reg.mgr.GetOption("maxBackoffTimeForBatchLimitingMS"); len(max) > 0 {
 		maxTime, err = strconv.Atoi(max)
 		if err != nil {
 			log.Errorf("limiting/throttling: error parsing maximum time for "+
