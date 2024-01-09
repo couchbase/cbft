@@ -47,6 +47,9 @@ function PrepQueryRequest(scope) {
         };
     }
 
+    qr["size"] = scope.resultsPerPage;
+    qr["from"] = (scope.page-1) * scope.resultsPerPage;
+
     return qr
 }
 
