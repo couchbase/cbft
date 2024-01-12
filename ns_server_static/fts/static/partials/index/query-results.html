@@ -133,13 +133,13 @@ licenses/APL2.txt.
 
   <div class="row pagination"
        ng-show="isQueryTab(1)">
-    <div class="simple-select">
+    <div class="simple-select" ng-show="$parent.showPagination">
       <select ng-model="$parent.resultsPerPage"
               ng-options="item for item in [5,10,20,50]"
               ng-change="runNewQuery()">
       </select>
     </div>
-    <div ng-show="numPages > 1" class="col-lg-12 col-lg-offset-5">
+    <div ng-show="numPages > 1 && $parent.showPagination" class="col-lg-12 col-lg-offset-5">
       <ul class="pagination">
         <li ng-show="page > 1">
           <a ng-click="jumpToPage(page-1, $event)" href="">
@@ -156,6 +156,11 @@ licenses/APL2.txt.
           </a>
         </li>
       </ul>
+    </div>
+    <div ng-show="!$parent.showPagination">
+      <h5>
+        Note: Default pagination is not supported for current query parameters
+      </h5>
     </div>
   </div>
   <br>

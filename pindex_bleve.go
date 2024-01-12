@@ -1482,8 +1482,11 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	if searchResult != nil {
 		// if the query decoration happens for collection targeted or docID
 		// queries for multi collection indexes, then restore the original
-		// user query in the search response.
-		if undecoratedQuery != nil {
+		// user query in the search response, if the search request was echo'd
+		// back in the search result.
+		// Note: searchResult.Request will be non nil only when searchRequest.Explain is true
+		// and its a bleve level setting
+		if undecoratedQuery != nil && searchResult.Request != nil {
 			searchResult.Request.Query = undecoratedQuery
 		}
 		err = processSearchResult(&queryCtlParams, indexName, searchResult,

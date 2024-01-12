@@ -47,8 +47,35 @@ function PrepQueryRequest(scope) {
         };
     }
 
-    qr["size"] = scope.resultsPerPage;
-    qr["from"] = (scope.page-1) * scope.resultsPerPage;
+    var hasSize = "size" in qr && typeof(qr.size) === "number"  && qr.size > 0
+    var hasLimit = "limit" in qr && typeof(qr.limit) === "number"  && qr.limit > 0
+    var hasFrom = "from" in qr && typeof(qr.from) === "number"  && qr.from >= 0
+    var hasOffset = "offset" in qr && typeof(qr.offset) === "number"  && qr.offset >= 0
+    scope.size = -1
+    scope.from = -1
+    scope.offset = 0
+
+
+    if (hasSize) {
+        scope.size = qr["size"]
+    } else if (!hasLimit) {
+        qr["size"] = scope.resultsPerPage
+    }
+
+    if (hasFrom) {
+        scope.from = qr["from"]
+    } else if (hasOffset) {
+        scope.offset = qr["offset"]
+    } else {
+        qr["from"] = (scope.page-1) * scope.resultsPerPage
+    }
+
+    if (!hasSize && !hasFrom && !hasLimit && !hasOffset) {
+        scope.showPaginationOnRefresh = true
+    } else {
+        scope.showPaginationOnRefresh = false
+        scope.showPagination = false
+    }
 
     return qr
 }
@@ -68,6 +95,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.numPages = 0;
     $scope.maxPagesToShow = 5;
     $scope.resultsPerPage = 10;
+    $scope.size = -1;
+    $scope.from = -1;
     $scope.resultsSuccessPct = 100;
     $scope.timeout = 0;
     $scope.consistencyLevel = "";
@@ -76,6 +105,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.queryEditMode = false;
     $scope.editor = null;
     $scope.queryTab = 1
+    $scope.showPagination = true;
+    $scope.showPaginationOnRefresh = true;
 
     $scope.hostPort = $location.host();
     if ($location.port()) {
@@ -158,6 +189,11 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             return;
         }
 
+        if ($scope.showPaginationOnRefresh) {
+            $scope.showPagination = true
+        } else {
+            $scope.showPagination = false
+        }
         $location.search('q', $scope.query);
         $location.search('p', $scope.page);
 
@@ -236,7 +272,19 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             return;
         }
 
-        $scope.numPages = Math.ceil(results.total_hits/$scope.resultsPerPage);
+        var size
+        if ($scope.size == -1) {
+            size = $scope.resultsPerPage
+        } else {
+            size = $scope.size
+        }
+
+        if ($scope.from != -1) {
+            $scope.page = 1
+        }
+
+        $scope.numPages = Math.ceil(results.total_hits/size);
+
         $scope.validPages = [];
         for(var i = 1; i <= $scope.numPages; i++) {
             $scope.validPages.push(i);
@@ -262,7 +310,12 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             $scope.validPages.splice(-backPagesToRemove, backPagesToRemove);
             $scope.validPages.splice(0, frontPagesToRemove);
         }
-        $scope.firstResult = (($scope.page-1) * $scope.resultsPerPage) + 1;
+
+        if ($scope.from == -1) {
+            $scope.firstResult = (($scope.page-1) * size) + 1 + $scope.offset;
+        } else {
+            $scope.firstResult = $scope.from + 1 + $scope.offset;
+        }
     };
 
     function getScopeAndCollection(docConfigMode, mapping) {
