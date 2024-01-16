@@ -185,6 +185,8 @@ licenses/APL2.txt.
                   | include term vectors
                 </span>
                 <span ng-if="field.docvalues">| docvalues</span>
+                <span ng-if="field.dims">| dims: {{field.dims}}</span>
+                <span ng-if="field.similarity">| metric: {{field.similarity}}</span>
               </span>
             </span>
           </span>
