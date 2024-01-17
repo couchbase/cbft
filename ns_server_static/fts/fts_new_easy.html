@@ -359,6 +359,15 @@
                       </select>
                     </div>
                   </div>
+                  <div class="formrow">
+                    <label for="vector-index-optimized-for">Optimized For</label>
+                    <div class="row">
+                      <select ng-model="editField.vector_index_optimized_for">
+                        <option value="recall">recall</option>
+                        <option value="latency">latency</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
                 <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
                   <label for="searchable-as">Searchable As</label>

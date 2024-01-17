@@ -282,6 +282,9 @@ function newEasyMapping() {
         if (field.similarity != null) {
             fieldMapping.similarity = field.similarity;
         }
+        if (field.vector_index_optimized_for != null) {
+            fieldMapping.vector_index_optimized_for = field.vector_index_optimized_for;
+        }
         return fieldMapping;
     };
 
@@ -380,6 +383,7 @@ function newEasyMapping() {
             editField.sortFacet = false;
             editField.dims = null;
             editField.similarity = null;
+            editField.vector_index_optimized_for = null;
 
             if (field.type == "text") {
                 editField.type = "text";
@@ -418,13 +422,14 @@ function newEasyMapping() {
             if (field.docvalues) {
                 editField.sortFacet = true;
             }
-
             if (field.dims != null) {
                 editField.dims = field.dims;
             }
-
             if (field.similarity != null) {
                 editField.similarity = field.similarity;
+            }
+            if (field.vector_index_optimized_for != null) {
+                editField.vector_index_optimized_for = field.vector_index_optimized_for;
             }
 
             mapping[editField.path] = editField;

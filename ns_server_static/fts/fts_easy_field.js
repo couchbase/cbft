@@ -57,7 +57,7 @@ function newEditField() {
             } else if (this.type == "IP") {
                 rv = "IP ";
             } else if (this.type == "vector") {
-                rv = "vector (dims: " + this.dims + "; metric: " + this.similarity + ")";
+                rv = "vector (dims: " + this.dims + "; metric: " + this.similarity + "; optimized for: " + this.vector_index_optimized_for + ")";
             }
 
             var supporting = [];

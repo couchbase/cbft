@@ -187,6 +187,7 @@ licenses/APL2.txt.
                 <span ng-if="field.docvalues">| docvalues</span>
                 <span ng-if="field.dims">| dims: {{field.dims}}</span>
                 <span ng-if="field.similarity">| metric: {{field.similarity}}</span>
+                <span ng-if="field.vector_index_optimized_for">| vector index optimized for: {{field.vector_index_optimized_for}}</span>
               </span>
             </span>
           </span>
@@ -253,6 +254,15 @@ licenses/APL2.txt.
                 <select ng-model="field.similarity">
                   <option value="dot_product">dot_product</option>
                   <option value="l2_norm">l2_norm</option>
+                </select>
+              </label>
+            </div>
+            <div ng-if="field.type == 'vector'">
+              <label>
+                <span ng-class="{'invalid': field._invalid}">optimized for</span>
+                <select ng-model="field.vector_index_optimized_for">
+                  <option value="recall">recall</option>
+                  <option value="latency">latency</option>
                 </select>
               </label>
             </div>

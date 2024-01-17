@@ -408,6 +408,11 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 delete rv.indexDef["sourceUUID"];
             }
 
+            // Drop "name" from the original and built index definition,
+            // to account global vs scoped naming. Index name changes
+            // are not allowed once created anyway.
+            delete origIndexDef["name"];
+            delete rv.indexDef["name"];
             if (angular.equals(origIndexDef, rv.indexDef)) {
                 return false;
             }
