@@ -1742,6 +1742,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         if ("similarity" in value.fields[i]) {
                             mapping.similarity = value.fields[i].similarity
                         }
+
+                        if ("vector_index_optimized_for" in value.fields[i]) {
+                            mapping.vector_index_optimized_for = value.fields[i].vector_index_optimized_for
+                        }
                     }
 
                     $scope.editAttrsDone(mapping, true)
@@ -2501,6 +2505,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.date_format = "dateTimeOptional";
                 $scope.editField.dims = null;
                 $scope.editField.similarity = null;
+                $scope.editField.vector_index_optimized_for = null;
                 if (valType === "boolean") {
                     $scope.editField.type = "boolean";
                 } else if (valType === "number") {
