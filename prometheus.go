@@ -68,6 +68,15 @@ var prometheusStats = map[string]string{
 	"tot_https_limitlisteners_closed":  "counter",
 	"tot_grpc_queryreject_on_memquota": "counter",
 
+	"total_create_index_request":               "counter",
+	"total_create_index_bad_request_error":     "counter",
+	"total_create_index_internal_server_error": "counter",
+	"total_create_index_request_ok":            "counter",
+	"total_delete_index_request":               "counter",
+	"total_delete_index_bad_request_error":     "counter",
+	"total_delete_index_internal_server_error": "counter",
+	"total_delete_index_request_ok":            "counter",
+
 	"tot_remote_http":                  "counter",
 	"total_queries_rejected_by_herder": "counter",
 	"total_gc":                         "counter",
