@@ -627,8 +627,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 
 			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
-				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
-					"supported for vectors' datatype and search", int(zv))
+				// overrride segmentVersion to minimum version needed to support vector mappings
+				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			}
 		} else {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
