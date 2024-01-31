@@ -311,6 +311,7 @@ var statkeys = []string{
 	"total_bytes_query_results",     // per-index stat.
 	"total_term_searchers",          // per-index stat.
 	"total_term_searchers_finished", // per-index stat.
+	"total_knn_searches",            // per-index stat.
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
@@ -872,6 +873,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
 	topLevelStats["num_gocbcore_stats_agents"] = cbgt.NumStatsAgents()
 
+	topLevelStats["num_knn_search_requests"] = atomic.LoadUint64(&numKNNSearchRequests)
+
 	if ServerlessMode {
 		gatherNodeUtilStats(mgr, topLevelStats)
 	}
@@ -933,6 +936,7 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("doc_count", float64(vuint64), nsIndexStat, aggrIdxStats)
 	}
+
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_term_searchers", float64(vuint64), nsIndexStat,
@@ -943,6 +947,12 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/knn_searches")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_knn_searches", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat,
@@ -1093,6 +1103,7 @@ var fixedSuffixToStatNameMapping = map[string]string{
 	"compacts":                     "total_compactions",
 	"term_searchers_started":       "total_term_searchers",
 	"term_searchers_finished":      "total_term_searchers_finished",
+	"knn_searches":                 "total_knn_searches",
 	"estimated_space_used":         "num_bytes_used_disk",
 	"CurDirtyOps":                  "num_recs_to_persist",
 	"num_plain_text_bytes_indexed": "total_bytes_indexed",

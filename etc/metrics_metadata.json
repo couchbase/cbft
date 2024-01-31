@@ -269,6 +269,16 @@
 			"index"
 		]
 	},
+	"fts_total_knn_searches": {
+		"type": "counter",
+		"help": "Total bleve knn search operations",
+		"labels": [
+			"bucket",
+			"scope",
+			"collection",
+			"index"
+		]
+	},
 	"fts_num_files_on_disk": {
 		"type": "gauge",
 		"help": "The number of files on disk for an index",
@@ -410,6 +420,10 @@
 		"type": "counter",
 		"help": "Total number of gRPC SSL listeners closed"
 	},
+    "fts_num_knn_search_requests": {
+        "type": "counter",
+        "help": "Total number of search requests with KNN"
+    },
 	"fts_tot_remote_http": {
 		"type": "counter",
 		"help": "Total number of remote(i.e. different node) HTTP requests"

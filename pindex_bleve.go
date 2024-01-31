@@ -1333,6 +1333,10 @@ var (
 	totQueryPartialResultsErr uint64
 )
 
+// number of search requests that carry a kNN request within them
+// (only recorded at coordinator node - where req was received)
+var numKNNSearchRequests uint64
+
 // QueryPIndexes defines the part of the JSON query request that
 // allows the client to specify which pindexes the server should
 // consider during query processing.
@@ -1394,6 +1398,10 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
+	}
+
+	if sr.KNN != nil {
+		atomic.AddUint64(&numKNNSearchRequests, 1)
 	}
 
 	var undecoratedQuery query.Query

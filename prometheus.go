@@ -26,6 +26,8 @@ var prometheusStats = map[string]string{
 	"doc_count":                      "counter",
 	"total_grpc_internal_queries":    "counter",
 	"total_term_searchers":           "counter",
+	"total_term_searchers_finished":  "counter",
+	"total_knn_searches":             "counter",
 	"total_queries_timeout":          "counter",
 	"total_grpc_queries":             "counter",
 	"total_grpc_queries_slow":        "counter",
@@ -39,7 +41,6 @@ var prometheusStats = map[string]string{
 	"total_internal_queries":         "counter",
 	"total_queries_error":            "counter",
 	"total_grpc_queries_error":       "counter",
-	"total_term_searchers_finished":  "counter",
 
 	"total_queries_search_in_context_error":          "counter",
 	"total_queries_bad_request_error":                "counter",
@@ -83,6 +84,7 @@ var prometheusStats = map[string]string{
 	"batch_bytes_added":                "counter",
 	"batch_bytes_removed":              "counter",
 	"num_batches_introduced":           "counter",
+	"num_knn_search_requests":          "counter",
 
 	"pct_cpu_gc":                     "gauge",
 	"num_bytes_used_ram":             "gauge",
