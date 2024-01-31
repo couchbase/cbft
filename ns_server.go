@@ -8,6 +8,11 @@
 
 package cbft
 
+/*
+# include "c_heap_mem_usage.h"
+*/
+import "C"
+
 import (
 	"bytes"
 	"encoding/json"
@@ -707,7 +712,8 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 	return totDestSeq, 0, nil
 }
 
-func getMemoryUtilization(memStats runtime.MemStats) uint64 {
+// Returns usage reported from go and c separately
+func getMemoryUtilization(memStats runtime.MemStats) (uint64, uint64) {
 	// Memory utilization to account for:
 	// - memory alloced for the process
 	// - memory released by process back to the OS
@@ -720,7 +726,8 @@ func getMemoryUtilization(memStats runtime.MemStats) uint64 {
 	// - HeapReleased is bytes of physical memory returned to the OS.
 	// So our equation here should be ..
 	//   Sys - (HeapIdle - HeapReleased) - HeapReleased
-	return memStats.Sys - memStats.HeapIdle
+	cHeapBytes := C.get_total_heap_bytes()
+	return memStats.Sys - memStats.HeapIdle, uint64(cHeapBytes)
 }
 
 func gatherNodeUtilStats(mgr *cbgt.Manager,
@@ -742,8 +749,9 @@ func gatherNodeUtilStats(mgr *cbgt.Manager,
 	rv["utilization:billableUnitsRate"] = DetermineNewAverage(
 		"totalUnitsMetered", totalUnitsMetered)
 
+	goUtil, cUtil := getMemoryUtilization(rd.memStats)
 	rv["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", getMemoryUtilization(rd.memStats))
+		"memoryBytes", goUtil + cUtil)
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
@@ -793,14 +801,17 @@ func gatherNodeUtilStats(mgr *cbgt.Manager,
 func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface{} {
 	topLevelStats := map[string]interface{}{}
 
-	memUtil := getMemoryUtilization(rd.memStats)
 	var ftsMemoryQuota uint64
 	if val := mgr.GetOption("ftsMemoryQuota"); len(val) > 0 {
 		if valUint64, err := strconv.ParseUint(val, 10, 64); err == nil {
 			ftsMemoryQuota = valUint64
 		}
 	}
+
+	goUtil, cUtil := getMemoryUtilization(rd.memStats)
+	memUtil := goUtil + cUtil
 	topLevelStats["num_bytes_used_ram"] = memUtil
+	topLevelStats["num_bytes_used_ram_c"] = cUtil
 	topLevelStats["num_bytes_ram_quota"] = ftsMemoryQuota
 	topLevelStats["pct_used_ram"] =
 		(float64(memUtil) / float64(ftsMemoryQuota)) * 100
@@ -1424,7 +1435,8 @@ func FetchCurMemoryUsed() uint64 {
 }
 
 func setCurMemoryUsedWith(memStats *runtime.MemStats) uint64 {
-	curMemoryUsed := getMemoryUtilization(*memStats)
+	goUtil, cUtil := getMemoryUtilization(*memStats)
+	curMemoryUsed := goUtil + cUtil
 	atomic.StoreUint64(&currentMemoryUsed, curMemoryUsed)
 	return curMemoryUsed
 }

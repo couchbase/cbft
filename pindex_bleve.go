@@ -61,7 +61,8 @@ var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
 
 var FeatureGeoSpatial = "geoSpatial"
 
-var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
+// Segment version since which multi version support is available.
+var FeatureBleveMultiSegmentSupportVersion = "segmentVersion:15"
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
@@ -608,12 +609,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 	}
 
-	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
-		FeatureBlevePreferredSegmentVersion, nodeDefs)
+	multiSegmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
+		FeatureBleveMultiSegmentSupportVersion, nodeDefs)
 	// if segment version is specified then perform the validations.
 	if v, ok := bp.Store["segmentVersion"]; ok {
 		if zv, ok := v.(float64); ok {
-			if !segmentVersionSupported && int(zv) != BleveDefaultZapVersion {
+			if !multiSegmentVersionSupported && int(zv) != BleveDefaultZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
@@ -625,8 +626,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 
 			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
-				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
-					"supported for vectors' datatype and search", int(zv))
+				// overrride segmentVersion to minimum version needed to support vector mappings
+				versionToUse := BleveVectorZapVersion
+				if versionToUse < BlevePreferredZapVersion {
+					versionToUse = BlevePreferredZapVersion
+				}
+				bp.Store["segmentVersion"] = versionToUse
 			}
 		} else {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
@@ -636,7 +641,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// if no zap version is specified then assume the preferred
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
-		if segmentVersionSupported {
+		if multiSegmentVersionSupported {
 			bp.Store["segmentVersion"] = BlevePreferredZapVersion
 		} else {
 			bp.Store["segmentVersion"] = BleveDefaultZapVersion

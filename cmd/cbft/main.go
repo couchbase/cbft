@@ -339,7 +339,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		"," + cbft.FeatureScorchIndex +
 		"," + cbft.FeatureGRPC +
 		"," + cbft.FeatureCollections +
-		"," + cbft.FeatureBlevePreferredSegmentVersion +
+		"," + cbft.FeatureBleveMultiSegmentSupportVersion +
 		"," + cbft.FeatureFileTransferRebalance +
 		"," + cbft.FeatureGeoSpatial +
 		"," + cbft.FeatureVectorSupportVersion
