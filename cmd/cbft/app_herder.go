@@ -22,10 +22,11 @@ import (
 type sizeFunc func(interface{}) uint64
 
 type appHerder struct {
-	memQuota   int64
-	appQuota   int64
-	indexQuota int64
-	queryQuota int64
+	memQuota             int64
+	appQuota             int64
+	indexQuota           int64
+	queryQuota           int64
+	concurrentMergeLimit int64 // max number of concurrent merges
 
 	overQuotaCh chan struct{}
 
@@ -40,22 +41,48 @@ type appHerder struct {
 
 	// states for log deduplication
 	memUsedPrev int64
-	pimPrev     int64
+	pimPrev     int64 // pre indexing memory
 	waitingPrev int64
 	indexesPrev int64
+
+	mm sync.Mutex
+
+	// map of index name -> count of ongoing merges.
+	// Will be decremented on merger progress
+	indexesMergeCount map[interface{}]int
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
-	queryRatio float64, overQuotaCh chan struct{}) *appHerder {
+	queryRatio float64, overQuotaCh chan struct{}, concurrentMergeLimit int64,
+	mergeCapChangech chan int64) *appHerder {
 	ah := &appHerder{
-		memQuota:    int64(memQuota),
-		overQuotaCh: overQuotaCh,
-		indexes:     map[interface{}]sizeFunc{},
+		memQuota:          int64(memQuota),
+		overQuotaCh:       overQuotaCh,
+		indexes:           map[interface{}]sizeFunc{},
+		indexesMergeCount: map[interface{}]int{},
 	}
 
 	ah.appQuota = int64(float64(ah.memQuota) * appRatio)
 	ah.indexQuota = int64(float64(ah.appQuota) * indexRatio)
 	ah.queryQuota = int64(float64(ah.appQuota) * queryRatio)
+	ah.concurrentMergeLimit = concurrentMergeLimit
+	// Start a new routine to receive the new cap - runs for the lifetime of the cbft process
+	// Should acquire the mm lock(a briefly held lock since it's only for rejections)
+	// and change it
+	go func(ch chan int64) {
+		for {
+			select {
+			case newCap := <-ch:
+				if newCap != ah.concurrentMergeLimit {
+					ah.mm.Lock()
+					log.Printf("app_herder: updating concurrent merge limit to "+
+						" %d \n", newCap)
+					ah.concurrentMergeLimit = newCap
+					ah.mm.Unlock()
+				}
+			}
+		}
+	}(mergeCapChangech)
 
 	ah.waitCond = sync.NewCond(&ah.m)
 
@@ -77,6 +104,12 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 	if ah.queryQuota < 0 {
 		log.Printf("app_herder: querying also ignores appQuota")
 	}
+	if ah.concurrentMergeLimit <= 0 {
+		log.Printf("app_herder: concurrent merging limit disabled")
+	}
+	if ah.concurrentMergeLimit < 0 {
+		log.Printf("app_herder: merging also ignores concurrent merging limit")
+	}
 
 	return ah
 }
@@ -88,26 +121,35 @@ func (a *appHerder) Stats() map[string]interface{} {
 		"TotOnBatchExecuteStartBeg": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartBeg),
 		"TotOnBatchExecuteStartEnd": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartEnd),
 		"TotQueriesRejected":        atomic.LoadUint64(&cbft.TotHerderQueriesRejected),
+		"TotMergesSkipped":          atomic.LoadUint64(&cbft.TotMergesSkipped),
 	}
 }
 
 // *** Indexing Callbacks
 
-func (a *appHerder) onClose(c interface{}) {
+func (a *appHerder) onClose(c interface{}) bool {
 	a.m.Lock()
 	delete(a.indexes, c)
 	a.awakeWaitersLOCKED("closing index")
 	a.m.Unlock()
+
+	// remove the indexes' merge count key on deletion
+	a.mm.Lock()
+	delete(a.indexesMergeCount, c)
+	a.mm.Unlock()
+
+	return true
 }
 
 func (a *appHerder) onMemoryUsedDropped(curMemoryUsed, prevMemoryUsed uint64) {
 	a.awakeWaiters("memory used dropped")
 }
 
-func (a *appHerder) awakeWaiters(msg string) {
+func (a *appHerder) awakeWaiters(msg string) bool {
 	a.m.Lock()
 	a.awakeWaitersLOCKED(msg)
 	a.m.Unlock()
+	return true
 }
 
 func (a *appHerder) awakeWaitersLOCKED(msg string) {
@@ -115,7 +157,7 @@ func (a *appHerder) awakeWaitersLOCKED(msg string) {
 		if a.waitingPrev != int64(a.waiting) ||
 			a.indexesPrev != int64(len(a.indexes)) {
 
-			log.Printf("app_herder: %s, indexes: %d, waiting: %d", msg,
+			log.Printf("app_herder: %s, indexes: %d, ops waiting: %d", msg,
 				len(a.indexes), a.waiting)
 
 			a.waitingPrev = int64(a.waiting)
@@ -126,13 +168,13 @@ func (a *appHerder) awakeWaitersLOCKED(msg string) {
 	}
 }
 
-func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
+func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) bool {
 	// negative means ignore both appQuota and indexQuota and let the
 	// incoming batch proceed.  A zero indexQuota means ignore the
 	// indexQuota, but continue to check the appQuota for incoming
 	// batches.
 	if a.indexQuota < 0 {
-		return
+		return true
 	}
 
 	atomic.AddUint64(&cbft.TotHerderOnBatchExecuteStartBeg, 1)
@@ -180,13 +222,15 @@ func (a *appHerder) onBatchExecuteStart(c interface{}, s sizeFunc) {
 	}
 
 	if wasWaiting {
-		log.Printf("app_herder: indexing proceeding, indexes: %d, waiting: %d, usage: %v",
-			len(a.indexes), a.waiting, cbft.FetchCurMemoryUsed())
+		log.Printf("app_herder: indexing proceeding, indexes: %d, waiting: %d, "+
+			"usage: %v", len(a.indexes), a.waiting, cbft.FetchCurMemoryUsed())
 	}
 
 	a.m.Unlock()
 
 	atomic.AddUint64(&cbft.TotHerderOnBatchExecuteStartEnd, 1)
+
+	return true
 }
 
 func (a *appHerder) indexingMemoryLOCKED() (rv uint64) {
@@ -230,12 +274,56 @@ func (a *appHerder) overMemQuotaForIndexingLOCKED() (bool, int64, int64) {
 	return a.appQuota > 0 && memUsed > a.appQuota, preIndexingMemory, memUsed
 }
 
-func (a *appHerder) onPersisterProgress() {
-	a.awakeWaiters("persister progress")
+func (a *appHerder) overLimitForConcurrentMergingLOCKED(c interface{}) (int, bool) {
+	// Total number of in-progress merges.
+	currMerges := 0
+	for _, c := range a.indexesMergeCount {
+		currMerges += c
+	}
+
+	return currMerges, currMerges > int(a.concurrentMergeLimit)
 }
 
-func (a *appHerder) onMergerProgress() {
+func (a *appHerder) onPersisterProgress() bool {
+	return a.awakeWaiters("persister progress")
+}
+
+func (a *appHerder) onMergerProgress(c interface{}) bool {
 	a.awakeWaiters("merger progress")
+
+	a.mm.Lock()
+	a.indexesMergeCount[c]--
+	a.mm.Unlock()
+
+	return true
+}
+
+func (a *appHerder) continueMerge(c interface{}) bool {
+	if a.concurrentMergeLimit <= 0 {
+		return true
+	}
+
+	a.mm.Lock()
+
+	if _, exists := a.indexesMergeCount[c]; !exists {
+		a.indexesMergeCount[c] = 0
+	}
+
+	currMerges, isOverCap := a.overLimitForConcurrentMergingLOCKED(c)
+
+	if isOverCap {
+		log.Printf("app_herder: rejecting merge since it's over concurrent merge"+
+			"limit %v, current merges: %v \n", a.concurrentMergeLimit, currMerges)
+		a.mm.Unlock()
+		atomic.AddUint64(&cbft.TotMergesSkipped, 1)
+		return false
+	}
+
+	// Decremented on merger progress
+	a.indexesMergeCount[c]++
+
+	a.mm.Unlock()
+	return true
 }
 
 // *** Query Interface
@@ -328,8 +416,8 @@ func (a *appHerder) onQueryEnd(depth int, size uint64) error {
 }
 
 // *** Scorch Wrapper
-func (a *appHerder) ScorchHerderOnEvent() func(scorch.Event) {
-	return func(event scorch.Event) { a.onScorchEvent(event) }
+func (a *appHerder) ScorchHerderOnEvent() func(scorch.Event) bool {
+	return func(event scorch.Event) bool { return a.onScorchEvent(event) }
 }
 
 func scorchSize(s interface{}) uint64 {
@@ -349,21 +437,24 @@ func scorchSize(s interface{}) uint64 {
 	return s.(*scorch.Scorch).MemoryUsed()
 }
 
-func (a *appHerder) onScorchEvent(event scorch.Event) {
+func (a *appHerder) onScorchEvent(event scorch.Event) bool {
 	switch event.Kind {
 	case scorch.EventKindClose:
-		a.onClose(event.Scorch)
+		return a.onClose(event.Scorch)
 
 	case scorch.EventKindBatchIntroductionStart:
-		a.onBatchExecuteStart(event.Scorch, scorchSize)
+		return a.onBatchExecuteStart(event.Scorch, scorchSize)
 
 	case scorch.EventKindPersisterProgress:
-		a.onPersisterProgress()
+		return a.onPersisterProgress()
 
 	case scorch.EventKindMergerProgress:
-		a.onMergerProgress()
+		return a.onMergerProgress(event.Scorch)
+
+	case scorch.EventKindPreMergeCheck:
+		return a.continueMerge(event.Scorch)
 
 	default:
-		return
+		return true
 	}
 }
