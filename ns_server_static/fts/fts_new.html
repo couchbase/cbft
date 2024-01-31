@@ -125,7 +125,7 @@
             </span>
             <select id="inputTargetIndexes"
                     multiple="true"
-                    ng-model="$parent.selectedTargetIndexes"
+                    ng-model="$parent.$parent.selectedTargetIndexes"
                     ng-options="indexName for indexName in aliasTargets">
             </select>
           </div>

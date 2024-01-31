@@ -268,8 +268,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
             return;
         }
 
-        var scopedIndexName = $scope.newSourceName+"."+
-            $scope.newScopeName+"."+$scope.newIndexName;
         if ($scope.prepareIndex &&
             $scope.prepareFTSIndex &&
             $scope.indexEditorPreview) {
@@ -285,11 +283,10 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 $scope.newIndexParams["fulltext-alias"] = {
                     "targets": JSON.stringify(aliasTargets)
                 };
-                scopedIndexName = $scope.newIndexName
             }
 
             var rv = $scope.prepareFTSIndex(
-                scopedIndexName,
+                $scope.newIndexName,
                 $scope.newIndexType, $scope.newIndexParams,
                 $scope.newSourceType, $scope.newSourceName, $scope.newSourceUUID, $scope.newSourceParams,
                 $scope.newPlanParams, $scope.prevIndexUUID,
@@ -299,7 +296,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 var newPlanParams = rv.newPlanParams;
 
                 rv = $scope.prepareIndex(
-                    scopedIndexName,
+                    $scope.newIndexName,
                     $scope.newIndexType, $scope.newIndexParams,
                     $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
                     newPlanParams, $scope.prevIndexUUID);

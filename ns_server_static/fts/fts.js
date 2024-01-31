@@ -989,10 +989,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.resetAliasDef = function() {
-
-            $scope.newIndexName = ""
-
-            $scope.selectedTargetIndexes = []
+            $scope.newIndexName = "";
+            $scope.selectedTargetIndexes = [];
         }
 
         $scope.parseAliasJSON = function(aliasJSON) {
@@ -2514,7 +2512,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "IP";
                 } else if (valType === "vector") {
                     $scope.editField.type = "vector";
-                    $scope.editField.dims = parsedDoc.getDims(newRow)
+                    $scope.editField.dims = parsedDoc.getDims(newRow);
+                    $scope.editField.vector_index_optimized_for = "recall";
+                    $scope.editField.similarity = "l2_norm";
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";

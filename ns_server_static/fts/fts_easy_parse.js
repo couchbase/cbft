@@ -131,15 +131,15 @@ function parseDocument(doc) {
             if (rowTypes[col] === "object") {
                 var numDims = 0
                 var path = rowPaths[col]
-                for (let i = col; i < rowTypes.length - 1; i++) {
-                    if (rowPaths[i] == path) {
+                for (let i = col+1; i < rowTypes.length - 1; i++) {
+                    if ((rowPaths[i] == path) && (rowTypes[i] == 'number')) {
                         numDims++
                     } else {
                         break
                     }
                 }
                 if (numDims > 2) {
-                    dims[col] = numDims - 2
+                    dims[col] = numDims - 1
                     return "vector"
                 }
             }
