@@ -24,7 +24,6 @@ import (
 // level stats for ns_server/prometheus uses.
 var prometheusStats = map[string]string{
 	"doc_count":                      "counter",
-	"batch_merge_count":              "counter",
 	"total_grpc_internal_queries":    "counter",
 	"total_term_searchers":           "counter",
 	"total_term_searchers_finished":  "counter",
@@ -86,6 +85,9 @@ var prometheusStats = map[string]string{
 	"batch_bytes_removed":              "counter",
 	"num_batches_introduced":           "counter",
 	"num_knn_search_requests":          "counter",
+
+	"num_file_merge_ops": "counter",
+	"num_mem_merge_ops":  "counter",
 
 	"pct_cpu_gc":                     "gauge",
 	"num_bytes_used_ram":             "gauge",

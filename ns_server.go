@@ -284,6 +284,9 @@ var statkeys = []string{
 	"num_persister_nap_pause_completed", // per-index stat.
 	"num_persister_nap_merger_break",    // per-index stat.
 
+	"num_file_merge_ops", // per-index stat.
+	"num_mem_merge_ops",  // per-index stat.
+
 	"total_compactions",              // per-index stat.
 	"total_compaction_written_bytes", // per-index stat.
 
@@ -952,10 +955,19 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 		updateStat("total_knn_searches", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
-
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/TotFileMergeIntroductionsDone")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("num_file_merge_ops", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/TotMemMergeDone")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("num_mem_merge_ops", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
 
@@ -1103,7 +1115,6 @@ var fixedSuffixToStatNameMapping = map[string]string{
 	"compacts":                     "total_compactions",
 	"term_searchers_started":       "total_term_searchers",
 	"term_searchers_finished":      "total_term_searchers_finished",
-	"knn_searches":                 "total_knn_searches",
 	"estimated_space_used":         "num_bytes_used_disk",
 	"CurDirtyOps":                  "num_recs_to_persist",
 	"num_plain_text_bytes_indexed": "total_bytes_indexed",
