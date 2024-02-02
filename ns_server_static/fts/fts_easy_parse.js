@@ -145,6 +145,15 @@ function parseDocument(doc) {
                 }
             }
 
+            // check whether the object is a vector_base64
+            if (rowTypes[col] === "string") {
+                var vecLen = parseBase64Length(parsedObj[rowPaths[col]])
+                if (vecLen > 2) {
+                    dims[col] = vecLen
+                    return "vector_base64"
+                }
+            }
+
             return rowTypes[col];
         },
         getDocument: function () {
@@ -162,6 +171,15 @@ function parseDocument(doc) {
             return dims[col]
         }
     };
+}
+
+function parseBase64Length(str) {
+    try {
+        var vecStr = atob(str)
+        return vecStr.length / 4
+    } catch {
+        return -1
+    }
 }
 
 export { newParsedDocs };

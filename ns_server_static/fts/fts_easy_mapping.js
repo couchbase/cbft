@@ -288,6 +288,12 @@ function newEasyMapping() {
         return fieldMapping;
     };
 
+    var newVectorBase64Field = function(field) {
+        var fieldMapping = newVectorField(field)
+        fieldMapping.type = "vector_base64";
+        return fieldMapping;
+    };
+
     var addDocumentMappingFromPathField = function(mapping, path, field) {
         // split dotted-path into path elements
         var pathElements = path.split('.');
@@ -332,6 +338,8 @@ function newEasyMapping() {
             mapping.fields.push(newIPField(field));
         } else if (field.type == "vector") {
             mapping.fields.push(newVectorField(field));
+        } else if (field.type == "vector_base64") {
+            mapping.fields.push(newVectorBase64Field(field))
         }
     };
 
@@ -406,6 +414,8 @@ function newEasyMapping() {
                 editField.type = "IP";
             } else if (field.type == "vector") {
                 editField.type = "vector";
+            } else if (field.type == "vector_base64") {
+                editField.type = "vector_base64";
             }
 
             // finish some common settings

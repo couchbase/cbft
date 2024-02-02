@@ -1004,3 +1004,165 @@ func TestHasXAttrs(t *testing.T) {
 
 	}
 }
+
+func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
+	tests := []struct {
+		idxMapping  *mapping.IndexMappingImpl
+		vectorField int
+	}{
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			vectorField: noVectorFields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector",
+						},
+					},
+				},
+			},
+			vectorField: vectorFields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector_base64",
+						},
+					},
+				},
+			},
+			vectorField: vectorAndBase64Fields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector_base64",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector",
+						},
+					},
+				},
+			},
+			vectorField: vectorAndBase64Fields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector_base64",
+						},
+					},
+				},
+			},
+			vectorField: vectorAndBase64Fields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			vectorField: vectorFields,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector_base64",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			vectorField: vectorAndBase64Fields,
+		},
+	}
+
+	for _, test := range tests {
+		res := vectorFieldsExistWithinIndexMapping(test.idxMapping)
+
+		if res != test.vectorField {
+			t.Errorf("Expected %v as output, but got %v. Index Mapping - %+v",
+				test.vectorField, res, test.idxMapping)
+		}
+	}
+}

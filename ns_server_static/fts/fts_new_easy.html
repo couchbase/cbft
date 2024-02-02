@@ -252,7 +252,7 @@
                   <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages">
                   </select>
                 </div>
-                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'">
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
                   <input
                       type="checkbox" id="field-is-stored"
                                       ng-model="editField.store"
@@ -305,7 +305,7 @@
                   </span>
                 </div>
 
-                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'">
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
                   <input
                       type="checkbox"
                       id="field-include-in-all"
@@ -322,7 +322,7 @@
                   </span>
                 </div>
 
-                <div ng-if="editField.type != 'disabled' && editField.type != 'vector'"
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'"
                      class="formrow">
                   <input
                       type="checkbox"
@@ -339,7 +339,7 @@
                     <span class="icon fa-info fa-stack-1x"></span>
                   </span>
                 </div>
-                <div ng-if="editField.type == 'vector'">
+                <div ng-if="editField.type == 'vector' || editField.type == 'vector_base64'">
                   <div class="formrow">
                     <label for="dims">Dimension</label>
                     <div class="row">

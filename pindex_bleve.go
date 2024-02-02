@@ -63,7 +63,7 @@ var FeatureGeoSpatial = "geoSpatial"
 
 var FeatureVectorSearch = "vectors"
 
-var FeatureXattrs = "Xattrs"
+var FeatureXattrsAndBase64 = "XattrsBase64"
 
 var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
 
@@ -102,6 +102,12 @@ const BleveVectorZapVersion = int(16)
 
 var defaultLimitingMinTime = 500
 var defaultLimitingMaxTime = 120000
+
+const (
+	noVectorFields        int = iota
+	vectorFields              // only vector fields (7.6.0+)
+	vectorAndBase64Fields     // vector + vector_base64 fields (7.6.2+)
+)
 
 // BleveParams represents the bleve index params.  See also
 // cbgt.IndexDef.Params.  A JSON'ified BleveParams looks like...
@@ -543,7 +549,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
 
-	var vectorFieldsSpecifiedInMapping bool
+	var vectorFieldsSpecifiedInMapping int
 
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
@@ -617,18 +623,17 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		vectorFieldsSpecifiedInMapping = vectorFieldsExistWithinIndexMapping(bp.Mapping)
-		if !isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
-			!cbgt.IsFeatureSupportedByCluster(FeatureVectorSearch, nodeDefs) {
+		if vectorFieldsSpecifiedInMapping != noVectorFields &&
+			(!isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
+				!cbgt.IsFeatureSupportedByCluster(FeatureVectorSearch, nodeDefs)) {
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
-			if vectorFieldsSpecifiedInMapping {
-				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
-					"not supported in mixed version cluster")
-			}
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
+				"not supported in mixed version cluster")
 		}
 
 		if mappingContainsXAttrs(bp) {
-			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) {
+			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrsAndBase64, nodeDefs) {
 				// XAttrs is NOT supported on this cluster
 				// (lower version or mixed lower version)
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
@@ -654,6 +659,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 			indexDef.SourceParams = string(updatedSourceParams)
 		}
+
+		if vectorFieldsSpecifiedInMapping == vectorAndBase64Fields &&
+			!cbgt.IsFeatureSupportedByCluster(FeatureXattrsAndBase64, nodeDefs) {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector_base64 typed fields " +
+				"not supported in mixed version cluster")
+		}
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -672,7 +683,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"supported", int(zv))
 			}
 
-			if vectorFieldsSpecifiedInMapping && int(zv) < BleveVectorZapVersion {
+			if vectorFieldsSpecifiedInMapping != noVectorFields && int(zv) < BleveVectorZapVersion {
 				// overrride segmentVersion to minimum version needed to support vector mappings
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			}
@@ -685,7 +696,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
-			if vectorFieldsSpecifiedInMapping {
+			if vectorFieldsSpecifiedInMapping != noVectorFields {
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			} else {
 				bp.Store["segmentVersion"] = BlevePreferredZapVersion
@@ -714,45 +725,60 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 // Utility function check if a "vector" typed field is present within
 // the index mapping
-func vectorFieldsExistWithinIndexMapping(m mapping.IndexMapping) bool {
+func vectorFieldsExistWithinIndexMapping(m mapping.IndexMapping) int {
 	im, ok := m.(*mapping.IndexMappingImpl)
 	if !ok {
 		// cannot interpret index mapping
-		return false
+		return noVectorFields
 	}
 
-	var vectorFieldExistsWithinDocMapping func(*mapping.DocumentMapping) bool
-	vectorFieldExistsWithinDocMapping = func(d *mapping.DocumentMapping) bool {
+	var vectorFieldExistsWithinDocMapping func(*mapping.DocumentMapping) int
+	vectorFieldExistsWithinDocMapping = func(d *mapping.DocumentMapping) int {
+		rv := noVectorFields
 		if d != nil && d.Enabled {
 			for _, v := range d.Properties {
-				if vectorFieldExistsWithinDocMapping(v) {
-					return true
+				val := vectorFieldExistsWithinDocMapping(v)
+				if val == vectorAndBase64Fields {
+					return val
+				} else if val > rv {
+					rv = val
 				}
 			}
 
 			for _, field := range d.Fields {
-				if field.Type == "vector" {
-					return true
+				if field.Type == "vector" && vectorFields > rv {
+					rv = vectorFields
+				}
+				if field.Type == "vector_base64" {
+					return vectorAndBase64Fields
 				}
 			}
 		}
 
-		return false
+		return rv
 	}
 
+	rv := noVectorFields
+
 	// Check DefaultMapping
-	if vectorFieldExistsWithinDocMapping(im.DefaultMapping) {
-		return true
+	val := vectorFieldExistsWithinDocMapping(im.DefaultMapping)
+	if val == vectorAndBase64Fields {
+		return val
+	} else if val > rv {
+		rv = val
 	}
 
 	// Iterate over TypeMapping(s)
 	for _, d := range im.TypeMapping {
-		if vectorFieldExistsWithinDocMapping(d) {
-			return true
+		val := vectorFieldExistsWithinDocMapping(d)
+		if val == vectorAndBase64Fields {
+			return val
+		} else if val > rv {
+			rv = val
 		}
 	}
 
-	return false
+	return rv
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {
