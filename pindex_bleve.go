@@ -1353,6 +1353,16 @@ func fireQueryEvent(depth int, kind QueryEventKind, dur time.Duration, size uint
 	return nil
 }
 
+// forcing the searcher creation to app_herder checks so that
+// if there is high memory usage we don't do an expensive searcher creation
+func bleveCtxSearcherStartCallback(size uint64) error {
+	return fireQueryEvent(0, EventQueryStart, 0, size)
+}
+
+func bleveCtxSearcherEndCallback(size uint64) error {
+	return fireQueryEvent(0, EventQueryEnd, 0, size)
+}
+
 func bleveCtxQueryStartCallback(size uint64) error {
 	return fireQueryEvent(1, EventQueryStart, 0, size)
 }
@@ -1476,6 +1486,12 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		bleve.SearchQueryStartCallbackFn(bleveCtxQueryStartCallback))
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
 		bleve.SearchQueryEndCallbackFn(bleveCtxQueryEndCallback))
+
+	// set the callbacks for searcher creation
+	ctx = context.WithValue(ctx, search.SearcherStartCallbackKey,
+		search.SearcherStartCallbackFn(bleveCtxSearcherStartCallback))
+	ctx = context.WithValue(ctx, search.SearcherEndCallbackKey,
+		search.SearcherEndCallbackFn(bleveCtxSearcherEndCallback))
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
