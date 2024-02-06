@@ -248,6 +248,11 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	ctx = context.WithValue(ctx, bleve.SearchQueryEndCallbackKey,
 		bleve.SearchQueryEndCallbackFn(bleveCtxQueryEndCallback))
 
+	ctx = context.WithValue(ctx, search.SearcherStartCallbackKey,
+		search.SearcherStartCallbackFn(bleveCtxSearcherStartCallback))
+	ctx = context.WithValue(ctx, search.SearcherEndCallbackKey,
+		search.SearcherEndCallbackFn(bleveCtxSearcherEndCallback))
+
 	if coordinatingNode {
 		// register with the QuerySupervisor only on the coordinating node.
 		id := querySupervisor.AddEntry(&QuerySupervisorContext{

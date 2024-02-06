@@ -284,6 +284,9 @@ var statkeys = []string{
 	"num_persister_nap_pause_completed", // per-index stat.
 	"num_persister_nap_merger_break",    // per-index stat.
 
+	"num_file_merge_ops", // per-index stat.
+	"num_mem_merge_ops",  // per-index stat.
+
 	"total_compactions",              // per-index stat.
 	"total_compaction_written_bytes", // per-index stat.
 
@@ -311,6 +314,7 @@ var statkeys = []string{
 	"total_bytes_query_results",     // per-index stat.
 	"total_term_searchers",          // per-index stat.
 	"total_term_searchers_finished", // per-index stat.
+	"total_knn_searches",            // per-index stat.
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
@@ -751,7 +755,7 @@ func gatherNodeUtilStats(mgr *cbgt.Manager,
 
 	goUtil, cUtil := getMemoryUtilization(rd.memStats)
 	rv["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", goUtil + cUtil)
+		"memoryBytes", goUtil+cUtil)
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
@@ -872,6 +876,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["num_gocbcore_dcp_agents"] = cbgt.NumDCPAgents()
 	topLevelStats["num_gocbcore_stats_agents"] = cbgt.NumStatsAgents()
 
+	topLevelStats["num_knn_search_requests"] = atomic.LoadUint64(&numKNNSearchRequests)
+
 	if ServerlessMode {
 		gatherNodeUtilStats(mgr, topLevelStats)
 	}
@@ -933,6 +939,7 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("doc_count", float64(vuint64), nsIndexStat, aggrIdxStats)
 	}
+
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/term_searchers_started")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_term_searchers", float64(vuint64), nsIndexStat,
@@ -943,9 +950,24 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 		updateStat("total_term_searchers_finished", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/knn_searches")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_knn_searches", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_bytes_indexed", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/TotFileMergeIntroductionsDone")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("num_file_merge_ops", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/TotMemMergeDone")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("num_mem_merge_ops", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
 
