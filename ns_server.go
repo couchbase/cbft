@@ -755,7 +755,7 @@ func gatherNodeUtilStats(mgr *cbgt.Manager,
 
 	goUtil, cUtil := getMemoryUtilization(rd.memStats)
 	rv["utilization:memoryBytes"] = DetermineNewAverage(
-		"memoryBytes", goUtil + cUtil)
+		"memoryBytes", goUtil+cUtil)
 
 	var size int64
 	_ = filepath.Walk(mgr.DataDir(), func(_ string, info os.FileInfo, err error) error {
