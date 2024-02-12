@@ -15,8 +15,62 @@ import (
 
 	"github.com/blevesearch/bleve/v2/index/scorch"
 
+	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 )
+
+func init() {
+	cbgt.RollbackHook = func(phase cbgt.RollbackPhase, pindex *cbgt.PIndex) (err error) {
+		df, ok := pindex.Dest.(*cbgt.DestForwarder)
+		if !ok || df == nil {
+			return fmt.Errorf("rollbackhook: invalid dest for pindex:%s",
+				pindex.Name)
+		}
+		bd, ok := df.DestProvider.(*BleveDest)
+		if !ok || bd == nil {
+			return fmt.Errorf("rollbackhook: invalid destProvider for pindex:%s",
+				pindex.Name)
+		}
+
+		bd.m.Lock()
+		defer bd.m.Unlock()
+
+		switch phase {
+		case cbgt.RollbackInit:
+
+			pindexName := bd.bindex.Name()
+			wasClosed, wasPartial, err := bd.partialRollbackLOCKED()
+
+			log.Printf("pindex_bleve_rollback: path: %s, wasClosed: %t, "+
+				"wasPartial: %t, err: %v", bd.path, wasClosed, wasPartial, err)
+
+			if !wasClosed {
+				bd.closeLOCKED(false)
+			}
+
+			if !wasPartial {
+				atomic.AddUint64(&TotRollbackFull, 1)
+				if ServerlessMode {
+					// this is a full rollback, so the paritition is going to be
+					// rebuilt a fresh. The reason we are refunding over here is
+					// because this is not a end-user problem, but rather a
+					// couchbase cluster problem. So, once the partition is built
+					// afresh, we would essentially any loss of cost by charging
+					// for 0 - original high seq no. and after that we will
+					// actually start costing the user.
+					RollbackRefund(pindexName, bd.sourceName, 0)
+				}
+				os.RemoveAll(bd.path) // Full rollback to zero.
+			} else {
+				atomic.AddUint64(&TotRollbackPartial, 1)
+			}
+		case cbgt.RollbackCompleted:
+			bd.isRollbackInProgress = false
+		}
+
+		return nil
+	}
+}
 
 func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq uint64) error {
 	t.AddError("dest rollback", partition, nil, rollbackSeq, nil, nil)
@@ -28,47 +82,27 @@ func (t *BleveDest) Rollback(partition string, vBucketUUID uint64, rollbackSeq u
 
 	// The BleveDest may be closed due to another partition(BleveDestPartition) of
 	// the same pindex being rolled back earlier.
-	if t.bindex != nil {
-		pindexName := t.bindex.Name()
-		wasClosed, wasPartial, err := t.partialRollbackLOCKED(partition,
-			vBucketUUID, rollbackSeq)
-
-		log.Printf("pindex_bleve_rollback: path: %s,"+
-			" wasClosed: %t, wasPartial: %t, err: %v",
-			t.path, wasClosed, wasPartial, err)
-
-		if !wasClosed {
-			t.closeLOCKED(false)
-		}
-
-		if !wasPartial {
-			atomic.AddUint64(&TotRollbackFull, 1)
-			if ServerlessMode {
-				// this is a full rollback, so the paritition is going to be
-				// rebuilt a fresh. The reason we are refunding over here is
-				// because this is not a end-user problem, but rather a
-				// couchbase cluster problem. So, once the partition is built
-				// afresh, we would essentially any loss of cost by charging
-				// for 0 - original high seq no. and after that we will
-				// actually start costing the user.
-				RollbackRefund(pindexName, t.sourceName, 0)
-			}
-			os.RemoveAll(t.path) // Full rollback to zero.
-		} else {
-			atomic.AddUint64(&TotRollbackPartial, 1)
-		}
-
-		// Whether partial or full rollback, restart the BleveDest so that
-		// feeds are restarted.
-		t.rollback()
+	if t.bindex == nil || t.isRollbackInProgress {
+		return nil
 	}
+
+	t.isRollbackInProgress = true
+
+	t.rollbackInfo = &RollbackInfo{
+		partition:   partition,
+		vBucketUUID: vBucketUUID,
+		rollbackSeq: rollbackSeq,
+	}
+
+	// Whether partial or full rollback, restart the BleveDest so that
+	// feeds are restarted.
+	t.rollback()
 
 	return nil
 }
 
 // Attempt partial rollback.
-func (t *BleveDest) partialRollbackLOCKED(partition string,
-	vBucketUUID uint64, rollbackSeq uint64) (bool, bool, error) {
+func (t *BleveDest) partialRollbackLOCKED() (bool, bool, error) {
 	if t.bindex == nil {
 		return false, false, nil
 	}
@@ -79,8 +113,7 @@ func (t *BleveDest) partialRollbackLOCKED(partition string,
 	}
 
 	if sh, ok := index.(*scorch.Scorch); ok {
-		return t.partialScorchRollbackLOCKED(sh,
-			partition, vBucketUUID, rollbackSeq)
+		return t.partialScorchRollbackLOCKED(sh)
 	}
 
 	return false, false, fmt.Errorf("unknown index type")
