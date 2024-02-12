@@ -345,24 +345,32 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 	return r, r.Validate()
 }
 
+type RollbackInfo struct {
+	partition   string
+	vBucketUUID uint64
+	rollbackSeq uint64
+}
+
 type BleveDest struct {
 	path string
 
 	bleveDocConfig BleveDocumentConfig
 
 	// Invoked when mgr should rollback this BleveDest
-	rollback func()
+	rollback     func()
+	rollbackInfo *RollbackInfo
 
 	stats     *cbgt.PIndexStoreStats
 	copyStats *CopyPartitionStats
 
-	m           sync.RWMutex // Protects the fields that follow.
-	bindex      bleve.Index
-	partitions  map[string]*BleveDestPartition
-	rev         uint64 // Incremented whenever bindex changes.
-	batchReqChs []chan *batchRequest
-	stopCh      chan struct{}
-	removeCh    chan struct{}
+	m                    sync.RWMutex // Protects the fields that follow.
+	bindex               bleve.Index
+	partitions           map[string]*BleveDestPartition
+	rev                  uint64 // Incremented whenever bindex changes.
+	batchReqChs          []chan *batchRequest
+	stopCh               chan struct{}
+	removeCh             chan struct{}
+	isRollbackInProgress bool
 }
 
 // Used to track state for a single partition.
