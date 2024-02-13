@@ -25,8 +25,17 @@ import (
 // Determine which point is of relevance to get to at or before the
 // wanted rollbackSeq and vBucketUUID. If found, rollback to that
 // particular point.
-func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch,
-	partition string, vBucketUUID, rollbackSeq uint64) (bool, bool, error) {
+func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch) (
+	bool, bool, error) {
+	if t == nil || t.rollbackInfo == nil {
+		return false, false, fmt.Errorf("pindex_bleve_scorch_rollback: invalid" +
+			" bleveDest or rollbackInfo")
+	}
+
+	partition := t.rollbackInfo.partition
+	vBucketUUID := t.rollbackInfo.vBucketUUID
+	rollbackSeq := t.rollbackInfo.rollbackSeq
+
 	seqMaxKey := []byte(partition)
 
 	// get vBucketMap/Opaque key
