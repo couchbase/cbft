@@ -61,6 +61,8 @@ var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
 
 var FeatureGeoSpatial = "geoSpatial"
 
+var FeatureVectorSearch = "vectors"
+
 var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
 
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
@@ -537,6 +539,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
 
+	var vectorFieldsSpecifiedInMapping bool
+
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -608,10 +612,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
-		if !isClusterCompatibleFor(FeatureVectorSupportVersion) {
+		vectorFieldsSpecifiedInMapping = vectorFieldsExistWithinIndexMapping(bp.Mapping)
+		if !isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
+			!cbgt.IsFeatureSupportedByCluster(FeatureVectorSearch, nodeDefs) {
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
-			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+			if vectorFieldsSpecifiedInMapping {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
@@ -634,7 +640,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"supported", int(zv))
 			}
 
-			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
+			if vectorFieldsSpecifiedInMapping && int(zv) < BleveVectorZapVersion {
 				// overrride segmentVersion to minimum version needed to support vector mappings
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			}
@@ -647,7 +653,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
-			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+			if vectorFieldsSpecifiedInMapping {
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			} else {
 				bp.Store["segmentVersion"] = BlevePreferredZapVersion

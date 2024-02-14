@@ -17,6 +17,12 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
+func FeatureVectorSearchSupport() string {
+	return "," + FeatureVectorSearch
+}
+
+// -----------------------------------------------------------------------------
+
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
