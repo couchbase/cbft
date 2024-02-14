@@ -64,6 +64,8 @@ var FeatureGeoSpatial = "geoSpatial"
 // Segment version since which multi version support is available.
 var FeatureBleveMultiSegmentSupportVersion = "segmentVersion:15"
 
+var FeatureVectorSearch = "vectors"
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
@@ -536,6 +538,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
 
+	var vectorFieldsSpecifiedInMapping bool
+
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -607,10 +611,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
-		if !isClusterCompatibleFor(FeatureVectorSupportVersion) {
+		vectorFieldsSpecifiedInMapping = vectorFieldsExistWithinIndexMapping(bp.Mapping)
+		if !isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
+			!cbgt.IsFeatureSupportedByCluster(FeatureVectorSearch, nodeDefs) {
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
-			if vectorFieldsExistWithinIndexMapping(bp.Mapping) {
+			if vectorFieldsSpecifiedInMapping {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
@@ -633,7 +639,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"supported", int(zv))
 			}
 
-			if vectorFieldsExistWithinIndexMapping(bp.Mapping) && int(zv) < BleveVectorZapVersion {
+			if vectorFieldsSpecifiedInMapping && int(zv) < BleveVectorZapVersion {
 				// overrride segmentVersion to minimum version needed to support vector mappings
 				versionToUse := BleveVectorZapVersion
 				if versionToUse < BlevePreferredZapVersion {

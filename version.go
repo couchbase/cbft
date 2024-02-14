@@ -45,7 +45,7 @@ const FeatureGrpcVersion = "6.5.0"
 
 const FeatureScopedIndexNamesVersion = "7.5.0"
 
-const FeatureVectorSupportVersion = "7.6.0"
+const FeatureVectorSearchSupportVersion = "7.6.0"
 
 func HandleAPIVersion(h string) (string, error) {
 	if len(h) <= 0 || h == "*/*" {
