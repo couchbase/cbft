@@ -16,7 +16,7 @@ extern "C" {
         size_t get_total_heap_bytes();
     #else
         size_t get_total_heap_bytes() {
-            return(size_t)0L;
+            return (size_t)0L;
         }
     #endif
 
