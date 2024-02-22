@@ -52,7 +52,7 @@ size_t get_attribute_value(const char *str, const char *first_substr, const char
 }
 
 
-size_t get_total_heap_bytes(){
+size_t get_total_heap_bytes() {
     // ref: https://gist.github.com/tadeu/95013963c64da4cd74a2c6f4fa4fd553
     // There are three functions in Linux libc API to retrieve heap
     // information: `malloc_stats`, `mallinfo` and `malloc_info`.
@@ -72,10 +72,19 @@ size_t get_total_heap_bytes(){
     size_t buf_size = 0;
 
     FILE* f = open_memstream(&buf, &buf_size);
+    if (f == NULL) {
+       return (size_t)0;
+    }
+
     // this doesn't include the golang or the other process's stats
     // as per local testing
-    malloc_info(0, f);
+    int rv = malloc_info(0, f);
     fclose(f);
+
+    // https://man7.org/linux/man-pages/man3/malloc_info.3.html
+    if ((rv != 0) || (buf == NULL)) {
+        return (size_t)0;
+    }
 
     // We are only interested in totals, so we skip everything until the
     // closing of the <heap>...</heap> block.
@@ -96,6 +105,7 @@ size_t get_total_heap_bytes(){
 
     free(buf);
     buf = NULL;
+
     return allocated_mem;
 }
 #endif
