@@ -902,10 +902,37 @@ func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{},
 			if err != nil {
 				return err
 			}
+
+			extractFieldStats(bpsm, nsIndexStat)
 			return extractStats(bpsm, nsIndexStat, aggrIdxStats)
 		}
 	}
 	return nil
+}
+
+func extractFieldStats(bpsm, nsIndexStat map[string]interface{}) {
+	v := gojson.Get(bpsm, "/bleveIndexStats/index")
+
+	if is, ok := v.(map[string]interface{}); ok {
+		for s, v := range is {
+			if strings.HasSuffix(s, ":num_vectors") {
+				updateFieldStats(s, v, nsIndexStat)
+				updateFieldStats("total_vectors", v, nsIndexStat)
+			}
+		}
+	}
+}
+
+func updateFieldStats(name string, val interface{}, nsIndexStat map[string]interface{}) {
+	if _, exist := nsIndexStat[name]; !exist {
+		nsIndexStat[name] = val
+	} else {
+		if oldVal, ok := nsIndexStat[name].(uint64); ok {
+			if newVal, ok := val.(uint64); ok {
+				nsIndexStat[name] = oldVal + newVal
+			}
+		}
+	}
 }
 
 func updateAggregateStats(ais *aggrIndexesStats, statName string, val float64) {
