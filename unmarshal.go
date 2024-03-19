@@ -404,6 +404,11 @@ func decodeMatchQueryOperator(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 // parseQuery deserializes a JSON representation of
 // a Query object.
 func parseQuery(input []byte) (query.Query, error) {
+	if len(input) == 0 {
+		// interpret as a match_none query
+		return query.NewMatchNoneQuery(), nil
+	}
+
 	var tmp map[string]interface{}
 	err := jsoniter.Unmarshal(input, &tmp)
 	if err != nil {

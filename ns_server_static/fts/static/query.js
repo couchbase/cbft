@@ -26,7 +26,8 @@ function PrepQueryRequest(scope) {
     let qr = {};
 
     if (typeof q == "object") {
-        if (('query' in q) && (typeof q['query'] == "object")) {
+        if ((('query' in q) && (typeof q['query'] == "object")) ||
+            (('knn' in q) && (typeof q['knn'] == "object"))) {
             q['explain'] = true;
             qr = q;
         } else {
