@@ -109,6 +109,9 @@ cluster.collection[<sourceName>].fts!read
 POST /api/index/{indexName}/analyzeDoc
 cluster.collection[<sourceName>].fts!read
 
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/analyzeDoc
+cluster.collection[<sourceName>].fts!read
+
 POST /api/index/{indexName}/tasks
 cluster.bucket[<sourceName>].fts!write
 

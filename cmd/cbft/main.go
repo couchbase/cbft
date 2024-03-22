@@ -615,6 +615,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
+	handle(prefix+"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/analyzeDoc", "POST",
+		cbft.NewAnalyzeDocHandler(mgr))
+
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
 
