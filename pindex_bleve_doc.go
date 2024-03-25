@@ -160,6 +160,10 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	} else if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
 		collectionId = extras[4:8]
+	} else if req != nil {
+		cmf = b.CollPrefixLookup[req.CollectionId]
+		collectionId = make([]byte, 4)
+		binary.LittleEndian.PutUint32(collectionId, req.CollectionId)
 	}
 
 	var v map[string]interface{}
