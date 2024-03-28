@@ -729,6 +729,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			Verbose:                            verbose,
 			FavorMinNodes:                      false,
 			WaitForMemberNodes:                 waitForMemberNodes,
+			EnableReplicaCatchup:               true, // enabling replica partition catchup by default
 			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
 			Manager:                            mgr,
 		})
