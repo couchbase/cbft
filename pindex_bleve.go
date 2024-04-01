@@ -627,29 +627,33 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
-		if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) && hasXAttrs(bp) {
-			// XAttrs is NOT supported on this cluster
-			// (lower version or mixed lower version)
-			return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
-				"and properties not supported in mixed version cluster")
+		if mappingContainsXAttrs(bp) {
+			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) {
+				// XAttrs is NOT supported on this cluster
+				// (lower version or mixed lower version)
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
+					"and properties not supported in mixed version cluster")
+			}
+
+			sourceParams := make(map[string]interface{})
+			if len(indexDef.SourceParams) > 0 && indexDef.SourceParams != "null" {
+				err = UnmarshalJSON([]byte(indexDef.SourceParams), &sourceParams)
+				if err != nil {
+					return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
+						", err: %v", err)
+				}
+			}
+
+			sourceParams["includeXAttrs"] = true
+
+			updatedSourceParams, err := MarshalJSON(sourceParams)
+			if err != nil {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
+					", err: %v", err)
+			}
+
+			indexDef.SourceParams = string(updatedSourceParams)
 		}
-
-		var sourceParams map[string]interface{}
-		err = json.Unmarshal([]byte(indexDef.SourceParams), &sourceParams)
-		if err != nil {
-			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
-				", err: %v", err)
-		}
-
-		sourceParams["IncludeXAttrs"] = hasXAttrs(bp)
-
-		updatedSourceParams, err := json.Marshal(sourceParams)
-		if err != nil {
-			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
-				", err: %v", err)
-		}
-
-		indexDef.SourceParams = string(updatedSourceParams)
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -3572,7 +3576,10 @@ func isGeoPointFieldInMapping(bp *BleveParams) bool {
 	return false
 }
 
-func hasXAttrs(bp *BleveParams) bool {
+func mappingContainsXAttrs(bp *BleveParams) bool {
+	if bp == nil {
+		return false
+	}
 
 	if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 		if im.DefaultMapping.Enabled {

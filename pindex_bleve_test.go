@@ -996,7 +996,7 @@ func TestHasXAttrs(t *testing.T) {
 			test.indexMapping.TypeMapping[test.typeMappingName] = docMapping
 		}
 		test.bleveParams.Mapping = test.indexMapping
-		res = hasXAttrs(test.bleveParams)
+		res = mappingContainsXAttrs(test.bleveParams)
 		if res != test.xattrs {
 			t.Errorf("Expected %v as output of hasXAttrs, but got %v. Fields - %+v",
 				test.xattrs, res, test.fields)
