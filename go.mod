@@ -54,7 +54,7 @@ require (
 	github.com/blevesearch/upsidedown_store_api v1.0.2 // indirect
 	github.com/blevesearch/vellum v1.0.10 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/couchbase/blance v0.1.5 // indirect
+	github.com/couchbase/blance v0.1.6 // indirect
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
 	github.com/couchbase/gocbcore/v10 v10.2.10 // indirect

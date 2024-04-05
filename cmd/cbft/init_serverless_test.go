@@ -448,7 +448,7 @@ func Test_serverlessRebalanceHook_addNodes(t *testing.T) {
 		},
 	}
 
-	output, _, err := serverlessRebalanceHook(input)
+	output, err := serverlessRebalanceHook(input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -542,7 +542,7 @@ func Test_serverlessRebalanceHook_removeNode(t *testing.T) {
 		},
 	}
 
-	output, _, err := serverlessRebalanceHook(input)
+	output, err := serverlessRebalanceHook(input)
 	if err != nil {
 		t.Fatal(err)
 	}
