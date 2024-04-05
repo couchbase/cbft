@@ -118,9 +118,15 @@ var prometheusStats = map[string]string{
 	"limits:billableUnitsRate":          "gauge",
 	"limits:diskBytes":                  "gauge",
 	"limits:memoryBytes":                "gauge",
+
+	"total_vectors": "gauge",
 }
 
 var bline = []byte("\n")
+
+var prometheusFieldStats = map[string]string{
+	"num_vectors": "gauge",
+}
 
 // PrometheusHighMetricsHandler is a REST handler that provides high
 // cardinality stats/metrics for consumption by ns_server/prometheus.
@@ -175,6 +181,15 @@ func (h *PrometheusHighMetricsHandler) ServeHTTP(w http.ResponseWriter,
 				w.Write([]byte(fmt.Sprintf("# TYPE fts_%s %s\n", nsik, typ)))
 				w.Write(append([]byte("fts_"+nsik+k+" "), b...))
 				w.Write(bline)
+			} else {
+				for suffix, typ := range prometheusFieldStats {
+					if strings.HasSuffix(nsik, suffix) {
+						w.Write([]byte(fmt.Sprintf("# TYPE fts_%s %s\n", nsik, typ)))
+						w.Write(append([]byte("fts_"+nsik+k+" "), b...))
+						w.Write(bline)
+						break
+					}
+				}
 			}
 		}
 	}

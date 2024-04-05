@@ -342,7 +342,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		"," + cbft.FeatureBleveMultiSegmentSupportVersion +
 		"," + cbft.FeatureFileTransferRebalance +
 		"," + cbft.FeatureGeoSpatial +
-		cbft.FeatureVectorSearchSupport()
+		cbft.FeatureVectorSearchSupport() +
+		"," + cbft.FeatureXattrs
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION
@@ -619,6 +620,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	muxrouter.Handle(prefix+"/login", cbAuthBasicLoginHadler)
 
+	handle(prefix+"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/analyzeDoc", "POST",
+		cbft.NewAnalyzeDocHandler(mgr))
+
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
 
@@ -751,6 +755,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			Verbose:                            verbose,
 			FavorMinNodes:                      false,
 			WaitForMemberNodes:                 waitForMemberNodes,
+			EnableReplicaCatchup:               true, // enabling replica partition catchup by default
 			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
 			Manager:                            mgr,
 		})

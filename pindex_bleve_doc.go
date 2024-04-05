@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/couchbase/cbgt"
+	log "github.com/couchbase/clog"
 )
 
 var ConfigModeCollPrefix = "scope.collection"
@@ -141,21 +142,45 @@ func (b *BleveDocumentConfig) multiCollection() bool {
 
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
-	extras []byte) (*BleveDocument, []byte, error) {
+	req *cbgt.GocbcoreDCPExtras, extras []byte) (*BleveDocument, []byte, error) {
+
 	var cmf *collMetaField
-	if len(extras) >= 8 {
+	var xattrs map[string]interface{}
+	var collectionId []byte
+	var err error
+
+	if req != nil && req.Datatype&4 > 0 {
+		cmf = b.CollPrefixLookup[req.CollectionId]
+		xattrs, val, err = b.buildXAttrs(val)
+		if err != nil {
+			log.Errorf("BuildDocumentEx: error parsing xattrs: %v", err)
+		}
+		collectionId = make([]byte, 4)
+		binary.LittleEndian.PutUint32(collectionId[0:], req.CollectionId)
+	} else if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
+		collectionId = extras[4:8]
+	} else if req != nil {
+		cmf = b.CollPrefixLookup[req.CollectionId]
+		collectionId = make([]byte, 4)
+		binary.LittleEndian.PutUint32(collectionId, req.CollectionId)
 	}
 
 	var v map[string]interface{}
-	err := json.Unmarshal(val, &v)
+	err = json.Unmarshal(val, &v)
 	if err != nil || v == nil {
 		v = map[string]interface{}{}
 	}
 
+	// Add the xattr fields back into the document mapping
+	// under the xattrs field mapping
+	if _, ok := v[xAttrsMappingName]; !ok && xattrs != nil {
+		v[xAttrsMappingName] = xattrs
+	}
+
 	if cmf != nil && len(b.CollPrefixLookup) > 1 {
 		// more than 1 collection indexed
-		key = append(extras[4:8], key...)
+		key = append(collectionId, key...)
 		v[CollMetaFieldName] = cmf.value
 	}
 
@@ -197,6 +222,66 @@ func (b *BleveDocumentConfig) BuildDocumentFromObj(key []byte, v interface{},
 		typ:            b.DetermineType(key, v, defaultType),
 		BleveInterface: v,
 	}
+}
+
+func (b *BleveDocumentConfig) buildXAttrs(val []byte) (
+	map[string]interface{}, []byte, error) {
+
+	xattrs := make(map[string]interface{})
+
+	if len(val) < 4 {
+		return nil, val, fmt.Errorf("buildXAttrs: length of mutation less than" +
+			"the required amount")
+	}
+
+	pos := uint32(0)
+	// First 4 bytes determines the size of the xattr content
+	xattrLen := binary.BigEndian.Uint32(val[pos : pos+4])
+	pos = pos + 4
+
+	if xattrLen == 0 {
+		val = val[pos+4:]
+	} else {
+		var valInterface interface{}
+
+		// Each xattr key and value pair is separated by \x00
+		separator := []byte("\x00")
+
+		for pos < xattrLen {
+			// The next 4 bytes determines the size of
+			// the key value pair
+			pairLen := binary.BigEndian.Uint32(val[pos : pos+4])
+			if pairLen == 0 || int(pos+pairLen+4) > len(val) {
+				return nil, val, fmt.Errorf("buildXAttrs: length of mutation less than" +
+					"the required amount")
+			}
+			pos += 4
+			pairBytes := val[pos : pos+pairLen]
+			// The key value looks like [key]\x00[value]\x00
+			components := bytes.Split(pairBytes, separator)
+
+			if len(components) != 3 {
+				return nil, val, fmt.Errorf("buildXAttrs: wrong number of separators in xattrs")
+			}
+
+			xattrKey := string(components[0])
+
+			// Exclude system xattrs from being added into the document
+			if xattrKey[0] != '_' {
+				// Check and parse the value into a string or a json
+				if err := json.Unmarshal(components[1], &valInterface); err == nil {
+					xattrs[xattrKey] = valInterface
+				} else {
+					xattrs[xattrKey] = string(components[1])
+				}
+			}
+
+			pos += pairLen
+		}
+		val = val[pos:]
+	}
+
+	return xattrs, val, nil
 }
 
 func (b *BleveDocumentConfig) DetermineType(key []byte, v interface{}, defaultType string) string {

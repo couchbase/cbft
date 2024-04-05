@@ -223,21 +223,18 @@ func serverlessPlannerHook(in cbgt.PlannerHookInfo) (cbgt.PlannerHookInfo, bool,
 // - adjust node weights to be able to influence partition positioning for the
 // current index during rebalance.
 func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
-	rebalance.RebalanceHookInfo, bool, error) {
+	rebalance.RebalanceHookInfo, error) {
 	switch in.Phase {
 	case rebalance.RebalanceHookPhaseInit:
-		// In serverless, for cases like auto-rebalance, we may benefit from
-		// moving partitions even when there is no fts topology change.
-		// Thus, we are not skipping the rebalance.
-		return in, false, nil
+		return in, nil
 	case rebalance.RebalanceHookPhaseAdjustNodeWeights:
 		if in.BegNodeDefs == nil || len(in.BegNodeDefs.NodeDefs) == 0 {
-			return in, false, nil
+			return in, nil
 		}
 
 		if in.ExistingPlanPIndexes == nil || len(in.ExistingPlanPIndexes.PlanPIndexes) == 0 {
 			// No plan pindexes in the system (yet), no need to adjust node weights.
-			return in, false, nil
+			return in, nil
 		}
 
 		if len(in.NodeUUIDsToAdd) > 0 && len(in.NodeUUIDsToRemove) == 0 {
@@ -245,7 +242,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 			// Early exit, no need to adjust node weights.
 			log.Printf("serverlessRebalanceHook: scale out operation (adding: %v),"+
 				" not moving index: %s", in.NodeUUIDsToAdd, in.IndexDef.Name)
-			return in, false, nil
+			return in, nil
 		}
 
 		numPlanPIndexes := len(in.ExistingPlanPIndexes.PlanPIndexes)
@@ -275,7 +272,7 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 
 			if !indexAffected {
 				// No need to adjust any node weights, favor stickiness
-				return in, false, nil
+				return in, nil
 			}
 		}
 
@@ -299,9 +296,9 @@ func serverlessRebalanceHook(in rebalance.RebalanceHookInfo) (
 		log.Printf("serverlessRebalanceHook: index: %s, proposed NodeWeights: %+v",
 			in.IndexDef.Name, nodeWeights)
 
-		return in, false, nil
+		return in, nil
 	default:
-		return in, false, fmt.Errorf("unrecognized rebalance hook phase: %v", in.Phase)
+		return in, fmt.Errorf("unrecognized rebalance hook phase: %v", in.Phase)
 	}
 }
 

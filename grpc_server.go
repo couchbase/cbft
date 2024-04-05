@@ -135,6 +135,9 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		return status.Errorf(codes.InvalidArgument,
 			"grpc_server: Search parsing searchRequest, err: %v", err)
 	}
+	if string(sr.Q) == "null" {
+		sr.Q = nil
+	}
 	var searchRequest *bleve.SearchRequest
 	searchRequest, err = sr.ConvertToBleveSearchRequest()
 	if err != nil {

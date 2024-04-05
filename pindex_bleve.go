@@ -66,6 +66,10 @@ var FeatureBleveMultiSegmentSupportVersion = "segmentVersion:15"
 
 var FeatureVectorSearch = "vectors"
 
+var FeatureXattrs = "Xattrs"
+
+var xAttrsMappingName = "_$xattrs"
+
 var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
 var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
@@ -620,6 +624,34 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
 					"not supported in mixed version cluster")
 			}
+		}
+
+		if mappingContainsXAttrs(bp) {
+			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) {
+				// XAttrs is NOT supported on this cluster
+				// (lower version or mixed lower version)
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
+					"and properties not supported in mixed version cluster")
+			}
+
+			sourceParams := make(map[string]interface{})
+			if len(indexDef.SourceParams) > 0 && indexDef.SourceParams != "null" {
+				err = UnmarshalJSON([]byte(indexDef.SourceParams), &sourceParams)
+				if err != nil {
+					return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
+						", err: %v", err)
+				}
+			}
+
+			sourceParams["includeXAttrs"] = true
+
+			updatedSourceParams, err := MarshalJSON(sourceParams)
+			if err != nil {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
+					", err: %v", err)
+			}
+
+			indexDef.SourceParams = string(updatedSourceParams)
 		}
 	}
 
@@ -2275,9 +2307,10 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 	return nil
 }
 
-func (t *BleveDestPartition) DataUpdate(partition string,
+func (t *BleveDestPartition) dataUpdate(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
-	extrasType cbgt.DestExtrasType, extras []byte) error {
+	extrasType cbgt.DestExtrasType, req *cbgt.GocbcoreDCPExtras, extras []byte) error {
+
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateBeg, 1)
 
 	t.m.Lock()
@@ -2293,7 +2326,7 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 	}
 
 	cbftDoc, key, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
-		defaultType, extrasType, extras)
+		defaultType, extrasType, req, extras)
 
 	erri := t.batch.Index(string(key), cbftDoc)
 
@@ -2313,6 +2346,24 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
 	return err
+}
+
+func (t *BleveDestPartition) DataUpdate(partition string,
+	key []byte, seq uint64, val []byte, cas uint64,
+	extrasType cbgt.DestExtrasType, extras []byte) error {
+
+	return t.dataUpdate(partition, key, seq, val, cas, extrasType, nil, extras)
+}
+
+func (t *BleveDestPartition) DataUpdateEx(partition string,
+	key []byte, seq uint64, val []byte, cas uint64,
+	extrasType cbgt.DestExtrasType, req interface{}) error {
+	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+	if !ok {
+		return fmt.Errorf("bleve: DataUpdateEx unable to typecast GocbcoreDCPExtras")
+	}
+
+	return t.dataUpdate(partition, key, seq, val, cas, extrasType, &dcpExtras, nil)
 }
 
 func (t *BleveDestPartition) DataDelete(partition string,
@@ -2346,6 +2397,22 @@ func (t *BleveDestPartition) DataDelete(partition string,
 
 	atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
 	return err
+}
+
+func (t *BleveDestPartition) DataDeleteEx(partition string, key []byte, seq uint64,
+	cas uint64,
+	extrasType cbgt.DestExtrasType, req interface{}) error {
+
+	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+	if !ok {
+		return fmt.Errorf("bleve: DataDeleteEx unable to typecast GocbcoreDCPExtras")
+	}
+
+	extras := make([]byte, 8)
+	binary.LittleEndian.PutUint32(extras[0:], dcpExtras.ScopeId)
+	binary.LittleEndian.PutUint32(extras[4:], dcpExtras.CollectionId)
+
+	return t.DataDelete(partition, key, seq, cas, extrasType, extras)
 }
 
 // ---------------------------------------------------------
@@ -3499,6 +3566,30 @@ func isGeoPointFieldInMapping(bp *BleveParams) bool {
 			for _, dm := range im.TypeMapping {
 				res := findGeoPoint(dm)
 				if res {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func mappingContainsXAttrs(bp *BleveParams) bool {
+	if bp == nil {
+		return false
+	}
+
+	if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+		if im.DefaultMapping.Enabled {
+			if _, ok := im.DefaultMapping.Properties[xAttrsMappingName]; ok {
+				return true
+			}
+		}
+
+		for _, tm := range im.TypeMapping {
+			if tm.Enabled {
+				if _, ok := tm.Properties[xAttrsMappingName]; ok {
 					return true
 				}
 			}

@@ -26,7 +26,8 @@ function PrepQueryRequest(scope) {
     let qr = {};
 
     if (typeof q == "object") {
-        if (('query' in q) && (typeof q['query'] == "object")) {
+        if ((('query' in q) && (typeof q['query'] == "object")) ||
+            (('knn' in q) && (typeof q['knn'] == "object"))) {
             q['explain'] = true;
             qr = q;
         } else {
@@ -108,6 +109,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.queryTab = 1
     $scope.showPagination = true;
     $scope.showPaginationOnRefresh = true;
+    $scope.queryEditMode = false;
+    $scope.editor = null;
 
     $scope.hostPort = $location.host();
     if ($location.port()) {
@@ -516,8 +519,6 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.isQueryTab = function(tabNum) {
         return $scope.queryTab === tabNum
     }
-
-
 }
 
 function queryMonitor($scope, $uibModal, $http){

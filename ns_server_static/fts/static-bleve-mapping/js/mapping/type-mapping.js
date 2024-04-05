@@ -111,6 +111,11 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
     $scope.removeFromParent = function(obj, scope) {
         $scope.editAttrsDone(obj, false); // Cancel any edits.
 
+        if (obj._xattrs) {
+            parent = $scope.findParent(obj)
+            parent._hasXattrChild = false
+        }
+
         scope.remove();
     }
 
@@ -146,8 +151,11 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             return;
         }
 
+        var isroot = false
+
         if (mapping == null) {
             mapping = $scope;
+            isroot = true
         }
 
         var m = {
@@ -156,7 +164,41 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             enabled: defaultMappingEnabled,
             dynamic: defaultMappingDynamic,
             fields: [],
-            mappings: []
+            mappings: [],
+            _xattrs: false,
+            _isroot: isroot,
+            _hasXattrChild: false
+        };
+        m._editing = function() { removeEntry(mapping.mappings, m); };
+        mapping.mappings.unshift(m);
+
+        $scope.validateMapping(m, mapping.mappings)
+
+        $scope.editing = m;
+        $scope.popup = null;
+    }
+
+    $scope.addChildXAttrsMapping = function(mapping) {
+        if ($scope.editing) {
+            return;
+        }
+
+        if (!mapping._isroot || mapping._hasXattrChild) {
+            return;
+        }
+
+        mapping._hasXattrChild  = true
+
+        var m = {
+            _kind: mapping == $scope ? 'mappingType' : 'mapping',
+            name: "_$xattrs",
+            enabled: defaultMappingEnabled,
+            dynamic: defaultMappingDynamic,
+            fields: [],
+            mappings: [],
+            _xattrs: true,
+            _hasXattrChild: false,
+            _isroot: false
         };
         m._editing = function() { removeEntry(mapping.mappings, m); };
         mapping.mappings.unshift(m);
@@ -210,6 +252,29 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
 
         delete obj._editing;
         $scope.editing = null;
+
+        if (ok && obj._kind == 'mapping') {
+
+            parent = $scope.findParent(obj)
+            if (obj.name == "_$xattrs" && parent != null) {
+                if (parent._isroot) {
+                    obj._xattrs = true
+                    parent._hasXattrChild = true
+                }
+            }
+        }
+    }
+
+    $scope.findParent = function(mapping) {
+        for (let i = 0; i < $scope.mappings.length; i++) {
+            for (let j = 0; j < $scope.mappings[i].mappings.length; j++) {
+                if ($scope.mappings[i].mappings[j] === mapping) {
+                    return $scope.mappings[i]
+                }
+            }
+        }
+
+        return null
     }
 
     $scope.changedProperty = function(field, mapping) {
@@ -232,6 +297,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
                 }
             }
             if (taken) {
+                field._invalid = true;
+            } else if (field._parentDefault && $scope.hasXattrs && field.name == "_$xattrs") {
                 field._invalid = true;
             } else {
                 delete field._invalid;
@@ -300,6 +367,9 @@ function bleveConvertFromTypeMapping(typeMapping) {
 
         mappings.push(mapping);
         mapping._kind = 'mappingType';
+        mapping._isroot = true;
+        mapping._hasXattrChild = false;
+        mapping._xattrs = false;
 
         delete mapping["name"];
         if (type) {
@@ -340,8 +410,16 @@ function bleveConvertFromTypeMapping(typeMapping) {
                 }
             } else {
                 m._kind = 'mapping';
+                m._xattrs = false;
+                m._isroot = false;
+                m._hasXattrChild = false;
                 m.name = property;
                 mappings.push(m);
+
+                if (m.name == '_$xattrs' && mapping._isroot) {
+                    mapping._hasXattrChild = true
+                    m._xattrs = true
+                }
 
                 convert(m);
             }
