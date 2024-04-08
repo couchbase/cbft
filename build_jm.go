@@ -1,4 +1,4 @@
-//  Copyright 2023-Present Couchbase, Inc.
+//  Copyright 2024-Present Couchbase, Inc.
 //
 //  Use of this software is governed by the Business Source License included
 //  in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
@@ -6,23 +6,11 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-//go:build !vectors
-// +build !vectors
+//go:build jemalloc
+// +build jemalloc
 
 package cbft
 
-import (
-	"encoding/json"
-
-	"github.com/blevesearch/bleve/v2"
-)
-
-func FeatureVectorSearchSupport() string {
-	return ""
-}
-
-func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
-	*bleve.SearchRequest, error) {
-	// Not supported
-	return r, nil
-}
+//#cgo CFLAGS: -DJEMALLOC=1
+//#cgo LDFLAGS: -ljemalloc_noprefix
+import "C"
