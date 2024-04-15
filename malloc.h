@@ -21,6 +21,12 @@
     extern const char* malloc_conf;
 #endif
 
+typedef struct {
+	char *buf;
+	int offset;
+	int size;
+} stats_buf;
+
 // ----------------------------------------------------------------------------------------------
 // Set API wrappers for statistic collection and profiling from the underlying C memory allocator
 // ----------------------------------------------------------------------------------------------
@@ -29,6 +35,13 @@ extern "C" {
 #endif
     // number of bytes allocated in malloc - num_bytes_used_ram_c
     size_t mm_allocated();
+    // if malloc implementation is jemalloc, mm_stats_json and mm_stats_text
+    // return jemalloc stats by calling the malloc_stats_print API, 
+    // otherwise they return NULL
+    // mm_stats_json - returns jemalloc stats in json format
+    char* mm_stats_json();
+    // mm_stats_text - returns jemalloc stats in text format
+    char* mm_stats_text();
 
 #ifdef __cplusplus
 }

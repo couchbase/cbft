@@ -57,6 +57,32 @@
         mallctl("stats.allocated", &allocated, &sz, NULL, 0);
         return allocated;
     }
+    // writecb is callback passed to jemalloc used to process a chunk of
+    // stats text. It is in charge of making sure that the buffer is
+    // sufficiently sized.
+    void writecb(void *ref, const char *s) {
+        stats_buf *buf = (stats_buf *)(ref);
+        int len;
+        len = strlen(s);
+        if (buf->offset + len >= buf->size) {
+            // Buffer is too small, resize it to fit at least len and string terminator
+            buf->size += len + 2;
+            buf->buf = realloc(buf->buf, buf->size);
+        }
+        strncpy(buf->buf + buf->offset, s, len);
+        buf->offset += len;
+    }
+    // doStats returns a string with jemalloc stats.
+    // Caller is responsible to call free on the string buffer.
+    char *doStats(char *opts)  {
+        stats_buf buf;
+        buf.size = 1024;
+        buf.buf = malloc(buf.size);
+        buf.offset = 0;
+        malloc_stats_print(writecb, &buf, opts);
+        buf.buf[buf.offset] = 0;
+        return buf.buf;
+    }
 #else
     // Underlying system allocator is not jemalloc and is glibc's malloc
     #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
@@ -176,3 +202,19 @@
         }
     #endif
 #endif
+
+char *mm_stats_json() {
+#ifdef JEMALLOC
+    return doStats("J");
+#else
+    return NULL;
+#endif
+}
+
+char *mm_stats_text() {
+#ifdef JEMALLOC
+    return doStats(NULL);
+#else
+    return NULL;
+#endif
+}
