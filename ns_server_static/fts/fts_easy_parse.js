@@ -131,6 +131,7 @@ function parseDocument(doc) {
             if (rowTypes[col] === "object") {
                 var numDims = 0
                 var path = rowPaths[col]
+                var nestDepth = rowPaths[col].split(".").length
                 for (let i = col+1; i < rowTypes.length - 1; i++) {
                     if ((rowPaths[i] == path) && (rowTypes[i] == 'number')) {
                         numDims++
@@ -138,8 +139,8 @@ function parseDocument(doc) {
                         break
                     }
                 }
-                if (numDims > 2) {
-                    dims[col] = numDims - 1
+                if (numDims > 1) {
+                    dims[col] = numDims - nestDepth
                     return "vector"
                 }
             }
