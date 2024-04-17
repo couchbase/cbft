@@ -257,7 +257,7 @@ licenses/APL2.txt.
             <div ng-if="field.type == 'vector'">
               <label>
                 <span ng-class="{'invalid': field._invalid}">similarity metric</span>
-                <select ng-init="field.similarity = (field.similarity ? field.similarity : 'l2_norm')"
+                <select ng-init="field.similarity = (field.similarity ? field.similarity : 'dot_product')"
                         ng-model="field.similarity">
                   <option value="dot_product">dot_product</option>
                   <option value="l2_norm">l2_norm</option>
