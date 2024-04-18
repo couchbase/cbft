@@ -13,6 +13,8 @@
     // -------------------------------------------------------------------------
     // Set tuning parameters for jemalloc used by cbft
     // -------------------------------------------------------------------------
+    // JEMALLOC VERSION: 5.2.1
+    // -------------------------------------------------------------------------
     const char* malloc_conf=
     #ifndef __APPLE__
         /* Enable background worker thread for asynchronous purging.
@@ -28,9 +30,16 @@
         */
         "narenas:4,"
     #ifdef __linux__
-        /* Start with profiling enabled but inactive; this allows us to
-        turn it on/off at runtime. */
-        "prof:true,prof_active:false,"
+        /*
+         * Start with profiling enabled but inactive; this allows us to
+           turn it on/off at runtime.
+         * Profiling adds an overhead which can impact performance, hence 
+           it must be ensured that profiling be activated for debugging
+           scenarios only. 
+         * Set prof_accum as true to get a cumulative profile
+           similar to Golang.
+        */
+        "prof:true,prof_active:false,prof_accum:true,"
     #endif
         /* abort immediately on illegal options, just for sanity */
         "abort_conf:true";
@@ -217,4 +226,28 @@ char *mm_stats_text() {
 #else
     return NULL;
 #endif
+}
+
+// jemalloc profiling APIs only supported on linux  as of jemalloc version 5.2.1 
+int mm_prof_activate() {
+#if defined(JEMALLOC) && defined(__linux__)
+    bool active = true;
+    return mallctl("prof.active", NULL, NULL, &active, sizeof(active));
+#endif
+    return ENOTSUP;
+}
+
+int mm_prof_deactivate() {
+#if defined(JEMALLOC) && defined(__linux__)
+    bool active = false;
+    return mallctl("prof.active", NULL, NULL, &active, sizeof(active));
+#endif
+    return ENOTSUP;
+}
+
+int mm_prof_dump(char* filePath) {
+#if defined(JEMALLOC) && defined(__linux__)
+    return mallctl("prof.dump", NULL, NULL, &filePath, sizeof(const char *));
+#endif
+    return ENOTSUP;
 }

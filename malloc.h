@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef JEMALLOC
     /* Include jemalloc.h for jemalloc specific functions. */
@@ -42,6 +43,12 @@ extern "C" {
     char* mm_stats_json();
     // mm_stats_text - returns jemalloc stats in text format
     char* mm_stats_text();
+    // mm_prof_activate - activates jemalloc profiling
+    int mm_prof_activate();
+    // mm_prof_deactivate - deactivates jemalloc profiling
+    int mm_prof_deactivate();
+    // mm_prof_dump - dumps jemalloc profiling data to a file
+    int mm_prof_dump(char* filePath);
 
 #ifdef __cplusplus
 }

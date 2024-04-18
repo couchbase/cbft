@@ -695,6 +695,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	// with the cbft process.
 	router.Handler("GET", "/debug/jemallocStats",
 		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(cbft.JeMallocStatsHandler)))
+	router.Handler("GET", "/debug/jemallocProfiler",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(cbft.JeMallocProfilerHandler)))
 
 	// Handle unsupported method for route(s)
 	router.MethodNotAllowed = &methodNotAllowedHandler{}
