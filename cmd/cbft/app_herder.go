@@ -51,6 +51,9 @@ type appHerder struct {
 	// map of index name -> count of ongoing merges.
 	// Will be decremented on merger progress
 	indexesMergeCount map[interface{}]int
+
+	// Tracks number of knn queries running
+	numKNNQueriesRunning int64
 }
 
 func newAppHerder(memQuota uint64, appRatio, indexRatio,
@@ -117,12 +120,13 @@ func newAppHerder(memQuota uint64, appRatio, indexRatio,
 
 func (a *appHerder) Stats() map[string]interface{} {
 	return map[string]interface{}{
-		"TotWaitingIn":              atomic.LoadUint64(&cbft.TotHerderWaitingIn),
-		"TotWaitingOut":             atomic.LoadUint64(&cbft.TotHerderWaitingOut),
-		"TotOnBatchExecuteStartBeg": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartBeg),
-		"TotOnBatchExecuteStartEnd": atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartEnd),
-		"TotQueriesRejected":        atomic.LoadUint64(&cbft.TotHerderQueriesRejected),
-		"TotMergesSkipped":          atomic.LoadUint64(&cbft.TotMergesSkipped),
+		"TotWaitingIn":                     atomic.LoadUint64(&cbft.TotHerderWaitingIn),
+		"TotWaitingOut":                    atomic.LoadUint64(&cbft.TotHerderWaitingOut),
+		"TotOnBatchExecuteStartBeg":        atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartBeg),
+		"TotOnBatchExecuteStartEnd":        atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartEnd),
+		"TotQueriesRejected":               atomic.LoadUint64(&cbft.TotHerderQueriesRejected),
+		"TotMergesSkipped":                 atomic.LoadUint64(&cbft.TotMergesSkipped),
+		"TotKNNQueriesRejectedByThrottler": atomic.LoadUint64(&cbft.TotKNNQueriesRejectedByThrottler),
 	}
 }
 
@@ -367,6 +371,11 @@ func (a *appHerder) queryHerderOnEvent() func(int, cbft.QueryEvent, uint64) erro
 		case cbft.EventQueryEnd:
 			return a.onQueryEnd(depth, size)
 
+		case cbft.EventKNNQueryStart:
+			return a.onKNNQueryStart()
+
+		case cbft.EventKNNQueryEnd:
+			return a.onKNNQueryEnd()
 		default:
 			return nil
 		}
@@ -442,6 +451,23 @@ func (a *appHerder) onQueryEnd(depth int, size uint64) error {
 	a.awakeWaitersLOCKED("query ended")
 	a.m.Unlock()
 
+	return nil
+}
+
+func (a *appHerder) onKNNQueryStart() error {
+	numQueries := atomic.LoadInt64(&a.numKNNQueriesRunning)
+	if numQueries+1 > cbft.GetKNNThrottleLimit() {
+		atomic.AddUint64(&cbft.TotKNNQueriesRejectedByThrottler, 1)
+		return rest.ErrorQueryReqRejected
+	}
+	atomic.AddInt64(&a.numKNNQueriesRunning, 1)
+	return nil
+}
+
+func (a *appHerder) onKNNQueryEnd() error {
+	if atomic.LoadInt64(&a.numKNNQueriesRunning) > 0 {
+		atomic.AddInt64(&a.numKNNQueriesRunning, -1)
+	}
 	return nil
 }
 

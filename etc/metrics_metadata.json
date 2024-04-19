@@ -480,6 +480,11 @@
         "type": "counter",
         "help": "Total number of search requests with KNN"
     },
+    "total_knn_queries_rejected_by_throttler": {
+        "added": "7.6.4",
+        "type": "counter",
+        "help": "Total number of http query requests with KNN rejected by the throttler"
+    },
     "fts_tot_remote_http": {
         "added": "7.2.0",
         "type": "counter",

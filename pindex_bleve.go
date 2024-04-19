@@ -1387,6 +1387,14 @@ func bleveCtxQueryEndCallback(size uint64) error {
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
+	// Throttle if query has knn
+	if GetKNNThrottleLimit() > 0 && QueryHasKNN(req) {
+		err := fireQueryEvent(0, EventKNNQueryStart, 0, 0)
+		if err != nil {
+			return err
+		}
+		defer fireQueryEvent(0, EventKNNQueryEnd, 0, 0)
+	}
 	// phase 0 - parsing/validating query
 	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{

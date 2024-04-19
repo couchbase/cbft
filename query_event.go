@@ -27,3 +27,9 @@ var EventQueryStart = QueryEventKind(1)
 
 // EventQueryEnd is fired upon the completion of a query.
 var EventQueryEnd = QueryEventKind(2)
+
+// EventKNNQueryStart is fired before a knn query begins the search.
+var EventKNNQueryStart = QueryEventKind(3)
+
+// EventKNNQueryEnd is fired upon the completion of a knn query.
+var EventKNNQueryEnd = QueryEventKind(4)

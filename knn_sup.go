@@ -13,9 +13,13 @@ package cbft
 
 import (
 	"encoding/json"
+	"regexp"
+	"strconv"
+	"sync/atomic"
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/document"
+	log "github.com/couchbase/clog"
 )
 
 // v2: 7.6.2
@@ -23,6 +27,18 @@ const featuresVectorBase64Dims4096 = "vector_base64_dims:4096"
 
 // v3: 7.6.3
 const featureVectorCosineSimilarity = "vector_cosine"
+
+// A knn regex to check against and determine if a query has knn fields
+var knnRegex *regexp.Regexp
+var kNNThrottleLimit int64
+
+func init() {
+	var err error
+	knnRegex, err = regexp.Compile(`"knn":\[{"`)
+	if err != nil {
+		log.Warnf("knn regex compilation failed, knn query throttler will be disabled")
+	}
+}
 
 func FeatureVectorSearchSupport() string {
 	return "," + featureVectorSearch +
@@ -89,4 +105,30 @@ func extractKNNQueryFields(sr *bleve.SearchRequest,
 		}
 	}
 	return queryFields, nil
+}
+
+func QueryHasKNN(req []byte) bool {
+	if knnRegex != nil && knnRegex.Match(req) {
+		return true
+	}
+	return false
+}
+
+func InitKNNQueryThrottlerOptions(options map[string]string) error {
+	if options["KNNSearchRequestConcurrencyLimit"] != "" {
+		val, err := strconv.Atoi(options["KNNSearchRequestConcurrencyLimit"])
+		if err != nil {
+			return err
+		}
+		SetKNNThrottleLimit(int64(val))
+	}
+	return nil
+}
+
+func GetKNNThrottleLimit() int64 {
+	return atomic.LoadInt64(&kNNThrottleLimit)
+}
+
+func SetKNNThrottleLimit(val int64) {
+	atomic.StoreInt64(&kNNThrottleLimit, val)
 }
