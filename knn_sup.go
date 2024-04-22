@@ -17,8 +17,26 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
+// v2: 7.6.2
+const featuresVectorBase64Dims4096 = "vector_base64_dims:4096"
+
 func FeatureVectorSearchSupport() string {
-	return "," + FeatureVectorSearch
+	return "," + featureVectorSearch +
+		"," + featuresVectorBase64Dims4096
+}
+
+// method will return appropriate flag to check cluster wide
+// if & when dims' ceiling is raised in the future
+func featureFlagForDims(dims int) string {
+	if dims <= 2048 {
+		return ""
+	}
+
+	if dims <= 4096 {
+		return featuresVectorBase64Dims4096
+	}
+
+	return ""
 }
 
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (

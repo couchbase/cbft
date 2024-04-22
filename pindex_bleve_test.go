@@ -943,7 +943,7 @@ func TestHasXAttrs(t *testing.T) {
 			bleveParams:  NewBleveParams(),
 			indexMapping: bleve.NewIndexMapping(),
 			fields: map[string]interface{}{
-				xAttrsMappingName: map[string]interface{}{
+				xattrsMappingName: map[string]interface{}{
 					"value": struct{}{},
 				},
 			},
@@ -955,7 +955,7 @@ func TestHasXAttrs(t *testing.T) {
 			indexMapping: bleve.NewIndexMapping(),
 			fields: map[string]interface{}{
 				"key": map[string]interface{}{
-					xAttrsMappingName: struct{}{},
+					xattrsMappingName: struct{}{},
 				},
 			},
 			typeMappingName: "type",
@@ -969,7 +969,7 @@ func TestHasXAttrs(t *testing.T) {
 					"value": struct{}{},
 				},
 			},
-			typeMappingName: xAttrsMappingName,
+			typeMappingName: xattrsMappingName,
 			xattrs:          false,
 		},
 	}
@@ -1005,10 +1005,12 @@ func TestHasXAttrs(t *testing.T) {
 	}
 }
 
-func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
+func TestVectorPictureFromIndexMapping(t *testing.T) {
 	tests := []struct {
-		idxMapping  *mapping.IndexMappingImpl
-		vectorField int
+		idxMapping     *mapping.IndexMappingImpl
+		expectFields   int
+		expectDims     int
+		expectDimsFlag string
 	}{
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1023,7 +1025,8 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					},
 				},
 			},
-			vectorField: noVectorFields,
+			expectFields:   noVectorFields,
+			expectDimsFlag: "",
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1034,11 +1037,14 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					Fields: []*mapping.FieldMapping{
 						{
 							Type: "vector",
+							Dims: 3072,
 						},
 					},
 				},
 			},
-			vectorField: vectorFields,
+			expectFields:   vectorFields,
+			expectDims:     3072,
+			expectDimsFlag: featuresVectorBase64Dims4096,
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1053,7 +1059,8 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					},
 				},
 			},
-			vectorField: vectorAndBase64Fields,
+			expectFields:   vectorAndBase64Fields,
+			expectDimsFlag: "",
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1064,6 +1071,7 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 						Fields: []*mapping.FieldMapping{
 							{
 								Type: "vector_base64",
+								Dims: 3072,
 							},
 						},
 					},
@@ -1078,7 +1086,9 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					},
 				},
 			},
-			vectorField: vectorAndBase64Fields,
+			expectFields:   vectorAndBase64Fields,
+			expectDims:     3072,
+			expectDimsFlag: featuresVectorBase64Dims4096,
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1089,6 +1099,7 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 						Fields: []*mapping.FieldMapping{
 							{
 								Type: "vector",
+								Dims: 3072,
 							},
 						},
 					},
@@ -1099,11 +1110,14 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					Fields: []*mapping.FieldMapping{
 						{
 							Type: "vector_base64",
+							Dims: 4096,
 						},
 					},
 				},
 			},
-			vectorField: vectorAndBase64Fields,
+			expectFields:   vectorAndBase64Fields,
+			expectDims:     4096,
+			expectDimsFlag: featuresVectorBase64Dims4096,
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1128,7 +1142,8 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					},
 				},
 			},
-			vectorField: vectorFields,
+			expectFields:   vectorFields,
+			expectDimsFlag: "",
 		},
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1153,16 +1168,25 @@ func TestVectorFieldsExistWithinIndexMapping(t *testing.T) {
 					},
 				},
 			},
-			vectorField: vectorAndBase64Fields,
+			expectFields: vectorAndBase64Fields,
 		},
 	}
 
-	for _, test := range tests {
-		res := vectorFieldsExistWithinIndexMapping(test.idxMapping)
+	for testi, test := range tests {
+		res := vectorPictureFromIndexMapping(test.idxMapping)
 
-		if res != test.vectorField {
-			t.Errorf("Expected %v as output, but got %v. Index Mapping - %+v",
-				test.vectorField, res, test.idxMapping)
+		if res.fields != test.expectFields {
+			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectFields, res.fields, test.idxMapping)
+		}
+
+		if res.maxDims != test.expectDims {
+			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectDims, res.maxDims, test.idxMapping)
+		}
+
+		if featureFlagForDims(res.maxDims) != test.expectDimsFlag {
+			t.Errorf("[%d] Unexpected flag for dims: %v", testi+1, res.maxDims)
 		}
 	}
 }

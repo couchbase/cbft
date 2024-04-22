@@ -41,72 +41,67 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-// Use sync/atomic to access these stats
-var BatchBytesAdded uint64
-var BatchBytesRemoved uint64
-var NumBatchesIntroduced uint64
-
-var TotBatchesFlushedOnMaxOps uint64
-var TotBatchesFlushedOnTimer uint64
-var TotBatchesNew uint64
-var TotBatchesMerged uint64
-
-var TotRollbackPartial uint64
-var TotRollbackFull uint64
-
-var featureIndexType = "indexType"
-var FeatureScorchIndex = featureIndexType + ":" + scorch.Name
-
-var FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
-
-var FeatureGeoSpatial = "geoSpatial"
-
-var FeatureVectorSearch = "vectors"
-
-var FeatureXattrsAndBase64 = "XattrsBase64"
-
-var FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
-
-var xAttrsMappingName = "_$xattrs"
-
-var BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
-
-var BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
-
-var BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
-
-const DefaultBleveMaxClauseCount = 1024
-
-// represents the number of async batch workers per pindex
-var asyncBatchWorkerCount = 4 // need to make it configurable,
-
-var TotBleveDestOpened uint64
-var TotBleveDestClosed uint64
-
-// BleveDefaultZapVersion represents the default zap version.
-// This version is expected to remain a constant as all the
-// future indexes are going to have a default segment version.
-// Only pre CC indexes are expected to have an empty segment version
-// which would be treated like the default zap version.
-const BleveDefaultZapVersion = int(11)
-
-// BlevePreferredZapVersion is the recommended zap version for newer indexes.
-// This version needs to be bumped to reflect the latest recommended zap
-// version in any given release.
-const BlevePreferredZapVersion = int(15)
-
-// Preview ZapVersion for indexes that come with vector search support.
-// FIXME: This is a temporary placeholder which will be removed once the
-// BlevePreferredZapVersion is updated to this. See: MB-59918
-const BleveVectorZapVersion = int(16)
-
-var defaultLimitingMinTime = 500
-var defaultLimitingMaxTime = 120000
-
 const (
-	noVectorFields        int = iota
-	vectorFields              // only vector fields (7.6.0+)
-	vectorAndBase64Fields     // vector + vector_base64 fields (7.6.2+)
+	featureIndexType = "indexType"
+	FeatureScorchIndex = featureIndexType + ":" + scorch.Name
+
+	FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
+	FeatureGeoSpatial = "geoSpatial"
+	featureVectorSearch = "vectors"
+	FeatureXattrs = "xattrs"
+
+	// BleveDefaultZapVersion represents the default zap version.
+	// This version is expected to remain a constant as all the
+	// future indexes are going to have a default segment version.
+	// Only pre CC indexes are expected to have an empty segment version
+	// which would be treated like the default zap version.
+	BleveDefaultZapVersion = int(11)
+
+	// BlevePreferredZapVersion is the recommended zap version for newer indexes.
+	// This version needs to be bumped to reflect the latest recommended zap
+	// version in any given release.
+	BlevePreferredZapVersion = int(15)
+
+	// Preview ZapVersion for indexes that come with vector search support.
+	// FIXME: This is a temporary placeholder which will be removed once the
+	// BlevePreferredZapVersion is updated to this. See: MB-59918
+	BleveVectorZapVersion = int(16)
+
+	xattrsMappingName = "_$xattrs"
+	DefaultBleveMaxClauseCount = 1024
+)
+
+var (
+	FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", BlevePreferredZapVersion)
+
+	// Use sync/atomic to access these stats
+	BatchBytesAdded uint64
+	BatchBytesRemoved uint64
+	NumBatchesIntroduced uint64
+
+	TotBatchesFlushedOnMaxOps uint64
+	TotBatchesFlushedOnTimer uint64
+	TotBatchesNew uint64
+	TotBatchesMerged uint64
+
+	TotRollbackPartial uint64
+	TotRollbackFull uint64
+
+	BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
+
+	BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
+
+	BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
+
+
+	// represents the number of async batch workers per pindex
+	asyncBatchWorkerCount = 4 // need to make it configurable,
+
+	TotBleveDestOpened uint64
+	TotBleveDestClosed uint64
+
+	defaultLimitingMinTime = 500
+	defaultLimitingMaxTime = 120000
 )
 
 // BleveParams represents the bleve index params.  See also
@@ -549,7 +544,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
 
-	var vectorFieldsSpecifiedInMapping int
+	var indexVectorPicture vectorPicture
 
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
@@ -622,22 +617,22 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
-		vectorFieldsSpecifiedInMapping = vectorFieldsExistWithinIndexMapping(bp.Mapping)
-		if vectorFieldsSpecifiedInMapping != noVectorFields &&
+		indexVectorPicture = vectorPictureFromIndexMapping(bp.Mapping)
+		if indexVectorPicture.fields != noVectorFields &&
 			(!isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
-				!cbgt.IsFeatureSupportedByCluster(FeatureVectorSearch, nodeDefs)) {
+				!cbgt.IsFeatureSupportedByCluster(featureVectorSearch, nodeDefs)) {
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
-				"not supported in mixed version cluster")
+				"not supported in this cluster")
 		}
 
 		if mappingContainsXAttrs(bp) {
-			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrsAndBase64, nodeDefs) {
+			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) {
 				// XAttrs is NOT supported on this cluster
 				// (lower version or mixed lower version)
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: xattr fields " +
-					"and properties not supported in mixed version cluster")
+					"and properties not supported in this cluster")
 			}
 
 			sourceParams := make(map[string]interface{})
@@ -660,10 +655,18 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			indexDef.SourceParams = string(updatedSourceParams)
 		}
 
-		if vectorFieldsSpecifiedInMapping == vectorAndBase64Fields &&
-			!cbgt.IsFeatureSupportedByCluster(FeatureXattrsAndBase64, nodeDefs) {
-			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector_base64 typed fields " +
-				"not supported in mixed version cluster")
+		if indexVectorPicture.fields == vectorAndBase64Fields &&
+			(len(featuresVectorBase64Dims4096) == 0 ||
+				!cbgt.IsFeatureSupportedByCluster(featuresVectorBase64Dims4096, nodeDefs)) {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector_base64 typed fields " +
+					"not supported in this cluster")
+		}
+
+		featureFlagToCheckForDims := featureFlagForDims(indexVectorPicture.maxDims)
+		if (len(featureFlagToCheckForDims) > 0 &&
+			!cbgt.IsFeatureSupportedByCluster(featureFlagToCheckForDims, nodeDefs)) {
+				return nil, cbgt.NewBadRequestError(fmt.Sprintf("PrepareIndex, err: vector typed fields "+
+					"with dims %v not supported in this cluster", indexVectorPicture.maxDims))
 		}
 	}
 
@@ -683,7 +686,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"supported", int(zv))
 			}
 
-			if vectorFieldsSpecifiedInMapping != noVectorFields && int(zv) < BleveVectorZapVersion {
+			if indexVectorPicture.fields != noVectorFields && int(zv) < BleveVectorZapVersion {
 				// overrride segmentVersion to minimum version needed to support vector mappings
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			}
@@ -696,7 +699,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
-			if vectorFieldsSpecifiedInMapping != noVectorFields {
+			if indexVectorPicture.fields != noVectorFields {
 				bp.Store["segmentVersion"] = BleveVectorZapVersion
 			} else {
 				bp.Store["segmentVersion"] = BlevePreferredZapVersion
@@ -721,64 +724,6 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		return rv, cbgt.NewInternalServerError("%v", err)
 	}
 	return rv, nil
-}
-
-// Utility function check if a "vector" typed field is present within
-// the index mapping
-func vectorFieldsExistWithinIndexMapping(m mapping.IndexMapping) int {
-	im, ok := m.(*mapping.IndexMappingImpl)
-	if !ok {
-		// cannot interpret index mapping
-		return noVectorFields
-	}
-
-	var vectorFieldExistsWithinDocMapping func(*mapping.DocumentMapping) int
-	vectorFieldExistsWithinDocMapping = func(d *mapping.DocumentMapping) int {
-		rv := noVectorFields
-		if d != nil && d.Enabled {
-			for _, v := range d.Properties {
-				val := vectorFieldExistsWithinDocMapping(v)
-				if val == vectorAndBase64Fields {
-					return val
-				} else if val > rv {
-					rv = val
-				}
-			}
-
-			for _, field := range d.Fields {
-				if field.Type == "vector" && vectorFields > rv {
-					rv = vectorFields
-				}
-				if field.Type == "vector_base64" {
-					return vectorAndBase64Fields
-				}
-			}
-		}
-
-		return rv
-	}
-
-	rv := noVectorFields
-
-	// Check DefaultMapping
-	val := vectorFieldExistsWithinDocMapping(im.DefaultMapping)
-	if val == vectorAndBase64Fields {
-		return val
-	} else if val > rv {
-		rv = val
-	}
-
-	// Iterate over TypeMapping(s)
-	for _, d := range im.TypeMapping {
-		val := vectorFieldExistsWithinDocMapping(d)
-		if val == vectorAndBase64Fields {
-			return val
-		} else if val > rv {
-			rv = val
-		}
-	}
-
-	return rv
 }
 
 func ValidateBleve(indexType, indexName, indexParams string) error {
@@ -3609,14 +3554,14 @@ func mappingContainsXAttrs(bp *BleveParams) bool {
 
 	if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 		if im.DefaultMapping.Enabled {
-			if _, ok := im.DefaultMapping.Properties[xAttrsMappingName]; ok {
+			if _, ok := im.DefaultMapping.Properties[xattrsMappingName]; ok {
 				return true
 			}
 		}
 
 		for _, tm := range im.TypeMapping {
 			if tm.Enabled {
-				if _, ok := tm.Properties[xAttrsMappingName]; ok {
+				if _, ok := tm.Properties[xattrsMappingName]; ok {
 					return true
 				}
 			}
@@ -3624,4 +3569,79 @@ func mappingContainsXAttrs(bp *BleveParams) bool {
 	}
 
 	return false
+}
+
+const (
+	noVectorFields        int = iota
+	vectorFields              // only vector fields (7.6.0+)
+	vectorAndBase64Fields     // vector + vector_base64 fields (7.6.2+)
+)
+
+type vectorPicture struct {
+	fields  int
+	maxDims int
+}
+
+// Utility function check if a "vector" typed field is present within
+// the index mapping
+func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
+	im, ok := m.(*mapping.IndexMappingImpl)
+	if !ok {
+		// cannot interpret index mapping
+		return vectorPicture{}
+	}
+
+	var vectorPictureFromDocMapping func(*mapping.DocumentMapping) vectorPicture
+	vectorPictureFromDocMapping = func(d *mapping.DocumentMapping) vectorPicture {
+		rv := vectorPicture{}
+		if d != nil && d.Enabled {
+			for _, v := range d.Properties {
+				val := vectorPictureFromDocMapping(v)
+				if val.fields > rv.fields {
+					rv.fields = val.fields
+				}
+				if val.maxDims > rv.maxDims {
+					rv.maxDims = val.maxDims
+				}
+			}
+
+			for _, field := range d.Fields {
+				if field.Type == "vector" && vectorFields > rv.fields {
+					rv.fields = vectorFields
+				}
+				if field.Type == "vector_base64" && vectorAndBase64Fields > rv.fields {
+					rv.fields = vectorAndBase64Fields
+				}
+				if field.Dims > rv.maxDims {
+					rv.maxDims = field.Dims
+				}
+			}
+		}
+
+		return rv
+	}
+
+	rv := vectorPicture{}
+
+	// Check DefaultMapping
+	val := vectorPictureFromDocMapping(im.DefaultMapping)
+	if val.fields > rv.fields {
+		rv.fields = val.fields
+	}
+	if val.maxDims > rv.maxDims {
+		rv.maxDims = val.maxDims
+	}
+
+	// Iterate over TypeMapping(s)
+	for _, d := range im.TypeMapping {
+		val := vectorPictureFromDocMapping(d)
+		if val.fields > rv.fields {
+			rv.fields = val.fields
+		}
+		if val.maxDims > rv.maxDims {
+			rv.maxDims = val.maxDims
+		}
+	}
+
+	return rv
 }

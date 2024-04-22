@@ -17,7 +17,13 @@ import (
 	"github.com/blevesearch/bleve/v2"
 )
 
+const featuresVectorBase64Dims4096 = ""
+
 func FeatureVectorSearchSupport() string {
+	return ""
+}
+
+func featureFlagForDims(int) string {
 	return ""
 }
 
