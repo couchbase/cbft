@@ -131,6 +131,7 @@ function parseDocument(doc) {
             if (rowTypes[col] === "object") {
                 var numDims = 0
                 var path = rowPaths[col]
+                var nestDepth = rowPaths[col].split(".").length
                 for (let i = col+1; i < rowTypes.length - 1; i++) {
                     if ((rowPaths[i] == path) && (rowTypes[i] == 'number')) {
                         numDims++
@@ -138,9 +139,18 @@ function parseDocument(doc) {
                         break
                     }
                 }
-                if (numDims > 2) {
-                    dims[col] = numDims - 1
+                if (numDims > 1) {
+                    dims[col] = numDims - nestDepth
                     return "vector"
+                }
+            }
+
+            // check whether the object is a vector_base64
+            if (rowTypes[col] === "string") {
+                var vecLen = parseBase64Length(parsedObj[rowPaths[col]])
+                if (vecLen > 2) {
+                    dims[col] = vecLen
+                    return "vector_base64"
                 }
             }
 
@@ -161,6 +171,15 @@ function parseDocument(doc) {
             return dims[col]
         }
     };
+}
+
+function parseBase64Length(str) {
+    try {
+        var vecStr = atob(str)
+        return vecStr.length / 4
+    } catch {
+        return -1
+    }
 }
 
 export { newParsedDocs };

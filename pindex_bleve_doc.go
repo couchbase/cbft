@@ -174,8 +174,8 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 
 	// Add the xattr fields back into the document mapping
 	// under the xattrs field mapping
-	if _, ok := v[xAttrsMappingName]; !ok && xattrs != nil {
-		v[xAttrsMappingName] = xattrs
+	if _, ok := v[xattrsMappingName]; !ok && xattrs != nil {
+		v[xattrsMappingName] = xattrs
 	}
 
 	if cmf != nil && len(b.CollPrefixLookup) > 1 {

@@ -695,6 +695,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	router.Handler("GET", "/debug/vars",
 		cbft.NewAuthVersionHandler(mgr, adtSvc, expvar.Handler()))
 
+	// Handle stats and profile route(s) for the C runtime associated
+	// with the cbft process.
+	router.Handler("GET", "/debug/jemallocStats",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(cbft.JeMallocStatsHandler)))
+	router.Handler("GET", "/debug/jemallocProfiler",
+		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(cbft.JeMallocProfilerHandler)))
+
 	// Handle unsupported method for route(s)
 	router.MethodNotAllowed = &methodNotAllowedHandler{}
 

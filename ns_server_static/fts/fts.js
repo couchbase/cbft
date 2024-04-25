@@ -1732,7 +1732,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         mapping.docvalues = value.fields[i].docvalues
                     }
 
-                    if (mapping.type == "vector") {
+                    if (mapping.type == "vector" || mapping.type == "vector_base64") {
                         if ("dims" in value.fields[i]) {
                             mapping.dims = value.fields[i].dims
                         }
@@ -2514,9 +2514,24 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "IP";
                 } else if (valType === "vector") {
                     $scope.editField.type = "vector";
-                    $scope.editField.dims = parsedDoc.getDims(newRow);
+                    var dims = parsedDoc.getDims(newRow);
+                    $scope.editField.dims = dims;
+                    if (dims && dims <= 4) {
+                        $scope.editField.similarity = "l2_norm";
+                    } else {
+                        $scope.editField.similarity = "dot_product";
+                    }
                     $scope.editField.vector_index_optimized_for = "recall";
-                    $scope.editField.similarity = "l2_norm";
+                } else if (valType === "vector_base64") {
+                    $scope.editField.type = "vector_base64";
+                    var dims = parsedDoc.getDims(newRow);
+                    $scope.editField.dims = dims;
+                    if (dims && dims <= 4) {
+                        $scope.editField.similarity = "l2_norm";
+                    } else {
+                        $scope.editField.similarity = "dot_product";
+                    }
+                    $scope.editField.vector_index_optimized_for = "recall";
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";

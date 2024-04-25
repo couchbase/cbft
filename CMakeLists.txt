@@ -19,29 +19,27 @@ SET (FTS_DEFAULT "server")
 
 INCLUDE (FindCouchbaseGo)
 
-SET (FTS_DEPENDS sigar)
+SET (FTS_DEPENDS)
 IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "enterprise")
     IF (CB_USE_FAISS)
-      SET (BUILD_TAG "${BUILD_TAG} vectors")
-      LIST (APPEND FTS_DEPENDS faiss_c)
+      SET (BUILD_TAG "${BUILD_TAG} jemalloc vectors")
+      LIST (APPEND FTS_DEPENDS Jemalloc::noprefix faiss_c)
     ENDIF ()
 ENDIF(BUILD_ENTERPRISE)
+
+LIST (APPEND FTS_DEPENDS sigar)
 
 SET (GOVERSION SUPPORTED_NEWER)
 
 GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
-  CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
-  CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin OUTPUT cbft
   DEPENDS ${FTS_DEPENDS}
   GOVERSION ${GOVERSION})
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
-  CGO_INCLUDE_DIRS "${sigar_SOURCE_DIR}/include"
-  CGO_LIBRARY_DIRS "${sigar_BINARY_DIR}/src"
   INSTALL_PATH bin
   DEPENDS ${FTS_DEPENDS}
   GOVERSION ${GOVERSION})

@@ -246,7 +246,7 @@ licenses/APL2.txt.
                 </select>
               </label>
             </div>
-            <div ng-if="field.type == 'vector'">
+            <div ng-if="field.type == 'vector' || field.type == 'vector_base64'">
                <label>
                 <span ng-class="{'invalid': field._invalid}">dimension</span>
                 <input type="number"
@@ -254,17 +254,17 @@ licenses/APL2.txt.
                        ng-model="field.dims"/>
               </label>
             </div>
-            <div ng-if="field.type == 'vector'">
+            <div ng-if="field.type == 'vector' || field.type == 'vector_base64'">
               <label>
                 <span ng-class="{'invalid': field._invalid}">similarity metric</span>
-                <select ng-init="field.similarity = (field.similarity ? field.similarity : 'l2_norm')"
+                <select ng-init="field.similarity = (field.similarity ? field.similarity : 'dot_product')"
                         ng-model="field.similarity">
                   <option value="dot_product">dot_product</option>
                   <option value="l2_norm">l2_norm</option>
                 </select>
               </label>
             </div>
-            <div ng-if="field.type == 'vector'">
+            <div ng-if="field.type == 'vector' || field.type == 'vector_base64'">
               <label>
                 <span ng-class="{'invalid': field._invalid}">optimized for</span>
                 <select ng-init="field.vector_index_optimized_for = (field.vector_index_optimized_for ? field.vector_index_optimized_for : 'recall')"
@@ -279,7 +279,7 @@ licenses/APL2.txt.
                class="editAreaFieldCheckboxes">
               <input type="checkbox" ng-model="field.index" id="field-index">
               <label for="field-index">index</label>
-              <span ng-if="field.type != 'vector'">
+              <span ng-if="field.type != 'vector' && field.type != 'vector_base64'">
                 <input type="checkbox" ng-model="field.store" id="field-store">
                 <label for="field-store">store</label>
                 <input type="checkbox" ng-model="field.include_in_all" id="field-includeall">
@@ -289,7 +289,7 @@ licenses/APL2.txt.
                 <input type="checkbox" ng-model="field.include_term_vectors" id="field-term">
                 <label for="field-term">include term vectors</label>
               </span>
-              <span ng-if="field.type != 'geopoint' && field.type != 'geoshape' && field.type != 'vector'">
+              <span ng-if="field.type != 'geopoint' && field.type != 'geoshape' && field.type != 'vector' && field.type != 'vector_base64'">
                 <input type="checkbox" ng-model="field.docvalues" id="field-docvalues">
                 <label for="field-docvalues">docvalues</label>
               </span>

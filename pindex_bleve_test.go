@@ -943,7 +943,7 @@ func TestHasXAttrs(t *testing.T) {
 			bleveParams:  NewBleveParams(),
 			indexMapping: bleve.NewIndexMapping(),
 			fields: map[string]interface{}{
-				xAttrsMappingName: map[string]interface{}{
+				xattrsMappingName: map[string]interface{}{
 					"value": struct{}{},
 				},
 			},
@@ -955,7 +955,7 @@ func TestHasXAttrs(t *testing.T) {
 			indexMapping: bleve.NewIndexMapping(),
 			fields: map[string]interface{}{
 				"key": map[string]interface{}{
-					xAttrsMappingName: struct{}{},
+					xattrsMappingName: struct{}{},
 				},
 			},
 			typeMappingName: "type",
@@ -969,7 +969,7 @@ func TestHasXAttrs(t *testing.T) {
 					"value": struct{}{},
 				},
 			},
-			typeMappingName: xAttrsMappingName,
+			typeMappingName: xattrsMappingName,
 			xattrs:          false,
 		},
 	}
@@ -1002,5 +1002,191 @@ func TestHasXAttrs(t *testing.T) {
 				test.xattrs, res, test.fields)
 		}
 
+	}
+}
+
+func TestVectorPictureFromIndexMapping(t *testing.T) {
+	tests := []struct {
+		idxMapping     *mapping.IndexMappingImpl
+		expectFields   int
+		expectDims     int
+		expectDimsFlag string
+	}{
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			expectFields:   noVectorFields,
+			expectDimsFlag: "",
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector",
+							Dims: 3072,
+						},
+					},
+				},
+			},
+			expectFields:   vectorFields,
+			expectDims:     3072,
+			expectDimsFlag: featuresVectorBase64Dims4096,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector_base64",
+						},
+					},
+				},
+			},
+			expectFields:   vectorAndBase64Fields,
+			expectDimsFlag: "",
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector_base64",
+								Dims: 3072,
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector",
+						},
+					},
+				},
+			},
+			expectFields:   vectorAndBase64Fields,
+			expectDims:     3072,
+			expectDimsFlag: featuresVectorBase64Dims4096,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector",
+								Dims: 3072,
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "vector_base64",
+							Dims: 4096,
+						},
+					},
+				},
+			},
+			expectFields:   vectorAndBase64Fields,
+			expectDims:     4096,
+			expectDimsFlag: featuresVectorBase64Dims4096,
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			expectFields:   vectorFields,
+			expectDimsFlag: "",
+		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type: "vector_base64",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type: "text",
+						},
+					},
+				},
+			},
+			expectFields: vectorAndBase64Fields,
+		},
+	}
+
+	for testi, test := range tests {
+		res := vectorPictureFromIndexMapping(test.idxMapping)
+
+		if res.fields != test.expectFields {
+			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectFields, res.fields, test.idxMapping)
+		}
+
+		if res.maxDims != test.expectDims {
+			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectDims, res.maxDims, test.idxMapping)
+		}
+
+		if featureFlagForDims(res.maxDims) != test.expectDimsFlag {
+			t.Errorf("[%d] Unexpected flag for dims: %v", testi+1, res.maxDims)
+		}
 	}
 }

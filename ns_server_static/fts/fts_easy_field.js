@@ -56,7 +56,7 @@ function newEditField() {
                 rv = "boolean ";
             } else if (this.type == "IP") {
                 rv = "IP ";
-            } else if (this.type == "vector") {
+            } else if (this.type == "vector" || this.type == "vector_base64") {
                 rv = "vector (dims: " + this.dims + "; metric: " + this.similarity + "; optimized for: " + this.vector_index_optimized_for + ")";
             }
 

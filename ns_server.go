@@ -8,11 +8,6 @@
 
 package cbft
 
-/*
-# include "c_heap_mem_usage.h"
-*/
-import "C"
-
 import (
 	"bytes"
 	"encoding/json"
@@ -730,8 +725,12 @@ func getMemoryUtilization(memStats runtime.MemStats) (uint64, uint64) {
 	// - HeapReleased is bytes of physical memory returned to the OS.
 	// So our equation here should be ..
 	//   Sys - (HeapIdle - HeapReleased) - HeapReleased
-	cHeapBytes := C.get_total_heap_bytes()
-	return memStats.Sys - memStats.HeapIdle, uint64(cHeapBytes)
+
+	// cHeapAlloc represents memory allocated by the C code through cgo,
+	// which is not included in the Go runtime statistics. This memory
+	// comprises the heap memory utilized by either jemalloc or malloc,
+	// depending on whether the jemalloc go-tag was set.
+	return memStats.Sys - memStats.HeapIdle, cHeapAlloc()
 }
 
 func gatherNodeUtilStats(mgr *cbgt.Manager,
