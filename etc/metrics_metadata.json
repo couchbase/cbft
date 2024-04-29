@@ -498,10 +498,6 @@
 		"type": "gauge",
 		"help": "The total number of vectors indexed"
 	},
-	"fts_field:<field_name>:num_vectors": {
-		"type": "gauge",
-		"help": "The total number of vectors indexed under the field name <field_name>"
-	},
 	"fts_throttle_seconds_total": {
 		"type": "counter",
 		"help": "The total time spent throttling (in seconds).",
