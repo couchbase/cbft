@@ -131,35 +131,38 @@
 
         <!-- partitions and replicas ----------------------------------------------- -->
         <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionOpened"
-             class="row width-4 items-top margin-bottom-2">
-            <div class="column">
-                <!-- NUMBER OF REPLICAS *********************** -->
-                <label for="inputNumReplicas" class="inline">Index Replicas</label>
-                <span class="fa-stack icon-info"
-                      uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
-                    <span class="icon fa-circle-thin fa-stack-2x"></span>
-                    <span class="icon fa-info fa-stack-1x"></span>
-                </span>
-                <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
-                <select ng-model="$parent.$parent.$parent.numReplicas"
-                        class="narrow"
-                        ng-options="item for item in replicaOptions"
-                        ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
-                </select>
-            </div>
-            <div class="column flex-grow">
-                <!-- NUMBER OF PINDEXES *********************** -->
-                <label for="inputNumPindexes" class="inline">Index Partitions</label>
-                <span class="fa-stack icon-info"
-                      uib-tooltip="Partitioning the index allows multiple nodes running the search service to share indexing and query workload."
-                      tooltip-placement="auto right">
-                    <span class="icon fa-circle-thin fa-stack-2x"></span>
-                    <span class="icon fa-info fa-stack-1x"></span>
-                </span>
-                <input ng-model="$parent.$parent.$parent.numPIndexes"
-                       type="number"
-                       class="width-6">
-            </div>
+             style="display: inline-block; width: 100%; border: 1px solid #dae2ea; padding: 5px;"
+             class="items-top margin-bottom-1">
+          <div class="row width-4">
+              <div class="column">
+                  <!-- NUMBER OF REPLICAS *********************** -->
+                  <label for="inputNumReplicas" class="inline">Index Replicas</label>
+                  <span class="fa-stack icon-info"
+                        uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
+                      <span class="icon fa-circle-thin fa-stack-2x"></span>
+                      <span class="icon fa-info fa-stack-1x"></span>
+                  </span>
+                  <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
+                  <select ng-model="$parent.$parent.$parent.numReplicas"
+                          class="narrow"
+                          ng-options="item for item in replicaOptions"
+                          ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
+                  </select>
+              </div>
+              <div class="column">
+                  <!-- NUMBER OF PINDEXES *********************** -->
+                  <label for="inputNumPindexes" class="inline">Index Partitions</label>
+                  <span class="fa-stack icon-info"
+                        uib-tooltip="Partitioning the index allows multiple nodes running the search service to share indexing and query workload."
+                        tooltip-placement="auto right">
+                      <span class="icon fa-circle-thin fa-stack-2x"></span>
+                      <span class="icon fa-info fa-stack-1x"></span>
+                  </span>
+                  <input ng-model="$parent.$parent.$parent.numPIndexes"
+                         type="number"
+                         class="width-6">
+              </div>
+          </div>
         </div>
 
         <hr>
