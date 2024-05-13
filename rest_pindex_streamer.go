@@ -194,6 +194,7 @@ func (h *PIndexContentHandler) streamTarArchive(pindexName string,
 		if err != nil {
 			rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 				" stream err: %v", err), http.StatusInternalServerError)
+			return
 		}
 	}
 
