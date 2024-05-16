@@ -60,7 +60,6 @@ var TotHerderWaitingOut uint64
 var TotHerderOnBatchExecuteStartBeg uint64
 var TotHerderOnBatchExecuteStartEnd uint64
 var TotHerderQueriesRejected uint64
-var TotMergesSkipped uint64
 
 // Atomic stat that tracks current memory acquired, not including
 // HeapIdle (memory reclaimed); updated every second;

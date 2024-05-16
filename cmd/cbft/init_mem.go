@@ -21,9 +21,6 @@ import (
 var (
 	ftsHerder            *appHerder
 	MemoryQuotaThreshold float32 = 0.75
-	// channel used by the herder when specifc merge-related cluster options are
-	// changed
-	herderMergeChan chan int64
 )
 
 func initMemOptions(options map[string]string) (err error) {
@@ -92,12 +89,9 @@ func initMemOptions(options map[string]string) (err error) {
 	if err != nil {
 		return err
 	}
-	ftsConcurrentMergeCap, err := parseFTSConcurrentMergeLimit(options)
 
-	herderMergeChan = make(chan int64)
 	ftsHerder = newAppHerder(memQuota, ftsApplicationFraction,
-		ftsIndexingFraction, ftsQueryingFraction, goverseerKickCh,
-		int64(ftsConcurrentMergeCap), herderMergeChan)
+		ftsIndexingFraction, ftsQueryingFraction, goverseerKickCh)
 
 	cbft.RegistryQueryEventCallback = ftsHerder.queryHerderOnEvent()
 
@@ -106,29 +100,6 @@ func initMemOptions(options map[string]string) (err error) {
 	}
 
 	return nil
-}
-
-// Function to change the herder's options while it's running.
-func updateHerderOptions(options map[string]string) error {
-	newConcMergeLimit, err := strconv.Atoi(options["concurrentMergeLimit"])
-	if err != nil {
-		return err
-	}
-	if herderMergeChan != nil {
-		herderMergeChan <- int64(newConcMergeLimit)
-	}
-
-	return nil
-}
-
-// defaultConcurrentMergeCap is the default limit on the number of
-// concurrent merges that can take place (default 0).
-var defaultFTSConcurrentMergeLimit = 0
-
-func parseFTSConcurrentMergeLimit(options map[string]string) (float64,
-	error) {
-	return parseFraction("concurrentMergeLimit", float64(defaultFTSConcurrentMergeLimit),
-		options)
 }
 
 // defaultFTSApplicationFraction is default ratio for the
