@@ -2024,7 +2024,8 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 	// exit early if all details are disabled.
 	if !verbose && !vbstats {
-		return
+		_, err = w.Write([]byte(`{}`))
+		return err
 	}
 
 	// if verbose stats is requested then send most of the index stats.
