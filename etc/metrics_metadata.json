@@ -270,6 +270,7 @@
 		]
 	},
 	"fts_total_knn_searches": {
+		"added": "7.6.0",
 		"type": "counter",
 		"help": "Total bleve knn search operations",
 		"labels": [
@@ -420,10 +421,11 @@
 		"type": "counter",
 		"help": "Total number of gRPC SSL listeners closed"
 	},
-    "fts_num_knn_search_requests": {
-        "type": "counter",
-        "help": "Total number of search requests with KNN"
-    },
+	"fts_num_knn_search_requests": {
+		"added": "7.6.0",
+		"type": "counter",
+		"help": "Total number of search requests with KNN"
+	},
 	"fts_tot_remote_http": {
 		"type": "counter",
 		"help": "Total number of remote(i.e. different node) HTTP requests"
@@ -495,6 +497,7 @@
 		"help": "Total number of HTTP limit listeners opened"
 	},
 	"fts_total_vectors": {
+		"added": "7.6.1",
 		"type": "gauge",
 		"help": "The total number of vectors indexed"
 	},
