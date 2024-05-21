@@ -2234,8 +2234,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
     }
 
     function prepareDocForCodeMirror(doc) {
-        $scope.parsedDocs.setDocForCollection($scope.collectionOpened, doc.json);
-        var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+        $scope.parsedDocs.setDocForCollection($scope.collectionOpened, doc.json, doc.xattrs);
+        var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened, $scope.xattrs);
         return parsedDoc.getDocument();
     }
 
@@ -2323,6 +2323,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.collectionDynamic = false;
         $scope.collectionTextFieldsAsIdentifiers = false;
         $scope.collectionAnalyzer = "standard";
+        $scope.xattrs = false;
 
         $scope.collectionDynamicToggled = function() {
             $scope.collectionDynamic = "false";
@@ -2330,6 +2331,12 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             $scope.collectionAnalyzer = "standard";
             $scope.resetDynamic();
         };
+
+        $scope.xattrsToggled = function(xattrs) {
+            $scope.xattrs = xattrs
+            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened, $scope.xattrs);
+            $scope.sampleDocument = parsedDoc.getDocument();
+        }
 
         $scope.setCollectionAnalyzer = function(identifier, analyzer) {
             $scope.collectionAnalyzer = "standard";
@@ -2480,7 +2487,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
 
         $scope.userSelectedField = function(path, valType) {
             var cursor = $scope.editor.getCursor();
-            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened, $scope.xattrs);
             var newRow = parsedDoc.getRow(path);
             if (newRow != cursor.line) {
                 $scope.editor.focus();
@@ -2610,7 +2617,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 $scope.editField.path = "";
                 return;
             }
-            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened);
+            var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened, $scope.xattrs);
             $scope.userSelectedField(parsedDoc.getPath(cursor.line), parsedDoc.getType(cursor.line));
         };
 
@@ -2699,7 +2706,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             $scope.collectionAnalyzer = "";
             $scope.collectionTextFieldsAsIdentifiers = false;
 
-            var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName).getDocument();
+            var sampleDocument = $scope.parsedDocs.getParsedDocForCollection(collectionName, $scope.xattrs).getDocument();
             if (sampleDocument == '{}') {
                 $scope.loadAnotherDocument($scope.newSourceName, $scope.newScopeName, collectionName);
             } else {

@@ -187,8 +187,6 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             return;
         }
 
-        mapping._hasXattrChild  = true
-
         var m = {
             _kind: mapping == $scope ? 'mappingType' : 'mapping',
             name: "_$xattrs",

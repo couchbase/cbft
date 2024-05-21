@@ -8,21 +8,26 @@
 
 function newParsedDocs() {
     var parsedDocs = {};
+    var parsedXattrsDocs = {};
 
     return {
-        getParsedDocForCollection: function (collectionName) {
+        getParsedDocForCollection: function (collectionName, xattrs) {
             if (!(collectionName in parsedDocs)) {
-                parsedDocs[collectionName] = parseDocument('{}');
+                parsedDocs[collectionName] = parseDocument('{}', null);
+            }
+            if (xattrs) {
+                return parsedXattrsDocs[collectionName];
             }
             return parsedDocs[collectionName];
         },
-        setDocForCollection: function (collectionName, src) {
-            parsedDocs[collectionName] = parseDocument(src);
+        setDocForCollection: function (collectionName, src, xattrs) {
+            parsedDocs[collectionName] = parseDocument(src, null);
+            parsedXattrsDocs[collectionName] = parseDocument(src, xattrs)
         }
     }
 }
 
-function parseDocument(doc) {
+function parseDocument(doc, xattrs) {
 
     var parseStack = [];
     var keysStack = [];
@@ -88,6 +93,18 @@ function parseDocument(doc) {
         parsedObj = JSON.parse(doc)
     } catch (e) {
         console.log("error parsing json", e)
+    }
+
+    if (xattrs != null && Object.keys(xattrs) != 0) {
+        var parsedXattrs = {}
+        for (const [key, val] of Object.entries(xattrs)) {
+            if (!key.startsWith('_') && key != "txn") {
+                parsedXattrs[key] = val
+            }
+        }
+        if (Object.keys(parsedXattrs) != 0) {
+            parsedObj["_$xattrs"] = parsedXattrs
+        }
     }
 
     var docString = JSON.stringify(parsedObj || "", replacer, 2);

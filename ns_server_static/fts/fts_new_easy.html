@@ -129,6 +129,42 @@
 
         </div>
 
+        <!-- partitions and replicas ----------------------------------------------- -->
+        <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionOpened"
+             style="display: inline-block; width: 100%; border: 1px solid #dae2ea; padding: 5px;"
+             class="items-top margin-bottom-1">
+          <div class="row width-4">
+              <div class="column">
+                  <!-- NUMBER OF REPLICAS *********************** -->
+                  <label for="inputNumReplicas" class="inline">Index Replicas</label>
+                  <span class="fa-stack icon-info"
+                        uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
+                      <span class="icon fa-circle-thin fa-stack-2x"></span>
+                      <span class="icon fa-info fa-stack-1x"></span>
+                  </span>
+                  <p ng-show="!(ftsNodes.length > numReplicas)" class="error">Warning: not enough servers to support this number of replicas.</p>
+                  <select ng-model="$parent.$parent.$parent.numReplicas"
+                          class="narrow"
+                          ng-options="item for item in replicaOptions"
+                          ng-disabled="replicaOptions.length == 1 && replicaOptions[0] == 0">
+                  </select>
+              </div>
+              <div class="column">
+                  <!-- NUMBER OF PINDEXES *********************** -->
+                  <label for="inputNumPindexes" class="inline">Index Partitions</label>
+                  <span class="fa-stack icon-info"
+                        uib-tooltip="Partitioning the index allows multiple nodes running the search service to share indexing and query workload."
+                        tooltip-placement="auto right">
+                      <span class="icon fa-circle-thin fa-stack-2x"></span>
+                      <span class="icon fa-info fa-stack-1x"></span>
+                  </span>
+                  <input ng-model="$parent.$parent.$parent.numPIndexes"
+                         type="number"
+                         class="width-6">
+              </div>
+          </div>
+        </div>
+
         <hr>
         <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionOpened">
           <div class="items-top formrow width-480">
@@ -137,13 +173,12 @@
                                    ng-change="collectionDynamicToggled()">
             <label for="collection-dynamic">Index everything* from collection: <i>{{collectionOpened}}</i></label>
             <span class="fa-stack icon-info"
-                  uib-tooltip="Everything is considered to be either text, numeric or boolean content."
+                  uib-tooltip="Everything is considered to be either text, numeric or boolean content. Any xattrs content is not included."
                   tooltip-placement="auto right">
               <span class="icon fa-circle-thin fa-stack-2x"></span>
               <span class="icon fa-info fa-stack-1x"></span>
             </span>
           </div>
-
           <div ng-if="collectionDynamic">
             <div style="display: inline-block; width: 100%; border: 1px solid #dae2ea; padding: 5px;">
               <div class="row flex-grow-1">
@@ -200,6 +235,10 @@
                   <span class="icon fa-refresh gray-icon"></span>
                 </a>
               </div>
+              <input type="checkbox" id="show-xattrs"
+                                     ng-model="xattrs"
+                                     ng-change="xattrsToggled(xattrs)">
+              <label for="show-xattrs"> <small>Show xattr fields</small></label>
               <div class="width-12">
                 <textarea
                     class="fts-sample-doc"
@@ -212,6 +251,7 @@
             <div class="width-5 row flex-left margin-left-2-5 margin-right-2 overflow-hidden">
               <div ng-if="!editField.path" class="">
                 <h4 class="margin-bottom-half">Configure Fields</h4>
+                <br>
                 <div class="filler">&nbsp;</div>
               </div>
               <div ng-if="editField.path" class="width-12 margin-top-half">
@@ -365,6 +405,7 @@
                       <select ng-model="editField.vector_index_optimized_for">
                         <option value="recall">recall</option>
                         <option value="latency">latency</option>
+                        <option value="memory">memory</option>
                       </select>
                     </div>
                   </div>

@@ -26,6 +26,10 @@ var ConfigModeCollPrefixLen = len(ConfigModeCollPrefix)
 
 var CollMetaFieldName = "_$scope_$collection"
 
+var reservedXattrsKeys = map[string]struct{}{
+	"txn": struct{}{},
+}
+
 type BleveInterface interface{}
 
 type BleveDocument struct {
@@ -266,8 +270,9 @@ func (b *BleveDocumentConfig) buildXAttrs(val []byte) (
 
 			xattrKey := string(components[0])
 
-			// Exclude system xattrs from being added into the document
-			if xattrKey[0] != '_' {
+			// Exclude system xattrs and any reserved xattr keys from being
+			// added into the document
+			if _, ok := reservedXattrsKeys[xattrKey]; !ok && xattrKey[0] != '_' {
 				// Check and parse the value into a string or a json
 				if err := json.Unmarshal(components[1], &valInterface); err == nil {
 					xattrs[xattrKey] = valInterface

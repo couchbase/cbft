@@ -940,8 +940,14 @@ func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
 	if meh.mgr != nil {
 		err := initBleveOptions(options)
 		if err != nil {
-			log.Printf("main: meh.OnRefreshManagerOptions, err: %v", err)
-			return
+			log.Printf("main: meh.OnRefreshManagerOptions: bleve options, err: %v",
+				err)
+		}
+
+		err = updateHerderOptions(options)
+		if err != nil {
+			log.Printf("main: meh.OnRefreshManagerOptions: herder options, err: %v",
+				err)
 		}
 	}
 }
