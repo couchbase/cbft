@@ -1550,6 +1550,23 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				" index partitions: %d", len(searchResult.Status.Errors))
 		}
 
+		if searchResult.Status != nil &&
+			searchResult.Status.Failed == searchResult.Status.Total {
+
+			// query rejected by all pindexes
+			isRejected := true
+			for _, e := range searchResult.Status.Errors {
+				if !strings.Contains(e.Error(), rest.ErrorQueryReqRejected.Error()) {
+					isRejected = false
+					break
+				}
+			}
+
+			if isRejected {
+				return rest.ErrorQueryReqRejected
+			}
+		}
+
 		mustEncode(res, searchResult)
 
 		// update return error status to indicate any errors within the
