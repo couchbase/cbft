@@ -42,13 +42,13 @@ import (
 )
 
 const (
-	featureIndexType = "indexType"
+	featureIndexType   = "indexType"
 	FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 
-	FeatureCollections = cbgt.SOURCE_GOCBCORE + ":collections"
-	FeatureGeoSpatial = "geoSpatial"
+	FeatureCollections  = cbgt.SOURCE_GOCBCORE + ":collections"
+	FeatureGeoSpatial   = "geoSpatial"
 	featureVectorSearch = "vectors"
-	FeatureXattrs = "xattrs"
+	FeatureXattrs       = "xattrs"
 
 	// BleveDefaultZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -65,7 +65,7 @@ const (
 	// ZapVersion where Vector support was introduced.
 	BleveVectorZapVersion = int(16)
 
-	xattrsMappingName = "_$xattrs"
+	xattrsMappingName          = "_$xattrs"
 	DefaultBleveMaxClauseCount = 1024
 )
 
@@ -75,17 +75,17 @@ var (
 	FeatureBleveMultiSegmentSupportVersion = "segmentVersion:15"
 
 	// Use sync/atomic to access these stats
-	BatchBytesAdded uint64
-	BatchBytesRemoved uint64
+	BatchBytesAdded      uint64
+	BatchBytesRemoved    uint64
 	NumBatchesIntroduced uint64
 
 	TotBatchesFlushedOnMaxOps uint64
-	TotBatchesFlushedOnTimer uint64
-	TotBatchesNew uint64
-	TotBatchesMerged uint64
+	TotBatchesFlushedOnTimer  uint64
+	TotBatchesNew             uint64
+	TotBatchesMerged          uint64
 
 	TotRollbackPartial uint64
-	TotRollbackFull uint64
+	TotRollbackFull    uint64
 
 	BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
 
@@ -657,15 +657,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		if indexVectorPicture.fields == vectorAndBase64Fields &&
 			(len(featuresVectorBase64Dims4096) == 0 ||
 				!cbgt.IsFeatureSupportedByCluster(featuresVectorBase64Dims4096, nodeDefs)) {
-				return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector_base64 typed fields " +
-					"not supported in this cluster")
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector_base64 typed fields " +
+				"not supported in this cluster")
 		}
 
 		featureFlagToCheckForDims := featureFlagForDims(indexVectorPicture.maxDims)
-		if (len(featureFlagToCheckForDims) > 0 &&
-			!cbgt.IsFeatureSupportedByCluster(featureFlagToCheckForDims, nodeDefs)) {
-				return nil, cbgt.NewBadRequestError(fmt.Sprintf("PrepareIndex, err: vector typed fields "+
-					"with dims %v not supported in this cluster", indexVectorPicture.maxDims))
+		if len(featureFlagToCheckForDims) > 0 &&
+			!cbgt.IsFeatureSupportedByCluster(featureFlagToCheckForDims, nodeDefs) {
+			return nil, cbgt.NewBadRequestError(fmt.Sprintf("PrepareIndex, err: vector typed fields "+
+				"with dims %v not supported in this cluster", indexVectorPicture.maxDims))
 		}
 	}
 
@@ -1547,6 +1547,23 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			// complete results expected, do not propagate partial results
 			return fmt.Errorf("bleve: results weren't retrieved from some"+
 				" index partitions: %d", len(searchResult.Status.Errors))
+		}
+
+		if searchResult.Status != nil &&
+			searchResult.Status.Failed == searchResult.Status.Total {
+
+			// query rejected by all pindexes
+			isRejected := true
+			for _, e := range searchResult.Status.Errors {
+				if !strings.Contains(e.Error(), rest.ErrorQueryReqRejected.Error()) {
+					isRejected = false
+					break
+				}
+			}
+
+			if isRejected {
+				return rest.ErrorQueryReqRejected
+			}
 		}
 
 		mustEncode(res, searchResult)
