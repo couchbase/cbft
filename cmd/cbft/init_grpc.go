@@ -9,10 +9,6 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"os"
-
 	"net"
 	"strconv"
 	"strings"
@@ -22,8 +18,6 @@ import (
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -75,8 +69,6 @@ func setupGRPCListeners(mgr *cbgt.Manager,
 	}
 
 	if status&cbgt.AuthChange_certificates != 0 {
-		// close any previously opened grpc-ssl servers
-		serversCache.shutdownGrpcServers(true)
 		startGRPCListeners(true, bindGRPCSList)
 	}
 
@@ -121,26 +113,21 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
 		} // else port not found.
 	}
 
-	setupGRPCServer := func(listener net.Listener, nwp string) {
+	setupGRPCServer := func(listener net.Listener, nwp string, address string) {
 		go func(nwp string, listener net.Listener) {
-			opts := getGrpcOpts(ssl, authType)
-
-			s := grpc.NewServer(opts...)
-
+			s := serversCache.registerNewGRPCServer(nwp, address, ssl, authType)
 			searchSrv := &cbft.SearchService{}
 			searchSrv.SetManager(mgr)
-			pb.RegisterSearchServiceServer(s, searchSrv)
+			pb.RegisterSearchServiceServer(s.server, searchSrv)
 
-			reflection.Register(s)
-
-			serversCache.registerGrpcServer(s, ssl)
+			reflection.Register(s.server)
 			if ssl {
 				atomic.AddUint64(&cbft.TotGRPCSListenersOpened, 1)
 			} else {
 				atomic.AddUint64(&cbft.TotGRPCListenersOpened, 1)
 			}
 			log.Printf("init_grpc: GrpcServer Started at %q, proto: %q", bindGRPC, nwp)
-			if err := s.Serve(listener); err != nil {
+			if err := s.server.Serve(listener); err != nil {
 				log.Warnf("init_grpc: Serve, err: %v;"+
 					" closed gRPC listener on bindGRPC: %q, proto: %q", err, bindGRPC, nwp)
 			}
@@ -154,103 +141,48 @@ func startGrpcServer(mgr *cbgt.Manager, bindGRPC string,
 	}
 
 	if ipv6 != ip_off {
-		listener, err := getListener(bindGRPC, "tcp6")
-		if err != nil {
-			if ipv6 == ip_required {
-				log.Fatalf("init_grpc: listen on ipv6, err: %v", err)
-			} else { // ip_optional
-				log.Errorf("init_grpc: listen on ipv6, err: %v", err)
-			}
-		} else if listener != nil {
-			setupGRPCServer(listener, "tcp6")
+		// Check if server already exists before opening another
+		s := serversCache.getGRPCServer(ssl, bindGRPC, "tcp6")
+		if s != nil {
+			config := s.getTLSConfig()
+			config = newTLSConfig(config)
+			s.setTLSConfig(config)
 		} else {
-			log.Warnf("init_grpc: ipv6 listener not set up for %s", bindGRPC)
+			listener, err := getListener(bindGRPC, "tcp6")
+			if err != nil {
+				if ipv6 == ip_required {
+					log.Fatalf("init_grpc: listen on ipv6, err: %v", err)
+				} else { // ip_optional
+					log.Errorf("init_grpc: listen on ipv6, err: %v", err)
+				}
+			} else if listener != nil {
+				setupGRPCServer(listener, "tcp6", bindGRPC)
+			} else {
+				log.Warnf("init_grpc: ipv6 listener not set up for %s", bindGRPC)
+			}
 		}
 	}
 
 	if ipv4 != ip_off {
-		listener, err := getListener(bindGRPC, "tcp4")
-		if err != nil {
-			if ipv4 == ip_required {
-				log.Fatalf("init_grpc: listen on ipv4, err: %v", err)
-			} else { // ip_optional
-				log.Errorf("init_grpc: listen on ipv4, err: %v", err)
-			}
-		} else if listener != nil {
-			setupGRPCServer(listener, "tcp4")
+		// Check if server already exists before opening another
+		s := serversCache.getGRPCServer(ssl, bindGRPC, "tcp4")
+		if s != nil {
+			config := s.getTLSConfig()
+			config = newTLSConfig(config)
+			s.setTLSConfig(config)
 		} else {
-			log.Warnf("init_grpc: ipv4 listener not set up for %s", bindGRPC)
-		}
-	}
-}
-
-func getGrpcOpts(ssl bool, authType string) []grpc.ServerOption {
-	opts := []grpc.ServerOption{
-		cbft.AddServerInterceptor(),
-		grpc.MaxConcurrentStreams(cbft.DefaultGrpcMaxConcurrentStreams),
-		grpc.MaxSendMsgSize(cbft.DefaultGrpcMaxRecvMsgSize),
-		grpc.MaxRecvMsgSize(cbft.DefaultGrpcMaxSendMsgSize),
-		// TODO add more configurability
-	}
-
-	if ssl {
-		var err error
-		config := &tls.Config{}
-		if authType == "cbauth" {
-			ss := cbgt.GetSecuritySetting()
-			if ss != nil && ss.TLSConfig != nil {
-				config.Certificates = []tls.Certificate{ss.ServerCertificate}
-
-				// Set MinTLSVersion and CipherSuites to what is provided by
-				// cbauth if authType were cbauth (cached locally).
-				config.MinVersion = ss.TLSConfig.MinVersion
-				config.CipherSuites = ss.TLSConfig.CipherSuites
-				config.PreferServerCipherSuites = ss.TLSConfig.PreferServerCipherSuites
-
-				if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
-					caCertPool := x509.NewCertPool()
-					certInBytes := ss.CACertInBytes
-					if len(certInBytes) == 0 {
-						// if no CertInBytes found in settings, then fallback
-						// to reading directly from file. Upon any certs change
-						// callbacks later, reboot of servers will ensure the
-						// latest certificates in the servers.
-						caFile := cbgt.TLSCertFile
-						if len(cbgt.TLSCAFile) > 0 {
-							caFile = cbgt.TLSCAFile
-						}
-
-						certInBytes, err = os.ReadFile(caFile)
-						if err != nil {
-							log.Fatalf("init_grpc: ReadFile of cacert, path: %v, err: %v",
-								caFile, err)
-						}
-					}
-					ok := caCertPool.AppendCertsFromPEM(certInBytes)
-					if !ok {
-						log.Fatalf("init_grpc: error in appending certificates")
-					}
-					config.ClientCAs = caCertPool
-					config.ClientAuth = *ss.ClientAuthType
-				} else {
-					config.ClientAuth = tls.NoClientCert
-				}
-			} else {
-				config.ClientAuth = tls.NoClientCert
-			}
-		} else {
-			config.Certificates = make([]tls.Certificate, 1)
-			config.Certificates[0], err = tls.LoadX509KeyPair(
-				cbgt.TLSCertFile, cbgt.TLSKeyFile)
+			listener, err := getListener(bindGRPC, "tcp4")
 			if err != nil {
-				log.Fatalf("init_grpc: LoadX509KeyPair, err: %v", err)
+				if ipv4 == ip_required {
+					log.Fatalf("init_grpc: listen on ipv4, err: %v", err)
+				} else { // ip_optional
+					log.Errorf("init_grpc: listen on ipv4, err: %v", err)
+				}
+			} else if listener != nil {
+				setupGRPCServer(listener, "tcp4", bindGRPC)
+			} else {
+				log.Warnf("init_grpc: ipv4 listener not set up for %s", bindGRPC)
 			}
 		}
-
-		creds := credentials.NewTLS(config)
-
-		opts = append(opts, grpc.Creds(creds))
 	}
-
-	return opts
 }
