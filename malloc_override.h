@@ -6,8 +6,8 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-#ifndef MALLOC_H
-#define MALLOC_H
+#ifndef MALLOC_OVERRIDE_H
+#define MALLOC_OVERRIDE_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -20,6 +20,14 @@
     #include <jemalloc/jemalloc.h>
     /* jemalloc checks for this symbol, and it's contents for the config to use. */
     extern const char* malloc_conf;
+#else
+    #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+        // Include malloc.h for malloc_info(..)
+        #include <malloc.h>
+    #elif defined(__APPLE__) && defined(__MACH__)
+        // Include malloc/malloc.h for mstats()
+        #include <malloc/malloc.h>
+    #endif
 #endif
 
 typedef struct {
@@ -54,4 +62,4 @@ extern "C" {
 }
 #endif
 
-#endif // MALLOC_H
+#endif // MALLOC_OVERRIDE_H

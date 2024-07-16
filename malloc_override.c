@@ -6,7 +6,7 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-#include "malloc.h"
+#include "malloc_override.h"
 
 #ifdef JEMALLOC
     // Underlying system allocator is jemalloc
@@ -95,7 +95,6 @@
 #else
     // Underlying system allocator is not jemalloc and is glibc's malloc
     #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-        #include <malloc.h>
         size_t get_attribute_value_current(const char *str, const char *substr) {
             const char *pos = strstr(str, substr);
             if (pos == NULL) {
@@ -190,7 +189,6 @@
             return allocated_mem;
         }
     #elif defined(__APPLE__) && defined(__MACH__)
-        #include <malloc/malloc.h>
         size_t mm_allocated() {
             // mstats on mac platform gives a copy of the struct which has information
             // like what's the bytes being used currently on the heap (the allocated bytes)
