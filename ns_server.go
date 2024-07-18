@@ -1520,10 +1520,17 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 	}()
 
-	tickCh := time.Tick(1 * time.Second)
+	memStatsRefreshTicker := time.NewTicker(1 * time.Second)
+	defer memStatsRefreshTicker.Stop()
+	tickCh := memStatsRefreshTicker.C
 
 	memStatsLoggingInterval, _ := strconv.Atoi(mgr.GetOption("memStatsLoggingInterval"))
-	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
+	var logMemStatCh <-chan time.Time
+	if memStatsLoggingInterval > 0 {
+		memStatsLoggingTicker := time.NewTicker(time.Duration(memStatsLoggingInterval) * time.Second)
+		defer memStatsLoggingTicker.Stop()
+		logMemStatCh = memStatsLoggingTicker.C
+	}
 
 	var prevMemoryUsed uint64
 	var curMemoryUsed uint64
