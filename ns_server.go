@@ -235,16 +235,6 @@ var statkeys = []string{
 	"doc_count",
 	"timer_batch_store_count",
 
-	// kv store
-	"batch_merge_count",
-	"iterator_next_count",
-	"iterator_seek_count",
-	"reader_get_count",
-	"reader_multi_get_count",
-	"reader_prefix_iterator_count",
-	"reader_range_iterator_count",
-	"writer_execute_batch_count",
-
 	// feed
 	"timer_opaque_set_count",
 	"timer_rollback_count",
@@ -267,7 +257,6 @@ var statkeys = []string{
 	"num_bytes_used_disk",                     // per-index stat.
 	"num_bytes_used_disk_by_root",             // per-index stat.
 	"num_files_on_disk",                       // per-index stat.
-	"num_bytes_live_data",                     // per-index stat, not in spec
 	"num_bytes_used_disk_by_root_reclaimable", // per-index stat.
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
@@ -283,7 +272,6 @@ var statkeys = []string{
 	"num_file_merge_ops", // per-index stat.
 	"num_mem_merge_ops",  // per-index stat.
 
-	"total_compactions",              // per-index stat.
 	"total_compaction_written_bytes", // per-index stat.
 
 	// "total_gc"   -- PROCESS-LEVEL stat.
