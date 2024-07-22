@@ -38,17 +38,20 @@ func (h *ProgressStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	docCount, _ := indexProgressStats["doc_count"].(uint64)
 	totSeqReceived, _ := indexProgressStats["tot_seq_received"].(uint64)
 	numMutationsToIndex, _ := indexProgressStats["num_mutations_to_index"].(uint64)
+	ingestStatus, _ := indexProgressStats["ingest_status"].(string)
 
 	rv := struct {
 		Status              string `json:"status"`
 		DocCount            uint64 `json:"doc_count"`
 		TotSeqReceived      uint64 `json:"tot_seq_received"`
 		NumMutationsToIndex uint64 `json:"num_mutations_to_index"`
+		IngestStatus        string `json:"ingest_status"`
 	}{
 		Status:              "ok",
 		DocCount:            docCount,
 		NumMutationsToIndex: numMutationsToIndex,
 		TotSeqReceived:      totSeqReceived,
+		IngestStatus:        ingestStatus,
 	}
 	rest.MustEncode(w, rv)
 }
@@ -118,6 +121,15 @@ func gatherIndexProgressStats(mgr *cbgt.Manager, indexName string) (
 
 	rv["tot_seq_received"] = totSeqReceived
 	rv["num_mutations_to_index"] = numMutationsToIndex
+
+	idxPlanParams := indexDef.PlanParams.NodePlanParams[""][""]
+	if idxPlanParams != nil && !idxPlanParams.CanWrite {
+		rv["ingest_status"] = "paused"
+	} else if numMutationsToIndex > 0 {
+		rv["ingest_status"] = "active"
+	} else {
+		rv["ingest_status"] = "idle"
+	}
 
 	return rv, nil
 }

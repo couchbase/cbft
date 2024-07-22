@@ -501,11 +501,10 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             if (data) {
                 $scope.docCount = data["doc_count"];
                 $scope.numMutationsToIndex = data["num_mutations_to_index"];
-                updateProgress();
+                $scope.progress = data["ingest_status"];
             }
         }, function(response) {
             $scope.httpStatus = response.Status;
-            updateProgress();
         });
 
         if (callback) {
@@ -583,24 +582,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             $scope.queryHelpSafe = $sce.trustAsHtml($scope.queryHelp);
         }
     });
-
-    function updateProgress() {
-        try {
-            if (angular.isDefined($scope.indexDef.planParams.nodePlanParams[""][""].canWrite)) {
-                if (!$scope.indexDef.planParams.nodePlanParams[""][""].canWrite) {
-                    $scope.progress = "paused";
-                    return;
-                }
-            }
-        } catch (e) {}
-
-        var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
-        let prog = "idle";
-        if (angular.isDefined(numMutationsToIndex) && numMutationsToIndex > 0) {
-            prog = "active";
-        }
-        $scope.progress = prog;
-    }
 
     IndexCtrl($scope, http, $routeParams,
               $location, $log, $sce, $uibModal);
