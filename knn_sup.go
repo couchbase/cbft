@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/document"
 )
 
 // v2: 7.6.2
@@ -39,6 +40,8 @@ func featureFlagForDims(dims int) string {
 	return ""
 }
 
+// -----------------------------------------------------------------------------
+
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
@@ -53,4 +56,33 @@ func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchReq
 	}
 
 	return r, nil
+}
+
+// extractKNNQueryFields extracts KNN query fields from the search request.
+func extractKNNQueryFields(sr *bleve.SearchRequest,
+	queryFields map[indexProperty]struct{}) (map[indexProperty]struct{}, error) {
+	var err error
+	if sr.KNN != nil {
+		for _, entry := range sr.KNN {
+			if entry != nil {
+				if entry.Vector == nil && entry.VectorBase64 != "" {
+					entry.Vector, err = document.DecodeVector(entry.VectorBase64)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				if queryFields == nil {
+					queryFields = map[indexProperty]struct{}{}
+				}
+
+				queryFields[indexProperty{
+					Name: entry.Field,
+					Type: "vector",
+					Dims: len(entry.Vector),
+				}] = struct{}{}
+			}
+		}
+	}
+	return queryFields, nil
 }

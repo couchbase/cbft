@@ -370,6 +370,8 @@ func gatherQueryErrorsStats() map[string]interface{} {
 		atomic.LoadUint64(&totQuerySearchInContextErr)
 	rv["total_queries_bad_request_error"] =
 		atomic.LoadUint64(&totQueryBadRequestErr)
+	rv["total_queries_validation_error"] =
+		atomic.LoadUint64(&totQueryValidationErr)
 	rv["total_queries_consistency_error"] =
 		atomic.LoadUint64(&totQueryConsistencyErr)
 	rv["total_queries_max_result_window_exceeded_error"] =
