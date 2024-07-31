@@ -511,7 +511,7 @@ func detectIndexAliasCycle(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
 					targetIndexDef.Name, err)
 			}
 			if targetIndexDef == nil {
-				return fmt.Errorf("scoped index target %v not found", targetIndexDef.Name)
+				return fmt.Errorf("scoped index target %v not found", target)
 			}
 			inPath, visited := visitedAndInPath[targetIndexDef.Name]
 			if inPath && visited {
