@@ -2052,6 +2052,21 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
                 }
             }
 
+            $scope.isAliasTargetSelected = function(indexName) {
+                return $scope.selectedTargetIndexes.indexOf(indexName) >= 0;
+            };
+
+            $scope.toggleAliasTargetSelection = function(indexName) {
+                var idx = $scope.selectedTargetIndexes.indexOf(indexName);
+                if (idx >= 0) {
+                    // Option is already selected, remove it
+                    $scope.selectedTargetIndexes.splice(idx, 1);
+                } else {
+                    // Option is not selected, add it
+                    $scope.selectedTargetIndexes.push(indexName);
+                }
+            };
+
             $scope.putIndexAlias =
                 function(newIndexName,
                          newIndexType, newIndexParams,
