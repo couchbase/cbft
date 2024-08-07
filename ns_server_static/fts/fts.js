@@ -501,11 +501,10 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             if (data) {
                 $scope.docCount = data["doc_count"];
                 $scope.numMutationsToIndex = data["num_mutations_to_index"];
-                updateProgress();
+                $scope.progress = data["ingest_status"];
             }
         }, function(response) {
             $scope.httpStatus = response.Status;
-            updateProgress();
         });
 
         if (callback) {
@@ -583,24 +582,6 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
             $scope.queryHelpSafe = $sce.trustAsHtml($scope.queryHelp);
         }
     });
-
-    function updateProgress() {
-        try {
-            if (angular.isDefined($scope.indexDef.planParams.nodePlanParams[""][""].canWrite)) {
-                if (!$scope.indexDef.planParams.nodePlanParams[""][""].canWrite) {
-                    $scope.progress = "paused";
-                    return;
-                }
-            }
-        } catch (e) {}
-
-        var numMutationsToIndex = parseInt($scope.numMutationsToIndex);
-        let prog = "idle";
-        if (angular.isDefined(numMutationsToIndex) && numMutationsToIndex > 0) {
-            prog = "active";
-        }
-        $scope.progress = prog;
-    }
 
     IndexCtrl($scope, http, $routeParams,
               $location, $log, $sce, $uibModal);
@@ -2070,6 +2051,21 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
                     $scope.selectedTargetIndexes.push(origTarget);
                 }
             }
+
+            $scope.isAliasTargetSelected = function(indexName) {
+                return $scope.selectedTargetIndexes.indexOf(indexName) >= 0;
+            };
+
+            $scope.toggleAliasTargetSelection = function(indexName) {
+                var idx = $scope.selectedTargetIndexes.indexOf(indexName);
+                if (idx >= 0) {
+                    // Option is already selected, remove it
+                    $scope.selectedTargetIndexes.splice(idx, 1);
+                } else {
+                    // Option is not selected, add it
+                    $scope.selectedTargetIndexes.push(indexName);
+                }
+            };
 
             $scope.putIndexAlias =
                 function(newIndexName,

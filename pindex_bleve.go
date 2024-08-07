@@ -460,7 +460,7 @@ func (ndf *NodeDefsFetcher) Get() (*cbgt.NodeDefs, error) {
 // ---------------------------------------------------------
 
 const bleveQueryHelp = `
-<a href="https://docs.couchbase.com/server/7.1/fts/fts-supported-queries.html"
+<a href="https://docs.couchbase.com/server/7.6/fts/fts-supported-queries.html"
    target="_blank">
    query syntax help
 </a>
@@ -1341,6 +1341,8 @@ var (
 	totQuerySearchInContextErr uint64
 	// requested query could not not be parsed, bad syntax
 	totQueryBadRequestErr uint64
+	// requested query failed validation against index
+	totQueryValidationErr uint64
 	// requested query could not meet consistency requirements
 	totQueryConsistencyErr uint64
 	// (Query.From + Query.Size) exceeded bleveMaxResultWindow
@@ -1424,6 +1426,16 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
 			" parsing searchRequest, err: %v", err)
+	}
+
+	// Validate from queryCtlParams
+	if queryCtlParams.Ctl.Validate {
+		if err = validateSearchRequestAgainstIndex(mgr, indexName, indexUUID,
+			sr.Collections, searchRequest); err != nil {
+			atomic.AddUint64(&totQueryValidationErr, 1)
+			return fmt.Errorf("bleve: QueryBleve"+
+				" query validation failed against index, err: %v", err)
+		}
 	}
 
 	if sr.KNN != nil {

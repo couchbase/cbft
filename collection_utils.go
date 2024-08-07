@@ -507,11 +507,10 @@ func detectIndexAliasCycle(mgr *cbgt.Manager, indexDef *cbgt.IndexDef,
 		for target := range params.Targets {
 			targetIndexDef, err := mgr.CheckAndGetIndexDef(target, false)
 			if err != nil {
-				return fmt.Errorf("failed to retrieve index defs for `%v`, err: %v",
-					targetIndexDef.Name, err)
+				return fmt.Errorf("failed to retrieve index definition for `%v`, err: %v", target, err)
 			}
 			if targetIndexDef == nil {
-				return fmt.Errorf("scoped index target %v not found", targetIndexDef.Name)
+				return fmt.Errorf("scoped index target `%v` not found", target)
 			}
 			inPath, visited := visitedAndInPath[targetIndexDef.Name]
 			if inPath && visited {

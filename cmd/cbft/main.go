@@ -778,8 +778,17 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			return err
 		}
 
+		priority := service.Priority(0)
+		intVersion, err := cbgt.CompatibilityVersion(cbgt.CfgAppVersion)
+		if err == nil {
+			priority = service.Priority(intVersion)
+		} else {
+			log.Warnf("main: error fetching compatability version for app "+
+				"version: %v \n", cbgt.CfgAppVersion)
+		}
 		nodeInfo := &service.NodeInfo{
-			NodeID: service.NodeID(uuid),
+			NodeID:   service.NodeID(uuid),
+			Priority: priority,
 		}
 
 		err = cfg.Refresh()

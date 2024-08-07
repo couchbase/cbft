@@ -123,11 +123,12 @@
                 <span class="icon fa-circle-thin fa-stack-2x"></span>
                 <span class="icon fa-info fa-stack-1x"></span>
             </span>
-            <select id="inputTargetIndexes"
-                    multiple="true"
-                    ng-model="$parent.$parent.selectedTargetIndexes"
-                    ng-options="indexName for indexName in aliasTargets">
-            </select>
+            <div style="border: 1px solid #ddd;overflow: auto;max-width: 500px;max-height: 400px;padding: 6px;margin-left:10px;margin-top:5px;">
+              <div ng-repeat="indexName in aliasTargets">
+                <input id="{{indexName}}" type="checkbox" ng-checked="isAliasTargetSelected(indexName)" ng-click="toggleAliasTargetSelection(indexName)"/>
+                <label for="{{indexName}}" >{{indexName}}</label>
+              </div>
+            </div>
           </div>
 
           <!-- hidden index type & source type fields -->

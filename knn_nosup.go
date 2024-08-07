@@ -27,8 +27,16 @@ func featureFlagForDims(int) string {
 	return ""
 }
 
+// -----------------------------------------------------------------------------
+
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	// Not supported
 	return r, nil
+}
+
+// extractKNNQueryFields is not supported
+func extractKNNQueryFields(sr *bleve.SearchRequest,
+	queryFields map[indexProperty]struct{}) (map[indexProperty]struct{}, error) {
+	return queryFields, nil
 }

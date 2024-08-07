@@ -235,16 +235,6 @@ var statkeys = []string{
 	"doc_count",
 	"timer_batch_store_count",
 
-	// kv store
-	"batch_merge_count",
-	"iterator_next_count",
-	"iterator_seek_count",
-	"reader_get_count",
-	"reader_multi_get_count",
-	"reader_prefix_iterator_count",
-	"reader_range_iterator_count",
-	"writer_execute_batch_count",
-
 	// feed
 	"timer_opaque_set_count",
 	"timer_rollback_count",
@@ -267,7 +257,6 @@ var statkeys = []string{
 	"num_bytes_used_disk",                     // per-index stat.
 	"num_bytes_used_disk_by_root",             // per-index stat.
 	"num_files_on_disk",                       // per-index stat.
-	"num_bytes_live_data",                     // per-index stat, not in spec
 	"num_bytes_used_disk_by_root_reclaimable", // per-index stat.
 	// "num_bytes_used_ram" -- PROCESS-LEVEL stat.
 
@@ -283,7 +272,6 @@ var statkeys = []string{
 	"num_file_merge_ops", // per-index stat.
 	"num_mem_merge_ops",  // per-index stat.
 
-	"total_compactions",              // per-index stat.
 	"total_compaction_written_bytes", // per-index stat.
 
 	// "total_gc"   -- PROCESS-LEVEL stat.
@@ -382,6 +370,8 @@ func gatherQueryErrorsStats() map[string]interface{} {
 		atomic.LoadUint64(&totQuerySearchInContextErr)
 	rv["total_queries_bad_request_error"] =
 		atomic.LoadUint64(&totQueryBadRequestErr)
+	rv["total_queries_validation_error"] =
+		atomic.LoadUint64(&totQueryValidationErr)
 	rv["total_queries_consistency_error"] =
 		atomic.LoadUint64(&totQueryConsistencyErr)
 	rv["total_queries_max_result_window_exceeded_error"] =
@@ -1532,10 +1522,17 @@ func RunRecentInfoCache(mgr *cbgt.Manager) {
 		}
 	}()
 
-	tickCh := time.Tick(1 * time.Second)
+	memStatsRefreshTicker := time.NewTicker(1 * time.Second)
+	defer memStatsRefreshTicker.Stop()
+	tickCh := memStatsRefreshTicker.C
 
 	memStatsLoggingInterval, _ := strconv.Atoi(mgr.GetOption("memStatsLoggingInterval"))
-	logMemStatCh := time.Tick(time.Duration(memStatsLoggingInterval) * time.Second)
+	var logMemStatCh <-chan time.Time
+	if memStatsLoggingInterval > 0 {
+		memStatsLoggingTicker := time.NewTicker(time.Duration(memStatsLoggingInterval) * time.Second)
+		defer memStatsLoggingTicker.Stop()
+		logMemStatCh = memStatsLoggingTicker.C
+	}
 
 	var prevMemoryUsed uint64
 	var curMemoryUsed uint64
