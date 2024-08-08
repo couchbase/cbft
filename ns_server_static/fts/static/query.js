@@ -261,10 +261,14 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     };
 
     $scope.manualEscapeHtmlExceptHighlighting = function(orig) {
+        if (/<mark>.*<\/mark>/.test(orig)) {
+            // If <mark> ...</mark> tags are present, return the original input as-is
+            // as the string already contains escaped HTML characters
+            return orig;
+        }
         // escape HTML tags
         let updated = orig.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
         // find escaped <mark> and </mark> and put them back
-        updated = updated.replace(/&lt;mark&gt;/g, "<mark>").replace(/&lt;\/mark&gt;/g, "</mark>")
         return updated
     }
 
@@ -401,7 +405,14 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             for(var fv in hit.fields) {
                 var fieldval = hit.fields[fv];
                 if (hit.fragments[fv] === undefined) {
-                    hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(""+fieldval)];
+                    // Check if fieldval is an array
+                    if (Array.isArray(fieldval)) {
+                        // Join array elements with a comma and space, and then escape HTML
+                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(fieldval.join(', '))];
+                    } else {
+                        // Handle single string case
+                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(fieldval)];
+                    }
                 }
             }
             if ($scope.decorateSearchHit) {
