@@ -667,6 +667,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			return nil, cbgt.NewBadRequestError(fmt.Sprintf("PrepareIndex, err: vector typed fields "+
 				"with dims %v not supported in this cluster", indexVectorPicture.maxDims))
 		}
+
+		if indexVectorPicture.cosine &&
+			(len(featureVectorCosineSimilarity) == 0 ||
+				!cbgt.IsFeatureSupportedByCluster(featureVectorCosineSimilarity, nodeDefs)) {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: cosine similarity metric for vectors " +
+				"not supported in this cluster")
+		}
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
@@ -3609,6 +3616,7 @@ const (
 type vectorPicture struct {
 	fields  int
 	maxDims int
+	cosine  bool
 }
 
 // Utility function check if a "vector" typed field is present within
@@ -3632,6 +3640,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 				if val.maxDims > rv.maxDims {
 					rv.maxDims = val.maxDims
 				}
+				rv.cosine = rv.cosine || val.cosine
 			}
 
 			for _, field := range d.Fields {
@@ -3643,6 +3652,9 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 				}
 				if field.Dims > rv.maxDims {
 					rv.maxDims = field.Dims
+				}
+				if field.Similarity == "cosine" {
+					rv.cosine = true
 				}
 			}
 		}
@@ -3660,6 +3672,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 	if val.maxDims > rv.maxDims {
 		rv.maxDims = val.maxDims
 	}
+	rv.cosine = rv.cosine || val.cosine
 
 	// Iterate over TypeMapping(s)
 	for _, d := range im.TypeMapping {
@@ -3670,6 +3683,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 		if val.maxDims > rv.maxDims {
 			rv.maxDims = val.maxDims
 		}
+		rv.cosine = rv.cosine || val.cosine
 	}
 
 	return rv

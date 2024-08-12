@@ -21,9 +21,13 @@ import (
 // v2: 7.6.2
 const featuresVectorBase64Dims4096 = "vector_base64_dims:4096"
 
+// v3: 7.6.3
+const featureVectorCosineSimilarity = "vector_cosine"
+
 func FeatureVectorSearchSupport() string {
 	return "," + featureVectorSearch +
-		"," + featuresVectorBase64Dims4096
+		"," + featuresVectorBase64Dims4096 +
+		"," + featureVectorCosineSimilarity
 }
 
 // method will return appropriate flag to check cluster wide
