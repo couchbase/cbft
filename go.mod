@@ -31,8 +31,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.7.0
-	golang.org/x/net v0.17.0
-	golang.org/x/sys v0.14.0
+	golang.org/x/net v0.21.0
+	golang.org/x/sys v0.23.0
 	golang.org/x/time v0.3.0
 	google.golang.org/grpc v1.58.3
 )
@@ -89,9 +89,9 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
-	golang.org/x/crypto v0.15.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -101,7 +101,7 @@ replace github.com/json-iterator/go => github.com/json-iterator/go v0.0.0-201711
 
 replace golang.org/x/text => golang.org/x/text v0.4.0
 
-replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+replace golang.org/x/crypto => golang.org/x/crypto v0.19.0
 
 replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
 

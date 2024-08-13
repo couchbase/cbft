@@ -19,6 +19,8 @@ import (
 
 const featuresVectorBase64Dims4096 = ""
 
+const featureVectorCosineSimilarity = ""
+
 func FeatureVectorSearchSupport() string {
 	return ""
 }

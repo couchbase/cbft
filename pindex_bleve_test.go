@@ -1011,6 +1011,7 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 		expectFields   int
 		expectDims     int
 		expectDimsFlag string
+		expectCosine   bool
 	}{
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1170,23 +1171,52 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 			},
 			expectFields: vectorAndBase64Fields,
 		},
+		{
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"Type1": {
+						Enabled:    true,
+						Properties: map[string]*mapping.DocumentMapping{},
+						Fields: []*mapping.FieldMapping{
+							{
+								Type:       "vector",
+								Dims:       3072,
+								Similarity: "cosine",
+							},
+						},
+					},
+				},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: false,
+				},
+			},
+			expectFields:   vectorFields,
+			expectDims:     3072,
+			expectDimsFlag: featuresVectorBase64Dims4096,
+			expectCosine:   true,
+		},
 	}
 
 	for testi, test := range tests {
 		res := vectorPictureFromIndexMapping(test.idxMapping)
 
 		if res.fields != test.expectFields {
-			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+			t.Errorf("[%d] Expected fields:%v as output, but got %v. Index Mapping - %+v",
 				testi+1, test.expectFields, res.fields, test.idxMapping)
 		}
 
 		if res.maxDims != test.expectDims {
-			t.Errorf("[%d] Expected %v as output, but got %v. Index Mapping - %+v",
+			t.Errorf("[%d] Expected dims:%v as output, but got %v. Index Mapping - %+v",
 				testi+1, test.expectDims, res.maxDims, test.idxMapping)
 		}
 
 		if featureFlagForDims(res.maxDims) != test.expectDimsFlag {
 			t.Errorf("[%d] Unexpected flag for dims: %v", testi+1, res.maxDims)
+		}
+
+		if res.cosine != test.expectCosine {
+			t.Errorf("[%d] Expected cosine:%v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectCosine, res.cosine, test.idxMapping)
 		}
 	}
 }
