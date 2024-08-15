@@ -50,29 +50,30 @@ const (
 	featureVectorSearch = "vectors"
 	FeatureXattrs       = "xattrs"
 
-	// BleveDefaultZapVersion represents the default zap version.
+	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
 	// future indexes are going to have a default segment version.
 	// Only pre CC indexes are expected to have an empty segment version
 	// which would be treated like the default zap version.
-	BleveDefaultZapVersion = int(11)
+	bleveLegacyZapVersion = int(11)
 
-	// BlevePreferredZapVersion is the recommended zap version for newer indexes.
-	// This version needs to be bumped to reflect the latest recommended zap
-	// version in any given release.
-	BlevePreferredZapVersion = int(16)
+	// ZapVersion where Collections support was introduced.
+	bleveCollectionsZapVersion = int(15)
 
 	// ZapVersion where Vector support was introduced.
-	BleveVectorZapVersion = int(16)
+	bleveVectorZapVersion = int(16)
+
+	// blevePreferredZapVersion is the recommended zap version for newer indexes.
+	// This version needs to be bumped to reflect the latest recommended zap
+	// version in any given release.
+	blevePreferredZapVersion = int(16)
 
 	xattrsMappingName          = "_$xattrs"
 	DefaultBleveMaxClauseCount = 1024
 )
 
-
 var (
-	// Segment version since which multi version support is available.
-	FeatureBleveMultiSegmentSupportVersion = "segmentVersion:15"
+	FeatureBlevePreferredSegmentVersion = fmt.Sprintf("segmentVersion:%d", blevePreferredZapVersion)
 
 	// Use sync/atomic to access these stats
 	BatchBytesAdded      uint64
@@ -543,6 +544,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		indexDef.SourceType = cbgt.SOURCE_GOCBCORE
 	}
 
+	vectorSearchSupported := isClusterCompatibleFor(FeatureVectorSearchSupportVersion) &&
+		cbgt.IsFeatureSupportedByCluster(featureVectorSearch, nodeDefs)
 	var indexVectorPicture vectorPicture
 
 	bp := NewBleveParams()
@@ -617,9 +620,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		indexVectorPicture = vectorPictureFromIndexMapping(bp.Mapping)
-		if indexVectorPicture.fields != noVectorFields &&
-			(!isClusterCompatibleFor(FeatureVectorSearchSupportVersion) ||
-				!cbgt.IsFeatureSupportedByCluster(featureVectorSearch, nodeDefs)) {
+		if indexVectorPicture.fields != noVectorFields && !vectorSearchSupported {
 			// Vector indexing & search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields " +
@@ -676,27 +677,27 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 	}
 
-	multiSegmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
-		FeatureBleveMultiSegmentSupportVersion, nodeDefs)
+	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
+		FeatureBlevePreferredSegmentVersion, nodeDefs)
 	// if segment version is specified then perform the validations.
 	if v, ok := bp.Store["segmentVersion"]; ok {
-		if zv, ok := v.(float64); ok {
-			if !multiSegmentVersionSupported && int(zv) != BleveDefaultZapVersion {
+		if zv, ok := v.(int); ok {
+			if !segmentVersionSupported && zv >= blevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
-					"supported in mixed version cluster", int(zv))
+					"supported in mixed version cluster", zv)
 			}
-			if int(zv) > BlevePreferredZapVersion || int(zv) < BleveDefaultZapVersion {
+			if zv > blevePreferredZapVersion || zv < bleveLegacyZapVersion {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
-					"supported", int(zv))
+					"supported", zv)
 			}
 
-			if indexVectorPicture.fields != noVectorFields && int(zv) < BleveVectorZapVersion {
+			if indexVectorPicture.fields != noVectorFields && zv < bleveVectorZapVersion {
 				// overrride segmentVersion to minimum version needed to support vector mappings
-				versionToUse := BleveVectorZapVersion
-				if versionToUse < BlevePreferredZapVersion {
-					versionToUse = BlevePreferredZapVersion
+				versionToUse := bleveVectorZapVersion
+				if segmentVersionSupported {
+					versionToUse = blevePreferredZapVersion
 				}
 				bp.Store["segmentVersion"] = versionToUse
 			}
@@ -708,10 +709,14 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// if no zap version is specified then assume the preferred
 		// zap version for newer indexes in a sufficiently advanced
 		// cluster, else consider the default zap version.
-		if multiSegmentVersionSupported {
-			bp.Store["segmentVersion"] = BlevePreferredZapVersion
+		if segmentVersionSupported {
+			bp.Store["segmentVersion"] = blevePreferredZapVersion
+		} else if vectorSearchSupported {
+			bp.Store["segmentVersion"] = bleveVectorZapVersion
+		} else if collectionsSupported {
+			bp.Store["segmentVersion"] = bleveCollectionsZapVersion
 		} else {
-			bp.Store["segmentVersion"] = BleveDefaultZapVersion
+			bp.Store["segmentVersion"] = bleveLegacyZapVersion
 		}
 	}
 
