@@ -25,28 +25,21 @@ import (
 
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
-	"github.com/couchbase/tools-common/cloud/objstore/objcli"
-	"github.com/couchbase/tools-common/cloud/objstore/objcli/objaws"
-	"github.com/couchbase/tools-common/cloud/objstore/objutil"
+	"github.com/couchbase/tools-common/cloud/v5/objstore/objcli"
+	"github.com/couchbase/tools-common/cloud/v5/objstore/objcli/objaws"
+	"github.com/couchbase/tools-common/cloud/v5/objstore/objutil"
 	"github.com/couchbase/tools-common/types/iface"
 	"github.com/couchbase/tools-common/types/ratelimit"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"golang.org/x/time/rate"
 )
 
 func GetS3Client(region string) (objcli.Client, error) {
-	session, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{Region: &region},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("s3_utils: error creating session: %v", err)
-	}
-
-	client := objaws.NewClient(objaws.ClientOptions{ServiceAPI: s3.New(session)})
+	client := objaws.NewClient(objaws.ClientOptions{ServiceAPI: s3.New(s3.Options{
+		Region: region,
+	})})
 	return client, nil
 }
 
@@ -164,13 +157,16 @@ func downloadFromBucket(c objcli.Client, bucket, key, pindexPath string,
 
 	atomic.AddInt32(&copyStats.TotCopyPartitionStart, 1)
 
-	object, err := c.GetObject(ctx, bucket, key, nil)
+	object, err := c.GetObject(ctx, objcli.GetObjectOptions{
+		Bucket: bucket,
+		Key:    key,
+	})
 	if err != nil {
 		atomic.AddInt32(&copyStats.TotCopyPartitionErrors, 1)
 		return err
 	}
 
-	resetCopyStats(copyStats, object.ObjectAttrs.Size)
+	resetCopyStats(copyStats, *object.ObjectAttrs.Size)
 
 	// decompressing the tar.gz object and adding it to pindex path
 	err = decompress(object.Body, pindexPath, ctx, copyStats)
@@ -185,7 +181,7 @@ func downloadFromBucket(c objcli.Client, bucket, key, pindexPath string,
 
 func DownloadMetadata(client objcli.Client, ctx context.Context, bucket, remotePath string) ([]byte, error) {
 	// Ref : https://stackoverflow.com/questions/46019484/buffer-implementing-io-writerat-in-go
-	buf := aws.NewWriteAtBuffer([]byte{})
+	buf := manager.NewWriteAtBuffer([]byte{})
 
 	options := objutil.DownloadOptions{
 		Client: client,
@@ -237,12 +233,8 @@ func UploadMetadata(client objcli.Client, ctx context.Context, bucket,
 	}
 	log.Printf("s3_utils: uploading metadata to path %s", remotePath)
 	err := objutil.Upload(options)
-	var awsErr awserr.Error
 	if err != nil {
-		if errors.As(err, &awsErr) {
-			log.Errorf("s3_utils: error uploading index defs: %s", awsErr.Message())
-			return fmt.Errorf("s3_utils: error uploading index defs: %s", awsErr.Message())
-		}
+		log.Errorf("s3_utils: error uploading index defs: %v", err)
 	}
 	return err
 }
