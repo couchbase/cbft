@@ -2317,7 +2317,7 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 
 func (t *BleveDestPartition) dataUpdate(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
-	extrasType cbgt.DestExtrasType, req *cbgt.GocbcoreDCPExtras, extras []byte) error {
+	extrasType cbgt.DestExtrasType, req interface{}, extras []byte) error {
 
 	atomic.AddUint64(&aggregateBDPStats.TotDataUpdateBeg, 1)
 
@@ -2366,12 +2366,8 @@ func (t *BleveDestPartition) DataUpdate(partition string,
 func (t *BleveDestPartition) DataUpdateEx(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
 	extrasType cbgt.DestExtrasType, req interface{}) error {
-	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
-	if !ok {
-		return fmt.Errorf("bleve: DataUpdateEx unable to typecast GocbcoreDCPExtras")
-	}
 
-	return t.dataUpdate(partition, key, seq, val, cas, extrasType, &dcpExtras, nil)
+	return t.dataUpdate(partition, key, seq, val, cas, extrasType, req, nil)
 }
 
 func (t *BleveDestPartition) DataDelete(partition string,
