@@ -156,8 +156,8 @@ github.com/couchbase/ghistogram v0.1.0/go.mod h1:s1Jhy76zqfEecpNWJfWUiKZookAFaiG
 github.com/couchbase/gocb/v2 v2.5.4 h1:7aWoVvg/C6OL3QZyZXzTNuMLbtYhipJV/QOkyqR4jqY=
 github.com/couchbase/gocb/v2 v2.5.4/go.mod h1:alZpkl4KFJc9fhCmeftbIewDdQiIh5hoMUpjiE+dM2g=
 github.com/couchbase/gocbcore/v10 v10.1.6/go.mod h1:qkPnOBziCs0guMEEvd0cRFo+AjOW0yEL99cU3I4n3Ao=
-github.com/couchbase/gocbcore/v10 v10.2.10 h1:S+mosIERQpc5QuEsoc614vnXc7AEIyb2Iz4230byarg=
-github.com/couchbase/gocbcore/v10 v10.2.10/go.mod h1:lYQIIk+tzoMcwtwU5GzPbDdqEkwkH3isI2rkSpfL0oM=
+github.com/couchbase/gocbcore/v10 v10.5.1 h1:bwlV/zv/fSQLuO14M9k49K7yWgcWfjSgMyfRGhW1AyU=
+github.com/couchbase/gocbcore/v10 v10.5.1/go.mod h1:rulbgUK70EuyRUiLQ0LhQAfSI/Rl+jWws8tTbHzvB6M=
 github.com/couchbase/gocbcore/v9 v9.1.8 h1:79VOjo+lOJpEG99vA6AIQCuwMizYe1TUDK2ynaDNHqQ=
 github.com/couchbase/gocbcore/v9 v9.1.8/go.mod h1:jOSQeBSECyNvD7aS4lfuaw+pD5t6ciTOf8hrDP/4Nus=
 github.com/couchbase/moss v0.3.0 h1:7NCCtyk6iGCr0egU6mxnx5wLqDSlRKkJJXOJp3seHMI=
@@ -181,8 +181,8 @@ github.com/couchbase/tools-common/types v1.1.4/go.mod h1:089L74+qhIDvDLEZzWk7PoQ
 github.com/couchbase/tools-common/utils/v3 v3.0.0 h1:j9o3D2Ue6b6AQg3B8WuaQ14UyIqg00m8SpbVuM4+NrM=
 github.com/couchbase/tools-common/utils/v3 v3.0.0/go.mod h1:3hsaJwSI1FhAc6PK0YgsUz1Z9rTn+viqLx+Ar9t3mHI=
 github.com/couchbaselabs/gocaves/client v0.0.0-20220223122017-22859b310bd2/go.mod h1:AVekAZwIY2stsJOMWLAS/0uA/+qdp7pjO8EHnl61QkY=
-github.com/couchbaselabs/gocaves/client v0.0.0-20230307083111-cc3960c624b1 h1:H7OK4q4WsDxqNIB/Ba8BQBXBHFilZnyItHrLr3qmsKA=
-github.com/couchbaselabs/gocaves/client v0.0.0-20230307083111-cc3960c624b1/go.mod h1:AVekAZwIY2stsJOMWLAS/0uA/+qdp7pjO8EHnl61QkY=
+github.com/couchbaselabs/gocaves/client v0.0.0-20230404095311-05e3ba4f0259 h1:2TXy68EGEzIMHOx9UvczR5ApVecwCfQZ0LjkmwMI6g4=
+github.com/couchbaselabs/gocaves/client v0.0.0-20230404095311-05e3ba4f0259/go.mod h1:AVekAZwIY2stsJOMWLAS/0uA/+qdp7pjO8EHnl61QkY=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -269,8 +269,8 @@ github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99/go.mod h1:ZgVRPoUq/hf
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/google/uuid v1.5.0 h1:1p67kYwdtXjb0gL0BPiP1Av9wiZPo5A8z2cWkTZ+eyU=
-github.com/google/uuid v1.5.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
