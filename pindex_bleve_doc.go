@@ -146,28 +146,45 @@ func (b *BleveDocumentConfig) multiCollection() bool {
 
 func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 	defaultType string, extrasType cbgt.DestExtrasType,
-	req *cbgt.GocbcoreDCPExtras, extras []byte) (*BleveDocument, []byte, error) {
+	req interface{}, extras []byte) (*BleveDocument, []byte, error) {
 
 	var cmf *collMetaField
 	var xattrs map[string]interface{}
 	var collectionId []byte
 	var err error
 
-	if req != nil && req.Datatype&4 > 0 {
-		cmf = b.CollPrefixLookup[req.CollectionId]
-		xattrs, val, err = b.buildXAttrs(val)
-		if err != nil {
-			log.Errorf("BuildDocumentEx: error parsing xattrs: %v", err)
+	// extract the metadata associated with the DCP mutation operation only if
+	// the ingestion is via gocbcore for eg the extras might have xAttrs or other
+	// metadata info useful while building the document to be indexed.
+	//
+	// in case of non-gocbcore ingestion, the extras are to be extracted according
+	// whatever interface is dictated which is inline with the extrasType.
+	// for eg in case of feed type gocouchbase, extra type is DEST_EXTRAS_TYPE_MCREQUEST and
+	// the req interface{} is of type *gomemcached.MCRequest
+	if extrasType == cbgt.DEST_EXTRAS_TYPE_GOCBCORE_DCP {
+		gocbcoreExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+		if !ok {
+			return nil, nil, fmt.Errorf("bleve: DataUpdateEx unable to typecast GocbcoreDCPExtras")
 		}
-		collectionId = make([]byte, 4)
-		binary.LittleEndian.PutUint32(collectionId[0:], req.CollectionId)
-	} else if len(extras) >= 8 {
+
+		if gocbcoreExtras.Datatype&4 > 0 {
+			cmf = b.CollPrefixLookup[gocbcoreExtras.CollectionId]
+			xattrs, val, err = b.buildXAttrs(val)
+			if err != nil {
+				log.Errorf("BuildDocumentEx: error parsing xattrs: %v", err)
+			}
+			collectionId = make([]byte, 4)
+			binary.LittleEndian.PutUint32(collectionId[0:], gocbcoreExtras.CollectionId)
+		} else {
+			cmf = b.CollPrefixLookup[gocbcoreExtras.CollectionId]
+			collectionId = make([]byte, 4)
+			binary.LittleEndian.PutUint32(collectionId, gocbcoreExtras.CollectionId)
+		}
+	}
+
+	if len(extras) >= 8 {
 		cmf = b.CollPrefixLookup[binary.LittleEndian.Uint32(extras[4:])]
 		collectionId = extras[4:8]
-	} else if req != nil {
-		cmf = b.CollPrefixLookup[req.CollectionId]
-		collectionId = make([]byte, 4)
-		binary.LittleEndian.PutUint32(collectionId, req.CollectionId)
 	}
 
 	var v map[string]interface{}
