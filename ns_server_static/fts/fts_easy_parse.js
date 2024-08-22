@@ -33,6 +33,7 @@ function parseDocument(doc, xattrs) {
     var keysStack = [];
     var rowPaths = [];
     var rowTypes = [];
+    var rowValues = [];
     var count = 0;
     var valsSincePop = 0;
     var dims = {};
@@ -46,6 +47,7 @@ function parseDocument(doc, xattrs) {
             if (valsSincePop > 1) {
                 rowPaths.push(rowPaths[rowPaths.length - 1]);
                 rowTypes.push(rowTypes[rowTypes.length - 1]);
+                rowValues.push(rowValues[rowValues.length - 1]);
                 valsSincePop--;
             }
         }
@@ -76,11 +78,13 @@ function parseDocument(doc, xattrs) {
         if (count != 0) {
             rowPaths.push(fullPath);
             rowTypes.push(valType);
+            rowValues.push(value);
         }
         // this is the second row, push an extra to fix up opening brace case
         if (count == 1) {
             rowPaths.push(fullPath);
             rowTypes.push(valType);
+            rowValues.push(value);
         }
 
         count++;
@@ -114,6 +118,7 @@ function parseDocument(doc, xattrs) {
         keysStack.pop();
         rowPaths.push(rowPaths[rowPaths.length - 1]);
         rowTypes.push(rowTypes[rowTypes.length - 1]);
+        rowValues.push(rowValues[rowValues.length - 1]);
     }
 
     return {
@@ -176,16 +181,11 @@ function parseDocument(doc, xattrs) {
         getDocument: function () {
             return docString;
         },
-        getRow: function (path) {
-            for (var i = 1; i < rowPaths.length; i++) {
-                if (rowPaths[i] == path) {
-                    return i;
-                }
-            }
-            return 1;
-        },
         getDims: function (col) {
             return dims[col]
+        },
+        getTextValue: function (col) {
+            return rowValues[col]
         }
     };
 }

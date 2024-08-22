@@ -14,6 +14,14 @@ licenses/APL2.txt.
       <th>analyzer name</th>
       <th class="text-right">
         <button
+          ng-if="showAnalyzer"
+          ng-click="analyzerPlayground()" type="button"
+                                          ng-show="showAnalyzer"
+                                          class="outline"
+                                          style="width:200px;">
+          Test Analyzer
+        </button>
+        <button
           ng-if="!viewOnlyModal && showAnalyzer"
           ng-click="newAnalyzer()" type="button"
                                    ng-show="showAnalyzer"

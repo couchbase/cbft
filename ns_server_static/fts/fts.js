@@ -32,6 +32,7 @@ import BleveDatetimeParserModalCtrl from "./static-bleve-mapping/js/mapping/anal
 import BleveTokenFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenfilter.js";
 import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenizer.js";
 import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
+import BleveTestAnalyzerModalCtrl from "./static-bleve-mapping/js/mapping/test_analyzer.js";
 import {bleveIndexMappingScrub} from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
@@ -50,6 +51,7 @@ import ftsNewEasyTemplate from "./fts_new_easy.html";
 import ftsSearchTemplate from "./fts_search.html";
 import ftsDetailsTemplate from "./fts_details.html";
 import indexImportTemplate from "./import_index.html";
+import testAnalyzerTemplate from "./static-bleve-mapping/partials/analysis/test_analyzer.html";
 
 import uiAce from "ui-ace";
 
@@ -2372,6 +2374,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 id: "standard"
             },
             {
+                label : "Simple",
+                id : "simple"
+            },
+            {
                 label: "English",
                 id: "en"
             },
@@ -2425,11 +2431,15 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
             },
             {
                 label: "Norwegian",
-                id: "fo"
+                id: "no"
             },
             {
                 label: "Persian",
                 id: "fa"
+            },
+            {
+                label: "Polish",
+                id: "pl"
             },
             {
                 label: "Portuguese",
@@ -2484,15 +2494,11 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.userSelectedField = function(path, valType) {
             var cursor = $scope.editor.getCursor();
             var parsedDoc = $scope.parsedDocs.getParsedDocForCollection($scope.collectionOpened, $scope.xattrs);
-            var newRow = parsedDoc.getRow(path);
-            if (newRow != cursor.line) {
-                $scope.editor.focus();
-                $scope.editor.setCursor({line: newRow, ch: 0})
-                return;
-            }
+            var newRow = cursor.line;
 
             if ($scope.easyMapping.hasFieldAtPath(path)) {
                 $scope.editField = Object.assign({}, $scope.easyMapping.getFieldAtPath(path));
+                $scope.editField.value = parsedDoc.getTextValue(newRow)
             } else {
                 $scope.editField.path = path;
                 // set defaults for new field
@@ -2539,8 +2545,40 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     // default to text if we aren't sure
                     $scope.editField.type = "text";
                     $scope.editField.analyzer = "en";
+                    $scope.editField.value = parsedDoc.getTextValue(newRow);
                 }
             }
+        }
+
+        $scope.testAnalyzerEasy = function(analyzer, value, field) {
+            var mapping = $scope.easyMapping.getIndexMapping();
+            $uibModal.open({
+                template: testAnalyzerTemplate,
+                animation: $scope.animationsEnabled,
+                scope: $scope,
+                controller: BleveTestAnalyzerModalCtrl,
+                resolve: {
+                    analyzerName: function() {
+                        return analyzer;
+                    },
+                    analyzerList: function() {
+                        return null;
+                    },
+                    textValue: function() {
+                        return value;
+                    },
+                    indexMapping: function() {
+                        return mapping;
+                    },
+                    httpClient: function() {
+                        return prefixedHttp($http, '../_p/' + ftsPrefix);
+                    }
+                }
+            }).result.then(function(){});
+        }
+
+        $scope.isString = function(value) {
+            return typeof value === 'string' || value instanceof String;
         }
 
         $scope.storeOptionChanged = function() {

@@ -1,0 +1,64 @@
+<!--
+Copyright 2024-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+-->
+
+<div class="dialog-xlg">
+  <div class="panel-header">
+    <h2>
+      Analyzer Playground
+    </h2>
+  </div>
+
+  <div class="panel-content">
+    <div class = "row margin-bottom-1">
+      <div class="column width-6">
+        <label for="inputText">Input Text<small> - Edit the text to test the analyzer</small></label>
+        <div class="text-smallish CodeMirror" id="inputText"
+          ui-ace="{
+                    onLoad: aceInputOnLoad,
+                    useWrapMode: true,
+                    showGutter: false,
+                    mode: 'text',
+                    require: ['ace/ext/language_tools'],
+                  }">
+        </div>
+      </div>
+      <div class="column width-6">
+        <label for="analyzedTokens">Analyzed Tokens</label>
+        <div class="wb-ace-editor CodeMirror" id="analyzedTokens"
+          ui-ace="{
+                    useWrapMode: false,
+                    showGutter: true,
+                    mode: 'json',
+                    require: ['ace/ext/language_tools'],
+                    advanced: {
+                                enableSnippets: true,
+                                autoScrollEditorIntoView: true,
+                                tabSize: 2,
+                                useSoftTabs: true
+                              }
+                  }">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="column width-6 text-left">
+        <span ng-if="!analyzerList" id="analyzer"> <b>Analyzer:</b> {{getAnalyzerLabel(analyzerName)}}</span>
+        <span ng-if="analyzerList">
+          <b>Analyzer:</b>
+          <select id="analyzer" ng-model="analyzerName" ng-options="analyzer for analyzer in analyzerList" ng-change="onAnalyzerChange(analyzerName)"></select>
+        </span>
+      </div>
+      <div class="column width-6 text-right">
+        <button ng-disabled="!resetEnabled" class="outline" ng-click="reset()">Reset Input</button>
+        <button ng-disabled="!analyzeEnabled" ng-click="analyze()">Analyze</button>
+      </div>
+    </div>
+  </div>
+</div>

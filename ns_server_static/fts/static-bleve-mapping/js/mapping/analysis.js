@@ -8,6 +8,7 @@
 
 // controller responsible for building custom analysis components
 import {confirmDialog, alertDialog} from "../../../static/util.js";
+import TestAnalyzerModalCtrl from "./test_analyzer.js";
 
 import analyzerTemplate from '../../partials/analysis/analyzer.html';
 import wordlistTemplate from '../../partials/analysis/wordlist.html';
@@ -15,6 +16,7 @@ import charfilterTemplate from '../../partials/analysis/charfilter.html';
 import tokenizerTemplate from '../../partials/analysis/tokenizer.html';
 import tokenfilterTemplate from '../../partials/analysis/tokenfilter.html';
 import datetimeparserTemplate from '../../partials/analysis/datetimeparser.html';
+import testAnalyzerTemplate from '../../partials/analysis/test_analyzer.html';
 
 export default BleveAnalysisCtrl;
 BleveAnalysisCtrl.$inject = ["$scope", "$http", "$log", "$uibModal"];
@@ -28,6 +30,33 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
             "tokenizer": "unicode",
             "token_filters": []
         });
+    };
+
+    $scope.analyzerPlayground = function() {
+        var mapping = $scope.indexMappingResult();
+        $uibModal.open({
+            template: testAnalyzerTemplate,
+            animation: $scope.animationsEnabled,
+            scope: $scope,
+            controller: TestAnalyzerModalCtrl,
+            resolve: {
+                analyzerName: function() {
+                    return "standard";
+                },
+                analyzerList: function() {
+                    return $scope.analyzerNames;
+                },
+                textValue: function() {
+                    return "";
+                },
+                indexMapping: function() {
+                    return mapping;
+                },
+                httpClient: function() {
+                    return $http;
+                }
+            }
+        }).result.then(function(){});
     };
 
     $scope.deleteAnalyzer = function(name) {

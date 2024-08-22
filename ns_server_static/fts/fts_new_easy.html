@@ -201,10 +201,17 @@
                 <span class="row"
                       ng-if="!collectionTextFieldsAsIdentifiers">
                   <label>Analyzer/Language:&nbsp;</label>
-                  <select ng-model="collectionAnalyzer"
-                          ng-change="setCollectionAnalyzer(false, collectionAnalyzer)"
-                          ng-options="t.id as t.label for t in easyLanguages">
-                  </select>
+                  <div class="flex-grow-1 column">
+                    <select ng-model="collectionAnalyzer"
+                            ng-change="setCollectionAnalyzer(false, collectionAnalyzer)"
+                            ng-options="t.id as t.label for t in easyLanguages">
+                    </select>
+                  </div>
+                  <div class="column">
+                    <button class="outline" ng-click="testAnalyzerEasy(collectionAnalyzer, '')">
+                      Test Analyzer
+                    </button>
+                  </div>
                 </span>
                 <span>
                   <button ng-click="makeDynamic()"
@@ -289,8 +296,16 @@
                 </div>
                 <div ng-if="editField.type == 'text' && !editField.identifier" class="formrow">
                   <label>Analyzer/Language</label>
-                  <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages">
-                  </select>
+                  <div class="row">
+                    <div class="flex-grow-1 column">
+                      <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages"></select>
+                    </div>
+                    <div class="column" ng-if="isString(editField.value)">
+                      <button class="outline" ng-click="testAnalyzerEasy(editField.analyzer, editField.value, editField)">
+                        Test Analyzer
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
                   <input
