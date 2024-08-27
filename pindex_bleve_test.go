@@ -540,8 +540,8 @@ func TestManagerIndexControl(t *testing.T) {
 	}
 	indexDefs, _, _ = cbgt.CfgGetIndexDefs(cfg)
 	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
-	if npp == nil {
-		t.Errorf("expected npp")
+	if npp != nil {
+		t.Errorf("expected nil, as we're back to default settings")
 	}
 	if npp[""] != nil {
 		t.Errorf("expected nil npp.sub")
@@ -648,8 +648,8 @@ func TestManagerIndexControl(t *testing.T) {
 	}
 	indexDefs, _, _ = cbgt.CfgGetIndexDefs(cfg)
 	npp = indexDefs.IndexDefs["foo"].PlanParams.NodePlanParams[""]
-	if npp == nil {
-		t.Errorf("expected npp")
+	if npp != nil {
+		t.Errorf("expected nil, as we're back to default settings")
 	}
 	if npp[""] != nil {
 		t.Errorf("expected nil npp.sub")

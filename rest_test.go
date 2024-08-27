@@ -2947,8 +2947,8 @@ func TestHandlersForIndexControl(t *testing.T) {
 			},
 			After: func() {
 				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
-				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
-					t.Errorf("expected non-nil plan params")
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
+					t.Errorf("expects plan params to be nil, as we're back to default settings")
 				}
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""] != nil {
 					t.Errorf("expected nil sub plan params after resume")
@@ -3013,8 +3013,8 @@ func TestHandlersForIndexControl(t *testing.T) {
 			},
 			After: func() {
 				indexDefs, _, _ := cbgt.CfgGetIndexDefs(cfg)
-				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams == nil {
-					t.Errorf("expected non-nil plan params")
+				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams != nil {
+					t.Errorf("expects plan params to be nil, as we're back to default settings")
 				}
 				if indexDefs.IndexDefs["idx0"].PlanParams.NodePlanParams[""][""] != nil {
 					t.Errorf("expected nil sub plan params after allow")
