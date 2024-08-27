@@ -91,8 +91,6 @@ var (
 
 	BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
 
-	BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
-
 	// represents the number of async batch workers per pindex
 	asyncBatchWorkerCount = 4 // need to make it configurable,
 
@@ -135,15 +133,6 @@ type BleveParamsStore struct {
 	// The kvStoreName defaults to bleve.Config.DefaultKVStore.
 	// See also bleve.registry.RegisterKVStore().
 	KvStoreName string `json:"kvStoreName"`
-
-	// The kvStoreMetricsAllow flag defaults to
-	// cbft.BleveKVStoreMetricsAllow.  When true, an
-	// interposing wrapper that captures additional metrics will be
-	// initialized as part of a bleve index's KVStore.
-	//
-	// Note: the interposing metrics wrapper might introduce
-	// additional performance costs.
-	KvStoreMetricsAllow bool `json:"kvStoreMetricsAllow"`
 }
 
 func NewBleveParams() *BleveParams {

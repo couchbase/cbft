@@ -48,16 +48,6 @@ func initBleveOptions(options map[string]string) error {
 		bleveSearcher.DisjunctionMaxClauseCount = cbft.DefaultBleveMaxClauseCount
 	}
 
-	bleveKVStoreMetricsAllow := options["bleveKVStoreMetricsAllow"]
-	if bleveKVStoreMetricsAllow != "" {
-		v, err := strconv.ParseBool(bleveKVStoreMetricsAllow)
-		if err != nil {
-			return err
-		}
-
-		cbft.BleveKVStoreMetricsAllow = v
-	}
-
 	bleveMaxOpsPerBatch := options["bleveMaxOpsPerBatch"]
 	if bleveMaxOpsPerBatch != "" {
 		v, err := strconv.Atoi(bleveMaxOpsPerBatch)
