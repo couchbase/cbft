@@ -681,7 +681,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		FeatureBlevePreferredSegmentVersion, nodeDefs)
 	// if segment version is specified then perform the validations.
 	if v, ok := bp.Store["segmentVersion"]; ok {
-		if zv, ok := v.(int); ok {
+		if z, ok := v.(float64); ok {
+			zv := int(z)
 			if !segmentVersionSupported && zv >= blevePreferredZapVersion {
 				// if the cluster isn't advanced enough then err out
 				// on latest zap version request for new indexes.
