@@ -104,6 +104,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
     $scope.consistencyLevel = "";
     $scope.consistencyVectors = "{}";
     $scope.jsonQuery = "";
+    $scope.queryString = null;
+    $scope.queryEditorInitValue = "";
     $scope.queryEditMode = false;
     $scope.editor = null;
     $scope.queryTab = 1
@@ -181,11 +183,53 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
 
     $scope.queryChanged = function() {
         try {
-            var j = JSON.stringify(createQueryRequest(), null, 2);
+            var sr = createQueryRequest();
+            var j = JSON.stringify(sr, null, 2);
             $scope.jsonQuery = j;
+            $scope.queryString = $scope.getQueryStringFromRequest(sr);
         } finally {
         }
     };
+
+    $scope.getQueryStringFromRequest = function(searchRequest) {
+        var qsq = null;
+        if (searchRequest &&
+            searchRequest.query &&
+            searchRequest.query.query &&
+            typeof searchRequest.query.query === "string") {
+
+            qsq = searchRequest.query.query;
+        }
+        return qsq;
+    };
+
+    $scope.parseQueryStringQuery = async function() {
+        let response = await $http.post('/api/_dumpQuery', {
+            query: $scope.queryString,
+            mapping: $scope.indexMapping
+        });
+        return response.data;
+    };
+
+    $scope.parseQueryString = function() {
+        $scope.errorMessage = null;
+        $scope.errorMessageFull = null;
+        $scope.parseQueryStringQuery().then(function(response) {
+            var result = response.query;
+            var queryPrev = $scope.query;
+            $scope.query = result;
+            var req = createQueryRequest();
+            if (req && req.query && req.query.query) {
+                req.query.query = result;
+            }
+            $scope.query = queryPrev;
+            $scope.queryEditorInitValue = JSON.stringify(req, null, 2);
+            $scope.queryEditMode = true;
+        }).catch(function(errorResponse) {
+            $scope.errorMessage = errorMessage(errorResponse.data, errorResponse.status);
+            $scope.errorMessageFull = errorResponse.data;
+        });
+    }
 
     $scope.runQuery = function() {
         if (!$scope.query) {
@@ -498,11 +542,12 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
           });
         if (/^((?!chrome).)*safari/i.test(navigator.userAgent))
           editor.renderer.scrollBarV.width = 20; // fix for missing scrollbars in Safari
-        editor.setValue($scope.jsonQuery, -1) // moves cursor to the start
+        editor.setValue($scope.queryEditorInitValue, -1) // moves cursor to the start
         $scope.editor = editor;
     }
 
     $scope.editQuery = function(){
+        $scope.queryEditorInitValue = $scope.jsonQuery;
         $scope.queryEditMode = true;
     }
 
@@ -513,8 +558,10 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
         $scope.timeout = qr.ctl && qr.ctl.timeout ? qr.ctl.timeout : 0;
         $scope.consistencyLevel = qr.ctl && qr.ctl.consistency && qr.ctl.consistency.level ? qr.ctl.consistency.level : "";
         $scope.consistencyVectors = qr.ctl && qr.ctl.consistency && qr.ctl.consistency.vectors ? JSON.stringify(qr.ctl.consistency.vectors) : "{}";
-        var j = JSON.stringify(PrepQueryRequest($scope), null, 2);
+        var queryReq = createQueryRequest()
+        var j = JSON.stringify(queryReq, null, 2);
         $scope.jsonQuery = j;
+        $scope.queryString = $scope.getQueryStringFromRequest(queryReq)
         $scope.runNewQuery($scope.query);
         $scope.queryEditMode = false;
     }

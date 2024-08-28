@@ -1899,6 +1899,11 @@ function IndexSearchCtrlFT_NS($scope, $http, $stateParams, $log, $sce,
         $location.search("p", $scope.page);
     }
 
+    $scope.indexMapping = null;
+    if ($scope.indexDef.type == "fulltext-index" && $scope.indexDef.params) {
+        $scope.indexMapping = $scope.indexDef.params.mapping;
+    }
+
     QueryCtrl($scope, $httpPrefixed, $routeParams, $log, $sce, $location, qwDialogService);
 
     ftsServiceHostPort($scope, $http, $location);

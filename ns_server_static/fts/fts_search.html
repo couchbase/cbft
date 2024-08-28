@@ -130,11 +130,14 @@
         <button ng-if="queryEditMode" ng-disabled="editorError" style="width:175px;" ng-click="executeQuery()">
           Execute
         </button>
-        <button ng-if="!queryEditMode"  class="outline copy-to-clipboard margin-top-1 margin-left-0" style="width:175px;" ngclipboard data-clipboard-target="#jsonQueryContent">
+        <button ng-if="!queryEditMode"  class="tight outline copy-to-clipboard margin-top-1 margin-left-0" style="width:175px;" ngclipboard data-clipboard-target="#jsonQueryContent">
           Copy to Clipboard
         </button>
         <button ng-if="queryEditMode" class="outline margin-top-1 margin-left-0" style="width:175px;" ng-click="cancelQuery()" >
           Cancel
+        </button>
+        <button ng-if="!queryEditMode && queryString && indexMapping" class="tight outline margin-top-1 margin-left-0" style="width:175px;" ng-click="parseQueryString()" >
+          Parse Query String
         </button>
         <div class="alert alert-warning margin-top-1" ng-if="editorError">{{editorError}}</div>
       </div>
