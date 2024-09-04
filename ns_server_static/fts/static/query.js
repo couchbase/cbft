@@ -411,7 +411,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
                         hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(fieldval.join(', '))];
                     } else {
                         // Handle single string case
-                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(fieldval)];
+                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(""+fieldval)];
                     }
                 }
             }
