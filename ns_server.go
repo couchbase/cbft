@@ -62,6 +62,9 @@ var TotHerderOnBatchExecuteStartEnd uint64
 var TotHerderQueriesRejected uint64
 var TotMergesSkipped uint64
 
+// Query Throttler stats.
+var TotKNNQueriesRejectedByThrottler uint64
+
 // Atomic stat that tracks current memory acquired, not including
 // HeapIdle (memory reclaimed); updated every second;
 // Used by the app_herder to track memory consumption by process.
@@ -867,6 +870,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["num_gocbcore_stats_agents"] = cbgt.NumStatsAgents()
 
 	topLevelStats["num_knn_search_requests"] = atomic.LoadUint64(&numKNNSearchRequests)
+
+	topLevelStats["total_knn_queries_rejected_by_throttler"] = atomic.LoadUint64(&TotKNNQueriesRejectedByThrottler)
 
 	if ServerlessMode {
 		gatherNodeUtilStats(mgr, topLevelStats)

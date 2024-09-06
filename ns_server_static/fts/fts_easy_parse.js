@@ -193,7 +193,10 @@ function parseDocument(doc, xattrs) {
 function parseBase64Length(str) {
     try {
         var vecStr = atob(str)
-        return vecStr.length / 4
+        if (vecStr.length % 4 == 0 && vecStr.length > 0) {
+            return vecStr.length / 4
+        }
+        return -1
     } catch {
         return -1
     }

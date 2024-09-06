@@ -21,6 +21,8 @@ const featuresVectorBase64Dims4096 = ""
 
 const featureVectorCosineSimilarity = ""
 
+var kNNThrottleLimit int64
+
 func FeatureVectorSearchSupport() string {
 	return ""
 }
@@ -41,4 +43,21 @@ func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchReq
 func extractKNNQueryFields(sr *bleve.SearchRequest,
 	queryFields map[indexProperty]struct{}) (map[indexProperty]struct{}, error) {
 	return queryFields, nil
+}
+
+func QueryHasKNN(req []byte) bool {
+	// Not supported
+	return false
+}
+
+func InitKNNQueryThrottlerOptions(options map[string]string) error {
+	// Not supported
+	return nil
+}
+
+func GetKNNThrottleLimit() int64 {
+	return 0
+}
+
+func SetKNNThrottleLimit(val int64) {
 }

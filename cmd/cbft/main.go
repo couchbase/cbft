@@ -415,6 +415,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return err
 	}
 
+	if err = cbft.InitKNNQueryThrottlerOptions(options); err != nil {
+		return err
+	}
+
 	exitCode := mainTool(cfg, uuid, tags, flags, options)
 	if exitCode >= 0 {
 		os.Exit(exitCode)
@@ -765,6 +769,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 			EnableReplicaCatchup:               true, // enabling replica partition catchup by default
 			MaxConcurrentPartitionMovesPerNode: maxConcurrentPartitionMovesPerNode,
 			Manager:                            mgr,
+			// Registering a callback for each node's cbft process
+			SkipSeqChecksCallback: cbft.CustomSeqTimeoutCheck,
 		})
 		if err != nil {
 			return fmt.Errorf("main: ctl.StartCtl, err: %v", err)
@@ -957,6 +963,11 @@ func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
 		if err != nil {
 			log.Printf("main: meh.OnRefreshManagerOptions: herder options, err: %v",
 				err)
+		}
+		err = cbft.InitKNNQueryThrottlerOptions(options)
+		if err != nil {
+			log.Printf("main: meh.OnRefreshManagerOptions, err: %v", err)
+			return
 		}
 	}
 }

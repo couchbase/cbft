@@ -92,8 +92,6 @@ var (
 
 	BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
 
-	BleveKVStoreMetricsAllow = false // Use metrics wrapper KVStore by default.
-
 	// represents the number of async batch workers per pindex
 	asyncBatchWorkerCount = 4 // need to make it configurable,
 
@@ -136,15 +134,6 @@ type BleveParamsStore struct {
 	// The kvStoreName defaults to bleve.Config.DefaultKVStore.
 	// See also bleve.registry.RegisterKVStore().
 	KvStoreName string `json:"kvStoreName"`
-
-	// The kvStoreMetricsAllow flag defaults to
-	// cbft.BleveKVStoreMetricsAllow.  When true, an
-	// interposing wrapper that captures additional metrics will be
-	// initialized as part of a bleve index's KVStore.
-	//
-	// Note: the interposing metrics wrapper might introduce
-	// additional performance costs.
-	KvStoreMetricsAllow bool `json:"kvStoreMetricsAllow"`
 }
 
 func NewBleveParams() *BleveParams {
@@ -1404,6 +1393,14 @@ func bleveCtxQueryEndCallback(size uint64) error {
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	req []byte, res io.Writer) error {
+	// Throttle if query has knn
+	if GetKNNThrottleLimit() > 0 && QueryHasKNN(req) {
+		err := fireQueryEvent(0, EventKNNQueryStart, 0, 0)
+		if err != nil {
+			return err
+		}
+		defer fireQueryEvent(0, EventKNNQueryEnd, 0, 0)
+	}
 	// phase 0 - parsing/validating query
 	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
@@ -2052,6 +2049,18 @@ var prefixPIndexStoreStats = []byte(`{"pindexStoreStats":`)
 
 var prefixCopyPartitionStats = []byte(`,"copyPartitionStats":`)
 
+var prefixHerderStats = []byte(`,"herderStats":`)
+
+func writeHerderStatsJSON(w io.Writer) {
+	t := atomic.LoadUint64(&TotHerderWaitingIn)
+	stats := fmt.Sprintf(`{"TotWaitingIn":%d`, t)
+	t = atomic.LoadUint64(&TotHerderWaitingOut)
+	stats += fmt.Sprintf(`,"TotWaitingOut":%d`, t)
+
+	w.Write([]byte(stats))
+	w.Write(cbgt.JsonCloseBrace)
+}
+
 func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var vbstats, verbose bool
 	var indexDef *cbgt.IndexDef
@@ -2207,12 +2216,47 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 	t.copyStats.WriteJSON(w)
 
+	_, err = w.Write(prefixHerderStats)
+	if err != nil {
+		return err
+	}
+
+	// Since herder and its stats are unique to cbft, writing these stats here
+	// instead of in cbgt/rest.
+	writeHerderStatsJSON(w)
+
 	_, err = w.Write(cbgt.JsonCloseBrace)
 	if err != nil {
 		return
 	}
 
 	return nil
+}
+
+func CustomSeqTimeoutCheck(pindex string, data []byte) bool {
+	m := struct {
+		PIndexes map[string]struct {
+			HerderStats struct {
+				TotWaitingIn  uint64 `json:"TotWaitingIn,omitempty"`
+				TotWaitingOut uint64 `json:"TotWaitingOut,omitempty"`
+			} `json:"herderStats,omitempty"`
+		} `json:"pindexes"`
+	}{}
+
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return false
+	}
+
+	// true since batches blocked by herder for this node's cbft process.
+	if m.PIndexes[pindex].HerderStats.TotWaitingIn > 0 &&
+		m.PIndexes[pindex].HerderStats.TotWaitingIn >
+			m.PIndexes[pindex].HerderStats.TotWaitingOut {
+		return true
+	}
+
+	// Return false since none of the batches/index are blocked.
+	return false
 }
 
 func (t *BleveDest) StatsMap() (rv map[string]interface{}, err error) {
