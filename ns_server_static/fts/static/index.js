@@ -7,7 +7,7 @@
 //  the file licenses/APL2.txt.
 import {errorMessage, confirmDialog,
         blevePIndexInitController, blevePIndexDoneController,
-        obtainBucketScopeUndecoratedIndexName} from "./util.js";
+        obtainBucketScopeUndecoratedIndexName, loadStateFromStorage, saveStateToStorage} from "./util.js";
 import { queryMonitor } from "./query.js";
 export {IndexCtrl, IndexesCtrl, IndexNewCtrl};
 
@@ -19,6 +19,10 @@ var ctrlKeeper = {blevePIndexInitController, blevePIndexDoneController};
 var indexStatsLabels = {
     "pindexes": "index partition", "feeds": "datasource"
 };
+
+var ftsIndexesPerPage = 10;
+var ftsAliasesPerPage = 10;
+
 IndexesCtrl.$inject = ["$scope", "$http", "$routeParams", "$log", "$sce", "$location", "$uibModal"];
 function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibModal) {
     $scope.data = null;
@@ -27,11 +31,69 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
     $scope.errorMessage = null;
     $scope.errorMessageFull = null;
 
+    $scope.draftIndexes = {};
+
     $scope.fullTextIndexes = [];
-    $scope.indexesPerPage = 10;
+    $scope.fullTextIndexesFiltered = [];
+    $scope.fullTextAliases = [];
+    $scope.fullTextAliasesFiltered = [];
+    $scope.indexesPerPage = ftsIndexesPerPage;
+    $scope.aliasesPerPage = ftsAliasesPerPage;
     $scope.indexesPage = 1;
+    $scope.aliasesPage = 1;
     $scope.indexesNumPages = 1;
+    $scope.aliasesNumPages = 1;
     $scope.maxIndexPagesToShow = 5;
+    $scope.maxAliasPagesToShow = 5;
+
+    $scope.indexFilter = {};
+
+    $scope.ftsIndexSearchKey = "ftsIndex";
+    $scope.ftsAliasSearchKey = "ftsAlias";
+
+    $scope.clearIndexFilter = function(type) {
+        $scope.indexFilter[type] = "";
+        if (type == $scope.ftsIndexSearchKey) {
+            $scope.fullTextIndexesFiltered = $scope.fullTextIndexes;
+            $scope.updateIndexesPerPage($scope.indexesPerPage);
+        } else if (type == $scope.ftsAliasSearchKey) {
+            $scope.fullTextAliasesFiltered = $scope.fullTextAliases;
+            $scope.updateAliasesPerPage($scope.aliasesPerPage);
+        }
+    }
+
+    $scope.indexFilterChanged = function(type) {
+        if ($scope.indexFilter[type] == "") {
+            $scope.clearIndexFilter(type);
+            return;
+        }
+        if (type == $scope.ftsIndexSearchKey) {
+            $scope.fullTextIndexesFiltered = $scope.fullTextIndexes.filter(function(index) {
+                return index.name.includes($scope.indexFilter[type]);
+            });
+            $scope.updateIndexesPerPage($scope.indexesPerPage);
+        } else if (type == $scope.ftsAliasSearchKey) {
+            $scope.fullTextAliasesFiltered = $scope.fullTextAliases.filter(function(index) {
+                return index.name.includes($scope.indexFilter[type]);
+            });
+            $scope.updateAliasesPerPage($scope.aliasesPerPage);
+        }
+    }
+
+    function indexNameSuffix(indexName) {
+        let suffix = indexName;
+        let pos = indexName.lastIndexOf(".");
+        if (pos > 0 && pos+1 < indexName.length) {
+            suffix = indexName.slice(pos+1);
+        }
+        return suffix;
+    }
+
+    function indexesSortFunc(indexA, indexB) {
+        let a = indexA.name;
+        let b = indexB.name;
+        return indexNameSuffix(a).localeCompare(indexNameSuffix(b));
+    }
 
     $scope.refreshIndexNames = function() {
         $http.get('/api/index').then(function(response) {
@@ -40,9 +102,13 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
             $scope.data = data;
 
             var indexNames = [];
+            let localState = loadStateFromStorage();
+            if (data.indexDefs || localState && Object.keys(localState).length > 0) {
+                $scope.fullTextIndexes = [];
+                $scope.fullTextAliases = [];
+            }
             if (data.indexDefs) {
                 $scope.indexDefs = data.indexDefs.indexDefs;
-                $scope.fullTextIndexes = [];
                 for (var indexName in data.indexDefs.indexDefs) {
                     indexNames.push(indexName);
 
@@ -54,14 +120,46 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
 
                     if ($scope.indexDefs[indexName].type == "fulltext-index") {
                         $scope.fullTextIndexes.push($scope.indexDefs[indexName]);
+                    } else if ($scope.indexDefs[indexName].type == "fulltext-alias") {
+                        $scope.fullTextAliases.push($scope.indexDefs[indexName]);
                     }
                 }
             }
-
-            $scope.updateIndexesPerPage($scope.indexesPerPage);
+            if (localState && Object.keys(localState).length > 0) {
+                for (let indexName in localState) {
+                    if (!indexNames.includes(indexName)) {
+                        // Draft Index is not already in the list
+                        // Add it to the list
+                        indexNames.push(indexName);
+                        let indexDef = JSON.parse(localState[indexName]);
+                        $scope.draftIndexes[indexName] = indexDef;
+                        if (indexDef.type == "fulltext-index") {
+                            $scope.fullTextIndexes.push(indexDef);
+                        } else if (indexDef.type == "fulltext-alias") {
+                            $scope.fullTextAliases.push(indexDef);
+                        }
+                    } else {
+                        delete localState[indexName];
+                    }
+                }
+            }
+            saveStateToStorage(localState);
 
             indexNames.sort();
             $scope.indexNames = indexNames;
+
+            $scope.fullTextIndexes.sort(indexesSortFunc);
+            $scope.fullTextAliases.sort(indexesSortFunc);
+
+            $scope.fullTextIndexesFiltered = $scope.fullTextIndexes;
+            $scope.fullTextAliasesFiltered = $scope.fullTextAliases;
+
+            $scope.clearIndexFilter($scope.ftsIndexSearchKey);
+            $scope.clearIndexFilter($scope.ftsAliasSearchKey);
+
+            $scope.updateIndexesPerPage($scope.indexesPerPage);
+            $scope.updateAliasesPerPage($scope.aliasesPerPage);
+
             $scope.indexNamesReady = true;
         }, function(response) {
             var data = response.data;
@@ -73,17 +171,38 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
 
     $scope.obtainFullTextIndexes = function() {
         let start = ($scope.indexesPage-1)*$scope.indexesPerPage;
-        return $scope.fullTextIndexes.slice(
+        return $scope.fullTextIndexesFiltered.slice(
             start,
-            Math.min(start+$scope.indexesPerPage, $scope.fullTextIndexes.length)
+            Math.min(start+$scope.indexesPerPage, $scope.fullTextIndexesFiltered.length)
         );
     };
 
+    $scope.obtainFullTextAliases = function() {
+        let start = ($scope.aliasesPage-1)*$scope.aliasesPerPage;
+        return $scope.fullTextAliasesFiltered.slice(
+            start,
+            Math.min(start+$scope.aliasesPerPage, $scope.fullTextAliasesFiltered.length)
+        );
+    };
+
+    $scope.getTooltipText = function(indexName) {
+        return $scope.draftIndexes[indexName] ? `${indexName} (draft)` : indexName;
+    };
+
     $scope.updateIndexesPerPage = function(i) {
+        ftsIndexesPerPage = i;
         $scope.indexesPerPage = i;
         $scope.indexesPage = 1;
-        $scope.indexesNumPages = Math.ceil($scope.fullTextIndexes.length/$scope.indexesPerPage);
+        $scope.indexesNumPages = Math.ceil($scope.fullTextIndexesFiltered.length/$scope.indexesPerPage);
         $scope.jumpToIndexesPage($scope.indexesPage, null);
+    };
+
+    $scope.updateAliasesPerPage = function(i) {
+        ftsAliasesPerPage = i;
+        $scope.aliasesPerPage = i;
+        $scope.aliasesPage = 1;
+        $scope.aliasesNumPages = Math.ceil($scope.fullTextAliasesFiltered.length/$scope.aliasesPerPage);
+        $scope.jumpToAliasesPage($scope.aliasesPage, null);
     };
 
     $scope.jumpToIndexesPage = function(pageNum, $event) {
@@ -120,23 +239,71 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
         }
     };
 
+    $scope.jumpToAliasesPage = function(pageNum, $event) {
+        if ($event) {
+            $event.preventDefault();
+        }
+
+        $scope.aliasesPage = pageNum;
+
+        $scope.aliasesValidPages = [];
+        for(var i = 1; i <= $scope.aliasesNumPages; i++) {
+            $scope.aliasesValidPages.push(i);
+        }
+
+        // now see if we have too many pages
+        if ($scope.aliasesValidPages.length > $scope.maxAliasPagesToShow) {
+            var numPagesToRemove = $scope.aliasesValidPages.length - $scope.maxAliasPagesToShow;
+            var frontPagesToRemove = 0
+            var backPagesToRemove = 0;
+            while (numPagesToRemove - frontPagesToRemove - backPagesToRemove > 0) {
+                var numPagesBefore = $scope.aliasesPage - 1 - frontPagesToRemove;
+                var numPagesAfter =
+                    $scope.aliasesValidPages.length - $scope.aliasesPage - backPagesToRemove;
+                if (numPagesAfter > numPagesBefore) {
+                    backPagesToRemove++;
+                } else {
+                    frontPagesToRemove++;
+                }
+            }
+
+            // remove from the end first, to keep indexes simpler
+            $scope.aliasesValidPages.splice(-backPagesToRemove, backPagesToRemove);
+            $scope.aliasesValidPages.splice(0, frontPagesToRemove);
+        }
+    };
+
     $scope.deleteIndex = function(name) {
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
 
-        confirmDialog(
-            $scope, $uibModal,
-            "Confirm Delete Index",
-            "Warning: Index `" + name + "` will be permanently deleted.",
-            "Delete Index"
-        ).then(function success() {
-            $http.delete('/api/index/' + name).then(function(response) {
+        if (name in $scope.draftIndexes) {
+            confirmDialog(
+                $scope, $uibModal,
+                "Confirm Delete Draft Index",
+                "Warning: Draft Index `" + name + "` will be permanently deleted.",
+                "Delete Draft Index"
+            ).then(function success() {
+                let localState = loadStateFromStorage();
+                delete localState[name];
+                saveStateToStorage(localState);
                 $scope.refreshIndexNames();
-            }, function(response) {
-                $scope.errorMessage = errorMessage(response.data, response.code);
-                $scope.errorMessageFull = response.data;
             });
-        });
+        } else {
+            confirmDialog(
+                $scope, $uibModal,
+                "Confirm Delete Index",
+                "Warning: Index `" + name + "` will be permanently deleted.",
+                "Delete Index"
+            ).then(function success() {
+                $http.delete('/api/index/' + name).then(function(response) {
+                    $scope.refreshIndexNames();
+                }, function(response) {
+                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessageFull = response.data;
+                });
+            });
+        }
     };
 
     $scope.editIndex = function(name) {
@@ -178,7 +345,6 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
     $scope.undecoratedIndexName = rv[2];
     $scope.isScopedIndexName = ($scope.indexName != $scope.undecoratedIndexName);
 
-    $scope.indexDocCount = 0;
     $scope.indexDefStr = "";
     $scope.indexParamsStr = "";
     $scope.indexStats = null;
@@ -336,17 +502,6 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
         };
     });
     queryMonitor($scope, $uibModal, $http)
-    $scope.loadIndexDocCount = function() {
-        $scope.errorMessage = null;
-        $scope.errorMessageFull = null;
-
-        $http.get('/api/index/' + $scope.indexName + '/count').
-        then(function(response) {
-            $scope.indexDocCount = response.data.count;
-        }, function(response) {
-            $scope.indexDocCount = "..."
-        });
-    };
 
     $scope.loadIndexStats = function() {
         $scope.statsRefresh = "refreshing...";
@@ -438,9 +593,6 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
     };
 
     // tab specific loading
-    if ($scope.tab === "summary") {
-        $scope.loadIndexDocCount();
-    }
     if ($scope.tab === "monitor") {
         $scope.loadIndexStats();
     }
@@ -520,7 +672,23 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
     $scope.isClone = $location.path().match(/_clone$/);
     $scope.showCustomizeIndex = $scope.isEdit
 
+    $scope.validateIndexName = function(name) {
+        $scope.errorFields["indexName"] = false;
+        $scope.errorMessage = null;
+        if (name && $scope.meta &&
+            $scope.meta.indexNameRE &&
+            !name.match($scope.meta.indexNameRE)) {
+            $scope.errorFields["indexName"] = true;
+            $scope.errorMessage = "index name '" + name + "'" +
+                " must start with an alphabetic character, and" +
+                " must only use alphanumeric or '-' or '_' characters"
+        } else {
+            $scope.newIndexName = name;
+        }
+    }
+
     origIndexName = $routeParams.indexName;
+    $scope.origIndexName = origIndexName;
 
     $http.get('/api/managerMeta').
     then(function(response) {
@@ -570,7 +738,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             }
 
             var indexUI = data.indexTypes[k].ui;
-            if (indexUI &&
+            if (indexUI && !$scope.isEdit &&
                 indexUI.controllerInitName &&
                 typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
                 ctrlKeeper[indexUI.controllerInitName](
@@ -600,72 +768,84 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             }
         };
 
+        $scope.indexDefHandler = function(indexDef) {
+            let indexNameSuffix = indexDef.name;
+            let pos = indexNameSuffix.lastIndexOf(".");
+            if (pos > 0 && pos+1 < indexNameSuffix.length) {
+                indexNameSuffix = indexNameSuffix.slice(pos+1);
+            }
+
+            $scope.newIndexName = indexNameSuffix;
+            if ($scope.isClone) {
+                $scope.newIndexName = indexNameSuffix + "-copy";
+            }
+            $scope.fullIndexName = indexDef.name;
+
+            $scope.newIndexType = indexDef.type;
+            $scope.newIndexParams[indexDef.type] =
+                JSON.parse(JSON.stringify(indexDef.params));
+            for (var j in $scope.newIndexParams[indexDef.type]) {
+                $scope.newIndexParams[indexDef.type][j] =
+                    JSON.stringify($scope.newIndexParams[indexDef.type][j],
+                                   undefined, 2);
+            }
+            $scope.newSourceType = indexDef.sourceType;
+            $scope.newSourceName = indexDef.sourceName;
+
+            $scope.newSourceUUID = "";
+
+            if (indexDef.type == "fulltext-index") {
+                updateScopeName(indexDef.params.doc_config.mode,
+                    indexDef.params.mapping);
+            }
+
+            $scope.newSourceParams[indexDef.sourceType] =
+                JSON.stringify(indexDef.sourceParams,
+                               undefined, 2);
+            $scope.newPlanParams =
+                JSON.stringify(indexDef.planParams,
+                               undefined, 2);
+            $scope.paramNumLines["planParams"] =
+                $scope.newPlanParams.split("\n").length + 1;
+
+            $scope.prevIndexUUID = "";
+            if ($scope.isEdit) {
+                $scope.prevIndexUUID = indexDef.uuid;
+            }
+
+            var indexUI =
+                $scope.meta && $scope.isEdit &&
+                $scope.meta.indexTypes &&
+                $scope.meta.indexTypes[indexDef.type] &&
+                $scope.meta.indexTypes[indexDef.type].ui;
+            if (indexUI &&
+                indexUI.controllerInitName &&
+                typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
+                ctrlKeeper[indexUI.controllerInitName](
+                    "edit", indexDef.params, indexUI,
+                    $scope, $http, $routeParams,
+                    $location, $log, $sce, $uibModal);
+            }
+        };
+
         if (origIndexName &&
             origIndexName.length > 0) {
-            $http.get('/api/index/' + origIndexName).
-            then(function(response) {
-                var data = response.data;
-
-                let indexNameSuffix = data.indexDef.name;
-                let pos = indexNameSuffix.lastIndexOf(".");
-                if (pos > 0 && pos+1 < indexNameSuffix.length) {
-                    indexNameSuffix = indexNameSuffix.slice(pos+1);
+            if ($scope.isDraft) {
+                let localState = loadStateFromStorage();
+                if (localState) {
+                    let indexDef = JSON.parse(localState[origIndexName]);
+                    $scope.indexDefHandler(indexDef);
                 }
-
-                $scope.newIndexName = indexNameSuffix;
-                if ($scope.isClone) {
-                    $scope.newIndexName = indexNameSuffix + "-copy";
-                }
-                $scope.fullIndexName= data.indexDef.name;
-
-                $scope.newIndexType = data.indexDef.type;
-                $scope.newIndexParams[data.indexDef.type] =
-                    JSON.parse(JSON.stringify(data.indexDef.params));
-                for (var j in $scope.newIndexParams[data.indexDef.type]) {
-                    $scope.newIndexParams[data.indexDef.type][j] =
-                        JSON.stringify($scope.newIndexParams[data.indexDef.type][j],
-                                       undefined, 2);
-                }
-                $scope.newSourceType = data.indexDef.sourceType;
-                $scope.newSourceName = data.indexDef.sourceName;
-                $scope.newSourceUUID = "";
-
-                if (data.indexDef.type == "fulltext-index") {
-                    updateScopeName(data.indexDef.params.doc_config.mode,
-                        data.indexDef.params.mapping);
-                }
-
-                $scope.newSourceParams[data.indexDef.sourceType] =
-                    JSON.stringify(data.indexDef.sourceParams,
-                                   undefined, 2);
-                $scope.newPlanParams =
-                    JSON.stringify(data.indexDef.planParams,
-                                   undefined, 2);
-                $scope.paramNumLines["planParams"] =
-                    $scope.newPlanParams.split("\n").length + 1;
-
-                $scope.prevIndexUUID = "";
-                if ($scope.isEdit) {
-                    $scope.prevIndexUUID = data.indexDef.uuid;
-                }
-
-                var indexUI =
-                    meta &&
-                    meta.indexTypes &&
-                    meta.indexTypes[data.indexDef.type] &&
-                    meta.indexTypes[data.indexDef.type].ui;
-                if (indexUI &&
-                    indexUI.controllerInitName &&
-                    typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
-                    ctrlKeeper[indexUI.controllerInitName](
-                        "edit", data.indexDef.params, indexUI,
-                        $scope, $http, $routeParams,
-                        $location, $log, $sce, $uibModal);
-                }
-            }, function(response) {
-                $scope.errorMessage = errorMessage(response.data, response.code);
-                $scope.errorMessageFull = response.data;
-            })
+            } else {
+                $http.get('/api/index/' + origIndexName).
+                then(function(response) {
+                    var data = response.data;
+                    $scope.indexDefHandler(data.indexDef);
+                }, function(response) {
+                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessageFull = response.data;
+                })
+            }
         }
     })
 
@@ -785,10 +965,22 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
         }
     }
 
+    $scope.saveDraftIndex = function(indexName, indexDef) {
+        let indexDefDraft = JSON.stringify(indexDef, undefined, 2);
+        let state = loadStateFromStorage() || {};
+        state[indexName] = indexDefDraft;
+        saveStateToStorage(state);
+    }
+
+    $scope.doesDraftIndexExist = function(indexName) {
+        let localState = loadStateFromStorage();
+        return localState && localState[indexName];
+    }
+
     $scope.putIndex = function(indexName, indexType, indexParams,
                                sourceType, sourceName,
                                sourceUUID, sourceParams,
-                               planParams, prevIndexUUID) {
+                               planParams, prevIndexUUID, saveDraft) {
         $scope.errorFields = {};
         $scope.errorMessage = null;
         $scope.errorMessageFull = null;
@@ -821,21 +1013,14 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 angular.isDefined(rv.indexDef.params.doc_config) &&
                 angular.isDefined(rv.indexDef.params.mapping)) {
                 var scopeName = $scope.getScopeForIndex(rv.indexDef.params.doc_config.mode, rv.indexDef.params.mapping);
-                $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
-                    then(function(response) {
-                        $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
-                    }, function(response) {
-                        $scope.errorMessage = errorMessage(response.data, response.code);
-                        $scope.errorMessageFull = response.data;
-                    });
-            } else if (indexType == "fulltext-alias" &&
-                angular.isDefined(rv.indexDef.params) &&
-                angular.isDefined(rv.indexDef.params.targets)) {
-                var bucketDotScope = $scope.getBucketScopeForAlias(rv.indexDef.params.targets);
-                var dotPos = bucketDotScope.lastIndexOf(".");
-                if (dotPos > 0) {
-                    let sourceName = bucketDotScope.substring(0, dotPos);
-                    let scopeName = bucketDotScope.substring(dotPos + 1, bucketDotScope.length);
+                if (saveDraft) {
+                    if ($scope.doesDraftIndexExist(indexName)) {
+                        $scope.errorMessage = "Draft index already exists for " + indexName;
+                        return;
+                    }
+                    $scope.saveDraftIndex(indexName, rv.indexDef);
+                    $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                } else {
                     $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
                         then(function(response) {
                             $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
@@ -843,8 +1028,33 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                             $scope.errorMessage = errorMessage(response.data, response.code);
                             $scope.errorMessageFull = response.data;
                         });
+                }
+            } else if (indexType == "fulltext-alias" &&
+                angular.isDefined(rv.indexDef.params) &&
+                angular.isDefined(rv.indexDef.params.targets)) {
+                if (saveDraft) {
+                    if ($scope.doesDraftIndexExist(indexName)) {
+                        $scope.errorMessage = "Draft index already exists for " + indexName;
+                        return;
+                    }
+                    $scope.saveDraftIndex(indexName, rv.indexDef);
+                    $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
                 } else {
-                    introduceTraditionalIndex();
+                    var bucketDotScope = $scope.getBucketScopeForAlias(rv.indexDef.params.targets);
+                    var dotPos = bucketDotScope.lastIndexOf(".");
+                    if (dotPos > 0) {
+                        let sourceName = bucketDotScope.substring(0, dotPos);
+                        let scopeName = bucketDotScope.substring(dotPos + 1, bucketDotScope.length);
+                        $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
+                            then(function(response) {
+                                $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                            }, function(response) {
+                                $scope.errorMessage = errorMessage(response.data, response.code);
+                                $scope.errorMessageFull = response.data;
+                            });
+                    } else {
+                        introduceTraditionalIndex();
+                    }
                 }
             } else {
                 introduceTraditionalIndex();

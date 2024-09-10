@@ -40,37 +40,30 @@
 
         <!-- first row of input controls for name and keyspace --------------------- -->
         <div class="row width-8 items-top margin-bottom-2">
-          <div class="column" ng-if="isEdit">
+          <div class="column">
             <label class="margin-bottom-quarter">Index Name</label>
-            <div class="text-small width-12">
-              {{newIndexName}}
-            </div>
-          </div>
-          <div class="column" ng-if="!isEdit">
-            <label>Index Name</label>
             <span
-                class="text-small"
-                ng-show="isEdit"
-                uib-tooltip="{{newIndexName}}"
+                class="text-small width-12 cursor-pointer"
+                ng-show="isEdit && !isDraft"
+                uib-tooltip="{{fullIndexName}}"
                 tooltip-placement="auto top"
-                tooltip-trigger="'mouseenter'">
-              {{newIndexName}}
+                tooltip-trigger="mouseenter">
+                {{newIndexName}}
             </span>
-            <input
-                ng-show="!isEdit"
-                ng-model="$parent.newIndexName"
-                id="inputIndexName"
-                type="text"
-                autofocus>
+            <input ng-show="!isEdit || isDraft"
+                   ng-model="$parent.newIndexName"
+                   ng-change="validateIndexName($parent.newIndexName)"
+                   type="text"
+                   autofocus>
           </div>
           <div class="flex-grow-1 column" ng-show="newSourceType && newSourceType != 'nil'">
-            <label for="inputSourceName">
+            <label for="inputSourceName" class="margin-bottom-quarter">
               Keyspace
               <small>bucket.scope.collection</small>
             </label>
             <div class="row flex-left">
               <mn-select
-                  ng-show="bucketNames && bucketNames.length >= 0 && !isEdit"
+                  ng-show="bucketNames && bucketNames.length >= 0 && (!isEdit || isDraft)"
                   ng-model="$parent.newSourceName"
                   values="bucketNames"
                   on-select="bucketChanged(selectedOption)"
@@ -78,10 +71,10 @@
                   class="margin-right-quarter width-12">
               </mn-select>
 
-              <div class="text-small nowrap" ng-if="isEdit">
+              <div class="text-small nowrap" ng-if="isEdit && !isDraft">
                 {{newSourceName}}.
               </div>
-              <mn-select ng-show="scopeNames && scopeNames.length >= 0 && !isEdit"
+              <mn-select ng-show="scopeNames && scopeNames.length >= 0 && (!isEdit || isDraft)"
                          ng-model="$parent.newScopeName"
                          values="scopeNames"
                          on-select="scopeChanged(selectedOption)"
@@ -89,7 +82,7 @@
                          class="margin-right-quarter width-12">
               </mn-select>
 
-              <div class="text-small nowrap" ng-if="isEdit">
+              <div class="text-small nowrap" ng-if="isEdit && !isDraft">
                 {{newScopeName}}.
               </div>
 
@@ -136,7 +129,7 @@
           <div class="row width-4">
               <div class="column">
                   <!-- NUMBER OF REPLICAS *********************** -->
-                  <label for="inputNumReplicas" class="inline">Index Replicas</label>
+                  <label for="inputNumReplicas" class="inline margin-bottom-quarter">Index Replicas</label>
                   <span class="fa-stack icon-info"
                         uib-tooltip="Number of replica (backup) copies of your index." tooltip-placement="auto right">
                       <span class="icon fa-circle-thin fa-stack-2x"></span>
@@ -151,7 +144,7 @@
               </div>
               <div class="column">
                   <!-- NUMBER OF PINDEXES *********************** -->
-                  <label for="inputNumPindexes" class="inline">Index Partitions</label>
+                  <label for="inputNumPindexes" class="inline margin-bottom-quarter">Index Partitions</label>
                   <span class="fa-stack icon-info"
                         uib-tooltip="Partitioning the index allows multiple nodes running the search service to share indexing and query workload."
                         tooltip-placement="auto right">
@@ -301,7 +294,7 @@
                       <select ng-model="editField.analyzer" ng-options="t.id as t.label for t in easyLanguages"></select>
                     </div>
                     <div class="column" ng-if="isString(editField.value)">
-                      <button class="outline" ng-click="testAnalyzerEasy(editField.analyzer, editField.value, editField)">
+                      <button class="outline" ng-click="testAnalyzerEasy(editField.analyzer, editField.value)">
                         Test Analyzer
                       </button>
                     </div>
@@ -507,27 +500,38 @@
       <footer class="footer-save">
         <button
             ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit)"
+            ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit, false)"
             type="submit"
-            ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)">
-          <span ng-show="!isEdit">
+            ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (!isDraft && isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0)">
+          <span ng-show="isDraft || !isEdit">
             Create Index
           </span>
-          <span ng-show="isEdit">
+          <span ng-show="!isDraft && isEdit">
             Update Index
           </span>
         </button>
 
         <button
             ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-            ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit)"
+            ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit, false)"
             type="submit">
-          <span ng-show="!isEdit">
+          <span ng-show="isDraft || !isEdit">
             Create Index Alias
           </span>
-          <span ng-show="isEdit">
+          <span ng-show="!isDraft && isEdit">
             Update Index Alias
           </span>
+        </button>
+        <button class="outline indent-1"
+                ng-if="newIndexType && newIndexType != 'fulltext-alias' && (!isEdit || isDraft)"
+                ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit, true)"
+                ng-disabled="(easyMappings.numFieldsInAllCollections() == 0) || (isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0)">
+          Save Draft Index
+        </button>
+        <button class="outline indent-1"
+                ng-if="newIndexType && newIndexType == 'fulltext-alias' && (!isEdit || isDraft)"
+                ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit, true)">
+          Save Draft Index Alias
         </button>
 
         <a ui-sref="^.fts_list" class="indent-1 text-small">

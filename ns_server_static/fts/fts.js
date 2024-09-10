@@ -36,7 +36,8 @@ import BleveTestAnalyzerModalCtrl from "./static-bleve-mapping/js/mapping/test_a
 import {bleveIndexMappingScrub} from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
-import {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName} from "./static/util.js";
+import {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName, 
+    loadStateFromStorage, saveStateToStorage} from "./static/util.js";
 import QueryCtrl from "./static/query.js";
 import uiTree from "angular-ui-tree";
 
@@ -82,7 +83,7 @@ angular
               }
             },
             data: {
-              title: "Full Text Search"
+              title: "Search"
             }
           })
           .state(parent + '.fts_list', {
@@ -100,7 +101,7 @@ angular
             },
             data: {
               title: "Add Index",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_new_easy', {
@@ -113,7 +114,7 @@ angular
             },
             data: {
               title: "Quick Index",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_new_alias', {
@@ -126,11 +127,11 @@ angular
             },
             data: {
               title: "Add Alias",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit', {
-            url: '/fts_edit/:indexName/_edit',
+            url: '/fts_edit/:indexName/_edit?isDraft',
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
@@ -139,11 +140,11 @@ angular
             },
             data: {
               title: "Edit Index",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit_easy', {
-            url: '/fts_edit_easy/:indexName/_edit',
+            url: '/fts_edit_easy/:indexName/_edit?isDraft',
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFTEasy_NS',
@@ -152,11 +153,11 @@ angular
             },
             data: {
               title: "Edit Quick Index",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_edit_alias', {
-            url: '/fts_edit_alias/:indexName/_edit',
+            url: '/fts_edit_alias/:indexName/_edit?isDraft',
             views: {
               "main@app.admin": {
                 controller: 'IndexNewCtrlFT_NS',
@@ -165,7 +166,7 @@ angular
             },
             data: {
               title: "Edit Alias",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_clone', {
@@ -178,7 +179,7 @@ angular
             },
             data: {
               title: "Clone Index",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_clone_alias', {
@@ -191,7 +192,7 @@ angular
             },
             data: {
               title: "Clone Alias",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_search', {
@@ -205,7 +206,7 @@ angular
             },
             data: {
               title: "Search Results",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           })
           .state(parent + '.fts_details', {
@@ -218,7 +219,7 @@ angular
             },
             data: {
               title: "Index Details",
-              parent: {name: 'Full Text Search', link: parent + '.fts_list'}
+              parent: {name: 'Search', link: parent + '.fts_list'}
             }
           });
       }
@@ -425,7 +426,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.detailsOpened[indexName] = !$scope.detailsOpened[indexName];
 
             // The timeout gives angular some time to create the input control.
-            if ($scope.detailsOpened[indexName]) {
+            if ($scope.detailsOpened[indexName] && !$scope.draftIndexes[indexName]) {
                 setTimeout(function() {
                     document.getElementById('query_bar_input_' + indexName).focus()
                 }, 100);
@@ -443,6 +444,69 @@ function indexViewController($scope, $http, $state, $log, $sce, $location, $uibM
 
     $scope.jsonDetails = false;
     $scope.curlDetails = false;
+
+    $scope.obtainScope = function(indexDef) {
+        if (angular.isDefined(indexDef.params.doc_config.mode)) {
+            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
+                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
+                    if (indexDef.params.mapping.default_mapping.enabled) {
+                        return "_default";
+                    }
+                }
+                if (angular.isDefined(indexDef.params.mapping.types)) {
+                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
+                        if (value.enabled) {
+                            return key.split(".")[0];
+                        }
+                    }
+                }
+            }
+        }
+        return "_default"
+    }
+
+    $scope.obtainCollections = function(indexDef) {
+        if (angular.isDefined(indexDef.params.doc_config.mode)) {
+            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
+                let collectionNames = [];
+                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
+                    if (indexDef.params.mapping.default_mapping.enabled) {
+                        collectionNames.push("_default");
+                    }
+                }
+                if (angular.isDefined(indexDef.params.mapping.types)) {
+                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
+                        if (value.enabled) {
+                            try {
+                                let collName = key.split(".")[1];
+                                if (collName.length > 0 && collectionNames.indexOf(collName) < 0) {
+                                    collectionNames.push(collName);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+                return collectionNames;
+            }
+        }
+        return ["_default"];
+    }
+
+    if ($scope.draftIndexes[$scope.indexName]) {
+        let rv = obtainBucketScopeUndecoratedIndexName($scope.indexName);
+        $scope.indexBucketName = rv[0];
+        $scope.indexScopeName = rv[1];
+        $scope.undecoratedIndexName = rv[2];
+        $scope.isScopedIndexName = ($scope.indexName != $scope.undecoratedIndexName);
+        $scope.indexDefStr = JSON.stringify($scope.indexDef, function(key, value) {
+            // Exclude $$hashKey from the object
+            if (key === '$$hashKey') {
+                return undefined;
+            }
+            return value;
+        }, 2);
+        return;
+    }
 
     var rv = IndexCtrlFT_NS($scope, $http, stateParams, $state,
         $location, $log, $sce, $uibModal);
@@ -506,59 +570,12 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
                 $scope.progress = data["ingest_status"];
             }
         }, function(response) {
-            $scope.httpStatus = response.Status;
+            $scope.httpStatus = response.status;
         });
 
         if (callback) {
             return callback($scope.httpStatus);
         }
-    }
-
-    $scope.obtainScope = function(indexDef) {
-        if (angular.isDefined(indexDef.params.doc_config.mode)) {
-            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
-                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
-                    if (indexDef.params.mapping.default_mapping.enabled) {
-                        return "_default";
-                    }
-                }
-                if (angular.isDefined(indexDef.params.mapping.types)) {
-                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
-                        if (value.enabled) {
-                            return key.split(".")[0];
-                        }
-                    }
-                }
-            }
-        }
-        return "_default"
-    }
-
-    $scope.obtainCollections = function(indexDef) {
-        if (angular.isDefined(indexDef.params.doc_config.mode)) {
-            if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
-                let collectionNames = [];
-                if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
-                    if (indexDef.params.mapping.default_mapping.enabled) {
-                        collectionNames.push("_default");
-                    }
-                }
-                if (angular.isDefined(indexDef.params.mapping.types)) {
-                    for (let [key, value] of Object.entries(indexDef.params.mapping.types)) {
-                        if (value.enabled) {
-                            try {
-                                let collName = key.split(".")[1];
-                                if (collName.length > 0 && collectionNames.indexOf(collName) < 0) {
-                                    collectionNames.push(collName);
-                                }
-                            } catch (e) {}
-                        }
-                    }
-                }
-                return collectionNames;
-            }
-        }
-        return ["_default"];
     }
 
     http.get("/api/managerMeta").
@@ -596,6 +613,8 @@ function IndexCtrlFT_NS($scope, $http, $stateParams, $state,
 }
 
 // -------------------------------------------------------
+
+const draftSuffix = " (Draft)";
 
 function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                            $location, $log, $sce, $uibModal,
@@ -647,6 +666,16 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.ftsStore = {};
         $scope.ftsStore.indexType = "scorch";
 
+        $scope.isDraft = $stateParams.isDraft === 'true';
+        if ($scope.isDraft) {
+            if (!$state.current.data.title.endsWith(draftSuffix)) {
+                $state.current.data.title += draftSuffix;
+            }
+        } else {
+            if ($state.current.data.title.endsWith(draftSuffix)) {
+                $state.current.data.title = $state.current.data.title.slice(0, -draftSuffix.length);
+            }
+        }
         $scope.ftsNodes = [];
         mnPoolDefault.get().then(function(value){
           $scope.ftsNodes = mnPoolDefault.getUrlsRunningService(value.nodes, "fts");
@@ -746,6 +775,14 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
         function finishIndexNewCtrlFTInit() {
             var putIndexOrig = $scope.putIndex;
+
+            $scope.enableCollections = function() {
+                if (!$scope.docConfigCollections) {
+                    $scope.newScopeName = "_default";
+                    $scope.updateScopeDetails($scope.newScopeName);
+                }
+                $scope.typeIdentifierChanged();
+            }
 
             $scope.typeIdentifierChanged = function() {
                 if ($scope.docConfigMode == "type_field" ||
@@ -897,8 +934,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                        newIndexType, newIndexParams,
                                        newSourceType, newSourceName,
                                        newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID, isEdit) {
-                if (isEdit) {
+                                       newPlanParams, prevIndexUUID, isEdit, saveDraft) {
+                if (isEdit && !$scope.isDraft && !saveDraft) {
                     newIndexName = $scope.fullIndexName;
                 }
                 $scope.errorFields = {};
@@ -919,11 +956,19 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 newSourceUUID = rv.newSourceUUID;
                 newPlanParams = rv.newPlanParams;
 
+                if (isEdit && $scope.isDraft) {
+                    let state = loadStateFromStorage();
+                    if (state && state[$scope.origIndexName]) {
+                        delete state[$scope.origIndexName];
+                        saveStateToStorage(state);
+                    }
+                }
+
                 return putIndexOrig(newIndexName,
                                     newIndexType, newIndexParams,
                                     newSourceType, newSourceName,
                                     newSourceUUID, newSourceParams,
-                                    newPlanParams, prevIndexUUID);
+                                    newPlanParams, prevIndexUUID, saveDraft);
             };
         }
     }
@@ -2027,8 +2072,16 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
         var indexDefs = $scope.indexDefs =
             data && data.indexDefs && data.indexDefs.indexDefs;
 
-        var origIndexDef = $scope.origIndexDef =
-            indexDefs && indexDefs[$routeParams.indexName];
+        if ($scope.isDraft) {
+            let state = loadStateFromStorage();
+            if (state) {
+                $scope.origIndexDef = JSON.parse(state[$routeParams.indexName]);
+            }
+        } else {
+            $scope.origIndexDef = indexDefs && indexDefs[$routeParams.indexName];
+        }
+
+        var origIndexDef = $scope.origIndexDef
 
         var isAlias =
             ($routeParams.indexType == 'fulltext-alias') ||
@@ -2080,9 +2133,9 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
                          newSourceType, newSourceName,
                          newSourceUUID, newSourceParams,
                          newPlanParams, prevIndexUUID,
-                         selectedTargetIndexes, isEdit) {
+                         selectedTargetIndexes, isEdit, saveDraft) {
                     var aliasTargets = {};
-                    if (isEdit) {
+                    if (isEdit && !$scope.isDraft && !saveDraft) {
                         newIndexName=$scope.fullIndexName;
                     }
                     for (var i = 0; i < selectedTargetIndexes.length; i++) {
@@ -2099,7 +2152,7 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
                                     newIndexType, newIndexParams,
                                     newSourceType, newSourceName,
                                     newSourceUUID, newSourceParams,
-                                    newPlanParams, prevIndexUUID);
+                                    newPlanParams, prevIndexUUID, isEdit, saveDraft);
                 };
         }
 
@@ -2327,6 +2380,70 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
         $scope.collectionTextFieldsAsIdentifiers = false;
         $scope.collectionAnalyzer = "standard";
         $scope.xattrs = false;
+        $scope.isDraft = $stateParams.isDraft === 'true';
+        if ($scope.isDraft) {
+            if (!$state.current.data.title.endsWith(draftSuffix)) {
+                $state.current.data.title += draftSuffix;
+            }
+        } else {
+            if ($state.current.data.title.endsWith(draftSuffix)) {
+                $state.current.data.title = $state.current.data.title.slice(0, -draftSuffix.length);
+            }
+        }
+
+        function initScopeName(params) {
+            let paramsObj = angular.fromJson(params);
+            let docConfig = angular.fromJson(paramsObj.doc_config);
+            if (angular.isDefined(docConfig.mode)) {
+                if (docConfig.mode.startsWith("scope.collection.")) {
+                    let mapping = angular.fromJson(paramsObj.mapping);
+                    if (angular.isDefined(mapping.default_mapping)) {
+                        if (mapping.default_mapping.enabled) {
+                            return "_default";
+                        }
+                        for (let [key, value] of Object.entries(mapping.types)) {
+                            if (value.enabled) {
+                                return key.split(".")[0];
+                            }
+                        }
+                    }
+                    return "";
+                }
+                return "_default";
+            }
+            return "";
+        }
+
+        $scope.updateBucketDetails = function(selectedBucket, keepScope) {
+            listScopesForBucket(selectedBucket || $scope.newSourceName).then(function (scopes) {
+                if (!keepScope) {
+                    $scope.newScopeName = initScopeName($scope.newIndexParams['fulltext-index']);
+                }
+                $scope.scopeNames = scopes;
+                if ($scope.scopeNames.length > 0) {
+                    if ($scope.newScopeName == "" || $scope.scopeNames.indexOf($scope.newScopeName) < 0) {
+                        // init scope to first entry in options if unavailable or not in options
+                        $scope.newScopeName = $scope.scopeNames[0];
+                    }
+                }
+                $scope.updateScopeDetails($scope.newScopeName);
+            });
+        };
+
+        $scope.updateScopeDetails = function(newScopeName) {
+            if (!angular.isDefined(newScopeName) ||
+                newScopeName == "" ||
+                newScopeName == null) {
+                $scope.newScopeName = "";
+                $scope.collectionNames = [];
+                return;
+            }
+
+            $scope.newScopeName = newScopeName;
+            listCollectionsForBucketScope($scope.newSourceName, $scope.newScopeName).then(function (collections) {
+                $scope.collectionNames = collections;
+            });
+        };
 
         $scope.collectionDynamicToggled = function() {
             $scope.collectionDynamic = "false";
@@ -2669,6 +2786,7 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     "Warning: All configurations made with the current bucket will be lost.",
                     "Update Bucket"
                 ).then(function success() {
+                    $scope.newSourceName = selectedBucket;
                     listScopesForBucket(selectedBucket).then(function (scopes) {
                         $scope.scopeNames = scopes;
                         if (scopes.length > 0) {
@@ -2724,6 +2842,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.newScopeName = orig;
                 });
             } else {
+                if (selectedScope) {
+                    $scope.newScopeName = selectedScope;
+                }
                 $scope.listCollectionsForBucketScope($scope.newSourceName,
                     $scope.newScopeName).then(function (collections) {
                         $scope.collectionNames = collections;
@@ -2913,8 +3034,8 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                                        newIndexType, newIndexParams,
                                        newSourceType, newSourceName,
                                        newSourceUUID, newSourceParams,
-                                       newPlanParams, prevIndexUUID, isEdit) {
-                if (isEdit) {
+                                       newPlanParams, prevIndexUUID, isEdit, saveDraft) {
+                if (isEdit && !$scope.isDraft && !saveDraft) {
                     newIndexName=$scope.fullIndexName;
                 }
                 $scope.errorFields = {};
@@ -2935,11 +3056,19 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                 newSourceUUID = rv.newSourceUUID;
                 newPlanParams = rv.newPlanParams;
 
+                if (isEdit && $scope.isDraft) {
+                    let state = loadStateFromStorage();
+                    if (state && state[$scope.origIndexName]) {
+                        delete state[$scope.origIndexName];
+                        saveStateToStorage(state);
+                    }
+                }
+
                 return putIndexOrig(newIndexName,
                     newIndexType, newIndexParams,
                     newSourceType, newSourceName,
                     newSourceUUID, newSourceParams,
-                    newPlanParams, prevIndexUUID);
+                    newPlanParams, prevIndexUUID, saveDraft);
             };
         }
     }

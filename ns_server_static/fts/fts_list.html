@@ -24,6 +24,12 @@
         class="resp-hide-sml">
       QUICK INDEX
     </a>
+    <a
+        ui-sref="app.admin.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
+        ng-disabled="!permsCluster.bucket['.'].fts.write"
+        class="resp-hide-sml">
+      ADD ALIAS
+    </a>
   </div>
 </mn-element-cargo>
 
@@ -35,7 +41,19 @@
 
   <!-- table of indexes  ******************** -->
   <span ng-if="indexNamesReady">
-    <h4 class="margin-bottom-half">Full Text Indexes</h4>
+    <div class="row margin-bottom-half">
+      <h4>Search Indexes</h4>
+      <div class="filter-input-group">
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="filter indexes..."
+          ng-model="indexFilter[ftsIndexSearchKey]"
+          ng-change="indexFilterChanged(ftsIndexSearchKey)"/>
+        <span class="icon fa-search-minus" ng-if=!indexFilter[ftsIndexSearchKey]></span>
+        <span class="icon fa-times-circle" ng-click="clearIndexFilter(ftsIndexSearchKey)" ng-if=!!indexFilter[ftsIndexSearchKey]></span>
+      </div>
+    </div>
     <table class="fts-indexes-list table-stroked">
       <tr>
         <th width="5%">scoped access</th>
@@ -72,13 +90,17 @@
             <span ng-if="isScopedIndexName"
                   class="icon fa-check"></span>
           </td>
-          <td class="cbui-tablerow-title ellipsis">
-            <span uib-tooltip="{{indexName}}"
-                  tooltip-trigger="mouseenter"
-                  tooltip-placement="auto top"
-                  tooltip-append-to-body="true">
-              {{undecoratedIndexName}}
-            </span>
+          <td>
+            <div class="index-name-container">
+              <div uib-tooltip="{{ getTooltipText(indexName) }}"
+                    tooltip-trigger="mouseenter"
+                    tooltip-placement="auto top"
+                    tooltip-append-to-body="true"
+                    class="cbui-tablerow-title ellipsis">
+                {{undecoratedIndexName}}
+              </div>
+              <span ng-if="draftIndexes[indexName]" class="draft-label">draft</span>
+            </div>
           </td>
           <td class="break-word">
             <span ng-if="indexDef.sourceType != 'couchbase' && indexDef.sourceType != 'gocbcore'">
@@ -102,10 +124,12 @@
             </div>
           </td>
           <td>
-            <span ng-bind="docCount"></span>
+            <span ng-bind="docCount" ng-if="!draftIndexes[indexName]"></span>
+            <span ng-if="draftIndexes[indexName]"> - </span>
           </td>
           <td>
-            <span ng-if="progress">{{progress}}</span>
+            <span ng-if="!draftIndexes[indexName] && progress">{{progress}}</span>
+            <span ng-if="draftIndexes[indexName]"> - </span>
           </td>
         </tr>
         <!-- index details area ************************* -->
@@ -114,10 +138,11 @@
             <div class="fts-index-details">
               <div class="margin-bottom1">
                 <form class="forms">
-                  <div class="row margin-bottom-half">
+                  <div class="row margin-bottom-half"
+                      ng-class="{'fts-flex-row-reverse': draftIndexes[indexName]}">
 
                     <!-- index search controls ************************* -->
-                    <div class="fts-query-bar" ng-click="$event.stopPropagation()">
+                    <div class="fts-query-bar" ng-click="$event.stopPropagation()" ng-if="!draftIndexes[indexName]">
                       <input id="query_bar_input_{{indexName}}"
                              ng-model="searchInputs[indexName]"
                              type="text"
@@ -135,7 +160,7 @@
                     <!-- index action buttons ************************* -->
                     <span class="nowrap" ng-click="$event.stopPropagation()">
                       <button class="icon outline"
-                              ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
+                              ng-if="!draftIndexes[indexName] && (permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write)"
                               ui-sref="^.search.fts_details({indexName: indexName})">
                         <span class="icon fa-bars"
                               uib-tooltip="Index details."
@@ -153,7 +178,7 @@
                         </span>
                       </button>
                       <button class="icon outline"
-                              ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
+                              ng-if="!draftIndexes[indexName] && (permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write)"
                               ui-sref="^.search.fts_clone({indexName: indexName})">
                         <span class="icon fa-copy"
                               uib-tooltip="Clone index's definition (allows edit after)."
@@ -163,7 +188,7 @@
                       </button>
                       <button class="icon"
                               ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
-                              ui-sref="^.search.fts_edit({indexName: indexName})">
+                              ui-sref="^.search.fts_edit({indexName: indexName, isDraft: draftIndexes[indexName] ? true : false})">
                         <span class="icon fa-pencil"
                               uib-tooltip="Edit index's definition."
                               tooltip-trigger="mouseenter"
@@ -173,7 +198,7 @@
                       <button class="icon"
                               ng-if="permsCluster.bucket[indexDef.sourceName].fts.write || permsCluster.bucket['.'].fts.write"
                               ng-disabled="!showEasyMode(indexDef)"
-                              ui-sref="^.search.fts_edit_easy({indexName: indexName})">
+                              ui-sref="^.search.fts_edit_easy({indexName: indexName, isDraft: draftIndexes[indexName] ? true : false})">
                         <span class="icon fa-edit"
                               uib-tooltip="{{ showEasyMode(indexDef) ? 'Quick edit index\'s definition.' : 'Index definition has certain elements set which are not supported within the quick editor.' }}"
                               tooltip-trigger="mouseenter"
@@ -186,7 +211,7 @@
 
                 <!-- second row help link ************************* -->
                 <div class="formrow text-smaller"
-                     ng-if="queryHelp && queryHelp.length"
+                     ng-if="queryHelp && queryHelp.length && !draftIndexes[indexName]"
                      ng-bind-html="queryHelpSafe">
                 </div>
               </div>
@@ -199,7 +224,7 @@
                     ng-click="showJSON[indexName] = !showJSON[indexName]">
                 {{showJSON[indexName] ? 'Hide' : 'Show'}} index definition JSON
                 </p>
-                <div class="indent-1" ng-show="showJSON[indexName]">
+                <div class="indent-1" ng-show="!draftIndexes[indexName] && showJSON[indexName]">
                   <input
                       id="for-show-def-fts-curl-{{indexName}}"
                       type="checkbox"
@@ -223,7 +248,7 @@
 
                 <!-- definition with CURL ****************** -->
                 <div
-                    ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                    ng-show="!draftIndexes[indexName] && showJSONCurl[indexName] && showJSON[indexName]"
                     class="json-content row items-top">
                   <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
                     <span ng-if="indexName == scopedIndexUndecoratedName(indexName)">
@@ -251,6 +276,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
                   item-id="{{indexName}}"
                   service="fts"
                   prefix="fts"
+                  ng-if="!draftIndexes[indexName]"
                   ></mn-detail-stats>
 
             </div>
@@ -290,13 +316,17 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
 
     <!-- table of aliases  ******************** -->
     <div class="row margin-bottom-half">
-      <h4>Full Text Aliases</h4>
-      <button
-          ui-sref="^.search.fts_new_alias({indexType: 'fulltext-alias', sourceType: 'nil'})"
-          ng-disabled="!permsCluster.bucket['.'].fts.write"
-          class="outline tight">
-        + Add Alias
-      </button>
+      <h4>Search Aliases</h4>
+      <div class="filter-input-group">
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="filter aliases..."
+          ng-model="indexFilter[ftsAliasSearchKey]"
+          ng-change="indexFilterChanged(ftsAliasSearchKey)"/>
+        <span class="icon fa-search-minus" ng-if=!indexFilter[ftsAliasSearchKey]></span>
+        <span class="icon fa-times-circle" ng-click="clearIndexFilter(ftsAliasSearchKey)" ng-if=!!indexFilter[ftsAliasSearchKey]></span>
+      </div>
     </div>
     <table class="fts-indexes-list table-stroked">
       <tr>
@@ -311,10 +341,10 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
           </span>
         </th>
       </tr>
-      <tbody ng-repeat="(indexName, indexDef) in indexDefs"
+      <tbody ng-repeat="indexDef in obtainFullTextAliases()"
              class="has-hover"
-             ng-if="indexDef.type == 'fulltext-alias'"
-             ng-click="detailsOpened[indexName] = !detailsOpened[indexName]">
+             ng-click="expando(indexName)"
+             ng-controller="indexViewController">
         <tr ng-class="{
                        'grayblue-bg-5 detailsOpened': detailsOpened[indexName],
                        'no-stroke': detailsOpened[node.hostname]
@@ -323,16 +353,20 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
             <span ng-if="indexName != scopedIndexUndecoratedName(indexName)"
                   class="icon fa-check"></span>
           </td>
-          <td class="cbui-tablerow-title ellipsis">
-            <span uib-tooltip="{{indexName}}"
-                  tooltip-trigger="mouseenter"
-                  tooltip-placement="auto top"
-                  tooltip-append-to-body="true">
-              {{scopedIndexUndecoratedName(indexName)}}
-            </span>
+          <td>
+            <div class="index-name-container">
+              <div  uib-tooltip="{{ getTooltipText(indexName) }}"
+                    tooltip-trigger="mouseenter"
+                    tooltip-placement="auto top"
+                    tooltip-append-to-body="true"
+                    class="cbui-tablerow-title ellipsis">
+                {{scopedIndexUndecoratedName(indexName)}}
+              </div>
+              <span ng-if="draftIndexes[indexName]" class="draft-label">draft</span>
+            </div>
           </td>
           <td class="alias-targets">
-            <span ng-repeat="(targetName, targetObj) in indexDef.paramsObj.targets">
+            <span ng-repeat="(targetName, targetObj) in indexDef.params.targets">
               {{targetName}}<span ng-show="!$last">, </span>
             </span>
           </td>
@@ -342,11 +376,13 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
           <td colspan="3">
             <div class="fts-index-details">
               <form>
-                <div class="row margin-bottom-1">
+                <div class="row margin-bottom-1"
+                     ng-class="{'fts-flex-row-reverse': draftIndexes[indexName]}">
 
                   <!-- search controls **************************** -->
-                  <div class="fts-query-bar" ng-click="$event.stopPropagation()">
+                  <div class="fts-query-bar" ng-click="$event.stopPropagation()" ng-if="!draftIndexes[indexName]">
                     <input
+                        id="query_bar_input_{{indexName}}"
                         ng-model="searchInputs[indexName]"
                         type="text"
                         placeholder="search this alias..."/>
@@ -372,6 +408,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
                       </span>
                     </button>
                     <button class="icon outline"
+                            ng-if="!draftIndexes[indexName]"
                             ng-disabled="!permsCluster.bucket['.'].fts.write"
                             ui-sref="^.search.fts_clone_alias({indexName: indexName})" class="outline">
                       <span class="icon fa-copy"
@@ -382,7 +419,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
                     </button>
                     <button class="icon"
                             ng-disabled="!permsCluster.bucket['.'].fts.write"
-                            ui-sref="^.search.fts_edit_alias({indexName: indexName})">
+                            ui-sref="^.search.fts_edit_alias({indexName: indexName, isDraft: draftIndexes[indexName] ? true : false})">
                       <span class="icon fa-pencil"
                             uib-tooltip="Edit index alias's definition."
                             tooltip-trigger="mouseenter"
@@ -402,7 +439,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
                       ng-click="showJSON[indexName] = !showJSON[indexName]">
                   {{showJSON[indexName] ? 'Hide' : 'Show'}} alias definition JSON
                   </p>
-                  <div class="indent-1" ng-show="showJSON[indexName]">
+                  <div class="indent-1" ng-show="!draftIndexes[indexName] && showJSON[indexName]">
                     <input
                         id="for-show-alias-def-fts-curl-{{indexName}}"
                         ng-model="showJSONCurl[indexName]"
@@ -426,7 +463,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
 
                   <!-- alias definition with CURL ****************** -->
                   <div
-                      ng-show="showJSONCurl[indexName] && showJSON[indexName]"
+                      ng-show="!draftIndexes[indexName] && showJSONCurl[indexName] && showJSON[indexName]"
                       class="json-content row items-top">
                     <pre id="indexDefStr_details_curl-{{dropDotsInIndexName(indexName)}}">
                       <span ng-if="indexName == scopedIndexUndecoratedName(indexName)">
@@ -453,14 +490,42 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
         </tr>
       </tbody>
     </table>
+    <div class="row pagination">
+      <div>
+        <mn-select
+            class="fix-width-1"
+            ng-model="aliasesPerPage"
+            on-select="updateAliasesPerPage(selectedOption)"
+            values="[5, 10, 20]">
+        </mn-select>
+      </div>
+      <div ng-show="aliasesNumPages > 1" class="col-lg-12 col-lg-offset-5">
+        <ul class="pagination">
+          <li ng-show="aliasesPage > 1">
+            <a ng-click="jumpToAliasesPage(aliasesPage-1, $event)" href="">
+              &laquo;
+            </a>
+          </li>
+          <li ng-repeat="i in aliasesValidPages" ng-attr-class="{{i == aliasesPage}}">
+            <a ng-show="i != aliasesPage" href="" ng-click="jumpToAliasesPage(i, $event)">{{i}}</a>
+            <span ng-hide="i != aliasesPage">{{i}}</span>
+          </li>
+          <li>
+            <a ng-show="aliasesPage < aliasesNumPages" ng-click="jumpToAliasesPage(aliasesPage+1, $event)" href="">
+              &raquo;
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </span>
 </div>
 
 <!-- display results of check for query nodes ********************  -->
 <div ng-show="!ftsChecking && !ftsAvailable && !ftsCheckError" class="margin-top-half">
-  <p>The full text search interface is only available on Couchbase clusters running the full text search service.</p>
+  <p>The search interface is only available on Couchbase clusters running the search service.</p>
   <div ng-show="ftsNodes.length > 0">
-    <p>The full text search service was found on the following nodes:</p>
+    <p>The search service was found on the following nodes:</p>
     <div class="indent-1" ng-repeat="url in ftsNodes">
       <a href="{{url}}">{{url}}</a>
     </div>
@@ -474,7 +539,7 @@ curl -XPUT -H "Content-Type: application/json" -u &lt;username&gt;:&lt;password&
       </p>
     </div>
   </div>
-  <p ng-show="ftsNodes.length == 0" class="error">No full text search nodes were found on this cluster.</p>
+  <p ng-show="ftsNodes.length == 0" class="error">No search nodes were found on this cluster.</p>
 </div>
 
 <div ng-show="!ftsChecking && !ftsAvailable && ftsCheckError"

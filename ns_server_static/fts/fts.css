@@ -704,3 +704,25 @@ select.midwide {
 .query-facets-table tr:nth-child(even) {
   background-color: #ffffff;
 }
+
+.draft-label {
+  flex-shrink: 0;
+  color: #333333;
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.70em;
+  margin-left: 4px;
+  background-color: #f8f8f8;
+}
+
+.fts-flex-row-reverse {
+    flex-direction: row-reverse;
+}
+
+.index-name-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  max-width: 100%;
+}

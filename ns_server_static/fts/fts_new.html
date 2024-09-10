@@ -32,14 +32,15 @@
             <label>Index Name</label>
             <span
                 class="cbui-tablerow padding-left-0 padding-right-0 cursor-pointer"
-                ng-show="isEdit"
+                ng-show="isEdit && !isDraft"
                 uib-tooltip="{{fullIndexName}}"
                 tooltip-placement="auto top"
                 tooltip-trigger="mouseenter">
               <span class="cbui-table-cell text-small">{{newIndexName}}</span>
             </span>
-            <input ng-show="!isEdit"
+            <input ng-show="!isEdit || isDraft"
                    ng-model="$parent.newIndexName"
+                   ng-change="validateIndexName($parent.newIndexName)"
                    id="inputIndexName"
                    type="text"
                    autofocus>
@@ -90,7 +91,7 @@
             <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport">
               <input type="checkbox" id="subscribe-to-collections"
                                      ng-model="$parent.$parent.$parent.docConfigCollections"
-                                     ng-change="typeIdentifierChanged()">
+                                     ng-change="enableCollections()">
               <label for="subscribe-to-collections">Use non-default scope/collection(s)</label>
               <span class="fa-stack icon-info"
                     uib-tooltip="Check this option for the index to be able to ingest data from a non-default scope and/or non-default collection(s) on the source bucket."
@@ -103,9 +104,10 @@
           <div ng-if="newIndexType != 'fulltext-alias' && $parent.collectionsSupport && $parent.$parent.docConfigCollections"
                class="row items-top formrow width-480">
             <div class="column width-12">
-              <label for="inputSourceName">Scope</label>
+              <label for="inputScopeName">Scope</label>
               <mn-select
-                  ng-model="$parent.newScopeName"
+                  id="inputScopeName"
+                  ng-model="newScopeName"
                   values="scopeNames"
                   on-select="updateScopeDetails(selectedOption)"
                   has-search="true">
@@ -315,26 +317,38 @@
         <hr>
         <div class="row flex-left">
           <button ng-if="newIndexType && newIndexType != 'fulltext-alias'"
-                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit)"
-                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0) || (scopeMismatch)"
+                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit, false)"
+                  ng-disabled="(!isDraft && isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0) || (scopeMismatch)"
                   type="submit">
-            <span ng-show="!isEdit">
+            <span ng-show="isDraft || !isEdit">
               Create Index
             </span>
-            <span ng-show="isEdit">
+            <span ng-show="!isDraft && isEdit">
               Update Index
             </span>
           </button>
           <button ng-if="newIndexType && newIndexType == 'fulltext-alias'"
-                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit)"
-                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef)) || (newIndexName.length == 0)"
+                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit, false)"
+                  ng-disabled="(!isDraft && isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0) || selectedTargetIndexes.length == 0"
                   type="submit">
-            <span ng-show="!isEdit">
+            <span ng-show="isDraft || !isEdit">
               Create Index Alias
             </span>
-            <span ng-show="isEdit">
+            <span ng-show="!isDraft && isEdit">
               Update Index Alias
             </span>
+          </button>
+          <button class="outline indent-1"
+                  ng-if="newIndexType && newIndexType != 'fulltext-alias' && (!isEdit || isDraft)"
+                  ng-click="putIndex(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, isEdit, true)"
+                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0) || (scopeMismatch)">
+            Save Draft Index
+          </button>
+          <button class="outline indent-1"
+                  ng-if="newIndexType && newIndexType == 'fulltext-alias' && (!isEdit || isDraft)"
+                  ng-click="putIndexAlias(newIndexName, newIndexType, newIndexParams, newSourceType, newSourceName, newSourceUUID, newSourceParams, newPlanParams, prevIndexUUID, selectedTargetIndexes, isEdit, true)"
+                  ng-disabled="(isEdit && !indexDefChanged(origIndexDef, isDraft)) || (newIndexName.length == 0) || selectedTargetIndexes.length == 0">
+            Save Draft Index Alias
           </button>
           <a ui-sref="^.fts_list" class="indent-1">
             Cancel

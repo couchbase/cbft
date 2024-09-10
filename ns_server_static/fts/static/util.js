@@ -11,7 +11,8 @@ import initBleveIndexMappingController from "../static-bleve-mapping/js/mapping/
 import confirmDialogTemplate from "../confirm_dialog.html";
 import alertDialogTemplate from "../alert_dialog.html";
 
-export {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName};
+export {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIndexName, 
+        loadStateFromStorage, saveStateToStorage};
 export {blevePIndexInitController, blevePIndexDoneController};
 
 function errorMessage(errorMessageFull, code) {
@@ -225,7 +226,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
         return imc.indexMapping();
     }
 
-    var done = false;
     var previewPrev = "";
 
     $scope.getScopeForIndex = function(docConfigMode, mapping) {
@@ -264,6 +264,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
     }
 
     function updatePreview() {
+        var done = $location.path().match(/_list$/);
         if (done) {
             return;
         }
@@ -323,7 +324,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                         } else {
                             $scope.scopeMismatch = false;
                             if ($scope.errorMessage != null && $scope.errorMessage.startsWith("scope selected")) {
-                                // reset a previous scope mismiatch error
+                                // reset a previous scope mismatch error
                                 $scope.errorMessage = "";
                             }
                         }
@@ -353,6 +354,11 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                             $scope.collectionsSelected = [];
                         }
                     } else {
+                        $scope.scopeMismatch = false;
+                        if ($scope.errorMessage != null && $scope.errorMessage.startsWith("scope selected")) {
+                            // reset a previous scope mismatch error
+                            $scope.errorMessage = "";
+                        }
                         $scope.scopeSelected = "_default";
                         $scope.collectionsSelected = ["_default"];
                     }
@@ -365,7 +371,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
     setTimeout(updatePreview, bleveUpdatePreviewTimeoutMS);
 
-    $scope.indexDefChanged = function(origIndexDef) {
+    $scope.indexDefChanged = function(origIndexDef, isDraft) {
         let rv = $scope.prepareFTSIndex(
             $scope.newIndexName,
             $scope.newIndexType, $scope.newIndexParams,
@@ -381,35 +387,38 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                 $scope.newSourceType, $scope.newSourceName, newSourceUUID, $scope.newSourceParams,
                 newPlanParams, $scope.prevIndexUUID);
 
-            try {
-                // Add an empty "analysis" section if no analysis elements defined.
-                if (!angular.isDefined(rv.indexDef["params"]["mapping"]["analysis"])) {
-                    rv.indexDef["params"]["mapping"]["analysis"] = {};
-                }
-                // Delete "numReplicas" if set to 0.
-                if (angular.isDefined(rv.indexDef["planParams"]["numReplicas"]) &&
-                    rv.indexDef["planParams"]["numReplicas"] == 0) {
-                    delete rv.indexDef["planParams"]["numReplicas"];
-                }
-                // Delete "empty" fields array if present in type mappings objects.
-                for (var name in rv.indexDef["params"]["mapping"]["types"]) {
-                    if (angular.isDefined(rv.indexDef["params"]["mapping"]["types"][name]["fields"]) &&
-                        rv.indexDef["params"]["mapping"]["types"][name]["fields"].length == 0) {
-                        delete rv.indexDef["params"]["mapping"]["types"][name]["fields"];
+            // since draft indexes are saved as is and not sent to the server,
+            // we do not need to perform these special steps for them to check
+            // if the index definition has changed. 
+            if (!isDraft) {
+                try {
+                    // Add an empty "analysis" section if no analysis elements defined.
+                    if (!angular.isDefined(rv.indexDef["params"]["mapping"]["analysis"])) {
+                        rv.indexDef["params"]["mapping"]["analysis"] = {};
                     }
+                    // Delete "numReplicas" if set to 0.
+                    if (angular.isDefined(rv.indexDef["planParams"]["numReplicas"]) &&
+                        rv.indexDef["planParams"]["numReplicas"] == 0) {
+                        delete rv.indexDef["planParams"]["numReplicas"];
+                    }
+                    // Delete "empty" fields array if present in type mappings objects.
+                    for (var name in rv.indexDef["params"]["mapping"]["types"]) {
+                        if (angular.isDefined(rv.indexDef["params"]["mapping"]["types"][name]["fields"]) &&
+                            rv.indexDef["params"]["mapping"]["types"][name]["fields"].length == 0) {
+                            delete rv.indexDef["params"]["mapping"]["types"][name]["fields"];
+                        }
+                    }
+                } catch (e) {
                 }
-            } catch (e) {
+                if (rv.indexDef["type"] == "fulltext-alias") {
+                    delete rv.indexDef["sourceUUID"];
+                }
+                // Drop "name" from the original and built index definition,
+                // to account global vs scoped naming. Index name changes
+                // are not allowed once created anyway.
+                delete origIndexDef["name"];
+                delete rv.indexDef["name"];
             }
-
-            if (rv.indexDef["type"] == "fulltext-alias") {
-                delete rv.indexDef["sourceUUID"];
-            }
-
-            // Drop "name" from the original and built index definition,
-            // to account global vs scoped naming. Index name changes
-            // are not allowed once created anyway.
-            delete origIndexDef["name"];
-            delete rv.indexDef["name"];
             if (angular.equals(origIndexDef, rv.indexDef)) {
                 return false;
             }
@@ -417,10 +426,6 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
 
         return true;
     };
-
-    $scope.$on('$stateChangeStart', function() {
-        done = true;
-    });
 }
 
 var bleveUpdatePreviewTimeoutMS = 1000;
@@ -477,4 +482,36 @@ function obtainBucketScopeUndecoratedIndexName(indexName) {
         indexName.slice(secondDotIndex + 1, lastDotIndex),
         indexName.slice(lastDotIndex + 1)
     ];
+}
+
+var hasLocalStorage = supportsHtml5Storage();
+var localStorageKey = 'CouchbaseFTS_' + window.location.host
+
+function supportsHtml5Storage() {
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+        return false;
+    }
+}
+
+function loadStateFromStorage() {
+    if (hasLocalStorage && typeof localStorage[localStorageKey] === 'string') {
+        try {
+            return JSON.parse(localStorage[localStorageKey]);
+        } catch (err) {
+            console.log("Error loading state from local storage", err);
+        }
+    }
+}
+
+function saveStateToStorage(state) {
+    // nop if we don't have local storage
+    if (!hasLocalStorage)
+        return;
+    try {
+        localStorage[localStorageKey] = JSON.stringify(state);
+    } catch (err) {
+        console.log("Error saving state to local storage", err);
+    }
 }

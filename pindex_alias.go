@@ -40,6 +40,9 @@ func init() {
 				"yourIndexName": {},
 			},
 		},
+		UI: map[string]string{
+			"controllerInitName": "blevePIndexInitController",
+		},
 	})
 }
 
