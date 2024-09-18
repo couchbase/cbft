@@ -22,10 +22,10 @@ import (
 	log "github.com/couchbase/clog"
 )
 
-// v2: 7.6.2
+// 7.6.2+
 const featuresVectorBase64Dims4096 = "vector_base64_dims:4096"
 
-// v3: 7.6.3
+// 7.6.4+
 const featureVectorCosineSimilarity = "vector_cosine"
 
 // A knn regex to check against and determine if a query has knn fields
