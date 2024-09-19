@@ -19,13 +19,14 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/document"
+	"github.com/blevesearch/bleve/v2/search/query"
 	log "github.com/couchbase/clog"
 )
 
-// v2: 7.6.2
+// 7.6.2+
 const featuresVectorBase64Dims4096 = "vector_base64_dims:4096"
 
-// v3: 7.6.3
+// 7.6.4+
 const featureVectorCosineSimilarity = "vector_cosine"
 
 // A knn regex to check against and determine if a query has knn fields
@@ -65,8 +66,40 @@ func featureFlagForDims(dims int) string {
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
-		if err := UnmarshalJSON(knn, &r.KNN); err != nil {
+		type tempKNNReq struct {
+			Field        string          `json:"field"`
+			Vector       []float32       `json:"vector"`
+			VectorBase64 string          `json:"vector_base64"`
+			K            int64           `json:"k"`
+			Boost        *query.Boost    `json:"boost,omitempty"`
+			Params       json.RawMessage `json:"params,omitempty"`
+			FilterQuery  json.RawMessage `json:"filter,omitempty"`
+		}
+
+		var tmp []tempKNNReq
+		err := UnmarshalJSON(knn, &tmp)
+		if err != nil {
 			return nil, err
+		}
+
+		r.KNN = make([]*bleve.KNNRequest, len(tmp))
+		for i, knnReq := range tmp {
+			r.KNN[i] = &bleve.KNNRequest{}
+			r.KNN[i].Field = knnReq.Field
+			r.KNN[i].Vector = knnReq.Vector
+			r.KNN[i].VectorBase64 = knnReq.VectorBase64
+			r.KNN[i].K = knnReq.K
+			r.KNN[i].Boost = knnReq.Boost
+			r.KNN[i].Params = knnReq.Params
+			if len(knnReq.FilterQuery) == 0 {
+				// Setting this to nil to avoid ParseQuery() setting it to a match none
+				r.KNN[i].FilterQuery = nil
+			} else {
+				r.KNN[i].FilterQuery, err = query.ParseQuery(knnReq.FilterQuery)
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 	if knnOperator != nil && r != nil {
