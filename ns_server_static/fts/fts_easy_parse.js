@@ -72,6 +72,9 @@ function parseDocument(doc, xattrs) {
             parseStack.push(value);
             keysStack.push(key);
             valsSincePop = 0;
+            if (Array.isArray(value) && value.every(item => typeof item == 'number')) {
+                dims[fullPath] = value.length
+            }
         }
 
         // for any row other than the first, push the path onto rowPaths
@@ -151,19 +154,10 @@ function parseDocument(doc, xattrs) {
 
             // check whether the object is a vector
             if (rowTypes[col] === "object") {
-                var numDims = 0
-                var path = rowPaths[col]
-                var nestDepth = rowPaths[col].split(".").length
-                for (let i = col+1; i < rowTypes.length - 1; i++) {
-                    if ((rowPaths[i] == path) && (rowTypes[i] == 'number')) {
-                        numDims++
-                    } else {
-                        break
+                if (rowPaths[col] in dims) {
+                    if (dims[rowPaths[col]] > 1) {
+                        return "vector"
                     }
-                }
-                if (numDims > 1) {
-                    dims[col] = numDims - nestDepth
-                    return "vector"
                 }
             }
 
@@ -171,7 +165,7 @@ function parseDocument(doc, xattrs) {
             if (rowTypes[col] === "string") {
                 var vecLen = parseBase64Length(parsedObj[rowPaths[col]])
                 if (vecLen > 2) {
-                    dims[col] = vecLen
+                    dims[rowPaths[col]] = vecLen
                     return "vector_base64"
                 }
             }
@@ -182,7 +176,7 @@ function parseDocument(doc, xattrs) {
             return docString;
         },
         getDims: function (col) {
-            return dims[col]
+            return dims[rowPaths[col]]
         },
         getTextValue: function (col) {
             return rowValues[col]
