@@ -66,7 +66,7 @@ func featureFlagForDims(dims int) string {
 func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
-		type tempKNNReq struct {
+		var tmp []struct {
 			Field        string          `json:"field"`
 			Vector       []float32       `json:"vector"`
 			VectorBase64 string          `json:"vector_base64"`
@@ -76,7 +76,6 @@ func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchReq
 			FilterQuery  json.RawMessage `json:"filter,omitempty"`
 		}
 
-		var tmp []tempKNNReq
 		err := UnmarshalJSON(knn, &tmp)
 		if err != nil {
 			return nil, err
