@@ -21,8 +21,8 @@
     /* jemalloc checks for this symbol, and it's contents for the config to use. */
     extern const char* malloc_conf;
 #else
-    #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-        // Include malloc.h for malloc_info(..)
+    #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(WIN32)
+        // Include malloc.h for malloc_info(..) on linux and _heapwalk(..) on windows
         #include <malloc.h>
     #elif defined(__APPLE__) && defined(__MACH__)
         // Include malloc/malloc.h for mstats()
