@@ -670,7 +670,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
 
     $scope.isEdit = $location.path().match(/_edit$/);
     $scope.isClone = $location.path().match(/_clone$/);
-    $scope.showCustomizeIndex = $scope.isEdit
+    $scope.showCustomizeIndex = ($scope.isEdit || $scope.isClone);
 
     $scope.validateIndexName = function(name) {
         $scope.errorFields["indexName"] = false;
@@ -738,7 +738,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             }
 
             var indexUI = data.indexTypes[k].ui;
-            if (indexUI && !$scope.isEdit &&
+            if (indexUI && !($scope.isEdit || $scope.isClone) &&
                 indexUI.controllerInitName &&
                 typeof(ctrlKeeper[indexUI.controllerInitName]) == "function") {
                 ctrlKeeper[indexUI.controllerInitName](
@@ -814,7 +814,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
             }
 
             var indexUI =
-                $scope.meta && $scope.isEdit &&
+                $scope.meta && ($scope.isEdit || $scope.isClone) &&
                 $scope.meta.indexTypes &&
                 $scope.meta.indexTypes[indexDef.type] &&
                 $scope.meta.indexTypes[indexDef.type].ui;
@@ -1019,7 +1019,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                         return;
                     }
                     $scope.saveDraftIndex(indexName, rv.indexDef);
-                    $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                    $location.path('/indexes/' + indexName);
                 } else {
                     $http.put('/api/bucket/' + sourceName + '/scope/' + scopeName + '/index/' + indexName, rv.indexDef).
                         then(function(response) {
@@ -1038,7 +1038,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                         return;
                     }
                     $scope.saveDraftIndex(indexName, rv.indexDef);
-                    $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
+                    $location.path('/indexes/' + indexName);
                 } else {
                     var bucketDotScope = $scope.getBucketScopeForAlias(rv.indexDef.params.targets);
                     var dotPos = bucketDotScope.lastIndexOf(".");
