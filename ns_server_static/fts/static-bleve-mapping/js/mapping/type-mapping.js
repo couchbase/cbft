@@ -283,6 +283,20 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         $scope.validateField(field, mapping)
     }
 
+    $scope.resetType = function(field, mapping) {
+        if ((field.type != "vector") && (field.type != "vector_base64")) {
+            field.similarity = null;
+            field.dims = null;
+            field.vector_index_optimized_for = null;
+        }
+        field.include_in_all = null;
+        field.store = null;
+        field.include_term_vectors = null;
+        field.docvalues = null;
+
+        $scope.changeProperty(field, mapping);
+    }
+
     $scope.validateField = function(field, mapping) {
         if (mapping) {
             var taken = false;

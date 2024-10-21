@@ -215,7 +215,8 @@ licenses/APL2.txt.
               <label>
                 <span>type</span>
                 <select ng-model="field.type"
-                        ng-options="t as t for t in fieldTypes">
+                        ng-options="t as t for t in fieldTypes"
+                        ng-change="resetType(field, mapping)">
                 </select>
               </label>
             </div>
