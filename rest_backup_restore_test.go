@@ -322,6 +322,16 @@ func TestRemapTypeMappings(t *testing.T) {
 			expTypNames:   []string{"scope1.collection1.beer", "scope1.collection1.brewery"},
 			expBucketName: "travel-sample",
 		},
+		// allow remap even with a conflict with an existing mapping (overwrite).
+		{
+			typMappings:    createTypeMappings([]string{"scope1.collection1.beer", "scope1.collection2.beer"}),
+			remapRules:     "beer-sample.scope1.collection1:beer-sample.scope1.collection2",
+			bucketName:     "beer-sample",
+			bucketLevel:    false,
+			expTypNames:   []string{"scope1.collection2.beer"},
+			expBucketName: "beer-sample",
+		},
+
 	}
 	for i, test := range tests {
 		rmr, err := parseMappingParams(test.remapRules)
@@ -351,14 +361,6 @@ func TestRemapTypeMappingsErrCases(t *testing.T) {
 		bucketLevel    bool
 		errDescription string
 	}{
-		// remap fails upon remap conflicts with an existing mapping.
-		{
-			typMappings:    createTypeMappings([]string{"scope1.collection1.beer", "scope1.collection2.beer"}),
-			remapRules:     "beer-sample.scope1.collection1:beer-sample.scope1.collection2",
-			bucketName:     "beer-sample",
-			bucketLevel:    false,
-			errDescription: "conflicts the existing type mappings for:",
-		},
 		// remap fails upon remap bucket.scope.collection rules within bucket scope. (it is supported for cluster level)
 		{
 			typMappings:    createTypeMappings([]string{"scope1.collection1.beer", "scope1.collection2.beer"}),
