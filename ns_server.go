@@ -417,6 +417,7 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		focusStats: &rest.RESTFocusStats{},
 	}
 
+	var numIndexes, numVectorIndexes int
 	for indexName, indexDef := range indexDefsMap {
 		var key string
 		if collAware {
@@ -437,6 +438,10 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		nsIndexStats[key] = nsIndexStat
 		indexNameToSourceName[indexName] = key
 
+		numIndexes += 1
+		if indexHasVectorFields(indexDef.Params) {
+			numVectorIndexes += 1
+		}
 	}
 
 	nsIndexStats["regulatorStats"] = GetRegulatorStats()
@@ -468,6 +473,9 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 	for k, v := range rest.GatherDeleteIndexStats() {
 		nsIndexStats[""][k] = v
 	}
+
+	nsIndexStats[""]["num_indexes"] = numIndexes
+	nsIndexStats[""]["num_vector_indexes"] = numVectorIndexes
 
 	return nsIndexStats, nil
 }

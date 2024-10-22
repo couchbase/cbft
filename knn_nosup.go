@@ -50,6 +50,11 @@ func QueryHasKNN(req []byte) bool {
 	return false
 }
 
+func indexHasVectorFields(params string) bool {
+	// Not supported
+	return false
+}
+
 func InitKNNQueryThrottlerOptions(options map[string]string) error {
 	// Not supported
 	return nil

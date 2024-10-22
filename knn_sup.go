@@ -33,12 +33,28 @@ const featureVectorCosineSimilarity = "vector_cosine"
 var knnRegex *regexp.Regexp
 var kNNThrottleLimit int64
 
+// Vector index regexes to check against and determine if an index has
+// vector fields
+var vectorIndexRegexes []*regexp.Regexp
+
 func init() {
 	var err error
 	knnRegex, err = regexp.Compile(`"knn":\[{"`)
 	if err != nil {
 		log.Warnf("knn regex compilation failed, knn query throttler will be disabled")
 	}
+
+	vectorRegex, err := regexp.Compile(`"type":"vector"`)
+	if err != nil {
+		log.Warnf("vector index regex compilation failed")
+	}
+	vectorIndexRegexes = append(vectorIndexRegexes, vectorRegex)
+
+	vectorBase64Regex, err := regexp.Compile(`"type":"vector_base64"`)
+	if err != nil {
+		log.Warnf("vector_base64 index regex compilation failed")
+	}
+	vectorIndexRegexes = append(vectorIndexRegexes, vectorBase64Regex)
 }
 
 func FeatureVectorSearchSupport() string {
@@ -142,6 +158,15 @@ func extractKNNQueryFields(sr *bleve.SearchRequest,
 func QueryHasKNN(req []byte) bool {
 	if knnRegex != nil && knnRegex.Match(req) {
 		return true
+	}
+	return false
+}
+
+func indexHasVectorFields(params string) bool {
+	for _, regex := range vectorIndexRegexes {
+		if regex.Match([]byte(params)) {
+			return true
+		}
 	}
 	return false
 }
