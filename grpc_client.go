@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -412,12 +413,18 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 
 		ss := cbgt.GetSecuritySetting()
 		var certInBytes []byte
+		var clientCert tls.Certificate
+		var clientAuth tls.ClientAuthType
 		if ss.EncryptionEnabled {
 			bindPort, err = getPortFromNodeDefs(remotePlanPIndex.NodeDef, "bindGRPCSSL")
 			if err == nil {
 				port = bindPort
 				certInBytes = ss.CACertInBytes
 			}
+		}
+		if ss.ClientAuthType != nil && *ss.ClientAuthType != tls.NoClientCert {
+			clientCert = ss.ClientCertificate
+			clientAuth = *ss.ClientAuthType
 		}
 
 		if port == "" {
@@ -426,7 +433,8 @@ func addGrpcClients(mgr *cbgt.Manager, indexName, indexUUID string,
 
 		host = host + ":" + port
 
-		cli, err := getRpcClient(remotePlanPIndex.NodeDef.UUID, host, certInBytes)
+		cli, err := getRpcClient(remotePlanPIndex.NodeDef.UUID, host, certInBytes,
+			clientCert, clientAuth)
 		if err != nil {
 			log.Errorf("grpc_client: getRpcClient err: %v", err)
 			continue

@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
@@ -98,7 +99,8 @@ func basicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
+func getRpcClient(nodeUUID, hostPort string, certInBytes []byte,
+	clientCert tls.Certificate, clientAuth tls.ClientAuthType) (
 	pb.SearchServiceClient, error) {
 	var hostPool []*grpc.ClientConn
 	var initialised bool
@@ -108,7 +110,7 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
 
 	rpcConnMutex.Lock()
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
-		opts, err := getGrpcOpts(hostPort, certInBytes)
+		opts, err := getGrpcOpts(hostPort, certInBytes, clientCert, clientAuth)
 		if err != nil {
 			rpcConnMutex.Unlock()
 			log.Errorf("grpc_client: getGrpcOpts, host port: %s, err: %v",
@@ -146,7 +148,8 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte) (
 	return cli, nil
 }
 
-func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error) {
+func getGrpcOpts(hostPort string, certInBytes []byte, clientCert tls.Certificate,
+	clientAuth tls.ClientAuthType) ([]grpc.DialOption, error) {
 	cbUser, cbPasswd, err := cbauth.GetHTTPServiceAuth(hostPort)
 	if err != nil {
 		return nil, fmt.Errorf("grpc_util: cbauth err: %v", err)
@@ -188,8 +191,16 @@ func getGrpcOpts(hostPort string, certInBytes []byte) ([]grpc.DialOption, error)
 		if !ok {
 			return nil, fmt.Errorf("grpc_util: failed to append ca certs")
 		}
-		creds := credentials.NewClientTLSFromCert(certPool, "")
-
+		var creds credentials.TransportCredentials
+		if clientAuth != tls.NoClientCert {
+			creds = credentials.NewTLS(&tls.Config{
+				RootCAs:      certPool,
+				Certificates: []tls.Certificate{clientCert},
+				ClientAuth:   clientAuth,
+			})
+		} else {
+			creds = credentials.NewClientTLSFromCert(certPool, "")
+		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
