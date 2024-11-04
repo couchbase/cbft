@@ -6,14 +6,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.4.3-0.20241028164519-bed244cefd70
+	github.com/blevesearch/bleve/v2 v2.4.3-0.20241104165431-902051d4d471
 	github.com/blevesearch/bleve_index_api v1.1.12
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
 	github.com/blevesearch/zapx/v13 v13.3.10
 	github.com/blevesearch/zapx/v14 v14.3.10
 	github.com/blevesearch/zapx/v15 v15.3.16
-	github.com/blevesearch/zapx/v16 v16.1.8-0.20241025145458-ef2b41dc3ae1
+	github.com/blevesearch/zapx/v16 v16.1.8-0.20241104164502-f19d5f0cdbcb
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.10
