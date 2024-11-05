@@ -3025,6 +3025,7 @@ func bleveIndexAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 type BleveIndexCollector interface {
 	Add(i ...bleve.Index)
 	VisitIndexes(func(bleve.Index))
+	SetIndexMapping(mapping.IndexMapping) error
 }
 
 func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
@@ -3109,6 +3110,19 @@ var FetchBleveTargets = func(mgr *cbgt.Manager, indexName, indexUUID string,
 	}, nil, false)
 }
 
+type bleveParamsCacheEntry struct {
+	bleveParams    *BleveParams
+	bleveParamsStr string
+}
+
+var bleveParamsCache map[string]*bleveParamsCacheEntry
+
+var bleveParamsCacheMutex sync.Mutex
+
+func init() {
+	bleveParamsCache = make(map[string]*bleveParamsCacheEntry)
+}
+
 func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	ensureCanRead bool, consistencyParams *cbgt.ConsistencyParams,
 	cancelCh <-chan bool, groupByNode bool, onlyPIndexes map[string]bool,
@@ -3178,6 +3192,55 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.
+
+	var bleveParamsStr string
+	var bleveParamsSame = true
+	checkParams := func(indexParams string) bool {
+		if bleveParamsStr == "" {
+			bleveParamsStr = indexParams
+			return true
+		}
+		return bleveParamsStr == indexParams
+	}
+
+	for _, localPIndex := range localPIndexes {
+		if !checkParams(localPIndex.IndexParams) {
+			bleveParamsSame = false
+			break
+		}
+	}
+	if bleveParamsSame {
+		for _, remotePlanPIndex := range remotePlanPIndexes {
+			if !checkParams(remotePlanPIndex.PlanPIndex.IndexParams) {
+				bleveParamsSame = false
+				break
+			}
+		}
+	}
+
+	if bleveParamsSame && bleveParamsStr != "" {
+		var ok bool
+		var bp *bleveParamsCacheEntry
+		bleveParamsCacheMutex.Lock()
+		if bp, ok = bleveParamsCache[indexUUID]; !ok || bp.bleveParamsStr != bleveParamsStr {
+			newBp := NewBleveParams()
+			err := json.Unmarshal([]byte(bleveParamsStr), &newBp)
+			if err != nil {
+				bleveParamsCacheMutex.Unlock()
+				return nil, 0, fmt.Errorf("grpc_client: error unmarshalling indexParams: %v", err)
+			}
+			bp = &bleveParamsCacheEntry{
+				bleveParams:    newBp,
+				bleveParamsStr: bleveParamsStr,
+			}
+			bleveParamsCache[indexUUID] = bp
+		}
+		bleveParamsCacheMutex.Unlock()
+		err := collector.SetIndexMapping(bp.bleveParams.Mapping)
+		if err != nil {
+			return nil, 0, fmt.Errorf("grpc_client: error setting index mapping: %v", err)
+		}
+	}
 
 	return remoteClients, numPIndexes, cbgt.ConsistencyWaitGroup(indexName, consistencyParams,
 		cancelCh, localPIndexes,
