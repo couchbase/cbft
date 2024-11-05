@@ -14,11 +14,13 @@ package cbft
 import (
 	"encoding/json"
 	"regexp"
+	"runtime"
 	"strconv"
 	"sync/atomic"
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/document"
+	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/blevesearch/bleve/v2/search/query"
 	log "github.com/couchbase/clog"
 )
@@ -42,6 +44,10 @@ func init() {
 	knnRegex, err = regexp.Compile(`"knn":\[{"`)
 	if err != nil {
 		log.Warnf("knn regex compilation failed, knn query throttler will be disabled")
+	}
+
+	if runtime.GOOS == "windows" {
+		scorch.BleveMaxKNNConcurrency = 1
 	}
 
 	vectorRegex, err := regexp.Compile(`"type":"vector"`)

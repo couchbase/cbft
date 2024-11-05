@@ -158,8 +158,13 @@ func cHeapProfiler(action int) (profilerOut []byte, err error) {
 //   - json=true: returns the stats in JSON format, else defaults to
 //     text format
 func JeMallocStatsHandler(w http.ResponseWriter, r *http.Request) {
+	stats := cHeapStats(r.URL.Query().Get("json") == "true")
+	if stats == "" {
+		writeError(w, "jemallocStatsHandler: jemalloc memory stats not available", http.StatusNotImplemented)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(cHeapStats(r.URL.Query().Get("json") == "true")))
+	w.Write([]byte(stats))
 }
 
 // Handle the request for interacting with the jemalloc memory profiler (GET)

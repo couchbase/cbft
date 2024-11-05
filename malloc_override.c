@@ -203,6 +203,33 @@
             struct mstats ms = mstats();
             return ms.bytes_used;
         }
+    #elif defined(WIN32)
+        size_t mm_allocated() {
+            // Declare a _HEAPINFO struct to store information about each heap block.
+            // This struct will be used by the _heapwalk function to get details of each block in the heap.
+            _HEAPINFO heapInfo;
+            // Initialize the _pentry member of heapInfo to NULL.
+            // This tells _heapwalk to start at the beginning of the heap.
+            heapInfo._pentry = NULL;
+            // Initialize a variable to accumulate the total size of allocated memory blocks.
+            size_t totalAllocated = 0;
+            // Declare an integer to store the status returned by each call to _heapwalk.
+            // This status will indicate whether the next heap block was successfully retrieved or if an error occurred.
+            int heapStatus;
+            // Call _heapwalk with &heapInfo to get the next block in the heap.
+            // If _heapwalk returns _HEAPOK, it means the block info was successfully retrieved.
+            while ((heapStatus = _heapwalk(&heapInfo)) == _HEAPOK) {
+                // Check if the current block is in use (allocated) by comparing _useflag to _USEDENTRY.
+                // _USEDENTRY indicates that the block is actively allocated.
+                if (heapInfo._useflag == _USEDENTRY) {
+                    // Add the size of this allocated block (heapInfo._size) to totalAllocated.
+                    // This accumulates the sizes of all allocated blocks as we go through the heap.
+                    totalAllocated += heapInfo._size;
+                }
+            }
+            // After walking through all blocks in the heap, return the total allocated memory size in bytes.
+            return totalAllocated;
+        }
     #else // Unsupported platform
         size_t mm_allocated() {
             return (size_t)0L;
