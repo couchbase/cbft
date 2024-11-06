@@ -1,0 +1,89 @@
+<!--
+Copyright 2024-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+-->
+
+<div class="dialog-med">
+  <div class="panel-header">
+    <h2>Synonym Source</h2>
+  </div>
+
+  <form role="form" class="forms">
+    <div class="panel-content">
+      <div
+        ng-show="errorMessage"
+        class="error error-form ng-cloak"
+        role="alert"> {{errorMessage}}
+      </div>
+
+      <div class="formrow">
+        <label>Name</label>
+        <input
+          ng-disabled="viewOnlyModal"
+          ng-model="name"
+          type="text"
+          id="tname">
+      </div>
+
+      <div class="formrow">
+        <div class = "row">
+          <div class="width-2 flex-column">
+            <label> Bucket </label>
+            <span> {{formdata.bucket}} </span>
+          </div>
+          <div class="width-2 flex-column">
+            <label> Scope </label>
+            <span> {{formdata.scope}} </span>
+          </div>
+          <div class="width-2 flex-column">
+            <label> Collection </label>
+            <mn-select
+              class="mn-select"
+              ng-model="formdata.collection"
+              ng-disabled="viewOnlyModal"
+              values="collectionNames"
+              on-select="updateCollection(selectedOption)"
+              has-search="true">
+            </mn-select>
+          </div>
+          <div class="width-2 flex-column">
+            <div ng-if="languageNames">
+              <label> Language </label>
+              <mn-select
+                class="mn-select"
+                ng-model="languageNameSelected"
+                ng-disabled="viewOnlyModal"
+                values="languageNames"
+                on-select="updateLanguage(selectedOption)"
+                has-search="true">
+              </mn-select>
+            </div>
+            <div ng-if="!languageNames">
+              <label> Analyzer </label>
+              <mn-select
+                class="mn-select"
+                ng-model="formdata.analyzer"
+                ng-disabled="viewOnlyModal"
+                values = "analyzerNames"
+                on-select="updateAnalyzer(selectedOption)"
+                has-search="true">
+              </mn-select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  <div class="panel-footer">
+    <a href="" ng-click="cancel()">Cancel</a>
+    <button
+      ng-if="!viewOnlyModal"
+      ng-click="build(name)"
+      type="button">Save</button>
+  </div>
+</div>

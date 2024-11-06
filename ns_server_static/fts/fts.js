@@ -34,6 +34,7 @@ import BleveTokenFilterModalCtrl from "./static-bleve-mapping/js/mapping/analysi
 import BleveTokenizerModalCtrl from "./static-bleve-mapping/js/mapping/analysis-tokenizer.js";
 import BleveWordListModalCtrl from "./static-bleve-mapping/js/mapping/analysis-wordlist.js";
 import BleveTestAnalyzerModalCtrl from "./static-bleve-mapping/js/mapping/test_analyzer.js";
+import BleveSynonymSourceModalCtrl from "./static-bleve-mapping/js/mapping/analysis-synonymsource.js";
 import {bleveIndexMappingScrub} from "./static-bleve-mapping/js/mapping/index-mapping.js";
 
 import {IndexesCtrl, IndexCtrl, IndexNewCtrl} from "./static/index.js";
@@ -54,6 +55,7 @@ import ftsSearchTemplate from "./fts_search.html";
 import ftsDetailsTemplate from "./fts_details.html";
 import indexImportTemplate from "./import_index.html";
 import testAnalyzerTemplate from "./static-bleve-mapping/partials/analysis/test_analyzer.html";
+import synonymsourceTemplate from './static-bleve-mapping/partials/analysis/synonymsource.html';
 
 import uiAce from "ui-ace";
 
@@ -397,8 +399,9 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
 
             let analysis = params.mapping.analysis;
             if (angular.isDefined(analysis) &&
-                Object.keys(analysis).length > 0) {
-                // custom analysis elements aren't supported with quick (easy) editor
+                (Object.keys(analysis).length > 1 || 
+                (Object.keys(analysis).length === 1 && !analysis.hasOwnProperty('synonym_sources')))) {
+                // custom analysis elements other than synonym sources aren't supported with quick (easy) editor
                 return false;
             }
 
@@ -468,8 +471,8 @@ function indexViewController($scope, $http, $state, $log, $sce, $location, $uibM
 
     $scope.obtainCollections = function(indexDef) {
         if (angular.isDefined(indexDef.params.doc_config.mode)) {
+            let collectionNames = [];
             if (indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
-                let collectionNames = [];
                 if (angular.isDefined(indexDef.params.mapping.default_mapping.enabled)) {
                     if (indexDef.params.mapping.default_mapping.enabled) {
                         collectionNames.push("_default");
@@ -487,8 +490,17 @@ function indexViewController($scope, $http, $state, $log, $sce, $location, $uibM
                         }
                     }
                 }
-                return collectionNames;
+            } else {
+                collectionNames.push("_default");
             }
+            if (angular.isDefined(indexDef.params.mapping.analysis.synonym_sources)) {
+                for (let [name, src] of Object.entries(indexDef.params.mapping.analysis.synonym_sources)) {
+                    if (collectionNames.indexOf(src.collection) < 0) {
+                        collectionNames.push(src.collection);
+                    }
+                }
+            }
+            return collectionNames;
         }
         return ["_default"];
     }
@@ -1096,9 +1108,11 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.indexMapping.analysis.token_maps = {}
             $scope.indexMapping.analysis.token_filters = {}
             $scope.indexMapping.analysis.date_time_parsers = {}
+            $scope.indexMapping.analysis.synonym_sources = {}
             $scope.indexMapping.analysis.analyzers = {}
             $scope.indexMapping.default_analyzer = "standard"
             $scope.indexMapping.default_datetime_parser = "dateTimeOptional"
+            $scope.indexMapping.default_synonym_source = ""
             $scope.indexMapping.default_field = "_all"
             $scope.indexMapping.default_mapping = {
                 "enabled": true,
@@ -1123,6 +1137,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
             delete $scope.mappings[0].date_format
             delete $scope.mappings[0].default_analyzer
+            delete $scope.mappings[0].default_synonym_source
 
             $scope.docConfigMode = "type_field"
             $scope.ftsDocConfig = {
@@ -1270,6 +1285,16 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                 }
                             }
                         }
+
+                        if ("synonym_sources" in indexParsed.params.mapping.analysis) {
+                            for (const [k, val] of Object.entries(indexParsed.params.mapping.analysis.synonym_sources)) {
+                                $scope.parseSynonymSource(k, val)
+    
+                                if ($scope.errorMsg != "") {
+                                    return
+                                }
+                            }
+                        }
                     }
 
                     if ("default_mapping" in indexParsed.params.mapping) {
@@ -1293,6 +1318,15 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                                 mapping.default_analyzer = indexParsed.params.mapping.default_mapping.default_analyzer
                             } else {
                                 $scope.errorMsg = "default_mapping has invalid value for field 'default_analyzer'"
+                                return
+                            }
+                        }
+
+                        if ("default_synonym_source" in indexParsed.params.mapping.default_mapping) {
+                            if ($scope.synonymSourceNames.includes(indexParsed.params.mapping.default_mapping.default_synonym_source)) {
+                                mapping.default_synonym_source = indexParsed.params.mapping.default_mapping.default_synonym_source
+                            } else {
+                                $scope.errorMsg = "default_mapping has invalid value for field 'default_synonym_source'"
                                 return
                             }
                         }
@@ -1333,6 +1367,15 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                             $scope.indexMapping.default_datetime_parser = indexParsed.params.mapping.default_datetime_parser
                         } else {
                             $scope.errorMsg = "Unknown value for default_datetime_parser"
+                            return
+                        }
+                    }
+
+                    if ("default_synonym_source" in indexParsed.params.mapping) {
+                        if ($scope.synSources.includes(indexParsed.params.mapping.default_synonym_source)) {
+                            $scope.indexMapping.default_synonym_source = indexParsed.params.mapping.default_synonym_source
+                        } else {
+                            $scope.errorMsg = "Unknown value for default_synonym_source"
                             return
                         }
                     }
@@ -1671,6 +1714,37 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             return ""
         }
 
+
+        $scope.parseSynonymSource = function(key, val) {
+            var err = $scope.validateSynonymSource(key, val, $scope.indexMapping.analysis.synonym_sources)
+            if (err == "") {
+                $scope.indexMapping.analysis.synonym_sources[key] = val
+                $scope.synonymSourceNames.push(key)
+            } else {
+                $scope.errorMsg = err
+            }
+        }
+
+        $scope.validateSynonymSource = function(name, newSynonymSource, synonymSources) {
+            if (!name) {
+                return "Synonym Source name is required"
+            }
+
+            if (name != "" && synonymSources[name]) {
+                return "Synonym Source named '" + name + "' already exists"
+            }
+
+            if (!("collection" in newSynonymSource)) {
+                return "Synonym Source named '" + name + "' must specify a collection"
+            }
+
+            if (!("analyzer" in newSynonymSource)) {
+                return "Synonym Source named '" + name + "' must specify an analyzer"
+            }
+
+            return ""
+        }
+
         $scope.parseAnalyzer = function (key, val) {
 
             var err = $scope.validateAnalyzer(key, val, $scope.indexMapping.analysis)
@@ -1772,6 +1846,15 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                         }
                     }
 
+                    if ("synonym_source" in value.fields[i] && mapping.type == "text") {
+                        if ($scope.synonymSourceNames.includes(value.fields[0].synonym_source)) {
+                            mapping.synonym_source = value.fields[0].synonym_source
+                        } else {
+                            $scope.errorMsg = "Field named '" + name + "' has invalid value for field synonym_source"
+                            return
+                        }
+                    }
+
                     if ("date_format" in value.fields[i] && mapping.type == "datetime") {
                         if ($scope.dateTimeParserNames.includes(value.fields[i].date_format)) {
                             mapping.date_format = value.fields[i].date_format
@@ -1828,6 +1911,12 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 if ("default_analyzer" in value) {
                     if ($scope.analyzerNames.includes(value.default_analyzer)) {
                         mapping.default_analyzer = value.default_analyzer
+                    }
+                }
+
+                if ("default_synonym_source" in value) {
+                    if ($scope.synonymSourceNames.includes(value.default_synonym_source)) {
+                        mapping.default_synonym_source = value.default_synonym_source
                     }
                 }
 
@@ -2058,7 +2147,10 @@ angular.module(ftsAppName).
                 "name", "value", "mapping", "static_prefix", BleveDatetimeParserModalCtrl_NS]).
     controller('BleveDocumentFilterModalCtrl',
                 ["$scope", "$uibModalInstance",
-                 "type", "value", "docConfig","mapping", BleveDocumentFilterModalCtrl_NS]);
+                 "type", "value", "docConfig","mapping", BleveDocumentFilterModalCtrl_NS]).
+    controller('BleveSynonymSourceModalCtrl',
+                ["$scope", "$uibModalInstance",
+                "name", "value", "mapping", "languages", "static_prefix", BleveSynonymSourceModalCtrl_NS]);
 
 // ----------------------------------------------
 
@@ -2106,6 +2198,12 @@ function BleveDocumentFilterModalCtrl_NS($scope, $uibModalInstance,
                                             type, value, docConfig, mapping) {
         return BleveDocumentFilterModalCtrl($scope, $uibModalInstance,
                                             type, value, docConfig, mapping);
+}
+
+function BleveSynonymSourceModalCtrl_NS($scope, $uibModalInstance,
+                                        name, value, mapping, languages, static_prefix) {
+    return BleveSynonymSourceModalCtrl($scope, $uibModalInstance,
+                                        name, value, mapping, languages, static_prefix);
 }
 
 // ----------------------------------------------
@@ -2747,6 +2845,70 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     }
                 }
             }).result.then(function(){});
+        }
+
+        $scope.addSynonymSourceEasy = function() {
+            $scope.editSynonymSourceEasy("", $scope.newSourceName, $scope.newScopeName, "", "");
+        }
+
+        $scope.editSynonymSourceEasy = function(name, bucket, scope, collection, analyzer) {
+            if (!bucket || !scope) {
+                $scope.errorMessage = "Please select a bucket and scope.";
+                return;
+            }
+            $scope.errorMsg = "";
+            var synSources = $scope.easyMappings.getSynonymSources();
+            var modalInstance = $uibModal.open({
+                template: synonymsourceTemplate,
+                animation: $scope.animationsEnabled,
+                scope: $scope,
+                controller: 'BleveSynonymSourceModalCtrl',
+                resolve: {
+                    name: function() {
+                        return name;
+                    },
+                    value: function() {
+                        return {
+                            "bucket": bucket,
+                            "scope": scope,
+                            "collection": collection,
+                            "analyzer": analyzer
+                        };
+                    },
+                    mapping: function() {
+                        return {
+                            "analysis": {
+                                "synonym_sources": synSources
+                            }
+                        };
+                    },
+                    languages: function() {
+                        return $scope.easyLanguages;
+                    },
+                    static_prefix: function() {
+                        return prefixedHttp($http, '../_p/' + ftsPrefix);
+                    }
+                }
+            })
+
+            modalInstance.result.then(function(result) {
+                for (var resultKey in result) {
+                    $scope.easyMappings.addSynonymSource(resultKey, result[resultKey]);
+                }
+            }, function() {
+              $log.info('Modal dismissed at: ' + new Date());
+            });
+        }
+
+        $scope.deleteSynonymSourceEasy = function(name) {
+            confirmDialog(
+                $scope, $uibModal,
+                "Confirm Delete Synonym Source",
+                "Are you sure you want to delete '" + name + "'?",
+                "Delete Synonym Source"
+            ).then(function success() {
+                $scope.easyMappings.deleteSynonymSource(name);
+            });
         }
 
         $scope.isString = function(value) {

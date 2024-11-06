@@ -10,6 +10,7 @@ import {newEditFields, newEditField} from "./fts_easy_field.js";
 
 function newEasyMappings() {
     var mappings = {};
+    var synonymSources = {};
 
     return {
         collectionNamedInMapping: function() {
@@ -47,6 +48,9 @@ function newEasyMappings() {
                 let collectionName = scopeCollType[1];
                 mappings[collectionName] = newEasyMapping();
                 mappings[collectionName].loadFromMapping(indexMapping.types[typeName]);
+            }
+            if (indexMapping.analysis && indexMapping.analysis.synonym_sources) {
+                synonymSources = indexMapping.analysis.synonym_sources;
             }
         },
         numCollections: function() {
@@ -109,9 +113,27 @@ function newEasyMappings() {
                 indexMapping.index_dynamic = true;
                 indexMapping.docvalues_dynamic = true;
             }
+            if (this.synonymSourcesPresent()) {
+                indexMapping.analysis.synonym_sources = this.getSynonymSources();
+            }
 
             return indexMapping;
-        }
+        },
+        addSynonymSource: function(name, value) {
+            synonymSources[name] = value;
+        },
+        deleteSynonymSource: function(name) {
+            delete synonymSources[name];
+        },
+        getSynonymSources: function() {
+            return synonymSources;
+        },
+        getSynonymSourceNames: function() {
+            return Object.keys(synonymSources);
+        },
+        synonymSourcesPresent: function() {
+            return Object.keys(synonymSources).length > 0;
+        },
     };
 }
 
@@ -146,6 +168,9 @@ function newEasyMapping() {
         }
         if (field.sortFacet) {
             fieldMapping.docvalues = true;
+        }
+        if (field.synonym_source) {
+            fieldMapping.synonym_source = field.synonym_source;
         }
         return fieldMapping;
     };
@@ -398,6 +423,9 @@ function newEasyMapping() {
                 editField.analyzer = field.analyzer;
                 if (field.analyzer == "keyword") {
                     editField.identifier = true;
+                }
+                if (field.synonym_source) {
+                    editField.synonym_source = field.synonym_source;
                 }
             } else if (field.type == "number") {
                 editField.type = "number";

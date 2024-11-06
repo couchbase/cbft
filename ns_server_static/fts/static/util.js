@@ -74,7 +74,8 @@ function bleveNewIndexMapping() {
             "tokenizers": {},
             "token_filters": {},
             "token_maps": {},
-            "date_time_parsers": {}
+            "date_time_parsers": {},
+            "synonym_sources": {},
         },
         "store_dynamic": false,
         "index_dynamic": true,
@@ -315,6 +316,7 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                     angular.isDefined(rv.indexDef.params) &&
                     angular.isDefined(rv.indexDef.params.doc_config) &&
                     angular.isDefined(rv.indexDef.params.mapping)) {
+                    let mapping = rv.indexDef.params.mapping;
                     if (rv.indexDef.params.doc_config.mode.startsWith("scope.collection.")) {
                         let scopeName = $scope.getScopeForIndex(rv.indexDef.params.doc_config.mode, rv.indexDef.params.mapping);
                         if (scopeName.length > 0 && scopeName != $scope.newScopeName) {
@@ -361,6 +363,14 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                         }
                         $scope.scopeSelected = "_default";
                         $scope.collectionsSelected = ["_default"];
+                    }
+                    // Add unique synonym collections from mapping.synonym_sources to the list of collections
+                    if (angular.isDefined(mapping.analysis.synonym_sources)) {
+                        Object.values(mapping.analysis.synonym_sources).forEach(src => {
+                            if (!$scope.collectionsSelected.includes(src.collection)) {
+                                $scope.collectionsSelected.push(src.collection);
+                            }
+                        });
                     }
                 }
             }

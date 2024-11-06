@@ -37,6 +37,8 @@ licenses/APL2.txt.
           <span ng-if="mapping.dynamic">| dynamic</span>
           <span ng-if="mapping.enabled && mapping.default_analyzer">
             | {{mapping.default_analyzer}}</span>
+          <span ng-if="mapping.enabled && mapping.default_synonym_source">
+            | synonym source: <i>{{mapping.default_synonym_source}}</i></span>
           <span ng-if="mapping.enabled && !mapping.dynamic">
             | only index specified fields</span>
         </span>
@@ -85,6 +87,12 @@ licenses/APL2.txt.
                 ng-model="mapping.default_analyzer"
                 ng-options="t as t for t in analyzerNames">
           <option value="">inherit</option>
+        </select>
+        <label>Synonym Source:</label>
+        <select class="mapping_default_analyzer"
+                ng-model="mapping.default_synonym_source"
+                ng-options="t as t for t in synonymSourceNames">
+          <option value="">none</option>
         </select>
       </span>
       <div
@@ -183,6 +191,9 @@ licenses/APL2.txt.
                 <span ng-if="field.analyzer && field.type == 'text'">
                   | {{field.analyzer}}
                 </span>
+                <span ng-if="field.synonym_source && field.type == 'text'">
+                  | synonym source: <i>{{field.synonym_source}}</i>
+                </span>
                 <span ng-if="field.index">| index</span>
                 <span ng-if="field.store">| store</span>
                 <span ng-if="field.include_in_all">| include in <i>_all</i> field</span>
@@ -234,6 +245,13 @@ licenses/APL2.txt.
                 <select ng-model="field.analyzer"
                         ng-options="t as t for t in analyzerNames">
                   <option value="">inherit</option>
+                </select>
+              </label>
+              <label>
+                <span>synonym source</span>
+                <select ng-model="field.synonym_source"
+                        ng-options="t as t for t in synonymSourceNames">
+                  <option value="">none</option>
                 </select>
               </label>
             </div>

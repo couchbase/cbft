@@ -300,6 +300,21 @@
                     </div>
                   </div>
                 </div>
+                <div ng-if="editField.type == 'text'" class="formrow">
+                  <label>Synonym Source</label>
+                  <div class="row">
+                    <div class="flex-grow-1 column">
+                      <select ng-model="editField.synonym_source" ng-options="t for t in easyMappings.getSynonymSourceNames()">
+                          <option value="">None</option>
+                      </select>
+                    </div>
+                    <div class="column">
+                      <button class="outline" ng-click="addSynonymSourceEasy()">
+                        Add Synonym Source
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
                   <input
                       type="checkbox" id="field-is-stored"
@@ -492,6 +507,30 @@
           </section>
           <div ng-if="easyMapping.numFields() < 1" class="zero-content">
             Select a field and configure the details above to map a field in this collection.
+          </div>
+        </div>
+        <div ng-if="easyMappings.synonymSourcesPresent()">
+          <h4>Synonym Sources</h4>
+          <div class="cbui-table">
+            <div class="cbui-table-header padding-left">
+              <span class="cbui-table-cell">name</span>
+              <span class="cbui-table-cell">collection</span>
+              <span class="cbui-table-cell">analyzer</span>
+              <span class="cbui-table-cell"></span>
+            </div>
+            <section class="has-hover" ng-repeat="(synonymSourceName, synonymSource) in easyMappings.getSynonymSources()">
+              <div class="cbui-tablerow padding-left"
+                   ng-click="editSynonymSourceEasy(synonymSourceName, newSourceName, newScopeName, synonymSource.collection, synonymSource.analyzer)">
+                <div class="cbui-table-cell">{{synonymSourceName}}</div>
+                <div class="cbui-table-cell">{{synonymSource.collection}}</div>
+                <div class="cbui-table-cell">{{synonymSource.analyzer}}</div>
+                <span class="cbui-table-cell text-left">
+                  <a ng-click="deleteSynonymSourceEasy(synonymSourceName)">
+                    Delete
+                  </a>
+                </span>
+              </div>
+            </section>
           </div>
         </div>
       </div>

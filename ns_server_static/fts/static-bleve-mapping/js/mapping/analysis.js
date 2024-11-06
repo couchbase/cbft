@@ -18,6 +18,7 @@ import tokenfilterTemplate from '../../partials/analysis/tokenfilter.html';
 import datetimeparserTemplate from '../../partials/analysis/datetimeparser.html';
 import testAnalyzerTemplate from '../../partials/analysis/test_analyzer.html';
 import documentfilterTemplate from '../../partials/analysis/documentfilter.html';
+import synonymsourceTemplate from '../../partials/analysis/synonymsource.html';
 
 export default BleveAnalysisCtrl;
 BleveAnalysisCtrl.$inject = ["$scope", "$http", "$log", "$uibModal"];
@@ -760,5 +761,77 @@ function BleveAnalysisCtrl($scope, $http, $log, $uibModal) {
             return true;
         }
         return Object.keys(obj).length === 0;
+    };
+
+    // synonym sources
+
+    $scope.newSynonymSource = function() {
+        return $scope.editSynonymSource("", {
+        });
+    };
+
+    $scope.editSynonymSource = function(name, value, viewOnlyIn) {
+        var viewOnlyModal = $scope.viewOnlyModal = viewOnlyIn || viewOnly;
+        var modalInstance = $uibModal.open({
+          scope: $scope,
+          animation: $scope.animationsEnabled,
+          template: synonymsourceTemplate,
+          controller: 'BleveSynonymSourceModalCtrl',
+          resolve: {
+            name: function() {
+                return name;
+            },
+            value: function() {
+                return value;
+            },
+            mapping: function() {
+                return $scope.indexMapping;
+            },
+            languages: function() {
+                return null;
+            },
+            static_prefix: function() {
+                return $scope.static_prefix;
+            },
+            viewOnlyModal: function() {
+                return viewOnlyModal;
+            }
+          }
+        });
+
+        modalInstance.result.then(function(result) {
+            $scope.viewOnlyModal = false;
+            // add this result to the mapping
+            for (var resultKey in result) {
+                if (name !== "" && resultKey != name) {
+                    // remove the old name
+                    delete $scope.indexMapping.analysis.synonym_sources[name];
+                }
+                $scope.indexMapping.analysis.synonym_sources[resultKey] =
+                    result[resultKey];
+
+                // reload available synonym sources
+                var lan =
+                    $scope.loadSynonymSources ||
+                    $scope.$parent.loadSynonymSources;
+                if (lan) {
+                    lan();
+                }
+            }
+        }, function() {
+          $scope.viewOnlyModal = false;
+          $log.info('Modal dismissed at: ' + new Date());
+        });
+    };
+
+    $scope.deleteSynonymSource = function(name) {
+        confirmDialog(
+            $scope, $uibModal,
+            "Confirm Delete Synonym Source",
+            "Are you sure you want to delete '" + name + "'?",
+            "Delete Synonym Source"
+        ).then(function success() {
+            delete $scope.indexMapping.analysis.synonym_sources[name]
+        });
     };
 }

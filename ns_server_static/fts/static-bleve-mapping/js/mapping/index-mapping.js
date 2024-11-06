@@ -39,6 +39,8 @@ function initBleveIndexMappingController(
         indexMapping.analysis.token_maps || {};
     indexMapping.analysis.date_time_parsers =
         indexMapping.analysis.date_time_parsers || {};
+    indexMapping.analysis.synonym_sources =
+        indexMapping.analysis.synonym_sources || {};
 
     if (indexMapping["default_mapping"]) {
         indexMapping.types[indexMapping.defaultMappingKey] = indexMapping["default_mapping"];
@@ -84,6 +86,21 @@ function initBleveIndexMappingController(
     };
     if (options.dateTimeParserNames == null || options.dateTimeLayoutStyles == null) {
         $scope.loadDatetimeParserNames();
+    }
+
+    $scope.synonymSourceNames = options.synonymSourceNames || [];
+    $scope.loadSynonymSources = function() {
+        $http.post('/api/_synonymSources', $scope.indexMappingResult()).
+        then(function(response) {
+            var data = response.data;
+            $scope.synonymSourceNames = data.synonym_sources;
+        }, function(response) {
+            var data = response.data;
+            $scope.errorMessage = data;
+        });
+    };
+    if (options.synonymSourceNames == null) {
+        $scope.loadSynonymSources();
     }
 
     // ------------------------------------------------

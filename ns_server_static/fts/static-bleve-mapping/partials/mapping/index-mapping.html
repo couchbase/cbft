@@ -73,6 +73,19 @@ licenses/APL2.txt.
       <div ng-include src="static_prefix + '/partials/analysis/datetimeparsers.html'"></div>
     </div>
 
+    <!-- SYNONYM SOURCES *********************************** -->
+    <div class="row min-height-2 margin-bottom-half">
+      <label
+        class="disclosure"
+        ng-class="{disclosed : showSynonymSource}"
+        ng-click="showSynonymSource = !showSynonymSource">
+        Synonym Sources
+      </label>
+    </div>
+    <div ng-show="showSynonymSource" class="indent-1 margin-bottom1">
+      <div ng-include src="static_prefix + '/partials/analysis/synonymsources.html'"></div>
+    </div>
+
     <!-- ADVANCED SETTINGS *********************************** -->
     <div class="min-height-2 margin-bottom-half">
       <label
@@ -102,6 +115,14 @@ licenses/APL2.txt.
         <select ng-disabled="viewOnly"
                 ng-model="indexMapping.default_datetime_parser"
                 ng-options="t as t for t in dateTimeParserNames">
+        </select>
+      </div>
+      <div class="formrow">
+        <label>Default Synonym Source</label>
+        <select ng-disabled="viewOnly"
+                ng-model="indexMapping.default_synonym_source"
+                ng-options="t as t for t in synonymSourceNames">
+          <option value="">none</option>
         </select>
       </div>
       <div class="formrow">

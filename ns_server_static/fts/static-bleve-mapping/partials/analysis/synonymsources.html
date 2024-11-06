@@ -1,0 +1,49 @@
+<!--
+Copyright 2024-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+-->
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>synonym source name</th>
+      <th class="text-right">
+        <button
+          ng-if="!viewOnlyModal && showSynonymSource"
+          ng-click="newSynonymSource()" type="button"
+                                         ng-show="showSynonymSource"
+                                         class="outline"
+                                         style="width:200px;">
+          + Add Synonym Source
+        </button>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr ng-repeat="(aname,aval) in indexMapping.analysis.synonym_sources">
+      <td><a ng-click="editSynonymSource(aname, aval, true)">{{aname}}</a></td>
+      <td class="controls">
+        <a href=""
+           ng-if="!viewOnlyModal"
+           ng-click="editSynonymSource(aname, aval)">
+          Edit
+        </a>
+        <a href=""
+           ng-if="!viewOnlyModal"
+           ng-click="deleteSynonymSource(aname)">
+          Delete
+        </a>
+      </td>
+    </tr>
+    <tr ng-show="isObjectEmpty(indexMapping.analysis.synonym_sources)">
+      <td colspan="2">None</td>
+    </tr>
+  </tbody>
+  <tfoot>
+  </tfoot>
+</table>

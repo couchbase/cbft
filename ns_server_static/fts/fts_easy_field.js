@@ -44,6 +44,9 @@ function newEditField() {
                 } else {
                     rv = this.analyzer + " text ";
                 }
+                if (this.synonym_source){
+                    rv += "synonym source: " + this.synonym_source + " ";
+                }
             } else if (this.type == "number") {
                 rv = "number ";
             } else if (this.type == "datetime") {
@@ -51,7 +54,7 @@ function newEditField() {
             } else if (this.type == "geopoint") {
                 rv = "geopoint ";
             } else if (this.type == "geoshape") {
-                    rv = "geoshape ";
+                rv = "geoshape ";
             } else if (this.type == "boolean") {
                 rv = "boolean ";
             } else if (this.type == "IP") {

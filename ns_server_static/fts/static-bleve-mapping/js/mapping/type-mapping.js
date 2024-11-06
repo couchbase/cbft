@@ -291,6 +291,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
         }
         field.date_format = null;
         field.analyzer = null;
+        field.synonym_source = null;
         field.include_in_all = null;
         field.store = null;
         field.include_term_vectors = null;
