@@ -92,8 +92,8 @@ github.com/bits-and-blooms/bitset v1.12.0 h1:U/q1fAF7xXRhFCrhROzIfffYnu+dlS38vCZ
 github.com/bits-and-blooms/bitset v1.12.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/blevesearch/bleve-mapping-ui v0.5.3 h1:ffWVhPwn0w7FNKcbqkRhgCNlq5ucruluDkj/OSBEHPM=
 github.com/blevesearch/bleve-mapping-ui v0.5.3/go.mod h1:D/HnjXhQdlSi0GU/xOWrh0LL/0XfmTSVuJZNQCy/Mqs=
-github.com/blevesearch/bleve/v2 v2.4.3-0.20241104165431-902051d4d471 h1:wuMOEe9QfopI7RdzbTkH1upJeM9+hQg36wSqhPHTD8A=
-github.com/blevesearch/bleve/v2 v2.4.3-0.20241104165431-902051d4d471/go.mod h1:YoCJGV+kc1RiwAjFsww8SuoRMNYXBckMMWZIv6h4qu0=
+github.com/blevesearch/bleve/v2 v2.4.3 h1:XDYj+1prgX84L2Cf+V3ojrOPqXxy0qxyd2uLMmeuD+4=
+github.com/blevesearch/bleve/v2 v2.4.3/go.mod h1:hEPDPrbYw3vyrm5VOa36GyS4bHWuIf4Fflp7460QQXY=
 github.com/blevesearch/bleve_index_api v1.1.12 h1:P4bw9/G/5rulOF7SJ9l4FsDoo7UFJ+5kexNy1RXfegY=
 github.com/blevesearch/bleve_index_api v1.1.12/go.mod h1:PbcwjIcRmjhGbkS/lJCpfgVSMROV6TRubGGAODaK1W8=
 github.com/blevesearch/geo v0.1.20 h1:paaSpu2Ewh/tn5DKn/FB5SzvH0EWupxHEIwbCk/QPqM=
@@ -131,8 +131,8 @@ github.com/blevesearch/zapx/v14 v14.3.10 h1:SG6xlsL+W6YjhX5N3aEiL/2tcWh3DO75Bnz7
 github.com/blevesearch/zapx/v14 v14.3.10/go.mod h1:qqyuR0u230jN1yMmE4FIAuCxmahRQEOehF78m6oTgns=
 github.com/blevesearch/zapx/v15 v15.3.16 h1:Ct3rv7FUJPfPk99TI/OofdC+Kpb4IdyfdMH48sb+FmE=
 github.com/blevesearch/zapx/v15 v15.3.16/go.mod h1:Turk/TNRKj9es7ZpKK95PS7f6D44Y7fAFy8F4LXQtGg=
-github.com/blevesearch/zapx/v16 v16.1.8-0.20241104164502-f19d5f0cdbcb h1:+LkKIOe8vnyxmHLI8iOa8vpv9h46qYait5znwcl7Utg=
-github.com/blevesearch/zapx/v16 v16.1.8-0.20241104164502-f19d5f0cdbcb/go.mod h1:JqQlOqlRVaYDkpLIl3JnKql8u4zKTNlVEa3nLsi0Gn8=
+github.com/blevesearch/zapx/v16 v16.1.8 h1:Bxzpw6YQpFs7UjoCV1+RvDw6fmAT2GZxldwX8b3wVBM=
+github.com/blevesearch/zapx/v16 v16.1.8/go.mod h1:JqQlOqlRVaYDkpLIl3JnKql8u4zKTNlVEa3nLsi0Gn8=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
