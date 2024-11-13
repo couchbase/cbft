@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blevesearch/bleve/v2/analysis"
 	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -61,10 +62,17 @@ func refreshMetaFieldValCache(indexDefs *cbgt.IndexDefs) {
 				" indexName: %v, err: %v", indexDef.Name, err)
 			continue
 		}
-		if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
+		// check if the mapping has synonym sources or is in scope.coll mode
+		var synonymsAvailable bool
+		if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+			synonymsAvailable = im.SynonymCount() > 0
+		}
+		scopeDotCollMode := strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix)
+		// need to validate and refresh the cache if either of the conditions are met
+		if scopeDotCollMode || synonymsAvailable {
 			if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
-					im, false)
+					im, false, scopeDotCollMode)
 				if err != nil {
 					return
 				}
@@ -174,6 +182,23 @@ func scopeCollTypeMapping(in string) (string, string, string) {
 	return scope, collection, typeMapping
 }
 
+func getSynonymCollectionsFromMapping(im *mapping.IndexMappingImpl) []string {
+	if im == nil || im.SynonymCount() == 0 {
+		return nil
+	}
+	uniqueCollections := make(map[string]struct{})
+	rv := make([]string, 0, im.SynonymCount())
+	im.SynonymSourceVisitor(func(name string, s analysis.SynonymSource) error {
+		collectionName := s.Collection()
+		if _, exists := uniqueCollections[collectionName]; !exists {
+			uniqueCollections[collectionName] = struct{}{}
+			rv = append(rv, collectionName)
+		}
+		return nil
+	})
+	return rv
+}
+
 // getScopeCollTypeMappings will return a deduplicated
 // list of collection names when skipMappings is enabled.
 func getScopeCollTypeMappings(im *mapping.IndexMappingImpl,
@@ -222,11 +247,36 @@ func getScopeCollTypeMappings(im *mapping.IndexMappingImpl,
 // validations in the type mappings defined. It also performs
 // - single scope validation across collections
 // - verify scope to collection mapping with kv manifest
+// call only when mode is either scope.collection or when synonym collections available
 func validateScopeCollFromMappings(bucket string,
-	im *mapping.IndexMappingImpl, ignoreCollNotFoundErrs bool) (*Scope, error) {
-	sName, collNames, typeMappings, err := getScopeCollTypeMappings(im, false)
-	if err != nil {
-		return nil, err
+	im *mapping.IndexMappingImpl, ignoreCollNotFoundErrs bool, scopeDotCollMode bool) (*Scope, error) {
+	var sName string
+	var collNames []string
+	var typeMappings []string
+	var err error
+	if scopeDotCollMode {
+		sName, collNames, typeMappings, err = getScopeCollTypeMappings(im, false)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		sName = defaultScopeName
+		collNames = []string{defaultCollName}
+		typeMappings = []string{""}
+	}
+
+	synColls := getSynonymCollectionsFromMapping(im)
+	if len(synColls) > 0 {
+		// ensure the synonym collections are disjoint from the
+		// regular collections.
+		for _, sc := range synColls {
+			for _, c := range collNames {
+				if sc == c {
+					return nil, fmt.Errorf("collection_utils: synonym collection:"+
+						" '%s' cannot be a indexed with a type mapping", sc)
+				}
+			}
+		}
 	}
 
 	manifest, err := GetBucketManifest(bucket)
@@ -234,7 +284,7 @@ func validateScopeCollFromMappings(bucket string,
 		return nil, err
 	}
 
-	rv := &Scope{Collections: make([]Collection, 0, len(collNames))}
+	rv := &Scope{Collections: make([]Collection, 0, len(collNames)+len(synColls))}
 	for _, scope := range manifest.Scopes {
 		if scope.Name == sName {
 			rv.Name = scope.Name
@@ -255,6 +305,24 @@ func validateScopeCollFromMappings(bucket string,
 					return nil, fmt.Errorf("collection_utils: collection:"+
 						" '%s' doesn't belong to scope: '%s' in bucket: '%s'",
 						collNames[i], sName, bucket)
+				}
+			}
+		OUTER2:
+			for i := range synColls {
+				for _, collection := range scope.Collections {
+					if collection.Name == synColls[i] {
+						rv.Collections = append(rv.Collections, Collection{
+							Uid:       collection.Uid,
+							Name:      collection.Name,
+							isSynonym: true,
+						})
+						continue OUTER2
+					}
+				}
+				if !ignoreCollNotFoundErrs {
+					return nil, fmt.Errorf("collection_utils: synonym collection:"+
+						" '%s' doesn't belong to scope: '%s' in bucket: '%s'",
+						synColls[i], sName, bucket)
 				}
 			}
 			break
@@ -311,15 +379,28 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 		if err = json.Unmarshal([]byte(indexDef.Params), bp); err != nil {
 			return "", nil, err
 		}
+		var synonymsAvailable bool
+		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+			synonymsAvailable = im.SynonymCount() > 0
+		}
+		scopeDotCollMode := strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix)
 
-		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
+		if scopeDotCollMode || synonymsAvailable {
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				var collectionNames []string
-				scope, collectionNames, _, err := getScopeCollTypeMappings(im, false)
-				if err != nil {
-					return "", nil, err
+				var scope string
+				if scopeDotCollMode {
+					scope, collectionNames, _, err = getScopeCollTypeMappings(im, false)
+					if err != nil {
+						return "", nil, err
+					}
+					if synonymsAvailable {
+						collectionNames = append(collectionNames, getSynonymCollectionsFromMapping(im)...)
+					}
+				} else {
+					scope = defaultScopeName
+					collectionNames = getSynonymCollectionsFromMapping(im)
 				}
-
 				uniqueCollections := map[string]struct{}{}
 				for _, coll := range collectionNames {
 					if _, exists := uniqueCollections[coll]; !exists {

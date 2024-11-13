@@ -33,6 +33,8 @@ type Collection struct {
 	Uid         string `json:"uid"`
 	Name        string `json:"name"`
 	typeMapping string
+	// is true if the collection is a synonym collection
+	isSynonym bool
 }
 
 type Scope struct {

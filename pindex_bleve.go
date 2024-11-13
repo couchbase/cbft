@@ -50,6 +50,7 @@ const (
 	featureVectorSearch       = "vectors"
 	FeatureXattrs             = "xattrs"
 	FeatureIndexCustomFilters = "indexCustomFilters"
+	FeatureSynonyms           = "synonyms"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -572,9 +573,24 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
+		// check if the index definition has a mapping with synonym sources present.
+		var synonymsAvailable bool
+		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+			synonymsAvailable = im.SynonymCount() > 0
+		}
+
+		// check if the cluster supports synonym search
+		if synonymsAvailable && !cbgt.IsFeatureSupportedByCluster(FeatureSynonyms, nodeDefs) {
+			// Synonym Search is NOT supported on this cluster
+			// (lower version or mixed lower version)
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: synonym search " +
+				"not supported in this cluster")
+		}
+
+		scopeDotCollMode := strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix)
 		// figure out the scope/collection details from mappings
 		// and perform the validation checks.
-		if strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix) {
+		if scopeDotCollMode || synonymsAvailable {
 			if !collectionsSupported {
 				return nil, cbgt.NewBadRequestError("PrepareIndex, collections not supported" +
 					" across all nodes in the cluster")
@@ -582,7 +598,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 
 			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
-					im, false)
+					im, false, scopeDotCollMode)
 				if err != nil {
 					return nil, cbgt.NewBadRequestError("%v", err)
 				}
@@ -946,10 +962,16 @@ func parseIndexParams(indexParams string) (
 		}
 	}
 
-	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
+	// check if the index definition has a mapping with synonym sources present.
+	var synonymsAvailable bool
+	if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+		synonymsAvailable = im.SynonymCount() > 0
+	}
+	scopeDotCollMode := strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix)
+	if scopeDotCollMode || synonymsAvailable {
 		if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 			scope, err := validateScopeCollFromMappings(ip.SourceName,
-				im, false)
+				im, false, scopeDotCollMode)
 			if err != nil {
 				return nil, nil, "", "", err
 			}
@@ -1093,7 +1115,7 @@ func RollbackBleve(indexType, indexParams, sourceParams, path string,
 	return nil, destfwd, nil
 }
 
-// To be called ONLY when docConfig.Mode has "scope.collection" prefix
+// To be called ONLY when docConfig.Mode has "scope.collection" prefix or when synonym collections are present.
 func initMetaFieldValCache(indexName, sourceName string,
 	im *mapping.IndexMappingImpl, scope *Scope) map[uint32]*collMetaField {
 	if im == nil {
@@ -1115,9 +1137,10 @@ func initMetaFieldValCache(indexName, sourceName string,
 		}
 		if cmf, ok := rv[uint32(cuid)]; !ok {
 			rv[uint32(cuid)] = &collMetaField{
-				scopeDotColl: scope.Name + "." + coll.Name,
-				typeMappings: []string{coll.typeMapping},
-				value:        encodeCollMetaFieldValue(suid, cuid),
+				scopeDotColl:      scope.Name + "." + coll.Name,
+				typeMappings:      []string{coll.typeMapping},
+				value:             encodeCollMetaFieldValue(suid, cuid),
+				synonymCollection: coll.isSynonym,
 			}
 		} else {
 			cmf.typeMappings = append(cmf.typeMappings, coll.typeMapping)
@@ -1199,7 +1222,14 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 		}
 	}
 
-	if strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix) {
+	// check if the index definition has a mapping with synonym sources present.
+	var synonymsAvailable bool
+	if im, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
+		synonymsAvailable = im.SynonymCount() > 0
+	}
+	scopeDotCollMode := strings.HasPrefix(bleveParams.DocConfig.Mode, ConfigModeCollPrefix)
+
+	if scopeDotCollMode || synonymsAvailable {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
 			buf, err = os.ReadFile(path +
 				string(os.PathSeparator) + "PINDEX_META")
@@ -1216,7 +1246,7 @@ func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
 				return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 			}
 			scope, err := validateScopeCollFromMappings(tmp.SourceName,
-				am, false)
+				am, false, scopeDotCollMode)
 			if err != nil {
 				return nil, nil, fmt.Errorf("bleve: validate scope/collection: %v", err)
 			}
@@ -2328,10 +2358,6 @@ func (t *BleveDestPartition) Close(remove bool) error {
 
 func (t *BleveDestPartition) PrepareFeedParams(partition string,
 	params *cbgt.DCPFeedParams) error {
-	// nothing to be done for bucket based indexes.
-	if !strings.HasPrefix(t.bdest.bleveDocConfig.Mode, ConfigModeCollPrefix) {
-		return nil
-	}
 	// if already set, then return early.
 	if params != nil && params.Scope != "" && len(params.Collections) > 0 {
 		return nil
@@ -2364,9 +2390,20 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		return fmt.Errorf("bleve: parse params: %v", err)
 	}
 
+	// check if the index definition has a mapping with synonym sources present.
+	var synonymsAvailable bool
+	if im, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
+		synonymsAvailable = im.SynonymCount() > 0
+	}
+	scopeDotCollMode := strings.HasPrefix(t.bdest.bleveDocConfig.Mode, ConfigModeCollPrefix)
+
+	if !(scopeDotCollMode || synonymsAvailable) {
+		return nil
+	}
+
 	if im, ok := tmp.Mapping.(*mapping.IndexMappingImpl); ok {
 		scope, err := validateScopeCollFromMappings(in.SourceName,
-			im, true)
+			im, true, scopeDotCollMode)
 		if err != nil {
 			return err
 		}
@@ -2407,7 +2444,14 @@ func (t *BleveDestPartition) dataUpdate(partition string,
 	cbftDoc, key, errv := t.bdest.bleveDocConfig.BuildDocumentEx(key, val,
 		defaultType, extrasType, req, extras)
 
-	erri := t.batch.Index(string(key), cbftDoc)
+	var erri error
+	synColl := cbftDoc.SynonymCollection()
+	synDef := cbftDoc.SynonymDefinition()
+	if synColl != "" && synDef != nil {
+		erri = t.batch.IndexSynonym(string(key), synColl, synDef)
+	} else {
+		erri = t.batch.Index(string(key), cbftDoc)
+	}
 
 	revNeedsUpdate, err := t.updateSeqLOCKED(seq)
 

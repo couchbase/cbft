@@ -253,7 +253,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 						scopeName = sName
 					} else {
 						scope, err := validateScopeCollFromMappings(
-							indexDef.SourceName, im, false)
+							indexDef.SourceName, im, false, true)
 						if err != nil {
 							return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
 								"validation errs: %v", indexDef.Name, err)

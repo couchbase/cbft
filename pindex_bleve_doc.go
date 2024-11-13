@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
@@ -35,8 +36,13 @@ var reservedXattrsKeys = map[string]struct{}{
 type BleveInterface interface{}
 
 type BleveDocument struct {
+	// these fields are populated only for non-synonym documents
 	typ            string
 	BleveInterface `json:""`
+
+	// these fields are populated only for synonym documents
+	synonymCollection string
+	synonymDefinition *bleve.SynonymDefinition
 }
 
 func (c *BleveDocument) Type() string {
@@ -47,10 +53,19 @@ func (c *BleveDocument) SetType(nTyp string) {
 	c.typ = nTyp
 }
 
+func (c *BleveDocument) SynonymCollection() string {
+	return c.synonymCollection
+}
+
+func (c *BleveDocument) SynonymDefinition() *bleve.SynonymDefinition {
+	return c.synonymDefinition
+}
+
 type collMetaField struct {
-	scopeDotColl string
-	typeMappings []string // for multiple mappings for a collection
-	value        string   // _$<scope_id>_$<collection_id>
+	scopeDotColl      string
+	typeMappings      []string // for multiple mappings for a collection
+	value             string   // _$<scope_id>_$<collection_id>
+	synonymCollection bool     // true if this is a synonym collection
 }
 
 type typeForFilter struct {
@@ -259,6 +274,17 @@ func (b *BleveDocumentConfig) BuildDocumentEx(key, val []byte,
 		collectionId = extras[4:8]
 	}
 
+	if cmf != nil && cmf.synonymCollection {
+		key = append(collectionId, key...)
+		synCollName := strings.Split(cmf.scopeDotColl, ".")[1]
+		def := &bleve.SynonymDefinition{}
+		err = json.Unmarshal(val, def)
+		if err != nil {
+			def = &bleve.SynonymDefinition{}
+		}
+		return b.BuildSynonymDocument(def, synCollName), key, err
+	}
+
 	var v map[string]interface{}
 	err = json.Unmarshal(val, &v)
 	if err != nil || v == nil {
@@ -314,6 +340,14 @@ func (b *BleveDocumentConfig) BuildDocumentFromObj(key []byte, v interface{},
 	return &BleveDocument{
 		typ:            b.DetermineType(key, v, defaultType),
 		BleveInterface: v,
+	}
+}
+
+func (b *BleveDocumentConfig) BuildSynonymDocument(def *bleve.SynonymDefinition,
+	coll string) *BleveDocument {
+	return &BleveDocument{
+		synonymDefinition: def,
+		synonymCollection: coll,
 	}
 }
 

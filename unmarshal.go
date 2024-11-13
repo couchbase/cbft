@@ -671,6 +671,18 @@ func parsePreSearchData(input []byte) (map[string]interface{}, error) {
 				rv = make(map[string]interface{})
 			}
 			rv[search.KnnPreSearchDataKey] = value
+		case search.SynonymPreSearchDataKey:
+			var value search.FieldTermSynonymMap
+			if v != nil {
+				err := jsoniter.Unmarshal(v, &value)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if rv == nil {
+				rv = make(map[string]interface{})
+			}
+			rv[search.SynonymPreSearchDataKey] = value
 		}
 	}
 	return rv, nil
