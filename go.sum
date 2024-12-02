@@ -94,6 +94,8 @@ github.com/blevesearch/bleve-mapping-ui v0.5.3 h1:ffWVhPwn0w7FNKcbqkRhgCNlq5ucru
 github.com/blevesearch/bleve-mapping-ui v0.5.3/go.mod h1:D/HnjXhQdlSi0GU/xOWrh0LL/0XfmTSVuJZNQCy/Mqs=
 github.com/blevesearch/bleve/v2 v2.4.4-0.20241121084719-60489d601219 h1:2nakG8wCK4BaTxRgFFMbqRs54Y0trz4JAOb7mLC/XbE=
 github.com/blevesearch/bleve/v2 v2.4.4-0.20241121084719-60489d601219/go.mod h1:cPcp2i6by9ijaBPvtIGo6hVuSoQRAVOnmWYmh6czz+M=
+github.com/blevesearch/bleve/v2 v2.4.4-0.20241202120754-b3c74dd88cdf h1:fFyIuSE4MV06D2dd/zQGLV2Fma3DzOMeAlnFwVkgSng=
+github.com/blevesearch/bleve/v2 v2.4.4-0.20241202120754-b3c74dd88cdf/go.mod h1:A7gjtZ2F7UdbJA93kLiKxhzdCGttoZ62n6rAe/iNxcA=
 github.com/blevesearch/bleve_index_api v1.1.13 h1:+nrA6oRJr85aCPyqaeZtsruObwKojutfonHJin/BP48=
 github.com/blevesearch/bleve_index_api v1.1.13/go.mod h1:PbcwjIcRmjhGbkS/lJCpfgVSMROV6TRubGGAODaK1W8=
 github.com/blevesearch/geo v0.1.20 h1:paaSpu2Ewh/tn5DKn/FB5SzvH0EWupxHEIwbCk/QPqM=
@@ -133,6 +135,8 @@ github.com/blevesearch/zapx/v15 v15.3.16 h1:Ct3rv7FUJPfPk99TI/OofdC+Kpb4IdyfdMH4
 github.com/blevesearch/zapx/v15 v15.3.16/go.mod h1:Turk/TNRKj9es7ZpKK95PS7f6D44Y7fAFy8F4LXQtGg=
 github.com/blevesearch/zapx/v16 v16.1.9-0.20241120170816-85db80035af2 h1:+RX9SM7KO7q91E7rFj4NARSsAhKj2EbvdWfzX+ihg/w=
 github.com/blevesearch/zapx/v16 v16.1.9-0.20241120170816-85db80035af2/go.mod h1:zuxVgVaLZ0g4lZvrv06xDc24N6nLCOzXYHVkXI7LMHM=
+github.com/blevesearch/zapx/v16 v16.1.9-0.20241202063052-60ebc9a97954 h1:MiW4//cq4F/oxY41jSMJifeIdxq02tqAZQouFVeN+48=
+github.com/blevesearch/zapx/v16 v16.1.9-0.20241202063052-60ebc9a97954/go.mod h1:zuxVgVaLZ0g4lZvrv06xDc24N6nLCOzXYHVkXI7LMHM=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
