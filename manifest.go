@@ -90,7 +90,8 @@ func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error
 func removeBucketFromManifestCache(bucket string) {
 	manifestsCache.m.Lock()
 	delete(manifestsCache.mCache, bucket)
-	if len(manifestsCache.mCache) == 0 && manifestsCache.monitorRunning {
+	if len(manifestsCache.mCache) == 0 && manifestsCache.monitorRunning &&
+		len(manifestsCache.stopCh) == 0 {
 		manifestsCache.stopCh <- struct{}{}
 		manifestsCache.once = sync.Once{}
 		manifestsCache.monitorRunning = false
