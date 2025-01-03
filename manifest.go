@@ -25,7 +25,7 @@ var manifestsCache *manifestCache
 func init() {
 	manifestsCache = &manifestCache{
 		mCache: make(map[string]*Manifest, 10),
-		stopCh: make(chan struct{}),
+		stopCh: make(chan struct{}, 1),
 	}
 }
 
