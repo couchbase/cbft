@@ -346,7 +346,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.FeatureVectorSearchSupport() +
 		"," + cbft.FeatureXattrs +
 		"," + cbft.FeatureIndexCustomFilters +
-		"," + cbft.FeatureSynonyms
+		"," + cbft.FeatureSynonyms +
+		"," + cbft.FeatureBM25Scoring
 
 	extrasMap["version-cbft.app"] = version
 	extrasMap["version-cbft.lib"] = cbft.VERSION

@@ -71,6 +71,15 @@ function initBleveIndexMappingController(
         $scope.loadAnalyzerNames();
     }
 
+    $scope.scoringModels = options.scoringModels || [];
+    $scope.loadScoringModels = function() {
+        $scope.scoringModels = ["bm25", "tfidf"];
+    };
+
+    if (options.scoringModels == null) {
+        $scope.loadScoringModels();
+    }
+
     $scope.dateTimeParserNames = options.dateTimeParserNames || [];
     $scope.dateTimeLayoutStyles = options.dateTimeLayoutStyles || [];
     $scope.loadDatetimeParserNames = function() {

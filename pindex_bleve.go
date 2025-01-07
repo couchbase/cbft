@@ -35,6 +35,7 @@ import (
 	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	"github.com/blevesearch/bleve/v2/search"
 	"github.com/blevesearch/bleve/v2/search/query"
+	index "github.com/blevesearch/bleve_index_api"
 	ftsHttp "github.com/couchbase/cbft/http"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -51,6 +52,7 @@ const (
 	FeatureXattrs             = "xattrs"
 	FeatureIndexCustomFilters = "indexCustomFilters"
 	FeatureSynonyms           = "synonyms"
+	FeatureBM25Scoring        = "bm25Scoring"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -577,6 +579,16 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		var synonymsAvailable bool
 		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 			synonymsAvailable = im.SynonymCount() > 0
+
+			// check if the overall cluster version supports BM25 scoring for the index
+			if im.ScoringModel == index.BM25Scoring {
+				if !cbgt.IsFeatureSupportedByCluster(FeatureBM25Scoring, nodeDefs) {
+					// BM25 Scoring is NOT supported on this cluster
+					// (lower version or mixed lower version)
+					return nil, cbgt.NewBadRequestError("PrepareIndex, err: BM25 scoring " +
+						"not supported in this cluster")
+				}
+			}
 		}
 
 		// check if the cluster supports synonym search
@@ -1456,7 +1468,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// could return err 400
 	queryCtlParams := cbgt.QueryCtlParams{
 		Ctl: cbgt.QueryCtl{
-			Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
+			GlobalScoring: false,
+			Timeout:       cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 		},
 	}
 
@@ -1581,6 +1594,11 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		search.SearcherStartCallbackFn(bleveCtxSearcherStartCallback))
 	ctx = context.WithValue(ctx, search.SearcherEndCallbackKey,
 		search.SearcherEndCallbackFn(bleveCtxSearcherEndCallback))
+
+	// if the user opted for global scoring, then set the search type
+	if queryCtlParams.Ctl.GlobalScoring {
+		ctx = context.WithValue(ctx, search.SearchTypeKey, search.GlobalScoring)
+	}
 
 	// register with the QuerySupervisor
 	id := querySupervisor.AddEntry(&QuerySupervisorContext{
@@ -3502,6 +3520,35 @@ should have a vbucketUUID of a0b1c2):`,
 	}
 }
 
+func reloadableIndexMapping(bpPrev, bpCur mapping.IndexMapping) bool {
+	mappingPrev, ok := bpPrev.(*mapping.IndexMappingImpl)
+	if !ok {
+		return false
+	}
+	mappingCur, ok := bpCur.(*mapping.IndexMappingImpl)
+	if !ok {
+		return false
+	}
+
+	// check for any changes in the index mapping that will warant re-indexing of
+	// documents.
+	// for eg: change in scoring model currently doesn't require re-indexing since the
+	// underlying data in the index files is not affected. hence we don't need to
+	// check for changes in scoring model here.
+	rv := reflect.DeepEqual(mappingPrev.DefaultAnalyzer, mappingCur.DefaultAnalyzer) &&
+		reflect.DeepEqual(mappingPrev.DefaultType, mappingCur.DefaultType) &&
+		reflect.DeepEqual(mappingPrev.DefaultDateTimeParser, mappingCur.DefaultDateTimeParser) &&
+		reflect.DeepEqual(mappingPrev.DefaultSynonymSource, mappingCur.DefaultSynonymSource) &&
+		reflect.DeepEqual(mappingPrev.DefaultMapping, mappingCur.DefaultMapping) &&
+		reflect.DeepEqual(mappingPrev.DocValuesDynamic, mappingCur.DocValuesDynamic) &&
+		reflect.DeepEqual(mappingPrev.IndexDynamic, mappingCur.IndexDynamic) &&
+		reflect.DeepEqual(mappingPrev.StoreDynamic, mappingCur.StoreDynamic) &&
+		reflect.DeepEqual(mappingPrev.CustomAnalysis, mappingCur.CustomAnalysis) &&
+		reflect.DeepEqual(mappingPrev.TypeMapping, mappingCur.TypeMapping) &&
+		reflect.DeepEqual(mappingPrev.TypeField, mappingCur.TypeField)
+	return rv
+}
+
 func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	bpPrev := NewBleveParams()
 	if len(paramPrev) == 0 {
@@ -3529,7 +3576,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	}
 
 	// check for non store parameter differences
-	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) ||
+	if !reloadableIndexMapping(bpPrev.Mapping, bpCur.Mapping) ||
 		!reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
 		return false
 	}

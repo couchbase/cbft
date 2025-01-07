@@ -64,6 +64,7 @@ function bleveNewIndexMapping() {
             "enabled": true,
             "dynamic": true
         },
+        "scoring_model": "tfidf",
         "default_type": "_default",
         "default_analyzer": "standard",
         "default_datetime_parser": "dateTimeOptional",

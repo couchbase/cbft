@@ -1111,6 +1111,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.indexMapping.analysis.date_time_parsers = {}
             $scope.indexMapping.analysis.synonym_sources = {}
             $scope.indexMapping.analysis.analyzers = {}
+            $scope.indexMapping.scoring_model = "tfidf"
             $scope.indexMapping.default_analyzer = "standard"
             $scope.indexMapping.default_datetime_parser = "dateTimeOptional"
             $scope.indexMapping.default_synonym_source = ""
@@ -1352,6 +1353,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                     if ("default_type" in indexParsed.params.mapping) {
                         $scope.indexMapping.default_type = indexParsed.params.mapping.default_type
+                    }
+
+                    if ("scoring_model" in indexParsed.params.mapping) {
+                        $scope.indexMapping.scoring_model = indexParsed.params.mapping.scoring_model
                     }
 
                     if ("default_analyzer" in indexParsed.params.mapping) {
@@ -1955,6 +1960,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             })
         }
 
+        $scope.loadScoringModels = function() {
+            $scope.scoringModels = ["bm25", "tfidf"];
+        }
+
         $scope.loadDatetimeParserNames = function() {
 
             var http = prefixedHttp($http, '/../_p/' + ftsPrefix)
@@ -1970,6 +1979,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         $scope.loadAnalyzerNames()
         $scope.loadDatetimeParserNames()
         $scope.loadTokenMapNames()
+        $scope.loadScoringModels()
     }
 
     $scope.importIndexJSON = function() {

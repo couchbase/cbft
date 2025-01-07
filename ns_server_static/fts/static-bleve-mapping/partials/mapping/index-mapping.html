@@ -98,6 +98,14 @@ licenses/APL2.txt.
 
     <div ng-show="showAdvanced" class="width-480 indent-1">
       <div class="formrow">
+        <label>Scoring Model</label>
+        <select ng-disabled="viewOnly"
+                ng-model="indexMapping.scoring_model"
+                ng-options="t as t for t in scoringModels">
+        </select>
+
+      </div>
+      <div class="formrow">
         <label>Default Type</label>
         <input type="text"
                ng-disabled="viewOnly"
