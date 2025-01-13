@@ -365,7 +365,8 @@ function blevePIndexInitController(initKind, indexParams, indexUI,
                         $scope.collectionsSelected = ["_default"];
                     }
                     // Add unique synonym collections from mapping.synonym_sources to the list of collections
-                    if (angular.isDefined(mapping.analysis.synonym_sources)) {
+                    if (angular.isDefined(mapping.analysis) &&
+                        angular.isDefined(mapping.analysis.synonym_sources)) {
                         Object.values(mapping.analysis.synonym_sources).forEach(src => {
                             if (!$scope.collectionsSelected.includes(src.collection)) {
                                 $scope.collectionsSelected.push(src.collection);

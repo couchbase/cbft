@@ -493,7 +493,8 @@ function indexViewController($scope, $http, $state, $log, $sce, $location, $uibM
             } else {
                 collectionNames.push("_default");
             }
-            if (angular.isDefined(indexDef.params.mapping.analysis.synonym_sources)) {
+            if (angular.isDefined(indexDef.params.mapping.analysis) &&
+                angular.isDefined(indexDef.params.mapping.analysis.synonym_sources)) {
                 for (let [name, src] of Object.entries(indexDef.params.mapping.analysis.synonym_sources)) {
                     if (collectionNames.indexOf(src.collection) < 0) {
                         collectionNames.push(src.collection);
