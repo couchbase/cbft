@@ -9,7 +9,6 @@ licenses/APL2.txt.
 -->
 
 <div class="resultsContainer">
-
   <div ng-show="results.total_hits">
     <h5 class="resultsTop">
       <span ng-show="resultsSuccessPct && resultsSuccessPct < 100"
@@ -20,14 +19,13 @@ licenses/APL2.txt.
     </h5>
     <div class="pull-right" ng-show="results.hits">
       <div>
-        <button
-                ng-click="setQueryTab(1)"
+        <button ng-click="setQueryTab(1)"
                 ng-style="{'background-color': isQueryTab(1)?'#30619c':''}">
           Results
         </button>
         <button ng-class="{ active: isQueryTab(2) }"
                 ng-click="setQueryTab(2)"
-                ng-show="results.facets"
+                ng-disabled="!results.facets"
                 ng-style="{'background-color': isQueryTab(2)?'#30619c':''}">
           Facets
         </button>
