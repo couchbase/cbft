@@ -1114,7 +1114,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.indexMapping.scoring_model = "tfidf"
             $scope.indexMapping.default_analyzer = "standard"
             $scope.indexMapping.default_datetime_parser = "dateTimeOptional"
-            $scope.indexMapping.default_synonym_source = ""
             $scope.indexMapping.default_field = "_all"
             $scope.indexMapping.default_mapping = {
                 "enabled": true,
@@ -1378,7 +1377,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("default_synonym_source" in indexParsed.params.mapping) {
-                        if ($scope.synSources.includes(indexParsed.params.mapping.default_synonym_source)) {
+                        if ($scope.synonymSourceNames.includes(indexParsed.params.mapping.default_synonym_source)) {
                             $scope.indexMapping.default_synonym_source = indexParsed.params.mapping.default_synonym_source
                         } else {
                             $scope.errorMsg = "Unknown value for default_synonym_source"
