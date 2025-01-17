@@ -197,7 +197,7 @@ func TestDocumentFilter(t *testing.T) {
 			expectedTypes: []string{
 				"_default",
 			},
-			err: "date range filter has invalid order or is not specified",
+			err: "error validating document filter typeA: date range filter has invalid order or is not specified",
 		},
 		{
 			docConfig: `{
@@ -218,7 +218,7 @@ func TestDocumentFilter(t *testing.T) {
 			expectedTypes: []string{
 				"_default",
 			},
-			err: "date range filter must specify field",
+			err: "error validating document filter typeA: date range filter must specify field",
 		},
 		{
 			docConfig: `{
@@ -416,6 +416,102 @@ func TestDocumentFilter(t *testing.T) {
 			},
 			err: "",
 		},
+		{
+			docConfig: `{
+				"mode": "custom",
+				"doc_filter": {
+					"typeA": {
+						"start": "2019/01/01",
+						"end": "2019/12/31",
+						"min": 87,
+						"order": 3
+					}
+				}
+			}`,
+			err: "error parsing document filter typeA: ambiguous document filter detected",
+		},
+		{
+			docConfig: `{
+				"mode": "custom",
+				"doc_filter": {
+					"typeA": {
+						"bool": false,
+						"term": "false",
+						"field": "tester_bool",
+						"order": 0
+					}
+				}
+			}`,
+			err: "error parsing document filter typeA: ambiguous document filter detected",
+		},
+		{
+			docConfig: `{
+				"mode": "custom",
+				"doc_filter": {
+					"typeA": {
+						"conjuncts": [
+							{
+								"start": "2019/01/01",
+								"end": "2019/12/31"
+							},
+							{
+								"min": 87,
+								"max": 99
+							}
+						],
+						"order": 3,
+						"disjuncts": [
+							{
+								"start": "2019/01/01",
+								"end": "2019/12/31"
+							},
+							{
+								"min": 87,
+								"max": 99
+							}
+						]
+					}
+				}
+			}`,
+			err: "error parsing document filter typeA: ambiguous document filter detected",
+		},
+		{
+			docConfig: `{
+				"mode": "custom",
+				"doc_filter": {
+					"typeA": {
+						"max": 233,
+						"disjuncts": [
+							{
+								"start": "2019/01/01",
+								"end": "2019/12/31"
+							}
+						],
+						"order": 0
+					}
+				}
+			}`,
+			err: "error parsing document filter typeA: ambiguous document filter detected",
+		},
+		{
+			docConfig: `{
+				"mode": "custom",
+				"doc_filter": {
+					"typeA": {
+						"max": 233,
+						"min": 87,
+						"disjuncts": [
+							{
+								"start": "2019/01/01",
+								"end": "2019/12/31"
+							}
+						],
+						"order": 0
+					}
+				}
+			}`,
+			err: "error parsing document filter typeA: ambiguous document filter detected",
+		},
 	}
 	for _, test := range tests {
 		params := getDummyParams(test.docConfig)
@@ -428,6 +524,7 @@ func TestDocumentFilter(t *testing.T) {
 			if err.Error() != test.err {
 				t.Fatalf("expected error: '%s', got '%s'", test.err, err.Error())
 			}
+			continue
 		}
 		err = abc.DocConfig.Validate(abc.Mapping)
 		if err != nil {
@@ -437,6 +534,7 @@ func TestDocumentFilter(t *testing.T) {
 			if err.Error() != test.err {
 				t.Fatalf("expected error: '%s', got '%s'", test.err, err.Error())
 			}
+			continue
 		}
 		for i, document := range test.documents {
 			var v interface{}

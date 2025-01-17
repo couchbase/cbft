@@ -540,11 +540,13 @@ func (cf *DisjunctionFilter) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+var ErrAmbiguousDocFilter = fmt.Errorf("ambiguous document filter detected")
+
 // -----------------------------------------------------------------------------
 
-func ParseDocumentFilter(DocumentFilterBytes []byte) (IndexFilter, error) {
+func ParseDocumentFilter(DocumentFilterBytes []byte) (rv IndexFilter, err error) {
 	var tmp map[string]interface{}
-	err := json.Unmarshal(DocumentFilterBytes, &tmp)
+	err = json.Unmarshal(DocumentFilterBytes, &tmp)
 	if err != nil {
 		return nil, err
 	}
@@ -552,52 +554,73 @@ func ParseDocumentFilter(DocumentFilterBytes []byte) (IndexFilter, error) {
 	_, hasStart := tmp["start"]
 	_, hasEnd := tmp["end"]
 	if hasStart || hasEnd {
-		var rv DateRangeFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
+		var df DateRangeFilter
+		err = json.Unmarshal(DocumentFilterBytes, &df)
 		if err != nil {
 			return nil, err
 		}
-		return &rv, nil
+		rv = &df
 	}
 	// check if the filter is a boolean field filter
 	_, hasBool := tmp["bool"]
 	if hasBool {
-		var rv BooleanFieldFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
+		if rv != nil {
+			return nil, ErrAmbiguousDocFilter
+		}
+		var bf BooleanFieldFilter
+		err = json.Unmarshal(DocumentFilterBytes, &bf)
 		if err != nil {
 			return nil, err
 		}
-		return &rv, nil
+		rv = &bf
 	}
 	// check if the filter is a term filter
 	_, hasTerm := tmp["term"]
 	if hasTerm {
-		var rv TermFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
+		if rv != nil {
+			return nil, ErrAmbiguousDocFilter
+		}
+		var tf TermFilter
+		err = json.Unmarshal(DocumentFilterBytes, &tf)
 		if err != nil {
 			return nil, err
 		}
-		return &rv, nil
+		rv = &tf
 	}
+	// a filter can have
+	// - "conjuncts": for conjunction filter
+	// - "disjuncts": for disjunction filter
+	// - only "min" or only "max" or both: a numeric range filter
+	// - "disjuncts" and "min": a disjunction filter with min
+	// ambiguous filters which are invalid:
+	// - "disjuncts" and "min" and "max"
+	// - "conjuncts" and ("min" or "max")
+	// - "conjuncts" and "disjuncts"
 	// check if the filter is a conjunction filter
 	_, hasConjuncts := tmp["conjuncts"]
 	if hasConjuncts {
-		var rv ConjunctionFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
+		if rv != nil {
+			return nil, ErrAmbiguousDocFilter
+		}
+		var cf ConjunctionFilter
+		err = json.Unmarshal(DocumentFilterBytes, &cf)
 		if err != nil {
 			return nil, err
 		}
-		return &rv, nil
+		rv = &cf
 	}
 	// check if the filter is a disjunction filter
 	_, hasDisjuncts := tmp["disjuncts"]
 	if hasDisjuncts {
-		var rv DisjunctionFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
+		if rv != nil {
+			return nil, ErrAmbiguousDocFilter
+		}
+		var df DisjunctionFilter
+		err = json.Unmarshal(DocumentFilterBytes, &df)
 		if err != nil {
 			return nil, err
 		}
-		return &rv, nil
+		rv = &df
 	}
 	// check if the filter is a numeric range filter
 	// after verifying that it is not a disjunction filter
@@ -605,12 +628,28 @@ func ParseDocumentFilter(DocumentFilterBytes []byte) (IndexFilter, error) {
 	_, hasMin := tmp["min"].(float64)
 	_, hasMax := tmp["max"].(float64)
 	if hasMin || hasMax {
-		var rv NumericRangeFilter
-		err := json.Unmarshal(DocumentFilterBytes, &rv)
-		if err != nil {
-			return nil, err
+		if rv != nil {
+			// If a filter is already set, this filter must be a disjunction filter, and has "min" and does
+			// not have "max", otherwise it is ambiguous
+			// Check if the filter is a disjunction filter with min specified
+			if _, isDisjunction := rv.(*DisjunctionFilter); !(isDisjunction && hasMin && !hasMax) {
+				// filter is already set, and is not a disjunction filter with min specified
+				return nil, ErrAmbiguousDocFilter
+			}
+			// If the filter is a disjunction filter with min specified, then it is a valid filter and we must
+			// retain is as is and not overwrite it with a numeric range filter
+		} else {
+			// Parse as NumericRangeFilter if no prior filter
+			var nf NumericRangeFilter
+			err = json.Unmarshal(DocumentFilterBytes, &nf)
+			if err != nil {
+				return nil, err
+			}
+			rv = &nf
 		}
-		return &rv, nil
+	}
+	if rv != nil {
+		return rv, nil
 	}
 	return nil, fmt.Errorf("unknown filter type")
 }

@@ -86,10 +86,10 @@ type BleveDocumentConfig struct {
 
 func (bd *BleveDocumentConfig) Validate(idxMapping mapping.IndexMapping) error {
 	if bd.DocumentFilter != nil {
-		for _, filter := range bd.DocumentFilter {
+		for name, filter := range bd.DocumentFilter {
 			err := filter.Validate(idxMapping, true, 0)
 			if err != nil {
-				return err
+				return fmt.Errorf("error validating document filter %s: %v", name, err)
 			}
 		}
 		keys := make([]string, 0, len(bd.DocumentFilter))
@@ -186,7 +186,7 @@ func (b *BleveDocumentConfig) UnmarshalJSON(data []byte) error {
 			for k, v := range tmp.DocumentFilter {
 				b.DocumentFilter[k], err = ParseDocumentFilter(v)
 				if err != nil {
-					return err
+					return fmt.Errorf("error parsing document filter %s: %v", k, err)
 				}
 			}
 		} else {
