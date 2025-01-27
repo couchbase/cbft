@@ -726,3 +726,8 @@ select.midwide {
   align-items: center;
   max-width: 100%;
 }
+
+.scrollable-container {
+  max-height: 400px;
+  overflow-y: auto;
+}

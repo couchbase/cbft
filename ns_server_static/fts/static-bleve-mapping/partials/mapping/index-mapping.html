@@ -40,7 +40,7 @@ licenses/APL2.txt.
         Analyzers
       </label>
     </div>
-    <div ng-show="showAnalyzer" class="indent-1 margin-bottom1">
+    <div ng-show="showAnalyzer" class="indent-1 margin-bottom1 scrollable-container">
       <div ng-include src="static_prefix + '/partials/analysis/analyzers.html'"></div>
     </div>
 
@@ -54,14 +54,14 @@ licenses/APL2.txt.
       </label>
     </div>
     <div ng-show="showFilters" class="indent-1 margin-bottom1">
-      <div ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
-      <div ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
-      <div ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
-      <div ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
+      <div class="scrollable-container" ng-include src="static_prefix + '/partials/analysis/charfilters.html'"></div>
+      <div class="scrollable-container" ng-include src="static_prefix + '/partials/analysis/tokenizers.html'"></div>
+      <div class="scrollable-container" ng-include src="static_prefix + '/partials/analysis/tokenfilters.html'"></div>
+      <div class="scrollable-container" ng-include src="static_prefix + '/partials/analysis/wordlists.html'"></div>
     </div>
 
     <!-- DATE TIME PARSERS *********************************** -->
-    <div class="row min-height-2 margin-bottom-half">
+    <div class="row min-height-2 margin-bottom-half scrollable-container">
       <label
         class="disclosure"
         ng-class="{disclosed : showDatetimeParser}"
@@ -74,7 +74,7 @@ licenses/APL2.txt.
     </div>
 
     <!-- SYNONYM SOURCES *********************************** -->
-    <div class="row min-height-2 margin-bottom-half">
+    <div class="row min-height-2 margin-bottom-half scrollable-container">
       <label
         class="disclosure"
         ng-class="{disclosed : showSynonymSource}"
