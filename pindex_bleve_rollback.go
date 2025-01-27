@@ -10,7 +10,6 @@ package cbft
 
 import (
 	"fmt"
-	"os"
 	"sync/atomic"
 
 	"github.com/blevesearch/bleve/v2/index/scorch"
@@ -20,15 +19,15 @@ import (
 )
 
 func init() {
-	cbgt.RollbackHook = func(phase cbgt.RollbackPhase, pindex *cbgt.PIndex) (err error) {
+	cbgt.RollbackHook = func(pindex *cbgt.PIndex, phase cbgt.RollbackPhase) (bool, error) {
 		df, ok := pindex.Dest.(*cbgt.DestForwarder)
 		if !ok || df == nil {
-			return fmt.Errorf("rollbackhook: invalid dest for pindex:%s",
+			return false, fmt.Errorf("rollbackhook: invalid dest for pindex:%s",
 				pindex.Name)
 		}
 		bd, ok := df.DestProvider.(*BleveDest)
 		if !ok || bd == nil {
-			return fmt.Errorf("rollbackhook: invalid destProvider for pindex:%s",
+			return false, fmt.Errorf("rollbackhook: invalid destProvider for pindex:%s",
 				pindex.Name)
 		}
 
@@ -37,7 +36,6 @@ func init() {
 
 		switch phase {
 		case cbgt.RollbackInit:
-
 			pindexName := bd.bindex.Name()
 			wasClosed, wasPartial, err := bd.partialRollbackLOCKED()
 
@@ -60,15 +58,16 @@ func init() {
 					// actually start costing the user.
 					RollbackRefund(pindexName, bd.sourceName, 0)
 				}
-				os.RemoveAll(bd.path) // Full rollback to zero.
 			} else {
 				atomic.AddUint64(&TotRollbackPartial, 1)
 			}
+
+			return wasPartial, nil
 		case cbgt.RollbackCompleted:
 			bd.isRollbackInProgress = false
 		}
 
-		return nil
+		return false, nil
 	}
 }
 
