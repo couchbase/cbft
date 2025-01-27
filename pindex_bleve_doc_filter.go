@@ -21,6 +21,7 @@ import (
 	"github.com/blevesearch/bleve/v2/search/query"
 )
 
+const maxNumberOfFilters = 100
 const maxFilterDepth = 5
 const defaultInclusiveLowerBound = true
 const defaultInclusiveUpperBound = false

@@ -86,6 +86,11 @@ type BleveDocumentConfig struct {
 
 func (bd *BleveDocumentConfig) Validate(idxMapping mapping.IndexMapping) error {
 	if bd.DocumentFilter != nil {
+		// check if the number of filters is valid
+		if len(bd.DocumentFilter) == 0 || len(bd.DocumentFilter) > maxNumberOfFilters {
+			return fmt.Errorf("number of filters should be between 1 and %d", maxNumberOfFilters)
+		}
+		// validate each of the filters
 		for name, filter := range bd.DocumentFilter {
 			err := filter.Validate(idxMapping, true, 0)
 			if err != nil {
