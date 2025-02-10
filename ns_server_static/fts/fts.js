@@ -1823,6 +1823,18 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
             }
 
+            if ("enabled" in value) {
+                if (value.enabled == true || value.enabled == false) {
+                    mapping.enabled = value.enabled
+                }
+            }
+
+            if ("dynamic" in value) {
+                if (value.dynamic == true || value.dynamic == false) {
+                    mapping.dynamic = value.dynamic
+                }
+            }
+
             if ("fields" in value) {
                 for (let i = 0; i < value.fields.length; i++) {
 
