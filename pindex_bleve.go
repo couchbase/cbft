@@ -2429,7 +2429,7 @@ func (t *BleveDestPartition) DataDelete(partition string,
 	}
 
 	// need to apply the key decoration with multicollection indexes.
-	if t.bdest.bleveDocConfig.multiCollection() {
+	if t.bdest.bleveDocConfig.multiCollection() && len(extras) >= 8 {
 		key = append(extras[4:8], key...)
 	}
 
@@ -2451,14 +2451,16 @@ func (t *BleveDestPartition) DataDeleteEx(partition string, key []byte, seq uint
 	cas uint64,
 	extrasType cbgt.DestExtrasType, req interface{}) error {
 
-	dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
-	if !ok {
-		return fmt.Errorf("bleve: DataDeleteEx unable to typecast GocbcoreDCPExtras")
+	var extras []byte
+	if extrasType == cbgt.DEST_EXTRAS_TYPE_GOCBCORE_DCP {
+		extras = make([]byte, 8)
+		dcpExtras, ok := req.(cbgt.GocbcoreDCPExtras)
+		if !ok {
+			return fmt.Errorf("bleve: DataDeleteEx unable to typecast GocbcoreDCPExtras")
+		}
+		binary.LittleEndian.PutUint32(extras[0:], dcpExtras.ScopeId)
+		binary.LittleEndian.PutUint32(extras[4:], dcpExtras.CollectionId)
 	}
-
-	extras := make([]byte, 8)
-	binary.LittleEndian.PutUint32(extras[0:], dcpExtras.ScopeId)
-	binary.LittleEndian.PutUint32(extras[4:], dcpExtras.CollectionId)
 
 	return t.DataDelete(partition, key, seq, cas, extrasType, extras)
 }
