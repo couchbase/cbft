@@ -307,6 +307,17 @@
             "index"
         ]
     },
+    "fts_total_synonym_searches": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "Total bleve synonym search operations",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
     "fts_num_files_on_disk": {
         "added": "7.2.0",
         "type": "gauge",

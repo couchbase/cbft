@@ -28,6 +28,7 @@ var prometheusStats = map[string]string{
 	"total_term_searchers":           "counter",
 	"total_term_searchers_finished":  "counter",
 	"total_knn_searches":             "counter",
+	"total_synonym_searches":         "counter",
 	"total_queries_timeout":          "counter",
 	"total_grpc_queries":             "counter",
 	"total_grpc_queries_slow":        "counter",
