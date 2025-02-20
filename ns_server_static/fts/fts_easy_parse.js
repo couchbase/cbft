@@ -27,6 +27,86 @@ function newParsedDocs() {
     }
 }
 
+// Regex matches the IPv4 and IPv6 address formats
+// IPv4:
+// - Four octets separated by periods
+// - Each octet is 0-255
+// IPv6:
+// - Full format, :: shorthand, and IPv4-mapped IPv6
+// - 8 groups of 4 hexadecimal digits separated by colons
+// - IPv4-mapped IPv6: 6 groups of 4 hexadecimal digits separated by colons followed by an IPv4 address
+// - :: shorthand: 0-8 groups of 4 hexadecimal digits separated by colons
+const ipRegex = new RegExp(
+    "^(?:" +
+      // IPv4: Ensures each octet is 0-255
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})" +
+      "|" +
+      // IPv6: Standard full format and shortened forms
+      "([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}" +
+      "|([a-fA-F0-9]{1,4}:){1,7}:" +
+      "|([a-fA-F0-9]{1,4}:){1,6}:[a-fA-F0-9]{1,4}" +
+      "|([a-fA-F0-9]{1,4}:){1,5}(:[a-fA-F0-9]{1,4}){1,2}" +
+      "|([a-fA-F0-9]{1,4}:){1,4}(:[a-fA-F0-9]{1,4}){1,3}" +
+      "|([a-fA-F0-9]{1,4}:){1,3}(:[a-fA-F0-9]{1,4}){1,4}" +
+      "|([a-fA-F0-9]{1,4}:){1,2}(:[a-fA-F0-9]{1,4}){1,5}" +
+      "|[a-fA-F0-9]{1,4}:((:[a-fA-F0-9]{1,4}){1,6})" +
+      "|:((:[a-fA-F0-9]{1,4}){1,7}|:)" +
+      "|([a-fA-F0-9]{1,4}:){1,6}:" +
+      // IPv6 with embedded IPv4
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})" +
+      "|" +
+      // IPv4-Mapped IPv6 (e.g., ::ffff:192.168.1.1)
+      "::ffff:(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\\." +
+      "(?:25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})" +
+    ")$", "i"
+);
+
+function isValidIP(ip) {
+    return ipRegex.test(ip);
+}
+
+// Regex matches the RFC3339 date-time format with optional
+// - fractional part
+// - timezone
+// - space separator between date and time
+// - `T` separator between date and time
+// - `Z` UTC designator
+// - timezone offset with or without `:` separator or Z
+const dateTimeRegex = new RegExp(
+    "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" +                                        // YYYY-MM-DD (Required)
+    "(?:[T ]" +                                                                                 // Optional separator `T` or space
+    "(?:([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])" +                                         // HH:MM:SS (Optional)
+    "(\\.\\d+)?" +                                                                              // Optional fractional seconds
+    "(?:\\s?(Z|[+-](?:0[0-9]|1[0-3]):?[0-5][0-9]|[+-]14:00|[+-]1400))?" +                       // Optional timezone
+    ")?)?$"                                                                                     // Time is optional, but if present, must follow a date
+);
+
+function isValidDateTime(dateTime) {
+    return dateTimeRegex.test(dateTime);
+}
+
+// Regex matches the geopoint in the form of <latitude,longitude>
+// Latitude: -90 to 90
+// Longitude: -180 to 180
+const geoPointRegex = new RegExp(
+    "^\\s*" +                                                               // Allow optional leading whitespace                                                                // Start of either latitude/longitude or geohash match
+    "(-?(?:90(?:\\.0+)?|[1-8]?\\d(?:\\.\\d+)?))\\s*,\\s*" +                 // Latitude: -90 to 90, optional decimals
+    "(-?(?:180(?:\\.0+)?|1[0-7]\\d(?:\\.\\d+)?|\\d{1,2}(?:\\.\\d+)?))" +    // Longitude: -180 to 180, optional decimals
+    "\\s*$"
+);
+
+function isValidGeoPoint(geoPoint) {
+    return geoPointRegex.test(geoPoint);
+}
+
 function parseDocument(doc, xattrs) {
 
     var parseStack = [];
@@ -150,23 +230,48 @@ function parseDocument(doc, xattrs) {
                         return "geoshape"
                     }
                 }
+                // check if the object is a geopoint with "lat" and "lon"/"lng" fields
+                // either the lat field is the first child and the lon/lng field is the second child
+                if (childPath1.includes("lat") && (childPath2.includes("lon") || childPath2.includes("lng"))) {
+                    return "geopoint"
+                }
+                // or the lon/lng field is the first child and the lat field is the second child
+                if (childPath2.includes("lat") && (childPath1.includes("lon") || childPath1.includes("lng"))) {
+                    return "geopoint"
+                }
             }
 
             // check whether the object is a vector
             if (rowTypes[col] === "object") {
                 if (rowPaths[col] in dims) {
                     if (dims[rowPaths[col]] > 1) {
-                        return "vector"
+                        // if the slice is of length 2, consider it is a
+                        // geopoint of the form [lon, lat]
+                        // otherwise, consider it as a vector
+                        return dims[rowPaths[col]] === 2 ? "geopoint" : "vector";
                     }
                 }
             }
 
-            // check whether the object is a vector_base64
+            // check whether the object is a vector_base64, geopoint, IP or datetime
             if (rowTypes[col] === "string") {
-                var vecLen = parseBase64Length(parsedObj[rowPaths[col]])
+                var strToTest = rowValues[col]
+                if (strToTest == null) {
+                    return rowTypes[col];
+                }
+                if (isValidDateTime(strToTest)) {
+                    return "datetime"
+                }
+                if (isValidGeoPoint(strToTest)) {
+                    return "geopoint"
+                }
+                var vecLen = parseBase64Length(strToTest)
                 if (vecLen > 2) {
                     dims[rowPaths[col]] = vecLen
                     return "vector_base64"
+                }
+                if (isValidIP(strToTest)) {
+                    return "IP"
                 }
             }
 

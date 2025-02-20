@@ -2813,6 +2813,10 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                     $scope.editField.type = "geoshape";
                 } else if (valType === "IP") {
                     $scope.editField.type = "IP";
+                } else if (valType === "datetime") {
+                    $scope.editField.type = "datetime";
+                } else if (valType === "geopoint") {
+                    $scope.editField.type = "geopoint";
                 } else if (valType === "vector") {
                     $scope.editField.type = "vector";
                     var dims = parsedDoc.getDims(newRow);

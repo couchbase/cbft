@@ -269,7 +269,7 @@ function newEasyMapping() {
             fieldMapping.include_in_all = true;
         }
         if (field.sortFacet) {
-            fieldMapping.docValues = true;
+            fieldMapping.docvalues = true;
         }
         return fieldMapping;
     };
