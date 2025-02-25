@@ -303,6 +303,7 @@ var statkeys = []string{
 	"total_term_searchers_finished", // per-index stat.
 	"total_knn_searches",            // per-index stat.
 	"total_synonym_searches",        // per-index stat.
+	"index_bgthreads_active",        //per-index stat
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
@@ -1090,6 +1091,7 @@ var scorchStats = map[string]string{
 	"/num_bytes_used_disk_by_root_reclaimable": "num_bytes_used_disk_by_root_reclaimable",
 	"/num_bytes_read_at_query_time":            "num_bytes_read_at_query_time",
 	"/num_bytes_written_at_index_time":         "num_bytes_written_at_index_time",
+	"/index_bgthreads_active":                  "index_bgthreads_active",
 }
 
 func extractScorchStats(sstats, nsIndexStat map[string]interface{},
@@ -1100,6 +1102,26 @@ func extractScorchStats(sstats, nsIndexStat map[string]interface{},
 			updateStat(statname, float64(vuint64), nsIndexStat, aggrIdxStats)
 		} else if fuint64, ok := v.(float64); ok {
 			updateStat(statname, float64(fuint64), nsIndexStat, aggrIdxStats)
+		} else if b, ok := v.(bool); ok {
+			// `index_bgthreads_active` indicates that the partition is still in the process of
+			// reaching a steady state.
+			// at an index level (multiple partitions), `index_bgthreads_active` is an OR
+			// operation of the activity status of all partitions.
+			if statname == "index_bgthreads_active" {
+				oldValue, ok := nsIndexStat["index_bgthreads_active"]
+				if ok {
+					switch oldValue := oldValue.(type) {
+					case float64:
+						val := uint64(oldValue)
+						if b {
+							val = uint64(oldValue) | 1
+						}
+						nsIndexStat["index_bgthreads_active"] = val != 0
+					case bool:
+						nsIndexStat["index_bgthreads_active"] = oldValue || b
+					}
+				}
+			}
 		}
 	}
 
