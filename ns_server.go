@@ -303,7 +303,8 @@ var statkeys = []string{
 	"total_term_searchers_finished", // per-index stat.
 	"total_knn_searches",            // per-index stat.
 	"total_synonym_searches",        // per-index stat.
-	"index_bgthreads_active",        //per-index stat
+	"index_bgthreads_active",        // per-index stat.
+	"total_mutations_filtered",      // per-index stat.
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
@@ -990,6 +991,11 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/synonym_searches")
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("total_synonym_searches", float64(vuint64), nsIndexStat,
+			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/index/total_mutations_filtered")
+	if vuint64, ok := v.(uint64); ok {
+		updateStat("total_mutations_filtered", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
 	}
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/num_plain_text_bytes_indexed")

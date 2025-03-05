@@ -318,6 +318,17 @@
             "index"
         ]
     },
+    "fts_total_mutations_filtered": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "Total number of mutations that qualify for any document filter in an index (in-memory only stat)",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
     "fts_num_files_on_disk": {
         "added": "7.2.0",
         "type": "gauge",
