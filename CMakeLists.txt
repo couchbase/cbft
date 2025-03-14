@@ -83,3 +83,5 @@ AddMetricsMetadata (JSON etc/metrics_metadata.json COMPONENT fts)
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.
 SET (GODEPS_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../godeps/src/github.com")
+
+GoModTidySetup()
