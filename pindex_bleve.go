@@ -702,6 +702,40 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: cosine similarity metric for vectors " +
 				"not supported in this cluster")
 		}
+
+		// setting default values for the number of persister workers and how much
+		// data each worker can handle in memory before flushing to disk.
+		//
+		// these defaults can be overridden by the user in the index definition.
+		// MB-63831 for more details.
+		// For non-vector indexes, we don't need to be aggressive
+		// with the flushing and background merging since the
+		// payload is generally smaller.
+		var numPersisterWorkers = 4
+		var maxSizeInMemoryMergePerWorker = 20 * 1024 * 1024
+		if indexVectorPicture.fields != noVectorFields {
+			// Keeping things a bit more parallelized and
+			// making each worker do the
+			// job on a larger amount of data because
+			// vector payload is generally higher
+			numPersisterWorkers = 8
+			maxSizeInMemoryMergePerWorker = 200 * 1024 * 1024
+		}
+
+		if v, ok := bp.Store["scorchPersisterOptions"].(map[string]interface{}); ok {
+			if v["numPersisterWorkers"] == nil {
+				v["numPersisterWorkers"] = numPersisterWorkers
+			}
+			if v["maxSizeInMemoryMergePerWorker"] == nil {
+				v["maxSizeInMemoryMergePerWorker"] = maxSizeInMemoryMergePerWorker
+			}
+		} else {
+			bp.Store["scorchPersisterOptions"] = map[string]interface{}{
+				"numPersisterWorkers":           numPersisterWorkers,
+				"maxSizeInMemoryMergePerWorker": maxSizeInMemoryMergePerWorker,
+			}
+		}
+
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(
