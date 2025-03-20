@@ -1226,6 +1226,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
                 }
 
+                if ("store" in indexParsed.params) {
+                    $scope.ftsStore = indexParsed.params.store;
+                }
+
                 if ("mapping" in indexParsed.params) {
 
                     if ("analysis" in indexParsed.params.mapping) {
@@ -1409,8 +1413,12 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
             }
 
+            if ("sourceType" in indexParsed) {
+                $scope.newSourceType = indexParsed.sourceType
+            }
+
             if ("sourceParams" in indexParsed) {
-                $scope.newSourceParams = indexParsed.sourceParams;
+                $scope.newSourceParams[$scope.newSourceType] = JSON.stringify(indexParsed.sourceParams);
             }
 
             if ("planParams" in indexParsed) {
