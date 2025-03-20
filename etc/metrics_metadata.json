@@ -272,6 +272,16 @@
         ],
         "uiName": "Search Result Rate"
     },
+    "fts_num_indexes": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Number of search indexes in the cluster"
+    },
+    "fts_num_vector_indexes": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Number of search indexes in the cluster that have vector/vector_base64 fields"
+    },
     "fts_total_term_searchers": {
         "added": "7.2.0",
         "type": "counter",

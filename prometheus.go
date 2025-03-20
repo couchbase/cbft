@@ -92,6 +92,9 @@ var prometheusStats = map[string]string{
 	"num_file_merge_ops": "counter",
 	"num_mem_merge_ops":  "counter",
 
+	"num_indexes":        "gauge",
+	"num_vector_indexes": "gauge",
+
 	"pct_cpu_gc":                     "gauge",
 	"num_bytes_used_ram":             "gauge",
 	"num_bytes_used_ram_c":           "gauge",
