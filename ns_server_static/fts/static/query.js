@@ -162,13 +162,17 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
 
         let timeout = parseInt($scope.timeout) || 0;
         if ($scope.consistencyLevel != "" || Object.keys(v).length > 0 || timeout != 0) {
-            req.ctl = {}
+            if (!angular.isDefined(req.ctl)) {
+                req.ctl = {}
+            }
             if ($scope.consistencyLevel != "") {
-                req.ctl.consistency = {}
+                if (!angular.isDefined(req.ctl.consistency)) {
+                    req.ctl.consistency = {}
+                }
                 req.ctl.consistency["level"] = $scope.consistencyLevel;
             }
             if (Object.keys(v).length > 0) {
-                if (req.ctl.consistency == null) {
+                if (!angular.isDefined(req.ctl.consistency)) {
                     req.ctl.consistency = {}
                 }
                 req.ctl.consistency["vectors"] = v
