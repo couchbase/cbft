@@ -1,12 +1,14 @@
 module github.com/couchbase/cbft
 
-go 1.21
+go 1.23
+
+toolchain go1.23.7
 
 require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.6.0
-	github.com/blevesearch/bleve/v2 v2.4.4-0.20250311051258-dd102de3e3fd
+	github.com/blevesearch/bleve/v2 v2.4.4-0.20250320075922-5040e2d2092a
 	github.com/blevesearch/bleve_index_api v1.2.3
 	github.com/blevesearch/zapx/v11 v11.4.1
 	github.com/blevesearch/zapx/v12 v12.4.1
@@ -31,7 +33,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.1
 	golang.org/x/net v0.24.0
 	golang.org/x/sys v0.29.0
 	golang.org/x/time v0.5.0
@@ -100,11 +102,11 @@ require (
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	go.etcd.io/bbolt v1.3.7 // indirect
+	go.etcd.io/bbolt v1.4.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
