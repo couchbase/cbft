@@ -192,7 +192,7 @@ func getGrpcOpts(hostPort string, certInBytes []byte, clientCert tls.Certificate
 			return nil, fmt.Errorf("grpc_util: failed to append ca certs")
 		}
 		var creds credentials.TransportCredentials
-		if clientAuth != tls.NoClientCert {
+		if clientAuth == tls.RequireAndVerifyClientCert {
 			creds = credentials.NewTLS(&tls.Config{
 				RootCAs:      certPool,
 				Certificates: []tls.Certificate{clientCert},
