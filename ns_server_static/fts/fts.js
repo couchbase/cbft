@@ -1122,6 +1122,10 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
                 }
 
+                if ("store" in indexParsed.params) {
+                    $scope.ftsStore = indexParsed.params.store;
+                }
+
                 if ("mapping" in indexParsed.params) {
 
                     if ("analysis" in indexParsed.params.mapping) {
@@ -1273,8 +1277,12 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
             }
 
+            if ("sourceType" in indexParsed) {
+                $scope.newSourceType = indexParsed.sourceType
+            }
+
             if ("sourceParams" in indexParsed) {
-                $scope.newSourceParams = indexParsed.sourceParams;
+                $scope.newSourceParams[$scope.newSourceType] = JSON.stringify(indexParsed.sourceParams);
             }
 
             if ("planParams" in indexParsed) {
@@ -1642,7 +1650,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.parseMapping = function(name, value, parentMapping) {
-
+            // Identify and attach property or field mapping to parent
             if (parentMapping == null) {
                 $scope.addChildMapping(null)
                 var mapping = $scope.mappings[0]
@@ -1656,6 +1664,58 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
             }
 
+            // flag to identify if the property has only field mappings or if
+            // there is another empty property with the same name
+            var isOnlyField = true
+            if ("enabled" in value) {
+                if (value.enabled == false) {
+                    isOnlyField = false
+                }
+            }
+
+            if ("dynamic" in value) {
+                if (value.dynamic == true) {
+                    isOnlyField = false
+                }
+            }
+
+            if ("default_analyzer" in value || "default_synonym_source" in value) {
+                isOnlyField = false
+            }
+
+            // Empty property mapping with no field
+            if (mapping._kind != "field") {
+                mapping.name = name
+
+                if ("dynamic" in value) {
+                    if (value.dynamic == true || value.dynamic == false) {
+                        mapping.dynamic = value.dynamic
+                    }
+                }
+
+                if ("enabled" in value) {
+                    if (value.enabled == true || value.enabled == false) {
+                        mapping.enabled = value.enabled
+                    }
+                }
+
+                if ("default_analyzer" in value) {
+                    if ($scope.analyzerNames.includes(value.default_analyzer)) {
+                        mapping.default_analyzer = value.default_analyzer
+                    }
+                }
+
+                if ("default_synonym_source" in value) {
+                    if ($scope.synonymSourceNames.includes(value.default_synonym_source)) {
+                        mapping.default_synonym_source = value.default_synonym_source
+                    }
+                }
+
+                $scope.editAttrsDone(mapping, true)
+                isOnlyField = true
+            }
+
+            // Fill in field mapping within property
             if ("fields" in value) {
                 for (let i = 0; i < value.fields.length; i++) {
 
@@ -1729,13 +1789,43 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
 
                     $scope.editAttrsDone(mapping, true)
 
+                    // Initialize next field mapping
                     if (i + 1 < value.fields.length) {
                         $scope.addChildField(parentMapping)
                         mapping = parentMapping.fields[0]
                     }
                 }
-            } else {
+            }
+
+            // Recursively initialize property mappings
+            if ("properties" in value && mapping._kind != "field") {
+                for (const [k, val] of Object.entries(value.properties)) {
+                    $scope.parseMapping(k, val, mapping)
+                }
+            }
+
+            // Add an additional empty property mapping to accomodate changes
+            if (!isOnlyField) {
+                if (parentMapping == null) {
+                    $scope.addChildMapping(null)
+                    var mapping = $scope.mappings[0]
+                } else {
+                    $scope.addChildMapping(parentMapping)
+                    var mapping = parentMapping.mappings[0]
+                }
+
                 mapping.name = name
+                if ("dynamic" in value) {
+                    if (value.dynamic == true || value.dynamic == false) {
+                        mapping.dynamic = value.dynamic
+                    }
+                }
+
+                if ("enabled" in value) {
+                    if (value.enabled == true || value.enabled == false) {
+                        mapping.enabled = value.enabled
+                    }
+                }
 
                 if ("default_analyzer" in value) {
                     if ($scope.analyzerNames.includes(value.default_analyzer)) {
@@ -1744,12 +1834,6 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                 }
 
                 $scope.editAttrsDone(mapping, true)
-            }
-
-            if ("properties" in value && mapping._kind != "field") {
-                for (const [k, val] of Object.entries(value.properties)) {
-                    $scope.parseMapping(k, val, mapping)
-                }
             }
         }
 
