@@ -101,7 +101,7 @@ func basicAuth(username, password string) string {
 
 func getRpcClient(nodeUUID, hostPort string, certInBytes []byte,
 	clientCert tls.Certificate, clientAuth tls.ClientAuthType,
-	clientCertEnabled bool) (pb.SearchServiceClient, error) {
+	shouldUseClientCert bool) (pb.SearchServiceClient, error) {
 	var hostPool []*grpc.ClientConn
 	var initialised bool
 
@@ -110,7 +110,7 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte,
 
 	rpcConnMutex.Lock()
 	if hostPool, initialised = RPCClientConn[key]; !initialised {
-		opts, err := getGrpcOpts(hostPort, certInBytes, clientCert, clientAuth, clientCertEnabled)
+		opts, err := getGrpcOpts(hostPort, certInBytes, clientCert, clientAuth, shouldUseClientCert)
 		if err != nil {
 			rpcConnMutex.Unlock()
 			log.Errorf("grpc_client: getGrpcOpts, host port: %s, err: %v",
@@ -149,7 +149,7 @@ func getRpcClient(nodeUUID, hostPort string, certInBytes []byte,
 }
 
 func getGrpcOpts(hostPort string, certInBytes []byte, clientCert tls.Certificate,
-	clientAuth tls.ClientAuthType, clientCertEnabled bool) ([]grpc.DialOption, error) {
+	clientAuth tls.ClientAuthType, shouldUseClientCert bool) ([]grpc.DialOption, error) {
 	cbUser, cbPasswd, err := cbauth.GetHTTPServiceAuth(hostPort)
 	if err != nil {
 		return nil, fmt.Errorf("grpc_util: cbauth err: %v", err)
@@ -192,7 +192,7 @@ func getGrpcOpts(hostPort string, certInBytes []byte, clientCert tls.Certificate
 			return nil, fmt.Errorf("grpc_util: failed to append ca certs")
 		}
 		var creds credentials.TransportCredentials
-		if clientCertEnabled {
+		if shouldUseClientCert {
 			creds = credentials.NewTLS(&tls.Config{
 				RootCAs:      certPool,
 				Certificates: []tls.Certificate{clientCert},
