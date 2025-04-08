@@ -6,14 +6,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.4.5-0.20250408141756-f97cbececf08
-	github.com/blevesearch/bleve_index_api v1.2.1-0.20250407171239-fd7f57705029
+	github.com/blevesearch/bleve/v2 v2.4.5-0.20250408151029-9a336c211a0f
+	github.com/blevesearch/bleve_index_api v1.1.13-0.20250408143424-7650bf7414fb
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
 	github.com/blevesearch/zapx/v13 v13.3.10
 	github.com/blevesearch/zapx/v14 v14.3.10
 	github.com/blevesearch/zapx/v15 v15.3.16
-	github.com/blevesearch/zapx/v16 v16.1.9-0.20250407172450-d7e1abd94198
+	github.com/blevesearch/zapx/v16 v16.1.9-0.20250408145346-d000edc04c2d
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.10
@@ -58,7 +58,7 @@ require (
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
 	github.com/blevesearch/gtreap v0.1.1 // indirect
 	github.com/blevesearch/mmap-go v1.0.4 // indirect
-	github.com/blevesearch/scorch_segment_api/v2 v2.2.17-0.20250407171917-6fe0debd32b2 // indirect
+	github.com/blevesearch/scorch_segment_api/v2 v2.2.17-0.20250408144238-c77c8b053a92 // indirect
 	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/blevesearch/stempel v0.2.0 // indirect
