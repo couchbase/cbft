@@ -2406,7 +2406,7 @@ function IndexNewCtrlFT($scope, $http, $routeParams,
             andThen();
         }
     }, function(response) {
-        $scope.errorMessage = errorMessage(response.data, response.code);
+        $scope.errorMessage = errorMessage(response.data, response.status);
         $scope.errorMessageFull = response.data;
     });
 }

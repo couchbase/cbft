@@ -26,6 +26,7 @@ import (
 
 	pb "github.com/couchbase/cbft/protobuf"
 	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 
 	"google.golang.org/grpc"
@@ -340,9 +341,18 @@ func (g *GrpcClient) Query(ctx context.Context,
 			return result, nil
 		}
 		g.lastErrBody, _ = MarshalJSON(err)
+		var errMsg error
+		switch g.lastSearchStatus {
+		case http.StatusGatewayTimeout:
+			errMsg = context.DeadlineExceeded
+		case http.StatusTooManyRequests:
+			errMsg = rest.ErrorQueryReqRejected
+		default:
+			errMsg = er
+		}
 		return nil, fmt.Errorf("grpc_client: query got status code: %d,"+
-			" resp: %#v, err: %v",
-			g.lastSearchStatus, result, er)
+			" resp: %#v, err: %w",
+			g.lastSearchStatus, result, errMsg)
 	}
 
 	return result, fmt.Errorf("grpc_client: invalid status code, err: %v", er)

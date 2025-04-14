@@ -1671,23 +1671,26 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 
 			// complete results expected, do not propagate partial results
 			return fmt.Errorf("bleve: results weren't retrieved from some"+
-				" index partitions: %d", len(searchResult.Status.Errors))
+				" index partitions: %d, %w", len(searchResult.Status.Errors),
+				rest.ErrorQueryConsistencyTimeout)
 		}
 
-		if searchResult.Status != nil &&
-			searchResult.Status.Failed == searchResult.Status.Total {
-
-			// query rejected by all pindexes
-			isRejected := true
-			for _, e := range searchResult.Status.Errors {
-				if !strings.Contains(e.Error(), rest.ErrorQueryReqRejected.Error()) {
-					isRejected = false
-					break
+		if status := searchResult.Status; status != nil && status.Failed == status.Total {
+			rejectedCount, timeoutCount := 0, 0
+			for _, err := range status.Errors {
+				switch {
+				case strings.Contains(err.Error(), rest.ErrorQueryReqRejected.Error()):
+					rejectedCount++
+				case strings.Contains(err.Error(), context.DeadlineExceeded.Error()):
+					timeoutCount++
 				}
 			}
-
-			if isRejected {
-				return rest.ErrorQueryReqRejected
+			// Only act if all errors are either rejections or timeouts
+			if rejectedCount+timeoutCount == len(status.Errors) {
+				if rejectedCount > timeoutCount {
+					return rest.ErrorQueryReqRejected
+				}
+				return rest.ErrorQueryReqTimeout
 			}
 		}
 

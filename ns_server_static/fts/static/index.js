@@ -164,7 +164,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
         }, function(response) {
             var data = response.data;
 
-            $scope.errorMessage = errorMessage(data, response.code);
+            $scope.errorMessage = errorMessage(data, response.status);
             $scope.errorMessageFull = data;
         });
     };
@@ -299,7 +299,7 @@ function IndexesCtrl($scope, $http, $routeParams, $log, $sce, $location, $uibMod
                 $http.delete('/api/index/' + name).then(function(response) {
                     $scope.refreshIndexNames();
                 }, function(response) {
-                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessage = errorMessage(response.data, response.status);
                     $scope.errorMessageFull = response.data;
                 });
             });
@@ -407,7 +407,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
                     }, r), {});
             $scope.loadIndexDetails()
         }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessage = errorMessage(response.data, response.status);
             $scope.errorMessageFull = response.data;
         });
 
@@ -496,7 +496,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
                         $location, $log, $sce, $uibModal);
                 }
             }, function(response) {
-                $scope.errorMessage = errorMessage(response.data, response.code);
+                $scope.errorMessage = errorMessage(response.data, response.status);
                 $scope.errorMessageFull = response.data;
             });
         };
@@ -587,7 +587,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
             $scope.indexStatsAgg = aggs;
         }, function(response) {
             $scope.statsRefresh = "error";
-            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessage = errorMessage(response.data, response.status);
             $scope.errorMessageFull = response.data;
         });
     };
@@ -605,7 +605,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
         then(function(response) {
             $scope.successMessage = "Indexed Document: " + id;
         }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessage = errorMessage(response.data, response.status);
             $scope.errorMessageFull = response.data;
         });
     };
@@ -618,7 +618,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
         then(function(response) {
             $scope.successMessage = "Deleted Document: " + id;
         }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessage = errorMessage(response.data, response.status);
             $scope.errorMessageFull = response.data;
         });
     };
@@ -637,7 +637,7 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
                 then(function(response) {
                     $scope.loadIndexDetails();
                 }, function(response) {
-                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessage = errorMessage(response.data, response.status);
                     $scope.errorMessageFull = response.data;
                 });
         });
@@ -842,7 +842,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                     var data = response.data;
                     $scope.indexDefHandler(data.indexDef);
                 }, function(response) {
-                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessage = errorMessage(response.data, response.status);
                     $scope.errorMessageFull = response.data;
                 })
             }
@@ -1001,7 +1001,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                 then(function(response) {
                     $location.path('/indexes/' + indexName);
                 }, function(response) {
-                    $scope.errorMessage = errorMessage(response.data, response.code);
+                    $scope.errorMessage = errorMessage(response.data, response.status);
                     $scope.errorMessageFull = response.data;
                 });
         }
@@ -1025,7 +1025,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                         then(function(response) {
                             $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
                         }, function(response) {
-                            $scope.errorMessage = errorMessage(response.data, response.code);
+                            $scope.errorMessage = errorMessage(response.data, response.status);
                             $scope.errorMessageFull = response.data;
                         });
                 }
@@ -1049,7 +1049,7 @@ function IndexNewCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibMo
                             then(function(response) {
                                 $location.path('/indexes/' + sourceName + '.' + scopeName + '.' + indexName);
                             }, function(response) {
-                                $scope.errorMessage = errorMessage(response.data, response.code);
+                                $scope.errorMessage = errorMessage(response.data, response.status);
                                 $scope.errorMessageFull = response.data;
                             });
                     } else {

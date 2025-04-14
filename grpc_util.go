@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -319,40 +320,40 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 func httpStatusCodes(code codes.Code) int {
 	switch code {
 	case codes.OK:
-		return 200
+		return http.StatusOK
 	case codes.Canceled:
 		return 499
 	case codes.Unknown:
-		return 500
+		return http.StatusInternalServerError
 	case codes.InvalidArgument:
-		return 400
+		return http.StatusBadRequest
 	case codes.DeadlineExceeded:
-		return 504
+		return http.StatusGatewayTimeout
 	case codes.NotFound:
-		return 404
+		return http.StatusNotFound
 	case codes.AlreadyExists:
-		return 409
+		return http.StatusConflict
 	case codes.PermissionDenied:
-		return 403
+		return http.StatusForbidden
 	case codes.ResourceExhausted:
-		return 429
+		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		return 412 // custom override for fts
+		return http.StatusPreconditionFailed // custom override for fts
 	case codes.Aborted:
-		return 409
+		return http.StatusConflict
 	case codes.OutOfRange:
-		return 400
+		return http.StatusBadRequest
 	case codes.Unimplemented:
-		return 501
+		return http.StatusNotImplemented
 	case codes.Internal:
-		return 500
+		return http.StatusInternalServerError
 	case codes.Unavailable:
-		return 503
+		return http.StatusServiceUnavailable
 	case codes.DataLoss:
-		return 500
+		return http.StatusInternalServerError
 	case codes.Unauthenticated:
-		return 401
+		return http.StatusUnauthorized
 	default:
-		return 500
+		return http.StatusInternalServerError
 	}
 }

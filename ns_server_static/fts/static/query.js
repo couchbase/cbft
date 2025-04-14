@@ -277,7 +277,7 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             $scope.queryChanged()
         }, function(response) {
             var data = response.data;
-            var code = response.code;
+            var code = response.status;
             $scope.errorMessageFull = data;
             if (data) {
                 $scope.errorMessage = errorMessage(data, code);
@@ -699,7 +699,7 @@ function queryMonitor($scope, $uibModal, $http){
             }
             sortActiveQueries()
         }, function(response) {
-            $scope.errorMessage = errorMessage(response.data, response.code);
+            $scope.errorMessage = errorMessage(response.data, response.status);
             $scope.errorMessageFull = response.data;
         });
     };
@@ -718,7 +718,7 @@ function queryMonitor($scope, $uibModal, $http){
             then(function(){
                 delete $scope.querySupervisorMap[ID];
             }, function(response){
-                $scope.errorMessage = errorMessage(response.data, response.code);
+                $scope.errorMessage = errorMessage(response.data, response.status);
                 $scope.errorMessageFull = response.data;
             });
         });
