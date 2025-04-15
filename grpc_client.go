@@ -146,7 +146,7 @@ func (g *GrpcClient) SearchInContext(ctx context.Context,
 		searchRequest: req,
 	}
 
-	resultCh := make(chan *bleve.SearchResult)
+	resultCh := make(chan *bleve.SearchResult, 1)
 
 	go func() {
 		rv, err := g.Query(ctx, sr)

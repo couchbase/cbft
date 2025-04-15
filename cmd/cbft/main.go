@@ -169,6 +169,11 @@ func main() {
 		log.Fatalf("main: InitHttpOptions, err: %v", err)
 	}
 
+	err = initGRPCOptions(options)
+	if err != nil {
+		log.Fatalf("main: InitGRPCOptions, err: %v", err)
+	}
+
 	// User may supply a comma-separated list of HOST:PORT values for
 	// http addresss/port listening, but only the first http entry
 	// is used for cbgt node and Cfg registration.
