@@ -387,8 +387,8 @@ function IndexCtrl($scope, $http, $routeParams, $location, $log, $sce, $uibModal
             $scope.nodeDefsByAddr = {}
             $scope.serverGroups = {}
             $scope.nodeAddrsArr = []
-            for (var k in data.nodeDefsWanted.nodeDefs) {
-                var nodeDef = data.nodeDefsWanted.nodeDefs[k]
+            for (var k in data.nodeDefsKnown.nodeDefs) {
+                var nodeDef = data.nodeDefsKnown.nodeDefs[k]
                 $scope.nodeDefsByUUID[nodeDef.uuid] = nodeDef
                 $scope.nodeDefsByAddr[nodeDef.hostPort] = nodeDef
                 if (typeof($scope.serverGroups[nodeDef.container]) === "undefined") {
