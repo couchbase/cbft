@@ -126,23 +126,3 @@ replace github.com/json-iterator/go => github.com/json-iterator/go v0.0.0-201711
 replace golang.org/x/text => golang.org/x/text v0.4.0
 
 replace golang.org/x/crypto => golang.org/x/crypto v0.19.0
-
-replace github.com/couchbase/cbauth => ../goproj/src/github.com/couchbase/cbauth
-
-replace github.com/couchbase/go_json => ../goproj/src/github.com/couchbase/go_json
-
-replace github.com/couchbase/regulator => ../goproj/src/github.com/couchbase/regulator
-
-replace github.com/couchbase/cbftx => ../cbftx
-
-replace github.com/couchbase/hebrew => ../hebrew
-
-replace github.com/couchbase/cbgt => ../cbgt
-
-replace github.com/couchbase/cbft => ./empty
-
-replace github.com/couchbase/go-couchbase => ../goproj/src/github.com/couchbase/go-couchbase
-
-replace github.com/couchbase/gomemcached => ../goproj/src/github.com/couchbase/gomemcached
-
-replace github.com/couchbase/goutils => ../goproj/src/github.com/couchbase/goutils
