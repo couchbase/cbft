@@ -324,14 +324,13 @@ func TestRemapTypeMappings(t *testing.T) {
 		},
 		// allow remap even with a conflict with an existing mapping (overwrite).
 		{
-			typMappings:    createTypeMappings([]string{"scope1.collection1.beer", "scope1.collection2.beer"}),
-			remapRules:     "beer-sample.scope1.collection1:beer-sample.scope1.collection2",
-			bucketName:     "beer-sample",
-			bucketLevel:    false,
+			typMappings:   createTypeMappings([]string{"scope1.collection1.beer", "scope1.collection2.beer"}),
+			remapRules:    "beer-sample.scope1.collection1:beer-sample.scope1.collection2",
+			bucketName:    "beer-sample",
+			bucketLevel:   false,
 			expTypNames:   []string{"scope1.collection2.beer"},
 			expBucketName: "beer-sample",
 		},
-
 	}
 	for i, test := range tests {
 		rmr, err := parseMappingParams(test.remapRules)
