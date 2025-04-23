@@ -216,7 +216,7 @@ func (rp *rpcRequestParser) GetPIndexName() (string, error) {
 
 // returns true if the scatter gather request is a pre-search
 func isPreSearch(ctx context.Context) bool {
-	return extractOptionalHeader(ctx, search.PreSearchKey) == clusterActionScatterGatherPreSearch
+	return extractOptionalHeader(ctx, search.PreSearchKey.String()) == clusterActionScatterGatherPreSearch
 }
 
 func verifyRPCAuth(ctx context.Context, indexName string, req interface{}) error {

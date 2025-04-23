@@ -331,7 +331,7 @@ func (g *GrpcClient) Query(ctx context.Context,
 	// if so add an optional header to the outgoing context
 	if _, ok := ctx.Value(search.PreSearchKey).(bool); ok {
 		nctx = metadata.AppendToOutgoingContext(nctx,
-			search.PreSearchKey, clusterActionScatterGatherPreSearch)
+			search.PreSearchKey.String(), clusterActionScatterGatherPreSearch)
 	}
 
 	result, er := g.SearchRPC(nctx, req, scatterGatherReq)
