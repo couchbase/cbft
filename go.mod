@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.4.5-0.20250408151029-9a336c211a0f
+	github.com/blevesearch/bleve/v2 v2.4.5-0.20250425150105-df801790e6e0
 	github.com/blevesearch/bleve_index_api v1.1.13-0.20250408143424-7650bf7414fb
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
