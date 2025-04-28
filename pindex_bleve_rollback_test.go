@@ -98,7 +98,7 @@ func testHandlersWithOnePartitionPrimaryFeedPartialRollback(t *testing.T,
 				"doc_count":           float64(0),
 				"num_recs_to_persist": float64(0),
 			}
-			err = addPIndexStats(pindex, stats, nil)
+			err = addPIndexStats(pindex, stats, nil, true)
 			if err != nil {
 				t.Errorf("expected nil addPIndexStats err, got: %v", err)
 			}

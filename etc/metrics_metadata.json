@@ -339,6 +339,28 @@
             "index"
         ]
     },
+    "fts_total_queries_to_actives": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "Total number of searches served by the active partitions of an index on a node",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_total_queries_to_replicas": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "Total number of searches served by the replica partitions of an index on a node",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
     "fts_num_files_on_disk": {
         "added": "7.2.0",
         "type": "gauge",

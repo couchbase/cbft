@@ -197,13 +197,14 @@ func (h *IndexNsStatsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	var planPIndexes []*cbgt.PlanPIndex
+	// planPindexName -> planPIndex
+	planPIndexes := make(map[string]*cbgt.PlanPIndex)
 	if rd.planPIndexes != nil {
 		for _, planPIndex := range rd.planPIndexes.PlanPIndexes {
 			if planPIndex.IndexName != indexName {
 				continue
 			}
-			planPIndexes = append(planPIndexes, planPIndex)
+			planPIndexes[planPIndex.Name] = planPIndex
 		}
 	}
 
@@ -305,6 +306,8 @@ var statkeys = []string{
 	"total_synonym_searches",        // per-index stat.
 	"index_bgthreads_active",        // per-index stat.
 	"total_mutations_filtered",      // per-index stat.
+	"total_queries_to_actives",      // per-index stat.
+	"total_queries_to_replicas",     // per-index stat.
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
@@ -428,10 +431,14 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		} else {
 			key = indexDef.SourceName + ":" + indexName
 		}
+		planPIndexes := make(map[string]*cbgt.PlanPIndex)
+		for _, planPIndex := range indexNameToPlanPIndexes[indexName] {
+			planPIndexes[planPIndex.Name] = planPIndex
+		}
 		nsIndexStat, err := gatherIndexStats(
 			mgr,
 			indexDef,
-			indexNameToPlanPIndexes[indexName],
+			planPIndexes,
 			sourceNameToSourcePartitionSeqs,
 			ais,
 		)
@@ -486,7 +493,7 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 func gatherIndexStats(
 	mgr *cbgt.Manager,
 	indexDef *cbgt.IndexDef,
-	planPIndexes []*cbgt.PlanPIndex,
+	planPIndexes map[string]*cbgt.PlanPIndex,
 	sourceNameToSourcePartitionSeqs map[string]map[string]cbgt.UUIDSeq,
 	aggrIdxStats *aggrIndexesStats,
 ) (map[string]interface{}, error) {
@@ -625,8 +632,15 @@ func gatherIndexStats(
 			}
 		}
 
+		selfUUID := mgr.UUID()
+		isActive := true
+		if planPIndex := planPIndexes[pindex.Name]; planPIndex != nil {
+			if node := planPIndex.Nodes[selfUUID]; node != nil && node.Priority != 0 {
+				isActive = false
+			}
+		}
 		// automatically process all the pindex dest stats
-		_ = addPIndexStats(pindex, nsIndexStat, aggrIdxStats)
+		_ = addPIndexStats(pindex, nsIndexStat, aggrIdxStats, isActive)
 		if pindex.Dest != nil {
 			destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder)
 			if !ok {
@@ -901,7 +915,7 @@ func addFeedStats(feed cbgt.Feed, nsIndexStat map[string]interface{}) error {
 }
 
 func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{},
-	aggrIdxStats *aggrIndexesStats) error {
+	aggrIdxStats *aggrIndexesStats, isActive bool) error {
 	if destForwarder, ok := pindex.Dest.(*cbgt.DestForwarder); ok {
 		if bp, ok := destForwarder.DestProvider.(*BleveDest); ok {
 			bpsm, err := bp.StatsMap()
@@ -910,7 +924,7 @@ func addPIndexStats(pindex *cbgt.PIndex, nsIndexStat map[string]interface{},
 			}
 
 			extractFieldStats(bpsm, nsIndexStat)
-			return extractStats(bpsm, nsIndexStat, aggrIdxStats)
+			return extractStats(bpsm, nsIndexStat, aggrIdxStats, isActive)
 		}
 	}
 	return nil
@@ -966,7 +980,7 @@ func updateStat(name string, val float64, nsIndexStat map[string]interface{},
 }
 
 func extractStats(bpsm, nsIndexStat map[string]interface{},
-	aggrIdxStats *aggrIndexesStats) error {
+	aggrIdxStats *aggrIndexesStats, isActive bool) error {
 	// common stats across different index types
 	v := gojson.Get(bpsm, "/DocCount")
 	if vuint64, ok := v.(uint64); ok {
@@ -1012,6 +1026,16 @@ func extractStats(bpsm, nsIndexStat map[string]interface{},
 	if vuint64, ok := v.(uint64); ok {
 		updateStat("num_mem_merge_ops", float64(vuint64), nsIndexStat,
 			aggrIdxStats)
+	}
+	v = gojson.Get(bpsm, "/bleveIndexStats/searches")
+	if vuint64, ok := v.(uint64); ok {
+		if isActive {
+			updateStat("total_queries_to_actives", float64(vuint64), nsIndexStat,
+				aggrIdxStats)
+		} else {
+			updateStat("total_queries_to_replicas", float64(vuint64), nsIndexStat,
+				aggrIdxStats)
+		}
 	}
 
 	v = gojson.Get(bpsm, "/bleveIndexStats/index/kv")

@@ -94,8 +94,8 @@ github.com/bits-and-blooms/bitset v1.22.0 h1:Tquv9S8+SGaS3EhyA+up3FXzmkhxPGjQQCk
 github.com/bits-and-blooms/bitset v1.22.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/blevesearch/bleve-mapping-ui v0.7.0 h1:gcrRWX5vjie2JEu5lgnn6tcwagcDEbD6d9XFkevt4fY=
 github.com/blevesearch/bleve-mapping-ui v0.7.0/go.mod h1:HeY/8LvxDgT8Qt7iqfw0dodA3Z8wAbr1hPgCnQIL5Ec=
-github.com/blevesearch/bleve/v2 v2.5.1-0.20250423172733-aff1eb77effd h1:bhoEs57kq9jF3y4EIK5PeEdZKnoaZ6h055EA+arM0j8=
-github.com/blevesearch/bleve/v2 v2.5.1-0.20250423172733-aff1eb77effd/go.mod h1:ri5XGzB6PlrdlM9s86TNhldfAf2wxZmcTPQpOsSPNIU=
+github.com/blevesearch/bleve/v2 v2.5.1-0.20250428043519-404e188eafe7 h1:sPDLPpmluXc1VnKdJDtND+31Fe28MV8GbkSHF5yIBaw=
+github.com/blevesearch/bleve/v2 v2.5.1-0.20250428043519-404e188eafe7/go.mod h1:ri5XGzB6PlrdlM9s86TNhldfAf2wxZmcTPQpOsSPNIU=
 github.com/blevesearch/bleve_index_api v1.2.8 h1:Y98Pu5/MdlkRyLM0qDHostYo7i+Vv1cDNhqTeR4Sy6Y=
 github.com/blevesearch/bleve_index_api v1.2.8/go.mod h1:rKQDl4u51uwafZxFrPD1R7xFOwKnzZW7s/LSeK4lgo0=
 github.com/blevesearch/geo v0.2.0 h1:f+IE3/C3mGeXDyhtMbWel6BgqBqaOUz43GtWg26GlB0=

@@ -30,7 +30,7 @@ func WaitForPersistence(pindex *cbgt.PIndex, docCount float64) error {
 			"doc_count":           float64(0),
 			"num_recs_to_persist": float64(0),
 		}
-		err := addPIndexStats(pindex, stats, nil)
+		err := addPIndexStats(pindex, stats, nil, true)
 		if err != nil {
 			return fmt.Errorf("expected nil addPIndexStats err, got: %v", err)
 		}
