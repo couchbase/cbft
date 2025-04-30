@@ -35,7 +35,6 @@ import (
 	bleveRegistry "github.com/blevesearch/bleve/v2/registry"
 	"github.com/blevesearch/bleve/v2/search"
 	"github.com/blevesearch/bleve/v2/search/query"
-	index "github.com/blevesearch/bleve_index_api"
 	ftsHttp "github.com/couchbase/cbft/http"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -580,13 +579,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 			synonymsAvailable = im.SynonymCount() > 0
 
-			// check if the overall cluster version supports BM25 scoring for the index
-			if im.ScoringModel == index.BM25Scoring {
+			// check if the overall cluster version supports configuring the scoring model for the index
+			if im.ScoringModel != "" {
 				if !cbgt.IsFeatureSupportedByCluster(FeatureBM25Scoring, nodeDefs) {
-					// BM25 Scoring is NOT supported on this cluster
-					// (lower version or mixed lower version)
-					return nil, cbgt.NewBadRequestError("PrepareIndex, err: BM25 scoring " +
-						"not supported in this cluster")
+					// scoring model is not configurable in this cluster, since other
+					// nodes can panic when they see a scoring model configured for the index
+					return nil, cbgt.NewBadRequestError("PrepareIndex, err: scoring model " +
+						"not configurable in this cluster")
 				}
 			}
 		}
