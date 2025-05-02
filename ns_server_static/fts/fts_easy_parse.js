@@ -209,34 +209,18 @@ function parseDocument(doc, xattrs) {
             return rowPaths[col];
         },
         getType: function (col) {
-            // check whether the object is a nested geojson shape.
-            if (rowTypes[col] === "object" &&
-                col < rowPaths.length - 2 && col < rowTypes.length - 2) {
-
-                var childPath1 = rowPaths[col + 1].toLowerCase()
-                var childPath2 = rowPaths[col + 2].toLowerCase()
-                var typeField = rowPaths[col] + ".type"
-                var coordField = rowPaths[col] + ".coordinates"
-                var gcField = rowPaths[col] + ".geometries"
-
-                if (childPath1.includes(typeField)) {
-                    if (childPath2.includes(coordField) ||
-                        childPath2.includes(gcField)) {
-                        return "geoshape"
-                    }
-                } else if (childPath2.includes(typeField)) {
-                    if (childPath1.includes(coordField) ||
-                        childPath1.includes(gcField)) {
-                        return "geoshape"
-                    }
+            // check whether the object is a nested geojson shape or a geopoint struct.
+            if (rowTypes[col] === "object") {
+                var obj = rowValues[col] || {};
+                var keys = Object.keys(obj);
+                // geoshape object must have a type and
+                // - coordinates (for basic geoshape)
+                // - geometries (for geometry collection)
+                if (keys.includes("type") && (keys.includes("coordinates") || keys.includes("geometries"))) {
+                    return "geoshape";
                 }
-                // check if the object is a geopoint with "lat" and "lon"/"lng" fields
-                // either the lat field is the first child and the lon/lng field is the second child
-                if (childPath1.includes("lat") && (childPath2.includes("lon") || childPath2.includes("lng"))) {
-                    return "geopoint"
-                }
-                // or the lon/lng field is the first child and the lat field is the second child
-                if (childPath2.includes("lat") && (childPath1.includes("lon") || childPath1.includes("lng"))) {
+                // geopoint object must have lat and lon / lng
+                if (keys.includes("lat") && (keys.includes("lon") || keys.includes("lng"))) {
                     return "geopoint"
                 }
             }
