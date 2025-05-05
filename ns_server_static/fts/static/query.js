@@ -467,9 +467,12 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
                     if (Array.isArray(fieldval)) {
                         // Join array elements with a comma and space, and then escape HTML
                         hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(fieldval.join(', '))];
+                    } else if (fieldval && typeof fieldval === 'object') {
+                        // Handle plain object case using JSON.stringify
+                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(JSON.stringify(fieldval, null, 2))];
                     } else {
-                        // Handle single string case
-                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting(""+fieldval)];
+                        // Handle primitives and other types (string, number, boolean, etc.)
+                        hit.fragments[fv] = [$scope.manualEscapeHtmlExceptHighlighting("" + fieldval)];
                     }
                 }
             }
