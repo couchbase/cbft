@@ -40,6 +40,7 @@ var totGrpcQueryRejectOnNotEnoughQuota uint64
 // SearchService is an implementation for the SearchSrvServer
 // gRPC search interface
 type SearchService struct {
+	pb.UnimplementedSearchServiceServer
 	mgr *cbgt.Manager
 }
 
