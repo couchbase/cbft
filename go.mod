@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.4.5-0.20250224123205-a20efc18549a
+	github.com/blevesearch/bleve/v2 v2.4.5-0.20250506223450-ab3e9605f7b8
 	github.com/blevesearch/bleve_index_api v1.1.12
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
@@ -33,7 +33,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.21.0
-	golang.org/x/sys v0.23.0
+	golang.org/x/sys v0.29.0
 	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.60.1
 )
@@ -101,7 +101,7 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
