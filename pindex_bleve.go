@@ -3559,32 +3559,14 @@ should have a vbucketUUID of a0b1c2):`,
 }
 
 func reloadableIndexMapping(bpPrev, bpCur mapping.IndexMapping) bool {
-	mappingPrev, ok := bpPrev.(*mapping.IndexMappingImpl)
-	if !ok {
-		return false
-	}
-	mappingCur, ok := bpCur.(*mapping.IndexMappingImpl)
-	if !ok {
-		return false
-	}
-
 	// check for any changes in the index mapping that will warant re-indexing of
 	// documents.
-	// for eg: change in scoring model currently doesn't require re-indexing since the
-	// underlying data in the index files is not affected. hence we don't need to
-	// check for changes in scoring model here.
-	rv := reflect.DeepEqual(mappingPrev.DefaultAnalyzer, mappingCur.DefaultAnalyzer) &&
-		reflect.DeepEqual(mappingPrev.DefaultType, mappingCur.DefaultType) &&
-		reflect.DeepEqual(mappingPrev.DefaultDateTimeParser, mappingCur.DefaultDateTimeParser) &&
-		reflect.DeepEqual(mappingPrev.DefaultSynonymSource, mappingCur.DefaultSynonymSource) &&
-		reflect.DeepEqual(mappingPrev.DefaultMapping, mappingCur.DefaultMapping) &&
-		reflect.DeepEqual(mappingPrev.DocValuesDynamic, mappingCur.DocValuesDynamic) &&
-		reflect.DeepEqual(mappingPrev.IndexDynamic, mappingCur.IndexDynamic) &&
-		reflect.DeepEqual(mappingPrev.StoreDynamic, mappingCur.StoreDynamic) &&
-		reflect.DeepEqual(mappingPrev.CustomAnalysis, mappingCur.CustomAnalysis) &&
-		reflect.DeepEqual(mappingPrev.TypeMapping, mappingCur.TypeMapping) &&
-		reflect.DeepEqual(mappingPrev.TypeField, mappingCur.TypeField)
-	return rv
+	// TODO: change in scoring model doesn't require re-indexing since the
+	// underlying data in the index files is not affected. However, implementation
+	// wise it's a little bit more involved as to how the handshake is done between
+	// cbft and bleve when the index mapping changes and the index is just reloaded.
+	// So for now, we'll just rebuild the index when the scoring model is changed.
+	return reflect.DeepEqual(bpPrev, bpCur)
 }
 
 func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
