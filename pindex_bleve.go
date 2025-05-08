@@ -63,8 +63,8 @@ const (
 	// ZapVersion where Collections support was introduced.
 	bleveCollectionsZapVersion = int(15)
 
-	// ZapVersion where Vector support was introduced.
-	bleveVectorZapVersion = int(16)
+	// ZapVersion where Vector and Synonyms support was introduced.
+	bleveVectorSynonymsZapVersion = int(16)
 
 	// blevePreferredZapVersion is the recommended zap version for newer indexes.
 	// This version needs to be bumped to reflect the latest recommended zap
@@ -540,6 +540,9 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		cbgt.IsFeatureSupportedByCluster(featureVectorSearch, nodeDefs)
 	var indexVectorPicture vectorPicture
 
+	synonymSearchSupported := cbgt.IsFeatureSupportedByCluster(FeatureSynonyms, nodeDefs)
+	var synonymsAvailable bool
+
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -575,7 +578,6 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		// check if the index definition has a mapping with synonym sources present.
-		var synonymsAvailable bool
 		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 			synonymsAvailable = im.SynonymCount() > 0
 
@@ -591,7 +593,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		// check if the cluster supports synonym search
-		if synonymsAvailable && !cbgt.IsFeatureSupportedByCluster(FeatureSynonyms, nodeDefs) {
+		if synonymsAvailable && !synonymSearchSupported {
 			// Synonym Search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: synonym search " +
@@ -754,9 +756,9 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"supported", zv)
 			}
 
-			if indexVectorPicture.fields != noVectorFields && zv < bleveVectorZapVersion {
-				// overrride segmentVersion to minimum version needed to support vector mappings
-				versionToUse := bleveVectorZapVersion
+			if ((indexVectorPicture.fields != noVectorFields) || synonymsAvailable) &&
+				zv < bleveVectorSynonymsZapVersion {
+				versionToUse := bleveVectorSynonymsZapVersion
 				if segmentVersionSupported {
 					versionToUse = blevePreferredZapVersion
 				}
@@ -772,8 +774,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
 			bp.Store["segmentVersion"] = blevePreferredZapVersion
-		} else if vectorSearchSupported {
-			bp.Store["segmentVersion"] = bleveVectorZapVersion
+		} else if vectorSearchSupported || synonymSearchSupported {
+			bp.Store["segmentVersion"] = bleveVectorSynonymsZapVersion
 		} else if collectionsSupported {
 			bp.Store["segmentVersion"] = bleveCollectionsZapVersion
 		} else {
