@@ -714,13 +714,17 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// payload is generally smaller.
 		var numPersisterWorkers = 4
 		var maxSizeInMemoryMergePerWorker = 20 * 1024 * 1024
+		var floorSegmentFileSize = 20 * 1024 * 1024
 		if indexVectorPicture.fields != noVectorFields {
-			// Keeping things a bit more parallelized and
-			// making each worker do the
-			// job on a larger amount of data because
-			// vector payload is generally higher
-			numPersisterWorkers = 8
-			maxSizeInMemoryMergePerWorker = 200 * 1024 * 1024
+			// Keeping each worker to do the job on a larger amount of data because
+			// vector payload is generally higher.
+			// the numPersisterWorkers is kept same since we don't want to explode
+			// the number of filesegments created while index build is in progress.
+			maxSizeInMemoryMergePerWorker = 400 * 1024 * 1024
+			// reduce the floor segment size to 1/3 of the in-memory buffer size
+			// since that's roughly the segment size and the merging is less
+			// aggressive when the floor size is reduced.
+			floorSegmentFileSize = maxSizeInMemoryMergePerWorker / 3
 		}
 
 		if v, ok := bp.Store["scorchPersisterOptions"].(map[string]interface{}); ok {
@@ -734,6 +738,16 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			bp.Store["scorchPersisterOptions"] = map[string]interface{}{
 				"numPersisterWorkers":           numPersisterWorkers,
 				"maxSizeInMemoryMergePerWorker": maxSizeInMemoryMergePerWorker,
+			}
+		}
+
+		if v, ok := bp.Store["scorchMergePlanOptions"].(map[string]interface{}); ok {
+			if v["floorSegmentFileSize"] == nil {
+				v["floorSegmentFileSize"] = floorSegmentFileSize
+			}
+		} else {
+			bp.Store["scorchMergePlanOptions"] = map[string]interface{}{
+				"floorSegmentFileSize": floorSegmentFileSize,
 			}
 		}
 
