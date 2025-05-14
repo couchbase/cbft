@@ -1727,8 +1727,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("type" in value.fields[i]) {
-                        if ($scope.fieldTypes.includes(value.fields[0].type)) {
-                            mapping.type = value.fields[0].type
+                        if ($scope.fieldTypes.includes(value.fields[i].type)) {
+                            mapping.type = value.fields[i].type
                         } else {
                             $scope.errorMsg = "Field named '" + name + "' has invalid value for field type"
                             return
@@ -1736,8 +1736,8 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
 
                     if ("analyzer" in value.fields[i] && mapping.type == "text") {
-                        if ($scope.analyzerNames.includes(value.fields[0].analyzer)) {
-                            mapping.analyzer = value.fields[0].analyzer
+                        if ($scope.analyzerNames.includes(value.fields[i].analyzer)) {
+                            mapping.analyzer = value.fields[i].analyzer
                         } else {
                             $scope.errorMsg = "Field named '" + name + "' has invalid value for field analyzer"
                             return
