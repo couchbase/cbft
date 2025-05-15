@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
 	github.com/blevesearch/bleve-mapping-ui v0.7.0
-	github.com/blevesearch/bleve/v2 v2.5.1-0.20250505073346-decc98c41f5a
+	github.com/blevesearch/bleve/v2 v2.5.1
 	github.com/blevesearch/bleve_index_api v1.2.8
 	github.com/blevesearch/zapx/v11 v11.4.2
 	github.com/blevesearch/zapx/v12 v12.4.2
@@ -54,7 +54,7 @@ require (
 	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.22.0 // indirect
-	github.com/blevesearch/geo v0.2.0 // indirect
+	github.com/blevesearch/geo v0.2.3 // indirect
 	github.com/blevesearch/go-faiss v1.0.25 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
