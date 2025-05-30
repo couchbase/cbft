@@ -1,0 +1,780 @@
+openapi: 3.0.3
+info:
+  title: Couchbase Search Statistics API
+  description: |-
+    The Search Statistics REST API is provided by the Search service.
+    This API enables you to get statistics for the Search Service and your Search indexes.
+  version: '7.6'
+
+servers:
+  - url: '{scheme}://{host}:{port}'
+    description: The URL scheme, host, and port are as follows.
+    variables:
+      scheme:
+        default: http
+        description: |-
+          The URL scheme.
+          Use `https` for secure access.
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+        description: The host name or IP address of a node running the Search Service.
+      port:
+        default: "8094"
+        description: |-
+          The Search Service REST port.
+          Use `18094` for secure access.
+        enum:
+          - "8094"
+          - "18094"
+
+paths:
+  /api/nsstats:
+    get:
+      summary: Get Query, Mutation, and Partition Statistics for the Search Service
+      description: |-
+        Gets query, mutation, document, partition, and compaction statistics for the Search Service and any Search indexes.
+
+        This endpoint returns statistics provided by the Cluster Manager.
+        For additional statistics, including detailed partition information, see [Get Indexing and Data Metrics for All Indexes](../fts-rest-indexing/index.html#g-api-stats).
+      operationId: g-api-nsstats
+      responses:
+        '200':
+          description: |-
+            The Search Service returns statistics from the `nsstats` endpoint for the entire cluster, and for each Search index.
+
+            For each Search index, the names of the statistics are prefixed with the bucket name and index name, in the form `BUCKET:INDEX:statistic_name`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/allStats'
+              example:
+                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-200.json'
+        '400':
+          description: |-
+            Object not found.
+            The URI may be malformed.
+        '401':
+          description: |-
+            Unauthorized.
+            Failure to authenticate.
+        '403':
+          description: |-
+            Forbidden.
+            The user authenticates but does not have the appropriate permissions.
+          content:
+            application/json:
+              example:
+                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-403.json'
+      security:
+        - Admin: []
+
+  /api/nsstats/index/{INDEX_NAME}:
+    get:
+      operationId: g-api-nsstats-index-name
+      summary: Get Query, Mutation, and Partition Statistics for an Index
+      description: |-
+        Gets query, mutation, document, partition, and compaction statistics for the Search index specified in the endpoint URL.
+
+        This endpoint returns statistics provided by the Cluster Manager.
+        For additional statistics, including detailed partition information, see [Get Indexing and Data Metrics for an Index](../fts-rest-indexing/index.html#g-api-stats-index-name).
+      parameters:
+        - name: INDEX_NAME
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |-
+            The name of the Search index definition.
+            You must use the fully qualified name for the index, which includes the bucket and scope.
+
+            To view the full, scoped name for an index for use with this endpoint:
+
+            1. Go to the **Search** tab in the Couchbase Server Web Console.
+            2. Point to the **Index Name** for an index.
+      responses:
+        '200':
+          description: |-
+            The Search Service returns statistics from the `nsstats` endpoint for the specified index.
+
+            Note that for a single index, the names of the statistics are not prefixed with the bucket name or index name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/indexStats'
+              example:
+                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-index-name.json'
+      security:
+        - Statistics: []
+
+components:
+  schemas:
+    allStats:
+      title: Service Statistics
+      allOf:
+        - $ref: '#/components/schemas/clusterStats'
+        - $ref: '#/components/schemas/indexStats'
+
+    clusterStats:
+      type: object
+      title: Cluster Statistics
+      description: Statistics for the entire cluster.
+      properties:
+        avg_queries_latency:
+          type: number
+          description: The average latency of all Search queries run on the cluster, in milliseconds.
+        batch_bytes_added:
+          type: integer
+          description: |-
+            The total number of bytes in batches that have not yet been added to the Search index.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+        batch_bytes_removed:
+          type: integer
+          description: |-
+            The total number of bytes in batches that have been added to the Search index.
+
+            Use together with `batch_bytes_added` to understand when indexing operations complete.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+        curr_batches_blocked_by_herder:
+          type: integer
+          description: |-
+            The difference between the number of batches that have been indexed (`batch_bytes_removed`) and batches that have not yet been indexed (`batch_bytes_added`).
+
+            The Search Service blocks batch indexing until there is sufficient memory available on a node.
+
+            This statistic appears on the Server Web Console dashboard as **DCP Batches Blocked**.
+        num_batches_introduced:
+          type: integer
+          description: |-
+            The total number of batches introduced as part of indexing operations.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+        num_bytes_ram_quota:
+          type: integer
+          description: |-
+            The total number of bytes set as the maximum usable memory for the Search Service on the cluster.
+
+            This statistic appears on the Server Web Console dashboard as **RAM Quota for Search**.
+        num_bytes_used_disk:
+          type: integer
+          description: The total number of bytes used on disk by Search indexes in the cluster.
+        num_bytes_used_ram:
+          type: integer
+          description: |-
+            The number of bytes used in memory by the Search Service.
+
+            This statistic appears on the Server Web Console dashboard as **RAM Used by Search**.
+        num_bytes_used_ram_c:
+          type: integer
+          description: |-
+            The number of bytes used in memory by the Search Service's C language processes.
+
+            This amount is included as part of the total number of bytes used in memory, given by the `num_bytes_used_ram` statistic.
+        num_files_on_disk:
+          type: integer
+          description: The total number of files on disk for all Search indexes.
+        num_gocbcore_dcp_agents:
+          type: integer
+          description: |-
+            The total number of Go SDK DCP agents used by the Search Service to establish DCP communication with the Data Service.
+
+            The number of Go SDK DCP agents should be less than or equal to the number of Search index partitions on a node.
+        num_gocbcore_stats_agents:
+          type: integer
+          description: |-
+            The total number of Go SDK agent pairs, used to retrieve statistics from the Data Service, that are present on a node.
+
+            Typically, the Search Service uses one agent pair for each bucket on a node.
+        num_knn_search_requests:
+          type: integer
+          description: The total number of [Vector Search](https://docs.couchbase.com/server/7.6/vector-search/vector-search.html) requests made across all Search indexes in the cluster.
+        pct_cpu_gc:
+          type: number
+          description: |-
+            The percentage of CPU time spent by a Search index in garbage collection.
+            Garbage collection involves cleanup actions like removing unnecessary index entries.
+        pct_used_ram:
+          type: number
+          description: |-
+            The percentage of the available RAM quota used by the Search Service.
+
+            This statistic appears on the Server Web Console dashboard as **Pct RAM Used by Search**.
+        tot_batches_flushed_on_maxops:
+          type: integer
+          description: |-
+            The total number of batches executed due to the batch size being greater than the maximum number of operations per batch.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+            A batch is executed when it's flushed to disk.
+        tot_batches_flushed_on_timer:
+          type: integer
+          description: The total number of batches executed at regular intervals.
+        tot_batches_merged:
+          type: integer
+          description: |-
+            The number of batches that have been merged together before being sent to the disk write queue.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+            A batch is executed when it's flushed to disk.
+        tot_batches_new:
+          type: integer
+          description: |-
+            The number of new batches that have been freshly introduced into the system.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+        tot_bleve_dest_closed:
+          type: integer
+          description: The total number of times a Search index partition closed to new Search requests.
+        tot_bleve_dest_opened:
+          type: integer
+          description: |-
+            The total number of times Search index partitions were created or reopened for new Search requests, or for ingesting data coming in from DCP.
+
+            Opening a Search index partition creates a file lock for concurrent access requests.
+        tot_grpc_listeners_closed:
+          type: integer
+          description: |-
+            The total number of gRPC listeners closed.
+
+            gRPC listeners handle incoming connection requests to the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        tot_grpc_listeners_opened:
+          type: integer
+          description: |-
+            The total number of gRPC listeners opened.
+
+            gRPC listeners handle incoming connection requests to the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        tot_grpc_queryreject_on_memquota:
+          type: integer
+          description: |-
+            The total number of gRPC queries rejected because of the available memory quota for the Search Service being less than the estimated memory required for merging search results from all partitions.
+
+            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        tot_grpcs_listeners_closed:
+          type: integer
+          description: |-
+            The total number of gRPC SSL listeners closed.
+
+            gRPC SSL listeners handle incoming SSL connection requests to the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        tot_grpcs_listeners_opened:
+          type: integer
+          description: |-
+            The total number of gRPC SSL listeners opened.
+
+            gRPC SSL listeners handle incoming SSL connection requests to the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        tot_http_limitlisteners_closed:
+          type: integer
+          description: |-
+            The total number of HTTP limit listeners closed.
+
+            HTTP limit listeners manage limits on incoming HTTP requests to the Search Service.
+        tot_http_limitlisteners_opened:
+          type: integer
+          description: |-
+            The total number of HTTP limit listeners opened.
+
+            HTTP limit listeners manage limits on incoming HTTP requests to the Search Service.
+        tot_https_limitlisteners_closed:
+          type: integer
+          description: |-
+            The total number of HTTPS limit listeners closed.
+
+            HTTPS limit listeners manage limits on incoming HTTPS requests to the Search Service.
+        tot_https_limitlisteners_opened:
+          type: integer
+          description: |-
+            The total number of HTTPS limit listeners opened.
+
+            HTTPS limit listeners manage limits on incoming HTTPS requests to the Search Service.
+        tot_queryreject_on_memquota:
+          type: integer
+          description: |-
+            The total number of Search queries rejected because of the available memory quota for the Search Service being less than the estimated memory required for merging search results from all partitions.
+
+            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+        tot_remote_grpc:
+          type: integer
+          description: |-
+            The total number of remote gRPC requests made to the Search Service.
+
+            A request is remote if it comes from a different node in the cluster.
+        tot_remote_grpc_ssl:
+          type: integer
+          description: |-
+            The total number of gRPC scatter-gather requests made to the Search Service over SSL.
+
+            A request is remote if it comes from a different node in the cluster.
+        tot_remote_grpc_tls:
+          type: integer
+          description: This metric is deprecated.
+        tot_remote_http:
+          type: integer
+          description: |-
+            The total number of remote HTTP requests made to the Search Service.
+
+            A request is remote if it comes from a different node in the cluster.
+
+            Remote HTTP requests are deprecated.
+            Use gRPC requests, instead.
+        tot_remote_http2:
+          type: integer
+          description: |-
+            The total number of remote HTTPS requests made to the Search Service.
+
+            A request is remote if it comes from a different node in the cluster.
+
+            Remote HTTP requests are deprecated.
+            Use gRPC requests, instead.
+        tot_remote_http_ssl:
+          type: integer
+          description: |-
+            The total number of remote HTTP SSL requests made to the Search Service.
+
+            A request is remote if it comes from a different node in the cluster.
+
+            Remote HTTP requests are deprecated.
+            Use gRPC requests, instead.
+        tot_rollback_full:
+          type: integer
+          description: |-
+            The total number of full rollbacks that occurred on a Search index partition.
+
+            The Search Service only maintains a small number of index snapshots at one time.
+
+            If the Search Service loses connection to the Data Service, the Search Service compares rollback sequence numbers when the connection is re-established.
+            If the Search Service's index snapshots are too far ahead of the Data Service's rollback sequence number, the Search Service performs a full rollback operation on documents in the index.
+        tot_rollback_partial:
+          type: integer
+          description: |-
+            The total number of partial rollbacks that occurred on a Search index partition.
+
+            The Search Service only maintains a small number of index snapshots at one time.
+
+            If the Search Service loses connection to the Data Service, the Search Service compares rollback sequence numbers when the connection is re-established.
+            If the Search Service's index snapshots are too far ahead of the Data Service's rollback sequence number, the Search Service performs a partial rollback operation on documents in the index.
+        total_bytes_query_results:
+          type: integer
+          description: |-
+            The size of all results returned for Search queries.
+            This includes the size of all JSON sent.
+        total_create_index_bad_request_error:
+          type: integer
+          description: The total number of bad request errors returned for requests to create new Search indexes on the cluster.
+        total_create_index_internal_server_error:
+          type: integer
+          description: The total number of internal server errors returned for requests to create new Search indexes on the cluster.
+        total_create_index_request:
+          type: integer
+          description: The total number of requests received by the Search Service for creating new Search indexes.
+        total_create_index_request_ok:
+          type: integer
+          description: The total number of requests received by the Search Service for creating new Search indexes that were successful.
+        total_delete_index_bad_request_error:
+          type: integer
+          description: The total number of bad request errors returned for requests to delete Search indexes on the cluster.
+        total_delete_index_internal_server_error:
+          type: integer
+          description: The total number of internal server errors returned for requests to delete Search indexes on the cluster.
+        total_delete_index_request:
+          type: integer
+          description: The total number of requests received by the Search Service to delete Search indexes.
+        total_delete_index_request_ok:
+          type: integer
+          description: The total number of requests received by the Search Service to delete Search indexes that were successful.
+        total_gc:
+          type: integer
+          description: |-
+            The total number of garbage collection events triggered by the Search Service.
+
+            Garbage collection events include removing unnecessary index entries.
+        total_internal_queries:
+          type: integer
+          description: |-
+            The number of internal queries from the coordinating node for a Search query to other nodes running the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+            The coordinating node is the Search node that receives the Search request and scatters it to all other Search index partitions on other nodes.
+            The coordinating node applies filters to the results from all Search index partitions and returns the final result set.
+        total_queries:
+          type: integer
+          description: The total number of Search queries per second across all Search indexes in the cluster.
+        total_queries_bad_request_error:
+          type: integer
+          description: The total number of bad request errors returned for Search queries on the cluster.
+        total_queries_consistency_error:
+          type: integer
+          description: |-
+            The total number of Search queries that encountered consistency errors on the cluster.
+
+            For more information about consistency in Search queries, see [Search Request JSON Properties](https://docs.couchbase.com/server/7.6/search/search-request-params.html#ctl).
+        total_queries_error:
+          type: integer
+          description: The total number of Search queries that encountered an error on the cluster.
+        total_queries_max_result_window_exceeded_error:
+          type: integer
+          description: The total number of Search queries that exceeded the [bleveMaxResultWindow](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-bleveMaxResultWindow.html) setting.
+        total_queries_partial_results_error:
+          type: integer
+          description: |-
+            The total number of Search queries that could only return partial results.
+
+            A Search query can return partial results if it times out before all partitions can respond.
+        total_queries_rejected_by_herder:
+          type: integer
+          description: |-
+            The total number of queries rejected by the Search Service when the memory used approaches or exceeds the quota set for a query.
+
+            For more information about how to set the Search Service's memory quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+
+            This statistic appears on the Server Web Console dashboard as **Rejected Queries**.
+        total_queries_search_in_context_error:
+          type: integer
+          description: |-
+            The total number of Search queries that returned an error when running through the `SearchInContext` API.
+
+            These errors are typically internal server errors.
+        total_queries_slow:
+          type: integer
+          description: |-
+            The total number of Search queries that were added to the slow query log.
+        total_queries_timeout:
+          type: integer
+          description: |-
+            The total number of Search queries that timed out.
+
+            You can set the timeout for a query with the [ctl object](https://docs.couchbase.com/server/7.6/search/search-request-params.html#ctl).
+        total_queries_validation_error:
+          type: integer
+          description: |-
+            The total number of queries that encountered a validation error, when the query request included a `validate` property in the `ctl` object.
+
+            For more information, see the [validate property](https://docs.couchbase.com/server/7.6/search/search-request-params.html#validate).
+        total_request_time:
+          type: integer
+          description: |-
+            The total time, in nanoseconds, spent processing Search queries across the cluster.
+
+    indexStats:
+      type: object
+      title: Index Statistics
+      description: Statistics for a single Search index.
+      # patternProperties:
+      #   '(.*:.*:)?avg_grpc_internal_queries_latency':
+      properties:
+        BUCKET:INDEX:avg_grpc_internal_queries_latency:
+          type: integer
+          description: |-
+            The average time taken for a Search query's scatter-gather requests between the coordinator and other nodes running the Search Service.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+            The coordinator is the Search node that receives the Search request and scatters it to all other Search index partitions on other nodes.
+        BUCKET:INDEX:avg_grpc_queries_latency:
+          type: integer
+          description: |-
+            The average time taken for each Search query that uses gRPC, in milliseconds for the given Search index.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+        BUCKET:INDEX:avg_internal_queries_latency:
+          type: integer
+          description: The average latency, in milliseconds, for inter-node queries for the given Search index.
+        BUCKET:INDEX:avg_queries_latency:
+          type: integer
+          description: |-
+            The average latency, in milliseconds, for all Search queries on the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Query Latency**.
+        BUCKET:INDEX:doc_count:
+          type: integer
+          description: |-
+            The total number of documents in the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Docs**.
+        BUCKET:INDEX:last_access_time:
+          type: string
+          format: date-time
+          description: The last date and time that a query ran against the given Search index.
+        BUCKET:INDEX:num_bytes_read_at_query_time:
+          type: integer
+          description: |-
+            The total number of bytes read by all queries against the given Search index.
+        BUCKET:INDEX:num_bytes_used_disk:
+          type: integer
+          description: |-
+            The total number of bytes used on disk by the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Disk Size**.
+        BUCKET:INDEX:num_bytes_used_disk_by_root:
+          type: integer
+          description: |-
+            The total number of bytes used on disk by the root segment of the given Search index.
+
+            The root segment includes all data for the Search index, excluding any segments that might be stale and will be removed by the persister or merger.
+            Segments are stale when they're replaced by a new merged segment created by the merger.
+            Stale segments are deleted when they're not used by any new queries.
+
+            The `num_bytes_used_disk_by_root` value will be less than the `num_bytes_used_disk` value.
+        BUCKET:INDEX:num_bytes_used_disk_by_root_reclaimable:
+          type: integer
+          description: |-
+            The total number of bytes used on disk by the latest root index segment snapshot, which can potentially be reclaimed by a file merge operation.
+
+            The root segment includes all data for the Search index, excluding any segments that might be stale and will be removed by the persister or merger.
+            Segments are stale when they're replaced by a new merged segment created by the merger.
+            Stale segments are deleted when they're not used by any new queries.
+        BUCKET:INDEX:num_bytes_written_at_index_time:
+          type: integer
+          description: |-
+            The total cumulative number of bytes written to disk as part of introducing segments, or files.
+
+        BUCKET:INDEX:num_file_merge_ops:
+          type: integer
+          description: |-
+            The number of merge operations completed by the merger routine, over persisted files.
+
+            Each Search index partition has a merger and a persister.
+
+            The persister reads in-memory segments from the disk write queue and flushes them to disk.
+            The merger consolidates flushed files from the persister and flushes the consolidated result to disk through the persister, while purging the smaller, older files.
+            The persister and merger interact to continuously flush and merge new in-memory segments to disk.
+        BUCKET:INDEX:num_files_on_disk:
+          type: integer
+          description: |-
+            The total number of files on disk for the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Disk Files**.
+        BUCKET:INDEX:num_mem_merge_ops:
+          type: integer
+          description: |-
+            The number of merge operations completed by the merger routine, over in-memory segments.
+
+            Each Search index partition has a merger and a persister.
+
+            The persister reads in-memory segments from the disk write queue and flushes them to disk.
+            The merger consolidates flushed files from the persister and flushes the consolidated result to disk through the persister, while purging the smaller, older files.
+            The persister and merger interact to continuously flush and merge new in-memory segments to disk.
+        BUCKET:INDEX:num_mutations_to_index:
+          type: integer
+          description: |-
+            The DCP sequence numbers of changes that have not yet been indexed for the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Mutations Remaining**.
+        BUCKET:INDEX:num_persister_nap_merger_break:
+          type: integer
+          description: |-
+            The number of times the persister was interrupted by the merger during a nap period.
+
+            Each Search index partition has a merger and a persister.
+
+            The persister reads in-memory segments from the disk write queue and flushes them to disk.
+            The merger consolidates flushed files from the persister and flushes the consolidated result to disk through the persister, while purging the smaller, older files.
+            The persister and merger interact to continuously flush and merge new in-memory segments to disk.
+        BUCKET:INDEX:num_persister_nap_pause_completed:
+          type: integer
+          description: |-
+            The number of times the persister completed its configured nap period before flushing content to disk, without being interrupted by the merger.
+
+            Each Search index partition has a merger and a persister.
+
+            The persister reads in-memory segments from the disk write queue and flushes them to disk.
+            The merger consolidates the flushed files from the persister and flushes the consolidated result to disk through the persister, while purging the smaller, older files.
+            The persister and merger interact to continuously flush and merge new in-memory segments to disk.
+        BUCKET:INDEX:num_pindexes_actual:
+          type: integer
+          description: |-
+            The total number of partitions currently in the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Partitions**.
+        BUCKET:INDEX:num_pindexes_target:
+          type: integer
+          description: |-
+            The total number of planned or expected partitions for the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Partitions Expected**.
+        BUCKET:INDEX:num_recs_to_persist:
+          type: integer
+          description: |-
+            The total number of entries, including terms, records, and dictionary rows, that have not yet been persisted to disk.
+
+            This statistic appears on the Server Web Console dashboard as **Search Records to Persist**.
+        BUCKET:INDEX:num_root_filesegments:
+          type: integer
+          description: |-
+            The total number of file segments in the root segment.
+
+            The root segment includes all data for the Search index, excluding any segments that might be stale and will be removed by the persister or merger.
+
+            This statistic appears on the Server Web Console dashboard as **Search Disk Segments**.
+        BUCKET:INDEX:num_root_memorysegments:
+          type: integer
+          description: |-
+            The total number of memory segments in the root segment.
+
+            The root segment includes all data for the Search index, excluding any segments that might be stale and will be removed by the persister or merger.
+
+            This statistic appears on the Server Web Console dashboard as **Search Memory Segments**.
+        BUCKET:INDEX:timer_batch_store_count:
+          type: integer
+          description: |-
+            The total number of times batches were executed against the given Search index.
+
+            Batches are a data structure in the Search Service, used for processing data coming in from DCP and the Data Service to the documents in a Search index.
+            A batch is executed when it's flushed to disk.
+        BUCKET:INDEX:timer_data_delete_count:
+          type: integer
+          description: The total number of delete operations received from DCP for the given Search index.
+        BUCKET:INDEX:timer_data_update_count:
+          type: integer
+          description: The total number of create or update operations received from DCP for the given Search index.
+        BUCKET:INDEX:timer_opaque_get_count:
+          type: integer
+          description: |-
+            The total number of times the DCP consumer had to retrieve stored metadata to aid in reconnection for the given Search index.
+
+            If the DCP connection closes, the Search Service can use this stored metadata to resume from the last stable point.
+        BUCKET:INDEX:timer_opaque_set_count:
+          type: integer
+          description: The total number of times the DCP consumer updated stored metadata, based on changes to Snapshot markers or the failover log, for the given Search index.
+        BUCKET:INDEX:timer_rollback_count:
+          type: integer
+          description: The total number of DCP Rollback messages received for the given Search index.
+        BUCKET:INDEX:timer_snapshot_start_count:
+          type: integer
+          description: |-
+            The total number of DCP Snapshot markers received for the given Search index.
+
+            Snapshots contain a representation of document mutations on either a write queue or in storage.
+        BUCKET:INDEX:tot_seq_received:
+          type: integer
+          description: |-
+            This metric is no longer used and will soon be deprecated.
+        BUCKET:INDEX:total_bytes_indexed:
+          type: integer
+          description: |-
+            The rate, in bytes per second, of content indexed in the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Index Rate**.
+        BUCKET:INDEX:total_bytes_query_results:
+          type: integer
+          description: |-
+            The size of results returned for Search queries on the given Search index.
+            This includes the size of all JSON sent.
+
+            This statistic appears on the Server Web Console dashboard as **Search Result Rate**.
+        BUCKET:INDEX:total_compaction_written_bytes:
+          type: integer
+          description: |-
+            The total number of bytes written to disk as a result of compaction operations on the given Search index.
+
+            This statistic appears on the Server Web Console dashboard as **Search Compaction Rate**.
+        BUCKET:INDEX:total_grpc_internal_queries:
+          type: integer
+          description: |-
+            The total number of internal gRPC requests from the coordinating node for a Search query to other nodes running the Search Service, for the given Search index.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+            The coordinating node is the Search node that receives the Search request and scatters it to all other Search index partitions on other nodes.
+            The coordinating node applies filters to the results from all Search index partitions and returns the final result set.
+        BUCKET:INDEX:total_grpc_queries:
+          type: integer
+          description: The total number of queries, using gRPC for streaming, for the given Search index.
+        BUCKET:INDEX:total_grpc_queries_error:
+          type: integer
+          description: The total number of queries that resulted in an error that used gRPC for streaming on the given Search index.
+        BUCKET:INDEX:total_grpc_queries_slow:
+          type: integer
+          description: The total number of queries added to the slow query log that used gRPC for streaming on the given Search index.
+        BUCKET:INDEX:total_grpc_queries_timeout:
+          type: integer
+          description: The total number of queries that timed out that used gRPC for streaming on the given Search index.
+        BUCKET:INDEX:total_grpc_request_time:
+          type: integer
+          description: |-
+            The total time, in nanoseconds, for internal scatter-gather requests.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+            The coordinating node is the Search node that receives the Search request and scatters it to all other Search index partitions on other nodes.
+            The coordinating node applies filters to the results from all Search index partitions and returns the final result set.
+        BUCKET:INDEX:total_internal_queries:
+          type: integer
+          description: |-
+            The number of internal queries from the coordinating node for a Search query to other nodes running the Search Service, for the given Search index.
+
+            The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
+            The coordinating node is the Search node that receives the Search request and scatters it to all other Search index partitions on other nodes.
+            The coordinating node applies filters to the results from all Search index partitions and returns the final result set.
+        BUCKET:INDEX:total_knn_searches:
+          type: integer
+          description: |-
+            The total number of [Vector Search](https://docs.couchbase.com/server/7.6/vector-search/vector-search.html) requests made to the given Search index.
+        BUCKET:INDEX:total_queries:
+          type: integer
+          description: The total number of Search queries per second on the given Search index.
+        BUCKET:INDEX:total_queries_error:
+          type: integer
+          description: |-
+            The total number of Search queries on the given Search index that resulted in an error.
+
+            This statistic appears on the Server Web Console dashboard as **Search Query Error Rate**.
+        BUCKET:INDEX:total_queries_slow:
+          type: integer
+          description: |-
+            The total number of Search queries on the given Search index in the slow query log.
+
+            Slow queries are any queries that take longer than 5 seconds to run.
+
+            This statistic appears on the Server Web Console dashboard as **Search Slow Queries**.
+        BUCKET:INDEX:total_queries_timeout:
+          type: integer
+          description: |-
+            The total number of Search queries on the given Search index that timed out.
+
+            This statistic appears on the Server Web Console dashboard as **Search Query Timeout Rate**.
+        BUCKET:INDEX:total_request_time:
+          type: integer
+          description: The total time, in nanoseconds, spent processing Search query requests for the given Search index.
+        BUCKET:INDEX:total_term_searchers:
+          type: integer
+          description: |-
+            The total number of term searchers for the given Search index.
+
+            Every Search query requires 1 or more term searchers.
+            More complex Search queries typically require more term searchers.
+
+            Use this statistic to approximate how complex a query is.
+
+            This statistic appears on the Server Web Console dashboard as **Term Searchers Start Rate**.
+        BUCKET:INDEX:total_term_searchers_finished:
+          type: integer
+          description: The total number of term searchers on the given Search index that have finished serving a Search query.
+        BUCKET:INDEX:total_vectors:
+          type: integer
+          description: |-
+            The total number of vectors inside the given Search index, across all indexed fields.
+
+            If there are no vectors inside the Search index, the REST API does not return this statistic.
+
+  securitySchemes:
+    Admin:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Full Admin**, **Cluster Admin**, or **Bucket Admin** role, with FTS Read permissions on the required bucket.
+
+    Statistics:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Search Admin** role, with Stats Read permissions on the required bucket.

@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Search Manager Options REST API
+  version: '7.6'
+  description: |-
+    The Search Manager Options REST API is provided by the Search service.
+    This API enables you to set Search manager options; in particular, to configure rebalance based on file transfer.
+
+servers:
+  - url: '{scheme}://{host}:{port}'
+    description: The URL scheme, host, and port are as follows.
+    variables:
+      scheme:
+        default: http
+        description: |-
+          The URL scheme.
+          Use `https` for secure access.
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+        description: The host name or IP address of a node running the Search Service.
+      port:
+        default: "8094"
+        description: |-
+          The Search Service REST port.
+          Use `18094` for secure access.
+        enum:
+          - "8094"
+          - "18094"
+
+paths:
+  /api/managerOptions:
+    put:
+      operationId: put_options
+      summary: Modify Search Manager Options
+      description: |-
+        Sets Search manager options.
+        Note that only one setting is available: `disableFileTransferRebalance`.
+      requestBody:
+        description: An object specifying Search manager options.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Options"
+      security:
+        - Default: []
+      responses:
+        "200":
+          $ref: '#/components/responses/OK'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "405":
+          $ref: '#/components/responses/NotAllowed'
+      x-codeSamples:
+        - lang: curl
+          label: Disable
+          source:
+            $ref: '../../../docs/modules/fts-rest-manage/examples/file-xfer-disable.sh'
+        - lang: curl
+          label: Re-enable
+          source:
+            $ref: '../../../docs/modules/fts-rest-manage/examples/file-xfer-enable.sh'
+
+components:
+  schemas:
+    Options:
+      type: object
+      properties:
+        disableFileTransferRebalance:
+          type: boolean
+          description: |-
+            If the value is `false` (the default), new Search Service partitions are created during rebalance by means of partition file transfer.
+
+            If the value is `true`, partitions are created by means of partition build, from scratch, over DCP connections from the Data Service.
+          default: false
+          x-has-default: true
+
+    Response:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: >
+            The status of the operation.
+        error:
+          type: string
+          description: >
+            The error message, if the operation was not successful.
+
+  responses:
+    OK:
+      description: The operation was successful.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            $ref: "../../../docs/modules/fts-rest-manage/examples/file-xfer-200.json"
+
+    NotFound:
+      description: >
+        Object not found.
+        The URL may be incorrectly specified.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+
+    NotAllowed:
+      description: >
+        Method not allowed.
+        The method may be incorrectly specified.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            $ref: "../../../docs/modules/fts-rest-manage/examples/file-xfer-405.json"
+
+    Unauthorized:
+      description: >
+        Failure to authenticate.
+        The user name or password may be incorrect.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+
+  securitySchemes:
+    Default:
+      type: http
+      scheme: basic
