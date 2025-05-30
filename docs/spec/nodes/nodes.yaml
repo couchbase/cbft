@@ -1,0 +1,495 @@
+openapi: 3.0.3
+info:
+  title: Couchbase Search Node API
+  description: |-
+    The Search Node Configuration REST API is provided by the Search service.
+    This API enables you to manage and monitor your Search nodes.
+  version: '7.6'
+
+servers:
+  - url: '{scheme}://{host}:{port}'
+    description: The URL scheme, host, and port are as follows.
+    variables:
+      scheme:
+        default: http
+        description: |-
+          The URL scheme.
+          Use `https` for secure access.
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+        description: The host name or IP address of a node running the Search Service.
+      port:
+        default: "8094"
+        description: |-
+          The Search Service REST port.
+          Use `18094` for secure access.
+        enum:
+          - "8094"
+          - "18094"
+
+tags:
+  - name: configuration
+    x-displayName: Node Configuration
+    description: Operations for node configuration.
+  - name: diagnostics
+    x-displayName: Node Diagnostics
+    description: Operations for node diagnostics.
+  - name: management
+    x-displayName: Node Management
+    description: Operations for node management.
+  - name: monitoring
+    x-displayName: Node Monitoring
+    description: Operations for node monitoring.
+
+paths:
+  /api/cfg:
+    get:
+      operationId: getClusterConfig
+      summary: Get Cluster Configuration
+      description: Returns the node's current view of the cluster's configuration as JSON.
+      tags:
+        - configuration
+      responses:
+        '200':
+          description: A JSON object containing the node's configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/clusterConfig'
+              example:
+                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-cluster-config.json'
+      security:
+        - readClusterSettings: []
+
+  /api/cfgRefresh:
+    post:
+      operationId: refreshClusterConfig
+      summary: Refresh Node Configuration
+      description: Requests the node to refresh its configuration from the configuration provider.
+      tags:
+        - configuration
+      responses:
+        '200':
+          $ref: '#/components/responses/OK'
+      security:
+        - writeClusterSettings: []
+
+  /api/managerKick:
+    post:
+      operationId: managerKick
+      summary: Replan Resource Assignments
+      description: Forces the node to replan resource assignments, (by running the planner, if enabled) and update its runtime state to reflect the latest plan (by running the janitor, if enabled).
+      tags:
+        - configuration
+      responses:
+        '200':
+          $ref: '#/components/responses/OK'
+      security:
+        - writeClusterSettings: []
+
+  /api/managerMeta:
+    get:
+      operationId: managerMeta
+      summary: Get Node Capabilities
+      description: |-
+        Returns information on the node's capabilities, including available indexing and storage options as JSON.
+        This operation is intended to help management tools and web UIs to be more dynamically metadata driven.
+      tags:
+        - configuration
+      responses:
+        '200':
+          description: A JSON object containing the node's capabilities.
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - writeClusterSettings: []
+
+  /api/diag:
+    get:
+      operationId: getDiagnostics
+      summary: Get Diagnostics
+      description: |-
+        Returns the full set of diagnostic information from the node as JSON.
+        The response is the union of the responses from the node's other REST API diagnostic and monitoring endpoints.
+
+        For example, for a 3 node cluster, you could capture diagnostics for each node with something like:
+
+        ```shell
+        curl http://cbft-01:8094/api/diag > cbft-01.json
+        curl http://cbft-02:8094/api/diag > cbft-02.json
+        curl http://cbft-03:8094/api/diag > cbft-03.json
+        ```
+
+        The response JSON object can be quite large, 100s of KB or much more.
+
+        The motivation for this operation is to simplify working with the Couchbase community, forums, technical support, and other engineers, by making data capture from each Search node a single step.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          description: A JSON object containing the node's diagnostics.
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - readClusterLogs: []
+
+  /api/log:
+    get:
+      operationId: getLogs
+      summary: Get Node Logs
+      description: Returns recent log messages and key events for the node as JSON.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          description: A JSON object containing the node's logs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/logInfo'
+              example:
+                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-logs.json'
+      security:
+        - readClusterLogs: []
+
+  /api/runtime:
+    get:
+      operationId: getRuntimeInfo
+      summary: Get Node Runtime Information
+      description: Returns information on the node's software, such as version strings and slow-changing runtime settings, as JSON.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          description: A JSON object containing the node's runtime information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/runtimeInfo'
+              example:
+                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-runtime-info.json'
+      security:
+        - readClusterSettings: []
+
+  /api/runtime/args:
+    get:
+      operationId: getRuntimeArgs
+      summary: Get Node Runtime Arguments
+      description: Returns information on the node's command-line, parameters, environment variables, and OS process values as JSON.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          description: A JSON object containing the node's runtime arguments.
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - readClusterSettings: []
+
+  /api/runtime/profile/cpu:
+    post:
+      operationId: captureCpuProfile
+      summary: Capture CPU Profiling Information
+      description: Requests the node to capture local CPU usage profiling information.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          $ref: '#/components/responses/OK'
+      security:
+        - manageCluster: []
+
+  /api/runtime/profile/memory:
+    post:
+      operationId: captureMemoryProfile
+      summary: Capture Memory Profiling Information
+      description: Requests the node to capture local memory usage profiling information.
+      tags:
+        - diagnostics
+      responses:
+        '200':
+          $ref: '#/components/responses/OK'
+      security:
+        - manageCluster: []
+
+  /api/runtime/gc:
+    post:
+      operationId: performGC
+      summary: Perform Garbage Collection
+      description: Requests the node to perform a garbage collection.
+      tags:
+        - management
+      responses:
+        '200':
+          $ref: '#/components/responses/OK'
+      security:
+        - manageCluster: []
+
+  /api/runtime/stats:
+    get:
+      operationId: getRuntimeStats
+      summary: Get Runtime Statistics
+      description: Returns information on the node's low-level runtime stats as JSON.
+      tags:
+        - monitoring
+      responses:
+        '200':
+          description: A JSON object containing the node's low-level runtime statistics.
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - manageCluster: []
+
+  /api/runtime/statsMem:
+    get:
+      operationId: getMemoryStats
+      summary: Get Memory Statistics
+      description: Returns information on the node's low-level garbage collection and memory-related runtime stats as JSON.
+      tags:
+        - monitoring
+      responses:
+        '200':
+          description: A JSON object containing the node's memory statistics.
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - manageCluster: []
+
+components:
+  responses:
+    OK:
+      description: Success.
+
+  schemas:
+    clusterConfig:
+      title: Cluster Configuration
+      type: object
+      properties:
+        indexDefs:
+          $ref: '#/components/schemas/clusterConfigIndexes'
+        indexDefsCAS:
+          type: integer
+          description: Search index definition concurrency (compare and swap) value.
+        indexDefsErr:
+          type: string
+          description: Search index definition error.
+          nullable: true
+        nodeDefsKnown:
+          $ref: '#/components/schemas/clusterConfigNodesKnown'
+        nodeDefsKnownCAS:
+          type: integer
+          description: Known node definition concurrency (compare and swap) value.
+        nodeDefsKnownErr:
+          type: string
+          description: Known node definition error.
+          nullable: true
+        nodeDefsWanted:
+          $ref: '#/components/schemas/clusterConfigNodesWanted'
+        nodeDefsWantedCAS:
+          type: integer
+          description: Wanted node definition concurrency (compare and swap) value.
+        nodeDefsWantedErr:
+          type: string
+          description: Wanted node definition error.
+          nullable: true
+        planPIndexes:
+          $ref: '#/components/schemas/clusterConfigPlan'
+        planPIndexesCAS:
+          type: integer
+          description: Search index partition concurrency (compare and swap) value.
+        planPIndexesErr:
+          type: string
+          description: Search index partition error.
+          nullable: true
+        status:
+          type: string
+          description: The status of the operation.
+
+    clusterConfigIndexes:
+      title: Index Definitions
+      type: object
+      description: An object containing Search index definitions and related information.
+      properties:
+        implVersion:
+          type: string
+        indexDefs:
+          $ref: '../index/index.yaml#/components/schemas/GetIndexesResponseIndexesWrapper'
+
+    clusterConfigNodesKnown:
+      title: Known Nodes
+      type: object
+      description: An object containing known node definitions and related information.
+      properties:
+        implVersion:
+          type: string
+        nodeDefs:
+          $ref: '#/components/schemas/clusterConfigNodesWrapper'
+        uuid:
+          type: string
+
+    clusterConfigNodesWanted:
+      title: Wanted Nodes
+      type: object
+      description: An object containing wanted node definitions and related information.
+      properties:
+        implVersion:
+          type: string
+        nodeDefs:
+          $ref: '#/components/schemas/clusterConfigNodesWrapper'
+        uuid:
+          type: string
+
+    clusterConfigNodesWrapper:
+      title: Node Definitions Wrapper
+      type: object
+      description: An object containing the definitions of 1 or more nodes.
+      additionalProperties:
+        x-additionalPropertiesName: Node UUID
+        $ref: '#/components/schemas/clusterConfigNodesWrapperNode'
+
+    clusterConfigNodesWrapperNode:
+      title: Node Definition
+      type: object
+      description: |-
+        An object containing the definition of a single node.
+        The name of the property is the UUID of the node.
+      properties:
+        container:
+          type: string
+        extras:
+          type: string
+        hostPort:
+          type: string
+        implVersion:
+          type: string
+        tags:
+          type: string
+          nullable: true
+        uuid:
+          type: string
+        weight:
+          type: integer
+
+    clusterConfigPlan:
+      type: object
+      title: Plan Partitions
+      description: An object containing Search index partitions and related information.
+      properties:
+        implVersion:
+          type: string
+        planPIndexes:
+          $ref: '#/components/schemas/clusterConfigPlanWrapper'
+        uuid:
+          type: string
+        warnings:
+          $ref: '#/components/schemas/GetIndexResponsePlanWrng'
+
+    clusterConfigPlanWrapper:
+      type: object
+      title: Plan Partitions Wrapper
+      description: An object containing information about 1 or more Search index partitions.
+      additionalProperties:
+        x-additionalPropertiesName: Partition Name
+        $ref: '../index/index.yaml#/components/schemas/GetIndexResponsePIndex'
+
+    GetIndexResponsePlanWrng:
+      type: object
+      title: Plan Warnings Wrapper
+      description: |-
+        An object containing 0, 1, or more nested objects, each containing warnings that apply to a Search index.
+      additionalProperties:
+        x-additionalPropertiesName: Index Name
+        $ref: '#/components/schemas/GetIndexResponsePlanWrngIndex'
+
+    GetIndexResponsePlanWrngIndex:
+      type: array
+      title: Plan Warnings
+      description: |-
+        An array of warnings.
+        The name of the property is the name of the Search index.
+      items:
+        type: string
+
+    runtimeInfo:
+      title: Runtime Information
+      type: object
+      properties:
+        arch:
+          type: string
+          description: The architecture of the node.
+        go:
+          $ref: '#/components/schemas/runtimeInfoGo'
+        numCPU:
+          type: integer
+          description: The number of CPUs on the node.
+        os:
+          type: string
+          description: The operating system of the node.
+        versionData:
+          type: string
+        versionMain:
+          type: string
+
+    runtimeInfoGo:
+      type: object
+      title: Go Runtime Information
+      properties:
+        GOMAXPROCS:
+          type: integer
+        GOROOT:
+          type: string
+        compiler:
+          type: string
+        version:
+          type: string
+
+    logInfo:
+      type: object
+      title: Log Messages
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+        messages:
+          type: array
+          items:
+            type: object
+
+  securitySchemes:
+    manageCluster:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Full Admin** or **Cluster Admin** role, with permissions to manage the cluster.
+
+    readClusterSettings:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Full Admin** or **Cluster Admin** role, with permission to read cluster settings.
+
+    readClusterLogs:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Full Admin** or **Cluster Admin** role, with permission to read cluster logs.
+
+    writeClusterSettings:
+      type: http
+      scheme: basic
+      description: |-
+        You must have the **Full Admin** or **Cluster Admin** role, with permission to write cluster settings.

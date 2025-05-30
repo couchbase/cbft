@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: Couchbase Search Active Queries REST API
+  description: |-
+    The Search Active Queries REST API is provided by the Search service.
+    This API enables you to get information about active Search queries.
+  version: '7.6'
+
+servers:
+  - url: '{scheme}://{host}:{port}'
+    description: The URL scheme, host, and port are as follows.
+    variables:
+      scheme:
+        default: http
+        description: |-
+          The URL scheme.
+          Use `https` for secure access.
+        enum:
+          - http
+          - https
+      host:
+        default: localhost
+        description: The host name or IP address of a node running the Search Service.
+      port:
+        default: "8094"
+        description: |-
+          The Search Service REST port.
+          Use `18094` for secure access.
+        enum:
+          - "8094"
+          - "18094"
+
+paths:
+  /api/query/index/{indexName}:
+    get:
+      operationId: api-query-index
+      summary: View Active Index Queries
+      description: |-
+        Gets the details of all the active queries for any given Search index in the system.
+      parameters:
+        - $ref: '#/components/parameters/pathIndexName'
+        - $ref: '#/components/parameters/queryLongerThan'
+      x-codeSamples:
+        - lang: curl
+          label: Request 1
+          source:
+            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-index.sh'
+      security:
+        - Default: []
+      responses:
+        "200":
+          description: A list of active queries for the specified Search index.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveResponse'
+              example:
+                $ref: '../../../docs/modules/fts-rest-query/examples/api-query-index.json'
+
+  /api/query:
+    get:
+      operationId: api-query
+      summary: View Active Node Queries
+      description: Gets the details of all the active queries in any Search node in a cluster.
+      parameters:
+        - $ref: '#/components/parameters/queryLongerThan'
+      x-codeSamples:
+        - lang: curl
+          label: Request 2
+          source:
+            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-all.sh'
+        - lang: curl
+          label: Request 3
+          source:
+            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-filter.sh'
+      security:
+        - Default: []
+      responses:
+        "200":
+          description: A list of all active Search queries across all nodes in the cluster.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveResponse'
+              examples:
+                request2:
+                  summary: Result of request 2
+                  value:
+                    $ref: '../../../docs/modules/fts-rest-query/examples/api-query-all.json'
+                request3:
+                  summary: Result of request 3
+                  value:
+                    $ref: '../../../docs/modules/fts-rest-query/examples/api-query-filter.json'
+
+  /api/query/{queryID}/cancel:
+    post:
+      operationId: api-query-cancel
+      summary: Cancel Active Queries
+      description: |-
+        Allows the user to cancel an active query that's running longer than expected.
+        Use the View Active Index Queries API or the View Active Node Queries API to get the parameters `queryID` and `uuid`, which are used to identify and cancel the query.
+      parameters:
+        - $ref: '#/components/parameters/pathQueryId'
+      requestBody:
+        description: |-
+          The body contains the UUID of the node where the query is running.
+          This is optional and allows cancellation of queries on specific nodes.
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+            example:
+              uuid: "b91d75480470f979f65f04e8f20a1f7b"
+      x-codeSamples:
+        - lang: curl
+          label: Request 4
+          source:
+            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-cancel.sh'
+      security:
+        - Default: []
+      responses:
+        "200":
+          description: The query was successfully canceled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+              example:
+                $ref: '../../../docs/modules/fts-rest-query/examples/api-query-cancel.json'
+
+components:
+  parameters:
+    pathIndexName:
+      name: indexName
+      in: path
+      required: true
+      description: The name of the Search index.
+      schema:
+        type: string
+    pathQueryId:
+      name: queryID
+      in: path
+      required: true
+      description: |-
+        The ID of the active query.
+        This ID is used to identify the query that you want to cancel.
+      schema:
+        type: integer
+    queryLongerThan:
+      name: longerThan
+      in: query
+      required: false
+      description: |-
+        Filters the queries running beyond the given span of time.
+
+        The duration string is a signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as `20s`, `-1.5h` or `2h45m`.
+        Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+      schema:
+        type: string
+        format: duration
+
+  schemas:
+    ActiveResponse:
+      type: object
+      title: Active Response
+      properties:
+        status:
+          type: string
+          description: The status of the request.
+        stats:
+          $ref: '#/components/schemas/ActiveResponseStats'
+        totalActiveQueryCount:
+          type: integer
+          description: The total number of active queries.
+        filteredActiveQueries:
+          $ref: '#/components/schemas/ActiveResponseFilter'
+    ActiveResponseStats:
+      type: object
+      title: Stats
+      description: An object containing request statistics.
+      properties:
+        total:
+          type: integer
+          example: 3
+          x-has-example: true
+        successful:
+          type: integer
+          example: 3
+          x-has-example: true
+    ActiveResponseFilter:
+      type: object
+      title: Filtered Active Queries
+      description: An object containing details of the filtered active queries.
+      properties:
+        indexName:
+          type: string
+          description: |-
+            The name of the Search index.
+            Only included if viewing active queries for a specific index.
+        longerThan:
+          type: string
+          format: duration
+          description: |-
+            The duration used to filter the active queries.
+            Only included if the `longerThan` query parameter is used.
+        queryCount:
+          type: integer
+          description: The number of filtered active queries.
+        queryMap:
+          $ref: '#/components/schemas/ActiveResponseFilterMap'
+    ActiveResponseFilterMap:
+      type: object
+      title: Query Map
+      description: Contains 1 or more nested objects, each containing the details of a single active query.
+      additionalProperties:
+        x-additionalPropertiesName: Node UUID - Query ID
+        $ref: '#/components/schemas/ActiveResponseFilterMapItem'
+    ActiveResponseFilterMapItem:
+      type: object
+      title: Query Map Item
+      description: |-
+        The details of a single active query.
+        The name of the property is the UUID of the node on which the query is running, and the ID of the query on that node, separated by a hyphen.
+      properties:
+        QueryContext:
+          $ref: '#/components/schemas/ActiveResponseFilterMapItemContext'
+        executionTime:
+          type: string
+          format: duration
+          description: The time taken to execute the query.
+    ActiveResponseFilterMapItemContext:
+      type: object
+      title: Query Context
+      description: The query context.
+      properties:
+        query:
+          type: object
+          description: |-
+            An object containing the Search query.
+            For more information, see [Search Request JSON Properties](../search/search-request-params.html).
+        size:
+          type: integer
+          example: 10
+          x-has-example: true
+        from:
+          type: integer
+          example: 0
+          x-has-example: true
+        timeout:
+          type: integer
+          example: 120000
+          x-has-example: true
+        index:
+          type: string
+          description: The name of a Search index.
+    CancelRequest:
+      type: object
+      title: Cancellation Request
+      properties:
+        uuid:
+          type: string
+          description: |-
+            Represents the active query's coordinator node's UUID, where the query will be canceled.
+            This parameter allows the user to cancel a query anywhere in the system by specifying its coordinator node's UUID.
+    CancelResponse:
+      type: object
+      title: Cancellation Response
+      properties:
+        status:
+          type: string
+          description: The status of the request.
+        msg:
+          type: string
+          description: The response message, giving details of the node UUID and query ID.
+
+  securitySchemes:
+    Default:
+      type: http
+      scheme: basic
