@@ -1,0 +1,13 @@
+{
+  "arch": "amd64",
+  "go": {
+      "GOMAXPROCS": 1,
+      "GOROOT": "/usr/local/go",
+      "compiler": "gc",
+      "version": "go1.4"
+  },
+  "numCPU": 8,
+  "os": "darwin",
+  "versionData": "4.0.0",
+  "versionMain": "v0.3.1"
+}

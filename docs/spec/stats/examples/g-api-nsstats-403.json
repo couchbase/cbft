@@ -1,0 +1,6 @@
+{
+  "message": "Forbidden. User needs one of the following permissions",
+  "permissions": [
+    "cluster.fts!read"
+  ]
+}

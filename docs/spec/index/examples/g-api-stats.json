@@ -1,0 +1,41 @@
+{
+  "feeds": {
+      "myFirstIndex_6cc599ab7a85bf3b": {}
+  },
+  "manager": {
+      "TotCreateIndex": 1,
+      "TotCreateIndexOk": 1,
+      "TotDeleteIndex": 0,
+      "TotDeleteIndexOk": 0,
+      "TotIndexControl": 0,
+      "TotIndexControlOk": 0,
+      "TotJanitorClosePIndex": 0,
+      "TotJanitorKick": 2,
+      "TotJanitorKickErr": 0,
+      "TotJanitorKickOk": 2,
+      "TotJanitorKickStart": 2,
+      "TotJanitorNOOP": 0,
+      "TotJanitorNOOPOk": 0,
+      "TotJanitorRemovePIndex": 0,
+      "TotJanitorSubscriptionEvent": 0,
+      "TotJanitorUnknownErr": 0,
+      "TotKick": 0,
+      "TotPlannerKick": 2,
+      "TotPlannerKickChanged": 1,
+      "TotPlannerKickErr": 0,
+      "TotPlannerKickOk": 2,
+      "TotPlannerKickStart": 2,
+      "TotPlannerNOOP": 0,
+      "TotPlannerNOOPOk": 0,
+      "TotPlannerSubscriptionEvent": 0,
+      "TotPlannerUnknownErr": 0,
+      "TotSaveNodeDef": 2,
+      "TotSaveNodeDefGetErr": 0,
+      "TotSaveNodeDefOk": 2,
+      "TotSaveNodeDefSame": 0,
+      "TotSaveNodeDefSetErr": 0
+   },
+   "pindexes": {
+       "myFirstIndex_6cc599ab7a85bf3b_0": null
+   }
+}

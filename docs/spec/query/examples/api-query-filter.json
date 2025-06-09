@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "stats": {
+    "total": 3,
+    "successful": 3
+  },
+  "totalActiveQueryCount": 3,
+  "filteredActiveQueries": {
+    "longerThan": "7s",
+    "queryCount": 1,
+    "queryMap": {
+      "b91d75480470f979f65f04e8f20a1f7b-21": {
+        "QueryContext": {
+          "query": {
+            "query": "decent hotel with a pool in italy"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex1"
+        },
+        "executionTime": "10.541956741s"
+      }
+    }
+  }
+}

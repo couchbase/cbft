@@ -60,7 +60,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetIndexesResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-index.json'
+                $ref: 'examples/g-api-index.json'
       security:
         - Read: []
 
@@ -82,7 +82,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetIndexesResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-scoped-indexes.json'
+                $ref: 'examples/g-api-scoped-indexes.json'
       security:
         - Read: []
 
@@ -103,7 +103,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-index-name.json'
+                $ref: 'examples/g-api-index-name.json'
       security:
         - Read: []
 
@@ -123,7 +123,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeleteIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/d-api-index-name-200.json'
+                $ref: 'examples/d-api-index-name-200.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
@@ -131,7 +131,7 @@ paths:
               schema:
                 type: object
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/d-api-index-name-default.json'
+                $ref: 'examples/d-api-index-name-default.json'
       security:
         - Write: []
 
@@ -162,7 +162,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PutIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-index-name-200.json'
+                $ref: 'examples/p-api-index-name-200.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
@@ -170,7 +170,7 @@ paths:
               schema:
                 type: object
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-index-name-default.json'
+                $ref: 'examples/p-api-index-name-default.json'
       security:
         - Write: []
 
@@ -195,7 +195,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/fts-sample-index-def-response.json'
+                $ref: 'examples/fts-sample-index-def-response.json'
       security:
         - Read: []
 
@@ -229,7 +229,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PutIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-scoped-index-name-200.json'
+                $ref: 'examples/p-api-scoped-index-name-200.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
@@ -237,7 +237,7 @@ paths:
               schema:
                 type: object
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-scoped-index-name-default.json'
+                $ref: 'examples/p-api-scoped-index-name-default.json'
       security:
         - Write: []
 
@@ -261,7 +261,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DeleteIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/d-api-scoped-index-name-200.json'
+                $ref: 'examples/d-api-scoped-index-name-200.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
@@ -269,7 +269,7 @@ paths:
               schema:
                 type: object
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/d-api-scoped-index-name-default.json'
+                $ref: 'examples/d-api-scoped-index-name-default.json'
       security:
         - Write: []
 
@@ -409,7 +409,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatsNodeResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-stats.json'
+                $ref: 'examples/g-api-stats.json'
       security:
         - Statistics: []
 
@@ -434,7 +434,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatsIndexResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-stats-index-name.json'
+                $ref: 'examples/g-api-stats-index-name.json'
       security:
         - Statistics: []
 
@@ -458,7 +458,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-scoped-status.json'
+                $ref: 'examples/g-api-scoped-status.json'
       security:
         - Read: []
 
@@ -481,7 +481,7 @@ paths:
               type: object
               title: Request Body
             example:
-              $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-stats-index-name-analyzeDoc-body.json'
+              $ref: 'examples/g-api-stats-index-name-analyzeDoc-body.json'
       responses:
         '200':
           description: A JSON object containing the analysis of the provided document.
@@ -490,7 +490,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentAnalysis'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-stats-index-name-analyzeDoc-200.json'
+                $ref: 'examples/g-api-stats-index-name-analyzeDoc-200.json'
       security:
         - Read: []
 
@@ -512,7 +512,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentCount'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/g-api-index-name-count.json'
+                $ref: 'examples/g-api-index-name-count.json'
       security:
         - Statistics: []
 
@@ -537,7 +537,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LookupRequest'
             example:
-              $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-pindex-lookup-body.json'
+              $ref: 'examples/p-api-pindex-lookup-body.json'
       responses:
         '200':
           description: The Search Service returns a response that includes the status `ok`.
@@ -546,7 +546,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LookupResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-pindex-lookup-200.json'
+                $ref: 'examples/p-api-pindex-lookup-200.json'
       security:
         - Manage: []
 
@@ -574,15 +574,15 @@ paths:
               regular:
                 summary: Regular Query
                 value:
-                  $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-index-name-query-regular.json'
+                  $ref: 'examples/p-api-index-name-query-regular.json'
               options:
                 summary: Query with Options
                 value:
-                  $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-index-name-query-options.json'
+                  $ref: 'examples/p-api-index-name-query-options.json'
               hybrid:
                 summary: Hybrid Query
                 value:
-                  $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-index-name-query-hybrid.json'
+                  $ref: 'examples/p-api-index-name-query-hybrid.json'
       responses:
         '200':
           description: |-
@@ -631,17 +631,17 @@ paths:
                 regular:
                   summary: Success Response for a Regular Query
                   value:
-                    $ref: '../../../docs/modules/fts-rest-indexing/examples/fts-sample-success-response.json'
+                    $ref: 'examples/fts-sample-success-response.json'
                 hybrid:
                   summary: Success Response for a Hybrid Query
                   value:
-                    $ref: '../../../docs/modules/fts-rest-indexing/examples/fts-sample-success-response-vector-search.json'
+                    $ref: 'examples/fts-sample-success-response-vector-search.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
             application/json:
               example:
-                $ref: '../../../docs/modules/fts-rest-indexing/examples/p-api-scoped-query-default.json'
+                $ref: 'examples/p-api-scoped-query-default.json'
       security:
         - Manage: []
 
@@ -734,7 +734,7 @@ components:
           schema:
             $ref: "#/components/schemas/MgmtResponse"
           example:
-            $ref: "../../../docs/modules/fts-rest-indexing/examples/response-200.json"
+            $ref: "examples/response-200.json"
 
   schemas:
     DeleteIndexResponse:

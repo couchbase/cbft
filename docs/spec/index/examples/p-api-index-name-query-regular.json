@@ -1,0 +1,12 @@
+{
+  "query": {
+    "query": "a sample query",
+    "boost": 1
+  },
+  "size": 10,
+  "from": 0,
+  "highlight": null,
+  "fields": null,
+  "facets": null,
+  "explain": false
+}

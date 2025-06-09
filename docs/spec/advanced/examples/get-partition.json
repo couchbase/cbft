@@ -1,0 +1,18 @@
+{
+  "pindexes": {
+      "myFirstIndex_6cc599ab7a85bf3b_0": {
+          "indexName": "myFirstIndex",
+          "indexParams": "",
+          "indexType": "blackhole",
+          "indexUUID": "6cc599ab7a85bf3b",
+          "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+          "sourceName": "",
+          "sourceParams": "",
+          "sourcePartitions": "",
+          "sourceType": "nil",
+          "sourceUUID": "",
+          "uuid": "2d9ecb8b574a9f6a"
+      }
+  },
+  "status": "ok"
+}

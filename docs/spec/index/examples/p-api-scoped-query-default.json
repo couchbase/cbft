@@ -1,0 +1,49 @@
+{
+  "error": "rest_index: Query, indexName: travel-sample.inventory.travel-test, err: bleve: QueryBleve parsing searchRequest, err: unknown query type",
+  "request": {
+      "collections": [
+          "hotel"
+      ],
+      "ctl": {
+          "consistency": {
+              "level": "at_plus",
+              "results": "complete",
+              "vectors": {
+                  "searchIndexName": {
+                      "607/205096593892159": 2,
+                      "640/298739127912798": 4
+                  }
+              }
+          },
+          "timeout": 10000
+      },
+      "explain": true,
+      "from": 0,
+      "highlight": {
+          "fields": [
+              "reviews.content"
+          ],
+          "style": "html"
+      },
+      "includeLocations": false,
+      "limit": 10,
+      "offset": 0,
+      "query": {},
+      "score": "none",
+      "size": 10,
+      "sort": [
+          "reviews.Ratings.Cleanliness",
+          {
+              "by": "field",
+              "desc": false,
+              "field": "reviews.Ratings.Cleanliness",
+              "missing": "last",
+              "mode": "default",
+              "type": "number"
+          },
+          "-_score",
+          "-_id"
+      ]
+  },
+  "status": "fail"
+}

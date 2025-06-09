@@ -1,0 +1,118 @@
+{
+  "status": "ok",
+  "indexDefs": {
+      "uuid": "23cf9530131858b8",
+      "indexDefs": {
+          "travel-sample.inventory.travel-hotel": {
+              "type": "fulltext-index",
+              "name": "travel-hotel",
+              "uuid": "a04a16f178846bc4",
+              "sourceType": "gocbcore",
+              "sourceName": "travel-sample",
+              "sourceUUID": "8f866261438f8b0d415a437552f3ae99",
+              "planParams": {
+                  "maxPartitionsPerPIndex": 1024,
+                  "indexPartitions": 1
+              },
+              "params": {
+                  "doc_config": {
+                      "docid_prefix_delim": "",
+                      "docid_regexp": "",
+                      "mode": "scope.collection.type_field",
+                      "type_field": "type"
+                  },
+                  "mapping": {
+                      "analysis": {},
+                      "default_analyzer": "standard",
+                      "default_datetime_parser": "dateTimeOptional",
+                      "default_field": "_all",
+                      "default_mapping": {
+                          "dynamic": true,
+                          "enabled": false
+                      },
+                      "default_type": "_default",
+                      "docvalues_dynamic": false,
+                      "index_dynamic": true,
+                      "store_dynamic": false,
+                      "type_field": "_type",
+                      "types": {
+                          "inventory.hotel": {
+                              "dynamic": false,
+                              "enabled": true,
+                              "properties": {
+                                  "reviews": {
+                                      "dynamic": false,
+                                      "enabled": true,
+                                      "properties": {
+                                          "content": {
+                                              "dynamic": false,
+                                              "enabled": true,
+                                              "fields": [
+                                                  {
+                                                      "docvalues": true,
+                                                      "include_in_all": true,
+                                                      "include_term_vectors": true,
+                                                      "index": true,
+                                                      "name": "content",
+                                                      "store": true,
+                                                      "type": "text"
+                                                  }
+                                              ]
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  },
+                  "store": {
+                      "indexType": "scorch",
+                      "segmentVersion": 15
+                  }
+              },
+              "sourceParams": {}
+          },
+          "travel-sample.inventory.travel-test": {
+              "type": "fulltext-index",
+              "name": "travel-test",
+              "uuid": "766ddce5d41a3b41",
+              "sourceType": "gocbcore",
+              "sourceName": "travel-sample",
+              "sourceUUID": "8f866261438f8b0d415a437552f3ae99",
+              "planParams": {
+                  "maxPartitionsPerPIndex": 1024,
+                  "indexPartitions": 1
+              },
+              "params": {
+                  "doc_config": {
+                      "docid_prefix_delim": "",
+                      "docid_regexp": "",
+                      "mode": "scope.collection.type_field",
+                      "type_field": "type"
+                  },
+                  "mapping": {
+                  "analysis": {},
+                  "default_analyzer": "standard",
+                  "default_datetime_parser": "dateTimeOptional",
+                  "default_field": "_all",
+                  "default_mapping": {
+                      "dynamic": true,
+                      "enabled": true
+                  },
+                  "default_type": "_default",
+                  "docvalues_dynamic": false,
+                  "index_dynamic": true,
+                  "store_dynamic": false,
+                  "type_field": "_type"
+                  },
+                  "store": {
+                      "indexType": "scorch",
+                      "segmentVersion": 15
+                  }
+              },
+              "sourceParams": {}
+          }
+      },
+      "implVersion": "5.7.0"
+  }
+}

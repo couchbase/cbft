@@ -1,0 +1,61 @@
+{
+  "status": "ok",
+  "stats": {
+    "total": 3,
+    "successful": 3
+  },
+  "totalActiveQueryCount": 4,
+  "filteredActiveQueries": {
+    "queryCount": 4,
+    "queryMap": {
+      "b91d75480470f979f65f04e8f20a1f7b-17": {
+        "QueryContext": {
+          "query": {
+            "query": "good restaurants in france"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex1"
+        },
+        "executionTime": "2.144802122s"
+      },
+      "b91d75480470f979f65f04e8f20a1f7b-18": {
+        "QueryContext": {
+          "query": {
+            "query": "decent hotel with a pool in italy"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex2"
+        },
+        "executionTime": "2.144712787s"
+      },
+      "b91d75480470f979f65f04e8f20a1f7b-19": {
+        "QueryContext": {
+          "query": {
+            "query": "germany"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex2"
+        },
+        "executionTime": "2.143957727s"
+      },
+      "f76b2d51397feee28c1e757ed426ef93-3": {
+        "QueryContext": {
+          "query": {
+            "query": "mexican food in england"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex1"
+        },
+        "executionTime": "2.14286421s"
+      }
+    }
+  }
+}

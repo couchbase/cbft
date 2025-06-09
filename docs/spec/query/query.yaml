@@ -41,10 +41,10 @@ paths:
         - $ref: '#/components/parameters/pathIndexName'
         - $ref: '#/components/parameters/queryLongerThan'
       x-codeSamples:
-        - lang: curl
+        - lang: Shell
           label: Request 1
           source:
-            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-index.sh'
+            $ref: 'examples/api-query-index.sh'
       security:
         - Default: []
       responses:
@@ -55,7 +55,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActiveResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-query/examples/api-query-index.json'
+                $ref: 'examples/api-query-index.json'
 
   /api/query:
     get:
@@ -65,14 +65,14 @@ paths:
       parameters:
         - $ref: '#/components/parameters/queryLongerThan'
       x-codeSamples:
-        - lang: curl
+        - lang: Shell
           label: Request 2
           source:
-            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-all.sh'
-        - lang: curl
+            $ref: 'examples/api-query-all.sh'
+        - lang: Shell
           label: Request 3
           source:
-            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-filter.sh'
+            $ref: 'examples/api-query-filter.sh'
       security:
         - Default: []
       responses:
@@ -86,11 +86,11 @@ paths:
                 request2:
                   summary: Result of request 2
                   value:
-                    $ref: '../../../docs/modules/fts-rest-query/examples/api-query-all.json'
+                    $ref: 'examples/api-query-all.json'
                 request3:
                   summary: Result of request 3
                   value:
-                    $ref: '../../../docs/modules/fts-rest-query/examples/api-query-filter.json'
+                    $ref: 'examples/api-query-filter.json'
 
   /api/query/{queryID}/cancel:
     post:
@@ -113,10 +113,10 @@ paths:
             example:
               uuid: "b91d75480470f979f65f04e8f20a1f7b"
       x-codeSamples:
-        - lang: curl
+        - lang: Shell
           label: Request 4
           source:
-            $ref: '../../../docs/modules/fts-rest-query/examples/api-query-cancel.sh'
+            $ref: 'examples/api-query-cancel.sh'
       security:
         - Default: []
       responses:
@@ -127,7 +127,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CancelResponse'
               example:
-                $ref: '../../../docs/modules/fts-rest-query/examples/api-query-cancel.json'
+                $ref: 'examples/api-query-cancel.json'
 
 components:
   parameters:
