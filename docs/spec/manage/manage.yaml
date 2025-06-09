@@ -56,14 +56,14 @@ paths:
         "405":
           $ref: '#/components/responses/NotAllowed'
       x-codeSamples:
-        - lang: curl
+        - lang: Shell
           label: Disable
           source:
-            $ref: '../../../docs/modules/fts-rest-manage/examples/file-xfer-disable.sh'
-        - lang: curl
+            $ref: 'examples/file-xfer-disable.sh'
+        - lang: Shell
           label: Re-enable
           source:
-            $ref: '../../../docs/modules/fts-rest-manage/examples/file-xfer-enable.sh'
+            $ref: 'examples/file-xfer-enable.sh'
 
 components:
   schemas:
@@ -101,7 +101,7 @@ components:
           schema:
             $ref: "#/components/schemas/Response"
           example:
-            $ref: "../../../docs/modules/fts-rest-manage/examples/file-xfer-200.json"
+            $ref: "examples/file-xfer-200.json"
 
     NotFound:
       description: >
@@ -121,7 +121,7 @@ components:
           schema:
             $ref: "#/components/schemas/Response"
           example:
-            $ref: "../../../docs/modules/fts-rest-manage/examples/file-xfer-405.json"
+            $ref: "examples/file-xfer-405.json"
 
     Unauthorized:
       description: >

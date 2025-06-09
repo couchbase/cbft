@@ -1,0 +1,39 @@
+{
+  "status": "ok",
+  "stats": {
+    "total": 3,
+    "successful": 3
+  },
+  "totalActiveQueryCount": 4,
+  "filteredActiveQueries": {
+    "indexName": "DemoIndex1",
+    "longerThan": "1ms",
+    "queryCount": 2,
+    "queryMap": {
+      "b91d75480470f979f65f04e8f20a1f7b-16": {
+        "QueryContext": {
+          "query": {
+            "query": "good restaurants in france"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex1"
+        },
+        "executionTime": "1.059754811s"
+      },
+      "f76b2d51397feee28c1e757ed426ef93-2": {
+        "QueryContext": {
+          "query": {
+            "query": "mexican food in england"
+          },
+          "size": 10,
+          "from": 0,
+          "timeout": 120000,
+          "index": "DemoIndex1"
+        },
+        "executionTime": "1.058247896s"
+      }
+    }
+  }
+}

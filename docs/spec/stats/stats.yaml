@@ -51,7 +51,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/allStats'
               example:
-                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-200.json'
+                $ref: 'examples/g-api-nsstats-200.json'
         '400':
           description: |-
             Object not found.
@@ -67,7 +67,7 @@ paths:
           content:
             application/json:
               example:
-                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-403.json'
+                $ref: 'examples/g-api-nsstats-403.json'
       security:
         - Admin: []
 
@@ -105,7 +105,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/indexStats'
               example:
-                $ref: '../../../docs/modules/fts-rest-stats/examples/g-api-nsstats-index-name.json'
+                $ref: 'examples/g-api-nsstats-index-name.json'
       security:
         - Statistics: []
 

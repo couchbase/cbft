@@ -1,0 +1,261 @@
+{
+  "status": {
+    "total": 1,
+    "failed": 0,
+    "successful": 1
+  },
+  "request": {
+    "query": {
+      "conjuncts": [
+        {
+          "match": "location",
+          "field": "reviews.content",
+          "prefix_length": 0,
+          "fuzziness": 0,
+          "operator": "or"
+        },
+        {
+          "match_phrase": "nice view",
+          "field": "reviews.content"
+        }
+      ]
+    },
+    "size": 10,
+    "from": 0,
+    "highlight": {
+      "style": "html",
+      "fields": [
+        "reviews.content"
+      ]
+    },
+    "fields": null,
+    "facets": null,
+    "explain": true,
+    "sort": [
+      "reviews.Ratings.Cleanliness",
+      {
+        "by": "field",
+        "field": "reviews.Ratings.Cleanliness",
+        "type": "number"
+      },
+      "-_score",
+      "-_id"
+    ],
+    "includeLocations": false,
+    "score": "none",
+    "search_after": null,
+    "search_before": null
+  },
+  "hits": [
+    {
+      "index": "travel-sample.inventory.travel-test_53373d2948c55e82_4c1c5584",
+      "id": "hotel_7388",
+      "score": 0,
+      "explanation": {
+        "value": 0,
+        "message": "sum of:",
+        "children": [
+          {
+            "value": 0,
+            "message": "product of:",
+            "children": [
+              {
+                "value": 0,
+                "message": "sum of:",
+                "children": [
+                  {
+                    "value": 0,
+                    "message": "weight(reviews.content:location^1.000000 in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                    "children": [
+                      {
+                        "value": 0.5320504947307548,
+                        "message": "queryWeight(reviews.content:location^1.000000), product of:",
+                        "children": [
+                          {
+                            "value": 1,
+                            "message": "boost"
+                          },
+                          {
+                            "value": 1.4291903588638628,
+                            "message": "idf(docFreq=596, maxDocs=917)"
+                          },
+                          {
+                            "value": 0.3722740581273647,
+                            "message": "queryNorm"
+                          }
+                        ]
+                      },
+                      {
+                        "value": 0,
+                        "message": "fieldWeight(reviews.content:location in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                        "children": [
+                          {
+                            "value": 0,
+                            "message": "tf(termFreq(reviews.content:location)=0"
+                          },
+                          {
+                            "value": 0,
+                            "message": "fieldNorm(field=reviews.content, doc=\u0000\u0000\u0000\u0000\u0000\u0000\u0003\n)"
+                          },
+                          {
+                            "value": 1.4291903588638628,
+                            "message": "idf(docFreq=596, maxDocs=917)"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "value": 1,
+                "message": "coord(1/1)"
+              }
+            ]
+          },
+          {
+            "value": 0,
+            "message": "sum of:",
+            "children": [
+              {
+                "value": 0,
+                "message": "weight(reviews.content:view^1.000000 in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                "children": [
+                  {
+                    "value": 0.6867550119496617,
+                    "message": "queryWeight(reviews.content:view^1.000000), product of:",
+                    "children": [
+                      {
+                        "value": 1,
+                        "message": "boost"
+                      },
+                      {
+                        "value": 1.8447565629585312,
+                        "message": "idf(docFreq=393, maxDocs=917)"
+                      },
+                      {
+                        "value": 0.3722740581273647,
+                        "message": "queryNorm"
+                      }
+                    ]
+                  },
+                  {
+                    "value": 0,
+                    "message": "fieldWeight(reviews.content:view in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                    "children": [
+                      {
+                        "value": 0,
+                        "message": "tf(termFreq(reviews.content:view)=0"
+                      },
+                      {
+                        "value": 0,
+                        "message": "fieldNorm(field=reviews.content, doc=\u0000\u0000\u0000\u0000\u0000\u0000\u0003\n)"
+                      },
+                      {
+                        "value": 1.8447565629585312,
+                        "message": "idf(docFreq=393, maxDocs=917)"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "value": 0,
+                "message": "weight(reviews.content:nice^1.000000 in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                "children": [
+                  {
+                    "value": 0.4952674273751292,
+                    "message": "queryWeight(reviews.content:nice^1.000000), product of:",
+                    "children": [
+                      {
+                        "value": 1,
+                        "message": "boost"
+                      },
+                      {
+                        "value": 1.3303839377539577,
+                        "message": "idf(docFreq=658, maxDocs=917)"
+                      },
+                      {
+                        "value": 0.3722740581273647,
+                        "message": "queryNorm"
+                      }
+                    ]
+                  },
+                  {
+                    "value": 0,
+                    "message": "fieldWeight(reviews.content:nice in \u0000\u0000\u0000\u0000\u0000\u0000\u0003\n), product of:",
+                    "children": [
+                      {
+                        "value": 0,
+                        "message": "tf(termFreq(reviews.content:nice)=0"
+                      },
+                      {
+                        "value": 0,
+                        "message": "fieldNorm(field=reviews.content, doc=\u0000\u0000\u0000\u0000\u0000\u0000\u0003\n)"
+                      },
+                      {
+                        "value": 1.3303839377539577,
+                        "message": "idf(docFreq=658, maxDocs=917)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "locations": {
+        "reviews.content": {
+          "location": [
+            {
+              "pos": 312,
+              "start": 1641,
+              "end": 1649,
+              "array_positions": [
+                4
+              ]
+            }
+          ],
+          "nice": [
+            {
+              "pos": 165,
+              "start": 840,
+              "end": 844,
+              "array_positions": [
+                2
+              ]
+            }
+          ],
+          "view": [
+            {
+              "pos": 166,
+              "start": 845,
+              "end": 849,
+              "array_positions": [
+                2
+              ]
+            }
+          ]
+        }
+      },
+      "fragments": {
+        "reviews.content": [
+          "…at\u0026#39;s her name checked us in, very friendly and knowlegeable of the area. I would stay here again get area and right at the street car stop. nice resturants in walking distance. \u003cmark\u003enice\u003c/mark\u003e \u003cmark\u003eview\u003c/mark\u003e of the city o…"
+        ]
+      },
+      "sort": [
+        "􏿿􏿿􏿿",
+        "􏿿􏿿􏿿",
+        "_score",
+        "hotel_7388"
+      ]
+    },
+    "..."
+  ],
+  "total_hits": 27,
+  "cost": 108906,
+  "max_score": 0,
+  "took": 14964461,
+  "facets": null
+}

@@ -60,7 +60,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/clusterConfig'
               example:
-                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-cluster-config.json'
+                $ref: 'examples/get-cluster-config.json'
       security:
         - readClusterSettings: []
 
@@ -155,7 +155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/logInfo'
               example:
-                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-logs.json'
+                $ref: 'examples/get-logs.json'
       security:
         - readClusterLogs: []
 
@@ -174,7 +174,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/runtimeInfo'
               example:
-                $ref: '../../../docs/modules/fts-rest-nodes/examples/get-runtime-info.json'
+                $ref: 'examples/get-runtime-info.json'
       security:
         - readClusterSettings: []
 

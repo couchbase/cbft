@@ -57,7 +57,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/indexPartition'
               example:
-                $ref: '../../../docs/modules/fts-rest-advanced/examples/get-partition.json'
+                $ref: 'examples/get-partition.json'
       security:
         - Read: []
 

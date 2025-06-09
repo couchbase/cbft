@@ -1,0 +1,18 @@
+{
+  "fields": ["*"],
+  "query": {
+    "min": 70,
+    "max": 80,
+    "inclusive_min": false,
+    "inclusive_max": true,
+    "field": "brightness"
+  },
+  "knn": [
+    {
+      "k": 10,
+      "field": "colorvect_dot",
+      "vector": [ 0.707106781186548, 0, 0.707106781186548 ]
+    }
+  ],
+  "size": 10
+}

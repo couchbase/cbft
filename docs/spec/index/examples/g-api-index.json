@@ -1,0 +1,26 @@
+{
+  "indexDefs": {
+      "implVersion": "4.0.0",
+      "indexDefs": {
+          "myFirstIndex": {
+          "name": "myFirstIndex",
+          "params": "",
+          "planParams": {
+              "hierarchyRules": null,
+              "maxPartitionsPerPIndex": 0,
+              "nodePlanParams": null,
+              "numReplicas": 0,
+              "planFrozen": false
+          },
+          "sourceName": "",
+          "sourceParams": "",
+          "sourceType": "nil",
+          "sourceUUID": "",
+          "type": "fulltext-index",
+          "uuid": "6cc599ab7a85bf3b"
+        }
+    },
+    "uuid": "6cc599ab7a85bf3b"
+  },
+  "status": "ok"
+}

@@ -1,0 +1,43 @@
+{
+  "indexDef": {
+    "name": "myFirstIndex",
+    "params": "",
+    "planParams": {
+        "hierarchyRules": null,
+        "maxPartitionsPerPIndex": 0,
+        "nodePlanParams": null,
+        "numReplicas": 0,
+        "planFrozen": false
+    },
+    "sourceName": "",
+    "sourceParams": "",
+    "source": "nil",
+    "sourceUUID": "",
+    "type": "fulltext-index",
+    "uuid": "6cc599ab7a85bf3b"
+  },
+  "planPIndexes": [
+    {
+    "indexName": "myFirstIndex",
+    "indexParams": "",
+    "indexType": "bleve",
+    "indexUUID": "6cc599ab7a85bf3b",
+    "name": "myFirstIndex_6cc599ab7a85bf3b_0",
+    "nodes": {
+        "78fc2ffac2fd9401": {
+          "canRead": true,
+          "canWrite": true,
+          "priority": 0
+        }
+    },
+    "sourceName": "",
+    "sourceParams": "",
+    "sourcePartitions": "",
+    "sourceType": "nil",
+    "sourceUUID": "",
+    "uuid": "64bed6e2edf354c3"
+    }
+  ],
+  "status": "ok",
+  "warnings": []
+}
