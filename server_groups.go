@@ -353,11 +353,16 @@ RECONNECT:
 
 			resBytes, err := reader.ReadBytes('\n')
 			if err != nil {
-				log.Warnf(msg+": reconnecting upon reader, bytes read: %d, err: %v",
-					len(resBytes), err)
-				close(stopCh2)
-				resp.Body.Close()
-				continue RECONNECT
+				select {
+				case <-stopCh:
+					continue
+				default:
+					log.Warnf(msg+": reconnecting upon reader, bytes read: %d, err: %v",
+						len(resBytes), err)
+					close(stopCh2)
+					resp.Body.Close()
+					continue RECONNECT
+				}
 			}
 			if len(resBytes) == 1 && resBytes[0] == '\n' {
 				continue
@@ -372,18 +377,17 @@ RECONNECT:
 	}
 }
 
-// terminator is a routine that would listen to stop channel parallely to the
-// streaming endpoint listener. essentially, this aids in immediate cleanup of the
-// routine, especially when the streaming endpoint doesn't send anything (no change
-// was detected in that endpoint).
+// terminator is a routine that would listen to stop channel in-parallel to the
+// streaming endpoint listener. this aids in immediate cleanup of the routine,
+// especially when the streaming endpoint has no updates to send
 func terminator(stopCh, stopCh2 chan struct{}, respBody io.ReadCloser) {
 	go func(stopCh, stopCh2 chan struct{}, respBody io.ReadCloser) {
 		if stopCh != nil {
 			select {
-			case <-stopCh:
+			case <-stopCh: // terminate the streaming endpoint listener altogether
 				respBody.Close()
 				return
-			case <-stopCh2:
+			case <-stopCh2: // cleanup the terminator routine
 				return
 			}
 		}
