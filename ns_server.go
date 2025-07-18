@@ -31,6 +31,8 @@ import (
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 	gojson "github.com/couchbase/go_json"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 // Dump stats to log once every 5min. This stat is configurable
@@ -290,6 +292,23 @@ var statkeys = []string{
 	"total_queries_timeout",        // per-index stat.
 	"total_queries_error",          // per-index stat.
 
+	// external client request/query metric.Timer stats
+	"global_query_timer_count",     // per-index stat.
+	"global_query_timer_mean_ns",   // per-index stat.
+	"global_query_timer_median_ns", // per-index stat.
+	"global_query_timer_p80_ns",    // per-index stat.
+	"global_query_timer_p99_ns",    // per-index stat.
+	"scoped_query_timer_count",     // per-index stat.
+	"scoped_query_timer_mean_ns",   // per-index stat.
+	"scoped_query_timer_median_ns", // per-index stat.
+	"scoped_query_timer_p80_ns",    // per-index stat.
+	"scoped_query_timer_p99_ns",    // per-index stat.
+	"grpc_query_timer_count",       // per-index stat.
+	"grpc_query_timer_mean_ns",     // per-index stat.
+	"grpc_query_timer_median_ns",   // per-index stat.
+	"grpc_query_timer_p80_ns",      // per-index stat.
+	"grpc_query_timer_p99_ns",      // per-index stat.
+
 	"total_grpc_queries",                // per-index stat.
 	"avg_grpc_queries_latency",          // per-index stat.
 	"total_grpc_internal_queries",       // per-index stat.
@@ -506,6 +525,7 @@ func gatherIndexStats(
 	var totalQueries, totalInternalQueries uint64
 	var totClientRequestTimeNS, totInternalRequestTimeNS uint64
 	var totRequestTimeNS, totRequestSlow, totRequestTimeout, totRequestErr, totResponseBytes uint64
+	var globalQueryTimer, scopedQueryTimer metrics.Timer
 
 	for k := range queryPaths {
 		// Obtain focus stats for all query paths supported
@@ -522,6 +542,11 @@ func gatherIndexStats(
 			totRequestTimeout += atomic.LoadUint64(&focusStats.TotRequestTimeout)
 			totRequestErr += atomic.LoadUint64(&focusStats.TotRequestErr)
 			totResponseBytes += atomic.LoadUint64(&focusStats.TotResponseBytes)
+			if k == "/api/index/{indexName}/query" {
+				globalQueryTimer = focusStats.ClientRequestTimer
+			} else if k == "/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/query" {
+				scopedQueryTimer = focusStats.ClientRequestTimer
+			}
 		}
 	}
 
@@ -556,6 +581,17 @@ func gatherIndexStats(
 	nsIndexStat["total_queries_error"] = totRequestErr
 	nsIndexStat["total_bytes_query_results"] = totResponseBytes
 
+	nsIndexStat["global_query_timer_count"] = globalQueryTimer.Count()
+	nsIndexStat["global_query_timer_mean_ns"] = globalQueryTimer.Mean()
+	nsIndexStat["global_query_timer_median_ns"] = globalQueryTimer.Percentile(0.50)
+	nsIndexStat["global_query_timer_p80_ns"] = globalQueryTimer.Percentile(0.80)
+	nsIndexStat["scoped_query_timer_p99_ns"] = globalQueryTimer.Percentile(0.99)
+	nsIndexStat["scoped_query_timer_count"] = scopedQueryTimer.Count()
+	nsIndexStat["scoped_query_timer_mean_ns"] = scopedQueryTimer.Mean()
+	nsIndexStat["scoped_query_timer_median_ns"] = scopedQueryTimer.Percentile(0.50)
+	nsIndexStat["scoped_query_timer_p80_ns"] = scopedQueryTimer.Percentile(0.80)
+	nsIndexStat["scoped_query_timer_p99_ns"] = scopedQueryTimer.Percentile(0.99)
+
 	nsIndexStat["num_pindexes_target"] = uint64(len(planPIndexes))
 
 	rpcFocusStats := GrpcPathStats.FocusStats(indexDef.Name)
@@ -564,8 +600,8 @@ func gatherIndexStats(
 		nsIndexStat["total_grpc_queries"] = totalQueries
 		if totalQueries > 0 {
 			nsIndexStat["avg_grpc_queries_latency"] =
-				float64((atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS) /
-					totalQueries)) / 1000000.0 // Convert from nanosecs to millisecs.
+				float64(atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeNS)/
+					totalQueries) / 1000000.0 // Convert from nanosecs to millisecs.
 		}
 		totalInternalQueries := atomic.LoadUint64(&rpcFocusStats.TotGrpcInternalRequest)
 		nsIndexStat["total_grpc_internal_queries"] = totalInternalQueries
@@ -583,6 +619,12 @@ func gatherIndexStats(
 			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestTimeout)
 		nsIndexStat["total_grpc_queries_error"] =
 			atomic.LoadUint64(&rpcFocusStats.TotGrpcRequestErr)
+
+		nsIndexStat["grpc_query_timer_count"] = rpcFocusStats.GrpcRequestTimer.Count()
+		nsIndexStat["grpc_query_timer_mean_ns"] = rpcFocusStats.GrpcRequestTimer.Mean()
+		nsIndexStat["grpc_query_timer_median_ns"] = rpcFocusStats.GrpcRequestTimer.Percentile(0.50)
+		nsIndexStat["grpc_query_timer_p80_ns"] = rpcFocusStats.GrpcRequestTimer.Percentile(0.80)
+		nsIndexStat["grpc_query_timer_p99_ns"] = rpcFocusStats.GrpcRequestTimer.Percentile(0.99)
 	}
 
 	nsIndexStat["last_access_time"] =

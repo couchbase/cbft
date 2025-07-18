@@ -788,5 +788,170 @@
         "help": "The time the service booted in fractional seconds since Unix epoch.",
         "unit": "seconds",
         "notes": "This is a metric specific to serverless."
+    },
+    "fts_global_query_timer_count": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "The number of query timer events received at the global query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_global_query_timer_mean_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Mean runtime for queries received at the global query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_global_query_timer_median_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Median runtime for queries received at the global query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_global_query_timer_p80_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "80th percentile runtime for queries received at the global query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_global_query_timer_p99_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "99th percentile runtime for queries received at the global query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_scoped_query_timer_count": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "The number of query timer events received at the scoped query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_scoped_query_timer_mean_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Mean runtime for queries received at the scoped query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_scoped_query_timer_median_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Median runtime for queries received at the scoped query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_scoped_query_timer_p80_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "80th percentile runtime for queries received at the scoped query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_scoped_query_timer_p99_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "99th percentile runtime for queries received at the scoped query endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_grpc_query_timer_count": {
+        "added": "8.0.0",
+        "type": "counter",
+        "help": "The number of query timer events received at the gRPC endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_grpc_query_timer_mean_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Mean runtime for queries received at the gRPC endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_grpc_query_timer_median_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "Median runtime for queries received at the gRPC endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_grpc_query_timer_p80_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "80th percentile runtime for queries received at the gRPC endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
+    },
+    "fts_grpc_query_timer_p99_ns": {
+        "added": "8.0.0",
+        "type": "gauge",
+        "help": "99th percentile runtime for queries received at the gRPC endpoint",
+        "labels": [
+            "bucket",
+            "scope",
+            "collection",
+            "index"
+        ]
     }
 }

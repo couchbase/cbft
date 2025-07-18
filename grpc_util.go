@@ -13,6 +13,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -26,6 +27,7 @@ import (
 	log "github.com/couchbase/clog"
 
 	"github.com/couchbase/cbauth"
+	"github.com/rcrowley/go-metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -226,7 +228,7 @@ func (s *GRPCPathStats) FocusStats(focusVal string) *RPCFocusStats {
 	}
 	rv, exists := s.focusStats[focusVal]
 	if !exists {
-		rv = &RPCFocusStats{}
+		rv = newRPCFocusStats()
 		s.focusStats[focusVal] = rv
 	}
 	s.m.Unlock()
@@ -237,7 +239,7 @@ func (s *GRPCPathStats) ResetFocusStats(focusVal string) {
 	s.m.Lock()
 	if s.focusStats != nil {
 		if _, exists := s.focusStats[focusVal]; exists {
-			s.focusStats[focusVal] = &RPCFocusStats{}
+			s.focusStats[focusVal] = newRPCFocusStats()
 		}
 	}
 	s.m.Unlock()
@@ -271,6 +273,14 @@ type RPCFocusStats struct {
 	TotGrpcResponseBytes         uint64 `json:"TotGrpcResponseBytes,omitempty"`
 	TotGrpcInternalRequest       uint64
 	TotGrpcInternalRequestTimeNS uint64
+
+	GrpcRequestTimer metrics.Timer
+}
+
+func newRPCFocusStats() *RPCFocusStats {
+	return &RPCFocusStats{
+		GrpcRequestTimer: metrics.NewTimer(),
+	}
 }
 
 func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
@@ -282,7 +292,8 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 			// co-ordinating node
 			atomic.AddUint64(&focusStats.TotGrpcRequest, 1)
 			atomic.AddUint64(&focusStats.TotGrpcRequestTimeNS,
-				uint64(time.Now().Sub(startTime)))
+				uint64(time.Since(startTime)))
+			focusStats.GrpcRequestTimer.Update(time.Since(startTime))
 
 			slowQueryLogTimeoutV := mgr.GetOption("slowQueryLogTimeout")
 			if slowQueryLogTimeoutV != "" {
@@ -302,7 +313,7 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 
 			if err != nil {
 				atomic.AddUint64(&focusStats.TotGrpcRequestErr, 1)
-				if err == context.DeadlineExceeded {
+				if errors.Is(err, context.DeadlineExceeded) {
 					atomic.AddUint64(&focusStats.TotGrpcRequestTimeout, 1)
 				}
 			}
@@ -310,7 +321,7 @@ func updateRpcFocusStats(startTime time.Time, mgr *cbgt.Manager,
 			// not a co-ordinating node
 			atomic.AddUint64(&focusStats.TotGrpcInternalRequest, 1)
 			atomic.AddUint64(&focusStats.TotGrpcInternalRequestTimeNS,
-				uint64(time.Now().Sub(startTime)))
+				uint64(time.Since(startTime)))
 		}
 	}
 }
