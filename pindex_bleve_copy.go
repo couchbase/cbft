@@ -445,6 +445,8 @@ func createNewBleveIndex(indexType, indexParams, path string,
 			return
 		}
 
+		log.Warnf("pindex_bleve_copy: createNewBleveIndex pindex: %s"+
+			" failed to create new bleve index, err: %v", pindexName, err)
 		// remove the currently registered noop powered pindex.
 		_ = mgr.RemovePIndex(pi)
 		mgr.JanitorKick(fmt.Sprintf("restart kick for pindex: %s",
