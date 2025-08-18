@@ -3256,6 +3256,7 @@ func addIndexClients(mgr *cbgt.Manager, indexName, indexUUID string,
 			PIndexNames: []string{remotePlanPIndex.PlanPIndex.Name},
 			QueryURL:    baseURL + "/query",
 			CountURL:    baseURL + "/count",
+			InsightsURL: hostPortUrl + prefix + "/api/index/" + indexName + "/insights",
 			Consistency: consistencyParams,
 			httpClient:  cbgt.HttpClient(),
 		}
@@ -3374,11 +3375,14 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 		}
 	}
 
-	remoteClients, err := rcAdder(mgr, indexName, indexUUID,
-		remotePlanPIndexes, consistencyParams, onlyPIndexes,
-		collector, groupByNode)
-	if err != nil {
-		return nil, numPIndexes, err
+	var remoteClients []RemoteClient
+	if rcAdder != nil {
+		remoteClients, err = rcAdder(mgr, indexName, indexUUID,
+			remotePlanPIndexes, consistencyParams, onlyPIndexes,
+			collector, groupByNode)
+		if err != nil {
+			return nil, numPIndexes, err
+		}
 	}
 
 	// TODO: Should kickoff remote queries concurrently before we wait.

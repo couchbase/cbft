@@ -127,3 +127,13 @@ func (m *MissingPIndex) DeleteInternal(key []byte) error {
 func (m *MissingPIndex) Advanced() (index.Index, error) {
 	return nil, missingPIndexUnimplementedErr
 }
+
+func (m *MissingPIndex) TermFrequencies(field string, limit int, descending bool) (
+	[]index.TermFreq, error) {
+	return nil, nil
+}
+
+func (m *MissingPIndex) CentroidCardinalities(field string, limit int, descending bool) (
+	[]index.CentroidCardinality, error) {
+	return nil, nil
+}

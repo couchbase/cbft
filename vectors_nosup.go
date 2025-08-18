@@ -13,8 +13,12 @@ package cbft
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/blevesearch/bleve/v2"
+
+	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 )
 
 const featuresVectorBase64Dims4096 = ""
@@ -65,4 +69,18 @@ func GetKNNThrottleLimit() int64 {
 }
 
 func SetKNNThrottleLimit(val int64) {
+}
+
+// -----------------------------------------------------------------------------
+
+type IndexInsightsHandler struct {
+}
+
+func NewIndexInsightsHandler(mgr *cbgt.Manager) *IndexInsightsHandler {
+	return &IndexInsightsHandler{}
+}
+
+func (h *IndexInsightsHandler) ServeHTTP(
+	w http.ResponseWriter, req *http.Request) {
+	rest.ShowError(w, req, "Not supported on cluster", http.StatusNotImplemented)
 }

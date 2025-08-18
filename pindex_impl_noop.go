@@ -115,3 +115,13 @@ func (p *noopBleveIndex) DeleteInternal(key []byte) error {
 func (p *noopBleveIndex) Advanced() (index.Index, error) {
 	return nil, noopBleveIndexUnimplementedErr
 }
+
+func (p *noopBleveIndex) TermFrequencies(field string, limit int, descending bool) (
+	[]index.TermFreq, error) {
+	return nil, nil
+}
+
+func (p *noopBleveIndex) CentroidCardinalities(field string, limit int, descending bool) (
+	[]index.CentroidCardinality, error) {
+	return nil, nil
+}

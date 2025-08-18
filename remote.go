@@ -92,6 +92,7 @@ type IndexClient struct {
 	PIndexNames    []string
 	QueryURL       string
 	CountURL       string
+	InsightsURL    string
 	TaskRequestURL string
 	Consistency    *cbgt.ConsistencyParams
 	httpClient     cbgt.HTTPClient
@@ -427,6 +428,7 @@ func GroupIndexClientsByHostPort(clients []*IndexClient) (rv []*IndexClient, err
 				IndexUUID:      client.IndexUUID,
 				QueryURL:       baseURL + "/query",
 				CountURL:       baseURL + "/count",
+				InsightsURL:    baseURL + "/insights",
 				TaskRequestURL: baseURL + "/tasks",
 				Consistency:    client.Consistency,
 				httpClient:     client.httpClient,
@@ -515,4 +517,91 @@ func completeTaskStatus(req *cbgt.TaskRequest, err error,
 		rv.Errors[pindexName] = err
 	}
 	return rv
+}
+
+func (r *IndexClient) fetchInsight(
+	insight string,
+	field string,
+	limit int,
+	descending bool,
+	out any,
+) error {
+	u, err := UrlWithAuth(r.AuthType(), r.InsightsURL)
+	if err != nil {
+		return fmt.Errorf("remote: insights auth for query, insightsURL: %s,"+
+			" authType: %s, err: %w", r.InsightsURL, r.AuthType(), err)
+	}
+
+	body, err := MarshalJSON(map[string]any{
+		"field":      field,
+		"insight":    insight,
+		"limit":      limit,
+		"descending": descending,
+		"local-only": true,
+	})
+	if err != nil {
+		return fmt.Errorf("remote: insights marshal request, err: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", u, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("remote: insights new request, err: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("remote: insights http request, err: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("remote: insights got status code %d, insightsURL: %s",
+			resp.StatusCode, r.InsightsURL)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("remote: insights read failure, err: %w", err)
+	}
+
+	if err := UnmarshalJSON(data, out); err != nil {
+		return fmt.Errorf("remote: insights parse response, err: %w", err)
+	}
+
+	return nil
+}
+
+func (r *IndexClient) TermFrequencies(field string, limit int, descending bool) (
+	[]index.TermFreq, error) {
+	var rv struct {
+		Status          string           `json:"status"`
+		TermFrequencies []index.TermFreq `json:"termFrequencies"`
+	}
+
+	if err := r.fetchInsight(
+		"termFrequencies", field, limit, descending, &rv); err != nil {
+		return nil, err
+	}
+	if rv.Status != "ok" {
+		return nil, fmt.Errorf("remote: insights unsupported")
+	}
+	return rv.TermFrequencies, nil
+}
+
+func (r *IndexClient) CentroidCardinalities(field string, limit int, descending bool) (
+	[]index.CentroidCardinality, error) {
+	var rv struct {
+		Status                string                      `json:"status"`
+		CentroidCardinalities []index.CentroidCardinality `json:"centroidCardinalities"`
+	}
+
+	if err := r.fetchInsight(
+		"centroidCardinalities", field, limit, descending, &rv); err != nil {
+		return nil, err
+	}
+	if rv.Status != "ok" {
+		return nil, fmt.Errorf("remote: insights unsupported")
+	}
+	return rv.CentroidCardinalities, nil
 }

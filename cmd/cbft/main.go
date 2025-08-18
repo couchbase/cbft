@@ -636,7 +636,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 
 	handle(prefix+"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
-
 	handle(prefix+"/api/index/{indexName}/analyzeDoc", "POST",
 		cbft.NewAnalyzeDocHandler(mgr))
 
@@ -659,6 +658,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.NewQuerySupervisorDetails(mgr))
 
 	handle(prefix+"/api/conciseOptions", "GET", cbft.NewConciseOptions(mgr))
+
+	// Index insights handlers
+	handle(prefix+"/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/insights", "POST",
+		cbft.NewIndexInsightsHandler(mgr))
+	handle(prefix+"/api/index/{indexName}/insights", "POST",
+		cbft.NewIndexInsightsHandler(mgr))
 
 	router := exportMuxRoutesToHttprouter(muxrouter, options)
 

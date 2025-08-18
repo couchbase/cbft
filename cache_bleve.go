@@ -349,3 +349,19 @@ func (m *cacheBleveIndex) HandleTask(req []byte) (
 
 	return nil, fmt.Errorf("bleve: unknown task op: %s", task.Op)
 }
+
+func (m *cacheBleveIndex) TermFrequencies(field string, limit int, descending bool) (
+	[]index.TermFreq, error) {
+	if insightsIdx, ok := m.bindex.(bleve.InsightsIndex); ok {
+		return insightsIdx.TermFrequencies(field, limit, descending)
+	}
+	return nil, nil
+}
+
+func (m *cacheBleveIndex) CentroidCardinalities(field string, limit int, descending bool) (
+	[]index.CentroidCardinality, error) {
+	if insightsIdx, ok := m.bindex.(bleve.InsightsIndex); ok {
+		return insightsIdx.CentroidCardinalities(field, limit, descending)
+	}
+	return nil, nil
+}

@@ -13,6 +13,9 @@ package cbft
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -22,6 +25,10 @@ import (
 	"github.com/blevesearch/bleve/v2/document"
 	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/blevesearch/bleve/v2/search/query"
+	index "github.com/blevesearch/bleve_index_api"
+
+	"github.com/couchbase/cbgt"
+	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
 )
 
@@ -194,4 +201,142 @@ func GetKNNThrottleLimit() int64 {
 
 func SetKNNThrottleLimit(val int64) {
 	atomic.StoreInt64(&kNNThrottleLimit, val)
+}
+
+// -----------------------------------------------------------------------------
+
+type IndexInsightsHandler struct {
+	mgr *cbgt.Manager
+}
+
+func NewIndexInsightsHandler(mgr *cbgt.Manager) *IndexInsightsHandler {
+	return &IndexInsightsHandler{mgr: mgr}
+}
+
+const (
+	insightTermFrequencies       = "termFrequencies"
+	insightCentroidCardinalities = "centroidCardinalities"
+)
+
+type IndexInsightsRequest struct {
+	Field      string `json:"field"`
+	Insight    string `json:"insight"`
+	Limit      *int   `json:"limit,omitempty"`
+	Descending *bool  `json:"descending,omitempty"`
+
+	LocalOnly bool `json:"local-only,omitempty"`
+}
+
+func (h *IndexInsightsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	indexName := rest.IndexNameLookup(req)
+	if indexName == "" {
+		rest.ShowError(w, req, "indexInsights, index name is required", http.StatusBadRequest)
+		return
+	}
+
+	requestBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		rest.ShowError(w, nil, fmt.Sprintf("indexInsights,"+
+			" could not read request body, indexName: %s, err: %v",
+			indexName, err), http.StatusBadRequest)
+		return
+	}
+
+	var idxInsightsReq IndexInsightsRequest
+	err = UnmarshalJSON(requestBody, &idxInsightsReq)
+	if err != nil {
+		rest.ShowError(w, nil, fmt.Sprintf("indexInsights,"+
+			" error parsing request body, indexName: %s, err: %v",
+			indexName, err), http.StatusBadRequest)
+		return
+	}
+
+	if len(idxInsightsReq.Field) == 0 {
+		rest.ShowError(w, req, "indexInsights, field name required", http.StatusBadRequest)
+		return
+	}
+
+	if idxInsightsReq.Insight != insightTermFrequencies &&
+		idxInsightsReq.Insight != insightCentroidCardinalities {
+		rest.ShowError(w, req,
+			"indexInsights, supported insights: 'termFrequencies'/'centroidCardinalities'",
+			http.StatusBadRequest)
+		return
+	}
+
+	rcAdder := addIndexClients
+	if idxInsightsReq.LocalOnly {
+		// no index clients in case of a "local-only" request
+		rcAdder = nil
+	}
+
+	alias, _, _, err := bleveIndexAlias(h.mgr, indexName, "", false, nil, nil,
+		true, nil, "", rcAdder)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("indexInsights, indexName: %s, err : %v",
+			indexName, err), http.StatusInternalServerError)
+		return
+	}
+
+	insightsIndex, ok := alias.(bleve.InsightsIndex)
+	if !ok {
+		rest.ShowError(w, req, "indexInsights, cannot produce insights for index",
+			http.StatusNotImplemented)
+		return
+	}
+
+	// defaults
+	limit, descending := 1, true
+	if idxInsightsReq.Limit != nil {
+		limit = *idxInsightsReq.Limit
+	}
+	if idxInsightsReq.Descending != nil {
+		descending = *idxInsightsReq.Descending
+	}
+
+	if idxInsightsReq.Insight == insightTermFrequencies {
+		termFreqs, err := insightsIndex.TermFrequencies(
+			idxInsightsReq.Field, limit, descending)
+		if err != nil {
+			rest.ShowError(w, req, fmt.Sprintf("indexInsights, indexName: %s, field: %s,"+
+				" limit: %d, descending: %v, termFrequencies err: %v",
+				indexName, idxInsightsReq.Field, limit, descending, err),
+				http.StatusInternalServerError)
+			return
+		}
+
+		rv := struct {
+			Status          string               `json:"status"`
+			Request         IndexInsightsRequest `json:"request"`
+			TermFrequencies []index.TermFreq     `json:"termFrequencies"`
+		}{
+			Status:          "ok",
+			Request:         idxInsightsReq,
+			TermFrequencies: termFreqs,
+		}
+		rest.MustEncode(w, rv)
+		return
+	}
+
+	// centroidCardinalities
+	centroidCardinalities, err := insightsIndex.CentroidCardinalities(
+		idxInsightsReq.Field, limit, descending)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("IndexInsights, indexName: %s, field: %s,"+
+			" limit: %d, descending: %v, centroidCardinalities err: %v",
+			indexName, idxInsightsReq.Field, limit, descending, err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	rv := struct {
+		Status                string                      `json:"status"`
+		Request               IndexInsightsRequest        `json:"request"`
+		CentroidCardinalities []index.CentroidCardinality `json:"centroidCardinalities"`
+	}{
+		Status:                "ok",
+		Request:               idxInsightsReq,
+		CentroidCardinalities: centroidCardinalities,
+	}
+	rest.MustEncode(w, rv)
 }
