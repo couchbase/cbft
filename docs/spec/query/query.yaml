@@ -4,7 +4,7 @@ info:
   description: |-
     The Search Active Queries REST API is provided by the Search service.
     This API enables you to get information about active Search queries.
-  version: '7.6'
+  version: '8.0'
 
 servers:
   - url: '{scheme}://{host}:{port}'

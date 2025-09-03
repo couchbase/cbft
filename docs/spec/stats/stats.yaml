@@ -4,7 +4,7 @@ info:
   description: |-
     The Search Statistics REST API is provided by the Search service.
     This API enables you to get statistics for the Search Service and your Search indexes.
-  version: '7.6'
+  version: '8.0'
 
 servers:
   - url: '{scheme}://{host}:{port}'
@@ -191,7 +191,7 @@ components:
             Typically, the Search Service uses one agent pair for each bucket on a node.
         num_knn_search_requests:
           type: integer
-          description: The total number of [Vector Search](https://docs.couchbase.com/server/7.6/vector-search/vector-search.html) requests made across all Search indexes in the cluster.
+          description: The total number of [Vector Search](https://docs.couchbase.com/server/8.0/vector-search/vector-search.html) requests made across all Search indexes in the cluster.
         pct_cpu_gc:
           type: number
           description: |-
@@ -256,7 +256,7 @@ components:
           description: |-
             The total number of gRPC queries rejected because of the available memory quota for the Search Service being less than the estimated memory required for merging search results from all partitions.
 
-            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-ftsMemoryQuota.html).
 
             The Search Service uses gRPC to manage scatter-gather operations across nodes when there are multiple nodes running the Search Service in a cluster.
         tot_grpcs_listeners_closed:
@@ -304,7 +304,7 @@ components:
           description: |-
             The total number of Search queries rejected because of the available memory quota for the Search Service being less than the estimated memory required for merging search results from all partitions.
 
-            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+            For more information about how to set the Search Service's quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-ftsMemoryQuota.html).
         tot_remote_grpc:
           type: integer
           description: |-
@@ -419,13 +419,13 @@ components:
           description: |-
             The total number of Search queries that encountered consistency errors on the cluster.
 
-            For more information about consistency in Search queries, see [Search Request JSON Properties](https://docs.couchbase.com/server/7.6/search/search-request-params.html#ctl).
+            For more information about consistency in Search queries, see [Search Request JSON Properties](https://docs.couchbase.com/server/8.0/search/search-request-params.html#ctl).
         total_queries_error:
           type: integer
           description: The total number of Search queries that encountered an error on the cluster.
         total_queries_max_result_window_exceeded_error:
           type: integer
-          description: The total number of Search queries that exceeded the [bleveMaxResultWindow](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-bleveMaxResultWindow.html) setting.
+          description: The total number of Search queries that exceeded the [bleveMaxResultWindow](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-bleveMaxResultWindow.html) setting.
         total_queries_partial_results_error:
           type: integer
           description: |-
@@ -437,7 +437,7 @@ components:
           description: |-
             The total number of queries rejected by the Search Service when the memory used approaches or exceeds the quota set for a query.
 
-            For more information about how to set the Search Service's memory quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/7.6/fts/fts-advanced-settings-ftsMemoryQuota.html).
+            For more information about how to set the Search Service's memory quota, see [ftsMemoryQuota](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-ftsMemoryQuota.html).
 
             This statistic appears on the Server Web Console dashboard as **Rejected Queries**.
         total_queries_search_in_context_error:
@@ -455,13 +455,13 @@ components:
           description: |-
             The total number of Search queries that timed out.
 
-            You can set the timeout for a query with the [ctl object](https://docs.couchbase.com/server/7.6/search/search-request-params.html#ctl).
+            You can set the timeout for a query with the [ctl object](https://docs.couchbase.com/server/8.0/search/search-request-params.html#ctl).
         total_queries_validation_error:
           type: integer
           description: |-
             The total number of queries that encountered a validation error, when the query request included a `validate` property in the `ctl` object.
 
-            For more information, see the [validate property](https://docs.couchbase.com/server/7.6/search/search-request-params.html#validate).
+            For more information, see the [validate property](https://docs.couchbase.com/server/8.0/search/search-request-params.html#validate).
         total_request_time:
           type: integer
           description: |-
@@ -718,7 +718,7 @@ components:
         BUCKET:INDEX:total_knn_searches:
           type: integer
           description: |-
-            The total number of [Vector Search](https://docs.couchbase.com/server/7.6/vector-search/vector-search.html) requests made to the given Search index.
+            The total number of [Vector Search](https://docs.couchbase.com/server/8.0/vector-search/vector-search.html) requests made to the given Search index.
         BUCKET:INDEX:total_queries:
           type: integer
           description: The total number of Search queries per second on the given Search index.

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Search Manager Options REST API
-  version: '7.6'
+  version: '8.0'
   description: |-
     The Search Manager Options REST API is provided by the Search service.
     This API enables you to set Search manager options; in particular, to configure rebalance based on file transfer.

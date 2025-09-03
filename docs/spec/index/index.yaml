@@ -4,7 +4,7 @@ info:
   description: |-
     The Search Indexing REST API is provided by the Search service.
     This API enables you to manage and monitor your Search indexes.
-  version: '7.6'
+  version: '8.0'
 
 servers:
   - url: '{scheme}://{host}:{port}'
@@ -180,7 +180,7 @@ paths:
       summary: Get Index Definition (Scoped)
       description: |-
         Returns the Search index definition for the Search index specified in the endpoint URL as a JSON object.
-        Unlike [Get Index Definition](#g-api-index-name), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Definitions
       parameters:
@@ -205,7 +205,7 @@ paths:
       description: |-
         If the Search index in the endpoint URL does not exist, this endpoint uses a JSON object in the request body to create a new index.
         If the Search index already exists, this endpoint updates the Search index definition.
-        Unlike [Create or Update an Index Definition](#p-api-index-name), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Definitions
       parameters:
@@ -246,7 +246,7 @@ paths:
       summary: Delete Index Definition (Scoped)
       description: |-
         Delete the Search index definition from the bucket and scope specified in the endpoint URL.
-        Unlike [Delete Index Definition](#d-api-index-name), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Definitions
       parameters:
@@ -298,7 +298,7 @@ paths:
       description: |-
         For the Search index specified in the endpoint URL, pause or resume index updates and maintenance.
         While paused, the Search index does not load any new document mutations.
-        Unlike [Set Index Ingestion Control](#p-api-idx-name-ingestcontrol), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Management
       parameters:
@@ -337,7 +337,7 @@ paths:
       description: |-
         For the Search index specified in the endpoint URL, freeze or unfreeze the assignment of index partitions to nodes.
         While frozen, the Search index stops assigning partitions during index rebalancing and index definition updates.
-        Unlike [Freeze Index Partition Assignment](#p-api-idx-name-planfreezecontrol), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Management
       parameters:
@@ -376,7 +376,7 @@ paths:
       description: |-
         For the Search index specified in the endpoint URL, disallow or allow queries.
         While queries are disallowed, users see an error that the Search index's partitions could not be reached.
-        Unlike [Stop Queries on an Index](#p-api-idx-name-querycontrol), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Management
       parameters:
@@ -602,7 +602,7 @@ paths:
       description: |
         Run a query formatted as a JSON object against the Search index definition specified in the endpoint URL.
         The endpoint returns a JSON object as a response.
-        Unlike [Query a Search Index](#p-api-index-name-query), this endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
       tags:
         - Querying
       parameters:

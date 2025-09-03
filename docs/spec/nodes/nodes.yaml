@@ -4,7 +4,7 @@ info:
   description: |-
     The Search Node Configuration REST API is provided by the Search service.
     This API enables you to manage and monitor your Search nodes.
-  version: '7.6'
+  version: '8.0'
 
 servers:
   - url: '{scheme}://{host}:{port}'
