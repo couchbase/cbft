@@ -4,7 +4,7 @@ info:
   description: |-
     The Advanced Search REST APIs are provided by the Search service.
     These APIs enable you to manage and query Search index partitions and to specify advanced settings.
-  version: '7.6'
+  version: '8.0'
 
 servers:
   - url: '{scheme}://{host}:{port}'
