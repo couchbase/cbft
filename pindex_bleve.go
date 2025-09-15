@@ -623,6 +623,35 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		}
 
 		scopeDotCollMode := strings.HasPrefix(bp.DocConfig.Mode, ConfigModeCollPrefix)
+		var scope *Scope
+		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
+			scope, err = validateScopeCollFromMappings(indexDef.SourceName,
+				im, false, scopeDotCollMode)
+			if err != nil {
+				return nil, cbgt.NewBadRequestError("%v", err)
+			}
+		}
+		sourceParams := make(map[string]interface{})
+		if len(indexDef.SourceParams) > 0 && indexDef.SourceParams != "null" {
+			err = UnmarshalJSON([]byte(indexDef.SourceParams), &sourceParams)
+			if err != nil {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
+					", err: %v", err)
+			}
+		}
+
+		scopeParams := &cbgt.ScopeParams{}
+		if scope != nil {
+			scopeParams.Name = scope.Name
+			for i := range scope.Collections {
+				scopeParams.Collections = append(scopeParams.Collections, cbgt.CollectionParams{
+					Name: scope.Collections[i].Name,
+					Uid:  scope.Collections[i].Uid,
+				})
+			}
+		}
+
+		sourceParams["scopeParams"] = scopeParams
 		// figure out the scope/collection details from mappings
 		// and perform the validation checks.
 		if scopeDotCollMode || synonymsAvailable {
@@ -631,23 +660,15 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					" across all nodes in the cluster")
 			}
 
-			if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
-				scope, err := validateScopeCollFromMappings(indexDef.SourceName,
-					im, false, scopeDotCollMode)
-				if err != nil {
-					return nil, cbgt.NewBadRequestError("%v", err)
+			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+			if len(bucketName) > 0 && len(scopeName) > 0 {
+				if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+					return nil, cbgt.NewBadRequestError("PrepareIndex, scoped indexes NOT" +
+						" supported in mixed version cluster")
 				}
-
-				bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
-				if len(bucketName) > 0 && len(scopeName) > 0 {
-					if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-						return nil, cbgt.NewBadRequestError("PrepareIndex, scoped indexes NOT" +
-							" supported in mixed version cluster")
-					}
-					if bucketName != indexDef.SourceName || scopeName != scope.Name {
-						return nil, cbgt.NewBadRequestError("PrepareIndex, validation of bucket" +
-							" and/or scope names against index definition failed")
-					}
+				if bucketName != indexDef.SourceName || scopeName != scope.Name {
+					return nil, cbgt.NewBadRequestError("PrepareIndex, validation of bucket" +
+						" and/or scope names against index definition failed")
 				}
 			}
 		} else {
@@ -685,24 +706,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 					"and properties not supported in this cluster")
 			}
 
-			sourceParams := make(map[string]interface{})
-			if len(indexDef.SourceParams) > 0 && indexDef.SourceParams != "null" {
-				err = UnmarshalJSON([]byte(indexDef.SourceParams), &sourceParams)
-				if err != nil {
-					return nil, cbgt.NewBadRequestError("PrepareIndex, unable to unmarshal source params"+
-						", err: %v", err)
-				}
-			}
-
 			sourceParams["includeXAttrs"] = true
-
-			updatedSourceParams, err := MarshalJSON(sourceParams)
-			if err != nil {
-				return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
-					", err: %v", err)
-			}
-
-			indexDef.SourceParams = string(updatedSourceParams)
 		}
 
 		if indexVectorPicture.fields == vectorAndBase64Fields &&
@@ -773,6 +777,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
+		updatedSourceParams, err := MarshalJSON(sourceParams)
+		if err != nil {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
+				", err: %v", err)
+		}
+
+		indexDef.SourceParams = string(updatedSourceParams)
 	}
 
 	segmentVersionSupported := cbgt.IsFeatureSupportedByCluster(

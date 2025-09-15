@@ -303,8 +303,8 @@ func validateScopeCollFromMappings(bucket string,
 				}
 				if !ignoreCollNotFoundErrs {
 					return nil, fmt.Errorf("collection_utils: collection:"+
-						" '%s' doesn't belong to scope: '%s' in bucket: '%s'",
-						collNames[i], sName, bucket)
+						" '%s' doesn't belong to scope: '%s' in bucket: '%s', err: %w",
+						collNames[i], sName, bucket, cbgt.ErrSourceDoesNotExist)
 				}
 			}
 		OUTER2:
@@ -321,8 +321,8 @@ func validateScopeCollFromMappings(bucket string,
 				}
 				if !ignoreCollNotFoundErrs {
 					return nil, fmt.Errorf("collection_utils: synonym collection:"+
-						" '%s' doesn't belong to scope: '%s' in bucket: '%s'",
-						synColls[i], sName, bucket)
+						" '%s' doesn't belong to scope: '%s' in bucket: '%s', err: %w",
+						synColls[i], sName, bucket, cbgt.ErrSourceDoesNotExist)
 				}
 			}
 			break
@@ -331,8 +331,8 @@ func validateScopeCollFromMappings(bucket string,
 
 	if rv.Name == "" {
 		return nil, fmt.Errorf("collection_utils: scope:"+
-			" '%s' not found in bucket: '%s' ",
-			sName, bucket)
+			" '%s' not found in bucket: '%s', err: %w",
+			sName, bucket, cbgt.ErrSourceDoesNotExist)
 	}
 
 	return rv, nil
