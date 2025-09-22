@@ -242,6 +242,7 @@ type SearchRequest struct {
 	KNN              json.RawMessage         `json:"knn,omitempty"`
 	KNNOperator      json.RawMessage         `json:"knn_operator,omitempty"`
 	PreSearchData    json.RawMessage         `json:"pre_search_data,omitempty"`
+	Params           json.RawMessage         `json:"params,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {
@@ -300,6 +301,22 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 		r.Sort, err = search.ParseSortOrderJSON(sr.Sort)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	if bleve.IsScoreFusionRequested(r) {
+		if sr.Params == nil {
+			// If params is not present and it requires fusion, assign
+			// default values
+			r.Params = bleve.NewDefaultParams(r.From, r.Size)
+		} else {
+			// if it is a rescoring request, validate the fusion rescoring
+			// parameters. Return errors if they are not valid.
+			params, err := bleve.ParseParams(r, sr.Params)
+			if err != nil {
+				return nil, err
+			}
+			r.Params = params
 		}
 	}
 
@@ -1472,6 +1489,8 @@ var (
 	totQueryConsistencyErr uint64
 	// (Query.From + Query.Size) exceeded bleveMaxResultWindow
 	totQueryMaxResultWindowExceededErr uint64
+	// Params.ScoreWindowSize exceeded bleveMaxResultWindow
+	totQueryMaxScoreWindowSizeExceededErr uint64
 	// requested query could not be executed by some pindex(es)
 	totQueryPartialResultsErr uint64
 )
@@ -1606,6 +1625,15 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 			return fmt.Errorf("bleve: bleveMaxResultWindow exceeded,"+
 				" from: %d, size: %d, bleveMaxResultWindow: %d",
 				searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
+		}
+
+		if searchRequest.Params != nil {
+			if searchRequest.Params.ScoreWindowSize > bleveMaxResultWindow {
+				atomic.AddUint64(&totQueryMaxScoreWindowSizeExceededErr, 1)
+				return fmt.Errorf("bleve: ScoreWindowSize exceeds bleveMaxResultWindow,"+
+					" from: %d, size: %d, bleveMaxResultWindow: %d",
+					searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
+			}
 		}
 	}
 

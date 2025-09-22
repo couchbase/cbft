@@ -187,6 +187,14 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 					bleveMaxResultWindow))
 			return err
 		}
+
+		if searchRequest.Params != nil {
+			if searchRequest.Params.ScoreWindowSize > bleveMaxResultWindow {
+				return fmt.Errorf("grpc_server: ScoreWindowSize exceeds bleveMaxResultWindow,"+
+					" from: %d, size: %d, bleveMaxResultWindow: %d",
+					searchRequest.From, searchRequest.Size, bleveMaxResultWindow)
+			}
+		}
 	}
 
 	// phase 1 - set up timeouts, wait for local consistency reqiurements
@@ -206,6 +214,10 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	// check if current scatter gather is a presearch
 	if isPreSearch(stream.Context()) {
 		ctx = context.WithValue(ctx, search.PreSearchKey, true)
+	}
+
+	if isScoreFusion(stream.Context()) {
+		ctx = context.WithValue(ctx, search.ScoreFusionKey, true)
 	}
 
 	alias, remoteClients, numPIndexes, er := bleveIndexAlias(s.mgr, req.IndexName,

@@ -310,6 +310,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		KNN              json.RawMessage         `json:"knn"`
 		KNNOperator      json.RawMessage         `json:"knn_operator"`
 		PreSearchData    json.RawMessage         `json:"pre_search_data"`
+		Params           json.RawMessage         `json:"params"`
 	}
 
 	r := &bleve.SearchRequest{}
@@ -364,6 +365,19 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		if err != nil {
 			iter.Error = err
 			return
+		}
+	}
+
+	if bleve.IsScoreFusionRequested(r) {
+		if temp.Params != nil {
+			r.Params = bleve.NewDefaultParams(r.From, r.Size)
+		} else {
+			params, err := bleve.ParseParams(r, temp.Params)
+			if err != nil {
+				iter.Error = err
+				return
+			}
+			r.Params = params
 		}
 	}
 

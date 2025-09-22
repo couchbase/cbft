@@ -334,6 +334,11 @@ func (g *GrpcClient) Query(ctx context.Context,
 			search.PreSearchKey.String(), clusterActionScatterGatherPreSearch)
 	}
 
+	// add ScoreFusion key if required
+	if _, ok := ctx.Value(search.ScoreFusionKey).(bool); ok {
+		nctx = metadata.AppendToOutgoingContext(nctx, search.ScoreFusionKey.String(), clusterActionScatterGatherScoreFusion)
+	}
+
 	result, er := g.SearchRPC(nctx, req, scatterGatherReq)
 	if st, ok := status.FromError(er); ok {
 		g.lastSearchStatus = httpStatusCodes(st.Code())

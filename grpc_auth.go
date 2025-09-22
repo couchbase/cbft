@@ -219,6 +219,10 @@ func isPreSearch(ctx context.Context) bool {
 	return extractOptionalHeader(ctx, search.PreSearchKey.String()) == clusterActionScatterGatherPreSearch
 }
 
+func isScoreFusion(ctx context.Context) bool {
+	return extractOptionalHeader(ctx, search.ScoreFusionKey.String()) == clusterActionScatterGatherScoreFusion
+}
+
 func verifyRPCAuth(ctx context.Context, indexName string, req interface{}) error {
 	if _, err := extractMetaHeader(ctx, rpcClusterActionKey); err == nil {
 		return nil

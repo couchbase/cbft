@@ -404,6 +404,8 @@ func gatherQueryErrorsStats() map[string]interface{} {
 		atomic.LoadUint64(&totQueryConsistencyErr)
 	rv["total_queries_max_result_window_exceeded_error"] =
 		atomic.LoadUint64(&totQueryMaxResultWindowExceededErr)
+	rv["total_queries_max_score_window_size_exceeded_error"] =
+		atomic.LoadUint64(&totQueryMaxScoreWindowSizeExceededErr)
 	rv["total_queries_partial_results_error"] =
 		atomic.LoadUint64(&totQueryPartialResultsErr)
 
