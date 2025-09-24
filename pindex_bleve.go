@@ -98,6 +98,11 @@ var (
 	// represents the number of async batch workers per pindex
 	asyncBatchWorkerCount = 4 // need to make it configurable,
 
+	// DefaultBoltTimeout is the cluster-wide default used when composing
+	// Bleve kvConfig, unless a per-index store.bolt_timeout or a manager
+	// option override is present.
+	DefaultBoltTimeout = "30s"
+
 	TotBleveDestOpened uint64
 	TotBleveDestClosed uint64
 
@@ -1235,7 +1240,6 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 		"numSnapshotsToKeep":       3,
 		"rollbackSamplingInterval": "10m",
 		"forceSegmentType":         "zap",
-		"bolt_timeout":             "30s",
 		// enable_concurrency will be added here.
 	}
 	for k, v := range bleveParams.Store {
@@ -1244,6 +1248,13 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 			continue
 		}
 		kvConfig[k] = v
+	}
+
+	// Validate bolt_timeout if provided via index params; fall back to
+	// DefaultBoltTimeout on bad type/format.
+	s, ok := kvConfig["bolt_timeout"].(string)
+	if !ok || s == "" || func() bool { _, err := time.ParseDuration(s); return err != nil }() {
+		kvConfig["bolt_timeout"] = DefaultBoltTimeout
 	}
 
 	if bleveIndexType != "scorch" {
