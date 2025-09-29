@@ -1111,7 +1111,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
             $scope.indexMapping.analysis.date_time_parsers = {}
             $scope.indexMapping.analysis.synonym_sources = {}
             $scope.indexMapping.analysis.analyzers = {}
-            $scope.indexMapping.scoring_model = "tfidf"
+            $scope.indexMapping.scoring_model = "tf-idf"
             $scope.indexMapping.default_analyzer = "standard"
             $scope.indexMapping.default_datetime_parser = "dateTimeOptional"
             $scope.indexMapping.default_field = "_all"
@@ -2045,7 +2045,7 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
         }
 
         $scope.loadScoringModels = function() {
-            $scope.scoringModels = ["bm25", "tfidf"];
+            $scope.scoringModels = ["bm25", "tf-idf"];
         }
 
         $scope.loadDatetimeParserNames = function() {

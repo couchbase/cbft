@@ -82,7 +82,7 @@ function newEasyMappings() {
         getIndexMapping: function(scopeName) {
             var indexMapping = {};
             indexMapping.type_field = "_type";
-            indexMapping.scoring_model = "tfidf";
+            indexMapping.scoring_model = "tf-idf";
             indexMapping.default_type = "_default";
             indexMapping.default_analyzer = "standard";
             indexMapping.default_datetime_parser = "dateTimeOptional";

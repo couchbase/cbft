@@ -73,7 +73,7 @@ function initBleveIndexMappingController(
 
     $scope.scoringModels = options.scoringModels || [];
     $scope.loadScoringModels = function() {
-        $scope.scoringModels = ["bm25", "tfidf"];
+        $scope.scoringModels = ["bm25", "tf-idf"];
     };
 
     if (options.scoringModels == null) {
