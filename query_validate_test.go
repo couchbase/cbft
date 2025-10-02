@@ -232,6 +232,25 @@ func TestQueryValidationAgainstDynamicIndex(t *testing.T) {
 			}`),
 			expectedResponse: fmt.Errorf("non-nil"),
 		},
+		{
+			// boolean over basic types
+			sr: []byte(`{
+				"query": {
+					"must": {"conjuncts": [
+						{"min": "term1", "max": "term2", "field": "A"},
+						{"min": 1, "max": 2, "field": "B"}
+					]},
+					"should": {"disjuncts": [
+						{"match": "x", "field": "C"}
+					]},
+					"must_not": {"disjuncts": [
+						{"bool": true, "field": "D"}
+					]},
+					"filter": {"match": "x", "field": "C"}
+				}
+			}`),
+			expectedResponse: nil,
+		},
 	}
 
 	for testI, test := range tests {

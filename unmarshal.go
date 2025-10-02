@@ -142,6 +142,7 @@ func decodeBooleanQuery(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		Must    json.RawMessage `json:"must,omitempty"`
 		Should  json.RawMessage `json:"should,omitempty"`
 		MustNot json.RawMessage `json:"must_not,omitempty"`
+		Filter  json.RawMessage `json:"filter,omitempty"`
 		Boost   *query.Boost    `json:"boost,omitempty"`
 	}{}
 	iter.ReadVal(&tmp)
@@ -185,6 +186,14 @@ func decodeBooleanQuery(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 		_, isDisjunctionQuery := q.MustNot.(*query.DisjunctionQuery)
 		if !isDisjunctionQuery {
 			iter.Error = fmt.Errorf("must not clause must be disjunction")
+			return
+		}
+	}
+
+	if tmp.Filter != nil {
+		q.Filter, err = parseQuery(tmp.Filter)
+		if err != nil {
+			iter.Error = err
 			return
 		}
 	}
@@ -468,7 +477,8 @@ func parseQuery(input []byte) (query.Query, error) {
 	_, hasMust := tmp["must"]
 	_, hasShould := tmp["should"]
 	_, hasMustNot := tmp["must_not"]
-	if hasMust || hasShould || hasMustNot {
+	_, hasFilter := tmp["filter"]
+	if hasMust || hasShould || hasMustNot || hasFilter {
 		var rv query.BooleanQuery
 		err := jsoniter.Unmarshal(input, &rv)
 		if err != nil {
