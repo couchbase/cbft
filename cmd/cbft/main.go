@@ -405,6 +405,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	if err = initBleveOptions(options); err != nil {
 		return err
 	}
+	initScorchCallbacks()
 
 	if options["logStatsEvery"] != "" {
 		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])

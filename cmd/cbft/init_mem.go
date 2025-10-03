@@ -110,7 +110,8 @@ func initMemOptions(options map[string]string) (err error) {
 
 // Function to change the herder's options while it's running.
 func updateHerderOptions(options map[string]string) error {
-	newConcMergeLimit, err := strconv.Atoi(options["concurrentMergeLimit"])
+	newConcMergeLimit, err := parseFraction("concurrentMergeLimit",
+		float64(defaultFTSConcurrentMergeLimit), options)
 	if err != nil {
 		return err
 	}
