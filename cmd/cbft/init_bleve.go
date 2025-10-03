@@ -89,21 +89,6 @@ func initBleveOptions(options map[string]string) error {
 		return err
 	}
 
-	// set scorch index's OnEvent callbacks using the app herder
-	scorch.RegistryEventCallbacks["scorchEventCallbacks"] =
-		ftsHerder.ScorchHerderOnEvent()
-
-	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
-		func(err error, path string) {
-			var stackDump string
-			if flags.DataDir != "" {
-				stackDump = dumpStack(flags.DataDir,
-					fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
-			}
-			log.Fatalf("scorch AsyncError, path: %s, treating this as fatal, err: %v,"+
-				" stack dump: %s", path, err, stackDump)
-		}
-
 	blevePersisterNapTimeMSec := options["blevePersisterNapTimeMSec"]
 	if blevePersisterNapTimeMSec != "" {
 		v, err := strconv.Atoi(blevePersisterNapTimeMSec)
@@ -135,6 +120,23 @@ func initBleveOptions(options map[string]string) error {
 	}
 
 	return nil
+}
+
+func initScorchCallbacks() {
+	// set scorch index's OnEvent callbacks using the app herder
+	scorch.RegistryEventCallbacks["scorchEventCallbacks"] =
+		ftsHerder.ScorchHerderOnEvent()
+
+	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
+		func(err error, path string) {
+			var stackDump string
+			if flags.DataDir != "" {
+				stackDump = dumpStack(flags.DataDir,
+					fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
+			}
+			log.Fatalf("scorch AsyncError, path: %s, treating this as fatal, err: %v,"+
+				" stack dump: %s", path, err, stackDump)
+		}
 }
 
 // ---------------------------------------------------------------
