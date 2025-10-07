@@ -189,9 +189,15 @@ components:
             The total number of Go SDK agent pairs, used to retrieve statistics from the Data Service, that are present on a node.
 
             Typically, the Search Service uses one agent pair for each bucket on a node.
+        num_indexes:
+          type: number
+          description: The number of Search indexes in the cluster.
         num_knn_search_requests:
           type: integer
           description: The total number of [Vector Search](https://docs.couchbase.com/server/8.0/vector-search/vector-search.html) requests made across all Search indexes in the cluster.
+        num_vector_indexes:
+          type: number
+          description: The number of Search indexes in the cluster that have vector/vector_base64 fields.
         pct_cpu_gc:
           type: number
           description: |-
@@ -502,6 +508,36 @@ components:
             The total number of documents in the given Search index.
 
             This statistic appears on the Server Web Console dashboard as **Search Docs**.
+        BUCKET:INDEX:global_query_timer_count:
+          type: number
+          description: The number of Search query timer events received at the global query endpoint.
+        BUCKET:INDEX:global_query_timer_mean_ns:
+          type: number
+          description: The mean runtime for Search queries received at the global query endpoint in nanoseconds.
+        BUCKET:INDEX:global_query_timer_median_ns:
+          type: number
+          description: The median runtime for Search queries received at the global query endpoint in nanoseconds.
+        BUCKET:INDEX:global_query_timer_p80_ns:
+          type: number
+          description: The 80th percentile runtime for Search queries received at the global query endpoint in nanoseconds.
+        BUCKET:INDEX:global_query_timer_p99_ns:
+          type: number
+          description: The 99th percentile runtime for Search queries received at the global query endpoint in nanoseconds.
+        BUCKET:INDEX:grpc_query_timer_count:
+          type: number
+          description: The number of Search query timer events received at the gRPC endpoint.
+        BUCKET:INDEX:grpc_query_timer_mean_ns:
+          type: number
+          description: The mean runtime for Search queries received at the gRPC endpoint in nanoseconds.
+        BUCKET:INDEX:grpc_query_timer_median_ns:
+          type: number
+          description: The median runtime for Search queries received at the gRPC endpoint in nanoseconds.
+        BUCKET:INDEX:grpc_query_timer_p80_ns:
+          type: number
+          description: The 80th percentile runtime for Search queries received at the gRPC endpoint in nanoseconds.
+        BUCKET:INDEX:grpc_query_timer_p99_ns:
+          type: number
+          description: The 99th percentile runtime for Search queries received at the gRPC endpoint in nanoseconds.
         BUCKET:INDEX:last_access_time:
           type: string
           format: date-time
@@ -625,6 +661,21 @@ components:
             The root segment includes all data for the Search index, excluding any segments that might be stale and will be removed by the persister or merger.
 
             This statistic appears on the Server Web Console dashboard as **Search Memory Segments**.
+        BUCKET:INDEX:scoped_query_timer_count:
+          type: number
+          description: The number of Search query timer events received at the scoped query endpoint.
+        BUCKET:INDEX:scoped_query_timer_mean_ns:
+          type: number
+          description: The mean runtime for Search queries received at the scoped query endpoint in nanoseconds.
+        BUCKET:INDEX:scoped_query_timer_median_ns:
+          type: number
+          description: The median runtime for Search queries received at the scoped query endpoint in nanoseconds.
+        BUCKET:INDEX:scoped_query_timer_p80_ns:
+          type: number
+          description: The 80th percentile runtime for Search queries received at the scoped query endpoint in nanoseconds.
+        BUCKET:INDEX:scoped_query_timer_p99_ns:
+          type: number
+          description: The 99th percentile runtime for Search queries received at the scoped query endpoint in nanoseconds.
         BUCKET:INDEX:timer_batch_store_count:
           type: integer
           description: |-
