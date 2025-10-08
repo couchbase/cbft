@@ -2,7 +2,7 @@ module github.com/couchbase/cbft
 
 go 1.23.0
 
-toolchain go1.23.7
+toolchain go1.24.7
 
 require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
