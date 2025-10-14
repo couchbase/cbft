@@ -199,22 +199,38 @@ func getSynonymCollectionsFromMapping(im *mapping.IndexMappingImpl) []string {
 	return rv
 }
 
+func vectorTypeMappingFilter(dm *mapping.DocumentMapping) bool {
+	if dm == nil || !dm.Enabled {
+		return true
+	}
+	for _, fm := range dm.Properties {
+		for _, f := range fm.Fields {
+			if f.Type == "vector" || f.Type == "vector_base64" {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // getScopeCollTypeMappings will return a deduplicated
 // list of collection names when skipMappings is enabled.
 func getScopeCollTypeMappings(im *mapping.IndexMappingImpl,
-	skipMappings bool) (scope string,
+	skipMappings bool, exclude func(*mapping.DocumentMapping) bool) (scope string,
 	cols []string, typeMappings []string, err error) {
 	// index the _default/_default scope and collection when
 	// default mapping is enabled.
 	if im.DefaultMapping.Enabled {
-		scope = defaultScopeName
-		cols = []string{defaultCollName}
-		typeMappings = []string{""}
+		if exclude == nil || !exclude(im.DefaultMapping) {
+			scope = defaultScopeName
+			cols = []string{defaultCollName}
+			typeMappings = []string{""}
+		}
 	}
 
 	hash := make(map[string]struct{}, len(im.TypeMapping))
 	for tp, dm := range im.TypeMapping {
-		if !dm.Enabled {
+		if !dm.Enabled || (exclude != nil && exclude(dm)) {
 			continue
 		}
 		s, c, t := scopeCollTypeMapping(tp)
@@ -255,7 +271,7 @@ func validateScopeCollFromMappings(bucket string,
 	var typeMappings []string
 	var err error
 	if scopeDotCollMode {
-		sName, collNames, typeMappings, err = getScopeCollTypeMappings(im, false)
+		sName, collNames, typeMappings, err = getScopeCollTypeMappings(im, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -390,7 +406,7 @@ func GetScopeCollectionsFromIndexDef(indexDef *cbgt.IndexDef) (
 				var collectionNames []string
 				var scope string
 				if scopeDotCollMode {
-					scope, collectionNames, _, err = getScopeCollTypeMappings(im, false)
+					scope, collectionNames, _, err = getScopeCollTypeMappings(im, false, nil)
 					if err != nil {
 						return "", nil, err
 					}

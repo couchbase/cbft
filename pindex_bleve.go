@@ -339,8 +339,10 @@ type RollbackInfo struct {
 }
 
 type BleveDest struct {
-	path       string
-	sourceName string
+	path         string
+	sourceName   string
+	sourceUUID   string
+	sourceParams string
 
 	bleveDocConfig BleveDocumentConfig
 
@@ -359,6 +361,7 @@ type BleveDest struct {
 	stopCh               chan struct{}
 	removeCh             chan struct{}
 	isRollbackInProgress bool
+	trainingSampler      trainer
 }
 
 // Used to track state for a single partition.
@@ -390,8 +393,28 @@ type batchRequest struct {
 	seqMax uint64 // a local copy of seqMax
 }
 
+type sourceInfo struct {
+	IndexName    string
+	SourceName   string
+	SourceUUID   string
+	SourceParams string
+	kvconfig     map[string]interface{}
+}
+
+// trainer interface is implemented for vectors usecase where we need to sample
+// vectors from KV to created a learned representation of the data (centroid index).
+// This blocks the data ingestion until the training is complete.
+type trainer interface {
+	// if necessary, start sampling docs from KV
+	acquireSamples()
+	// a way to control the data ingestion from feeds
+	wait()
+	// cleanup any resources
+	close() error
+}
+
 func NewBleveDestEx(path string, bindex bleve.Index,
-	rollback func(), bleveDocConfig BleveDocumentConfig, sourceName string) *BleveDest {
+	rollback func(), bleveDocConfig BleveDocumentConfig, source *sourceInfo) *BleveDest {
 
 	bleveDest := &BleveDest{
 		path:           path,
@@ -403,10 +426,18 @@ func NewBleveDestEx(path string, bindex bleve.Index,
 		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
 		removeCh:       make(chan struct{}),
-		sourceName:     sourceName,
+		sourceName:     source.SourceName,
+		sourceUUID:     source.SourceUUID,
+		sourceParams:   source.SourceParams,
 	}
 
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
+
+	bleveDest.trainingSampler = initTrainer(bleveDest, source.kvconfig)
+
+	if bleveDest.trainingSampler != nil {
+		go bleveDest.trainingSampler.acquireSamples()
+	}
 
 	bleveDest.startBatchWorkers()
 
@@ -442,7 +473,14 @@ func NewBleveDest(path string, bindex bleve.Index,
 func (t *BleveDest) startBatchWorkers() {
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		t.batchReqChs[i] = make(chan *batchRequest, 1)
-		go runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex, i)
+		go func() {
+			// wait till the training is done and allow the data ingest to
+			// proceed only after that
+			if t.trainingSampler != nil {
+				t.trainingSampler.wait()
+			}
+			runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex, i)
+		}()
 	}
 }
 
@@ -1089,17 +1127,17 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	if err != nil {
 		return nil, nil, err
 	}
-	tmp := struct {
-		SourceName string `json:"sourceName"`
-	}{}
 
+	var tmp sourceInfo
 	err = json.Unmarshal([]byte(indexParams), &tmp)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
+
+	tmp.kvconfig = kvConfig
 	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,
-			tmp.SourceName),
+			&tmp),
 	}, nil
 }
 
@@ -1365,11 +1403,8 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 	if err != nil {
 		return nil, nil, err
 	}
-	tmp := struct {
-		SourceName string `json:"sourceName"`
-		IndexName  string `json:"indexName"`
-	}{}
 
+	var tmp sourceInfo
 	err = json.Unmarshal(buf, &tmp)
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
@@ -1377,7 +1412,7 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 
 	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,
-			tmp.SourceName),
+			&tmp),
 	}, nil
 }
 

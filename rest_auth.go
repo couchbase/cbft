@@ -277,7 +277,7 @@ func getSourceNamesFromIndexDef(indexDef *cbgt.IndexDef) ([]string, error) {
 				return nil, err
 			}
 
-			sName, colNames, _, err := getScopeCollTypeMappings(mapping, true)
+			sName, colNames, _, err := getScopeCollTypeMappings(mapping, true, nil)
 			if err != nil {
 				return nil, err
 			}

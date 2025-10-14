@@ -121,7 +121,7 @@ func TestScopeCollectionTypeMappings(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		scope, colls, tmappings, err := getScopeCollTypeMappings(test.im, test.skipMapping)
+		scope, colls, tmappings, err := getScopeCollTypeMappings(test.im, test.skipMapping, nil)
 		if err != nil && !test.defaultMapping {
 			t.Errorf("test %s failed, err: %v", test.title, err)
 		}
@@ -163,7 +163,7 @@ func TestScopeCollectionTypeMappingsErrorCases(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, _, _, err := getScopeCollTypeMappings(test.im, test.skipMapping)
+		_, _, _, err := getScopeCollTypeMappings(test.im, test.skipMapping, nil)
 		if err == nil || !strings.HasPrefix(err.Error(), test.errText) {
 			t.Errorf("err %v expected, but test %s passed", test.errText, test.title)
 		}

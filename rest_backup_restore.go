@@ -246,7 +246,7 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 
 					var scopeName string
 					if skipValidation {
-						sName, _, _, err := getScopeCollTypeMappings(im, false)
+						sName, _, _, err := getScopeCollTypeMappings(im, false, nil)
 						if err != nil {
 							return nil, err
 						}
@@ -651,7 +651,7 @@ func parseSourceNamesFromIndexDefs(indexDef *cbgt.IndexDef) []string {
 				return nil
 			}
 
-			sname, colNames, _, err := getScopeCollTypeMappings(mapping, true)
+			sname, colNames, _, err := getScopeCollTypeMappings(mapping, true, nil)
 			if err != nil {
 				return nil
 			}

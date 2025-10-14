@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
@@ -34,6 +35,42 @@ type Scope struct {
 	Limits      map[string]map[string]int `json:"limits"`
 }
 
+func (m *Manifest) GetScopeCollectionUIDs(scopeName string, collectionNames []string) (uint64, []uint64, error) {
+	var sc Scope
+	for _, scope := range m.Scopes {
+		if scope.Name == scopeName {
+			sc = scope
+		}
+	}
+	if len(collectionNames) == 0 {
+		return 0, []uint64{}, nil
+	}
+
+	collectionMap := make(map[string]string, len(sc.Collections))
+	for i := range sc.Collections {
+		collectionMap[sc.Collections[i].Name] = sc.Collections[i].Uid
+	}
+
+	rv := make([]uint64, len(collectionNames))
+	var err error
+	for i, collectionName := range collectionNames {
+		uid, exists := collectionMap[collectionName]
+		if !exists {
+			return 0, nil, fmt.Errorf("collection %s not found", collectionName)
+		}
+		rv[i], err = strconv.ParseUint(uid, 16, 32)
+		if err != nil {
+			return 0, nil, fmt.Errorf("error parsing collection uid %s: %v", uid, err)
+		}
+	}
+
+	scopeUID, err := strconv.ParseUint(sc.Uid, 16, 32)
+	if err != nil {
+		return 0, nil, fmt.Errorf("error parsing scope uid %v: %w", scopeUID, err)
+	}
+	return scopeUID, rv, nil
+}
+
 type Manifest struct {
 	Uid    string  `json:"uid"`
 	Scopes []Scope `json:"scopes"`
@@ -42,6 +79,15 @@ type Manifest struct {
 type manifestResult struct {
 	manifest *Manifest
 	err      error
+}
+
+func (m *Manifest) GetScope(scopeName string) *Scope {
+	for _, scope := range m.Scopes {
+		if scope.Name == scopeName {
+			return &scope
+		}
+	}
+	return nil
 }
 
 type manifestBatch struct {
