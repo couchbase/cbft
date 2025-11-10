@@ -33,6 +33,7 @@ import (
 
 	"github.com/couchbase/cbauth/service"
 	"github.com/couchbase/cbft"
+	"github.com/couchbase/cbft/search_history"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/cmd"
 	"github.com/couchbase/cbgt/ctl"
@@ -531,6 +532,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		_ = cbft.InitRateLimiter(mgr)
 	}
 
+	// Setup query history service with the manager
+	search_history.Init(dataDir)
+
 	// start the effective cluster tracker.
 	cbft.StartClusterVersionTracker(cbgt.CfgAppVersion,
 		options["nsServerURL"])
@@ -664,6 +668,9 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		cbft.NewIndexInsightsHandler(mgr))
 	handle(prefix+"/api/index/{indexName}/insights", "POST",
 		cbft.NewIndexInsightsHandler(mgr))
+
+	handle(prefix+"/api/searchHistory", "GET",
+		search_history.NewSearchHistoryHandler())
 
 	router := exportMuxRoutesToHttprouter(muxrouter, options)
 

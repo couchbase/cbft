@@ -233,4 +233,7 @@ cluster.bucket[<bucketName>].fts!read
 
 GET /api/indexes/source/{bucketName}
 cluster.bucket[<bucketName>].fts!read
+
+GET /api/searchHistory
+cluster.settings.fts!read
 `

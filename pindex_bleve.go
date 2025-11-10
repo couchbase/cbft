@@ -36,6 +36,7 @@ import (
 	"github.com/blevesearch/bleve/v2/search"
 	"github.com/blevesearch/bleve/v2/search/query"
 	ftsHttp "github.com/couchbase/cbft/http"
+	"github.com/couchbase/cbft/search_history"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
 	log "github.com/couchbase/clog"
@@ -1569,7 +1570,14 @@ func bleveCtxQueryEndCallback(size uint64) error {
 }
 
 func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
-	req []byte, res io.Writer) error {
+	req []byte, res io.Writer) (err error) {
+	var took time.Duration
+	var totalHits uint64
+
+	defer func() {
+		search_history.Service.LogRequest(indexName, req, took, totalHits, err)
+	}()
+
 	// Throttle if query has knn
 	if GetKNNThrottleLimit() > 0 && QueryHasKNN(req) {
 		err := fireQueryEvent(0, EventKNNQueryStart, 0, 0)
@@ -1587,7 +1595,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		},
 	}
 
-	err := UnmarshalJSON(req, &queryCtlParams)
+	err = UnmarshalJSON(req, &queryCtlParams)
 	if err != nil {
 		atomic.AddUint64(&totQueryBadRequestErr, 1)
 		return fmt.Errorf("bleve: QueryBleve"+
@@ -1782,6 +1790,8 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 				return rest.ErrorQueryReqTimeout
 			}
 		}
+		took = searchResult.Took
+		totalHits = searchResult.Total
 
 		mustEncode(res, searchResult)
 
