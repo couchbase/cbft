@@ -487,11 +487,11 @@ func init() {
 		Validate: ValidateBleve,
 		OnDelete: OnDeleteIndex,
 
-		New:      NewBlevePIndexImpl,
-		NewEx:    NewBlevePIndexImplEx,
-		Rollback: RollbackBleve,
-		Open:     OpenBlevePIndexImpl,
-		OpenEx:   OpenBlevePIndexImplEx,
+		New:       NewBlevePIndexImpl,
+		NewEx:     NewBlevePIndexImplEx,
+		Rollback:  RollbackBleve,
+		Open:      OpenBlevePIndexImpl,
+		OpenUsing: OpenBlevePIndexImplUsing,
 
 		Count: CountBleve,
 		Query: QueryBleve,
@@ -1248,7 +1248,7 @@ func initMetaFieldValCache(indexName, sourceName string,
 
 func OpenBlevePIndexImpl(indexType, path string,
 	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
-	return OpenBlevePIndexImplEx(indexType, path, rollback, nil)
+	return OpenBlevePIndexImplUsing(indexType, path, "", rollback)
 }
 
 func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
@@ -1295,17 +1295,8 @@ func bleveRuntimeConfigMap(bleveParams *BleveParams) (map[string]interface{},
 	return kvConfig, bleveIndexType, kvStoreName
 }
 
-func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
-	options map[string]interface{}) (cbgt.PIndexImpl, cbgt.Dest, error) {
-
-	if options == nil {
-		options = make(map[string]interface{})
-	}
-	var indexParams string
-	if val, ok := options["indexParams"]; ok {
-		indexParams = val.(string)
-	}
-
+func OpenBlevePIndexImplUsing(indexType, path, indexParams string,
+	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
 	buf := []byte(indexParams)
 	var err error
 	if len(buf) == 0 {
@@ -1369,27 +1360,12 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 	// TODO: boltdb sometimes locks on Open(), so need to investigate,
 	// where perhaps there was a previous missing or race-y Close().
 	startTime := time.Now()
-	var bindex bleve.Index
-	if val, ok := options[cbgt.UpdatedMappingKey]; ok {
-		if paramStr, ok := val.(string); ok {
-			log.Printf("bleve: start update using: %s", path)
-			kvConfig[cbgt.UpdatedMappingKey] = paramStr
-			bindex, err = bleve.OpenUsing(path, kvConfig)
-			if err != nil {
-				return nil, nil, err
-			}
-			log.Printf("bleve: finished update using: %s took: %s", path, time.Since(startTime).String())
-		} else {
-			return nil, nil, fmt.Errorf("bleve: updated_mapping not a string")
-		}
-	} else {
-		log.Printf("bleve: start open using: %s", path)
-		bindex, err = bleve.OpenUsing(path, kvConfig)
-		if err != nil {
-			return nil, nil, err
-		}
-		log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
+	log.Printf("bleve: start open using: %s", path)
+	bindex, err := bleve.OpenUsing(path, kvConfig)
+	if err != nil {
+		return nil, nil, err
 	}
+	log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
 
 	buf, err = os.ReadFile(path +
 		string(os.PathSeparator) + "PINDEX_META")
@@ -3648,7 +3624,18 @@ should have a vbucketUUID of a0b1c2):`,
 	}
 }
 
-func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
+func reloadableIndexMapping(bpPrev, bpCur mapping.IndexMapping) bool {
+	// check for any changes in the index mapping that will warant re-indexing of
+	// documents.
+	// TODO: change in scoring model doesn't require re-indexing since the
+	// underlying data in the index files is not affected. However, implementation
+	// wise it's a little bit more involved as to how the handshake is done between
+	// cbft and bleve when the index mapping changes and the index is just reloaded.
+	// So for now, we'll just rebuild the index when the scoring model is changed.
+	return reflect.DeepEqual(bpPrev, bpCur)
+}
+
+func reloadableIndexDefParamChange(paramPrev, paramCur string) bool {
 	bpPrev := NewBleveParams()
 	if len(paramPrev) == 0 {
 		// make it a json unmarshal-able string
@@ -3656,7 +3643,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 	}
 	err := json.Unmarshal([]byte(paramPrev), bpPrev)
 	if err != nil {
-		return ""
+		return false
 	}
 
 	bpCur := NewBleveParams()
@@ -3666,55 +3653,34 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 	}
 	err = json.Unmarshal([]byte(paramCur), bpCur)
 	if err != nil {
-		return ""
+		return false
 	}
 
 	// check for any changes in the spatial engines.
 	if bpPrev.Store["spatialPlugin"] != bpCur.Store["spatialPlugin"] {
-		return ""
+		return false
 	}
 
 	// check for non store parameter differences
-	if !reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
-		return ""
-	}
-
-	updatable := false
-	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) {
-		curMapImpl, ok1 := bpCur.Mapping.(*mapping.IndexMappingImpl)
-		prevMapImpl, ok2 := bpPrev.Mapping.(*mapping.IndexMappingImpl)
-		if ok1 && ok2 {
-			fieldInfo, err := bleve.DeletedFields(prevMapImpl, curMapImpl)
-			if err == nil {
-				if fieldInfo != nil && len(fieldInfo) != 0 {
-					updatable = true
-				}
-			} else {
-				return ""
-			}
-		} else {
-			return ""
-		}
+	if !reloadableIndexMapping(bpPrev.Mapping, bpCur.Mapping) ||
+		!reflect.DeepEqual(bpCur.DocConfig, bpPrev.DocConfig) {
+		return false
 	}
 	// check for indexType updates
 	prevType := bpPrev.Store["indexType"]
 	curType := bpCur.Store["indexType"]
 	if prevType != curType {
-		return ""
+		return false
 	}
 	// always reboot partitions on scorch option changes
 	if curType == "scorch" {
 		log.Printf("bleve: reloadable scorch option change "+
-			"detected, before: %s, after: %s", paramPrev, paramCur)
-		if updatable {
-			return cbgt.PINDEXES_LAZYUPDATE
-		} else {
-			return cbgt.PINDEXES_REFRESH
-		}
+			" detected, before: %s, after: %s", paramPrev, paramCur)
+		return true
 	}
 
 	log.Warnf("bleve: unsupported index type: %s", curType)
-	return cbgt.PINDEXES_REFRESH
+	return true
 }
 
 func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
@@ -3762,8 +3728,8 @@ func reloadableSourceParamsChange(paramPrev, paramCur string) bool {
 }
 
 // RestartOnIndexDefChanges checks whether the changes in the indexDefns are
-// quickly adoptable over a reboot or an update of the pindex implementations.
-// eg: kvstore configs updates like compaction percentage or a dropped field.
+// quickly adoptable over a reboot of the pindex implementations.
+// eg: kvstore configs updates like compaction percentage.
 func RestartOnIndexDefChanges(
 	configRequest *cbgt.ConfigAnalyzeRequest) cbgt.ResultCode {
 	if configRequest == nil || configRequest.IndexDefnCur == nil ||
@@ -3780,12 +3746,12 @@ func RestartOnIndexDefChanges(
 		configRequest.IndexDefnPrev.Type !=
 			configRequest.IndexDefnCur.Type ||
 		!reflect.DeepEqual(configRequest.SourcePartitionsCur,
-			configRequest.SourcePartitionsPrev) {
+			configRequest.SourcePartitionsPrev) ||
+		!reloadableIndexDefParamChange(configRequest.IndexDefnPrev.Params,
+			configRequest.IndexDefnCur.Params) {
 		return ""
 	}
-
-	return reloadableIndexDefParamChange(configRequest.IndexDefnPrev.Params,
-		configRequest.IndexDefnCur.Params)
+	return cbgt.PINDEXES_RESTART
 }
 
 func mustEncode(w io.Writer, i interface{}) {
