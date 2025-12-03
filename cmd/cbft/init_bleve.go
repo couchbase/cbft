@@ -9,6 +9,7 @@
 package main
 
 import (
+	"errors"
 	"expvar"
 	"fmt"
 	"runtime"
@@ -129,13 +130,22 @@ func initScorchCallbacks() {
 
 	scorch.RegistryAsyncErrorCallbacks["scorchAsyncErrorCallbacks"] =
 		func(err error, path string) {
-			var stackDump string
-			if flags.DataDir != "" {
-				stackDump = dumpStack(flags.DataDir,
-					fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
+			switch {
+			// For these errors, can avoid panicking
+			case errors.Is(err, scorch.ErrPersist):
+				fallthrough
+			case errors.Is(err, scorch.ErrCleanup):
+				log.Errorf("scorch AsyncError, path: %s, err: %v", path, err)
+			// In case of ErrAsyncPanic or ErrOptionsParse, panic
+			default:
+				var stackDump string
+				if flags.DataDir != "" {
+					stackDump = dumpStack(flags.DataDir,
+						fmt.Sprintf("scorch AsyncError, path: %v, err: %v", path, err))
+				}
+				log.Fatalf("scorch AsyncError, path: %s, treating this as fatal, err: %v,"+
+					" stack dump: %s", path, err, stackDump)
 			}
-			log.Fatalf("scorch AsyncError, path: %s, treating this as fatal, err: %v,"+
-				" stack dump: %s", path, err, stackDump)
 		}
 }
 
