@@ -3683,15 +3683,17 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 		return ""
 	}
 
-	updatable := false
+	resultCode := cbgt.PINDEXES_REFRESH
 	if !reflect.DeepEqual(bpCur.Mapping, bpPrev.Mapping) {
 		curMapImpl, ok1 := bpCur.Mapping.(*mapping.IndexMappingImpl)
 		prevMapImpl, ok2 := bpPrev.Mapping.(*mapping.IndexMappingImpl)
 		if ok1 && ok2 {
 			fieldInfo, err := bleve.DeletedFields(prevMapImpl, curMapImpl)
-			if err == nil {
-				if fieldInfo != nil && len(fieldInfo) != 0 {
-					updatable = true
+			if err == nil && fieldInfo != nil {
+				if len(fieldInfo) != 0 {
+					resultCode = cbgt.PINDEXES_LAZYUPDATE
+				} else {
+					resultCode = cbgt.PINDEXES_CONFIGUPDATE
 				}
 			} else {
 				return ""
@@ -3707,14 +3709,13 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 		return ""
 	}
 	// always reboot partitions on scorch option changes
+	// PINDEXES_LAZYUPDATE for modified or deleted fields
+	// PINDEXES_CONFIGUPDATE for all other mapping changes like scoring model or unused analyzers
+	// PINDEXES_REFRESH for all non mapping changes
 	if curType == "scorch" {
 		log.Printf("bleve: reloadable scorch option change "+
 			"detected, before: %s, after: %s", paramPrev, paramCur)
-		if updatable {
-			return cbgt.PINDEXES_LAZYUPDATE
-		} else {
-			return cbgt.PINDEXES_REFRESH
-		}
+		return resultCode
 	}
 
 	log.Warnf("bleve: unsupported index type: %s", curType)
