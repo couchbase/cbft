@@ -2,7 +2,7 @@
     "fts_total_queries": {
         "added": "7.2.0",
         "type": "counter",
-        "help": "The number of full text queries per second for an index",
+        "help": "The number of search queries for an index",
         "labels": [
             "bucket",
             "scope",
