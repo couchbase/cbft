@@ -61,7 +61,7 @@ paths:
           source:
             $ref: 'examples/file-xfer-disable.sh'
         - lang: Shell
-          label: Re-enable
+          label: Enable
           source:
             $ref: 'examples/file-xfer-enable.sh'
 

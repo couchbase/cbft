@@ -42,7 +42,6 @@ paths:
         - $ref: '#/components/parameters/queryLongerThan'
       x-codeSamples:
         - lang: Shell
-          label: Request 1
           source:
             $ref: 'examples/api-query-index.sh'
       security:
@@ -66,11 +65,11 @@ paths:
         - $ref: '#/components/parameters/queryLongerThan'
       x-codeSamples:
         - lang: Shell
-          label: Request 2
+          label: All
           source:
             $ref: 'examples/api-query-all.sh'
         - lang: Shell
-          label: Request 3
+          label: Filtered
           source:
             $ref: 'examples/api-query-filter.sh'
       security:
@@ -83,14 +82,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActiveResponse'
               examples:
-                request2:
-                  summary: Result of request 2
-                  value:
-                    $ref: 'examples/api-query-all.json'
-                request3:
-                  summary: Result of request 3
-                  value:
-                    $ref: 'examples/api-query-filter.json'
+                all:
+                  summary: All active node queries
+                  description: All active queries across the Search cluster.
+                  externalValue: 'examples/api-query-all.json'
+                filtered:
+                  summary: All active node queries (filtered)
+                  description: All queries across the cluster running for longer than 7&nbsp;s.
+                  externalValue: 'examples/api-query-filter.json'
 
   /api/query/{queryID}/cancel:
     post:
@@ -114,7 +113,6 @@ paths:
               uuid: "b91d75480470f979f65f04e8f20a1f7b"
       x-codeSamples:
         - lang: Shell
-          label: Request 4
           source:
             $ref: 'examples/api-query-cancel.sh'
       security:
