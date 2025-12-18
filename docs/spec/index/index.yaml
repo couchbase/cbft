@@ -573,16 +573,13 @@ paths:
             examples:
               regular:
                 summary: Regular Query
-                value:
-                  $ref: 'examples/p-api-index-name-query-regular.json'
+                externalValue: 'examples/p-api-index-name-query-regular.json'
               options:
                 summary: Query with Options
-                value:
-                  $ref: 'examples/p-api-index-name-query-options.json'
+                externalValue: 'examples/p-api-index-name-query-options.json'
               hybrid:
                 summary: Hybrid Query
-                value:
-                  $ref: 'examples/p-api-index-name-query-hybrid.json'
+                externalValue: 'examples/p-api-index-name-query-hybrid.json'
       responses:
         '200':
           description: |-
@@ -630,12 +627,10 @@ paths:
               examples:
                 regular:
                   summary: Success Response for a Regular Query
-                  value:
-                    $ref: 'examples/fts-sample-success-response.json'
+                  externalValue: 'examples/fts-sample-success-response.json'
                 hybrid:
                   summary: Success Response for a Hybrid Query
-                  value:
-                    $ref: 'examples/fts-sample-success-response-vector-search.json'
+                  externalValue: 'examples/fts-sample-success-response-vector-search.json'
         default:
           description: The Search Service returns a non-200 HTTP error code when a request fails.
           content:
