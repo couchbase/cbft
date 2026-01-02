@@ -166,11 +166,17 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		}
 	}
 
+	var needConsistencyVectors bool
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument,
 				"grpc_server: Search validating consistency, err: %v", err)
+		}
+
+		// if scan plus is detected, and we're at coordinating node, flag for vector population
+		if coordinatingNode && queryCtlParams.Ctl.Consistency.Level == cbgt.ConsistencyLevelScanPlus {
+			needConsistencyVectors = true
 		}
 	}
 
@@ -213,6 +219,13 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()
+
+	if needConsistencyVectors {
+		if err = AddConsistencyVectors(s.mgr, req.IndexName, queryCtlParams.Ctl.Consistency, cancelCh); err != nil {
+			return status.Errorf(codes.InvalidArgument,
+				"grpc_server: Search AddConsistencyVectors, err: %v", err)
+		}
+	}
 
 	var onlyPIndexes map[string]bool
 	if len(queryPIndexes.PIndexNames) > 0 {

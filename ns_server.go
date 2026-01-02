@@ -72,6 +72,9 @@ var TotKNNQueriesRejectedByThrottler uint64
 // Used by the app_herder to track memory consumption by process.
 var currentMemoryUsed uint64
 
+// Number of scan plus errors
+var TotScanPlusQueriesKVErrors atomic.Uint64
+
 // Optional callback when current memory used has dropped since the
 // last sampling.
 var OnMemoryUsedDropped func(curMemoryUsed, prevMemoryUsed uint64)
@@ -940,6 +943,8 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["num_knn_search_requests"] = atomic.LoadUint64(&numKNNSearchRequests)
 
 	topLevelStats["total_knn_queries_rejected_by_throttler"] = atomic.LoadUint64(&TotKNNQueriesRejectedByThrottler)
+
+	topLevelStats["total_scan_plus_queries_kv_errors"] = TotScanPlusQueriesKVErrors.Load()
 
 	if ServerlessMode {
 		gatherNodeUtilStats(mgr, topLevelStats)

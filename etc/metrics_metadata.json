@@ -993,5 +993,10 @@
         "added": "8.1.0",
         "type": "counter",
         "help": "Cumulative count of heap objects freed"
+    },
+    "fts_total_scan_plus_queries_kv_errors": {
+        "added": "8.1.0",
+        "type": "counter",
+        "help": "Total number of KV errors encountered during scan plus queries"
     }
 }

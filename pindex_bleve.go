@@ -1398,12 +1398,55 @@ func CountBleve(mgr *cbgt.Manager, indexName, indexUUID string) (
 
 func ValidateConsistencyParams(c *cbgt.ConsistencyParams) error {
 	switch c.Level {
-	case "":
-		return nil
-	case "at_plus":
+	case cbgt.ConsistencyLevelUnbounded, cbgt.ConsistencyLevelAtPlus,
+		cbgt.ConsistencyLevelScanPlus:
 		return nil
 	}
 	return fmt.Errorf("unsupported consistencyLevel: %s", c.Level)
+}
+
+func AddConsistencyVectors(mgr *cbgt.Manager, indexName string,
+	consistencyParams *cbgt.ConsistencyParams, cancelCh <-chan bool) error {
+	if consistencyParams.Vectors != nil {
+		return fmt.Errorf("bleve: scan_plus queries cannot contain user" +
+			" supplied consistency vectors")
+	}
+	indexDef, _, err := mgr.GetIndexDef(indexName, false)
+	if err != nil || indexDef == nil {
+		return fmt.Errorf("bleve: failed to retrieve index def for `%v`, err: %v",
+			indexName, err)
+	}
+
+	scope, colls := metaFieldValCache.getScopeCollectionNames(indexDef.Name)
+
+	// if cannot get scope or collection from cache, extract from indexDef
+	if len(scope) == 0 || len(colls) == 0 {
+		scope, colls, err = GetScopeCollectionsFromIndexDef(indexDef)
+		if err != nil {
+			return fmt.Errorf("bleve: failed to resolve scope and collection, err: %v", err)
+		}
+	}
+
+	// request to fetch high seqnos from KV
+	consistencyVector, err := cbgt.GetSeqNos(
+		indexDef.SourceName,
+		indexDef.SourceUUID,
+		indexDef.SourceParams,
+		mgr.Server(),
+		scope,
+		colls,
+		cancelCh,
+	)
+	if err != nil {
+		return fmt.Errorf("bleve: failed to retrieve high seqnos for scan plus"+
+			" query, err: %v", err)
+	}
+
+	// create consistency vector to populate in request
+	vector := make(map[string]cbgt.ConsistencyVector, 1)
+	vector[indexName] = consistencyVector
+	consistencyParams.Vectors = vector
+	return nil
 }
 
 // SubmitTaskRequest helps requesting for asynchronous tasks on
@@ -1621,12 +1664,18 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		setKNNRequest(searchRequest, decoratedKNNRequest)
 	}
 
+	var needConsistencyVectors bool
 	if queryCtlParams.Ctl.Consistency != nil {
 		err = ValidateConsistencyParams(queryCtlParams.Ctl.Consistency)
 		if err != nil {
 			atomic.AddUint64(&totQueryConsistencyErr, 1)
 			return fmt.Errorf("bleve: QueryBleve"+
 				" validating consistency, err: %v", err)
+		}
+
+		// if scan plus consistency is detected, flag for vector population
+		if queryCtlParams.Ctl.Consistency.Level == cbgt.ConsistencyLevelScanPlus {
+			needConsistencyVectors = true
 		}
 	}
 
@@ -1664,6 +1713,13 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()
+
+	if needConsistencyVectors {
+		if err = AddConsistencyVectors(mgr, indexName, queryCtlParams.Ctl.Consistency, cancelCh); err != nil {
+			return fmt.Errorf("bleve: QueryBleve"+
+				" AddConsistencyVectors, err: %v", err)
+		}
+	}
 
 	var onlyPIndexes map[string]bool
 	if len(queryPIndexes.PIndexNames) > 0 {
@@ -1991,13 +2047,14 @@ func (t *BleveDest) closeLOCKED(remove bool) error {
 // ---------------------------------------------------------
 
 func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
-	consistencyLevel string,
+	consistencyLevel cbgt.ConsistencyLevel,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
-	if consistencyLevel == "" {
+	if consistencyLevel == cbgt.ConsistencyLevelUnbounded {
 		return nil
 	}
-	if consistencyLevel != "at_plus" {
+	if consistencyLevel != cbgt.ConsistencyLevelAtPlus &&
+		consistencyLevel != cbgt.ConsistencyLevelScanPlus {
 		return fmt.Errorf("bleve: unsupported consistencyLevel: %s",
 			consistencyLevel)
 	}
@@ -2871,7 +2928,7 @@ func (t *BleveDestPartition) OpaqueSet(partition string, value []byte) error {
 
 func (t *BleveDestPartition) ConsistencyWait(
 	partition, partitionUUID string,
-	consistencyLevel string,
+	consistencyLevel cbgt.ConsistencyLevel,
 	consistencySeq uint64,
 	cancelCh <-chan bool) error {
 	return t.bdest.ConsistencyWait(partition, partitionUUID,
@@ -3323,6 +3380,7 @@ func bleveIndexTargets(mgr *cbgt.Manager, indexName, indexUUID string,
 	if err != nil {
 		return nil, 0, fmt.Errorf("bleve: bleveIndexTargets, err: %v", err)
 	}
+
 	if consistencyParams != nil &&
 		consistencyParams.Results == "complete" &&
 		len(missingPIndexNames) > 0 {
@@ -3616,7 +3674,7 @@ should have a vbucketUUID of a0b1c2):`,
 					Ctl: cbgt.QueryCtl{
 						Timeout: cbgt.QUERY_CTL_DEFAULT_TIMEOUT_MS,
 						Consistency: &cbgt.ConsistencyParams{
-							Level: "at_plus",
+							Level: cbgt.ConsistencyLevelAtPlus,
 							Vectors: map[string]cbgt.ConsistencyVector{
 								"customerIndex": {
 									"0":        123,

@@ -124,6 +124,39 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		// Validate scanPlusFetchBucketWideSeqNos
+		if options["scanPlusFetchBucketWideSeqNos"] != "" {
+			_, err := strconv.ParseBool(options["scanPlusFetchBucketWideSeqNos"])
+			if err != nil {
+				return nil, fmt.Errorf("illegal value for scanPlusFetchBucketWideSeqNos: '%v'",
+					options["scanPlusFetchBucketWideSeqNos"])
+			}
+		}
+
+		// Validate scanPlusNumWorkers
+		if options["scanPlusNumWorkers"] != "" {
+			numWorkers, err := strconv.Atoi(options["scanPlusNumWorkers"])
+			if err != nil {
+				return nil, fmt.Errorf("illegal value for scanPlusNumWorkers: '%v'",
+					options["scanPlusNumWorkers"])
+			}
+			if numWorkers < 1 {
+				return nil, fmt.Errorf("scanPlusNumWorkers must be greater than or equal to 1, got: %d", numWorkers)
+			}
+		}
+
+		// Validate scanPlusNumRetries
+		if options["scanPlusNumRetries"] != "" {
+			numRetries, err := strconv.Atoi(options["scanPlusNumRetries"])
+			if err != nil {
+				return nil, fmt.Errorf("illegal value for scanPlusNumRetries: '%v'",
+					options["scanPlusNumRetries"])
+			}
+			if numRetries < 1 {
+				return nil, fmt.Errorf("scanPlusNumRetries must be greater than or equal to 1, got: %d", numRetries)
+			}
+		}
+
 		return options, nil
 	}
 

@@ -409,6 +409,13 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	}
 	initScorchCallbacks()
 
+	scanPlusErrorCallback := func() {
+		cbft.TotScanPlusQueriesKVErrors.Add(1)
+	}
+	if err = cbgt.RefreshScanPlusOptions(options, scanPlusErrorCallback); err != nil {
+		return err
+	}
+
 	if options["logStatsEvery"] != "" {
 		logStatsEvery, err := strconv.Atoi(options["logStatsEvery"])
 		if err != nil {
@@ -994,6 +1001,11 @@ func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
 		}
 
 		search_history.Service.Refresh(options)
+
+		err = cbgt.RefreshScanPlusOptions(options, nil)
+		if err != nil {
+			log.Printf("main: meh.OnRefreshManagerOptions: scan plus options, err: %v", err)
+		}
 	}
 }
 
