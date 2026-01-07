@@ -653,8 +653,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		featureFlagToCheckForDims := featureFlagForDims(indexVectorPicture.maxDims)
 		if len(featureFlagToCheckForDims) > 0 &&
 			!cbgt.IsFeatureSupportedByCluster(featureFlagToCheckForDims, nodeDefs) {
-			return nil, cbgt.NewBadRequestError(fmt.Sprintf("PrepareIndex, err: vector typed fields "+
-				"with dims %v not supported in this cluster", indexVectorPicture.maxDims))
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: vector typed fields "+
+				"with dims %v not supported in this cluster", indexVectorPicture.maxDims)
 		}
 
 		if indexVectorPicture.cosine &&

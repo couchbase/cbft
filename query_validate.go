@@ -80,7 +80,7 @@ OUTER:
 			if entry.Type == "vector" {
 				msg += fmt.Sprintf(", dims: %d", entry.Dims)
 			}
-			return fmt.Errorf(msg)
+			return fmt.Errorf("%s", msg)
 		}
 
 		// check for dynamic mappings for other field types - "text", "number", "boolean"
