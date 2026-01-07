@@ -55,7 +55,7 @@ func dumpStack(dir, msg string) string {
 		return ""
 	}
 
-	fmt.Fprintf(file, msg+"\n\n")
+	fmt.Fprintln(file, msg+"\n\n")
 	pprof.Lookup("goroutine").WriteTo(file, 2)
 	file.Close()
 

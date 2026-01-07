@@ -199,7 +199,7 @@ func (st *serverGroupTracker) handleServerGroupUpdates() {
 			if len(msgs) > 0 {
 				msgs = cbgt.StringsRemoveDuplicates(msgs)
 				for _, msg := range msgs {
-					log.Printf(msg)
+					log.Printf("%s", msg)
 				}
 			}
 		}
@@ -332,7 +332,7 @@ RECONNECT:
 					return -1
 				}
 
-				log.Printf(msg + ": pool streaming started")
+				log.Printf("%s: pool streaming started", msg)
 				return -1 // success
 			},
 			backoffStartSleepMS, backoffFactor, backoffMaxSleepMS,
@@ -345,7 +345,7 @@ RECONNECT:
 				select {
 				case <-stopCh:
 					resp.Body.Close()
-					log.Warnf(msg + ": terminating pool streaming")
+					log.Warnf("%s: terminating pool streaming", msg)
 					return nil
 				default:
 				}
@@ -357,8 +357,8 @@ RECONNECT:
 				case <-stopCh:
 					continue
 				default:
-					log.Warnf(msg+": reconnecting upon reader, bytes read: %d, err: %v",
-						len(resBytes), err)
+					log.Warnf("%s: reconnecting upon reader, bytes read: %d, err: %v",
+						msg, len(resBytes), err)
 					close(stopCh2)
 					resp.Body.Close()
 					continue RECONNECT
