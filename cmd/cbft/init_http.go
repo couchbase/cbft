@@ -132,10 +132,10 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 				anyHostPort := host + ":" + port
 				if anyHostPorts[anyHostPort] {
 					if anyHostPort != bindHTTP {
-						log.Printf(bar)
+						log.Printf("%s", bar)
 						log.Printf("init_http: web UI / REST API is available"+
 							" (via %v): %s://%s", host, proto, bindHTTP)
-						log.Printf(bar)
+						log.Printf("%s", bar)
 					}
 					return
 				}
@@ -143,9 +143,9 @@ func mainServeHTTP(proto, bindHTTP string, anyHostPorts map[string]bool,
 		} // Else port not found.
 	}
 
-	log.Printf(bar)
+	log.Printf("%s", bar)
 	log.Printf("init_http: web UI / REST API is available: %s://%s", proto, bindHTTP)
-	log.Printf(bar)
+	log.Printf("%s", bar)
 
 	setupHTTPServer := func(listener net.Listener, nwp string) {
 

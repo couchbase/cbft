@@ -25,9 +25,9 @@ import (
 
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
-	"github.com/couchbase/tools-common/cloud/v5/objstore/objcli"
-	"github.com/couchbase/tools-common/cloud/v5/objstore/objcli/objaws"
-	"github.com/couchbase/tools-common/cloud/v5/objstore/objutil"
+	"github.com/couchbase/tools-common/cloud/v8/objstore/objcli"
+	"github.com/couchbase/tools-common/cloud/v8/objstore/objcli/objaws"
+	"github.com/couchbase/tools-common/cloud/v8/objstore/objutil"
 	"github.com/couchbase/tools-common/types/iface"
 	"github.com/couchbase/tools-common/types/ratelimit"
 
@@ -232,7 +232,7 @@ func UploadMetadata(client objcli.Client, ctx context.Context, bucket,
 		Options: objutil.Options{Context: ctx},
 	}
 	log.Printf("s3_utils: uploading metadata to path %s", remotePath)
-	err := objutil.Upload(options)
+	_, err := objutil.Upload(options)
 	if err != nil {
 		log.Errorf("s3_utils: error uploading index defs: %v", err)
 	}
@@ -372,7 +372,7 @@ func compressUploadUtil(src string, ctx context.Context, mpUploader *objutil.MPU
 			}
 		}
 
-		err := mpUploader.Commit()
+		_, err := mpUploader.Commit()
 		if err != nil {
 			appendToErrs(err)
 		}
