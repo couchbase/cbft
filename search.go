@@ -38,6 +38,8 @@ type dateTimeRange struct {
 type facetRequest struct {
 	Size           int              `json:"size"`
 	Field          string           `json:"field"`
+	TermPrefix     string           `json:"term_prefix,omitempty"`
+	TermPattern    string           `json:"term_pattern,omitempty"`
 	NumericRanges  []*numericRange  `json:"numeric_ranges,omitempty"`
 	DateTimeRanges []*dateTimeRange `json:"date_ranges,omitempty"`
 }

@@ -394,7 +394,17 @@ func decodeFacetRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	if iter.Error != nil {
 		return
 	}
+
 	fr := bleve.NewFacetRequest(temp.Field, temp.Size)
+
+	if len(temp.TermPrefix) > 0 {
+		fr.SetPrefixFilter(temp.TermPrefix)
+	}
+
+	if len(temp.TermPattern) > 0 {
+		fr.SetRegexFilter(temp.TermPattern)
+	}
+
 	for _, nr := range temp.NumericRanges {
 		fr.AddNumericRange(nr.Name, nr.Min, nr.Max)
 	}
@@ -402,6 +412,7 @@ func decodeFacetRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	for _, dr := range temp.DateTimeRanges {
 		fr.AddDateTimeRangeStringWithParser(dr.Name, dr.Start, dr.End, dr.DateTimeParser)
 	}
+
 	*((*bleve.FacetRequest)(ptr)) = *fr
 }
 
