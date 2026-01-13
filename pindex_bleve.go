@@ -1566,10 +1566,18 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	}
 
 	var undecoratedQuery query.Query
+	// set to any since !vectors builds will not have bleve.KNNRequest type
+	var undecoratedKNNRequest, decoratedKNNRequest interface{}
 	// pre process the query with collections if applicable.
 	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
 		undecoratedQuery, searchRequest.Query = sr.decorateQuery(indexName,
 			searchRequest.Query, nil)
+
+		undecoratedKNNRequest, decoratedKNNRequest = sr.decorateKNNRequest(indexName,
+			searchRequest, nil)
+
+		// set the new knn request
+		setKNNRequest(searchRequest, decoratedKNNRequest)
 	}
 
 	if queryCtlParams.Ctl.Consistency != nil {
@@ -1672,8 +1680,15 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 		// back in the search result.
 		// Note: searchResult.Request will be non nil only when searchRequest.Explain is true
 		// and its a bleve level setting
-		if undecoratedQuery != nil && searchResult.Request != nil {
-			searchResult.Request.Query = undecoratedQuery
+		if searchResult.Request != nil {
+			if undecoratedQuery != nil {
+				searchResult.Request.Query = undecoratedQuery
+			}
+
+			// Set to the original KNN request in the search response
+			if undecoratedKNNRequest != nil {
+				setKNNRequest(searchResult.Request, undecoratedKNNRequest)
+			}
 		}
 		err = processSearchResult(&queryCtlParams, indexName, searchResult,
 			remoteClients, err, err1)

@@ -66,3 +66,12 @@ func GetKNNThrottleLimit() int64 {
 
 func SetKNNThrottleLimit(val int64) {
 }
+
+// -----------------------------------------------------------------------------
+
+// returns the original KNN request along with the decorated KNN request
+func (sr *SearchRequest) decorateKNNRequest(indexName string, searchRequest *bleve.SearchRequest, cache *collMetaFieldCache) (interface{}, interface{}) {
+	return nil, nil
+}
+
+func setKNNRequest(sr *bleve.SearchRequest, knn interface{}) {}
