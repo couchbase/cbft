@@ -84,3 +84,12 @@ func (h *IndexInsightsHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	rest.ShowError(w, req, "Not supported on cluster", http.StatusNotImplemented)
 }
+
+// -----------------------------------------------------------------------------
+
+// returns the original KNN request along with the decorated KNN request
+func (sr *SearchRequest) decorateKNNRequest(indexName string, searchRequest *bleve.SearchRequest, cache *collMetaFieldCache) (interface{}, interface{}) {
+	return nil, nil
+}
+
+func setKNNRequest(sr *bleve.SearchRequest, knn interface{}) {}

@@ -340,3 +340,66 @@ func (h *IndexInsightsHandler) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	}
 	rest.MustEncode(w, rv)
 }
+
+// -----------------------------------------------------------------------------
+
+// returns the original KNN request along with the decorated KNN request
+func (sr *SearchRequest) decorateKNNRequest(indexName string, searchRequest *bleve.SearchRequest, cache *collMetaFieldCache) (interface{}, interface{}) {
+	if len(sr.Collections) == 0 || sr.KNN == nil {
+		return nil, searchRequest.KNN
+	}
+
+	if cache == nil {
+		cache = metaFieldValCache
+	}
+
+	// filter must be a disjunction of collections
+	djnq := query.NewDisjunctionQuery(nil)
+
+	for _, col := range sr.Collections {
+		queryStr := cache.getMetaFieldValue(indexName, col)
+		mq := query.NewMatchQuery(queryStr)
+		mq.Analyzer = "keyword"
+		mq.SetField(CollMetaFieldName)
+		djnq.AddQuery(mq)
+	}
+	djnq.SetMin(1)
+
+	decoratedKnnRequests := make([]*bleve.KNNRequest, 0, len(searchRequest.KNN))
+	for _, knnQ := range searchRequest.KNN {
+		// if prefilter already exists, conjunct it with the collections disjunction
+		var filterQuery query.Query
+		if knnQ.FilterQuery != nil {
+			filterQuery = query.NewConjunctionQuery(
+				[]query.Query{
+					knnQ.FilterQuery,
+					djnq,
+				},
+			)
+		} else {
+			filterQuery = djnq
+		}
+
+		decoratedKnnRequests = append(decoratedKnnRequests, &bleve.KNNRequest{
+			Field:        knnQ.Field,
+			Vector:       knnQ.Vector,
+			VectorBase64: knnQ.VectorBase64,
+			K:            knnQ.K,
+			Boost:        knnQ.Boost,
+			Params:       knnQ.Params,
+			FilterQuery:  filterQuery,
+		})
+	}
+
+	return searchRequest.KNN, decoratedKnnRequests
+}
+
+func setKNNRequest(sr *bleve.SearchRequest, knn interface{}) {
+	knnRequest, ok := knn.([]*bleve.KNNRequest)
+
+	if !ok {
+		return
+	}
+
+	sr.KNN = knnRequest
+}
