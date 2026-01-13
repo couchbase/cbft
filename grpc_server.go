@@ -147,6 +147,8 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 
 	// pre process the query if applicable
 	var undecoratedQuery query.Query
+	// set to any since !vectors builds will not have bleve.KNNRequest type
+	var undecoratedKNNRequest, decoratedKNNRequest interface{}
 	var coordinatingNode bool
 	if strings.Compare(cbgt.CfgAppVersion, "7.0.0") >= 0 {
 		hv, _ := extractMetaHeader(stream.Context(), rpcClusterActionKey)
@@ -154,6 +156,12 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 			coordinatingNode = true
 			undecoratedQuery, searchRequest.Query = sr.decorateQuery(req.IndexName,
 				searchRequest.Query, nil)
+
+			undecoratedKNNRequest, decoratedKNNRequest = sr.decorateKNNRequest(req.IndexName,
+				searchRequest, nil)
+
+			// set the new knn request
+			setKNNRequest(searchRequest, decoratedKNNRequest)
 		}
 	}
 
@@ -279,8 +287,15 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 		// back in the search result.
 		// Note: searchResult.Request will be non nil only when searchRequest.Explain is true
 		// and its a bleve level setting
-		if undecoratedQuery != nil && searchResult.Request != nil {
-			searchResult.Request.Query = undecoratedQuery
+		if searchResult.Request != nil {
+			if undecoratedQuery != nil {
+				searchResult.Request.Query = undecoratedQuery
+			}
+
+			// Set to the original KNN request in the search response
+			if undecoratedKNNRequest != nil {
+				setKNNRequest(searchResult.Request, undecoratedKNNRequest)
+			}
 		}
 		err1 := processSearchResult(&queryCtlParams, req.IndexName, searchResult,
 			remoteClients, err, er)
