@@ -72,7 +72,8 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             'name': null,
             'enabled': null,
             'dynamic': null,
-            'default_analyzer': null
+            'default_analyzer': null,
+            'nested': null,
         }
     };
 
@@ -163,6 +164,7 @@ function initBleveTypeMappingController($scope, typeMappingIn, options) {
             name: "",
             enabled: defaultMappingEnabled,
             dynamic: defaultMappingDynamic,
+            nested: false,
             fields: [],
             mappings: [],
             _xattrs: false,

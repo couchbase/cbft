@@ -108,14 +108,12 @@ function isValidGeoPoint(geoPoint) {
 }
 
 function parseDocument(doc, xattrs) {
-
     var parseStack = [];
     var keysStack = [];
     var rowPaths = [];
     var rowTypes = [];
     var rowValues = [];
     var count = 0;
-    var valsSincePop = 0;
     var dims = {};
 
     var replacer = function (key, value) {
@@ -123,13 +121,9 @@ function parseDocument(doc, xattrs) {
         while ((parseStack.length > 0) && (this !== parseStack[parseStack.length - 1])) {
             parseStack.pop();
             keysStack.pop();
-
-            if (valsSincePop > 1) {
-                rowPaths.push(rowPaths[rowPaths.length - 1]);
-                rowTypes.push(rowTypes[rowTypes.length - 1]);
-                rowValues.push(rowValues[rowValues.length - 1]);
-                valsSincePop--;
-            }
+            rowPaths.push(rowPaths[rowPaths.length - 1]);
+            rowTypes.push(rowTypes[rowTypes.length - 1]);
+            rowValues.push(rowValues[rowValues.length - 1]);
         }
         var ks = keysStack;
         var keysCopy = [];
@@ -148,12 +142,15 @@ function parseDocument(doc, xattrs) {
 
         // if object, push onto stack
         var valType = typeof value;
-        if (valType === "object") {
-            parseStack.push(value);
-            keysStack.push(key);
-            valsSincePop = 0;
-            if (Array.isArray(value) && value.every(item => typeof item == 'number')) {
-                dims[fullPath] = value.length
+        if (value && valType === "object") {
+            var hasKeys = Object.keys(value).length > 0;
+            var hasElements = Array.isArray(value) && value.length > 0;
+            if (hasKeys || hasElements) {
+                parseStack.push(value);
+                keysStack.push(key);
+                if (Array.isArray(value) && value.every(item => typeof item == 'number')) {
+                    dims[fullPath] = value.length
+                }
             }
         }
 
@@ -171,7 +168,6 @@ function parseDocument(doc, xattrs) {
         }
 
         count++;
-        valsSincePop++;
         return value;
     };
 
@@ -193,7 +189,24 @@ function parseDocument(doc, xattrs) {
             parsedObj["_$xattrs"] = parsedXattrs
         }
     }
-
+    // first stringify to find brace only lines
+    var docString = JSON.stringify(parsedObj || '', null, 2);
+    // find lines that contain only braces/brackets/commas
+    var lines = docString.split('\n');
+    // collect indexes of such lines and store in a set for quick lookup
+    var braceOnlyLineIndexes = new Set();
+    lines.forEach((line, index) => {
+        const trimmed = line.trim();
+        if (
+            trimmed === '' || // empty line
+            trimmed === '{}' || // empty object
+            trimmed === '[]' || // empty array
+            /^[\{\}\[\],\s]+$/.test(trimmed) // any combination of braces/brackets/commas/spaces
+        ) {
+            braceOnlyLineIndexes.add(index);
+        }
+    });
+  
     var docString = JSON.stringify(parsedObj || "", replacer, 2);
 
     while (parseStack.length > 0) {
@@ -206,9 +219,17 @@ function parseDocument(doc, xattrs) {
 
     return {
         getPath: function (col) {
+            // If the rendered line is purely structural (only braces, brackets, commas)
+            // return an empty path so the UI can ignore selection for that line.
+            if (braceOnlyLineIndexes.has(col)) {
+                return '';
+            }
             return rowPaths[col];
         },
         getType: function (col) {
+            if (braceOnlyLineIndexes.has(col)) {
+                return '';
+            }
             // check whether the object is a nested geojson shape or a geopoint struct.
             if (rowTypes[col] === "object") {
                 var obj = rowValues[col] || {};
@@ -233,6 +254,15 @@ function parseDocument(doc, xattrs) {
                         // geopoint of the form [lon, lat]
                         // otherwise, consider it as a vector
                         return dims[rowPaths[col]] === 2 ? "geopoint" : "vector";
+                    }
+                }
+            }
+            // check whether the object is an array of objects
+            if (rowTypes[col] === "object") {
+                var obj = rowValues[col] || {};
+                if (Array.isArray(obj)) {
+                    if (obj.length > 0 && typeof obj[0] === 'object') {
+                        return "array";
                     }
                 }
             }

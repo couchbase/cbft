@@ -68,6 +68,19 @@ licenses/APL2.txt.
                 <li ng-repeat="fragment in fragments" ng-bind-html="fragment"></li>
               </ul>
             </div>
+            <div ng-if="hit.fields._$nested && hit.fields._$nested.length > 0" class="nested-documents">
+              <div class="nested-header">
+                <strong>Nested Documents:</strong>
+              </div>
+              <div ng-repeat="nestedHit in hit.fields._$nested" class="nested-document">
+                <div ng-repeat="(fieldName, fragments) in nestedHit.fragments" ng-if="fragments.length > 0">
+                  <div class="nested-field">{{fieldName}}</div>
+                  <ul>
+                    <li ng-repeat="fragment in fragments" ng-bind-html="fragment"></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </li>
       </ol>

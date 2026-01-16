@@ -140,11 +140,20 @@ function newEasyMappings() {
 
 function newEasyMapping() {
     var mapping = {};
+    var nestedArrayFieldPaths = {};
 
     var newDocMapping = function() {
         var docMapping = {};
         docMapping.enabled = true;
         docMapping.dynamic = false;
+        return docMapping;
+    };
+
+    var newNestedDocMapping = function() {
+        var docMapping = {};
+        docMapping.enabled = true;
+        docMapping.dynamic = false;
+        docMapping.nested = true;
         return docMapping;
     };
 
@@ -321,10 +330,20 @@ function newEasyMapping() {
     };
 
     var addDocumentMappingFromPathField = function(mapping, path, field) {
+        // check if the field is marked as nested array
+        if (field.type == "array" && field.nested) {
+            // record the path as a nested array field path
+            nestedArrayFieldPaths[path] = true;
+            // no further processing needed as array is not a real field type
+            return;
+        }
         // split dotted-path into path elements
         var pathElements = path.split('.');
+        // track the current path as we traverse the path elements
+        var pathTillNow = "";
         // traverse the path, adding any missing document mappings along the way
         for (var pathElementI in pathElements) {
+            pathTillNow = pathTillNow + (pathTillNow.length > 0 ? "." : "") + pathElements[pathElementI];
             let pathElement = pathElements[pathElementI];
             if (pathElement === "*dynamic*") {
                 mapping.dynamic = true;
@@ -338,7 +357,14 @@ function newEasyMapping() {
             if (!mapping.properties) {
                 mapping.properties = {};
             }
-            let newMapping = newDocMapping();
+            // check if the path element is an array that is marked as nested
+            var newMapping = {};
+            if (pathTillNow in nestedArrayFieldPaths) {
+                newMapping = newNestedDocMapping();
+            } else {
+                // otherwise, just add a regular document mapping
+                newMapping = newDocMapping();
+            }
             mapping.properties[pathElement] = newMapping;
             mapping = mapping.properties[pathElement];
         }
@@ -397,6 +423,20 @@ function newEasyMapping() {
             fullPath = parentPath + "." + path;
         } else {
             fullPath = path;
+        }
+        // If this property is marked as nested, reconstruct an array editField entry
+        // so that the Easy UI can reflect the "nested array" choice when reloading.
+        // In the Easy UI, nested arrays are represented as a synthetic field of type
+        // "array" with a boolean flag `nested: true` at the array path.
+        if (property && property.nested === true) {
+            let arrayEditField = newEditField();
+            arrayEditField.path = fullPath;
+            arrayEditField.type = "array";
+            arrayEditField.nested = true;
+            arrayEditField.new = false;
+            // Persist this synthetic entry so userSelectedField(..., 'array')
+            // can pick it up and keep the checkbox checked.
+            mapping[arrayEditField.path] = arrayEditField;
         }
         for (var prop in property.properties) {
             rebuildFieldFromProperty(fullPath, prop, property.properties[prop])

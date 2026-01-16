@@ -259,16 +259,33 @@
                 <h4 class="margin-bottom-half" ng-if="!editField.new">Edit Fields</h4>
 
                 <p class="text-small">
-                <span ng-if="editField.new">The field at path <em>{{editField.path}}</em> is not yet in the index. Configure it here.</span>
-                <span ng-if="!editField.new">The field at path <em>{{editField.path}}</em> is in the index as:</span>
+                <span ng-if="editField.new">The {{editField.type === "array" ? "array" : "field"}} at path <em>{{editField.path}}</em> is not yet in the index. Configure it here.</span>
+                <span ng-if="!editField.new">The {{editField.type === "array" ? "array" : "field"}} at path <em>{{editField.path}}</em> is in the index as:</span>
                 </p>
 
-                <div class="formrow">
+                <div class="formrow" ng-if="editField.type !== 'array'">
                   <label>Type</label>
                   <select
                       ng-model="editField.type"
                       ng-options="t as t for t in fieldTypes">
                   </select>
+                </div>
+                <div ng-if="editField.type === 'array'"
+                     class="formrow margin-bottom-1-5">
+                  <input
+                      type="checkbox"
+                      id="field-is-nested"
+                      ng-model="editField.nested">
+                  <label for="field-is-nested" class="margin-right-0">
+                    Treat each object in the array as a nested sub-document
+                  </label>
+                  <span
+                      class="fa-stack icon-info"
+                      uib-tooltip="Enabling this option indexes each object in the array as an individual sub-document. This improves search accuracy when querying fields inside array objects."
+                      tooltip-placement="auto right">
+                    <span class="icon fa-circle-thin fa-stack-2x"></span>
+                    <span class="icon fa-info fa-stack-1x"></span>
+                  </span>
                 </div>
                 <div ng-if="editField.type == 'text'"
                      class="formrow">
@@ -315,7 +332,7 @@
                     </div>
                   </div>
                 </div>
-                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64' && editField.type != 'array'">
                   <input
                       type="checkbox" id="field-is-stored"
                                       ng-model="editField.store"
@@ -368,7 +385,7 @@
                   </span>
                 </div>
 
-                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64'">
+                <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64' &&  editField.type != 'array'">
                   <input
                       type="checkbox"
                       id="field-include-in-all"
@@ -385,7 +402,7 @@
                   </span>
                 </div>
                 <div class ="formrow">
-                  <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64' && editField.type != 'geoshape'">
+                  <div ng-if="editField.type != 'disabled' && editField.type != 'vector' && editField.type != 'vector_base64' && editField.type != 'geoshape' && editField.type != 'array'">
                     <input
                         type="checkbox"
                         id="field-is-sort-facet"
@@ -434,7 +451,7 @@
                     </div>
                   </div>
                 </div>
-                <div ng-if="field.type != 'disabled'" class="margin-bottom-1-5">
+                <div ng-if="field.type != 'disabled' && editField.type != 'array'" class="margin-bottom-1-5">
                   <label for="searchable-as">Searchable As</label>
                   <div class="row">
                     {{editField.pathPrefix()}}
@@ -473,7 +490,7 @@
             <span class="cbui-table-cell">collection</span>
             <span class="cbui-table-cell flex-grow-3"></span>
           </div>
-          <section class="has-hover" ng-repeat="(i, collectionName) in easyMappings.collectionNamesNotEmpty()">
+          <section class="has-hover" ng-repeat="collectionName in easyMappings.collectionNamesNotEmpty()">
             <div class="cbui-tablerow padding-left">
               <div class="cbui-table-cell">{{collectionName}}</div>
               <span class="cbui-table-cell cbui-tablerow-title flex-grow-3">
@@ -485,16 +502,28 @@
                     <span class="cbui-table-cell flex-grow-2">field mapping details</span>
                     <span class="cbui-table-cell text-right"></span>
                   </div>
-                  <section class="has-hover" ng-repeat="(i, fieldDef) in easyMappings.getMappingForCollection(collectionName).fields() track by fieldDef.path">
+                  <section class="has-hover" ng-repeat="fieldDef in easyMappings.getMappingForCollection(collectionName).fields() track by fieldDef.path">
                     <div
                         class="cbui-tablerow padding-left"
                         ng-click="userSelectedFieldInCollection(collectionName, fieldDef.path, '')"
                         ng-class="{'selected-field-row' : fieldDef.path == editField.path && collectionName == collectionOpened}">
-                      <span class="cbui-table-cell cbui-tablerow-title">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
-                      <span class="cbui-table-cell">{{fieldDef.path}}</span>
-                      <span class="cbui-table-cell flex-grow-2">{{fieldDef.description()}}</span>
+                      <span class="cbui-table-cell" style="white-space: normal; word-break: break-all;"
+                            title="{{!(fieldDef.type === 'array' && fieldDef.nested) ? fieldDef.pathPrefix() + fieldDef.name : ''}}">
+                        <!-- For nested array synthetic entries, hide the searchable-as name -->
+                        <span ng-if="!(fieldDef.type === 'array' && fieldDef.nested)">{{fieldDef.pathPrefix()}}{{fieldDef.name}}</span>
+                      </span>
+                      <span class="cbui-table-cell"
+                            style="white-space: normal; word-break: break-all;"
+                            title="{{fieldDef.path}}">
+                        {{fieldDef.path}}
+                        <span ng-if="fieldDef.type === 'array' && fieldDef.nested" class="text-small gray-6"> (nested array)</span>
+                      </span>
+                      <span class="cbui-table-cell flex-grow-2">
+                        <!-- Nested array entries have no field-level mapping details -->
+                        <span ng-if="!(fieldDef.type === 'array' && fieldDef.nested)">{{fieldDef.description()}}</span>
+                      </span>
                       <span class="cbui-table-cell text-right">
-                        <a ng-click="deleteFieldInCollection(collectionName, fieldDef.path)">
+                        <a ng-click="deleteFieldInCollection(collectionName, fieldDef.path); $event.stopPropagation()">
                           Delete
                         </a>
                       </span>

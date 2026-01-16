@@ -731,3 +731,30 @@ select.midwide {
   max-height: 400px;
   overflow-y: auto;
 }
+
+.nested-documents {
+  margin-top: 15px;
+  border-left: 3px solid #ccc;
+  padding-left: 10px;
+  background-color: #f9f9f9;
+}
+
+.nested-header {
+  margin-bottom: 10px;
+  color: #666;
+  font-size: 14px;
+}
+
+.nested-document {
+  margin-bottom: 10px;
+  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.nested-field {
+  color: #555;
+  font-weight: bold;
+  font-size: 13px;
+}

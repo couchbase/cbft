@@ -35,6 +35,7 @@ licenses/APL2.txt.
         <span class="attrs">
           <span ng-if="!mapping.enabled">| disabled</span>
           <span ng-if="mapping.dynamic">| dynamic</span>
+          <span ng-if="mapping.nested">| nested</span>
           <span ng-if="mapping.enabled && mapping.default_analyzer">
             | {{mapping.default_analyzer}}</span>
           <span ng-if="mapping.enabled && mapping.default_synonym_source">
@@ -109,6 +110,15 @@ licenses/APL2.txt.
           <label for="specified" class="checkbox">
             only index specified fields
           </label>
+          <span ng-if="!mapping._isroot">
+            <input
+               type="checkbox"
+               ng-model="mapping.nested" 
+               id="nested-mapping">
+            <label for="nested-mapping" class="checkbox">
+              nested
+            </label>
+          </span>
         </span>
       </div>
     </div>
@@ -225,6 +235,7 @@ licenses/APL2.txt.
               <label>
                 <span>type</span>
                 <select ng-model="field.type"
+                        ng-if="field.type != 'array'"
                         ng-options="t as t for t in fieldTypes"
                         ng-change="resetType(field, mapping)">
                 </select>

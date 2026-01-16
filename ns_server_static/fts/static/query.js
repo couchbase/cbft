@@ -445,8 +445,8 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
             }
         }
 
-        for(var i in $scope.results.hits) {
-            var hit = $scope.results.hits[i];
+        // Helper function to process a single hit (main hit or nested hit)
+        function processHit(hit) {
             for(var ff in hit.fragments) {
                 var fragments = hit.fragments[ff];
                 var newFragments = [];
@@ -461,6 +461,10 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
                 hit.fragments = {};
             }
             for(var fv in hit.fields) {
+                // Skip _$nested field as it's handled separately in the template
+                if (fv === '_$nested') {
+                    continue;
+                }
                 var fieldval = hit.fields[fv];
                 if (hit.fragments[fv] === undefined) {
                     // Check if fieldval is an array
@@ -476,8 +480,25 @@ function QueryCtrl($scope, $http, $routeParams, $log, $sce, $location, qwDialogS
                     }
                 }
             }
+        }
+        for(var i in $scope.results.hits) {
+            var hit = $scope.results.hits[i];
+            // Process main hit
+            processHit(hit);
+            // Process nested documents if they exist
+            if (hit.fields && hit.fields['_$nested']) {
+                var nestedDocs = hit.fields['_$nested'];
+                if (Array.isArray(nestedDocs)) {
+                    for (var j = 0; j < nestedDocs.length; j++) {
+                        var nestedHit = nestedDocs[j];
+                        if (nestedHit && nestedHit.fields) {
+                            processHit(nestedHit);
+                        }
+                    }
+                }
+            }
             if ($scope.decorateSearchHit) {
-              $scope.decorateSearchHit(hit)
+                $scope.decorateSearchHit(hit)
             }
         }
         if (data.took) {

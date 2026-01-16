@@ -16,6 +16,7 @@ import (
 	zapv14cmd "github.com/blevesearch/zapx/v14/cmd/zap/cmd"
 	zapv15cmd "github.com/blevesearch/zapx/v15/cmd/zap/cmd"
 	zapv16cmd "github.com/blevesearch/zapx/v16/cmd/zap/cmd"
+	zapv17cmd "github.com/blevesearch/zapx/v17/cmd/zap/cmd"
 	"github.com/spf13/cobra"
 
 	// to support cbft's flavor of bleve build tags & flags
@@ -31,6 +32,7 @@ func init() {
 	updateCommandAndAdd(zapv14cmd.RootCmd, "v14")
 	updateCommandAndAdd(zapv15cmd.RootCmd, "v15")
 	updateCommandAndAdd(zapv16cmd.RootCmd, "v16")
+	updateCommandAndAdd(zapv17cmd.RootCmd, "v17")
 	cmd.RootCmd.AddCommand(zapCmd)
 }
 

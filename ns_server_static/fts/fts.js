@@ -1867,6 +1867,12 @@ function IndexNewCtrlFT_NS($scope, $http, $state, $stateParams,
                     }
                 }
 
+                if ("nested" in value) {
+                    if (value.nested == true || value.nested == false) {
+                        mapping.nested = value.nested
+                    }
+                }
+
                 if ("default_analyzer" in value) {
                     if ($scope.analyzerNames.includes(value.default_analyzer)) {
                         mapping.default_analyzer = value.default_analyzer
@@ -2910,6 +2916,9 @@ function IndexNewCtrlFTEasy_NS($scope, $http, $state, $stateParams,
                         $scope.editField.similarity = "dot_product";
                     }
                     $scope.editField.vector_index_optimized_for = "recall";
+                } else if (valType === 'array') {
+                    $scope.editField.type = 'array';
+                    $scope.editField.nested = false;
                 } else  {
                     // default to text if we aren't sure
                     $scope.editField.type = "text";
