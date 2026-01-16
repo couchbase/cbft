@@ -46,13 +46,14 @@ const (
 	featureIndexType   = "indexType"
 	FeatureScorchIndex = featureIndexType + ":" + scorch.Name
 
-	FeatureCollections        = cbgt.SOURCE_GOCBCORE + ":collections"
-	FeatureGeoSpatial         = "geoSpatial"
-	featureVectorSearch       = "vectors"
-	FeatureXattrs             = "xattrs"
-	FeatureIndexCustomFilters = "indexCustomFilters"
-	FeatureSynonyms           = "synonyms"
-	FeatureBM25Scoring        = "bm25Scoring"
+	FeatureCollections              = cbgt.SOURCE_GOCBCORE + ":collections"
+	FeatureGeoSpatial               = "geoSpatial"
+	featureVectorSearch             = "vectors"
+	FeatureXattrs                   = "xattrs"
+	FeatureIndexCustomFilters       = "indexCustomFilters"
+	FeatureSynonyms                 = "synonyms"
+	FeatureBM25Scoring              = "bm25Scoring"
+	FeatureHierarchicalNestedSearch = "nestedSearch"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -67,10 +68,13 @@ const (
 	// ZapVersion where Vector and Synonyms support was introduced.
 	bleveVectorSynonymsZapVersion = int(16)
 
+	// ZapVersion where nested hierarchical fields support was introduced.
+	bleveHierarchicalNestedZapVersion = int(17)
+
 	// blevePreferredZapVersion is the recommended zap version for newer indexes.
 	// This version needs to be bumped to reflect the latest recommended zap
 	// version in any given release.
-	blevePreferredZapVersion = int(16)
+	blevePreferredZapVersion = int(17)
 
 	xattrsMappingName          = "_$xattrs"
 	DefaultBleveMaxClauseCount = 1024
@@ -566,6 +570,9 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	synonymSearchSupported := cbgt.IsFeatureSupportedByCluster(FeatureSynonyms, nodeDefs)
 	var synonymsAvailable bool
 
+	nestedSearchSupported := cbgt.IsFeatureSupportedByCluster(FeatureHierarchicalNestedSearch, nodeDefs)
+	var nestedMappingsAvailable bool
+
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -600,7 +607,6 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			}
 		}
 
-		// check if the index definition has a mapping with synonym sources present.
 		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 			synonymsAvailable = im.SynonymCount() > 0
 
@@ -613,6 +619,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 						"not configurable in this cluster")
 				}
 			}
+
+			nestedMappingsAvailable = im.CountNested() > 0
 		}
 
 		// check if the cluster supports synonym search
@@ -620,6 +628,13 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			// Synonym Search is NOT supported on this cluster
 			// (lower version or mixed lower version)
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: synonym search " +
+				"not supported in this cluster")
+		}
+
+		if nestedMappingsAvailable && !nestedSearchSupported {
+			// Nested Fields is NOT supported on this cluster
+			// (lower version or mixed lower version)
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: nested fields " +
 				"not supported in this cluster")
 		}
 
@@ -803,15 +818,18 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("PrepareIndex, err: zap version %d isn't "+
 					"supported", zv)
 			}
-
-			if ((indexVectorPicture.fields != noVectorFields) || synonymsAvailable) &&
+			var versionToUse = zv
+			// check for other features that might require higher zap versions.
+			// and adjust the zap version to use accordingly.
+			if nestedMappingsAvailable && zv < bleveHierarchicalNestedZapVersion {
+				versionToUse = bleveHierarchicalNestedZapVersion
+			} else if ((indexVectorPicture.fields != noVectorFields) || synonymsAvailable) &&
 				zv < bleveVectorSynonymsZapVersion {
-				versionToUse := bleveVectorSynonymsZapVersion
-				if segmentVersionSupported {
-					versionToUse = blevePreferredZapVersion
-				}
-				bp.Store["segmentVersion"] = versionToUse
+				versionToUse = bleveVectorSynonymsZapVersion
+			} else if collectionsSupported && zv < bleveCollectionsZapVersion {
+				versionToUse = bleveCollectionsZapVersion
 			}
+			bp.Store["segmentVersion"] = versionToUse
 		} else {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, err: segmentVersion %v "+
 				"should be a numeric value", v)
@@ -822,6 +840,8 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
 			bp.Store["segmentVersion"] = blevePreferredZapVersion
+		} else if nestedSearchSupported {
+			bp.Store["segmentVersion"] = bleveHierarchicalNestedZapVersion
 		} else if vectorSearchSupported || synonymSearchSupported {
 			bp.Store["segmentVersion"] = bleveVectorSynonymsZapVersion
 		} else if collectionsSupported {
