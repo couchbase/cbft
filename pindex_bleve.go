@@ -2406,14 +2406,8 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 		if len(scope) > 0 && len(collections) > 0 && sourcePartitionSeqs != nil {
 			var highSeq uint64
-			// determine which collection holds the highest sequence number
-			for _, coll := range collections {
-				if uuidSeq, exists :=
-					sourcePartitionSeqs[partition+":"+scope+":"+coll]; exists {
-					if highSeq < uuidSeq.Seq {
-						highSeq = uuidSeq.Seq
-					}
-				}
+			if uuidSeq, exists := sourcePartitionSeqs[partition]; exists {
+				highSeq = uuidSeq.Seq
 			}
 			partitionSeq += `,"sourceSeq":` + strconv.FormatUint(highSeq, 10)
 		}

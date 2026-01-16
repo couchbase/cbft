@@ -743,27 +743,11 @@ func obtainDestSeqsForIndex(indexDef *cbgt.IndexDef,
 
 	var totDestSeq, totSrcSeq uint64
 	for partitionId, dstUUIDSeq := range destPartitionSeqs {
-		var srcSeq uint64
-		// the following loop is skipped if srcPartitionSeqs isn't available
-		for i := range collections {
-			uuidHighSeq, exists :=
-				srcPartitionSeqs[partitionId+":"+scope+":"+collections[i]]
-			if !exists {
-				continue
-			}
-
-			// account this collection's high seq only if it actually holds
-			// any items and is greater than the last accounted value
-			if uuidHighSeq.Seq > srcSeq {
-				srcSeq = uuidHighSeq.Seq
-			}
-
+		uuidHighSeq, exists := srcPartitionSeqs[partitionId]
+		if !exists {
+			continue
 		}
-
-		if srcSeq > 0 {
-			totSrcSeq += srcSeq
-		}
-
+		totSrcSeq += uuidHighSeq.Seq
 		totDestSeq += dstUUIDSeq.Seq
 	}
 
