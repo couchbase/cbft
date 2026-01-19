@@ -144,6 +144,20 @@ var prometheusStats = map[string]string{
 	"limits:memoryBytes":                "gauge",
 
 	"total_vectors": "gauge",
+
+	// Runtime metrics
+	"num_goroutines": "gauge",
+	"num_cgocalls":   "counter",
+
+	// Heap memory metrics for debugging memory issues
+	"heap_alloc":    "gauge",
+	"heap_idle":     "gauge",
+	"heap_inuse":    "gauge",
+	"heap_released": "gauge",
+
+	// Allocation counters
+	"mallocs": "counter",
+	"frees":   "counter",
 }
 
 var bline = []byte("\n")

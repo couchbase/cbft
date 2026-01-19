@@ -953,5 +953,45 @@
             "collection",
             "index"
         ]
+    },
+    "fts_num_goroutines": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "Current number of goroutines running in the FTS process"
+    },
+    "fts_num_cgocalls": {
+        "added": "8.1.0",
+        "type": "counter",
+        "help": "Total number of CGo calls made by the FTS process since startup"
+    },
+    "fts_heap_alloc": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "Bytes of allocated heap objects currently in use"
+    },
+    "fts_heap_idle": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "Bytes in idle (unused) heap spans"
+    },
+    "fts_heap_inuse": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "Bytes in non-idle heap spans"
+    },
+    "fts_heap_released": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "Bytes of physical memory returned to the OS"
+    },
+    "fts_mallocs": {
+        "added": "8.1.0",
+        "type": "counter",
+        "help": "Cumulative count of heap objects allocated"
+    },
+    "fts_frees": {
+        "added": "8.1.0",
+        "type": "counter",
+        "help": "Cumulative count of heap objects freed"
     }
 }

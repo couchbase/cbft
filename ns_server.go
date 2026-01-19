@@ -868,6 +868,21 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 
 	topLevelStats["total_gc"] = rd.memStats.NumGC
 	topLevelStats["pct_cpu_gc"] = rd.memStats.GCCPUFraction
+
+	// Runtime metrics for debugging goroutine and CGo issues
+	topLevelStats["num_goroutines"] = runtime.NumGoroutine()
+	topLevelStats["num_cgocalls"] = runtime.NumCgoCall()
+
+	// Heap memory metrics for debugging memory leaks and fragmentation
+	topLevelStats["heap_alloc"] = rd.memStats.HeapAlloc
+	topLevelStats["heap_idle"] = rd.memStats.HeapIdle
+	topLevelStats["heap_inuse"] = rd.memStats.HeapInuse
+	topLevelStats["heap_released"] = rd.memStats.HeapReleased
+
+	// Allocation counters for tracking allocation pressure
+	topLevelStats["mallocs"] = rd.memStats.Mallocs
+	topLevelStats["frees"] = rd.memStats.Frees
+
 	topLevelStats["tot_remote_http"] = atomic.LoadUint64(&totRemoteHttp)
 	topLevelStats["tot_remote_http2"] = atomic.LoadUint64(&totRemoteHttpSsl) // deprecated
 	topLevelStats["tot_remote_http_ssl"] = atomic.LoadUint64(&totRemoteHttpSsl)
