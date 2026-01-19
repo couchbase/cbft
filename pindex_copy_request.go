@@ -89,6 +89,11 @@ func (s *CopyPartitionStats) WriteJSON(w io.Writer) {
 // Currently this is a naive implementation which just checks the existence
 // of pindexes among the known node lists and then sort them based on the
 // partition state, rack and number of total partitions/load on those nodes.
+//
+// Returns:
+//   - (req, nil): success, proceed with copy using req
+//   - (nil, err): error occurred, requires fresh index creation
+//   - (nil, nil): no copy needed, pindex already present on current node
 func buildCopyPartitionRequest(pindexName string, stats *CopyPartitionStats,
 	mgr *cbgt.Manager, stopCh chan struct{}) (*CopyPartitionRequest, error) {
 	planPIndexes, _, err := cbgt.CfgGetPlanPIndexes(mgr.Cfg())
@@ -115,7 +120,7 @@ func buildCopyPartitionRequest(pindexName string, stats *CopyPartitionStats,
 
 	formerPrimary := ""
 	// get all the potential source nodes except self.
-	uuids := make([]string, len(planPIndex.Nodes))
+	uuids := make([]string, 0, len(planPIndex.Nodes))
 	for uuid, node := range planPIndex.Nodes {
 		if node.Priority == 0 && node.CanRead && node.CanWrite {
 			formerPrimary = uuid
@@ -139,8 +144,8 @@ func buildCopyPartitionRequest(pindexName string, stats *CopyPartitionStats,
 	sourceUUIDs := getNodesHostingPIndex(uuids, pindexName,
 		mgr.GetOption("authType"), nodeDefs)
 	if len(sourceUUIDs) == 0 {
-		atomic.StoreInt32(&stats.TotCopyPartitionSkipped, int32(1))
-		return nil, nil
+		return nil, fmt.Errorf("pindex_copy_request:"+
+			" no nodes currently hosting pindex: %s", pindexName)
 	}
 
 	return buildCopyPartitionRequestUtil(planPIndexes, pindexName, stats,
@@ -202,7 +207,8 @@ func buildCopyPartitionRequestUtil(planPIndexes *cbgt.PlanPIndexes,
 		}, nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("pindex_copy_request:"+
+		" no source nodes found for pindex: %s", pindexName)
 }
 
 // getNodesHostingPIndex confirms the list of node UUIDs

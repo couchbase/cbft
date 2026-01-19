@@ -380,11 +380,19 @@ func copyBleveIndex(pindexName, path string, dest *BleveDest,
 	// build the remote partition copy request.
 	req, err := buildCopyPartitionRequest(pindexName, dest.copyStats,
 		mgr, dest.stopCh)
-	if req == nil || err != nil {
+	// handle errors during building of copy request.
+	if err != nil {
 		log.Printf("pindex_bleve_copy: buildCopyPartitionRequest,"+
-			" no source nodes found for partition: %s, err: %v",
+			" error building request for partition: %s, err: %v",
 			pindexName, err)
-		return fmt.Errorf("copyBleveIndex, req: %v, err: %v", req != nil, err)
+		return fmt.Errorf("copyBleveIndex, err: %v", err)
+	}
+	// if req is nil, it means no copy is needed, and we can directly open
+	// the existing index.
+	if req == nil {
+		log.Printf("pindex_bleve_copy: buildCopyPartitionRequest,"+
+			" partition copy skipped for: %s", pindexName)
+		return nil
 	}
 
 	err = CopyPartition(mgr, req)
