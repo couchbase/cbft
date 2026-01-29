@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"strconv"
 	"time"
 
 	log "github.com/couchbase/clog"
@@ -140,5 +141,31 @@ func (s *service) UpdateSettings(enabled *bool, maxRecords *int) {
 		if max > 0 && max <= maxAllowedRecords {
 			s.writer.resizeCapacity(max)
 		}
+	}
+}
+
+// Refresh extracts search history settings from the options map and updates the service.
+func (s *service) Refresh(options map[string]string) {
+	if s == nil {
+		return
+	}
+
+	var enabledPtr *bool
+	var maxRecordsPtr *int
+
+	if v := options["searchHistoryEnabled"]; v != "" {
+		if enabled, err := strconv.ParseBool(v); err == nil {
+			enabledPtr = &enabled
+		}
+	}
+
+	if v := options["searchHistoryMaxRecords"]; v != "" {
+		if maxRecords, err := strconv.Atoi(v); err == nil {
+			maxRecordsPtr = &maxRecords
+		}
+	}
+
+	if enabledPtr != nil || maxRecordsPtr != nil {
+		s.UpdateSettings(enabledPtr, maxRecordsPtr)
 	}
 }

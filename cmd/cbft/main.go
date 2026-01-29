@@ -992,6 +992,8 @@ func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
 			log.Printf("main: meh.OnRefreshManagerOptions, err: %v", err)
 			return
 		}
+
+		search_history.Service.Refresh(options)
 	}
 }
 

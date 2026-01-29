@@ -152,24 +152,7 @@ func (h *ManagerOptionsExt) ServeHTTP(
 	}
 
 	// Update search history settings if requested.
-	if search_history.Service != nil {
-		var enabledPtr *bool
-		var maxRecordsPtr *int
-		if v := h.mgr.GetOption("searchHistoryEnabled"); v != "" {
-			if enabled, err := strconv.ParseBool(v); err == nil {
-				enabledPtr = &enabled
-			}
-		}
-		if v := h.mgr.GetOption("searchHistoryMaxRecords"); v != "" {
-			if maxRecords, err := strconv.Atoi(v); err == nil {
-				maxRecordsPtr = &maxRecords
-			}
-		}
-
-		if enabledPtr != nil || maxRecordsPtr != nil {
-			search_history.Service.UpdateSettings(enabledPtr, maxRecordsPtr)
-		}
-	}
+	search_history.Service.Refresh(h.mgr.Options())
 }
 
 type ConciseOptions struct {
