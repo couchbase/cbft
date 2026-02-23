@@ -614,6 +614,15 @@ func parseQuery(input []byte) (query.Query, error) {
 		}
 		return &rv, nil
 	}
+
+	// Handle custom_filter and custom_score query types.
+	if _, ok := tmp["custom_filter"]; ok {
+		return parseCustomFilterQuery(input)
+	}
+	if _, ok := tmp["custom_score"]; ok {
+		return parseCustomScoreQuery(input)
+	}
+
 	_, hasDocIds := tmp["ids"]
 	if hasDocIds {
 		var rv query.DocIDQuery

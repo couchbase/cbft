@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
 	github.com/blevesearch/bleve-mapping-ui v0.7.0
-	github.com/blevesearch/bleve/v2 v2.5.8-0.20260403183259-66904bb280e7
+	github.com/blevesearch/bleve/v2 v2.5.8-0.20260407165053-8a44c378d72c
 	github.com/blevesearch/bleve_index_api v1.3.9
 	github.com/blevesearch/zapx/v11 v11.4.3
 	github.com/blevesearch/zapx/v12 v12.4.3
@@ -76,6 +76,7 @@ require (
 	github.com/couchbase/gomemcached v0.3.4 // indirect
 	github.com/couchbase/goprotostellar v1.0.2 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
+	github.com/couchbase/js-evaluator v0.1.0 // indirect
 	github.com/couchbase/moss v0.3.0 // indirect
 	github.com/couchbase/tools-common/fs v1.0.3 // indirect
 	github.com/couchbase/tools-common/strings v1.0.0 // indirect
@@ -87,8 +88,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/flatbuffers v24.3.25+incompatible // indirect
+	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
@@ -132,6 +134,8 @@ replace github.com/couchbase/go_json => ../goproj/src/github.com/couchbase/go_js
 replace github.com/couchbase/regulator => ../goproj/src/github.com/couchbase/regulator
 
 replace github.com/couchbase/cbftx => ../cbftx
+
+replace github.com/couchbase/js-evaluator => ../goproj/src/github.com/couchbase/js-evaluator
 
 replace github.com/couchbase/hebrew => ../hebrew
 
