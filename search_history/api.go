@@ -10,9 +10,9 @@ package search_history
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
-	"strconv"
 	"time"
 
 	log "github.com/couchbase/clog"

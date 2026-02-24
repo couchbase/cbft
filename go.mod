@@ -8,15 +8,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
 	github.com/blevesearch/bleve-mapping-ui v0.7.0
-	github.com/blevesearch/bleve/v2 v2.5.8-0.20260203081432-74cb8d1545d5
-	github.com/blevesearch/bleve_index_api v1.3.1
-	github.com/blevesearch/zapx/v11 v11.4.2
-	github.com/blevesearch/zapx/v12 v12.4.2
-	github.com/blevesearch/zapx/v13 v13.4.2
-	github.com/blevesearch/zapx/v14 v14.4.2
-	github.com/blevesearch/zapx/v15 v15.4.2
-	github.com/blevesearch/zapx/v16 v16.3.0
-	github.com/blevesearch/zapx/v17 v17.0.1
+	github.com/blevesearch/bleve/v2 v2.5.8-0.20260224190131-48a0653ead2c
+	github.com/blevesearch/bleve_index_api v1.3.2
+	github.com/blevesearch/zapx/v11 v11.4.3
+	github.com/blevesearch/zapx/v12 v12.4.3
+	github.com/blevesearch/zapx/v13 v13.4.3
+	github.com/blevesearch/zapx/v14 v14.4.3
+	github.com/blevesearch/zapx/v15 v15.4.3
+	github.com/blevesearch/zapx/v16 v16.3.1
+	github.com/blevesearch/zapx/v17 v17.0.2
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.13
@@ -56,7 +56,7 @@ require (
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.24.2 // indirect
-	github.com/blevesearch/geo v0.2.4 // indirect
+	github.com/blevesearch/geo v0.2.5 // indirect
 	github.com/blevesearch/go-faiss v1.0.27 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
