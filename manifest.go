@@ -17,17 +17,7 @@ import (
 	"time"
 
 	"github.com/couchbase/cbgt"
-	log "github.com/couchbase/clog"
 )
-
-var manifestsCache *manifestCache
-
-func init() {
-	manifestsCache = &manifestCache{
-		mCache: make(map[string]*Manifest, 10),
-		stopCh: make(chan struct{}, 1),
-	}
-}
 
 type Collection struct {
 	Uid         string `json:"uid"`
@@ -49,91 +39,68 @@ type Manifest struct {
 	Scopes []Scope `json:"scopes"`
 }
 
-// TODO manifestCache needs to be refreshed from the future
-// streaming APIs from the ns_server in real time
-type manifestCache struct {
-	once           sync.Once
-	m              sync.RWMutex
-	stopCh         chan struct{}
-	mCache         map[string]*Manifest // bucketName<=>Manifest
-	monitorRunning bool
+type manifestResult struct {
+	manifest *Manifest
+	err      error
 }
 
+type manifestBatch struct {
+	waiters []chan manifestResult
+}
+
+// manifestBatchWindow is how long the first request for a bucket waits for
+// additional concurrent requests to queue up before a single fetch is made.
+const manifestBatchWindow = 50 * time.Millisecond
+
+var (
+	manifestRequestBatchMu sync.Mutex
+	// manifestRequestBatches tracks in-flight manifest fetch batches per bucket name.
+	// While a batch exists for a bucket, new callers join its waiters list instead
+	// of issuing a separate request.
+	manifestRequestBatches = map[string]*manifestBatch{}
+)
+
+// GetBucketManifest fetches the current collection manifest for a bucket.
+// Batches requests to avoid blasting ns_server with requests
 func GetBucketManifest(bucketName string) (*Manifest, error) {
-	return manifestsCache.getBucketManifest(bucketName)
-}
-
-func (c *manifestCache) getBucketManifest(bucketName string) (*Manifest, error) {
-	c.m.RLock()
-	if m, exists := c.mCache[bucketName]; exists {
-		c.m.RUnlock()
-		return m, nil
-	}
-	c.m.RUnlock()
-	manifest, err := c.fetchCollectionManifest(bucketName)
-	if err != nil {
-		return nil, err
-	}
-	c.m.Lock()
-	c.mCache[bucketName] = manifest
-	c.once.Do(func() { go c.monitor() })
-	c.m.Unlock()
-	return manifest, nil
-}
-
-func (c *manifestCache) fetchCollectionManifest(bucket string) (*Manifest, error) {
-	if CurrentNodeDefsFetcher == nil || bucket == "" {
-		return nil, fmt.Errorf("invalid input")
+	if CurrentNodeDefsFetcher == nil || bucketName == "" {
+		return nil, fmt.Errorf("manifest: invalid input")
 	}
 
-	return obtainManifest(CurrentNodeDefsFetcher.GetManager().Server(), bucket)
-}
+	ch := make(chan manifestResult, 1)
 
-func removeBucketFromManifestCache(bucket string) {
-	manifestsCache.m.Lock()
-	delete(manifestsCache.mCache, bucket)
-	if len(manifestsCache.mCache) == 0 && manifestsCache.monitorRunning &&
-		len(manifestsCache.stopCh) == 0 {
-		manifestsCache.stopCh <- struct{}{}
-		manifestsCache.once = sync.Once{}
-		manifestsCache.monitorRunning = false
+	manifestRequestBatchMu.Lock()
+	batch, exists := manifestRequestBatches[bucketName]
+	if !exists {
+		batch = &manifestBatch{}
+		manifestRequestBatches[bucketName] = batch
+		go runManifestBatch(bucketName, batch)
 	}
-	manifestsCache.m.Unlock()
+	batch.waiters = append(batch.waiters, ch)
+	manifestRequestBatchMu.Unlock()
+
+	result := <-ch
+	return result.manifest, result.err
 }
 
-func (c *manifestCache) monitor() {
-	// TODO - until the streaming endpoints from ns_server
-	mTicker := time.NewTicker(1 * time.Second)
-	defer mTicker.Stop()
-	c.m.Lock()
-	c.monitorRunning = true
-	c.m.Unlock()
-	for {
-		select {
-		case <-c.stopCh:
-			return
+func runManifestBatch(bucketName string, batch *manifestBatch) {
+	time.Sleep(manifestBatchWindow)
 
-		case _, ok := <-mTicker.C:
-			if !ok {
-				return
-			}
-			c.m.RLock()
-			manifestCache := c.mCache
-			c.m.RUnlock()
-			for bucket, old := range manifestCache {
-				curr, err := c.fetchCollectionManifest(bucket)
-				if err != nil {
-					log.Debugf("manifest: manifest refresh failed for bucket %s, err: %v",
-						bucket, err)
-					continue
-				}
-				if old.Uid != curr.Uid {
-					c.m.Lock()
-					c.mCache[bucket] = curr
-					c.m.Unlock()
-				}
-			}
-		}
+	manifestRequestBatchMu.Lock()
+	delete(manifestRequestBatches, bucketName)
+	waiters := batch.waiters
+	manifestRequestBatchMu.Unlock()
+
+	var result manifestResult
+	if CurrentNodeDefsFetcher == nil {
+		result.err = fmt.Errorf("manifest: invalid input")
+	} else {
+		result.manifest, result.err = obtainManifest(
+			CurrentNodeDefsFetcher.GetManager().Server(), bucketName)
+	}
+
+	for _, ch := range waiters {
+		ch <- result
 	}
 }
 
