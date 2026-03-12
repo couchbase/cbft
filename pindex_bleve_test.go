@@ -742,6 +742,7 @@ func getTestCache() *collMetaFieldCache {
 	cache["ftsIndexB$colA"] = "_$suid_$cuidA"
 	cache["ftsIndexB$colB"] = "_$suid_$cuidB"
 	cache["ftsIndexB$colC"] = "_$suid_$cuidC"
+	cache["ftsIndexC$colA"] = "_$suid1_$cuidA"
 
 	indexCache := make(map[string]*sourceDetails)
 	sdm := &sourceDetails{scopeName: "test",

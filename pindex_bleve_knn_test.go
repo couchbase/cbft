@@ -41,6 +41,15 @@ func TestDecorateKNNRequestWithCollections(t *testing.T) {
 			qNumDisjuncts: 1,
 		},
 		{
+			name:          "single collection with single KNN on single-collection index",
+			indexName:     "ftsIndexC",
+			collections:   []string{"colA"},
+			knnJSON:       `[{"field": "embedding", "k": 5, "vector": [1, 2, 3]}]`,
+			qField:        "_$scope_$collection",
+			qTerms:        []string{"_$suid1_$cuidA"},
+			qNumDisjuncts: 1,
+		},
+		{
 			name:          "multiple collections with single KNN",
 			indexName:     "ftsIndexB",
 			collections:   []string{"colA", "colB", "colC"},
@@ -74,59 +83,89 @@ func TestDecorateKNNRequestWithCollections(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			_, multiCollIndex := testCache.getSourceDetailsMap(test.indexName)
+			undecoratedKNN, decoratedKNN := sr.decorateKNNRequest(test.indexName, bsr, testCache)
 
-			originalKNN, decoratedKNN := sr.decorateKNNRequest(test.indexName, bsr, testCache)
-
-			// Check that original KNN is returned unchanged
-			originalKNNRequests, ok := originalKNN.([]*bleve.KNNRequest)
-			if !ok {
-				t.Fatal("expected originalKNN to be []*bleve.KNNRequest")
-			}
-			if len(originalKNNRequests) == 0 {
-				t.Fatal("expected at least one KNN request in original")
-			}
-			// Original should not have any filter queries added (they were nil initially)
-			for _, knnReq := range originalKNNRequests {
-				if knnReq.FilterQuery != nil {
-					t.Errorf("expected original KNN request to have nil FilterQuery")
+			// single-collection index early exit without decoration, the undecorated KNN
+			// should be nil and decorated KNN should be same as original KNN with
+			// no filter queries added.
+			if !multiCollIndex {
+				if undecoratedKNN != nil {
+					t.Errorf("expected undecoratedKNN to be nil for single-collection "+
+						" index, got %v", undecoratedKNN)
 				}
-			}
-
-			// Check decorated KNN
-			decoratedKNNRequests, ok := decoratedKNN.([]*bleve.KNNRequest)
-			if !ok {
-				t.Fatal("expected decoratedKNN to be []*bleve.KNNRequest")
-			}
-			if len(decoratedKNNRequests) != len(originalKNNRequests) {
-				t.Fatalf("expected %d decorated KNN requests, got %d",
-					len(originalKNNRequests), len(decoratedKNNRequests))
-			}
-
-			// Verify each decorated KNN request has the proper filter
-			for _, knnReq := range decoratedKNNRequests {
-				if knnReq.FilterQuery == nil {
-					t.Fatal("expected decorated KNN request to have non-nil FilterQuery")
-				}
-
-				djnq, ok := knnReq.FilterQuery.(*query.DisjunctionQuery)
+				decoratedKNNRequests, ok := decoratedKNN.([]*bleve.KNNRequest)
 				if !ok {
-					t.Fatalf("expected FilterQuery to be DisjunctionQuery, got %T", knnReq.FilterQuery)
-				}
-				if len(djnq.Disjuncts) != test.qNumDisjuncts {
-					t.Fatalf("expected %d disjuncts, got %d", test.qNumDisjuncts, len(djnq.Disjuncts))
+					t.Fatal("expected decoratedKNN to be []*bleve.KNNRequest")
 				}
 
-				for i, dq := range djnq.Disjuncts {
-					mq, ok := dq.(*query.MatchQuery)
-					if !ok {
-						t.Fatalf("expected disjunct to be MatchQuery, got %T", dq)
+				if len(decoratedKNNRequests) != len(bsr.KNN) {
+					t.Fatalf("expected decorated KNN to have same number of requests as "+
+						"original when single-collection index, expected %d got %d",
+						len(bsr.KNN), len(decoratedKNNRequests))
+				}
+
+				for _, knnReq := range decoratedKNNRequests {
+					if knnReq.FilterQuery != nil {
+						t.Errorf("expected decorated KNN request to have nil "+
+							"FilterQuery for single-collection index, got %v",
+							knnReq.FilterQuery)
 					}
-					if mq.Match != test.qTerms[i] || mq.FieldVal != test.qField {
-						t.Errorf("expected match query with field=%s, term=%s; got field=%s, term=%s",
-							test.qField, test.qTerms[i], mq.FieldVal, mq.Match)
+				}
+
+			} else {
+				// Check that original KNN is returned unchanged
+				undecoratedKNNRequests, ok := undecoratedKNN.([]*bleve.KNNRequest)
+				if !ok {
+					t.Fatal("expected undecoratedKNN to be []*bleve.KNNRequest")
+				}
+				if len(undecoratedKNNRequests) == 0 {
+					t.Fatal("expected at least one KNN request in original")
+				}
+				// Original should not have any filter queries added (they were nil initially)
+				for _, knnReq := range undecoratedKNNRequests {
+					if knnReq.FilterQuery != nil {
+						t.Errorf("expected original KNN request to have nil FilterQuery")
+					}
+				}
+
+				// Check decorated KNN
+				decoratedKNNRequests, ok := decoratedKNN.([]*bleve.KNNRequest)
+				if !ok {
+					t.Fatal("expected decoratedKNN to be []*bleve.KNNRequest")
+				}
+				if len(decoratedKNNRequests) != len(undecoratedKNNRequests) {
+					t.Fatalf("expected %d decorated KNN requests, got %d",
+						len(undecoratedKNNRequests), len(decoratedKNNRequests))
+				}
+
+				// Verify each decorated KNN request has the proper filter
+				for _, knnReq := range decoratedKNNRequests {
+					if knnReq.FilterQuery == nil {
+						t.Fatal("expected decorated KNN request to have non-nil FilterQuery")
+					}
+					djnq, ok := knnReq.FilterQuery.(*query.DisjunctionQuery)
+					if !ok {
+						t.Fatalf("expected FilterQuery to be DisjunctionQuery, got %T", knnReq.FilterQuery)
+					}
+
+					if len(djnq.Disjuncts) != test.qNumDisjuncts {
+						t.Fatalf("expected %d disjuncts, got %d", test.qNumDisjuncts, len(djnq.Disjuncts))
+					}
+
+					for i, dq := range djnq.Disjuncts {
+						mq, ok := dq.(*query.MatchQuery)
+						if !ok {
+							t.Fatalf("expected disjunct to be MatchQuery, got %T", dq)
+						}
+						if mq.Match != test.qTerms[i] || mq.FieldVal != test.qField {
+							t.Errorf("expected match query with field=%s, term=%s; got field=%s, term=%s",
+								test.qField, test.qTerms[i], mq.FieldVal, mq.Match)
+						}
 					}
 				}
 			}
+
 		})
 	}
 }
