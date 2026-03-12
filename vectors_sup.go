@@ -353,6 +353,14 @@ func (sr *SearchRequest) decorateKNNRequest(indexName string, searchRequest *ble
 		cache = metaFieldValCache
 	}
 
+	// no need to do collection scoping for single-collection index since the
+	// docID and the collectionID decorations to the doc won't be done during
+	// indexing either.
+	if sdm, ok := cache.getSourceDetailsMap(indexName); !ok ||
+		len(sdm.collUIDNameMap) <= 1 {
+		return nil, searchRequest.KNN
+	}
+
 	// filter must be a disjunction of collections
 	djnq := query.NewDisjunctionQuery(nil)
 
