@@ -746,53 +746,6 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				"not supported in this cluster")
 		}
 
-		// setting default values for the number of persister workers and how much
-		// data each worker can handle in memory before flushing to disk.
-		//
-		// these defaults can be overridden by the user in the index definition.
-		// MB-63831 for more details.
-		// For non-vector indexes, we don't need to be aggressive
-		// with the flushing and background merging since the
-		// payload is generally smaller.
-		var numPersisterWorkers = 4
-		var maxSizeInMemoryMergePerWorker = 20 * 1024 * 1024
-		var floorSegmentFileSize = 20 * 1024 * 1024
-		if indexVectorPicture.fields != noVectorFields {
-			// Keeping each worker to do the job on a larger amount of data because
-			// vector payload is generally higher.
-			// the numPersisterWorkers is kept same since we don't want to explode
-			// the number of filesegments created while index build is in progress.
-			maxSizeInMemoryMergePerWorker = 400 * 1024 * 1024
-			// reduce the floor segment size to 1/3 of the in-memory buffer size
-			// since that's roughly the segment size and the merging is less
-			// aggressive when the floor size is reduced.
-			floorSegmentFileSize = maxSizeInMemoryMergePerWorker / 3
-		}
-
-		if v, ok := bp.Store["scorchPersisterOptions"].(map[string]interface{}); ok {
-			if v["numPersisterWorkers"] == nil {
-				v["numPersisterWorkers"] = numPersisterWorkers
-			}
-			if v["maxSizeInMemoryMergePerWorker"] == nil {
-				v["maxSizeInMemoryMergePerWorker"] = maxSizeInMemoryMergePerWorker
-			}
-		} else {
-			bp.Store["scorchPersisterOptions"] = map[string]interface{}{
-				"numPersisterWorkers":           numPersisterWorkers,
-				"maxSizeInMemoryMergePerWorker": maxSizeInMemoryMergePerWorker,
-			}
-		}
-
-		if v, ok := bp.Store["scorchMergePlanOptions"].(map[string]interface{}); ok {
-			if v["floorSegmentFileSize"] == nil {
-				v["floorSegmentFileSize"] = floorSegmentFileSize
-			}
-		} else {
-			bp.Store["scorchMergePlanOptions"] = map[string]interface{}{
-				"floorSegmentFileSize": floorSegmentFileSize,
-			}
-		}
-
 		updatedSourceParams, err := MarshalJSON(sourceParams)
 		if err != nil {
 			return nil, cbgt.NewBadRequestError("PrepareIndex, unable to marshal source params"+
