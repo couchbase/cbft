@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1185,7 +1186,8 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	}
 
 	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
-	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
+	_, err = encryptionManagerInstance.encryptAndWriteFile(
+		pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1216,10 +1218,15 @@ func RollbackBleve(indexType, indexParams, sourceParams, path string,
 			" uses index type upside_down which is no longer supported", path)
 	}
 
-	pindexName := cbgt.PIndexNameFromPath(path)
+	pindexName, err := mgr.GetPIndexName(filepath.Base(path), false)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: rollback, get pindex name from path: %s,"+
+			" err: %v", path, err)
+	}
 
 	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
-	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
+	_, err = encryptionManagerInstance.encryptAndWriteFile(
+		pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1378,7 +1385,7 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 	buf := []byte(indexParams)
 	var err error
 	if len(buf) == 0 {
-		buf, err = os.ReadFile(path +
+		buf, _, err = encryptionManagerInstance.decryptAndReadFile(path +
 			string(os.PathSeparator) + "PINDEX_BLEVE_META")
 		if err != nil {
 			return nil, nil, err
@@ -1409,8 +1416,8 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 
 	if scopeDotCollMode || synonymsAvailable {
 		if am, ok := bleveParams.Mapping.(*mapping.IndexMappingImpl); ok {
-			buf, err = os.ReadFile(path +
-				string(os.PathSeparator) + "PINDEX_META")
+			metaPath := path + string(os.PathSeparator) + "PINDEX_META"
+			buf, _, err = encryptionManagerInstance.decryptAndReadFile(metaPath)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1460,8 +1467,8 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 		log.Printf("bleve: finished open using: %s took: %s", path, time.Since(startTime).String())
 	}
 
-	buf, err = os.ReadFile(path +
-		string(os.PathSeparator) + "PINDEX_META")
+	metaPath := path + string(os.PathSeparator) + "PINDEX_META"
+	buf, _, err = encryptionManagerInstance.decryptAndReadFile(metaPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -2649,8 +2656,8 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 		return nil
 	}
 
-	buf, err := os.ReadFile(t.bdest.path +
-		string(os.PathSeparator) + "PINDEX_META")
+	metaPath := t.bdest.path + string(os.PathSeparator) + "PINDEX_META"
+	buf, _, err := encryptionManagerInstance.decryptAndReadFile(metaPath)
 	if err != nil {
 		return err
 	}

@@ -112,8 +112,14 @@ func (h *PIndexContentHandler) ServeHTTP(
 
 func (h *PIndexContentHandler) streamPIndexContents(pindexName string,
 	w http.ResponseWriter, req *http.Request) {
-	pindexPath := h.mgr.PIndexPath(pindexName)
-	_, err := os.ReadDir(pindexPath)
+	pindexPath, err := h.mgr.PIndexPathEx(pindexName)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
+			" failed to get pindex path for pindex: %s, err: %v",
+			pindexName, err), http.StatusInternalServerError)
+		return
+	}
+	_, err = os.ReadDir(pindexPath)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
 			" read failed for path: %s, err: %v", pindexPath, err),
@@ -138,7 +144,13 @@ func (h *PIndexContentHandler) streamPIndexContents(pindexName string,
 
 func (h *PIndexContentHandler) streamTarArchive(pindexName string,
 	w http.ResponseWriter, req *http.Request) {
-	rootPath := h.mgr.PIndexPath(pindexName)
+	rootPath, err := h.mgr.PIndexPathEx(pindexName)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
+			" failed to get pindex path for pindex: %s, err: %v",
+			pindexName, err), http.StatusInternalServerError)
+		return
+	}
 	// temp dir for storing all memory segments and root bolt file.
 	tempPath, err := os.MkdirTemp(filepath.Dir(rootPath), "temp$$")
 	if err != nil {
@@ -156,6 +168,13 @@ func (h *PIndexContentHandler) streamTarArchive(pindexName string,
 
 	tw := tar.NewWriter(w)
 	defer tw.Close()
+
+	err = encryptionManagerInstance.prepEncryptionKeys(rootPath, tempPath)
+	if err != nil {
+		rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+
+			" encryption key prep err: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	// hash and archive together
 	hash := crc32.New(crcTable)
@@ -189,7 +208,7 @@ func (h *PIndexContentHandler) streamTarArchive(pindexName string,
 	// eg: the in-memory segments, bolt and bleve meta files.
 	for path, suffixes := range map[string][]string{
 		rootPath: {"PINDEX_BLEVE_META", "PINDEX_META"},
-		tempPath: {".bolt", ".zap", ".json"}} {
+		tempPath: {".bolt", ".zap", ".json", "_KEY"}} {
 		err = cs.walkDirAndStreamFiles(path, suffixes)
 		if err != nil {
 			rest.ShowError(w, req, fmt.Sprintf("rest_pindex_streamer:"+

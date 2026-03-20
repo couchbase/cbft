@@ -546,6 +546,12 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		_ = cbft.InitRateLimiter(mgr)
 	}
 
+	// Setup the encryption manager with the cbft manager
+	_, err = cbft.NewEncryptionManager(mgr)
+	if err != nil {
+		return fmt.Errorf("failed to start encryption manager: %w", err)
+	}
+
 	// Setup query history service with the manager
 	search_history.Init(dataDir)
 

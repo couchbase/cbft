@@ -270,7 +270,7 @@ func uploadPIndexFiles(mgr *cbgt.Manager, client objcli.Client, remotePath,
 	atomic.AddInt32(&dest.copyStats.TotCopyPartitionStart, 1)
 
 	log.Printf("s3_utils: uploading path %s", path)
-	err = compressUploadToBucket(client, bucket, path, keyPrefix, dest.copyStats, ctx)
+	err = compressUploadToBucket(mgr, client, bucket, path, keyPrefix, dest.copyStats, ctx)
 	if err != nil {
 		log.Errorf("s3_utils: error compressing and uploading to bucket: %v", err)
 		atomic.AddInt32(&dest.copyStats.TotCopyPartitionErrors, 1)
@@ -280,9 +280,12 @@ func uploadPIndexFiles(mgr *cbgt.Manager, client objcli.Client, remotePath,
 	atomic.AddInt32(&dest.copyStats.TotCopyPartitionFinished, 1)
 }
 
-func compressUploadToBucket(c objcli.Client, bucket, pindexPath,
+func compressUploadToBucket(mgr *cbgt.Manager, c objcli.Client, bucket, pindexPath,
 	keyPrefix string, copyStats *CopyPartitionStats, ctx context.Context) error {
-	pindexName := cbgt.PIndexNameFromPath(pindexPath)
+	pindexName, err := mgr.GetPIndexName(filepath.Base(pindexPath), false)
+	if err != nil {
+		return fmt.Errorf("s3_utils: error getting pindex name from path: %s, err: %v", pindexPath, err)
+	}
 	key := keyPrefix + "/" + pindexName + ".tar.gz"
 
 	mpuOpts := objutil.MPUploaderOptions{

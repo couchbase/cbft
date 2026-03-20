@@ -176,7 +176,7 @@ func (t *BleveDest) IsFeedable() (bool, error) {
 		return true, nil
 	}
 	return false, fmt.Errorf("pindex_bleve_copy: failed creating bleve"+
-		" index for pindex: %s", cbgt.PIndexNameFromPath(t.path))
+		" index for pindex path: %s", t.path)
 }
 
 func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
@@ -202,7 +202,11 @@ func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
 func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	mgr *cbgt.Manager, rollback func(), bucket, keyPrefix string) (
 	cbgt.PIndexImpl, cbgt.Dest, error) {
-	pindexName := cbgt.PIndexNameFromPath(path)
+	pindexName, err := mgr.GetPIndexName(filepath.Base(path), false)
+	if err != nil {
+		return nil, nil, fmt.Errorf("pindex_bleve_copy: error getting pindex name from path: %s, err: %v",
+			path, err)
+	}
 	// validate the index params and exit early on errors.
 	bleveParams, kvConfig, _, _, err := parseIndexParams(indexParams)
 	if err != nil {
@@ -281,8 +285,18 @@ func GetHibernationBucketForPindex(params string) (string, string, error) {
 
 func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	mgr *cbgt.Manager, rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
-
-	pindexName := cbgt.PIndexNameFromPath(path)
+	var pindexName string
+	if mgr != nil {
+		var err error
+		pindexName, err = mgr.GetPIndexName(filepath.Base(path), false)
+		if err != nil {
+			return nil, nil, fmt.Errorf("pindex_bleve_copy: error getting pindex name from path: %s, err: %v",
+				path, err)
+		}
+	} else {
+		// this edge case is hit during unit tests when manager is available
+		pindexName = cbgt.PIndexNameFromPath(path)
+	}
 
 	hibBucket, keyPrefix, err := GetHibernationBucketForPindex(indexParams)
 
@@ -312,7 +326,7 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 	}
 
 	pathMeta := filepath.Join(path, "PINDEX_BLEVE_META")
-	err = os.WriteFile(pathMeta, []byte(indexParams), 0600)
+	_, err = encryptionManagerInstance.encryptAndWriteFile(pathMeta, []byte(indexParams), 0600)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -332,7 +346,11 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 func tryCopyBleveIndex(indexType, indexParams, path string,
 	kvConfig map[string]interface{}, rollback func(),
 	dest *BleveDest, mgr *cbgt.Manager) (err error) {
-	pindexName := cbgt.PIndexNameFromPath(path)
+	pindexName, err := mgr.GetPIndexName(filepath.Base(path), false)
+	if err != nil {
+		return fmt.Errorf("pindex_bleve_copy: error getting pindex name from path: %s, err: %v",
+			path, err)
+	}
 
 	defer func() {
 		// fallback to fresh new creation upon errors.
@@ -358,6 +376,11 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 		// that might have missed the clean up performed during the dest closure.
 		_ = os.RemoveAll(path)
 		return nil
+	}
+
+	err = encryptionManagerInstance.importEncryptionKeys(path)
+	if err != nil {
+		return err
 	}
 
 	var bindex bleve.Index
@@ -427,7 +450,12 @@ func openBleveIndex(path string, kvConfig map[string]interface{}) (
 
 func createNewBleveIndex(indexType, indexParams, path string,
 	rollback func(), dest *BleveDest, mgr *cbgt.Manager) {
-	pindexName := cbgt.PIndexNameFromPath(path)
+	pindexName, err := mgr.GetPIndexName(filepath.Base(path), false)
+	if err != nil {
+		log.Printf("pindex_bleve_copy: createNewBleveIndex error getting pindex name from path: %s, err: %v",
+			path, err)
+		return
+	}
 	// check whether the dest is already closed.
 	if isClosed(dest.stopCh) {
 		log.Printf("pindex_bleve_copy: createNewBleveIndex pindex: %s"+
