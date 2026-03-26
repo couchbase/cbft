@@ -1,39 +1,39 @@
 module github.com/couchbase/cbft
 
-go 1.24.0
+go 1.24.13
 
 require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
 	github.com/blevesearch/bleve-mapping-ui v0.5.2
-	github.com/blevesearch/bleve/v2 v2.4.5-0.20260129164850-80a94ed16500
+	github.com/blevesearch/bleve/v2 v2.4.5-0.20260326152444-ea571f92e3f3
 	github.com/blevesearch/bleve_index_api v1.1.13-0.20250408143424-7650bf7414fb
 	github.com/blevesearch/zapx/v11 v11.3.10
 	github.com/blevesearch/zapx/v12 v12.3.10
 	github.com/blevesearch/zapx/v13 v13.3.10
 	github.com/blevesearch/zapx/v14 v14.3.10
 	github.com/blevesearch/zapx/v15 v15.3.16
-	github.com/blevesearch/zapx/v16 v16.1.9-0.20251215174229-a406f70c703b
+	github.com/blevesearch/zapx/v16 v16.1.9-0.20260325143815-36fc676c3ece
 	github.com/buger/jsonparser v1.1.1
 	github.com/cloudfoundry/gosigar v1.3.4
-	github.com/couchbase/cbauth v0.1.10
+	github.com/couchbase/cbauth v0.1.18
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
 	github.com/couchbase/go-couchbase v0.1.1
-	github.com/couchbase/go_json v0.0.0-20220330123059-4473a21887c8
+	github.com/couchbase/go_json v0.0.0-20250803152502-4641f4ef8578
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
 	github.com/couchbase/tools-common/cloud/v8 v8.1.3
 	github.com/couchbase/tools-common/types v1.1.4
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.4
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.48.0
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.41.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.78.0
 )
@@ -69,8 +69,8 @@ require (
 	github.com/couchbase/ghistogram v0.1.0 // indirect
 	github.com/couchbase/gocb/v2 v2.5.4 // indirect
 	github.com/couchbase/gocbcore/v10 v10.5.2 // indirect
-	github.com/couchbase/gocbcore/v9 v9.1.8 // indirect
-	github.com/couchbase/gomemcached v0.2.2-0.20230407174933-7d7ce13da8cc // indirect
+	github.com/couchbase/gocbcore/v9 v9.1.11 // indirect
+	github.com/couchbase/gomemcached v0.3.4 // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
 	github.com/couchbase/moss v0.3.0 // indirect
 	github.com/couchbase/tools-common/fs v1.0.3 // indirect
@@ -85,14 +85,13 @@ require (
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.65.0 // indirect
+	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -100,6 +99,7 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
+	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 // indirect
 	golang.org/x/text v0.32.0 // indirect
