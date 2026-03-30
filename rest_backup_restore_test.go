@@ -508,7 +508,7 @@ func TestRemapIndexDefinions(t *testing.T) {
 		versionTracker.version = test.version
 		versionTracker.clusterVersion = versionTracker.version
 
-		resIndexDefs, err := remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
+		resIndexDefs, err := remapIndexDefinitions(nil, &indexDefs, test.mappingRules, "", true)
 		if err != nil {
 			t.Errorf("test %d, remapIndexDefinitions failed, err: %v", i, err)
 			continue
@@ -589,7 +589,7 @@ func TestRemapIndexDefinionsErrors(t *testing.T) {
 			t.Fatalf("test %d, json err: %v", i, err)
 		}
 
-		_, err = remapIndexDefinitions(&indexDefs, test.mappingRules, "", true)
+		_, err = remapIndexDefinitions(nil, &indexDefs, test.mappingRules, "", true)
 
 		if err == nil || !strings.Contains(err.Error(), test.errDescription) {
 			t.Fatalf("test %d: expected err: %s, got: %v", i, test.errDescription,

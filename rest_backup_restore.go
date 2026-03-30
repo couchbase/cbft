@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	bleveMappingUI "github.com/blevesearch/bleve-mapping-ui"
@@ -37,7 +38,7 @@ func NewRestoreIndexHandler(mgr *cbgt.Manager) *RestoreIndexHandler {
 func (h *RestoreIndexHandler) ServeHTTP(
 	w http.ResponseWriter, req *http.Request) {
 	// parse and process the request body.
-	indexDefs, err := processRemapRequest(req, "")
+	indexDefs, err := processRemapRequest(req, h.mgr, "")
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_backup_restore: processRemapRequest "+
 			"failed, err: %v", err), http.StatusBadRequest)
@@ -83,7 +84,7 @@ func (h *BucketRestoreIndexHandler) ServeHTTP(
 		return
 	}
 	// parse and process the request body.
-	indexDefs, err := processRemapRequest(req, bucketName)
+	indexDefs, err := processRemapRequest(req, h.mgr, bucketName)
 	if err != nil {
 		rest.ShowError(w, req, fmt.Sprintf("rest_backup_restore: processRemapRequest failed,"+
 			" for bucket: %s, err: %v", bucketName, err), http.StatusBadRequest)
@@ -137,7 +138,7 @@ func restoreIndexDefs(indexDefs *cbgt.IndexDefs, cfg cbgt.Cfg) error {
 	return nil
 }
 
-func processRemapRequest(req *http.Request, bucketName string) (
+func processRemapRequest(req *http.Request, mgr *cbgt.Manager, bucketName string) (
 	*cbgt.IndexDefs, error) {
 	requestBody, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -162,7 +163,7 @@ func processRemapRequest(req *http.Request, bucketName string) (
 	if err != nil {
 		return nil, err
 	}
-	indexDefs, err = remapIndexDefinitions(indexDefs, mapingRules,
+	indexDefs, err = remapIndexDefinitions(mgr, indexDefs, mapingRules,
 		bucketName, false)
 	if err != nil {
 		return nil, fmt.Errorf("index remapping error: %v", err)
@@ -189,9 +190,19 @@ func parseMappingParams(params string) (map[string]string, error) {
 	return rv, nil
 }
 
-func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
+func remapIndexDefinitions(mgr *cbgt.Manager, indexDefs *cbgt.IndexDefs,
 	mappingRules map[string]string, bucketName string,
 	skipValidation bool) (*cbgt.IndexDefs, error) {
+	// MB-69751: guardrail to limit the number of collections for index
+	collectionsLimitPerIndex := defaultCollectionsLimitPerIndex
+	if mgr != nil {
+		if v := mgr.GetOption("collectionsLimitPerIndex"); len(v) > 0 {
+			if vInt, err := strconv.Atoi(v); err == nil {
+				collectionsLimitPerIndex = vInt
+			}
+		}
+	}
+
 	for _, indexDef := range indexDefs.IndexDefs {
 		// override the UUID during restore.
 		indexDef.UUID = cbgt.NewUUID()
@@ -259,6 +270,12 @@ func remapIndexDefinitions(indexDefs *cbgt.IndexDefs,
 								"validation errs: %v", indexDef.Name, err)
 						}
 						scopeName = scope.Name
+
+						if len(scope.Collections) > collectionsLimitPerIndex {
+							return nil, fmt.Errorf("rest_backup_restore: indexName: %s, "+
+								"number of source collections: %d exceeds limit: %d",
+								indexDef.Name, len(scope.Collections), collectionsLimitPerIndex)
+						}
 					}
 
 					indexDef.Name, err = decorateIndexNameWithKeySpace(

@@ -78,6 +78,8 @@ const (
 
 	xattrsMappingName          = "_$xattrs"
 	DefaultBleveMaxClauseCount = 1024
+
+	defaultCollectionsLimitPerIndex = int(100) // MB-69751
 )
 
 var (
@@ -685,6 +687,19 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("%v", err)
 			}
 		}
+
+		// MB-69751: guardrail to limit the number of collections for index
+		collectionsLimitPerIndex := defaultCollectionsLimitPerIndex
+		if v := mgr.GetOption("collectionsLimitPerIndex"); len(v) > 0 {
+			if vInt, err := strconv.Atoi(v); err == nil {
+				collectionsLimitPerIndex = vInt
+			}
+		}
+		if len(scope.Collections) > collectionsLimitPerIndex {
+			return nil, cbgt.NewBadRequestError("PrepareIndex, number of source collections: %d "+
+				"exceeds limit: %d", len(scope.Collections), collectionsLimitPerIndex)
+		}
+
 		sourceParams := make(map[string]interface{})
 		if len(indexDef.SourceParams) > 0 && indexDef.SourceParams != "null" {
 			err = UnmarshalJSON([]byte(indexDef.SourceParams), &sourceParams)
