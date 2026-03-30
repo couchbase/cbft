@@ -602,8 +602,8 @@ func (t *vectorIndexTrainer) acquireSamples() {
 	// the remaining bleve dests will wait here for the centroid index to be created,
 	// after which they will file transfer it from the source bleveDest
 	<-worker.copyCh
-	if ic, ok := worker.vecIndex.(indexFileCopyable); ok && worker.success {
-		dest, ok := t.bleveDest.bindex.(indexFileCopyable)
+	if ic, ok := worker.vecIndex.(bleve.IndexFileCopyable); ok && worker.success {
+		dest, ok := t.bleveDest.bindex.(bleve.IndexFileCopyable)
 		if !ok {
 			err = fmt.Errorf("error getting index file copyable: %w", err)
 			return
@@ -620,16 +620,11 @@ func (t *vectorIndexTrainer) acquireSamples() {
 
 }
 
-type indexFileCopyable interface {
-	SetPathInBolt(key []byte, value []byte) error
-	CopyFile(file string, d index.IndexDirectory) error
-}
-
 // centroidWriter implements the writer used when copying the centroid index
 // file from the source partition into this partition's index directory.
 type centroidWriter struct {
 	rootpath  string
-	destIndex indexFileCopyable
+	destIndex bleve.IndexFileCopyable
 }
 
 // GetWriter returns a file writer for the given path; only centroid index file
