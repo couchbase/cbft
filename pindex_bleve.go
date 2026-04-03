@@ -1471,6 +1471,7 @@ func OpenBlevePIndexImplEx(indexType, path string, rollback func(),
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
+	tmp.kvconfig = kvConfig
 
 	return bindex, &cbgt.DestForwarder{
 		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,

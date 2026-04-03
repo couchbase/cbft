@@ -477,6 +477,13 @@ func (t *vectorIndexTrainer) createCentroidIndex(cfg *centroidIndexConfig) error
 		return err
 	}
 
+	// mark training as complete so that scorch releases its resources
+	batch := cfg.vecIndex.NewBatch()
+	batch.SetInternal(util.BoltTrainCompleteKey, []byte("true"))
+	err = cfg.vecIndex.Train(batch)
+	if err != nil {
+		return fmt.Errorf("error setting train complete flag in bolt: %w", err)
+	}
 	return nil
 }
 
@@ -552,6 +559,8 @@ func (t *vectorIndexTrainer) acquireSamples() {
 		return
 	}
 	if trained {
+		log.Printf("trainer_vector: skipping the training phase, since we already" +
+			" have a centroid index")
 		return
 	}
 	// TODO: allow copying centroid index from another partition on this node if
