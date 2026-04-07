@@ -434,13 +434,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		return err
 	}
 
-	// Custom script query evaluator is feature-gated. Only initialize it when
-	// the toggle is on.
-	cbft.RefreshCustomScriptQuerySettings(options)
-	if cbft.CustomScriptQueriesEnabled() {
-		cbft.InitJSEvaluator()
-	}
-
 	if err = cbft.InitKNNQueryThrottlerOptions(options); err != nil {
 		return err
 	}
@@ -1012,11 +1005,6 @@ func (meh *mainHandlers) OnRefreshManagerOptions(options map[string]string) {
 		err = cbgt.RefreshScanPlusOptions(options, nil)
 		if err != nil {
 			log.Printf("main: meh.OnRefreshManagerOptions: scan plus options, err: %v", err)
-		}
-
-		cbft.RefreshCustomScriptQuerySettings(options)
-		if cbft.CustomScriptQueriesEnabled() {
-			cbft.InitJSEvaluator()
 		}
 	}
 }
