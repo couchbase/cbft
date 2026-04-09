@@ -165,6 +165,14 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		if options["customScriptQueriesEnabled"] != "" {
+			_, err := strconv.ParseBool(options["customScriptQueriesEnabled"])
+			if err != nil {
+				return nil, fmt.Errorf("illegal value for customScriptQueriesEnabled: '%v'",
+					options["customScriptQueriesEnabled"])
+			}
+		}
+
 		return options, nil
 	}
 
@@ -194,6 +202,9 @@ func (h *ManagerOptionsExt) ServeHTTP(
 
 	// Update search history settings if requested.
 	search_history.Service.Refresh(h.mgr.Options())
+	if err := RefreshCustomScriptQuerySettings(h.mgr.Options()); err != nil {
+		log.Warnf("rest_options: custom script query settings, err: %v", err)
+	}
 }
 
 type ConciseOptions struct {

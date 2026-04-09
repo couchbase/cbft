@@ -20,8 +20,16 @@ SET (FTS_DEFAULT "server")
 INCLUDE (FindCouchbaseGo)
 
 SET (FTS_DEPENDS)
+SET (CGO_INCLUDE_DIRS)
+SET (CGO_LIBRARY_DIRS)
 IF (BUILD_ENTERPRISE)
     SET (BUILD_TAG "enterprise")
+    SET (NEWEVAL_DIR ../eventing-ee/evaluator)
+    find_path(NEWEVAL_INCLUDE_DIR worker.h
+        HINTS ${NEWEVAL_DIR}/worker/include)
+    LIST(PREPEND CGO_LIBRARY_DIRS "${evaluator_BINARY_DIR}")
+    LIST(PREPEND CGO_INCLUDE_DIRS "${NEWEVAL_INCLUDE_DIR}")
+    LIST(APPEND FTS_DEPENDS jseval)
     IF (CB_USE_FAISS)
       IF (NOT WIN32)
         SET (BUILD_TAG "${BUILD_TAG} jemalloc vectors")
@@ -41,12 +49,16 @@ GoModBuild (TARGET cbft PACKAGE github.com/couchbase/cbft/cmd/cbft
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin OUTPUT cbft
   DEPENDS ${FTS_DEPENDS}
+  CGO_INCLUDE_DIRS "${CGO_INCLUDE_DIRS}"
+  CGO_LIBRARY_DIRS "${CGO_LIBRARY_DIRS}"
   GOVERSION ${GOVERSION})
 
 GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
   GOTAGS "${FTS_DEFAULT} ${BUILD_TAG}"
   INSTALL_PATH bin
   DEPENDS ${FTS_DEPENDS}
+  CGO_INCLUDE_DIRS "${CGO_INCLUDE_DIRS}"
+  CGO_LIBRARY_DIRS "${CGO_LIBRARY_DIRS}"
   GOVERSION ${GOVERSION})
 
 # Build the UI and copy the files to the correct place
