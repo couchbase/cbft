@@ -231,25 +231,25 @@ func (sr *SearchRequest) decorateQuery(indexName string, q query.Query,
 }
 
 type SearchRequest struct {
-	Q                json.RawMessage         `json:"query"`
-	Size             *int                    `json:"size"`
-	From             *int                    `json:"from"`
-	Highlight        *bleve.HighlightRequest `json:"highlight"`
-	Fields           []string                `json:"fields"`
-	Facets           bleve.FacetsRequest     `json:"facets"`
-	Explain          bool                    `json:"explain"`
-	Sort             []json.RawMessage       `json:"sort"`
-	IncludeLocations bool                    `json:"includeLocations"`
-	Score            string                  `json:"score,omitempty"`
-	SearchAfter      []string                `json:"search_after,omitempty"`
-	SearchBefore     []string                `json:"search_before,omitempty"`
-	Limit            *int                    `json:"limit,omitempty"`
-	Offset           *int                    `json:"offset,omitempty"`
-	Collections      []string                `json:"collections,omitempty"`
-	KNN              json.RawMessage         `json:"knn,omitempty"`
-	KNNOperator      json.RawMessage         `json:"knn_operator,omitempty"`
-	PreSearchData    json.RawMessage         `json:"pre_search_data,omitempty"`
-	Params           json.RawMessage         `json:"params,omitempty"`
+	Q                json.RawMessage          `json:"query"`
+	Size             *int                     `json:"size"`
+	From             *int                     `json:"from"`
+	Highlight        *bleve.HighlightRequest  `json:"highlight"`
+	Fields           []string                 `json:"fields"`
+	Facets           bleve.FacetsRequest      `json:"facets"`
+	Explain          bool                     `json:"explain"`
+	Sort             []json.RawMessage        `json:"sort"`
+	IncludeLocations bool                     `json:"includeLocations"`
+	Score            string                   `json:"score,omitempty"`
+	SearchAfter      []string                 `json:"search_after,omitempty"`
+	SearchBefore     []string                 `json:"search_before,omitempty"`
+	Limit            *int                     `json:"limit,omitempty"`
+	Offset           *int                     `json:"offset,omitempty"`
+	Collections      []string                 `json:"collections,omitempty"`
+	KNN              bleve.OptionalRawMessage `json:"knn,omitempty"`
+	KNNOperator      bleve.OptionalRawMessage `json:"knn_operator,omitempty"`
+	PreSearchData    bleve.OptionalRawMessage `json:"pre_search_data,omitempty"`
+	Params           bleve.OptionalRawMessage `json:"params,omitempty"`
 }
 
 func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, error) {

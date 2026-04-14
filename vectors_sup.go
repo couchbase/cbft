@@ -92,17 +92,17 @@ func featureFlagForDims(dims int) string {
 
 // -----------------------------------------------------------------------------
 
-func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
+func interpretKNNForRequest(knn, knnOperator bleve.OptionalRawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	if knn != nil && r != nil {
 		var tmp []struct {
-			Field        string          `json:"field"`
-			Vector       []float32       `json:"vector"`
-			VectorBase64 string          `json:"vector_base64"`
-			K            int64           `json:"k"`
-			Boost        *query.Boost    `json:"boost,omitempty"`
-			Params       json.RawMessage `json:"params,omitempty"`
-			FilterQuery  json.RawMessage `json:"filter,omitempty"`
+			Field        string                   `json:"field"`
+			Vector       []float32                `json:"vector"`
+			VectorBase64 string                   `json:"vector_base64"`
+			K            int64                    `json:"k"`
+			Boost        *query.Boost             `json:"boost,omitempty"`
+			Params       bleve.OptionalRawMessage `json:"params,omitempty"`
+			FilterQuery  bleve.OptionalRawMessage `json:"filter,omitempty"`
 		}
 
 		err := UnmarshalJSON(knn, &tmp)
@@ -118,11 +118,10 @@ func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchReq
 			r.KNN[i].VectorBase64 = knnReq.VectorBase64
 			r.KNN[i].K = knnReq.K
 			r.KNN[i].Boost = knnReq.Boost
-			r.KNN[i].Params = knnReq.Params
-			if len(knnReq.FilterQuery) == 0 {
-				// Setting this to nil to avoid ParseQuery() setting it to a match none
-				r.KNN[i].FilterQuery = nil
-			} else {
+			if len(knnReq.Params) > 0 {
+				r.KNN[i].Params = json.RawMessage(knnReq.Params)
+			}
+			if len(knnReq.FilterQuery) > 0 {
 				r.KNN[i].FilterQuery, err = query.ParseQuery(knnReq.FilterQuery)
 				if err != nil {
 					return nil, err

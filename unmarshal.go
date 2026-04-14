@@ -297,20 +297,20 @@ func decodeBleveIndexErrMap(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 
 func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	var temp struct {
-		Q                json.RawMessage         `json:"query"`
-		Size             *int                    `json:"size"`
-		From             int                     `json:"from"`
-		Highlight        *bleve.HighlightRequest `json:"highlight"`
-		Fields           []string                `json:"fields"`
-		Facets           bleve.FacetsRequest     `json:"facets"`
-		Explain          bool                    `json:"explain"`
-		Sort             []json.RawMessage       `json:"sort"`
-		IncludeLocations bool                    `json:"includeLocations"`
-		Score            string                  `json:"score"`
-		KNN              json.RawMessage         `json:"knn"`
-		KNNOperator      json.RawMessage         `json:"knn_operator"`
-		PreSearchData    json.RawMessage         `json:"pre_search_data"`
-		Params           json.RawMessage         `json:"params"`
+		Q                json.RawMessage          `json:"query"`
+		Size             *int                     `json:"size"`
+		From             int                      `json:"from"`
+		Highlight        *bleve.HighlightRequest  `json:"highlight"`
+		Fields           []string                 `json:"fields"`
+		Facets           bleve.FacetsRequest      `json:"facets"`
+		Explain          bool                     `json:"explain"`
+		Sort             []json.RawMessage        `json:"sort"`
+		IncludeLocations bool                     `json:"includeLocations"`
+		Score            string                   `json:"score"`
+		KNN              bleve.OptionalRawMessage `json:"knn"`
+		KNNOperator      bleve.OptionalRawMessage `json:"knn_operator"`
+		PreSearchData    bleve.OptionalRawMessage `json:"pre_search_data"`
+		Params           bleve.OptionalRawMessage `json:"params"`
 	}
 
 	r := &bleve.SearchRequest{}
@@ -382,6 +382,7 @@ func decodeBleveSearchRequest(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	}
 
 	if r, err = interpretKNNForRequest(temp.KNN, temp.KNNOperator, r); err != nil {
+		iter.Error = err
 		return
 	}
 
@@ -447,6 +448,10 @@ func parseQuery(input []byte) (query.Query, error) {
 	err := jsoniter.Unmarshal(input, &tmp)
 	if err != nil {
 		return nil, err
+	}
+	if len(tmp) == 0 {
+		// interpret as a match_none query
+		return query.NewMatchNoneQuery(), nil
 	}
 	_, hasFuzziness := tmp["fuzziness"]
 	_, isMatchQuery := tmp["match"]

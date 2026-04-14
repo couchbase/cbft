@@ -12,7 +12,6 @@
 package cbft
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/blevesearch/bleve/v2"
@@ -37,7 +36,7 @@ func featureFlagForDims(int) string {
 
 // -----------------------------------------------------------------------------
 
-func interpretKNNForRequest(knn, knnOperator json.RawMessage, r *bleve.SearchRequest) (
+func interpretKNNForRequest(knn, knnOperator bleve.OptionalRawMessage, r *bleve.SearchRequest) (
 	*bleve.SearchRequest, error) {
 	// Not supported
 	return r, nil
