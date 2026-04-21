@@ -983,9 +983,16 @@ func extractFieldStats(bpsm, nsIndexStat map[string]interface{}) {
 
 	if is, ok := v.(map[string]interface{}); ok {
 		for s, v := range is {
-			if strings.HasSuffix(s, ":num_vectors") {
+			switch {
+			case strings.HasSuffix(s, ":num_vectors"):
 				updateFieldStats(s, v, nsIndexStat)
 				updateFieldStats("total_vectors", v, nsIndexStat)
+			case strings.HasSuffix(s, ":num_vector_indexes_in_gpu"):
+				updateFieldStats(s, v, nsIndexStat)
+				updateFieldStats("total_vector_indexes_in_gpu", v, nsIndexStat)
+			case strings.HasSuffix(s, ":num_vector_indexes_in_cpu"):
+				updateFieldStats(s, v, nsIndexStat)
+				updateFieldStats("total_vector_indexes_in_cpu", v, nsIndexStat)
 			}
 		}
 	}

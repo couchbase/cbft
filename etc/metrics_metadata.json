@@ -998,5 +998,15 @@
         "added": "8.1.0",
         "type": "counter",
         "help": "Total number of KV errors encountered during scan plus queries"
+    },
+    "fts_total_vector_indexes_in_gpu": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "The total number of segmented vector indexes currently loaded in GPU memory"
+    },
+    "fts_total_vector_indexes_in_cpu": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "The total number of segmented vector indexes currently loaded in CPU memory"
     }
 }

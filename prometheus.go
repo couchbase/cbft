@@ -143,7 +143,9 @@ var prometheusStats = map[string]string{
 	"limits:diskBytes":                  "gauge",
 	"limits:memoryBytes":                "gauge",
 
-	"total_vectors": "gauge",
+	"total_vectors":                    "gauge",
+	"total_vector_indexes_in_gpu": "gauge",
+	"total_vector_indexes_in_cpu": "gauge",
 
 	// Runtime metrics
 	"num_goroutines": "gauge",

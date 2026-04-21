@@ -816,6 +816,18 @@ components:
             The total number of vectors inside the given Search index, across all indexed fields.
 
             If there are no vectors inside the Search index, the REST API does not return this statistic.
+        BUCKET:INDEX:total_vector_indexes_in_gpu:
+          type: integer
+          description: |-
+            The total number of segmented vector indexes currently loaded in GPU memory, across all indexed fields.
+
+            If there are no indexes in GPU memory, the REST API does not return this statistic.
+        BUCKET:INDEX:total_vector_indexes_in_cpu:
+          type: integer
+          description: |-
+            The total number of segmented vector indexes currently loaded in CPU memory, across all indexed fields.
+
+            If there are no indexes in CPU memory, the REST API does not return this statistic.
 
   securitySchemes:
     Admin:
