@@ -152,3 +152,9 @@ replace github.com/couchbase/gomemcached => ../goproj/src/github.com/couchbase/g
 replace github.com/couchbase/goutils => ../goproj/src/github.com/couchbase/goutils
 
 replace github.com/couchbase/gocbcrypto => ../goproj/src/github.com/couchbase/gocbcrypto
+
+replace github.com/couchbase/eventing => ../goproj/src/github.com/couchbase/eventing
+
+replace github.com/couchbase/n1fty => ../goproj/src/github.com/couchbase/n1fty
+
+replace github.com/couchbase/query-ee => ../goproj/src/github.com/couchbase/query-ee
