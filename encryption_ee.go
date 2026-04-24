@@ -255,43 +255,21 @@ func (em *encryptionManager) dropKeysAsync(keyData cbauth.KeyDataType,
 	errs := make(chan error, len(pIndexes))
 	wg := sync.WaitGroup{}
 
-	wg.Add(1)
 	// traverse through all planPIndexes and re-encrypt the ones encrypted with the keys to drop
-	go func() {
-		defer wg.Done()
-		planPIndexesPath := filepath.Join(em.mgr.DataDir(), "planPIndexes")
-		files, err := os.ReadDir(planPIndexesPath)
-		if err != nil {
-			log.Printf("encryptionManager: failed to read planPIndexes directory at "+
-				"path %s: %v", planPIndexesPath, err)
-			errs <- err
-			return
-		}
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-			path := filepath.Join(planPIndexesPath, file.Name())
-			err = em.reencryptFile(path, keysToDropMap)
-			if err != nil {
-				log.Printf("encryptionManager: failed to re-encrypt planPIndexes "+
-					"file at path %s: %v", path, err)
-				errs <- err
-				return
-			}
-		}
-	}()
-
-	for _ = range numParallelDrops {
-		go em.dropWorker(jobs, keysToDropMap, &wg, errs)
-	}
-
-	// traverse through all pindexes and re-encrypt the ones
-	// encrypted with the keys to drop.
-	for _, pIndex := range pIndexes {
+	if keyData.TypeName == otherKeyType {
 		wg.Add(1)
-		jobs <- pIndex
+		go em.dropPlanPIndexes(keysToDropMap, &wg, errs)
+	} else {
+		for _ = range numParallelDrops {
+			go em.dropWorker(jobs, keyData, keysToDropMap, &wg, errs)
+		}
+
+		// traverse through all pindexes and re-encrypt the ones
+		// encrypted with the keys to drop.
+		for _, pIndex := range pIndexes {
+			wg.Add(1)
+			jobs <- pIndex
+		}
 	}
 
 	// blockingly wait for all re-encryption go-routines to finish and
@@ -325,9 +303,33 @@ func (em *encryptionManager) dropKeysAsync(keyData cbauth.KeyDataType,
 	return
 }
 
-func (em *encryptionManager) dropPIndex(pIndex *cbgt.PIndex, keysToDropMap map[string]struct{},
-	wg *sync.WaitGroup) error {
+func (em *encryptionManager) dropPlanPIndexes(keysToDropMap map[string]struct{}, wg *sync.WaitGroup, errs chan error) {
 	defer wg.Done()
+	planPIndexesPath := filepath.Join(em.mgr.DataDir(), "planPIndexes")
+	files, err := os.ReadDir(planPIndexesPath)
+	if err != nil {
+		log.Printf("encryptionManager: failed to read planPIndexes directory at "+
+			"path %s: %v", planPIndexesPath, err)
+		errs <- err
+		return
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		path := filepath.Join(planPIndexesPath, file.Name())
+		err = em.reencryptFile(path, keysToDropMap)
+		if err != nil {
+			log.Printf("encryptionManager: failed to re-encrypt planPIndexes "+
+				"file at path %s: %v", path, err)
+			errs <- err
+			return
+		}
+	}
+}
+
+func (em *encryptionManager) dropPIndex(pIndex *cbgt.PIndex, keysToDropMap map[string]struct{}) error {
 	// obtain the bleve index for the pindex
 	bIndex, _, _, err := bleveIndex(pIndex)
 	if err != nil {
@@ -368,13 +370,16 @@ func (em *encryptionManager) dropPIndex(pIndex *cbgt.PIndex, keysToDropMap map[s
 	return nil
 }
 
-func (em *encryptionManager) dropWorker(jobs <-chan *cbgt.PIndex, keysToDropMap map[string]struct{},
+func (em *encryptionManager) dropWorker(jobs <-chan *cbgt.PIndex, keyData cbauth.KeyDataType, keysToDropMap map[string]struct{},
 	wg *sync.WaitGroup, errs chan error) {
 	for pIndex := range jobs {
-		err := em.dropPIndex(pIndex, keysToDropMap, wg)
-		if err != nil {
-			errs <- err
+		if pIndex.SourceUUID == keyData.BucketUUID {
+			err := em.dropPIndex(pIndex, keysToDropMap)
+			if err != nil {
+				errs <- err
+			}
 		}
+		wg.Done()
 	}
 }
 
