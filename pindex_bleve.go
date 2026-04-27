@@ -720,8 +720,16 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				})
 			}
 		}
-
 		sourceParams["scopeParams"] = scopeParams
+
+		// Convert non scoped index name to scoped index name by prefixing bucket and scope names
+		bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
+		if len(bucketName) == 0 || len(scopeName) == 0 {
+			indexDef.Name = indexDef.SourceName + "." + scope.Name + "." + indexDef.Name
+			bucketName = indexDef.SourceName
+			scopeName = scope.Name
+		}
+
 		// figure out the scope/collection details from mappings
 		// and perform the validation checks.
 		if scopeDotCollMode || synonymsAvailable {
@@ -729,25 +737,18 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				return nil, cbgt.NewBadRequestError("PrepareIndex, collections not supported" +
 					" across all nodes in the cluster")
 			}
-
-			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
-			if len(bucketName) > 0 && len(scopeName) > 0 {
-				if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
-					return nil, cbgt.NewBadRequestError("PrepareIndex, scoped indexes NOT" +
-						" supported in mixed version cluster")
-				}
-				if bucketName != indexDef.SourceName || scopeName != scope.Name {
-					return nil, cbgt.NewBadRequestError("PrepareIndex, validation of bucket" +
-						" and/or scope names against index definition failed")
-				}
+			if !isClusterCompatibleFor(FeatureScopedIndexNamesVersion) {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, scoped indexes NOT" +
+					" supported in mixed version cluster")
+			}
+			if bucketName != indexDef.SourceName || scopeName != scope.Name {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, validation of bucket" +
+					" and/or scope names against index definition failed")
 			}
 		} else {
-			bucketName, scopeName := getKeyspaceFromScopedIndexName(indexDef.Name)
-			if len(bucketName) > 0 && len(scopeName) > 0 {
-				if bucketName != indexDef.SourceName || scopeName != "_default" {
-					return nil, cbgt.NewBadRequestError("PrepareIndex, changing a scoped index's" +
-						" bucket/scope name is NOT allowed")
-				}
+			if bucketName != indexDef.SourceName || scopeName != "_default" {
+				return nil, cbgt.NewBadRequestError("PrepareIndex, changing a scoped index's" +
+					" bucket/scope name is NOT allowed")
 			}
 		}
 

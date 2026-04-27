@@ -959,11 +959,17 @@ func processPath(p string) (string, string, string, error) {
 			// pindex names are in the format bucketName.indexType.indexUUID, so we can
 			// obtain the bucket name just by splitting
 			pindexParts := strings.Split(pindexName, ".")
+			var bucketName string
 			if len(pindexParts) < 3 {
-				return "", "", "", fmt.Errorf("invalid pindex "+
-					"name extracted: %s from path: %s", pindexName, p)
+				indexDef, _, err := encryptionManagerInstance.mgr.GetIndexDef(pindexName, false)
+				if err != nil {
+					return "", "", "", fmt.Errorf("invalid pindex "+
+						"name extracted: %s from path: %s", pindexName, p)
+				}
+				bucketName = indexDef.SourceName
+			} else {
+				bucketName = pindexParts[0]
 			}
-			bucketName := pindexParts[0]
 			context := strings.Join(parts[i+1:], "/")
 			// if the context ends with "temp", this is likely a temporary file created during re-encryption
 			// so we trim the "temp" suffix to get the original context for encryption
