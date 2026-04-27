@@ -127,6 +127,37 @@ paths:
               example:
                 $ref: 'examples/api-query-cancel.json'
 
+  /api/pindex/{pindexName}/query:
+    post:
+      operationId: api-pindex-query
+      summary: Query Index Partition
+      description: |-
+        Executes a Search query against a specific Search index partition (pindex) by name.
+
+        This endpoint targets a single partition directly, rather than the full index, and is intended for advanced use cases such as those involving index insights.
+      parameters:
+        - $ref: '#/components/parameters/pathPIndexName'
+      requestBody:
+        required: true
+        description: |-
+          A JSON object that defines the settings for your Search query.
+          For more information about how to create a Search query JSON object, see [Search Request JSON Properties](../search/search-request-params.html).
+        content:
+          application/json:
+            schema:
+              $ref: '../index/index.yaml#/components/schemas/QueryRequest'
+      security:
+        - Default: []
+      responses:
+        "200":
+          description: |-
+            The response object has a status section that must be checked for every request.
+            Under nearly all circumstances, the query response will be HTTP 200 even though individual index shards (partitions) may encounter a timeout or return an error.
+          content:
+            application/json:
+              schema:
+                $ref: '../index/index.yaml#/components/schemas/QueryResponse'
+
 components:
   parameters:
     pathIndexName:
@@ -134,6 +165,13 @@ components:
       in: path
       required: true
       description: The name of the Search index.
+      schema:
+        type: string
+    pathPIndexName:
+      name: pindexName
+      in: path
+      required: true
+      description: The name of the Search index partition (pindex).
       schema:
         type: string
     pathQueryId:
