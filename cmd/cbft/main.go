@@ -1099,3 +1099,6 @@ func (meh *mainHandlers) OnFeedError(srcType string, r cbgt.Feed, err error) {
 		meh.mgr.DeleteIndexEx(r.IndexName(), indexUUID)
 	}
 }
+
+// handler added as part of feature req for SG, no-op for us
+func (meh *mainHandlers) OnUnregisterFeed(_ cbgt.Feed) {}
