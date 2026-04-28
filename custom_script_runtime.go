@@ -73,12 +73,16 @@ func RefreshCustomScriptQuerySettings(options map[string]string) error {
 	}
 
 	v := options["customScriptQueriesEnabled"]
-	// CAS fires Init/Shutdown only on a real state flip; async so the admin
-	// toggle doesn't block on engine setup/teardown.
+	// Fire Init/Shutdown only on a real false→true or true→false transition.
+	// CAS(x, x) trivially succeeds when current==x, so we must gate each
+	// branch on the target value to avoid duplicate Refresh calls (e.g.
+	// startup + REST handler + ns_server propagation) tearing down the
+	// engine the user just enabled. Async so the admin toggle doesn't
+	// block on engine setup/teardown.
 	if vBool, err := strconv.ParseBool(v); err == nil {
-		if customScriptQueriesEnabled.CompareAndSwap(false, vBool) {
+		if vBool && customScriptQueriesEnabled.CompareAndSwap(false, true) {
 			go InitJSEvaluator()
-		} else if customScriptQueriesEnabled.CompareAndSwap(true, vBool) {
+		} else if !vBool && customScriptQueriesEnabled.CompareAndSwap(true, false) {
 			go ShutdownJSEvaluator()
 		}
 	}
