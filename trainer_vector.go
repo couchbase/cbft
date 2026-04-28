@@ -51,7 +51,10 @@ const (
 )
 
 type vectorIndexTrainer struct {
-	indexName string
+	indexName     string
+	partitionName string
+
+	mgr       *cbgt.Manager
 	worker    *samplingWorker
 	bleveDest *BleveDest
 	doneCh    chan struct{}
@@ -62,7 +65,15 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 	f, ok := kvconfig[scorch.IndexTrainedWithFastMerge]
 	if ok {
 		if feature, ok := f.(bool); ok && feature {
+			if CurrentNodeDefsFetcher == nil || CurrentNodeDefsFetcher.GetManager() == nil {
+				log.Errorf("trainer_vector: no manager available to create trainer for"+
+					" partition %s", bleveDest.bindex.Name())
+				return nil
+			}
+			mgr := CurrentNodeDefsFetcher.GetManager()
+
 			return &vectorIndexTrainer{
+				mgr:       mgr,
 				bleveDest: bleveDest,
 				doneCh:    make(chan struct{}),
 			}
@@ -75,7 +86,7 @@ func (t *vectorIndexTrainer) wait() {
 	// this channel is blocked until released at the end of trySampling()
 	<-t.doneCh
 	log.Printf("trainer_vector: finished sampling documents from KV for "+
-		"%s", t.bleveDest.bindex.Name())
+		"%s", t.partitionName)
 }
 
 func (t *vectorIndexTrainer) close() error {
@@ -84,15 +95,19 @@ func (t *vectorIndexTrainer) close() error {
 	// may have changed
 	workerRegistry.m.Lock()
 	defer workerRegistry.m.Unlock()
-	t.worker.ref--
-	if t.worker.ref == 0 {
-		delete(workerRegistry.workers, t.indexName)
+	if t.worker != nil {
+		t.worker.ref--
+		if t.worker.ref == 0 {
+			log.Printf("trainer_vector: closing and remove worker for index %s "+
+				"from registry", t.indexName)
+			delete(workerRegistry.workers, t.indexName)
+		}
 	}
 	return nil
 }
 
 // workerRegistry maps index name to the sampling worker that runs sampling
-// and coordinates centroid index creation/copy for that index.
+// and coordinates trained index creation/copy for that index.
 var workerRegistry *samplingWorkerRegistry
 
 // samplingWorkerRegistry holds one samplingWorker per index name. Per-node
@@ -121,7 +136,7 @@ func (r *samplingWorkerRegistry) getOrCreateWorker(indexName string) (*samplingW
 }
 
 // samplingWorker runs sampling for one index with a single goroutine other
-// BleveDests for the same index wait on copyCh and then copy the centroid index.
+// BleveDests for the same index wait on copyCh and then copy the trained index.
 type samplingWorker struct {
 	samplingWorkerRunConfig
 
@@ -131,7 +146,7 @@ type samplingWorker struct {
 
 	sampleCh chan *sample
 	doneCh   chan struct{} // closed when sampling iteration is finished
-	copyCh   chan struct{} // closed when centroid index is ready to copy
+	copyCh   chan struct{} // closed when trained index is ready to copy
 }
 
 // sample is a single document sampled from KV for vector training.
@@ -187,7 +202,7 @@ func (w *samplingWorker) run() {
 		var err error
 		iterators[i], err = collectionScanner.Scan(scan, nil)
 		if err != nil {
-			log.Printf("trainer_vector: error opening scan for collection %s: %v\n",
+			log.Printf("trainer_vector: error opening scan for collection %s: %v",
 				w.collectionNames[i], err)
 			return
 		}
@@ -223,13 +238,13 @@ func (w *samplingWorker) run() {
 
 	for i, err := range errs {
 		if err != nil {
-			log.Printf("trainer_vector: error sampling collection %s: %v\n",
+			log.Printf("trainer_vector: error sampling collection %s: %v",
 				w.collectionNames[i], err)
 		}
 	}
 }
 
-func fetchMemcachedURL(mgr *cbgt.Manager, sourceName string) (string, error) {
+func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
 	nsServerURL := mgr.Server() + "/pools/default/nodeServices"
 	u, err := cbgt.CBAuthURL(nsServerURL)
 	if err != nil {
@@ -384,8 +399,8 @@ func (t *vectorIndexTrainer) trainOnSamples(ch chan *sample, defaultType string,
 	}
 }
 
-// centroidIndexConfig carries everything needed to create and train a centroid index.
-type centroidIndexConfig struct {
+// trainedIndexConfig carries everything needed to create and train a trained index.
+type trainedIndexConfig struct {
 	worker          *samplingWorker
 	vecIndex        bleve.TrainableIndex
 	defaultType     string
@@ -393,31 +408,25 @@ type centroidIndexConfig struct {
 	collectionNames []string
 }
 
-// createCentroidIndex connects to KV, computes per-collection sample limits,
+// createTrainedIndex connects to KV, computes per-collection sample limits,
 // configures the worker, and runs 4 goroutines that consume samples from the
 // worker's channels and train the vector index. When training finishes, copyCh
-// is closed so other BleveDests can copy the centroid index.
-func (t *vectorIndexTrainer) createCentroidIndex(cfg *centroidIndexConfig) error {
+// is closed so other BleveDests can copy the trained index.
+func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 	var err error
 	defer func() {
 		cfg.worker.success = (err == nil)
 		close(cfg.worker.copyCh)
 	}()
 
-	log.Printf("trainer_vector: creating centroid index in partition: "+
-		"%s\n", t.bleveDest.bindex.Name())
+	log.Printf("trainer_vector: creating trained index in partition: "+
+		"%s", t.partitionName)
 
-	if CurrentNodeDefsFetcher == nil || CurrentNodeDefsFetcher.GetManager() == nil {
-		return fmt.Errorf("no manager available")
-	}
-
-	mgr := CurrentNodeDefsFetcher.GetManager()
-
-	memcachedURL, err := fetchMemcachedURL(mgr, t.bleveDest.sourceName)
+	memcachedURL, err := fetchMemcachedURL(t.mgr)
 	if err != nil {
 		return fmt.Errorf("error fetching memcached URL: %w", err)
 	}
-	cluster, agent, err := t.getClusterAndKVConnection(mgr, memcachedURL)
+	cluster, agent, err := t.getClusterAndKVConnection(t.mgr, memcachedURL)
 	if err != nil {
 		return fmt.Errorf("error getting cluster and KV connection: %w", err)
 	}
@@ -471,23 +480,22 @@ func (t *vectorIndexTrainer) createCentroidIndex(cfg *centroidIndexConfig) error
 	go cfg.worker.run()
 
 	// single training thread
-	err = t.trainOnSamples(cfg.worker.sampleCh, cfg.defaultType, extraOpts,
+	return t.trainOnSamples(cfg.worker.sampleCh, cfg.defaultType, extraOpts,
 		cfg.vecIndex, cfg.worker.doneCh)
-	if err != nil {
-		return err
-	}
+}
 
+func (t *vectorIndexTrainer) markTrainingComplete(index bleve.TrainableIndex) error {
 	// mark training as complete so that scorch releases its resources
-	batch := cfg.vecIndex.NewBatch()
+	batch := index.NewBatch()
 	batch.SetInternal(util.BoltTrainCompleteKey, []byte("true"))
-	err = cfg.vecIndex.Train(batch)
+	err := index.Train(batch)
 	if err != nil {
 		return fmt.Errorf("error setting train complete flag in bolt: %w", err)
 	}
 	return nil
 }
 
-// isTrained reports whether this partition's centroid index is already built
+// isTrained reports whether this partition's trained index is already built
 // by reading the internal Bolt train-complete flag.
 func (t *vectorIndexTrainer) isTrained() (bool, error) {
 	found := false
@@ -506,10 +514,26 @@ func (t *vectorIndexTrainer) isTrained() (bool, error) {
 	return found, nil
 }
 
+func (t *vectorIndexTrainer) extractIndexNameFromPath(path string) (string, error) {
+	partitionName, err := t.mgr.GetPIndexName(filepath.Base(path), false)
+	if err != nil {
+		return "", err
+	}
+	t.partitionName = partitionName
+	var indexName string
+	if x := strings.LastIndex(partitionName, "_"); x > 0 && x < len(partitionName) {
+		temp := partitionName[:x]
+		if x = strings.LastIndex(temp, "_"); x > 0 && x < len(temp) {
+			indexName = temp[:x]
+		}
+	}
+	return indexName, nil
+}
+
 // getIndexSourceInfo extracts index name, default type, scope, and collection
 // names from the Bleve index mapping (vector type mapping only). Returns an
 // error if the index is not a vector index.
-func (t *vectorIndexTrainer) getIndexSourceInfo() (string, string, string, []string, error) {
+func (t *vectorIndexTrainer) getIndexSourceInfo() (string, string, []string, error) {
 	defaultType := "_default"
 	var collectionNames []string
 	var scopeName string
@@ -519,66 +543,65 @@ func (t *vectorIndexTrainer) getIndexSourceInfo() (string, string, string, []str
 		scopeName, collectionNames, _, err = getScopeCollTypeMappings(
 			imi, false, vectorTypeMappingFilter)
 		if err != nil {
-			return "", "", "", nil, err
+			return "", "", nil, err
 		}
 	}
 	if len(collectionNames) == 0 {
-		return "", "", "", nil, nil
+		return "", "", nil, nil
 	}
 
-	var indexName string
-	partitionName := t.bleveDest.bindex.Name()
-	if x := strings.LastIndex(partitionName, "_"); x > 0 && x < len(partitionName) {
-		temp := partitionName[:x]
-		if x = strings.LastIndex(temp, "_"); x > 0 && x < len(partitionName) {
-			indexName = filepath.Base(temp)
-		}
-	}
-
-	t.indexName = indexName
-	return indexName, defaultType, scopeName, collectionNames, nil
+	return defaultType, scopeName, collectionNames, nil
 }
 
 // acquireSamples runs the vector sampling flow for this BleveDest. If this
 // partition is already trained, it returns. Otherwise it gets or creates the
 // index's sampling worker: if this dest creates the worker (first for that
-// index), then create the centroid index; otherwise wait on worker.copyCh and
-// then copy the centroid index from the source. Always close doneCh when done.
+// index), then create the trained index; otherwise wait on worker.copyCh and
+// then copy the trained index from the source. Always close doneCh when done.
 func (t *vectorIndexTrainer) acquireSamples() {
 	var err error
+	vecIndex, ok := t.bleveDest.bindex.(bleve.TrainableIndex)
+	if !ok {
+		err = fmt.Errorf("index doesnt implement bleve.TrainableIndex")
+		return
+	}
 	defer func() {
 		if err != nil {
 			log.Errorf("trainer_vector: error while sampling vectors from KV: %v", err)
 		}
-		// release channel to continue data ingestion
+		// mark training as complete and release channel to continue data ingestion
+		t.markTrainingComplete(vecIndex)
 		close(t.doneCh)
 	}()
 
+	// before the partition is registered with the manager, the bindex.Name() is
+	// the full path to the partition directory, so we need to handle the extraction
+	// carefully
+	indexName, err := t.extractIndexNameFromPath(t.bleveDest.bindex.Name())
+	if err != nil {
+		err = fmt.Errorf("error extracting index name from path: %w", err)
+		return
+	}
+	t.indexName = indexName
+
 	trained, err := t.isTrained()
 	if err != nil {
+		err = fmt.Errorf("error checking if index is already trained: %w", err)
 		return
 	}
 	if trained {
-		log.Printf("trainer_vector: skipping the training phase, since we already" +
-			" have a centroid index")
+		log.Printf("trainer_vector: skipping the training phase, since we already"+
+			" have a trained index for %s", t.partitionName)
 		return
 	}
-	// TODO: allow copying centroid index from another partition on this node if
-	//  already built.
-	indexName, defaultType, scopeName, collectionNames, err := t.getIndexSourceInfo()
+
+	defaultType, scopeName, collectionNames, err := t.getIndexSourceInfo()
 	if err != nil {
 		err = fmt.Errorf("error getting the vector index info: %w", err)
 		return
 	}
-
 	if len(collectionNames) == 0 {
 		// not a vector index, return
-		return
-	}
-
-	vecIndex, ok := t.bleveDest.bindex.(bleve.TrainableIndex)
-	if !ok {
-		err = fmt.Errorf("index doesnt implement bleve.TrainableIndex")
 		return
 	}
 
@@ -586,8 +609,7 @@ func (t *vectorIndexTrainer) acquireSamples() {
 	if !ok {
 		t.worker = worker
 		// track the index name to clear out the entry during an index delete operation
-		t.indexName = indexName
-		err = t.createCentroidIndex(&centroidIndexConfig{
+		err = t.createTrainedIndex(&trainedIndexConfig{
 			worker:          worker,
 			vecIndex:        vecIndex,
 			defaultType:     defaultType,
@@ -595,7 +617,7 @@ func (t *vectorIndexTrainer) acquireSamples() {
 			collectionNames: collectionNames,
 		})
 		if err != nil {
-			err = fmt.Errorf("error creating centroid index: %w", err)
+			err = fmt.Errorf("error creating trained index: %w", err)
 		}
 		return
 	}
@@ -604,11 +626,11 @@ func (t *vectorIndexTrainer) acquireSamples() {
 	}
 
 	t.worker = worker
-	// Wait for the source partition to finish building the centroid index, then copy it.
-	centroidWriter := &centroidWriter{
+	// Wait for the source partition to finish building the trained index, then copy it.
+	trainedIndexWriter := &trainedIndexWriter{
 		rootpath: t.bleveDest.path,
 	}
-	// the remaining bleve dests will wait here for the centroid index to be created,
+	// the remaining bleve dests will wait here for the trained index to be created,
 	// after which they will file transfer it from the source bleveDest
 	<-worker.copyCh
 	if ic, ok := worker.vecIndex.(bleve.IndexFileCopyable); ok && worker.success {
@@ -617,28 +639,28 @@ func (t *vectorIndexTrainer) acquireSamples() {
 			err = fmt.Errorf("error getting index file copyable: %w", err)
 			return
 		}
-		centroidWriter.destIndex = dest
-		err = ic.CopyFile(index.TrainedIndexFileName, centroidWriter)
+		trainedIndexWriter.destIndex = dest
+		err = ic.CopyFile(index.TrainedIndexFileName, trainedIndexWriter)
 		if err != nil {
-			err = fmt.Errorf("error copying centroid index: %w", err)
+			err = fmt.Errorf("error copying trained index: %w", err)
 			return
 		}
-		log.Printf("trainer_vector: finished copying centroid index from"+
+		log.Printf("trainer_vector: finished copying trained index from"+
 			" source partition %s", worker.vecIndex.Name())
 	}
 
 }
 
-// centroidWriter implements the writer used when copying the centroid index
+// trainedIndexWriter implements the writer used when copying the trained index
 // file from the source partition into this partition's index directory.
-type centroidWriter struct {
+type trainedIndexWriter struct {
 	rootpath  string
 	destIndex bleve.IndexFileCopyable
 }
 
-// GetWriter returns a file writer for the given path; only centroid index file
+// GetWriter returns a file writer for the given path; only trained index file
 // is allowed.
-func (c *centroidWriter) GetWriter(path string) (io.WriteCloser, error) {
+func (c *trainedIndexWriter) GetWriter(path string) (io.WriteCloser, error) {
 	if !(strings.HasSuffix(path, index.TrainedIndexFileName)) {
 		return nil, fmt.Errorf("write not allowed on path %s", path)
 	}
@@ -646,6 +668,6 @@ func (c *centroidWriter) GetWriter(path string) (io.WriteCloser, error) {
 }
 
 // SetPathInBolt forwards the update to the destination index's bolt store.
-func (c *centroidWriter) SetPathInBolt(key []byte, value []byte) error {
+func (c *trainedIndexWriter) SetPathInBolt(key []byte, value []byte) error {
 	return c.destIndex.SetPathInBolt(key, value)
 }

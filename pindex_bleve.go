@@ -2124,6 +2124,10 @@ func (t *BleveDest) closeLOCKED(remove bool) error {
 
 	close(t.stopCh)
 
+	if t.trainingSampler != nil {
+		t.trainingSampler.close()
+	}
+
 	partitions := t.partitions
 	t.partitions = make(map[string]*BleveDestPartition)
 
