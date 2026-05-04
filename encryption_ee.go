@@ -33,6 +33,7 @@ import (
 	index "github.com/blevesearch/bleve_index_api"
 	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbauth/cbauthimpl"
+	"github.com/couchbase/cbft/search_history"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 	gocbcrypto "github.com/couchbase/gocbcrypto"
@@ -108,6 +109,12 @@ func NewEncryptionManager(mgr *cbgt.Manager) (*encryptionManager, error) {
 	// register callbacks with bleve for readers and writers
 	index.WriterHook = encryptionManagerInstance.bleveWriterHook
 	index.ReaderHook = encryptionManagerInstance.bleveReaderHook
+
+	// search_history derives keys from the same path-shaped context as bleve;
+	// reuse the bleve hooks directly. Per-record callback caching lives inside
+	// search_history's logWriter so the hook itself stays stateless.
+	search_history.WriterHook = encryptionManagerInstance.bleveWriterHook
+	search_history.ReaderHook = encryptionManagerInstance.bleveReaderHook
 
 	// register callbacks with cbgt manager for bucket updates and file encryption/decryption
 	mgr.SetBucketUpdateCallback(
@@ -252,15 +259,17 @@ func (em *encryptionManager) dropKeysAsync(keyData cbauth.KeyDataType,
 	for _, keyId := range KeyIdsToDrop {
 		keysToDropMap[keyId] = struct{}{}
 	}
-	// initialize channels for jobs and errors
+	// initialize channels for jobs and errors. The error buffer also covers
+	// the otherKeyType branch (planPIndexes + search history goroutines).
 	jobs := make(chan *cbgt.PIndex, len(pIndexes))
-	errs := make(chan error, len(pIndexes))
+	errs := make(chan error, len(pIndexes)+2)
 	wg := sync.WaitGroup{}
 
 	// traverse through all planPIndexes and re-encrypt the ones encrypted with the keys to drop
 	if keyData.TypeName == otherKeyType {
-		wg.Add(1)
+		wg.Add(2)
 		go em.dropPlanPIndexes(keysToDropMap, &wg, errs)
+		go em.dropSearchHistory(keysToDropMap, &wg, errs)
 	} else {
 		for _ = range numParallelDrops {
 			go em.dropWorker(jobs, keyData, keysToDropMap, &wg, errs)
@@ -304,6 +313,23 @@ func (em *encryptionManager) dropKeysAsync(keyData cbauth.KeyDataType,
 	}()
 
 	return
+}
+
+// re-encrypts records in the search history log whose key id is in the
+// keysToDropMap. Runs in its own goroutine under the same WaitGroup as
+// dropPlanPIndexes so the drop-keys API stays unblocked but the final
+// KeysDropComplete only fires after both finish.
+func (em *encryptionManager) dropSearchHistory(keysToDropMap map[string]struct{},
+	wg *sync.WaitGroup, errs chan error) {
+	defer wg.Done()
+	if search_history.Service == nil {
+		return
+	}
+	if err := search_history.Service.Reencrypt(keysToDropMap); err != nil {
+		log.Printf("encryptionManager: failed to re-encrypt search history: %v",
+			err)
+		errs <- err
+	}
 }
 
 func (em *encryptionManager) dropPlanPIndexes(keysToDropMap map[string]struct{}, wg *sync.WaitGroup, errs chan error) {
@@ -851,6 +877,21 @@ func (ks *keyStore) refreshKeysInUseCache() {
 		}
 	}
 
+	// also obtain keys in use from the search history log. Each line in the
+	// log is independently encrypted and carries its own key id, so all
+	// distinct key ids (including the empty key id for legacy plaintext
+	// lines) are added.
+	if search_history.Service != nil {
+		ids, err := search_history.Service.KeyIdsInUse()
+		if err != nil {
+			log.Printf("keyStore: failed to scan search history keys: %v", err)
+		} else {
+			for id := range ids {
+				curKeyMap[otherKeyType][id] = struct{}{}
+			}
+		}
+	}
+
 	// combine keys obtained with all keys distributed since the last refresh
 	// to ensure correctness of the cache
 	ks.newKeysLock.Lock()
@@ -1011,12 +1052,7 @@ func processPath(p string) (string, string, string, error) {
 			} else {
 				bucketName = pindexParts[0]
 			}
-			context := strings.Join(parts[i+1:], "/")
-			// if the context ends with "temp", this is likely a temporary file created during re-encryption
-			// so we trim the "temp" suffix to get the original context for encryption
-			if strings.HasSuffix(context, "temp") {
-				context = strings.TrimSuffix(context, "temp")
-			}
+			context := normalizePathContext(strings.Join(parts[i+1:], "/"))
 			return bucketKeyType, bucketName, context, nil
 		}
 
@@ -1024,7 +1060,7 @@ func processPath(p string) (string, string, string, error) {
 		// we will use the "other" key type and context is the filename and
 		// the directories after the the current path component.
 		if pathIsRecoveryPlan(parts[i]) || pathIsSearchHistory(parts[i]) {
-			context := strings.Join(parts[i+1:], "/")
+			context := normalizePathContext(strings.Join(parts[i+1:], "/"))
 			return otherKeyType, "", context, nil
 		}
 	}
@@ -1067,6 +1103,16 @@ func pathIsSearchHistory(s string) bool {
 		return true
 	}
 	return false
+}
+
+// normalizePathContext canonicalizes temporary rewrite paths back to the
+// original logical path context. Re-encryption writes "<path>temp" files and
+// then renames them over the original; both paths must derive the same key.
+func normalizePathContext(context string) string {
+	if strings.HasSuffix(context, "temp") {
+		return strings.TrimSuffix(context, "temp")
+	}
+	return context
 }
 
 // get the uuid for bucket name
@@ -1244,35 +1290,6 @@ func (em *encryptionManager) encryptAndWriteFile(path string, data []byte, perm 
 	return id, nil
 }
 
-// returns a writer callback for the given path by processing the path to obtain the key type, bucket name and context,
-// and creating a writer callback with the corresponding key material and context.
-func getWriterCallbackForPath(path string) (func(data []byte) []byte, error) {
-	// process the path to obtain the key type, bucket name and context for encryption
-	keyType, bucket, context, err := processPath(path)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to process path for writer callback: %w", err)
-	}
-
-	// get the bucket UUID for the bucket name
-	bucketUUID, err := encryptionManagerInstance.bucketStore.getUUIDforBucket(bucket)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to get bucket UUID for bucket %s: %w",
-			bucket, err)
-	}
-
-	// create a writer callback for the key type, bucket UUID and context
-	_, writerCallback, err := encryptionManagerInstance.newWriter(
-		keyType, bucketUUID, context)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to create writer callback: %w", err)
-	}
-
-	return writerCallback, nil
-}
-
 // returns a reader callback for the given key type, bucket UUID, key ID and context by retrieving the key material
 // for the key ID and creating a reader callback with the key material and context. If the key ID is empty or no key is found
 // for the key ID, an empty reader callback that does not modify the data is returned.
@@ -1373,42 +1390,6 @@ func (em *encryptionManager) decryptAndReadFile(path string) ([]byte, string, er
 	}
 
 	return data, keyID, nil
-}
-
-// returns a reader callback for the given path by processing the path to
-// obtain the key type, bucket name and context
-func getReaderCallbackForPath(path string) (func(data []byte) ([]byte, error), error) {
-	// process the path to obtain the key type, bucket name and context for decryption
-	keyType, bucket, context, err := processPath(path)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to process path for reader callback: %w", err)
-	}
-
-	// get the bucket UUID for the bucket name
-	bucketUUID, err := encryptionManagerInstance.bucketStore.getUUIDforBucket(bucket)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to get bucket UUID for bucket %s: %w",
-			bucket, err)
-	}
-
-	// read the file to obtain the key ID used for encryption
-	_, keyID, err := encryptionManagerInstance.decryptAndReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to read file for reader callback: %w", err)
-	}
-
-	// create a reader callback for the key type, bucket UUID, key ID and context
-	readerCallback, err := encryptionManagerInstance.newReader(keyType,
-		bucketUUID, keyID, context)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"encryptionManager: failed to create reader callback: %w", err)
-	}
-
-	return readerCallback, nil
 }
 
 // re-encrypts the file at the given path with new encryption keys if the file is currently

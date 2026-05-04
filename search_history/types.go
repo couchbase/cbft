@@ -36,3 +36,12 @@ type record struct {
 	TotalHits uint64    `json:"totalHits"`
 	Status    string    `json:"status"`
 }
+
+// envelope is the on-disk per-line format when encryption is enabled.
+// "k" carries the encryption key id and "d" the base64-encoded ciphertext
+// of the marshaled record. When encryption is disabled, lines are written
+// as raw record JSON (legacy format) and read with a fallback path.
+type envelope struct {
+	K string `json:"k"`
+	D []byte `json:"d"`
+}

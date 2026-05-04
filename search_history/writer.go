@@ -41,6 +41,20 @@ type logWriter struct {
 	appendFile   *os.File
 	appendWriter *bufio.Writer
 
+	// writer caches the active encryption callback returned by WriterHook,
+	// along with the keyId it encrypts under. Refreshed on TTL expiry or
+	// invalidated at the start of reencryptFile. Touched only from
+	// encodeRecordLine; appendRecords and reencryptFile call it under ioMu,
+	// compactFile relies on the logWorker single-goroutine invariant for
+	// non-overlap with appendRecords.
+	writer cachedWriter
+
+	// readers caches decryption callbacks by keyId. Populated lazily by
+	// decodeRecordLine on first occurrence of each keyId; entries for a
+	// dropped key are removed at the end of reencryptFile.
+	readers   map[string]func([]byte) ([]byte, error)
+	readersMu sync.Mutex
+
 	baseDir string
 }
 
@@ -59,6 +73,7 @@ func newLogWriter(baseDir string, maxCapacity int) (*logWriter, error) {
 		ringSize:      0,
 		unsyncedCount: 0,
 		lastSyncTime:  time.Now(),
+		readers:       make(map[string]func([]byte) ([]byte, error)),
 	}
 
 	if err := w.loadFromDisk(); err != nil {

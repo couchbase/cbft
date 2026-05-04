@@ -22,6 +22,18 @@ import (
 var Service *service
 var serviceOnce sync.Once
 
+// WriterHook, if set, returns an encryption callback and the encryption key
+// id for storage at the given path. The callback turns plaintext bytes into
+// ciphertext (encoding any nonce alongside). When unset (community edition)
+// or when the returned keyId is empty, callers write records as raw JSON.
+// The callback is cached and reused for many writes; lifetime is governed
+// by an internal TTL on the cached entry.
+var WriterHook func(path []byte) (string, func(data []byte) []byte, error)
+
+// ReaderHook, if set, returns a decryption callback bound to (keyId, path).
+// When unset, callers should treat any encrypted on-disk line as unreadable.
+var ReaderHook func(keyId string, path []byte) (func(data []byte) ([]byte, error), error)
+
 // Manages search history logging and retrieval.
 type service struct {
 	writer     *logWriter
@@ -142,6 +154,28 @@ func (s *service) UpdateSettings(enabled *bool, maxRecords *int) {
 			s.writer.resizeCapacity(max)
 		}
 	}
+}
+
+// KeyIdsInUse scans the on-disk request log and returns the set of distinct
+// encryption key ids currently used by any record. The empty key id is
+// included if the file holds any plaintext (legacy) lines, signalling that
+// unencrypted data is on disk.
+func (s *service) KeyIdsInUse() (map[string]struct{}, error) {
+	if s == nil || s.writer == nil {
+		return nil, nil
+	}
+	return s.writer.scanKeyIds()
+}
+
+// Reencrypt rewrites the on-disk request log so that any record currently
+// encrypted with a key id in keysToDropMap is re-encrypted under the
+// active key. Records under other key ids are passed through unchanged.
+// Holds the writer's I/O lock so it serializes against in-flight syncs.
+func (s *service) Reencrypt(keysToDropMap map[string]struct{}) error {
+	if s == nil || s.writer == nil {
+		return nil
+	}
+	return s.writer.reencryptFile(keysToDropMap)
 }
 
 // Refresh extracts search history settings from the options map and updates the service.

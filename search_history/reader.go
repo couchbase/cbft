@@ -10,7 +10,6 @@ package search_history
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,13 +70,13 @@ func readFile(filePath string, indexName string, minTookMs int64, status string)
 	scanner := bufio.NewScanner(f)
 
 	for scanner.Scan() {
-		var record record
-		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
+		rec, _, err := decodeRecordLine(filePath, scanner.Bytes())
+		if err != nil {
 			continue
 		}
 
-		if matchesFilters(&record, indexName, minTookMs, status) {
-			results = append(results, &record)
+		if matchesFilters(rec, indexName, minTookMs, status) {
+			results = append(results, rec)
 		}
 	}
 
