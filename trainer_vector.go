@@ -12,6 +12,7 @@
 package cbft
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -48,6 +49,7 @@ const (
 	// number of centroids gives us the minimum number of samples we'd want from
 	// a source.
 	defaultMinSamplesPerCentroid = 39
+	trainerWaitOnKV              = 10 * time.Second
 )
 
 type vectorIndexTrainer struct {
@@ -59,7 +61,9 @@ type vectorIndexTrainer struct {
 	mgr       *cbgt.Manager
 	worker    *samplingWorker
 	bleveDest *BleveDest
-	doneCh    chan struct{}
+
+	doneCh  chan struct{}
+	closeCh chan struct{}
 }
 
 func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer {
@@ -87,6 +91,7 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 				mgr:                   mgr,
 				bleveDest:             bleveDest,
 				doneCh:                make(chan struct{}),
+				closeCh:               make(chan struct{}),
 			}
 		}
 	}
@@ -95,9 +100,14 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 
 func (t *vectorIndexTrainer) wait() {
 	// this channel is blocked until released at the end of trySampling()
-	<-t.doneCh
-	log.Printf("trainer_vector: finished sampling documents from KV for "+
-		"%s", t.partitionName)
+	select {
+	case <-t.doneCh:
+		log.Printf("trainer_vector: finished sampling documents from KV for "+
+			"%s", t.partitionName)
+	case <-t.bleveDest.stopCh:
+		log.Warnf("trainer_vector: received stop signal while waiting, shutting down "+
+			"training for %s", t.partitionName)
+	}
 }
 
 func (t *vectorIndexTrainer) close() error {
@@ -106,9 +116,11 @@ func (t *vectorIndexTrainer) close() error {
 	// may have changed
 	workerRegistry.m.Lock()
 	defer workerRegistry.m.Unlock()
+	close(t.closeCh)
 	if t.worker != nil {
 		t.worker.ref--
 		if t.worker.ref == 0 {
+			t.worker.close()
 			log.Printf("trainer_vector: closing and remove worker for index %s "+
 				"from registry", t.indexName)
 			delete(workerRegistry.workers, t.indexName)
@@ -136,8 +148,11 @@ func (r *samplingWorkerRegistry) getOrCreateWorker(indexName string) (*samplingW
 	worker, ok := r.workers[indexName]
 	if !ok {
 		worker = &samplingWorker{
-			copyCh: make(chan struct{}),
-			ref:    1,
+			ref:      1,
+			sampleCh: make(chan *sample, 1),
+			doneCh:   make(chan struct{}),
+			closeCh:  make(chan struct{}),
+			copyCh:   make(chan struct{}),
 		}
 		r.workers[indexName] = worker
 		return worker, false
@@ -153,11 +168,11 @@ type samplingWorker struct {
 
 	success bool
 	ref     int64
-	cv      *sync.Cond
 
 	sampleCh chan *sample
-	doneCh   chan struct{} // closed when sampling iteration is finished
-	copyCh   chan struct{} // closed when trained index is ready to copy
+	closeCh  chan struct{} // closed to signal the worker to stop sampling
+	doneCh   chan struct{} // closed when training phase is done
+	copyCh   chan struct{} // closed when trained index is ready to be copied
 }
 
 // sample is a single document sampled from KV for vector training.
@@ -169,24 +184,102 @@ type sample struct {
 
 // samplingWorkerRunConfig holds the inputs for configuring a samplingWorker obj.
 type samplingWorkerRunConfig struct {
-	vecIndex        bleve.TrainableIndex
+	params   *samplingParams
+	vecIndex bleve.TrainableIndex
+	cluster  kvCluster
+}
+
+type samplingParams struct {
 	sampleLimit     []int
 	collectionNames []string
 	scopeName       string
 	sourceName      string
-	cluster         *gocb.Cluster
+}
+
+// clusterAdapter abstracts the KV cluster operations needed by the samplingWorker to
+// fetch documents for training. This is mainly done to allow mocking a cluster
+// for unit test purposes
+type kvCluster interface {
+	// 1 iterator per source (which is a collection in the context of couchbase)
+	fetchiterators(params *samplingParams) ([]sourceIterator, error)
+}
+
+// an iterator over the source which contains multiple documents, which can used
+// be for training by invoking Next() until exhaustion. for eg one of the implementations
+// is random sampling scan over the collection
+type sourceIterator interface {
+	Next() (*kvDoc, error)
+	Close() error
+}
+
+// an adapter that communicates with the couchbase kv-engine using gocb
+type gocbClusterAdapter struct {
+	cluster *gocb.Cluster
+}
+
+// gocbScanner implements the sourceIterator interface for a gocb.ScanResult, which is actually
+// an iterator over a random set of documents in the collection
+type gocbScanner struct {
+	scanner *gocb.ScanResult
+}
+
+type kvDoc struct {
+	ID  string
+	Val json.RawMessage
+}
+
+func (g *gocbScanner) Next() (*kvDoc, error) {
+	d := g.scanner.Next()
+	err := g.scanner.Err()
+	if err != nil {
+		return nil, err
+	}
+	if d == nil {
+		return nil, nil
+	}
+	var v json.RawMessage
+	if err := d.Content(&v); err != nil {
+		return nil, err
+	}
+
+	return &kvDoc{
+		ID:  d.ID(),
+		Val: v,
+	}, nil
+}
+
+func (g *gocbScanner) Close() error {
+	return g.scanner.Close()
+}
+
+func (a *gocbClusterAdapter) fetchiterators(params *samplingParams) ([]sourceIterator, error) {
+	collectionScanners := make([]*gocb.Collection, len(params.collectionNames))
+	for i, collectionName := range params.collectionNames {
+		collectionScanners[i] = a.cluster.
+			Bucket(params.sourceName).Scope(params.scopeName).Collection(collectionName)
+	}
+
+	iterators := make([]sourceIterator, len(params.collectionNames))
+	for i, collectionScanner := range collectionScanners {
+		scan := gocb.SamplingScan{
+			Limit: uint64(params.sampleLimit[i]),
+			Seed:  0, // gocb generates a random seed internally when 0
+		}
+		var err error
+		sc, err := collectionScanner.Scan(scan, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		iterators[i] = &gocbScanner{scanner: sc}
+	}
+	return iterators, nil
 }
 
 func (w *samplingWorker) configure(c *samplingWorkerRunConfig) {
 	w.vecIndex = c.vecIndex
-	w.sampleLimit = c.sampleLimit
-	w.collectionNames = c.collectionNames
-	w.scopeName = c.scopeName
-	w.sourceName = c.sourceName
+	w.params = c.params
 	w.cluster = c.cluster
-	w.cv = sync.NewCond(new(sync.Mutex))
-	w.sampleCh = make(chan *sample, 1)
-	w.doneCh = make(chan struct{})
 }
 
 // run performs the sampling run: opens a sampling scan per collection, reads
@@ -198,49 +291,42 @@ func (w *samplingWorker) run() {
 		close(w.doneCh)
 	}()
 
-	collectionScanners := make([]*gocb.Collection, len(w.collectionNames))
-	for i, collectionName := range w.collectionNames {
-		collectionScanners[i] = w.cluster.
-			Bucket(w.sourceName).Scope(w.scopeName).Collection(collectionName)
-	}
-
-	iterators := make([]*gocb.ScanResult, len(w.collectionNames))
-	for i, collectionScanner := range collectionScanners {
-		scan := gocb.SamplingScan{
-			Limit: uint64(w.sampleLimit[i]),
-			Seed:  0, // gocb generates a random seed internally when 0
-		}
-		var err error
-		iterators[i], err = collectionScanner.Scan(scan, nil)
-		if err != nil {
-			log.Printf("trainer_vector: error opening scan for collection %s: %v",
-				w.collectionNames[i], err)
-			return
-		}
+	iterators, err := w.cluster.fetchiterators(w.params)
+	if err != nil {
+		log.Errorf("trainer_vector: error fetching iterators: %v", err)
+		return
 	}
 
 	// Drain each collection's iterator and stream the samples to the bindex
 	// for document building + training.
 	var wg sync.WaitGroup
-	errs := make([]error, len(w.collectionNames))
-	for i := range w.collectionNames {
+	errs := make([]error, len(w.params.collectionNames))
+	for i := range w.params.collectionNames {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for j := 0; j < w.sampleLimit[i]; j++ {
-				d := iterators[i].Next()
-				if d == nil {
-					continue
+			for j := 0; j < w.params.sampleLimit[i]; j++ {
+				select {
+				case <-w.closeCh:
+					log.Warnf("trainer_vector: stopped sampling for collection %s "+
+						"due to close signal", w.params.collectionNames[i])
+					return
+				default:
 				}
-				var v json.RawMessage
-				if err := d.Content(&v); err != nil {
+
+				doc, err := iterators[i].Next()
+				if err != nil {
 					errs[i] = err
 					return
 				}
+				if doc == nil {
+					// iterator exhausted before reaching sampleLimit
+					continue
+				}
 				w.sampleCh <- &sample{
 					cid:   i,
-					id:    d.ID(),
-					value: v,
+					id:    doc.ID,
+					value: doc.Val,
 				}
 			}
 		}(i)
@@ -249,10 +335,16 @@ func (w *samplingWorker) run() {
 
 	for i, err := range errs {
 		if err != nil {
-			log.Printf("trainer_vector: error sampling collection %s: %v",
-				w.collectionNames[i], err)
+			log.Errorf("trainer_vector: error sampling collection %s: %v",
+				w.params.collectionNames[i], err)
 		}
 	}
+}
+
+// this basically shuts down the sampling worker when the bleveDest experiences
+// some failure in operations
+func (w *samplingWorker) close() {
+	close(w.closeCh)
 }
 
 func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
@@ -322,6 +414,9 @@ func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcac
 			Username: username,
 			Password: password,
 		},
+		TimeoutsConfig: gocb.TimeoutsConfig{
+			ConnectTimeout: trainerWaitOnKV,
+		},
 	})
 
 	if err != nil {
@@ -331,9 +426,31 @@ func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcac
 	return cluster, nil, err
 }
 
+func waitForResponse(signal <-chan error, closeCh <-chan struct{},
+	op gocbcore.PendingOp, timeout time.Duration) error {
+	timeoutTmr := gocbcore.AcquireTimer(timeout)
+	select {
+	case err := <-signal:
+		gocbcore.ReleaseTimer(timeoutTmr, false)
+		return err
+	case <-closeCh:
+		gocbcore.ReleaseTimer(timeoutTmr, false)
+		return gocbcore.ErrRequestCanceled
+	case <-timeoutTmr.C:
+		gocbcore.ReleaseTimer(timeoutTmr, true)
+		log.Warnf("trainer_vector: request wait has timed out, canceling op")
+		if op != nil {
+			op.Cancel()
+			// wait for confirmation after canceling the PendingOp
+			<-signal
+		}
+		return gocbcore.ErrTimeout
+	}
+}
+
 // computeSampleLimitsForSources uses gocbcore stats to get item count per
 // collection and returns a sample limit per collection: 4 * sqrt(docCount) * minSamplesPerCentroid.
-func computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
+func (t *vectorIndexTrainer) computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
 	collections []string, minSamplesPerCentroid float64) (rv []int, err error) {
 	rv = make([]int, len(collections))
 	signal := make(chan error, 1)
@@ -341,7 +458,9 @@ func computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
 	for i, collectionName := range collections {
 		key := fmt.Sprintf("collections %s.%s", scopeName, collectionName)
 		var docCount int64
-		_, err = agent.Stats(gocbcore.StatsOptions{Key: key},
+		op, err := agent.Stats(gocbcore.StatsOptions{
+			Deadline: time.Now().Add(trainerWaitOnKV), // set a deadline to avoid hanging indefinitely if there are issues with KV
+			Key:      key},
 			func(resp *gocbcore.StatsResult, er error) {
 				if resp == nil || er != nil {
 					signal <- er
@@ -368,7 +487,7 @@ func computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
 			return nil, err
 		}
 
-		err = <-signal
+		err = waitForResponse(signal, t.closeCh, op, cbgt.GocbcoreStatsTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -387,6 +506,14 @@ func (t *vectorIndexTrainer) trainOnSamples(ch chan *sample, defaultType string,
 	for {
 		select {
 		case <-doneCh:
+			select {
+			case <-t.closeCh:
+				log.Warnf("trainer_vector: stopped training for %s due to close signal",
+					t.partitionName)
+				return fmt.Errorf("training stopped due to close signal")
+			default:
+			}
+
 			err := vecIndex.Train(batch)
 			if err != nil {
 				return err
@@ -417,6 +544,10 @@ type trainedIndexConfig struct {
 	defaultType     string
 	scopeName       string
 	collectionNames []string
+
+	// initClusterCallback is just used for unit test purposes to inject a callback
+	// that can initialize a mock cluster to test things out
+	initClusterCallback func() error
 }
 
 // createTrainedIndex connects to KV, computes per-collection sample limits,
@@ -430,64 +561,86 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 		close(cfg.worker.copyCh)
 	}()
 
-	log.Printf("trainer_vector: creating trained index in partition: "+
-		"%s", t.partitionName)
-
-	memcachedURL, err := fetchMemcachedURL(t.mgr)
-	if err != nil {
-		return fmt.Errorf("error fetching memcached URL: %w", err)
-	}
-	cluster, agent, err := t.getClusterAndKVConnection(t.mgr, memcachedURL)
-	if err != nil {
-		return fmt.Errorf("error getting cluster and KV connection: %w", err)
-	}
-	// handles closing of the cluster and agent connections
-	defer cluster.Close(nil)
-
-	bucket := cluster.Bucket(t.bleveDest.sourceName)
-	err = bucket.WaitUntilReady(10*time.Second, &gocb.WaitUntilReadyOptions{
-		DesiredState: gocb.ClusterStateOnline,
-		ServiceTypes: []gocb.ServiceType{gocb.ServiceTypeKeyValue},
-	})
-	if err != nil {
-		return err
-	}
-	agent, err = bucket.Internal().IORouter()
-	if err != nil {
-		return err
-	}
-
-	sampleLimits, err := computeSampleLimitsForSources(agent,
-		cfg.scopeName, cfg.collectionNames, t.minSamplesPerCentroid)
-	if err != nil {
-		return fmt.Errorf("error getting total source doc count: %w", err)
-	}
-
-	manifest, err := GetBucketManifest(t.bleveDest.sourceName)
-	if err != nil {
-		return err
-	}
-	scopeUID, collectionUIDs, err := manifest.GetScopeCollectionUIDs(cfg.scopeName, cfg.collectionNames)
-	if err != nil {
-		return err
-	}
-
 	// Encode scope UID and collection UID per collection for document building.
 	extraOpts := make([][]byte, len(cfg.collectionNames))
-	for i := range cfg.collectionNames {
-		extraOpts[i] = make([]byte, 8)
-		binary.LittleEndian.PutUint32(extraOpts[i][0:], uint32(scopeUID))
-		binary.LittleEndian.PutUint32(extraOpts[i][4:], uint32(collectionUIDs[i]))
+	if cfg.initClusterCallback != nil {
+		err = cfg.initClusterCallback()
+		if err != nil {
+			return fmt.Errorf("error in initClusterCallback: %w", err)
+		}
+	} else {
+		log.Printf("trainer_vector: creating trained index in partition: "+
+			"%s", t.partitionName)
+
+		memcachedURL, err := fetchMemcachedURL(t.mgr)
+		if err != nil {
+			return fmt.Errorf("error fetching memcached URL: %w", err)
+		}
+		cluster, agent, err := t.getClusterAndKVConnection(t.mgr, memcachedURL)
+		if err != nil {
+			return fmt.Errorf("error getting cluster and KV connection: %w", err)
+		}
+		// handles closing of the cluster and agent connections
+		defer cluster.Close(nil)
+
+		bucket := cluster.Bucket(t.bleveDest.sourceName)
+		waitCtx, waitCancel := context.WithCancel(context.Background())
+		defer waitCancel()
+		go func() {
+			select {
+			case <-t.closeCh:
+				waitCancel()
+			case <-waitCtx.Done():
+			}
+		}()
+
+		// wait until the bucket is ready
+		err = bucket.WaitUntilReady(trainerWaitOnKV, &gocb.WaitUntilReadyOptions{
+			DesiredState: gocb.ClusterStateOnline,
+			ServiceTypes: []gocb.ServiceType{gocb.ServiceTypeKeyValue},
+			Context:      waitCtx,
+		})
+		if err != nil {
+			return err
+		}
+		agent, err = bucket.Internal().IORouter()
+		if err != nil {
+			return err
+		}
+
+		sampleLimits, err := t.computeSampleLimitsForSources(agent,
+			cfg.scopeName, cfg.collectionNames, t.minSamplesPerCentroid)
+		if err != nil {
+			return fmt.Errorf("error getting total source doc count: %w", err)
+		}
+
+		manifest, err := GetBucketManifest(t.bleveDest.sourceName)
+		if err != nil {
+			return err
+		}
+		scopeUID, collectionUIDs, err := manifest.GetScopeCollectionUIDs(cfg.scopeName, cfg.collectionNames)
+		if err != nil {
+			return err
+		}
+
+		for i := range cfg.collectionNames {
+			extraOpts[i] = make([]byte, 8)
+			binary.LittleEndian.PutUint32(extraOpts[i][0:], uint32(scopeUID))
+			binary.LittleEndian.PutUint32(extraOpts[i][4:], uint32(collectionUIDs[i]))
+		}
+
+		cfg.worker.configure(&samplingWorkerRunConfig{
+			vecIndex: cfg.vecIndex,
+			params: &samplingParams{
+				sampleLimit:     sampleLimits,
+				collectionNames: cfg.collectionNames,
+				scopeName:       cfg.scopeName,
+				sourceName:      t.bleveDest.sourceName,
+			},
+			cluster: &gocbClusterAdapter{cluster: cluster},
+		})
 	}
 
-	cfg.worker.configure(&samplingWorkerRunConfig{
-		vecIndex:        cfg.vecIndex,
-		sampleLimit:     sampleLimits,
-		collectionNames: cfg.collectionNames,
-		scopeName:       cfg.scopeName,
-		sourceName:      t.bleveDest.sourceName,
-		cluster:         cluster,
-	})
 	go cfg.worker.run()
 
 	// single training thread
@@ -643,7 +796,14 @@ func (t *vectorIndexTrainer) acquireSamples() {
 	}
 	// the remaining bleve dests will wait here for the trained index to be created,
 	// after which they will file transfer it from the source bleveDest
-	<-worker.copyCh
+	select {
+	case <-worker.copyCh:
+	case <-t.closeCh:
+		log.Warnf("trainer_vector: received stop signal while waiting to copy the "+
+			"trained index, shutting down on %s", t.partitionName)
+		return
+	}
+
 	if ic, ok := worker.vecIndex.(bleve.IndexFileCopyable); ok && worker.success {
 		dest, ok := t.bleveDest.bindex.(bleve.IndexFileCopyable)
 		if !ok {
