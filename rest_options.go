@@ -132,6 +132,14 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
+		if options["minSamplesPerCentroid"] != "" {
+			minSamplesPerCentroid, err := strconv.Atoi(options["minSamplesPerCentroid"])
+			if err != nil || minSamplesPerCentroid < 0 {
+				return nil, fmt.Errorf("illegal value for minSamplesPerCentroid: '%v'",
+					options["minSamplesPerCentroid"])
+			}
+		}
+
 		// Validate scanPlusFetchBucketWideSeqNos
 		if options["scanPlusFetchBucketWideSeqNos"] != "" {
 			_, err := strconv.ParseBool(options["scanPlusFetchBucketWideSeqNos"])

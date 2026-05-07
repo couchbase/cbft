@@ -47,10 +47,12 @@ const (
 	// the minimum number of samples we want per centroid. this multiplied by the
 	// number of centroids gives us the minimum number of samples we'd want from
 	// a source.
-	minSamplesPerCentroid = 39
+	defaultMinSamplesPerCentroid = 39
 )
 
 type vectorIndexTrainer struct {
+	minSamplesPerCentroid float64
+
 	indexName     string
 	partitionName string
 
@@ -70,12 +72,21 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 					" partition %s", bleveDest.bindex.Name())
 				return nil
 			}
-			mgr := CurrentNodeDefsFetcher.GetManager()
 
+			mgr := CurrentNodeDefsFetcher.GetManager()
+			minSamplesPerCentroid := defaultMinSamplesPerCentroid
+			if v := mgr.GetOption("minSamplesPerCentroid"); len(v) > 0 {
+				if vInt, err := strconv.Atoi(v); err == nil {
+					log.Printf("trainer_vector: setting minSamplesPerCentroid to %d "+
+						"from the manager options", vInt)
+					minSamplesPerCentroid = vInt
+				}
+			}
 			return &vectorIndexTrainer{
-				mgr:       mgr,
-				bleveDest: bleveDest,
-				doneCh:    make(chan struct{}),
+				minSamplesPerCentroid: float64(minSamplesPerCentroid),
+				mgr:                   mgr,
+				bleveDest:             bleveDest,
+				doneCh:                make(chan struct{}),
 			}
 		}
 	}
@@ -323,7 +334,7 @@ func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcac
 // computeSampleLimitsForSources uses gocbcore stats to get item count per
 // collection and returns a sample limit per collection: 4 * sqrt(docCount) * minSamplesPerCentroid.
 func computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
-	collections []string) (rv []int, err error) {
+	collections []string, minSamplesPerCentroid float64) (rv []int, err error) {
 	rv = make([]int, len(collections))
 	signal := make(chan error, 1)
 
@@ -447,7 +458,7 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 	}
 
 	sampleLimits, err := computeSampleLimitsForSources(agent,
-		cfg.scopeName, cfg.collectionNames)
+		cfg.scopeName, cfg.collectionNames, t.minSamplesPerCentroid)
 	if err != nil {
 		return fmt.Errorf("error getting total source doc count: %w", err)
 	}
