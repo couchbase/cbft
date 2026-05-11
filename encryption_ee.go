@@ -158,7 +158,9 @@ func (em *encryptionManager) refreshKeys(keyData cbauth.KeyDataType) error {
 
 	// compare all of the keys in use with the new keys. If any of the keys in use is not
 	// present in the new keys, return an error as we cannot guarantee continued
-	// operation without the key
+	// operation without the key. The empty key ID signals unencrypted data and
+	// is not present in cbauth's key registry, so exclude it from validation.
+	delete(keysInUse, "")
 	for keyId := range keysInUse {
 		if _, exists := newKeysMap[keyId]; !exists {
 			return fmt.Errorf("encryptionManager: key with ID %s is still in "+
@@ -1385,6 +1387,20 @@ func (em *encryptionManager) reencryptFile(path string, keysToDropMap map[string
 
 // ------------------------- rebalance implementation ---------------------------------
 
+// withoutEmptyKeyIDs returns a copy of keys with the empty key ID sentinel
+// removed. The empty key ID ("") signals that unencrypted data exists on disk
+// and is intentionally tracked in the keys-in-use cache so cbauth can issue a
+// dropKeys("") to trigger encryption.
+func withoutEmptyKeyIDs(keys []string) []string {
+	out := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
 // Suffix and directory name for encryption keys during file transfer rebalance
 const keyPath = "_KEY"
 
@@ -1436,7 +1452,16 @@ func (em *encryptionManager) prepEncryptionKeys(primaryPath, tempPath string) er
 		keysMap[key.Id] = struct{}{}
 	}
 
-	// ensure that all keys in use are present in the keys obtained from cbauth for the bucket
+	// ensure that all keys in use are present in the keys obtained from cbauth
+	// for the bucket. Strip the empty key ID sentinel first — it signals
+	// unencrypted data and is not present in cbauth's key registry.
+	keysInUse = withoutEmptyKeyIDs(keysInUse)
+
+	// if no keys present, skip creating the directory
+	if len(keysInUse) == 0 {
+		return nil
+	}
+
 	for _, keyId := range keysInUse {
 		if _, exists := keysMap[keyId]; !exists {
 			return fmt.Errorf("key with ID %s is still in use but not present in keys for bucket %s",
