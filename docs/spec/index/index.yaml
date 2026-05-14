@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Couchbase Search Index Management and Monitoring API
   description: |-
-    The Search Indexing REST API is provided by the Search service.
+    The Search Indexing REST API is provided by the Search Service.
     This API enables you to manage and monitor your Search indexes.
   version: '7.6'
 
@@ -154,6 +154,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IndexDefinition'
+            example:
+              $ref: 'examples/simple-search-index-payload.json'
       responses:
         '200':
           description: A JSON object indicating the status of the operation.
@@ -221,6 +223,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IndexDefinition'
+            example:
+              $ref: 'examples/simple-search-index-payload.json'
       responses:
         '200':
           description: A JSON object indicating the status of the operation.
@@ -397,7 +401,7 @@ paths:
       description: |-
         Returns indexing and data-related metrics, timings, counters, and detailed partition information for all Search indexes, from the node running the Search Service.
 
-        This endpoint returns statistics provided by the Search service.
+        This endpoint returns statistics provided by the Search Service.
         For additional statistics, see [Get Query, Mutation, and Partition Statistics for the Search Service](../fts-rest-stats/index.html#g-api-nsstats).
       tags:
         - Monitoring
@@ -420,7 +424,7 @@ paths:
       description: |-
         Returns indexing and data-related metrics, timings, counters, and detailed partition information for the Search index specified in the endpoint URL.
 
-        This endpoint returns statistics provided by the Search service.
+        This endpoint returns statistics provided by the Search Service.
         For additional statistics, see [Get Query, Mutation, and Partition Statistics for an Index](../fts-rest-stats/index.html#g-api-nsstats-index-name).
       tags:
         - Monitoring
@@ -478,8 +482,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              title: Request Body
+              $ref: "#/components/schemas/Document"
             example:
               $ref: 'examples/g-api-stats-index-name-analyzeDoc-body.json'
       responses:
@@ -570,16 +573,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QueryRequest'
-            examples:
-              regular:
-                summary: Regular Query
-                externalValue: 'examples/p-api-index-name-query-regular.json'
-              options:
-                summary: Query with Options
-                externalValue: 'examples/p-api-index-name-query-options.json'
-              hybrid:
-                summary: Hybrid Query
-                externalValue: 'examples/p-api-index-name-query-hybrid.json'
       responses:
         '200':
           description: |-
@@ -615,6 +608,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QueryRequest'
+            examples:
+              regular:
+                summary: Regular Query
+                description: This request searches for the text `a sample query` in the documents included in the Search index.
+                externalValue: 'examples/p-api-index-name-query-regular.json'
+              options:
+                summary: Query with Options
+                description: |-
+                  This request uses from/size for results paging, with `ctl` for a timeout and the `"at_plus"` consistency level.
+
+                  On consistency, the index must have incorporated at least mutation sequence-number 123 for partition (vBucket) 0 and mutation sequence-number 234 for partition (vBucket) 1, where vBucket 1 should have a `vbucketUUID` of `a0b1c2`.
+                externalValue: 'examples/p-api-index-name-query-options.json'
+              hybrid:
+                summary: Hybrid Query
+                description: This request searches for a specified normalized color vector in `colorvect_dot`, but uses regular query parameters to limit the `brightness` value of the returned color to the range of `70-80`.
+                externalValue: 'examples/p-api-index-name-query-hybrid.json'
       responses:
         '200':
           description: |-
@@ -963,6 +972,11 @@ components:
         uuid:
           $ref: "#/components/schemas/CommonIndexUUID"
 
+    Document:
+      type: object
+      additionalProperties:
+        description: Any valid JSON value.
+
     DocumentAnalysis:
       type: object
       title: Document Analysis
@@ -1054,10 +1068,11 @@ components:
           $ref: '#/components/schemas/IndexDefinitionPlanParams'
         prevIndexUUID:
           type: string
+          format: UUID
           writeOnly: true
           description: |-
             The UUID of the previous index.
-            Intended for clients that want to check that they are not overwriting the Search index definition updates of concurrent clients.
+            Intended for clients that want to check that they're not overwriting the Search index definition updates of concurrent clients.
         uuid:
           $ref: '#/components/schemas/CommonIndexUUID'
       required:
@@ -1167,6 +1182,8 @@ components:
           description: An array of strings that specify the collections where you want to run the query.
           items:
             type: string
+      example:
+        $ref: 'examples/run-search-payload.json'
 
     QueryResponse:
       type: object
@@ -1179,6 +1196,8 @@ components:
           description: The results of the Search query.
           items:
             type: object
+      example:
+        $ref: 'examples/run-search-response.json'
 
     MgmtResponse:
       type: object
@@ -1201,6 +1220,7 @@ components:
       type: string
       title: Status
       description: The status of the operation.
+      example: ok
 
     CommonIndexName:
       type: string
@@ -1222,10 +1242,15 @@ components:
       description: |-
         The type of the Search index.
         For more information, see [Initial Settings](../search/search-index-params.html#initial).
+      enum:
+        - fulltext-index
+        - fulltext-alias
 
     CommonIndexUUID:
       type: string
+      format: UUID
       title: Index UUID
+      readOnly: true
       description: |-
         The UUID of the Search index.
         For more information, see [Initial Settings](../search/search-index-params.html#initial).
@@ -1254,6 +1279,8 @@ components:
     CommonSourceUUID:
       type: string
       title: Source UUID
+      format: UUID
+      readOnly: true
       description: |-
         The UUID of the bucket where the Search index is stored.
         For more information, see [Initial Settings](../search/search-index-params.html#initial).

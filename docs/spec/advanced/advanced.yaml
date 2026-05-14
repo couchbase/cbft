@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Couchbase Search Advanced API
   description: |-
-    The Advanced Search REST APIs are provided by the Search service.
+    The Advanced Search REST APIs are provided by the Search Service.
     These APIs enable you to manage and query Search index partitions and to specify advanced settings.
   version: '7.6'
 
@@ -156,7 +156,7 @@ paths:
               properties:
                 ftsMemoryQuota:
                   type: integer
-                  description: The memory quota for the Search service.
+                  description: The memory quota for the Search Service.
                   example: 512
                   x-has-example: true
       responses:

@@ -1,0 +1,47 @@
+{
+  "status": {
+      "total": 1,
+      "failed": 0,
+      "successful": 1
+  },
+  "hits": [
+      {
+          "index": "travel-sample.inventory.landmark-content-index_49563a96ea6d3686_4c1c5584",
+          "id": "landmark_4428",
+          "score": 2.425509689250102,
+          "sort": [
+              "_score"
+          ],
+          "fields": {
+              "content": "serves fresh food at very reasonable prices - view of stoney beach with herons"
+          }
+      },
+      {
+          "index": "travel-sample.inventory.landmark-content-index_49563a96ea6d3686_4c1c5584",
+          "id": "landmark_26385",
+          "score": 1.6270812956011347,
+          "sort": [
+              "_score"
+          ],
+          "fields": {
+              "content": "Burgers, seafood, and other simple but tasty meals right at the harbor. You can take your food around the corner to sit on the beach or the sea wall and enjoy the ocean view while you eat."
+          }
+      },
+      {
+          "index": "travel-sample.inventory.landmark-content-index_49563a96ea6d3686_4c1c5584",
+          "id": "landmark_38035",
+          "score": 1.1962539437368078,
+          "sort": [
+              "_score"
+          ],
+          "fields": {
+              "content": "Famous for &quot;the Blue Lady&quot;, a ghost rumored to haunt the premises, the Moss Beach distillery offers a full menu, Sunday brunch, drinks, and a tremendous ocean view with comfortable fire pits. Happy hour Mon-Fri from 5PM to 7PM offers half-priced drinks and a discounted food menu."
+          }
+      }
+  ],
+  "total_hits": 3,
+  "cost": 150479,
+  "max_score": 2.425509689250102,
+  "took": 1441203,
+  "facets": null
+}

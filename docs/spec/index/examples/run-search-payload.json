@@ -1,0 +1,10 @@
+{
+  "fields": [
+    "*"
+  ],
+  "query": {
+    "query": "+view +food +beach"
+  },
+  "size": 10,
+  "from": 0
+}

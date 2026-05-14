@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Couchbase Search Node API
   description: |-
-    The Search Node Configuration REST API is provided by the Search service.
+    The Search Node Configuration REST API is provided by the Search Service.
     This API enables you to manage and monitor your Search nodes.
   version: '7.6'
 
@@ -117,19 +117,16 @@ paths:
         Returns the full set of diagnostic information from the node as JSON.
         The response is the union of the responses from the node's other REST API diagnostic and monitoring endpoints.
 
-        For example, for a 3 node cluster, you could capture diagnostics for each node with something like:
-
-        ```shell
-        curl http://cbft-01:8094/api/diag > cbft-01.json
-        curl http://cbft-02:8094/api/diag > cbft-02.json
-        curl http://cbft-03:8094/api/diag > cbft-03.json
-        ```
-
         The response JSON object can be quite large, 100s of KB or much more.
 
         The motivation for this operation is to simplify working with the Couchbase community, forums, technical support, and other engineers, by making data capture from each Search node a single step.
       tags:
         - diagnostics
+      x-codeSamples:
+        - lang: Shell
+          description: Capture diagnostics for each node in a 3 node cluster.
+          source:
+            $ref: 'examples/get-diagnostics.sh'
       responses:
         '200':
           description: A JSON object containing the node's diagnostics.
@@ -282,7 +279,7 @@ components:
           $ref: '#/components/schemas/clusterConfigIndexes'
         indexDefsCAS:
           type: integer
-          description: Search index definition concurrency (compare and swap) value.
+          description: Search index definition concurrency (Compare and Swap) value.
         indexDefsErr:
           type: string
           description: Search index definition error.
@@ -291,7 +288,7 @@ components:
           $ref: '#/components/schemas/clusterConfigNodesKnown'
         nodeDefsKnownCAS:
           type: integer
-          description: Known node definition concurrency (compare and swap) value.
+          description: Known node definition concurrency (Compare and Swap) value.
         nodeDefsKnownErr:
           type: string
           description: Known node definition error.
@@ -300,7 +297,7 @@ components:
           $ref: '#/components/schemas/clusterConfigNodesWanted'
         nodeDefsWantedCAS:
           type: integer
-          description: Wanted node definition concurrency (compare and swap) value.
+          description: Wanted node definition concurrency (Compare and Swap) value.
         nodeDefsWantedErr:
           type: string
           description: Wanted node definition error.
@@ -309,7 +306,7 @@ components:
           $ref: '#/components/schemas/clusterConfigPlan'
         planPIndexesCAS:
           type: integer
-          description: Search index partition concurrency (compare and swap) value.
+          description: Search index partition concurrency (Compare and Swap) value.
         planPIndexesErr:
           type: string
           description: Search index partition error.
