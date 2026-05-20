@@ -2190,8 +2190,11 @@ func (t *BleveDest) ConsistencyWait(partition, partitionUUID string,
 
 	bdp.m.Lock()
 	if cwr.PartitionUUID != "" && cwr.PartitionUUID != uuid {
-		cwr.DoneCh <- fmt.Errorf("bleve: pindex_consistency"+
-			" mismatched partition, uuid: %s, cwr: %#v", uuid, cwr)
+		cwr.DoneCh <- fmt.Errorf("bleve: pindex consistency mismatched"+
+			" partition uuid for %q (current: %q, requested: %q),"+
+			" consistencyLevel: %q, consistencySeq: %d",
+			partition, uuid, cwr.PartitionUUID,
+			cwr.ConsistencyLevel, cwr.ConsistencySeq)
 		close(cwr.DoneCh)
 	} else if cwr.ConsistencySeq > seq {
 		heap.Push(&bdp.cwrQueue, cwr)
