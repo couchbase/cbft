@@ -132,11 +132,11 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			}
 		}
 
-		if options["minSamplesPerCentroid"] != "" {
-			minSamplesPerCentroid, err := strconv.Atoi(options["minSamplesPerCentroid"])
-			if err != nil || minSamplesPerCentroid < 0 {
-				return nil, fmt.Errorf("illegal value for minSamplesPerCentroid: '%v'",
-					options["minSamplesPerCentroid"])
+		if options["numSamplesPerCentroid"] != "" {
+			numSamplesPerCentroid, err := strconv.Atoi(options["numSamplesPerCentroid"])
+			if err != nil || numSamplesPerCentroid < 0 {
+				return nil, fmt.Errorf("illegal value for numSamplesPerCentroid: '%v'",
+					options["numSamplesPerCentroid"])
 			}
 		}
 

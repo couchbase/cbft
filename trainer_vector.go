@@ -48,12 +48,16 @@ const (
 	// the minimum number of samples we want per centroid. this multiplied by the
 	// number of centroids gives us the minimum number of samples we'd want from
 	// a source.
-	defaultMinSamplesPerCentroid = 39
-	trainerWaitOnKV              = 10 * time.Second
+	minSamplesPerCentroid        = 39
+	maxSamplesPerCentroid        = 256
+	defaultNumSamplesPerCentroid = minSamplesPerCentroid
+
+	trainerWaitOnKV = 10 * time.Second
 )
 
 type vectorIndexTrainer struct {
-	minSamplesPerCentroid float64
+	numCentroids          int
+	numSamplesPerCentroid int
 
 	indexName     string
 	partitionName string
@@ -78,16 +82,28 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 			}
 
 			mgr := CurrentNodeDefsFetcher.GetManager()
-			minSamplesPerCentroid := defaultMinSamplesPerCentroid
-			if v := mgr.GetOption("minSamplesPerCentroid"); len(v) > 0 {
+			numSamplesPerCentroid := defaultNumSamplesPerCentroid
+			if v := mgr.GetOption("numSamplesPerCentroid"); len(v) > 0 {
 				if vInt, err := strconv.Atoi(v); err == nil {
-					log.Printf("trainer_vector: setting minSamplesPerCentroid to %d "+
+					log.Printf("trainer_vector: setting numSamplesPerCentroid to %d "+
 						"from the manager options", vInt)
-					minSamplesPerCentroid = vInt
+					numSamplesPerCentroid = vInt
+				}
+				if numSamplesPerCentroid < minSamplesPerCentroid {
+					log.Printf("trainer_vector: configured numSamplesPerCentroid %d is less "+
+						"than the allowed minimum %d, using the minimum", numSamplesPerCentroid,
+						minSamplesPerCentroid)
+					numSamplesPerCentroid = minSamplesPerCentroid
+				}
+				if numSamplesPerCentroid > maxSamplesPerCentroid {
+					log.Printf("trainer_vector: configured numSamplesPerCentroid %d is more "+
+						"than the allowed maximum %d, using the maximum", numSamplesPerCentroid,
+						maxSamplesPerCentroid)
+					numSamplesPerCentroid = maxSamplesPerCentroid
 				}
 			}
 			return &vectorIndexTrainer{
-				minSamplesPerCentroid: float64(minSamplesPerCentroid),
+				numSamplesPerCentroid: numSamplesPerCentroid,
 				mgr:                   mgr,
 				bleveDest:             bleveDest,
 				doneCh:                make(chan struct{}),
@@ -374,7 +390,7 @@ func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
 		} `json:"nodesExt"`
 	}{}
 
-	err = json.Unmarshal(respBuf, &serverList)
+	err = UnmarshalJSON(respBuf, &serverList)
 	if err != nil {
 		return "", err
 	}
@@ -449,9 +465,9 @@ func waitForResponse(signal <-chan error, closeCh <-chan struct{},
 }
 
 // computeSampleLimitsForSources uses gocbcore stats to get item count per
-// collection and returns a sample limit per collection: 4 * sqrt(docCount) * minSamplesPerCentroid.
+// collection and returns a sample limit per collection: 4 * sqrt(docCount) * numSamplesPerCentroid.
 func (t *vectorIndexTrainer) computeSampleLimitsForSources(agent *gocbcore.Agent, scopeName string,
-	collections []string, minSamplesPerCentroid float64) (rv []int, err error) {
+	collections []string, numSamplesPerCentroid int) (rv []int, err error) {
 	rv = make([]int, len(collections))
 	signal := make(chan error, 1)
 
@@ -492,7 +508,8 @@ func (t *vectorIndexTrainer) computeSampleLimitsForSources(agent *gocbcore.Agent
 			return nil, err
 		}
 		// Heuristic sample limit: scale with sqrt of collection size.
-		rv[i] = int(4 * math.Sqrt(float64(docCount)) * minSamplesPerCentroid)
+		t.numCentroids = int(4 * math.Sqrt(float64(docCount)))
+		rv[i] = t.numCentroids * numSamplesPerCentroid
 	}
 	return rv, nil
 }
@@ -503,6 +520,21 @@ func (t *vectorIndexTrainer) computeSampleLimitsForSources(agent *gocbcore.Agent
 func (t *vectorIndexTrainer) trainOnSamples(ch chan *sample, defaultType string,
 	extras [][]byte, vecIndex bleve.TrainableIndex, doneCh chan struct{}) error {
 	batch := vecIndex.NewBatch()
+
+	// set the centroid count for the training process
+	trainingParams := &index.TrainingParams{
+		NumCentroids: t.numCentroids,
+	}
+	bytes, err := MarshalJSON(trainingParams)
+	if err != nil {
+		return err
+	}
+	batch.SetInternal([]byte(index.TrainingKey), bytes)
+	err = vecIndex.Train(batch)
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-doneCh:
@@ -609,7 +641,7 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 		}
 
 		sampleLimits, err := t.computeSampleLimitsForSources(agent,
-			cfg.scopeName, cfg.collectionNames, t.minSamplesPerCentroid)
+			cfg.scopeName, cfg.collectionNames, t.numSamplesPerCentroid)
 		if err != nil {
 			return fmt.Errorf("error getting total source doc count: %w", err)
 		}
