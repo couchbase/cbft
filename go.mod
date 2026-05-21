@@ -23,8 +23,8 @@ require (
 	github.com/couchbase/clog v0.1.0
 	github.com/couchbase/go-couchbase v0.1.1
 	github.com/couchbase/go_json v0.0.0-20250803152502-4641f4ef8578
-	github.com/couchbase/gocb/v2 v2.12.1
-	github.com/couchbase/gocbcore/v10 v10.9.1
+	github.com/couchbase/gocb/v2 v2.12.3
+	github.com/couchbase/gocbcore/v10 v10.9.3
 	github.com/couchbase/gocbcrypto v0.0.0-00010101000000-000000000000
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
@@ -76,7 +76,7 @@ require (
 	github.com/couchbase/gocbcore/v9 v9.1.11 // indirect
 	github.com/couchbase/gocbcoreps v0.1.5-0.20260107140814-1c3a03f888f8 // indirect
 	github.com/couchbase/gomemcached v0.3.4 // indirect
-	github.com/couchbase/goprotostellar v1.0.5 // indirect
+	github.com/couchbase/goprotostellar v1.0.6-0.20260407143512-d7af25156dcc // indirect
 	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
 	github.com/couchbase/moss v0.3.0 // indirect
 	github.com/couchbase/query v0.0.0-20260401214352-fd7842db0db8 // indirect
