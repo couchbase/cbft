@@ -965,8 +965,12 @@ func processPath(p string) (string, string, string, error) {
 			if len(pindexParts) < 3 {
 				indexDef, _, err := encryptionManagerInstance.mgr.GetIndexDef(pindexName, false)
 				if err != nil {
-					return "", "", "", fmt.Errorf("invalid pindex "+
-						"name extracted: %s from path: %s", pindexName, p)
+					// Force a full check incase the index def is not loaded yet
+					indexDef, _, err = encryptionManagerInstance.mgr.GetIndexDef(pindexName, true)
+					if err != nil {
+						return "", "", "", fmt.Errorf("invalid pindex "+
+							"name extracted: %s from path: %s, err: %v", pindexName, p, err)
+					}
 				}
 				bucketName = indexDef.SourceName
 			} else {
