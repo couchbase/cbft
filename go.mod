@@ -6,15 +6,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.95.0
 	github.com/blevesearch/bleve-mapping-ui v0.7.0
-	github.com/blevesearch/bleve/v2 v2.6.1-0.20260521140412-1b8d6d25d0c0
-	github.com/blevesearch/bleve_index_api v1.3.11
+	github.com/blevesearch/bleve/v2 v2.6.1-0.20260529084126-8bc46c91118a
+	github.com/blevesearch/bleve_index_api v1.3.12
 	github.com/blevesearch/zapx/v11 v11.4.3
 	github.com/blevesearch/zapx/v12 v12.4.3
 	github.com/blevesearch/zapx/v13 v13.4.3
 	github.com/blevesearch/zapx/v14 v14.4.3
 	github.com/blevesearch/zapx/v15 v15.4.3
 	github.com/blevesearch/zapx/v16 v16.3.4
-	github.com/blevesearch/zapx/v17 v17.1.4-0.20260521123239-ff145410dea9
+	github.com/blevesearch/zapx/v17 v17.1.5
 	github.com/buger/jsonparser v1.1.2
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.18
@@ -26,7 +26,7 @@ require (
 	github.com/couchbase/gocb/v2 v2.12.3
 	github.com/couchbase/gocbcore/v10 v10.9.3
 	github.com/couchbase/gocbcrypto v0.0.0-00010101000000-000000000000
-	github.com/couchbase/goutils v0.1.2
+	github.com/couchbase/goutils v0.3.0
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
 	github.com/couchbase/tools-common/cloud/v8 v8.1.3
 	github.com/couchbase/tools-common/types v1.1.4
@@ -58,7 +58,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.24.2 // indirect
 	github.com/blevesearch/geo v0.2.5 // indirect
-	github.com/blevesearch/go-faiss v1.1.3-0.20260520191817-63736f1417c1 // indirect
+	github.com/blevesearch/go-faiss v1.1.3 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/goleveldb v1.0.1 // indirect
 	github.com/blevesearch/gtreap v0.1.1 // indirect
