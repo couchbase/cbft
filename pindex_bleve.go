@@ -411,7 +411,7 @@ type trainer interface {
 	// if necessary, start sampling docs from KV
 	acquireSamples()
 	// a way to control the data ingestion from feeds
-	wait()
+	wait() <-chan struct{}
 	// cleanup any resources
 	close() error
 }
@@ -476,14 +476,22 @@ func NewBleveDest(path string, bindex bleve.Index,
 func (t *BleveDest) startBatchWorkers() {
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		t.batchReqChs[i] = make(chan *batchRequest, 1)
-		go func() {
+		go func(i int) {
 			// wait till the training is done and allow the data ingest to
 			// proceed only after that
 			if t.trainingSampler != nil {
-				t.trainingSampler.wait()
+				select {
+				case <-t.trainingSampler.wait():
+					log.Printf("pindex_bleve: training complete on BleveDest %s, "+
+						"starting batch worker %d", t.path, i)
+				case <-t.stopCh:
+					log.Warnf("pindex_bleve: received stop signal while training "+
+						"on BleveDest %s, shutting down batch worker %d", t.path, i)
+					return
+				}
 			}
 			runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex, i)
-		}()
+		}(i)
 	}
 }
 

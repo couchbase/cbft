@@ -20,8 +20,9 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 
 func (t *trainerNoop) acquireSamples() {}
 
-func (t *trainerNoop) wait() {
+func (t *trainerNoop) wait() <-chan struct{} {
 	// no-op
+	return nil
 }
 
 func (t *trainerNoop) close() error {

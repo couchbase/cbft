@@ -114,16 +114,8 @@ func initTrainer(bleveDest *BleveDest, kvconfig map[string]interface{}) trainer 
 	return nil
 }
 
-func (t *vectorIndexTrainer) wait() {
-	// this channel is blocked until released at the end of trySampling()
-	select {
-	case <-t.doneCh:
-		log.Printf("trainer_vector: finished sampling documents from KV for "+
-			"%s", t.partitionName)
-	case <-t.bleveDest.stopCh:
-		log.Warnf("trainer_vector: received stop signal while waiting, shutting down "+
-			"training for %s", t.partitionName)
-	}
+func (t *vectorIndexTrainer) wait() <-chan struct{} {
+	return t.doneCh
 }
 
 func (t *vectorIndexTrainer) close() error {
