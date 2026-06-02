@@ -8,7 +8,9 @@
 
 package cbft
 
-//#include "malloc_override.h"
+/*
+#include "malloc_override.h"
+*/
 import "C"
 import (
 	"fmt"

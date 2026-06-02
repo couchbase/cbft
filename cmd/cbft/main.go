@@ -485,6 +485,8 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		log.SetLevel(log.LevelNormal)
 	}
 
+	cbft.LogGPUState()
+
 	// If maxReplicasAllowed is among options provided, ensure that it
 	// holds a valid value.
 	if options["maxReplicasAllowed"] != "" {

@@ -1,4 +1,4 @@
-//  Copyright 2024-Present Couchbase, Inc.
+//  Copyright 2026-Present Couchbase, Inc.
 //
 //  Use of this software is governed by the Business Source License included
 //  in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
@@ -6,13 +6,13 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 
-//go:build jemalloc
-// +build jemalloc
+//go:build !gpu
+// +build !gpu
 
 package cbft
 
-/*
-#cgo CFLAGS: -DJEMALLOC=1
-#cgo LDFLAGS: -ljemalloc_noprefix
-*/
-import "C"
+import log "github.com/couchbase/clog"
+
+func LogGPUState() {
+	log.Printf("GPU: GPU support is not available in this build")
+}

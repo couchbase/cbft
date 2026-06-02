@@ -11,9 +11,12 @@
 
 package cbft
 
-//#cgo LDFLAGS: -lsigar
-//#include <sigar.h>
-//#include <sigar_control_group.h>
+/*
+#cgo LDFLAGS: -lsigar
+#include <sigar.h>
+
+#include <sigar_control_group.h>
+*/
 import "C"
 
 import (
