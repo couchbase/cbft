@@ -31,7 +31,6 @@ import (
 	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/blevesearch/bleve/v2/util"
 	index "github.com/blevesearch/bleve_index_api"
-	"github.com/couchbase/cbauth"
 	"github.com/couchbase/cbgt"
 	log "github.com/couchbase/clog"
 	"github.com/couchbase/gocb/v2"
@@ -355,22 +354,22 @@ func (w *samplingWorker) close() {
 	close(w.closeCh)
 }
 
-func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
+func fetchMemcachedURLs(mgr *cbgt.Manager) ([]string, error) {
 	nsServerURL := mgr.Server() + "/pools/default/nodeServices"
 	u, err := cbgt.CBAuthURL(nsServerURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	resp, err := HttpGet(cbgt.HttpClient(), u)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	serverList := struct {
@@ -384,20 +383,21 @@ func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
 
 	err = UnmarshalJSON(respBuf, &serverList)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var rv string
+	var rv []string
 	for _, node := range serverList.NodesExt {
 		if node.Services["kv"] > 0 {
-			if node.HostName == "" && node.ThisNode {
+			// if the hostname is missing it means that we're referring to the host
+			// that is 127.0.0.1 (or ::1 for IPv6 clusters).
+			if node.HostName == "" {
 				mgrURL, err := url.Parse(mgr.Server())
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 				node.HostName = strings.Split(mgrURL.Host, ":")[0]
 			}
-			rv = strings.Join([]string{node.HostName, strconv.Itoa(node.Services["kv"])}, ":")
-			break
+			rv = append(rv, strings.Join([]string{node.HostName, strconv.Itoa(node.Services["kv"])}, ":"))
 		}
 	}
 	return rv, nil
@@ -406,22 +406,15 @@ func fetchMemcachedURL(mgr *cbgt.Manager) (string, error) {
 // getClusterAndKVConnection returns a gocb cluster (and optionally gocbcore agent)
 // for the current node using manager server URL and cbauth credentials.
 // TODO: tighten API and consider reusing connections.
-func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcachedHost string) (*gocb.Cluster, *gocbcore.Agent, error) {
-	u, err := url.Parse(mgr.Server())
-	if err != nil {
-		return nil, nil, err
-	}
-	couchbaseURL := strings.Join([]string{"couchbase://", memcachedHost}, "")
-	username, password, err := cbauth.GetMemcachedServiceAuth(u.Host)
+func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcachedHosts []string) (*gocb.Cluster, *gocbcore.Agent, error) {
+	kvClusterURL := "couchbase://" + strings.Join(memcachedHosts, ",")
+	auth, err := gocbAuth(t.bleveDest.sourceParams, mgr.GetOption("authType"))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	cluster, err := gocb.Connect(couchbaseURL, gocb.ClusterOptions{
-		Authenticator: &gocb.PasswordAuthenticator{
-			Username: username,
-			Password: password,
-		},
+	cluster, err := gocb.Connect(kvClusterURL, gocb.ClusterOptions{
+		Authenticator: auth,
 		TimeoutsConfig: gocb.TimeoutsConfig{
 			ConnectTimeout: trainerWaitOnKV,
 		},
@@ -596,11 +589,11 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 		log.Printf("trainer_vector: creating trained index in partition: "+
 			"%s", t.partitionName)
 
-		memcachedURL, err := fetchMemcachedURL(t.mgr)
+		memcachedURLs, err := fetchMemcachedURLs(t.mgr)
 		if err != nil {
 			return fmt.Errorf("error fetching memcached URL: %w", err)
 		}
-		cluster, agent, err := t.getClusterAndKVConnection(t.mgr, memcachedURL)
+		cluster, agent, err := t.getClusterAndKVConnection(t.mgr, memcachedURLs)
 		if err != nil {
 			return fmt.Errorf("error getting cluster and KV connection: %w", err)
 		}
