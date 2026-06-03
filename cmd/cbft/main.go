@@ -412,7 +412,7 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	scanPlusErrorCallback := func() {
 		cbft.TotScanPlusQueriesKVErrors.Add(1)
 	}
-	if err = cbgt.RefreshScanPlusOptions(options, scanPlusErrorCallback); err != nil {
+	if err = cbgt.StartScanPlusReader(options, scanPlusErrorCallback); err != nil {
 		return err
 	}
 
