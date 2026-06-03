@@ -313,6 +313,7 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 	}
 
 	if bleve.IsScoreFusionRequested(r) {
+		// params check
 		if sr.Params == nil {
 			// If params is not present and it requires fusion, assign
 			// default values
@@ -325,6 +326,14 @@ func (sr *SearchRequest) ConvertToBleveSearchRequest() (*bleve.SearchRequest, er
 				return nil, err
 			}
 			r.Params = params
+		}
+
+		// sort check
+		// queries coming from n1fty without a sort will have an empty slice
+		// as the sort value rather than nil. This is incompatible with score fusion.
+		// To solve this, if the length of the array is 0, replace with desc score
+		if len(r.Sort) == 0 {
+			r.Sort = bleve.AllowedFusionSort.Copy()
 		}
 	}
 
