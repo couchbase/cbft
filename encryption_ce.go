@@ -33,6 +33,10 @@ func NewEncryptionManager(mgr *cbgt.Manager) (*encryptionManager, error) {
 	return encryptionManagerInstance, nil
 }
 
+func (em *encryptionManager) getAllKeysInUse() (map[string][]string, error) {
+	return nil, fmt.Errorf("encryptionManager: encryption is not supported in non-enterprise edition")
+}
+
 func (em *encryptionManager) encryptAndWriteFile(path string, data []byte, perm os.FileMode) (string, error) {
 	err := os.WriteFile(path, data, perm)
 	if err != nil {

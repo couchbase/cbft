@@ -236,4 +236,7 @@ cluster.bucket[<bucketName>].fts!read
 
 GET /api/searchHistory
 cluster.settings.fts!read
+
+GET /api/encryption/keysInUse
+cluster.settings.fts!read
 `

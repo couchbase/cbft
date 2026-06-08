@@ -171,8 +171,8 @@ func (em *encryptionManager) refreshKeys(keyData cbauth.KeyDataType) error {
 	// update the key store with the new keys
 	em.keyStore.updateMasterKey(keyData.BucketUUID, keyData.TypeName, newKeyInfo)
 
-	log.Printf("encryptionManager: refreshKeys completed successfully for key data %v",
-		keyData)
+	log.Printf("encryptionManager: refreshKeys completed successfully for key data %v, "+
+		"new active key ID: %s", keyData, newKeyInfo.ActiveKeyId)
 	return nil
 }
 
@@ -300,6 +300,7 @@ func (em *encryptionManager) dropKeysAsync(keyData cbauth.KeyDataType,
 			cbauth.KeysDropComplete(keyData, nil)
 		}
 		em.bucketStore.refreshBucketUUIDMap()
+		em.keyStore.refreshKeysInUseCache()
 	}()
 
 	return
@@ -409,6 +410,11 @@ func (em *encryptionManager) getEncryptionKeys(keyData cbauth.KeyDataType) (
 	}
 
 	return newKeyInfo, nil
+}
+
+// ---------------------------- utility functions ----------------------------
+func (em *encryptionManager) getAllKeysInUse() (map[string][]string, error) {
+	return em.keyStore.getAllKeysInUse()
 }
 
 // obtain the active key for the given bucket and key type
@@ -897,6 +903,40 @@ func (ks *keyStore) getKeysInUse(keyType, bucketUUID string) (map[string]struct{
 		for keyId := range keysInUse {
 			keysMap[keyId] = struct{}{}
 		}
+	}
+
+	return keysMap, nil
+}
+
+func (ks *keyStore) getAllKeysInUse() (map[string][]string, error) {
+	ks.keysLock.RLock()
+	keyIdentifiers := make([]string, 0, len(ks.keys))
+	for identifier := range ks.keys {
+		keyIdentifiers = append(keyIdentifiers, identifier)
+	}
+	ks.keysLock.RUnlock()
+
+	keysMap := make(map[string][]string, len(keyIdentifiers))
+
+	for _, identifier := range keyIdentifiers {
+		keyType := otherKeyType
+		bucketUUID := ""
+		if identifier != otherKeyType {
+			keyType = bucketKeyType
+			bucketUUID = strings.TrimPrefix(identifier, bucketKeyType)
+		}
+
+		keysInUse, err := ks.getKeysInUse(keyType, bucketUUID)
+		if err != nil {
+			return nil, fmt.Errorf("keyStore: failed to get keys in use for identifier %s: %w",
+				identifier, err)
+		}
+
+		keys := make([]string, 0, len(keysInUse))
+		for keyId := range keysInUse {
+			keys = append(keys, keyId)
+		}
+		keysMap[keyType+" "+bucketUUID] = keys
 	}
 
 	return keysMap, nil

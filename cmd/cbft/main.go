@@ -715,6 +715,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 		}
 	}
 
+	// Handle encryption route(s)
+	router.Handler("GET", prefix+"/api/encryption/keysInUse",
+		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewGetKeysInUseHandler(mgr)))
+
 	// Setup all debug/pprof routes
 	router.Handler("GET", "/debug/pprof/",
 		cbft.NewAuthVersionHandler(mgr, nil, http.HandlerFunc(pprof.Index)))
