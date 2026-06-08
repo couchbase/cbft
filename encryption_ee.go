@@ -963,16 +963,11 @@ func processPath(p string) (string, string, string, error) {
 			pindexParts := strings.Split(pindexName, ".")
 			var bucketName string
 			if len(pindexParts) < 3 {
-				indexDef, _, err := encryptionManagerInstance.mgr.GetIndexDef(pindexName, false)
+				bucketName, err = nonScopedIndexSourceName(pindexName)
 				if err != nil {
-					// Force a full check incase the index def is not loaded yet
-					indexDef, _, err = encryptionManagerInstance.mgr.GetIndexDef(pindexName, true)
-					if err != nil {
-						return "", "", "", fmt.Errorf("invalid pindex "+
-							"name extracted: %s from path: %s, err: %v", pindexName, p, err)
-					}
+					return "", "", "", fmt.Errorf("invalid pindex name extracted: %s from path: %s, err: %v",
+						pindexName, p, err)
 				}
-				bucketName = indexDef.SourceName
 			} else {
 				bucketName = pindexParts[0]
 			}
@@ -996,6 +991,26 @@ func processPath(p string) (string, string, string, error) {
 
 	return "", "", "", fmt.Errorf("no valid pindex, recovery plan, "+
 		"or search history found in path: %s", p)
+}
+
+// for non-scoped indexes, the source name does not contain the bucket name,
+// so we need to obtain the source name from the index definition
+func nonScopedIndexSourceName(pindexName string) (string, error) {
+	// Extract the index name from the pindex name
+	indexName, err := encryptionManagerInstance.mgr.GetIndexNameForPIndex(pindexName)
+	if err != nil {
+		return "", err
+	}
+
+	indexDef, _, err := encryptionManagerInstance.mgr.GetIndexDef(indexName, false)
+	if err != nil {
+		// Force a full check incase the index def is not loaded yet
+		indexDef, _, err = encryptionManagerInstance.mgr.GetIndexDef(pindexName, true)
+		if err != nil {
+			return "", err
+		}
+	}
+	return indexDef.SourceName, nil
 }
 
 // check if the path component is the recovery plan directory
