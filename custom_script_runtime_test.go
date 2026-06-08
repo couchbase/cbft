@@ -30,7 +30,7 @@ func TestBuildFilterFuncDisabledError(t *testing.T) {
 
 	InitJSEvaluator = func() {}
 	CustomScriptFilterBuilder = func(source string, params map[string]interface{}, fields []string) (searcher.CustomFilterFunc, error) {
-		return func(d *search.DocumentMatch) bool { return true }, nil
+		return func(d *search.DocumentMatch) (bool, error) { return true, nil }, nil
 	}
 	customScriptQueriesEnabled.Store(false)
 
@@ -62,7 +62,7 @@ func TestBuildScoreFuncEnabled(t *testing.T) {
 
 	InitJSEvaluator = func() {}
 	CustomScriptScoreBuilder = func(source string, params map[string]interface{}, fields []string) (searcher.CustomScoreFunc, error) {
-		return func(d *search.DocumentMatch) float64 { return d.Score }, nil
+		return func(d *search.DocumentMatch) (float64, error) { return d.Score, nil }, nil
 	}
 	customScriptQueriesEnabled.Store(true)
 
@@ -79,11 +79,11 @@ func TestParseQueryBindsCustomScriptCallbacks(t *testing.T) {
 	var filterSources, scoreSources []string
 	CustomScriptFilterBuilder = func(source string, params map[string]interface{}, fields []string) (searcher.CustomFilterFunc, error) {
 		filterSources = append(filterSources, source)
-		return func(d *search.DocumentMatch) bool { return true }, nil
+		return func(d *search.DocumentMatch) (bool, error) { return true, nil }, nil
 	}
 	CustomScriptScoreBuilder = func(source string, params map[string]interface{}, fields []string) (searcher.CustomScoreFunc, error) {
 		scoreSources = append(scoreSources, source)
-		return func(d *search.DocumentMatch) float64 { return d.Score }, nil
+		return func(d *search.DocumentMatch) (float64, error) { return d.Score, nil }, nil
 	}
 	InitJSEvaluator = func() {}
 	customScriptQueriesEnabled.Store(true)
@@ -126,7 +126,7 @@ func TestParseQueryPreservesCustomScriptPayloadForMarshalRoundTrip(t *testing.T)
 	defer restore()
 
 	CustomScriptScoreBuilder = func(source string, params map[string]interface{}, fields []string) (searcher.CustomScoreFunc, error) {
-		return func(d *search.DocumentMatch) float64 { return d.Score }, nil
+		return func(d *search.DocumentMatch) (float64, error) { return d.Score, nil }, nil
 	}
 	InitJSEvaluator = func() {}
 	customScriptQueriesEnabled.Store(true)
