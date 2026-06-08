@@ -15,7 +15,7 @@ require (
 	github.com/blevesearch/zapx/v15 v15.4.2
 	github.com/blevesearch/zapx/v16 v16.2.5-0.20260325143906-9c91042a4232
 	github.com/blevesearch/zapx/v17 v17.0.0
-	github.com/buger/jsonparser v1.1.1
+	github.com/buger/jsonparser v1.1.2
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.18
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
@@ -25,7 +25,7 @@ require (
 	github.com/couchbase/go_json v0.0.0-20250803152502-4641f4ef8578
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
-	github.com/couchbase/tools-common/cloud/v8 v8.1.3
+	github.com/couchbase/tools-common/cloud/v8 v8.1.4
 	github.com/couchbase/tools-common/types v1.1.4
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.4
