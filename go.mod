@@ -14,7 +14,7 @@ require (
 	github.com/blevesearch/zapx/v14 v14.3.10
 	github.com/blevesearch/zapx/v15 v15.3.16
 	github.com/blevesearch/zapx/v16 v16.1.9-0.20260325143815-36fc676c3ece
-	github.com/buger/jsonparser v1.1.1
+	github.com/buger/jsonparser v1.1.2
 	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/cbauth v0.1.18
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
@@ -22,9 +22,9 @@ require (
 	github.com/couchbase/clog v0.1.0
 	github.com/couchbase/go-couchbase v0.1.1
 	github.com/couchbase/go_json v0.0.0-20250803152502-4641f4ef8578
-	github.com/couchbase/goutils v0.1.2
+	github.com/couchbase/goutils v0.3.0
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
-	github.com/couchbase/tools-common/cloud/v8 v8.1.3
+	github.com/couchbase/tools-common/cloud/v8 v8.1.4
 	github.com/couchbase/tools-common/types v1.1.4
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/golang/protobuf v1.5.4
@@ -97,7 +97,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
