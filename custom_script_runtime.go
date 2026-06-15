@@ -36,6 +36,18 @@ type CustomScriptScoreBuilderFn func(source string, params map[string]interface{
 var (
 	customScriptCEWarnOnce     sync.Once
 	customScriptQueriesEnabled atomic.Bool
+
+	// A single long-lived reconciler goroutine owns Init/Shutdown so the engine
+	// state always converges to customScriptQueriesEnabled, regardless of how
+	// the admin toggles the setting. reconcileCustomScript is buffered (size 1)
+	// and coalescing: each signal makes the reconciler re-read the latest
+	// desired state, so a dropped (already-pending) signal still yields
+	// convergence on the next pass. This replaces direction-specific
+	// "go Init/Shutdown" calls which, being unordered goroutines, could
+	// otherwise apply Init/Shutdown in an order that left the engine
+	// inconsistent with the flag (e.g. flag=true but engine never started).
+	reconcileCustomScriptOnce sync.Once
+	reconcileCustomScript     = make(chan struct{}, 1)
 )
 
 func init() {
@@ -72,21 +84,47 @@ func RefreshCustomScriptQuerySettings(options map[string]string) error {
 		return nil
 	}
 
-	v := options["customScriptQueriesEnabled"]
-	// Fire Init/Shutdown only on a real false→true or true→false transition.
-	// CAS(x, x) trivially succeeds when current==x, so we must gate each
-	// branch on the target value to avoid duplicate Refresh calls (e.g.
-	// startup + REST handler + ns_server propagation) tearing down the
-	// engine the user just enabled. Async so the admin toggle doesn't
-	// block on engine setup/teardown.
-	if vBool, err := strconv.ParseBool(v); err == nil {
-		if vBool && customScriptQueriesEnabled.CompareAndSwap(false, true) {
-			go InitJSEvaluator()
-		} else if !vBool && customScriptQueriesEnabled.CompareAndSwap(true, false) {
-			go ShutdownJSEvaluator()
-		}
+	v, ok := options["customScriptQueriesEnabled"]
+	if !ok {
+		return nil
+	}
+	vBool, err := strconv.ParseBool(v)
+	if err != nil {
+		return nil
+	}
+
+	// Record the desired state and nudge the reconciler. Storing unconditionally
+	// (instead of CAS-gating a direction-specific goroutine) means concurrent
+	// Refresh calls from startup, the REST handler, and ns_server propagation
+	// all converge on the final value: InitJSEvaluator/ShutdownJSEvaluator are
+	// idempotent, so a duplicate Refresh with the same value is a no-op and
+	// never tears down an engine the user just enabled.
+	customScriptQueriesEnabled.Store(vBool)
+	startCustomScriptReconciler()
+	select {
+	case reconcileCustomScript <- struct{}{}:
+	default:
 	}
 	return nil
+}
+
+// startCustomScriptReconciler lazily starts the single goroutine that drives
+// the engine to match customScriptQueriesEnabled. Running Init/Shutdown from
+// one goroutine guarantees the last desired state is the one that ends up
+// applied, even under rapid toggles, while keeping the admin toggle
+// non-blocking.
+func startCustomScriptReconciler() {
+	reconcileCustomScriptOnce.Do(func() {
+		go func() {
+			for range reconcileCustomScript {
+				if customScriptQueriesEnabled.Load() {
+					InitJSEvaluator() // no-op when already running
+				} else {
+					ShutdownJSEvaluator() // no-op when already stopped
+				}
+			}
+		}()
+	})
 }
 
 // buildFilterFunc invokes the registered builder or returns a disabled/error
