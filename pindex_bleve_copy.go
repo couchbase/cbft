@@ -355,6 +355,13 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 	defer func() {
 		// fallback to fresh new creation upon errors.
 		if err != nil {
+			// remove the path to avoid any stale files
+			// from previous copy attempts.
+			_ = os.RemoveAll(path)
+			log.Printf("pindex_bleve_copy: tryCopyBleveIndex pindex: %s,"+
+				" error copying index, err: %v, removing path and falling"+
+				" back to fresh creation",
+				pindexName, err)
 			createNewBleveIndex(indexType, indexParams,
 				path, rollback, dest, mgr)
 			return
