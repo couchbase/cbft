@@ -28,7 +28,7 @@ require (
 	github.com/couchbase/gocbcrypto v0.0.0-00010101000000-000000000000
 	github.com/couchbase/goutils v0.3.0
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
-	github.com/couchbase/tools-common/cloud/v8 v8.1.3
+	github.com/couchbase/tools-common/cloud/v8 v8.1.4
 	github.com/couchbase/tools-common/types v1.1.4
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/gorilla/mux v1.8.1
