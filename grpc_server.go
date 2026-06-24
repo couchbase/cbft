@@ -215,7 +215,7 @@ func (s *SearchService) Search(req *pb.SearchRequest,
 	// to be satisfied, could return err 412
 
 	// create a context with the appropriate timeout
-	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
+	ctx, cancel, cancelCh := setupContextAndCancelCh(stream.Context(), queryCtlParams, nil)
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()

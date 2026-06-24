@@ -9,6 +9,7 @@
 package cbft
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -191,7 +192,7 @@ func QueryAlias(mgr *cbgt.Manager, indexName, indexUUID string,
 			" parsing searchRequest, err: %v", err)
 	}
 
-	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
+	ctx, cancel, cancelCh := setupContextAndCancelCh(context.Background(), queryCtlParams, nil)
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()

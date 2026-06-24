@@ -1831,7 +1831,7 @@ func QueryBleve(mgr *cbgt.Manager, indexName, indexUUID string,
 	// to be satisfied, could return err 412
 
 	// create a context with the appropriate timeout
-	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, nil)
+	ctx, cancel, cancelCh := setupContextAndCancelCh(context.Background(), queryCtlParams, nil)
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()
@@ -2274,7 +2274,7 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 	// could return err 412
 
 	// create a context with the appropriate timeout
-	ctx, cancel, cancelCh := setupContextAndCancelCh(queryCtlParams, parentCancelCh)
+	ctx, cancel, cancelCh := setupContextAndCancelCh(context.Background(), queryCtlParams, parentCancelCh)
 	// defer a call to cancel, this ensures that goroutine from
 	// setupContextAndCancelCh always exits
 	defer cancel()
@@ -2354,14 +2354,17 @@ func makeSearchResultErr(req *bleve.SearchRequest,
 
 // ---------------------------------------------------------
 
-func setupContextAndCancelCh(queryCtlParams cbgt.QueryCtlParams,
+func setupContextAndCancelCh(parent context.Context, queryCtlParams cbgt.QueryCtlParams,
 	parentCancelCh <-chan bool) (ctx context.Context, cancel context.CancelFunc,
 	cancelChRv <-chan bool) {
+	if parent == nil {
+		parent = context.Background()
+	}
 	if queryCtlParams.Ctl.Timeout > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(),
+		ctx, cancel = context.WithTimeout(parent,
 			time.Duration(queryCtlParams.Ctl.Timeout)*time.Millisecond)
 	} else {
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(parent)
 	}
 	// now create cbgt compatible cancel channel
 	cancelCh := make(chan bool, 1)
