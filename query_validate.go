@@ -71,6 +71,7 @@ OUTER:
 
 		if entry.Type == "geopoint" ||
 			entry.Type == "geoshape" ||
+			entry.Type == "geoshape_v2" ||
 			entry.Type == "IP" ||
 			entry.Type == "datetime" ||
 			entry.Type == "vector" {
@@ -319,6 +320,8 @@ func extractQueryFields(sr *bleve.SearchRequest,
 					fieldDesc.Type = "geopoint"
 				case *query.GeoShapeQuery:
 					fieldDesc.Type = "geoshape"
+				case *query.GeoShapeV2Query:
+					fieldDesc.Type = "geoshape_v2"
 				case *query.IPRangeQuery:
 					fieldDesc.Type = "IP"
 				default:

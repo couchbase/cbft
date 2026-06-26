@@ -683,6 +683,15 @@ func parseQuery(input []byte) (query.Query, error) {
 		}
 		return &rv, nil
 	}
+	_, hasGeo = tmp["geometry_v2"]
+	if hasGeo {
+		var rv query.GeoShapeV2Query
+		err := jsoniter.Unmarshal(input, &rv)
+		if err != nil {
+			return nil, err
+		}
+		return &rv, nil
+	}
 	_, hasCidr := tmp["cidr"]
 	if hasCidr {
 		var rv query.IPRangeQuery
