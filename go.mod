@@ -30,7 +30,6 @@ require (
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
 	github.com/couchbase/tools-common/cloud/v8 v8.1.4
 	github.com/couchbase/tools-common/types v1.1.4
-	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
@@ -88,6 +87,7 @@ require (
 	github.com/couchbase/tools-common/utils/v3 v3.1.1 // indirect
 	github.com/couchbaselabs/gocbconnstr/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/elazarl/go-bindata-assetfs v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect

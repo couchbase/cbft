@@ -16,7 +16,7 @@ default: build
 clean:
 	rm -f ./cbft ./cbft_docs
 
-build: gen-bindata
+build:
 	go build $(goflags) -o $(CBFT_OUT) ./cmd/cbft
 
 build-static:
@@ -27,10 +27,6 @@ build-leveldb:
 
 build-full:
 	$(MAKE) build CBFT_TAGS="full"
-
-gen-bindata:
-	go-bindata-assetfs -pkg=cbft ./staticx/... ./ns_server_static/fts/static-bleve-mapping/...
-	gofmt -s -w bindata_assetfs.go
 
 gen-docs: cmd/cbft_docs/main.go
 	go build $(goflags) -o ./cbft_docs ./cmd/cbft_docs
@@ -55,15 +51,10 @@ dist: test dist-meta dist-build
 
 dist-meta:
 	mkdir -p ./dist/out
-	mkdir -p ./staticx/dist
 	rm -rf ./dist/out/*
-	rm -rf ./staticx/dist/*
-	echo $(version) > ./staticx/dist/version.txt
-	cp ./staticx/dist/version.txt ./dist/out
-	./dist/go-manifest > ./staticx/dist/manifest.txt
-	cp ./staticx/dist/manifest.txt ./dist/out
-	cp ./LICENSE.txt ./staticx/dist/LICENSE.txt
-	cp ./staticx/dist/LICENSE.txt ./dist/out
+	echo $(version) > ./dist/out/version.txt
+	./dist/go-manifest > ./dist/out/manifest.txt
+	cp ./LICENSE.txt ./dist/out
 	cp ./LICENSE-thirdparty.txt ./dist/out
 	cp ./CHANGES.md ./dist/out
 
@@ -79,8 +70,6 @@ dist-build:
 
 dist-clean: clean
 	rm -rf ./dist/out/*
-	rm -rf ./staticx/dist/*
-	git checkout bindata_assetfs.go
 
 manifest.projects: dist-meta
 	awk '{split($$1, a, "/"); printf "  <project revision=\"%s\" path=\"%s\" name=\"%s\"/>\n", $$2, $$1, a[length(a)];}' ./dist/out/manifest.txt > ./dist/out/manifest.projects
@@ -104,7 +93,6 @@ manifest.projects: dist-meta
 #   git grep v0.0.1 # Look for old version strings.
 #   git grep v0.0   # Look for old version strings.
 #   # Edit/update files, especially cmd/cbft/main.go and mkdocs.yml...
-#   # Then, ensure that bindata_assetfs.go is up-to-date, by running...
 #   make build
 #   # Then, run tests, gen-docs, etc...
 #   make test
@@ -192,8 +180,6 @@ LICENSE-thirdparty.txt:
 prereqs:
 	go get github.com/blevesearch/bleve/...
 	go get github.com/blevesearch/bleve-mapping-ui/...
-	go get github.com/jteeuwen/go-bindata/...
-	go get github.com/elazarl/go-bindata-assetfs/...
 	go get github.com/ikawaha/kagome/...
 	go get github.com/tebeka/snowball/...
 

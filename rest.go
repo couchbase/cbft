@@ -51,81 +51,8 @@ func InitRESTPathStats() {
 	}
 }
 
-func InitStaticRouter(staticDir, staticETag string,
-	mgr *cbgt.Manager) *mux.Router {
-	router := mux.NewRouter()
-	router.StrictSlash(true)
-
-	prefix := ""
-	if mgr != nil {
-		prefix = mgr.GetOption("urlPrefix")
-	}
-
-	hfsStaticX := http.FileServer(assetFS())
-
-	router.Handle(prefix+"/",
-		http.RedirectHandler(prefix+"/index.html", 302))
-	router.Handle(prefix+"/index.html",
-		http.RedirectHandler(prefix+"/staticx/index.html", 302))
-	router.Handle(prefix+"/static/partials/index/start.html",
-		http.RedirectHandler(prefix+"/staticx/partials/index/start.html", 302))
-	router.Handle(prefix+"/static/partials/index/new.html",
-		http.RedirectHandler(prefix+"/staticx/partials/index/ft/new.html", 302))
-	router.Handle(prefix+"/static/partials/index/list.html",
-		http.RedirectHandler(prefix+"/staticx/partials/index/ft/list.html", 302))
-
-	for _, p := range []string{
-		prefix + "/indexes",
-		prefix + "/nodes",
-		prefix + "/monitor",
-		prefix + "/manage",
-		prefix + "/logs",
-		prefix + "/debug",
-	} {
-		router.Handle(p, http.RedirectHandler(prefix+"/staticx/index.html", 302))
-	}
-
-	staticxRoutes := []string{
-		"/staticx/",
-		"/staticx/css/cbft.css",
-		"/staticx/index.html",
-		"/staticx/index-ft.html",
-		"/staticx/js/debug.js",
-		"/staticx/partials/debug-rows.html",
-		"/staticx/partials/debug.html",
-		"/staticx/partials/index/ft/list.html",
-		"/staticx/partials/index/ft/new.html",
-		"/staticx/partials/index/start.html",
-	}
-
-	for _, route := range staticxRoutes {
-		router.Handle(prefix+route, http.StripPrefix(prefix+"/staticx/", hfsStaticX))
-	}
-
-	return router
-}
-
-func myAssetDir(name string) ([]string, error) {
-	a, err := AssetDir(name)
-	if err == nil {
-		return a, err
-	}
-
-	return rest.AssetDir(name)
-}
-
-func myAsset(name string) ([]byte, error) {
-	b, err := Asset(name)
-	if err == nil {
-		return b, err
-	}
-
-	return rest.Asset(name)
-}
-
 // NewRESTRouter creates a mux.Router initialized with the REST
-// API and web UI routes.  See also InitStaticRouter if you need finer
-// control of the router initialization.
+// API routes.
 func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 	staticDir, staticETag string, mr *cbgt.MsgRing,
 	adtSvc *audit.AuditSvc) (
@@ -139,10 +66,12 @@ func NewRESTRouter(versionMain string, mgr *cbgt.Manager,
 		"mapRESTPathStats": MapRESTPathStats,
 	}
 
+	r := mux.NewRouter()
+	r.StrictSlash(true)
+
 	return rest.InitRESTRouterEx(
-		InitStaticRouter(staticDir, staticETag, mgr),
-		versionMain, mgr, staticDir, staticETag, mr,
-		myAssetDir, myAsset, options)
+		r, versionMain, mgr, staticDir, staticETag, mr,
+		nil, nil, options)
 }
 
 // --------------------------------------------------

@@ -3681,12 +3681,11 @@ func BleveInitRouter(r *mux.Router, phase string,
 	if phase == "static.before" {
 		staticBleveMapping := http.FileServer(bleveMappingUI.AssetFS())
 
-		staticBleveMappingRoutes := AssetNames()
+		staticBleveMappingRoutes := bleveMappingUI.AssetNames()
 
 		for _, route := range staticBleveMappingRoutes {
 			if strings.Contains(route, "static-bleve-mapping") {
-				route = strings.TrimPrefix(route, "ns_server_static/fts")
-				r.Handle(prefix+route, http.StripPrefix(prefix+"/static-bleve-mapping/",
+				r.Handle(prefix+"/"+route, http.StripPrefix(prefix+"/static-bleve-mapping/",
 					staticBleveMapping))
 			}
 		}

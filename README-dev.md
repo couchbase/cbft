@@ -92,11 +92,7 @@ For running using Couchbase Server's cluster_run (in watson and beyond)...
     cd (your dev directory where you ran 'repo sync' for couchbase server watson.xml)
     make -j 9
     mkdir -p install/lib/fts
-    rm -rf install/lib/fts/static
     rm -rf install/lib/fts/static-bleve-mapping
-    rm -rf install/lib/fts/staticx
-    ln -s ../../../goproj/src/github.com/couchbase/cbft/staticx/ install/lib/fts
-    ln -s ../../../goproj/src/github.com/couchbase/cbgt/rest/static/ install/lib/fts
     ln -s ../../../godeps/src/github.com/blevesearch/bleve-mapping-ui/static-bleve-mapping/ install/lib/fts
     cp goproj/src/github.com/couchbase/cbft/ns_server_static/fts/* install/lib/fts
     cd ns_server

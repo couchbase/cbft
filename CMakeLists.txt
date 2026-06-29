@@ -65,36 +65,6 @@ GoModBuild (TARGET cbft-bleve PACKAGE github.com/couchbase/cbft/cmd/cbft-bleve
 # Build the UI and copy the files to the correct place
 ADD_SUBDIRECTORY(ns_server_static)
 
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/staticx"
-  DESTINATION lib/fts)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/css"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/fonts"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/img"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/js"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/modal"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/partials"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/tabs"
-  DESTINATION lib/fts/static)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-route"
-  DESTINATION lib/fts/static/lib)
-
-install (DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../cbgt/rest/static/lib/angular-ui-tree"
-  DESTINATION lib/fts/static/lib)
-
 AddMetricsMetadata (JSON etc/metrics_metadata.json COMPONENT fts)
 
 # Generate pluggable-ui-fts.cluster_run.json file for cluster_run.

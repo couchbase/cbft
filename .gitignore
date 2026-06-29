@@ -14,7 +14,3 @@
 /dist/*.gz
 /dist/out
 /site
-/static
-/staticx/dist/LICENSE.txt
-/staticx/dist/manifest.txt
-/staticx/dist/version.txt
