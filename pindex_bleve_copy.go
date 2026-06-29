@@ -10,6 +10,7 @@ package cbft
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -357,11 +358,16 @@ func tryCopyBleveIndex(indexType, indexParams, path string,
 		if err != nil {
 			// remove the path to avoid any stale files
 			// from previous copy attempts.
-			_ = os.RemoveAll(path)
 			log.Printf("pindex_bleve_copy: tryCopyBleveIndex pindex: %s,"+
 				" error copying index, err: %v, removing path and falling"+
 				" back to fresh creation",
 				pindexName, err)
+			err := removeStaleBleveIndexFiles(path)
+			if err != nil {
+				log.Printf("pindex_bleve_copy: tryCopyBleveIndex pindex: %s,"+
+					" error removing stale files, err: %v",
+					pindexName, err)
+			}
 			createNewBleveIndex(indexType, indexParams,
 				path, rollback, dest, mgr)
 			return
@@ -564,4 +570,32 @@ func isClosed(ch chan struct{}) bool {
 	default:
 		return false
 	}
+}
+
+// Remove all files pertaining to a bleve index
+// keeping cbgt and cbft meta files intact
+func removeStaleBleveIndexFiles(path string) error {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return fmt.Errorf("failed to read directory %s: %w", path, err)
+	}
+
+	var errs []error
+	for _, entry := range entries {
+		if entry.Name() == "PINDEX_META" || entry.Name() == "PINDEX_BLEVE_META" {
+			continue
+		}
+
+		fullPath := filepath.Join(path, entry.Name())
+		if entry.IsDir() {
+			err = os.RemoveAll(fullPath)
+		} else {
+			err = os.Remove(fullPath)
+		}
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove %s: %w", fullPath, err))
+		}
+	}
+
+	return errors.Join(errs...)
 }
