@@ -106,6 +106,7 @@ var prometheusStats = map[string]string{
 	"num_batches_introduced":                  "counter",
 	"num_knn_search_requests":                 "counter",
 	"total_knn_queries_rejected_by_throttler": "counter",
+	"total_scan_plus_queries_kv_errors":       "counter",
 
 	"num_file_merge_ops": "counter",
 	"num_mem_merge_ops":  "counter",
@@ -143,7 +144,7 @@ var prometheusStats = map[string]string{
 	"limits:diskBytes":                  "gauge",
 	"limits:memoryBytes":                "gauge",
 
-	"total_vectors":                    "gauge",
+	"total_vectors":               "gauge",
 	"total_vector_indexes_in_gpu": "gauge",
 	"total_vector_indexes_in_cpu": "gauge",
 
