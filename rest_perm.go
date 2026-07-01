@@ -239,4 +239,10 @@ cluster.settings.fts!read
 
 GET /api/encryption/keysInUse
 cluster.settings.fts!read
+
+POST /api/index/{indexName}/insights
+cluster.collection[<sourceName>].fts!read
+
+POST /api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/insights
+cluster.collection[<sourceName>].fts!read
 `

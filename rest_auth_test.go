@@ -541,6 +541,27 @@ func TestPreparePerms(t *testing.T) {
 			vars:   map[string]string{"indexName": "anewone"},
 			perms:  []string{"cluster.bucket[abucket].fts!write"},
 		},
+		{
+			method: http.MethodPost,
+			uri:    "/api/index/i1/insights",
+			path:   "/api/index/{indexName}/insights",
+			vars:   map[string]string{"indexName": "i1"},
+			perms:  []string{"cluster.bucket[s1].fts!read"},
+		},
+		{
+			method: http.MethodPost,
+			uri:    "/api/index/i3/insights",
+			path:   "/api/index/{indexName}/insights",
+			vars:   map[string]string{"indexName": "i3"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
+		},
+		{
+			method: http.MethodPost,
+			uri:    "/api/bucket/bucket1/scope/scope1/index/i3/insights",
+			path:   "/api/bucket/{bucketName}/scope/{scopeName}/index/{indexName}/insights",
+			vars:   map[string]string{"indexName": "i3"},
+			perms:  []string{"cluster.collection[bucket1:scope1:collection1].fts!read"},
+		},
 	}
 
 	requestVariableLookupOrig := rest.RequestVariableLookup
