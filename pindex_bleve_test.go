@@ -1221,3 +1221,47 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 		}
 	}
 }
+
+// TestAppInfoChangeIsReloadable checks that an appInfo-only change is not a rebuild.
+func TestAppInfoChangeIsReloadable(t *testing.T) {
+	params := `{"store":{"indexType":"scorch"}}`
+
+	prev := &cbgt.IndexDef{
+		Type:       "fulltext-index",
+		Name:       "idx",
+		SourceName: "beer-sample",
+		Params:     params,
+		AppInfo:    cbgt.OptionalRawMessage(`{"sha":"aaa"}`),
+	}
+	cur := &cbgt.IndexDef{
+		Type:       "fulltext-index",
+		Name:       "idx",
+		SourceName: "beer-sample",
+		Params:     params,
+		AppInfo:    cbgt.OptionalRawMessage(`{"sha":"bbb"}`),
+	}
+
+	rc := RestartOnIndexDefChanges(&cbgt.ConfigAnalyzeRequest{
+		IndexDefnCur:  cur,
+		IndexDefnPrev: prev,
+	})
+	if rc == "" {
+		t.Fatalf("expected a non-empty (reloadable) result code for an"+
+			" appInfo-only change, got a rebuild signal: %q", rc)
+	}
+
+	// A real change (e.g. sourceName) must still signal a rebuild.
+	curDiffSource := &cbgt.IndexDef{
+		Type:       "fulltext-index",
+		Name:       "idx",
+		SourceName: "other-bucket",
+		Params:     params,
+		AppInfo:    cbgt.OptionalRawMessage(`{"sha":"bbb"}`),
+	}
+	if rc := RestartOnIndexDefChanges(&cbgt.ConfigAnalyzeRequest{
+		IndexDefnCur:  curDiffSource,
+		IndexDefnPrev: prev,
+	}); rc != "" {
+		t.Fatalf("expected a rebuild signal for a sourceName change, got: %q", rc)
+	}
+}

@@ -55,6 +55,7 @@ const (
 	FeatureSynonyms                 = "synonyms"
 	FeatureBM25Scoring              = "bm25Scoring"
 	FeatureHierarchicalNestedSearch = "nestedSearch"
+	FeatureAppInfo                  = "appInfo"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -607,6 +608,12 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	nodeDefs, err := CurrentNodeDefsFetcher.Get()
 	if err != nil {
 		return nil, cbgt.NewInternalServerError("PrepareIndex, nodeDefs unavailable: err: %v", err)
+	}
+
+	if len(indexDef.AppInfo) > 0 &&
+		!cbgt.IsFeatureSupportedByCluster(FeatureAppInfo, nodeDefs) {
+		return nil, cbgt.NewBadRequestError("PrepareIndex, err: appInfo is not" +
+			" supported until all nodes in the cluster are upgraded")
 	}
 
 	var collectionsSupported, s2SpatialSupported bool

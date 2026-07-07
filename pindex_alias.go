@@ -70,6 +70,18 @@ func PrepareAlias(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (*cbgt.IndexDef, e
 		return nil, cbgt.NewBadRequestError("PrepareAlias, indexDef is nil")
 	}
 
+	if len(indexDef.AppInfo) > 0 && CurrentNodeDefsFetcher != nil {
+		nodeDefs, err := CurrentNodeDefsFetcher.Get()
+		if err != nil {
+			return nil, cbgt.NewInternalServerError("PrepareAlias, nodeDefs"+
+				" unavailable: err: %v", err)
+		}
+		if !cbgt.IsFeatureSupportedByCluster(FeatureAppInfo, nodeDefs) {
+			return nil, cbgt.NewBadRequestError("PrepareAlias, err: appInfo is not" +
+				" supported until all nodes in the cluster are upgraded")
+		}
+	}
+
 	// Reset plan params for a full-text alias
 	indexDef.PlanParams = cbgt.PlanParams{}
 
