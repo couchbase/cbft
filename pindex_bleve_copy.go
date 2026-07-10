@@ -48,13 +48,21 @@ func HibernatePartitions(mgr *cbgt.Manager, activePIndexes,
 	var errs []error
 
 	for _, pindex := range activePIndexes {
-		bleveParams, _, _, _, err := parseIndexParams(pindex.IndexParams)
+		bleveParams, kvconfig, _, _, err := parseIndexParams(pindex.IndexParams)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil)
+		var tmp sourceInfo
+		err = json.Unmarshal([]byte(pindex.IndexParams), &tmp)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("bleve: parse params: %v", err))
+			continue
+		}
+		tmp.kvconfig = kvconfig
+
+		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil, &tmp)
 		pindex.Dest = &cbgt.DestForwarder{DestProvider: dest}
 
 		go uploadPIndexFiles(mgr, client, pindex.HibernationPath, pindex.Name,
@@ -62,13 +70,21 @@ func HibernatePartitions(mgr *cbgt.Manager, activePIndexes,
 	}
 
 	for _, pindex := range replicaPIndexes {
-		bleveParams, _, _, _, err := parseIndexParams(pindex.IndexParams)
+		bleveParams, kvconfig, _, _, err := parseIndexParams(pindex.IndexParams)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil)
+		var tmp sourceInfo
+		err = json.Unmarshal([]byte(pindex.IndexParams), &tmp)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("bleve: parse params: %v", err))
+			continue
+		}
+		tmp.kvconfig = kvconfig
+
+		dest := newNoOpBleveDest(pindex.Name, pindex.Path, bleveParams, nil, &tmp)
 		pindex.Dest = &cbgt.DestForwarder{DestProvider: dest}
 	}
 
@@ -181,7 +197,7 @@ func (t *BleveDest) IsFeedable() (bool, error) {
 }
 
 func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
-	rollback func()) *BleveDest {
+	rollback func(), sourceInfo *sourceInfo) *BleveDest {
 
 	noopImpl := &noopBleveIndex{name: pindexName}
 	dest := &BleveDest{
@@ -194,6 +210,7 @@ func newNoOpBleveDest(pindexName, path string, bleveParams *BleveParams,
 		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
 		removeCh:       make(chan struct{}),
+		sourceInfo:     sourceInfo,
 	}
 	dest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
@@ -218,7 +235,14 @@ func newRemoteBlevePIndexImplEx(indexType, indexParams, sourceParams, path strin
 
 	copyStats := &CopyPartitionStats{}
 
-	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
+	var tmp sourceInfo
+	err = json.Unmarshal([]byte(indexParams), &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+	}
+	tmp.kvconfig = kvConfig
+
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback, &tmp)
 	dest.copyStats = copyStats
 	destfwd = &cbgt.DestForwarder{DestProvider: dest}
 
@@ -332,8 +356,15 @@ func NewBlevePIndexImplEx(indexType, indexParams, sourceParams, path string,
 		return nil, nil, err
 	}
 
+	var tmp sourceInfo
+	err = json.Unmarshal([]byte(indexParams), &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+	}
+	tmp.kvconfig = kvConfig
+
 	// create a noop index and wrap that inside the dest.
-	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback, &tmp)
 	destfwd := &cbgt.DestForwarder{DestProvider: dest}
 
 	go tryCopyBleveIndex(indexType, indexParams, path, kvConfig,
@@ -557,6 +588,13 @@ func updateBleveIndex(pindexName string, mgr *cbgt.Manager,
 		return
 	}
 	dest.resetBIndex(index)
+
+	// if the file transfer rebalance kicked in before the training was completed
+	// on the destination node, we need to try training again. if there's no trained_index
+	// file in the directory, then we will start training again over here on the
+	// destination node.
+	dest.tryTraining()
+
 	dest.startBatchWorkers()
 	http.RegisterIndexName(pindexName, index)
 

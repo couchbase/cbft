@@ -56,7 +56,7 @@ func init() {
 					// afresh, we would essentially any loss of cost by charging
 					// for 0 - original high seq no. and after that we will
 					// actually start costing the user.
-					RollbackRefund(pindexName, bd.sourceName, 0)
+					RollbackRefund(pindexName, bd.sourceInfo.SourceName, 0)
 				}
 			} else {
 				atomic.AddUint64(&TotRollbackPartial, 1)

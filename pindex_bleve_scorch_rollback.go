@@ -83,7 +83,7 @@ func (t *BleveDest) partialScorchRollbackLOCKED(sh *scorch.Scorch) (
 				}
 
 				if t.bindex != nil {
-					RollbackRefund(t.bindex.Name(), t.sourceName, binary.LittleEndian.Uint64(v))
+					RollbackRefund(t.bindex.Name(), t.sourceInfo.SourceName, binary.LittleEndian.Uint64(v))
 				}
 			}
 			err = scorch.Rollback(idxPath, rollbackPoint)

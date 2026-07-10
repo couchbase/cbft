@@ -351,10 +351,9 @@ type RollbackInfo struct {
 }
 
 type BleveDest struct {
-	path         string
-	sourceName   string
-	sourceUUID   string
-	sourceParams string
+	path string
+
+	sourceInfo *sourceInfo
 
 	bleveDocConfig BleveDocumentConfig
 
@@ -441,18 +440,12 @@ func NewBleveDestEx(path string, bindex bleve.Index,
 		copyStats:      &CopyPartitionStats{},
 		stopCh:         make(chan struct{}),
 		removeCh:       make(chan struct{}),
-		sourceName:     source.SourceName,
-		sourceUUID:     source.SourceUUID,
-		sourceParams:   source.SourceParams,
+		sourceInfo:     source,
 	}
 
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
-	bleveDest.trainingSampler = initTrainer(bleveDest, source.kvconfig)
-
-	if bleveDest.trainingSampler != nil {
-		go bleveDest.trainingSampler.acquireSamples()
-	}
+	bleveDest.tryTraining()
 
 	bleveDest.startBatchWorkers()
 
@@ -478,11 +471,20 @@ func NewBleveDest(path string, bindex bleve.Index,
 
 	bleveDest.batchReqChs = make([]chan *batchRequest, asyncBatchWorkerCount)
 
+	bleveDest.tryTraining()
+
 	bleveDest.startBatchWorkers()
 
 	atomic.AddUint64(&TotBleveDestOpened, 1)
 
 	return bleveDest
+}
+
+func (t *BleveDest) tryTraining() {
+	t.trainingSampler = initTrainer(t, t.sourceInfo.kvconfig)
+	if t.trainingSampler != nil {
+		go t.trainingSampler.acquireSamples()
+	}
 }
 
 func (t *BleveDest) startBatchWorkers() {
@@ -1217,6 +1219,7 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 	if err != nil {
 		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
 	}
+	tmp.kvconfig = kvConfig
 
 	tmp.kvconfig = kvConfig
 	return bindex, &cbgt.DestForwarder{
@@ -1251,7 +1254,14 @@ func RollbackBleve(indexType, indexParams, sourceParams, path string,
 		return nil, nil, err
 	}
 
-	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback)
+	var tmp sourceInfo
+	err = json.Unmarshal([]byte(indexParams), &tmp)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bleve: parse params: %v", err)
+	}
+	tmp.kvconfig = kvConfig
+
+	dest := newNoOpBleveDest(pindexName, path, bleveParams, rollback, &tmp)
 	destfwd := &cbgt.DestForwarder{DestProvider: dest}
 
 	go func() {
@@ -3268,7 +3278,7 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	// valid sourceName. So, in scenarios like rebalance and hibernation
 	// when there is a no-op bleve dest involved, those operations
 	//  shouldn't happen.
-	if !ServerlessMode || bdp[0].bdest.sourceName == "" {
+	if !ServerlessMode || bdp[0].bdest.sourceInfo.SourceName == "" {
 		_, err := execute(bdp, bdpMaxSeqNums, index, batch)
 		if err != nil {
 			bdp[0].setLastAsyncBatchErr(err)
@@ -3277,7 +3287,7 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	}
 
 	result, _, err := CheckQuotaWrite(bdp[0].bdest.stopCh,
-		bdp[0].bdest.sourceName, "", true, index)
+		bdp[0].bdest.sourceInfo.SourceName, "", true, index)
 
 	// NOTE: At this point, it's guaranteed that the action is either
 	// CheckResultError (which is the case when the bdp's bleve index is closed)
@@ -3296,7 +3306,7 @@ func regulateAndExecute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,
 	// NOTE: each partition is going to fetch its bleve index's
 	// bytes written to disk, and meter this to its local node
 	// in the cluster.
-	MeterWrites(bdp[0].bdest.stopCh, bdp[0].bdest.sourceName, index)
+	MeterWrites(bdp[0].bdest.stopCh, bdp[0].bdest.sourceInfo.SourceName, index)
 }
 
 func execute(bdp []*BleveDestPartition, bdpMaxSeqNums []uint64,

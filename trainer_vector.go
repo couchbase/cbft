@@ -434,7 +434,7 @@ func fetchMemcachedURLs(mgr *cbgt.Manager) ([]string, error) {
 // TODO: tighten API and consider reusing connections.
 func (t *vectorIndexTrainer) getClusterAndKVConnection(mgr *cbgt.Manager, memcachedHosts []string) (*gocb.Cluster, *gocbcore.Agent, error) {
 	kvClusterURL := "couchbase://" + strings.Join(memcachedHosts, ",")
-	auth, err := gocbAuth(t.bleveDest.sourceParams, mgr.GetOption("authType"))
+	auth, err := gocbAuth(t.bleveDest.sourceInfo.SourceParams, mgr.GetOption("authType"))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -674,7 +674,7 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 		// handles closing of the cluster and agent connections
 		defer cluster.Close(nil)
 
-		bucket := cluster.Bucket(t.bleveDest.sourceName)
+		bucket := cluster.Bucket(t.bleveDest.sourceInfo.SourceName)
 		waitCtx, waitCancel := context.WithCancel(context.Background())
 		defer waitCancel()
 		go func() {
@@ -705,7 +705,7 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 			return fmt.Errorf("error getting total source doc count: %w", err)
 		}
 
-		manifest, err := GetBucketManifest(t.bleveDest.sourceName)
+		manifest, err := GetBucketManifest(t.bleveDest.sourceInfo.SourceName)
 		if err != nil {
 			return err
 		}
@@ -726,7 +726,7 @@ func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
 				sampleLimit:     sampleLimits,
 				collectionNames: cfg.collectionNames,
 				scopeName:       cfg.scopeName,
-				sourceName:      t.bleveDest.sourceName,
+				sourceName:      t.bleveDest.sourceInfo.SourceName,
 			},
 			cluster:    &gocbClusterAdapter{cluster: cluster},
 			trainStats: &t.trainStats,
@@ -845,6 +845,7 @@ func (t *vectorIndexTrainer) acquireSamples() {
 		err = fmt.Errorf("error checking if index is already trained: %w", err)
 		return
 	}
+
 	if trained {
 		log.Printf("trainer_vector: skipping the training phase, since we already"+
 			" have a trained index for %s", t.partitionName)
