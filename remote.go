@@ -22,6 +22,7 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
+	"github.com/blevesearch/bleve/v2/search"
 	index "github.com/blevesearch/bleve_index_api"
 
 	"github.com/couchbase/cbgt"
@@ -197,6 +198,13 @@ func (r *IndexClient) SearchInContext(ctx context.Context,
 		Ctl: cbgt.QueryCtl{
 			Consistency: r.Consistency,
 		},
+	}
+
+	// Forward the resolved limit so remote pindexes enforce the same decision
+	// as local ones. Using a pointer to differentiate between explicitly set
+	// no limit and default cluster-wide limit.
+	if v, ok := ctx.Value(search.MaxTermSearchersKey).(int); ok {
+		queryCtlParams.Ctl.BleveMaxTerms = &v
 	}
 
 	queryPIndexes := &QueryPIndexes{

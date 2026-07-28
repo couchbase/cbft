@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/cbgt/rest"
@@ -105,6 +106,20 @@ func NewManagerOptionsExt(mgr *cbgt.Manager) *ManagerOptionsExt {
 			if err != nil || bleveMaxClauseCount <= 0 {
 				return nil, fmt.Errorf("illegal value for bleveMaxClauseCount: '%v'",
 					options["bleveMaxClauseCount"])
+			}
+		}
+
+		if options["bleveMaxTerms"] != "" {
+			bleveMaxTerms, err := strconv.Atoi(options["bleveMaxTerms"])
+			// A value of <= 0 is allowed and disables the cap (no limit) by
+			// default across the cluster; a positive value sets the cap.
+			// Negatives are replaced with 0 to avoid confusion.
+			if err != nil {
+				return nil, fmt.Errorf("illegal value for bleveMaxTerms: '%v'",
+					options["bleveMaxTerms"])
+			}
+			if bleveMaxTerms < 0 {
+				bleveMaxTerms = 0
 			}
 		}
 
@@ -208,6 +223,13 @@ func (h *ManagerOptionsExt) ServeHTTP(
 		bleveSearcher.DisjunctionMaxClauseCount = bleveMaxClauseCount
 	}
 
+	// Update bleveMaxTerms if requested.
+	bleveMaxTermsStr := h.mgr.GetOption("bleveMaxTerms")
+	if bleveMaxTermsStr != "" {
+		bleveMaxTerms, _ := strconv.Atoi(bleveMaxTermsStr)
+		atomic.StoreInt64(&BleveMaxTermsLimit, int64(bleveMaxTerms))
+	}
+
 	// Update search history settings if requested.
 	search_history.Service.Refresh(h.mgr.Options())
 	if err := RefreshCustomScriptQuerySettings(h.mgr.Options()); err != nil {
@@ -231,6 +253,8 @@ func (h *ConciseOptions) ServeHTTP(
 	bucketTypesAllowed := options["bucketTypesAllowed"]
 	bleveMaxResultWindow, _ := strconv.Atoi(options["bleveMaxResultWindow"])
 	bleveMaxClauseCount, _ := strconv.Atoi(options["bleveMaxClauseCount"])
+	bleveMaxTermsStr := options["bleveMaxTerms"]
+	bleveMaxTerms, _ := strconv.Atoi(bleveMaxTermsStr)
 
 	var deploymentModel string
 	if val, exists := options["deploymentModel"]; exists {
@@ -240,6 +264,12 @@ func (h *ConciseOptions) ServeHTTP(
 	if bleveMaxClauseCount == 0 {
 		// in case bleveMaxClauseCount wasn't updated by user
 		bleveMaxClauseCount = DefaultBleveMaxClauseCount
+	}
+
+	if bleveMaxTermsStr == "" {
+		// Not configured by the user: report the built-in default. An explicit
+		// value of 0 is a deliberate "no limit" and is reported as-is.
+		bleveMaxTerms = DefaultBleveMaxTerms
 	}
 
 	var collectionsSupported bool
@@ -264,6 +294,7 @@ func (h *ConciseOptions) ServeHTTP(
 		CollectionsSupport   bool   `json:"collectionsSupport"`
 		BleveMaxResultWindow int    `json:"bleveMaxResultWindow"`
 		BleveMaxClauseCount  int    `json:"bleveMaxClauseCount"`
+		BleveMaxTerms        int    `json:"bleveMaxTerms"`
 		DeploymentModel      string `json:"deploymentModel,omitempty"`
 		ScopedIndexesSupport bool   `json:"scopedIndexesSupport"`
 	}{
@@ -273,6 +304,7 @@ func (h *ConciseOptions) ServeHTTP(
 		CollectionsSupport:   collectionsSupported,
 		BleveMaxResultWindow: bleveMaxResultWindow,
 		BleveMaxClauseCount:  bleveMaxClauseCount,
+		BleveMaxTerms:        bleveMaxTerms,
 		DeploymentModel:      deploymentModel,
 		ScopedIndexesSupport: scopedIndexesSupport,
 	}

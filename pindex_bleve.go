@@ -79,6 +79,7 @@ const (
 
 	xattrsMappingName          = "_$xattrs"
 	DefaultBleveMaxClauseCount = 1024
+	DefaultBleveMaxTerms       = 1024
 
 	defaultCollectionsLimitPerIndex = int(100) // MB-69751
 )
@@ -100,6 +101,10 @@ var (
 	TotRollbackFull    uint64
 
 	BleveMaxOpsPerBatch = 200 // Unlimited when <= 0.
+
+	// Cluster-wide cap on the number of term searchers a single pindex
+	// search may build. Accessed atomically; <= 0 disables the check.
+	BleveMaxTermsLimit int64 = DefaultBleveMaxTerms
 
 	BleveBatchFlushDuration = time.Duration(100 * time.Millisecond)
 
@@ -2367,6 +2372,25 @@ func makeSearchResultErr(req *bleve.SearchRequest,
 
 // ---------------------------------------------------------
 
+// effectiveBleveMaxTerms resolves the term-searcher limit for a single request.
+// The per-request override (ctl.bleveMaxTerms) takes precedence over the
+// cluster-wide default (BleveMaxTermsLimit):
+//   - a nil override (the field was absent from the request) falls back to the
+//     cluster-wide default;
+//   - a non-positive override (0 or negative) explicitly disables the cap for
+//     this request, returning 0 (no limit);
+//   - a positive override is used as the cap.
+func effectiveBleveMaxTerms(reqOverride *int) int {
+	if reqOverride == nil {
+		return int(atomic.LoadInt64(&BleveMaxTermsLimit))
+	}
+	if *reqOverride <= 0 {
+		// Explicitly disabled for this request: no limit.
+		return 0
+	}
+	return *reqOverride
+}
+
 func setupContextAndCancelCh(parent context.Context, queryCtlParams cbgt.QueryCtlParams,
 	parentCancelCh <-chan bool) (ctx context.Context, cancel context.CancelFunc,
 	cancelChRv <-chan bool) {
@@ -2379,6 +2403,13 @@ func setupContextAndCancelCh(parent context.Context, queryCtlParams cbgt.QueryCt
 	} else {
 		ctx, cancel = context.WithCancel(parent)
 	}
+	// Resolve the term-searcher cap once here and carry it through the context
+	// so both the local search (via bleve) and remote pindexes (see
+	// IndexClient.SearchInContext) enforce the same decision. A resolved value
+	// of 0 or less means "no limit"; bleve treats a non-positive value as a
+	// no-op, so it is safe to always set.
+	limit := effectiveBleveMaxTerms(queryCtlParams.Ctl.BleveMaxTerms)
+	ctx = context.WithValue(ctx, search.MaxTermSearchersKey, limit)
 	// now create cbgt compatible cancel channel
 	cancelCh := make(chan bool, 1)
 	cancelChRv = cancelCh

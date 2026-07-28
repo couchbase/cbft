@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
@@ -47,6 +48,18 @@ func initBleveOptions(options map[string]string) error {
 		bleveSearcher.DisjunctionMaxClauseCount = v
 	} else {
 		bleveSearcher.DisjunctionMaxClauseCount = cbft.DefaultBleveMaxClauseCount
+	}
+
+	bleveMaxTerms := options["bleveMaxTerms"]
+	if bleveMaxTerms != "" {
+		v, err := strconv.Atoi(bleveMaxTerms)
+		if err != nil {
+			return err
+		}
+
+		atomic.StoreInt64(&cbft.BleveMaxTermsLimit, int64(v))
+	} else {
+		atomic.StoreInt64(&cbft.BleveMaxTermsLimit, int64(cbft.DefaultBleveMaxTerms))
 	}
 
 	bleveMaxOpsPerBatch := options["bleveMaxOpsPerBatch"]
