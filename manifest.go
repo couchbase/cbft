@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
@@ -172,6 +173,19 @@ func obtainManifest(serverURL, bucket string) (*Manifest, error) {
 	respBuf, err := io.ReadAll(resp.Body)
 	if err != nil || len(respBuf) == 0 {
 		return nil, fmt.Errorf("manifest: error reading resp.Body, err: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		// ns_server responds with a plain-text body (not JSON) for a
+		// bucket that does not exist; surface that as a clean error
+		// instead of attempting to parse it below.
+		if resp.StatusCode == http.StatusNotFound ||
+			cbgt.IsResponseEquivalentToResourceNotFound(string(respBuf)) {
+			return nil, fmt.Errorf("manifest: bucket '%s' does not exist,"+
+				" err: %w", bucket, cbgt.ErrSourceDoesNotExist)
+		}
+		return nil, fmt.Errorf("manifest: request failed for bucket '%s',"+
+			" status: %d, resp: %s", bucket, resp.StatusCode, respBuf)
 	}
 
 	rv := &Manifest{}

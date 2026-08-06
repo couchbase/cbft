@@ -719,7 +719,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			scope, err = validateScopeCollFromMappings(indexDef.SourceName,
 				im, false, scopeDotCollMode)
 			if err != nil {
-				return nil, cbgt.NewBadRequestError("%v", err)
+				return nil, cbgt.WrapBadRequestError(err)
 			}
 		}
 
