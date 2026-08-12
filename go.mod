@@ -17,7 +17,7 @@ require (
 	github.com/blevesearch/zapx/v17 v17.2.2-0.20260806075952-6594f3d6bd0d
 	github.com/buger/jsonparser v1.1.2
 	github.com/cloudfoundry/gosigar v1.3.4
-	github.com/couchbase/cbauth v0.1.20
+	github.com/couchbase/cbauth v0.1.23-0.20260807235904-eda1f2edba77
 	github.com/couchbase/cbftx v0.0.0-00010101000000-000000000000
 	github.com/couchbase/cbgt v0.0.0-00010101000000-000000000000
 	github.com/couchbase/clog v0.1.0
