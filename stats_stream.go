@@ -58,6 +58,7 @@ func (h *statsStreamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		"batch_bytes_added",
 		"batch_bytes_removed",
 		"curr_batches_blocked_by_herder",
+		"curr_mutations_blocked_by_herder",
 		"num_batches_introduced",
 		"num_bytes_used_ram",
 		"num_gocbcore_dcp_agents",

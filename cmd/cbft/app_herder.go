@@ -124,6 +124,8 @@ func (a *appHerder) Stats() map[string]interface{} {
 		"TotWaitingOut":                    atomic.LoadUint64(&cbft.TotHerderWaitingOut),
 		"TotOnBatchExecuteStartBeg":        atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartBeg),
 		"TotOnBatchExecuteStartEnd":        atomic.LoadUint64(&cbft.TotHerderOnBatchExecuteStartEnd),
+		"TotOnIndexStartBeg":               atomic.LoadUint64(&cbft.TotHerderOnIndexStartBeg),
+		"TotOnIndexStartEnd":               atomic.LoadUint64(&cbft.TotHerderOnIndexStartEnd),
 		"TotQueriesRejected":               atomic.LoadUint64(&cbft.TotHerderQueriesRejected),
 		"TotMergesSkipped":                 atomic.LoadUint64(&cbft.TotMergesSkipped),
 		"TotKNNQueriesRejectedByThrottler": atomic.LoadUint64(&cbft.TotKNNQueriesRejectedByThrottler),
@@ -179,7 +181,9 @@ func (a *appHerder) onIndexStart() bool {
 	// indexQuota, but continue to check the appQuota for incoming
 	// batches.
 	if a.indexQuota >= 0 {
+		atomic.AddUint64(&cbft.TotHerderOnIndexStartBeg, 1)
 		a.checkAndBlockIndex()
+		atomic.AddUint64(&cbft.TotHerderOnIndexStartEnd, 1)
 	}
 	return true
 }
@@ -224,7 +228,20 @@ func (a *appHerder) checkAndBlockIndex() {
 func (a *appHerder) checkAndBlockBatch(c interface{}, s sizeFunc) {
 	a.m.Lock()
 	defer a.m.Unlock()
+	_, tracked := a.indexes[c]
 	a.indexes[c] = s
+
+	// MB-73287: never block an index's first-ever (bootstrap) batch: it holds
+	// no memory to free, and blocking it can stall pindex creation forever.
+	if !tracked {
+		if isOverQuota, _, memUsed := a.overMemQuotaForIndexing(); isOverQuota {
+			log.Printf("app_herder: allowing first batch of a new index"+
+				" while over indexQuota: %d, memUsed: %d, indexes: %d",
+				a.indexQuota, memUsed, len(a.indexes))
+		}
+		return
+	}
+
 	// MB-29504 workaround to try and prevent indexing from becoming completely
 	// stuck.  The thinking is that if the indexing memUsed is 0, all data has
 	// been flushed to disk, and we should allow it to proceed (even if we're

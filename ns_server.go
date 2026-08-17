@@ -61,6 +61,8 @@ var TotHerderWaitingIn uint64
 var TotHerderWaitingOut uint64
 var TotHerderOnBatchExecuteStartBeg uint64
 var TotHerderOnBatchExecuteStartEnd uint64
+var TotHerderOnIndexStartBeg uint64
+var TotHerderOnIndexStartEnd uint64
 var TotHerderQueriesRejected uint64
 var TotMergesSkipped uint64
 
@@ -332,6 +334,7 @@ var statkeys = []string{
 	"total_queries_to_replicas",     // per-index stat.
 
 	// "curr_batches_blocked_by_herder"   -- PROCESS-LEVEL stat.
+	// "curr_mutations_blocked_by_herder" -- PROCESS-LEVEL stat.
 	// "total_queries_rejected_by_herder" -- PROCESS-LEVEL stat
 }
 
@@ -938,6 +941,9 @@ func gatherTopLevelStats(mgr *cbgt.Manager, rd *recentInfo) map[string]interface
 	topLevelStats["curr_batches_blocked_by_herder"] =
 		atomic.LoadUint64(&TotHerderOnBatchExecuteStartBeg) -
 			atomic.LoadUint64(&TotHerderOnBatchExecuteStartEnd)
+	topLevelStats["curr_mutations_blocked_by_herder"] =
+		atomic.LoadUint64(&TotHerderOnIndexStartBeg) -
+			atomic.LoadUint64(&TotHerderOnIndexStartEnd)
 	topLevelStats["total_queries_rejected_by_herder"] =
 		atomic.LoadUint64(&TotHerderQueriesRejected)
 

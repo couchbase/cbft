@@ -134,6 +134,7 @@ var prometheusStats = map[string]string{
 	"num_root_memorysegments":        "gauge",
 	"curr_batches_blocked_by_herder": "gauge",
 
+	"curr_mutations_blocked_by_herder":  "gauge",
 	"resourceUtilizationHighWaterMark":  "gauge",
 	"resourceUtilizationLowWaterMark":   "gauge",
 	"resourceUnderUtilizationWaterMark": "gauge",

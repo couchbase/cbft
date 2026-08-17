@@ -496,6 +496,13 @@
         "notes": "The app herder blocks indexing of batches till there is sufficient memory i.e. the memory used is below the memory quota",
         "uiName": "DCP Batches Blocked"
     },
+    "fts_curr_mutations_blocked_by_herder": {
+        "added": "8.1.0",
+        "type": "gauge",
+        "help": "The number of index mutations currently blocked by the app herder because memory usage exceeds the index quota",
+        "notes": "Point-in-time gauge sampled at collection time. Complements fts_curr_batches_blocked_by_herder: mutations are blocked on the per-document index path, batches on the batch execution path",
+        "uiName": "Mutations Blocked"
+    },
     "fts_tot_queryreject_on_memquota": {
         "added": "7.2.0",
         "type": "counter",
