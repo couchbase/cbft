@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -1105,6 +1104,11 @@ func (ps *pindexSourceStore) resolveSourceName(pindexName string) (
 	return indexDef.SourceName, nil
 }
 
+// splitPathComponents cleans p and splits it on sep, independent of platform.
+func splitPathComponents(p string, sep rune) []string {
+	return strings.Split(filepath.Clean(p), string(sep))
+}
+
 // clean disk path and obtain key type, bucket name and context for encryption
 func processPath(p string) (string, string, string, error) {
 	if p == "" {
@@ -1113,8 +1117,7 @@ func processPath(p string) (string, string, string, error) {
 
 	// clean the path to ensure consistent processing and
 	// split into components for analysis
-	cleaned := path.Clean(p)
-	parts := strings.Split(cleaned, "/")
+	parts := splitPathComponents(p, os.PathSeparator)
 	if len(parts) == 0 {
 		return "", "", "", fmt.Errorf("invalid path provided: %s", p)
 	}
