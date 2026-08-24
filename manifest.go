@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/url"
 	"sync"
 	"time"
@@ -118,7 +119,7 @@ func (c *manifestCache) monitor() {
 				return
 			}
 			c.m.RLock()
-			manifestCache := c.mCache
+			manifestCache := maps.Clone(c.mCache)
 			c.m.RUnlock()
 			for bucket, old := range manifestCache {
 				curr, err := c.fetchCollectionManifest(bucket)
