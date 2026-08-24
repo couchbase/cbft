@@ -350,6 +350,8 @@ type BleveDestPartition struct {
 	seqMaxBatch uint64       // Max seq # that got through batch apply/commit.
 	lastUUID    atomic.Value // type: string; Cache most recent partition UUID from lastOpaque.
 
+	staleOpsSkipped uint64 // (atomic) MB-70770: seq-guard skips.
+
 	m                 sync.Mutex   // Protects the fields that follow.
 	seqSnapEnd        uint64       // To track snapshot end seq # for this partition.
 	osoSnapshot       bool         // Flag to track if current seq # is within an OSO Snapshot.
@@ -2530,6 +2532,45 @@ func (t *BleveDestPartition) PrepareFeedParams(partition string,
 	return nil
 }
 
+// PartitionOpsStaleWarnLimit caps the per-partition stale-op skip
+// warnings; further skips log at debug. Read without locking, so treat
+// as read-only after startup (like BleveMaxOpsPerBatch).
+var PartitionOpsStaleWarnLimit = uint64(8)
+
+// staleSeqLOCKED reports whether a DCP data op must be skipped because
+// this partition already saw a seq at or beyond it. BleveDestPartition
+// assumes one in-order dispatcher per partition; a stale op means a
+// torn-down feed's dispatcher raced the live one, and applying it can
+// resurrect a deleted doc as a permanent ghost (MB-70770), as seqMax
+// never moves backward and the delete is never re-streamed. Skipping is
+// safe: a re-delivery in (seqMaxBatch, seqMax] is already pending in a
+// batch. OSO seqs arrive out of order by design, so the guard is
+// bypassed there. Caller must hold t.m.
+func (t *BleveDestPartition) staleSeqLOCKED(seq uint64) bool {
+	if t.osoSnapshot {
+		return false
+	}
+	seqMax := atomic.LoadUint64(&t.seqMax)
+	return seqMax != 0 && seq <= seqMax
+}
+
+// staleOpSkipped accounts for a data op skipped by staleSeqLOCKED.
+// Called after t.m has been released.
+func (t *BleveDestPartition) staleOpSkipped(op, partition string,
+	key []byte, seq uint64) {
+	atomic.AddUint64(&aggregateBDPStats.TotDataStaleOpsSkipped, 1)
+	seqMax := atomic.LoadUint64(&t.seqMax)
+	if atomic.AddUint64(&t.staleOpsSkipped, 1) <= PartitionOpsStaleWarnLimit {
+		log.Warnf("pindex_bleve: MB-70770 stale %s skipped, partition: %s,"+
+			" key: %v, seq: %d <= seqMax: %d",
+			op, partition, log.Tag(log.UserData, key), seq, seqMax)
+	} else {
+		log.Debugf("pindex_bleve: MB-70770 stale %s skipped, partition: %s,"+
+			" key: %v, seq: %d <= seqMax: %d",
+			op, partition, log.Tag(log.UserData, key), seq, seqMax)
+	}
+}
+
 func (t *BleveDestPartition) dataUpdate(partition string,
 	key []byte, seq uint64, val []byte, cas uint64,
 	extrasType cbgt.DestExtrasType, req interface{}, extras []byte) error {
@@ -2541,6 +2582,13 @@ func (t *BleveDestPartition) dataUpdate(partition string,
 		t.m.Unlock()
 		atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
 		return fmt.Errorf("bleve: DataUpdate nil batch")
+	}
+
+	if t.staleSeqLOCKED(seq) {
+		t.m.Unlock()
+		t.staleOpSkipped("DataUpdate", partition, key, seq)
+		atomic.AddUint64(&aggregateBDPStats.TotDataUpdateEnd, 1)
+		return nil
 	}
 
 	defaultType := "_default"
@@ -2604,6 +2652,13 @@ func (t *BleveDestPartition) DataDelete(partition string,
 		t.m.Unlock()
 		atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
 		return fmt.Errorf("bleve: DataDelete nil batch")
+	}
+
+	if t.staleSeqLOCKED(seq) {
+		t.m.Unlock()
+		t.staleOpSkipped("DataDelete", partition, key, seq)
+		atomic.AddUint64(&aggregateBDPStats.TotDataDeleteEnd, 1)
+		return nil
 	}
 
 	// need to apply the key decoration with multicollection indexes.
@@ -2738,6 +2793,10 @@ type bleveDestPartitionStats struct {
 
 	TotExecuteBatchBeg uint64
 	TotExecuteBatchEnd uint64
+
+	// MB-70770: ops/markers skipped by the seq guard.
+	TotDataStaleOpsSkipped         uint64
+	TotSnapshotStaleMarkersSkipped uint64
 }
 
 var aggregateBDPStats bleveDestPartitionStats
@@ -2752,6 +2811,11 @@ func AggregateBleveDestPartitionStats() map[string]interface{} {
 
 		"TotExecuteBatchBeg": atomic.LoadUint64(&aggregateBDPStats.TotExecuteBatchBeg),
 		"TotExecuteBatchEnd": atomic.LoadUint64(&aggregateBDPStats.TotExecuteBatchEnd),
+
+		"TotDataStaleOpsSkipped": atomic.LoadUint64(
+			&aggregateBDPStats.TotDataStaleOpsSkipped),
+		"TotSnapshotStaleMarkersSkipped": atomic.LoadUint64(
+			&aggregateBDPStats.TotSnapshotStaleMarkersSkipped),
 	}
 }
 
@@ -2760,6 +2824,21 @@ func AggregateBleveDestPartitionStats() map[string]interface{} {
 func (t *BleveDestPartition) SnapshotStart(partition string,
 	snapStart, snapEnd uint64) error {
 	t.m.Lock()
+
+	// MB-70770: a stale marker (snapEnd already seen) would drag
+	// seqSnapEnd backwards and mis-time batch flushes.
+	if !t.osoSnapshot {
+		if seqMax := atomic.LoadUint64(&t.seqMax); seqMax != 0 &&
+			snapEnd <= seqMax {
+			t.m.Unlock()
+			atomic.AddUint64(&aggregateBDPStats.TotSnapshotStaleMarkersSkipped, 1)
+			log.Warnf("pindex_bleve: MB-70770 stale SnapshotStart skipped,"+
+				" partition: %s, snapStart: %d, snapEnd: %d <= seqMax: %d",
+				partition, snapStart, snapEnd, seqMax)
+			return nil
+		}
+	}
+
 	t.osoSnapshot = false
 	revNeedsUpdate, err := t.submitAsyncBatchRequestLOCKED()
 	if err != nil {
