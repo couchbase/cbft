@@ -492,7 +492,7 @@
     "fts_curr_batches_blocked_by_herder": {
         "added": "7.2.0",
         "type": "gauge",
-        "help": "The difference between the number of batches that have been indexed and the number of batches yet to be indexed",
+        "help": "The number of indexing batches currently blocked by the app herder because memory usage exceeds the index quota. This is a point-in-time gauge sampled at collection time, so brief blocking episodes between collections may not appear",
         "notes": "The app herder blocks indexing of batches till there is sufficient memory i.e. the memory used is below the memory quota",
         "uiName": "DCP Batches Blocked"
     },

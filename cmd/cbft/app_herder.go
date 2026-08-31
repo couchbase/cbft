@@ -248,7 +248,7 @@ func (a *appHerder) checkAndBlockBatch(c interface{}, s sizeFunc) {
 		if a.memUsedPrev != memUsed || a.pimPrev != preIndexingMemory ||
 			a.waitingBatchesPrev != int64(a.waitingBatches) ||
 			a.indexesPrev != int64(len(a.indexes)) {
-			log.Printf("app_herder: indexing over indexQuota: %d, memUsed: %d,"+
+			log.Warnf("app_herder: indexing over indexQuota: %d, memUsed: %d,"+
 				" preIndexingMemory: %d, indexes: %d, waiting batches: %d, waiting mutations: %d", a.indexQuota,
 				memUsed, preIndexingMemory, len(a.indexes), a.waitingBatches, a.waitingMutations)
 
@@ -409,7 +409,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 		// first make sure querying (on it's own) doesn't exceed the
 		// query portion of the quota
 		if a.queryQuota > 0 && memUsed > a.queryQuota {
-			log.Printf("app_herder: querying over queryQuota: %d,"+
+			log.Warnf("app_herder: querying over queryQuota: %d,"+
 				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
 				a.queryQuota, size, a.runningQueryUsed, memUsed)
 
@@ -424,7 +424,7 @@ func (a *appHerder) onQueryStart(depth int, size uint64) error {
 		}
 
 		if a.appQuota > 0 && memUsed > a.appQuota {
-			log.Printf("app_herder: querying over appQuota: %d,"+
+			log.Warnf("app_herder: querying over appQuota: %d,"+
 				" estimated size: %d, runningQueryUsed: %d, memUsed: %d",
 				a.appQuota, size, a.runningQueryUsed, memUsed)
 
