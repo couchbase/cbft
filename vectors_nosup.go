@@ -58,6 +58,11 @@ func indexHasVectorFields(params string) bool {
 	return false
 }
 
+func indexHasBinaryVectorFields(params string) bool {
+	// Not supported
+	return false
+}
+
 func InitKNNQueryThrottlerOptions(options map[string]string) error {
 	// Not supported
 	return nil

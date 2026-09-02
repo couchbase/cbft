@@ -447,7 +447,7 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		focusStats: &rest.RESTFocusStats{},
 	}
 
-	var numIndexes, numVectorIndexes int
+	var numIndexes, numVectorIndexes, numVectorBinaryIndexes int
 	for indexName, indexDef := range indexDefsMap {
 		var key string
 		if collAware {
@@ -475,6 +475,9 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 		numIndexes += 1
 		if indexHasVectorFields(indexDef.Params) {
 			numVectorIndexes += 1
+			if indexHasBinaryVectorFields(indexDef.Params) {
+				numVectorBinaryIndexes += 1
+			}
 		}
 	}
 
@@ -510,6 +513,7 @@ func gatherIndexesStats(mgr *cbgt.Manager, rd *recentInfo,
 
 	nsIndexStats[""]["num_indexes"] = numIndexes
 	nsIndexStats[""]["num_vector_indexes"] = numVectorIndexes
+	nsIndexStats[""]["num_vector_binary_indexes"] = numVectorBinaryIndexes
 
 	return nsIndexStats, nil
 }

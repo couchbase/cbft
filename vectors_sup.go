@@ -44,6 +44,10 @@ var kNNThrottleLimit int64
 // vector fields
 var vectorIndexRegexes []*regexp.Regexp
 
+// Binary vector index regexes to check against and determine if an index
+// has vector fields backed by a binary (BIVF/RaBitQ) vector index
+var vectorBinaryIndexes []*regexp.Regexp
+
 func init() {
 	var err error
 	knnRegex, err = regexp.Compile(`"knn":\[{"`)
@@ -62,6 +66,21 @@ func init() {
 		log.Warnf("vector_base64 index regex compilation failed")
 	}
 	vectorIndexRegexes = append(vectorIndexRegexes, vectorBase64Regex)
+
+	for _, optimization := range []string{
+		index.IndexBIVFWithBackingFlat,
+		index.IndexBIVFWithBackingSQ8,
+		index.IndexIVFRaBitQ,
+	} {
+		binaryVectorRegex, err := regexp.Compile(
+			`"vector_index_optimized_for":"` + regexp.QuoteMeta(optimization) + `"`)
+		if err != nil {
+			log.Warnf("binary vector index regex compilation failed for: %s",
+				optimization)
+			continue
+		}
+		vectorBinaryIndexes = append(vectorBinaryIndexes, binaryVectorRegex)
+	}
 }
 
 func FeatureVectorSearchSupport() string {
@@ -170,6 +189,15 @@ func QueryHasKNN(req []byte) bool {
 
 func indexHasVectorFields(params string) bool {
 	for _, regex := range vectorIndexRegexes {
+		if regex.Match([]byte(params)) {
+			return true
+		}
+	}
+	return false
+}
+
+func indexHasBinaryVectorFields(params string) bool {
+	for _, regex := range vectorBinaryIndexes {
 		if regex.Match([]byte(params)) {
 			return true
 		}
