@@ -300,7 +300,7 @@ function IndexesCtrlFT_NS($scope, $http, $state, $stateParams,
         });
       } else {
         // some other error to show
-        $scope.ftsCheckError = response.data;
+        $scope.ftsCheckError = errorMessage(response.data, response.status);
       }
 
       nextSteps();

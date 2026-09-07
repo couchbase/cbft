@@ -16,6 +16,14 @@ export {errorMessage, confirmDialog, alertDialog, obtainBucketScopeUndecoratedIn
 export {blevePIndexInitController, blevePIndexDoneController};
 
 function errorMessage(errorMessageFull, code) {
+    // in a mixed version cluster, ns_server refuses to proxy UI requests
+    // to a search node running a different server version, returning 503
+    if (code == 503 && typeof errorMessageFull == "string" &&
+        errorMessageFull.startsWith(
+            "Service fts not running on this node, and compatible service is not found")) {
+        return "Version mismatch between local node and search service node. " +
+            "Connect to UI on search service node.";
+    }
     if (typeof errorMessageFull == "object") {
         if (code == 403) {
             let rv = errorMessageFull.message + ": ";
