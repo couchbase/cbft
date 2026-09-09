@@ -2160,7 +2160,10 @@ func (t *BleveDest) removeLOCKED() {
 
 func (t *BleveDest) closeLOCKED(remove bool) error {
 	if t.bindex == nil {
-		return nil // Already closed.
+		if remove {
+			os.RemoveAll(t.path)
+		}
+		return nil
 	}
 
 	atomic.AddUint64(&TotBleveDestClosed, 1)
