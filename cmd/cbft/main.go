@@ -695,6 +695,10 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 	handle(prefix+"/api/searchHistory", "GET",
 		search_history.NewSearchHistoryHandler())
 
+	// Handle encryption route(s)
+	handle(prefix+"/api/encryption/keysInUse", "GET",
+		cbft.NewGetKeysInUseHandler(mgr))
+
 	router := exportMuxRoutesToHttprouter(muxrouter, options)
 
 	router.Handler("PUT", prefix+"/api/managerOptions",
@@ -717,10 +721,6 @@ func mainStart(cfg cbgt.Cfg, uuid string, tags []string, container string,
 				cbft.NewAuthVersionHandler(mgr, nil, handler))
 		}
 	}
-
-	// Handle encryption route(s)
-	router.Handler("GET", prefix+"/api/encryption/keysInUse",
-		cbft.NewAuthVersionHandler(mgr, nil, cbft.NewGetKeysInUseHandler(mgr)))
 
 	// Setup all debug/pprof routes
 	router.Handler("GET", "/debug/pprof/",
