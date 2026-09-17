@@ -4058,6 +4058,13 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 	if prevType != curType {
 		return ""
 	}
+
+	fastmergeChange := bpPrev.Store[scorch.IndexTrainedWithFastMerge] != bpCur.Store[scorch.IndexTrainedWithFastMerge]
+	if fastmergeChange {
+		log.Printf("bleve: fast merge scorch option change "+
+			"detected, before: %s, after: %s", paramPrev, paramCur)
+		return ""
+	}
 	// always reboot partitions on scorch option changes
 	// PINDEXES_LAZYUPDATE for modified or deleted fields
 	// PINDEXES_CONFIGUPDATE for all other mapping changes like scoring model or unused analyzers
