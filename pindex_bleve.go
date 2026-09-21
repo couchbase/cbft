@@ -2288,6 +2288,13 @@ func (t *BleveDest) Query(pindex *cbgt.PIndex, req []byte, res io.Writer,
 			" parsing queryCtlParams, err: %v", err)
 	}
 
+	if consistency := queryCtlParams.Ctl.Consistency; consistency != nil &&
+		consistency.Level == cbgt.ConsistencyLevelScanPlus &&
+		(consistency.Vectors == nil || consistency.Vectors[pindex.IndexName] == nil) {
+		return fmt.Errorf("bleve: BleveDest.Query, scan_plus consistency" +
+			" is not supported on pindex-level endpoints")
+	}
+
 	var sr *SearchRequest
 	err = UnmarshalJSON(req, &sr)
 	if err != nil {
