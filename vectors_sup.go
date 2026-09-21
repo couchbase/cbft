@@ -196,6 +196,18 @@ func indexHasVectorFields(params string) bool {
 	return false
 }
 
+// optimizationIsBinary reports whether a vector index optimization is backed
+// by a binary (BIVF/RaBitQ) index.
+func optimizationIsBinary(optimization string) bool {
+	switch optimization {
+	case index.IndexBIVFWithBackingFlat, index.IndexBIVFWithBackingSQ8,
+		index.IndexIVFRaBitQ:
+		return true
+	default:
+		return false
+	}
+}
+
 func indexHasBinaryVectorFields(params string) bool {
 	for _, regex := range vectorBinaryIndexes {
 		if regex.Match([]byte(params)) {

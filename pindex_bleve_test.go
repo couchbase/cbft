@@ -1013,6 +1013,7 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 		expectDims     int
 		expectDimsFlag string
 		expectCosine   bool
+		expectBinary   bool
 	}{
 		{
 			idxMapping: &mapping.IndexMappingImpl{
@@ -1196,6 +1197,25 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 			expectDimsFlag: featuresVectorBase64Dims4096,
 			expectCosine:   true,
 		},
+		{
+			// a non-binary optimization must not set the binary flag
+			idxMapping: &mapping.IndexMappingImpl{
+				TypeMapping: map[string]*mapping.DocumentMapping{},
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled:    true,
+					Properties: map[string]*mapping.DocumentMapping{},
+					Fields: []*mapping.FieldMapping{
+						{
+							Type:                    "vector",
+							Dims:                    128,
+							VectorIndexOptimizedFor: "recall",
+						},
+					},
+				},
+			},
+			expectFields: vectorFields,
+			expectDims:   128,
+		},
 	}
 
 	for testi, test := range tests {
@@ -1218,6 +1238,108 @@ func TestVectorPictureFromIndexMapping(t *testing.T) {
 		if res.cosine != test.expectCosine {
 			t.Errorf("[%d] Expected cosine:%v as output, but got %v. Index Mapping - %+v",
 				testi+1, test.expectCosine, res.cosine, test.idxMapping)
+		}
+
+		if res.binary != test.expectBinary {
+			t.Errorf("[%d] Expected binary:%v as output, but got %v. Index Mapping - %+v",
+				testi+1, test.expectBinary, res.binary, test.idxMapping)
+		}
+	}
+}
+
+func TestIsFieldOfTypeInMapping(t *testing.T) {
+	geoShapeV2Field := func(index bool) *mapping.FieldMapping {
+		return &mapping.FieldMapping{Type: "geoshape_v2", Index: index}
+	}
+
+	tests := []struct {
+		desc       string
+		idxMapping *mapping.IndexMappingImpl
+		expect     bool
+	}{
+		{
+			desc: "top level field in the default mapping",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: true,
+					Fields:  []*mapping.FieldMapping{geoShapeV2Field(true)},
+				},
+			},
+			expect: true,
+		},
+		{
+			desc: "nested within a child mapping",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: true,
+					Properties: map[string]*mapping.DocumentMapping{
+						"a": {
+							Enabled: true,
+							Properties: map[string]*mapping.DocumentMapping{
+								"b": {
+									Enabled: true,
+									Fields:  []*mapping.FieldMapping{geoShapeV2Field(true)},
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			desc: "within a type mapping",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{Enabled: false},
+				TypeMapping: map[string]*mapping.DocumentMapping{
+					"scope.coll": {
+						Enabled: true,
+						Fields:  []*mapping.FieldMapping{geoShapeV2Field(true)},
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			desc: "field present but not indexed",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: true,
+					Fields:  []*mapping.FieldMapping{geoShapeV2Field(false)},
+				},
+			},
+			expect: false,
+		},
+		{
+			desc: "field under a disabled mapping",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: false,
+					Fields:  []*mapping.FieldMapping{geoShapeV2Field(true)},
+				},
+			},
+			expect: false,
+		},
+		{
+			desc: "legacy geoshape must not be mistaken for geoshape_v2",
+			idxMapping: &mapping.IndexMappingImpl{
+				DefaultMapping: &mapping.DocumentMapping{
+					Enabled: true,
+					Fields: []*mapping.FieldMapping{
+						{Type: "geoshape", Index: true},
+					},
+				},
+			},
+			expect: false,
+		},
+	}
+
+	for _, test := range tests {
+		bp := NewBleveParams()
+		bp.Mapping = test.idxMapping
+
+		if got := isFieldOfTypeInMapping(bp, "geoshape_v2"); got != test.expect {
+			t.Errorf("%s: expected %v, got %v", test.desc, test.expect, got)
 		}
 	}
 }

@@ -63,6 +63,11 @@ func indexHasBinaryVectorFields(params string) bool {
 	return false
 }
 
+func optimizationIsBinary(optimization string) bool {
+	// Not supported
+	return false
+}
+
 func InitKNNQueryThrottlerOptions(options map[string]string) error {
 	// Not supported
 	return nil

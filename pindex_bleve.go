@@ -55,7 +55,9 @@ const (
 	FeatureSynonyms                 = "synonyms"
 	FeatureBM25Scoring              = "bm25Scoring"
 	FeatureHierarchicalNestedSearch = "nestedSearch"
+	FeatureBinaryVectorIndex        = "binaryVectors"
 	FeatureAppInfo                  = "appInfo"
+	FeatureGeoShapeV2               = "geoShapeV2"
 
 	// bleveLegacyZapVersion represents the default zap version.
 	// This version is expected to remain a constant as all the
@@ -71,7 +73,7 @@ const (
 	bleveVectorSynonymsZapVersion = int(16)
 
 	// ZapVersion where nested hierarchical fields support was introduced.
-	bleveHierarchicalNestedZapVersion = int(17)
+	bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion = int(17)
 
 	// blevePreferredZapVersion is the recommended zap version for newer indexes.
 	// This version needs to be bumped to reflect the latest recommended zap
@@ -650,6 +652,11 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 	nestedSearchSupported := cbgt.IsFeatureSupportedByCluster(FeatureHierarchicalNestedSearch, nodeDefs)
 	var nestedMappingsAvailable bool
 
+	binaryVectorsSupported := cbgt.IsFeatureSupportedByCluster(FeatureBinaryVectorIndex, nodeDefs)
+
+	geoShapeV2Supported := cbgt.IsFeatureSupportedByCluster(FeatureGeoShapeV2, nodeDefs)
+	var geoShapeV2Available bool
+
 	bp := NewBleveParams()
 	if len(indexDef.Params) > 0 {
 		b, err := bleveMappingUI.CleanseJSON([]byte(indexDef.Params))
@@ -676,7 +683,7 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				delete(bp.Store, "kvStoreName")
 
 				// insert spatial config only if geopoint field exists in the mapping.
-				if s2SpatialSupported && isGeoPointFieldInMapping(bp) {
+				if s2SpatialSupported && isFieldOfTypeInMapping(bp, "geopoint") {
 					bp.Store["spatialPlugin"] = "s2"
 				} else {
 					delete(bp.Store, "spatialPlugin")
@@ -804,6 +811,21 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 				"not supported in this cluster")
 		}
 
+		if indexVectorPicture.binary && !binaryVectorsSupported {
+			// Binary quantized vector indexes are NOT supported on this
+			// cluster (lower version or mixed lower version).
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: binary quantized " +
+				"vector fields not supported in this cluster")
+		}
+
+		geoShapeV2Available = isFieldOfTypeInMapping(bp, "geoshape_v2")
+		if geoShapeV2Available && !geoShapeV2Supported {
+			// geoshape_v2 fields are NOT supported on this cluster
+			// (lower version or mixed lower version).
+			return nil, cbgt.NewBadRequestError("PrepareIndex, err: geoshape_v2 typed " +
+				"fields not supported in this cluster")
+		}
+
 		if mappingContainsXAttrs(bp) {
 			if !cbgt.IsFeatureSupportedByCluster(FeatureXattrs, nodeDefs) {
 				// XAttrs is NOT supported on this cluster
@@ -911,8 +933,10 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 			var versionToUse = zv
 			// check for other features that might require higher zap versions.
 			// and adjust the zap version to use accordingly.
-			if nestedMappingsAvailable && zv < bleveHierarchicalNestedZapVersion {
-				versionToUse = bleveHierarchicalNestedZapVersion
+			if (nestedMappingsAvailable || geoShapeV2Available ||
+				indexVectorPicture.binary) &&
+				zv < bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion {
+				versionToUse = bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion
 			} else if ((indexVectorPicture.fields != noVectorFields) || synonymsAvailable) &&
 				zv < bleveVectorSynonymsZapVersion {
 				versionToUse = bleveVectorSynonymsZapVersion
@@ -930,8 +954,9 @@ func PrepareIndexDef(mgr *cbgt.Manager, indexDef *cbgt.IndexDef) (
 		// cluster, else consider the default zap version.
 		if segmentVersionSupported {
 			bp.Store["segmentVersion"] = blevePreferredZapVersion
-		} else if nestedSearchSupported {
-			bp.Store["segmentVersion"] = bleveHierarchicalNestedZapVersion
+		} else if nestedSearchSupported || binaryVectorsSupported ||
+			geoShapeV2Supported {
+			bp.Store["segmentVersion"] = bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion
 		} else if vectorSearchSupported || synonymSearchSupported {
 			bp.Store["segmentVersion"] = bleveVectorSynonymsZapVersion
 		} else if collectionsSupported {
@@ -4215,15 +4240,15 @@ func checkSourceCompatability(mgr *cbgt.Manager, sourceName string) error {
 	return nil
 }
 
-func findGeoPoint(dm *mapping.DocumentMapping) bool {
+func findFieldOfType(dm *mapping.DocumentMapping, typ string) bool {
 	if dm != nil && dm.Enabled {
 		for _, fm := range dm.Fields {
-			if fm.Index && fm.Type == "geopoint" {
+			if fm.Index && fm.Type == typ {
 				return true
 			}
 		}
 		for _, dmapping := range dm.Properties {
-			found := findGeoPoint(dmapping)
+			found := findFieldOfType(dmapping, typ)
 			if found {
 				return true
 			}
@@ -4232,18 +4257,18 @@ func findGeoPoint(dm *mapping.DocumentMapping) bool {
 	return false
 }
 
-func isGeoPointFieldInMapping(bp *BleveParams) bool {
+func isFieldOfTypeInMapping(bp *BleveParams, typ string) bool {
 	if bp != nil && bp.Mapping != nil {
 		if im, ok := bp.Mapping.(*mapping.IndexMappingImpl); ok {
 			// look for in the default mapping.
-			res := findGeoPoint(im.DefaultMapping)
+			res := findFieldOfType(im.DefaultMapping, typ)
 			if res {
 				return true
 			}
 
 			// look for among the custom mappings.
 			for _, dm := range im.TypeMapping {
-				res := findGeoPoint(dm)
+				res := findFieldOfType(dm, typ)
 				if res {
 					return true
 				}
@@ -4288,6 +4313,9 @@ type vectorPicture struct {
 	fields  int
 	maxDims int
 	cosine  bool
+	// binary is set when any vector field asks for an index optimization
+	// backed by a binary (BIVF/RaBitQ) index, which needs zap 17+.
+	binary bool
 }
 
 // Utility function check if a "vector" typed field is present within
@@ -4312,6 +4340,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 					rv.maxDims = val.maxDims
 				}
 				rv.cosine = rv.cosine || val.cosine
+				rv.binary = rv.binary || val.binary
 			}
 
 			for _, field := range d.Fields {
@@ -4326,6 +4355,9 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 				}
 				if field.Similarity == "cosine" {
 					rv.cosine = true
+				}
+				if optimizationIsBinary(field.VectorIndexOptimizedFor) {
+					rv.binary = true
 				}
 			}
 		}
@@ -4344,6 +4376,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 		rv.maxDims = val.maxDims
 	}
 	rv.cosine = rv.cosine || val.cosine
+	rv.binary = rv.binary || val.binary
 
 	// Iterate over TypeMapping(s)
 	for _, d := range im.TypeMapping {
@@ -4355,6 +4388,7 @@ func vectorPictureFromIndexMapping(m mapping.IndexMapping) vectorPicture {
 			rv.maxDims = val.maxDims
 		}
 		rv.cosine = rv.cosine || val.cosine
+		rv.binary = rv.binary || val.binary
 	}
 
 	return rv
