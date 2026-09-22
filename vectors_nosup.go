@@ -102,3 +102,8 @@ func (sr *SearchRequest) decorateKNNRequest(indexName string, searchRequest *ble
 }
 
 func setKNNRequest(sr *bleve.SearchRequest, knn interface{}) {}
+
+func fastMergeOptionChanged(storePrev, storeCur map[string]interface{}) bool {
+	// Not supported
+	return false
+}

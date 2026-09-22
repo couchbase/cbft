@@ -4059,8 +4059,7 @@ func reloadableIndexDefParamChange(paramPrev, paramCur string) cbgt.ResultCode {
 		return ""
 	}
 
-	fastmergeChange := bpPrev.Store[scorch.IndexTrainedWithFastMerge] != bpCur.Store[scorch.IndexTrainedWithFastMerge]
-	if fastmergeChange {
+	if fastMergeOptionChanged(bpPrev.Store, bpCur.Store) {
 		log.Printf("bleve: fast merge scorch option change "+
 			"detected, before: %s, after: %s", paramPrev, paramCur)
 		return ""

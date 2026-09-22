@@ -22,6 +22,7 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/document"
+	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/blevesearch/bleve/v2/search/query"
 	index "github.com/blevesearch/bleve_index_api"
 
@@ -443,4 +444,11 @@ func setKNNRequest(sr *bleve.SearchRequest, knn interface{}) {
 	}
 
 	sr.KNN = knnRequest
+}
+
+// fastMergeOptionChanged reports whether the vector index's fast merge
+// setting differs between the previous and the current index params.
+func fastMergeOptionChanged(storePrev, storeCur map[string]interface{}) bool {
+	return storePrev[scorch.IndexTrainedWithFastMerge] !=
+		storeCur[scorch.IndexTrainedWithFastMerge]
 }
