@@ -2532,11 +2532,12 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 	var vbstats, verbose bool
 	var indexDef *cbgt.IndexDef
 	var sourcePartitionSeqs map[string]cbgt.UUIDSeq
+	var psw rest.PartitionStatsWriter
 	if w, ok := w.(rest.PartitionStatsWriter); ok {
 		vbstats = w.VbStats()
 		verbose = w.Verbose()
 		indexDef = w.IndexDef()
-		sourcePartitionSeqs = w.SourcePartitionSeqs()
+		psw = w
 	}
 
 	// exit early if all details are disabled.
@@ -2618,6 +2619,14 @@ func (t *BleveDest) Stats(w io.Writer) (err error) {
 
 	// obtain scope, collection names
 	scope, collections, _ := GetScopeCollectionsFromIndexDef(indexDef)
+
+	// The source high seqs are scoped to the index's own collections, as
+	// the bucket wide high seqs keep advancing with mutations to unrelated
+	// collections, which the index's feed never receives (MB-74146).
+	if psw != nil && len(scope) > 0 && len(collections) > 0 {
+		sourcePartitionSeqs =
+			psw.SourcePartitionSeqsForCollections(scope, collections)
+	}
 
 	t.m.RLock()
 	partitionSeqs := make([][]byte, len(t.partitions))
