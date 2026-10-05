@@ -147,6 +147,30 @@ components:
             The Search Service blocks batch indexing until there is sufficient memory available on a node.
 
             This statistic appears on the Server Web Console dashboard as **DCP Batches Blocked**.
+        frees:
+          type: integer
+          description: |-
+            The cumulative number of heap objects freed by the Search Service process.
+        heap_alloc:
+          type: integer
+          description: |-
+            The number of bytes of allocated heap objects in the Search Service process.
+        heap_idle:
+          type: integer
+          description: |-
+            The number of bytes in idle, unused heap spans in the Search Service process.
+        heap_inuse:
+          type: integer
+          description: |-
+            The number of bytes in in-use heap spans in the Search Service process.
+        heap_released:
+          type: integer
+          description: |-
+            The number of bytes of physical memory returned to the operating system by the Search Service process.
+        mallocs:
+          type: integer
+          description: |-
+            The cumulative number of heap objects allocated by the Search Service process.
         num_batches_introduced:
           type: integer
           description: |-
@@ -174,6 +198,10 @@ components:
             The number of bytes used in memory by the Search Service's C language processes.
 
             This amount is included as part of the total number of bytes used in memory, given by the `num_bytes_used_ram` statistic.
+        num_cgocalls:
+          type: integer
+          description: |-
+            The cumulative number of calls from Go to C code made by the Search Service process.
         num_files_on_disk:
           type: integer
           description: The total number of files on disk for all Search indexes.
@@ -189,6 +217,10 @@ components:
             The total number of Go SDK agent pairs, used to retrieve statistics from the Data Service, that are present on a node.
 
             Typically, the Search Service uses one agent pair for each bucket on a node.
+        num_goroutines:
+          type: integer
+          description: |-
+            The number of goroutines that currently exist in the Search Service process.
         num_indexes:
           type: number
           description: The number of Search indexes in the cluster.
@@ -432,6 +464,10 @@ components:
         total_queries_max_result_window_exceeded_error:
           type: integer
           description: The total number of Search queries that exceeded the [bleveMaxResultWindow](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-bleveMaxResultWindow.html) setting.
+        total_queries_max_score_window_size_exceeded_error:
+          type: integer
+          description: |-
+            The total number of Search queries that used score fusion with a `score_window_size` greater than the [bleveMaxResultWindow](https://docs.couchbase.com/server/8.0/fts/fts-advanced-settings-bleveMaxResultWindow.html) setting.
         total_queries_partial_results_error:
           type: integer
           description: |-
@@ -472,7 +508,10 @@ components:
           type: integer
           description: |-
             The total time, in nanoseconds, spent processing Search queries across the cluster.
-
+        total_scan_plus_queries_kv_errors:
+          type: integer
+          description: |-
+            The total number of errors encountered when fetching sequence numbers from the Data Service for Search queries with `scan_plus` consistency.
     indexStats:
       type: object
       title: Index Statistics
