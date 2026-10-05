@@ -494,6 +494,87 @@ paths:
       security:
         - Read: []
 
+  /api/index/{INDEX_NAME}/insights:
+    post:
+      operationId: p-api-index-name-insights
+      summary: Get Index Insights
+      description: |-
+        Returns insights into the contents of a field in the Search index specified in the endpoint URL: either the most or least frequent terms in a field, or the cardinalities of the centroids of a vector field.
+
+        This operation is read-only.
+        By default, the Search Service gathers insights from all partitions of the index across the cluster.
+        This endpoint is available only in Couchbase Server Enterprise Edition.
+      tags:
+        - Monitoring
+      parameters:
+        - $ref: "#/components/parameters/PathIndexFull"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsightsRequest'
+            examples:
+              termFrequencies:
+                summary: Term Frequencies
+                value:
+                  field: description
+                  insight: termFrequencies
+                  limit: 10
+                  descending: true
+              centroidCardinalities:
+                summary: Centroid Cardinalities
+                value:
+                  field: embedding
+                  insight: centroidCardinalities
+                  limit: 5
+      responses:
+        '200':
+          $ref: '#/components/responses/InsightsOK'
+        '400':
+          $ref: '#/components/responses/InsightsBadRequest'
+        '500':
+          $ref: '#/components/responses/InsightsError'
+        '501':
+          $ref: '#/components/responses/InsightsNotSupported'
+      security:
+        - Read: []
+
+  /api/bucket/{BUCKET_NAME}/scope/{SCOPE_NAME}/index/{INDEX_NAME}/insights:
+    post:
+      operationId: p-api-scoped-insights
+      summary: Get Index Insights (Scoped)
+      description: |-
+        Returns insights into the contents of a field in the Search index specified in the endpoint URL: either the most or least frequent terms in a field, or the cardinalities of the centroids of a vector field.
+
+        This operation is read-only.
+        By default, the Search Service gathers insights from all partitions of the index across the cluster.
+        This endpoint is available only in Couchbase Server Enterprise Edition.
+        This endpoint is scoped and does not require a fully qualified `{INDEX_NAME}` value.
+      tags:
+        - Monitoring
+      parameters:
+        - $ref: "#/components/parameters/PathBucket"
+        - $ref: "#/components/parameters/PathScope"
+        - $ref: "#/components/parameters/PathIndex"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsightsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/InsightsOK'
+        '400':
+          $ref: '#/components/responses/InsightsBadRequest'
+        '500':
+          $ref: '#/components/responses/InsightsError'
+        '501':
+          $ref: '#/components/responses/InsightsNotSupported'
+      security:
+        - Read: []
+
   /api/index/{INDEX_NAME}/count:
     get:
       operationId: g-api-index-name-count
@@ -730,6 +811,41 @@ components:
             $ref: "#/components/schemas/MgmtResponse"
           example:
             $ref: "examples/response-200.json"
+
+    InsightsOK:
+      description: A JSON object containing the requested insight.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InsightsResponse"
+
+    InsightsBadRequest:
+      description: |-
+        The request was not valid.
+        The request body may be malformed, the `field` may be empty, or the `insight` may not be supported.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: fail
+            error: "indexInsights, supported insights: 'termFrequencies'/'centroidCardinalities'"
+
+    InsightsError:
+      description: The Search Service could not compute the requested insight.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InsightsNotSupported:
+      description: |-
+        Insights are not supported for this Search index or on this cluster.
+        The Search Service returns this response in Couchbase Server Community Edition.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
     DeleteIndexResponse:
@@ -1029,6 +1145,108 @@ components:
           type: integer
           description: The document count for the specified index.
 
+    InsightsRequest:
+      type: object
+      title: Insights Request
+      required:
+        - field
+        - insight
+      properties:
+        field:
+          type: string
+          description: The name of the field to get insights for.
+        insight:
+          type: string
+          enum:
+            - termFrequencies
+            - centroidCardinalities
+          description: |-
+            The type of insight to return.
+
+            - `termFrequencies`: the terms in the field and the number of times each term occurs.
+            - `centroidCardinalities`: the centroids of a vector field and the number of vectors assigned to each centroid.
+              Applies only to vector fields that use an IVF index.
+        limit:
+          type: integer
+          default: 1
+          x-has-default: true
+          description: The maximum number of terms or centroids to return.
+        descending:
+          type: boolean
+          default: true
+          x-has-default: true
+          description: |-
+            If `true`, the Search Service returns the terms or centroids with the highest frequency or cardinality first.
+            If `false`, the Search Service returns the lowest first.
+        local-only:
+          type: boolean
+          default: false
+          x-has-default: true
+          description: |-
+            If `true`, the Search Service gathers insights only from the index partitions on the node that receives the request.
+            If `false`, the Search Service gathers insights from all index partitions across the cluster.
+
+    InsightsResponse:
+      type: object
+      title: Insights Response
+      properties:
+        status:
+          $ref: "#/components/schemas/CommonStatus"
+        request:
+          $ref: "#/components/schemas/InsightsRequest"
+        termFrequencies:
+          type: array
+          description: |-
+            Only returned if `insight` is `termFrequencies`.
+            The frequency of each term is summed across all index partitions.
+          items:
+            $ref: "#/components/schemas/InsightsTermFrequency"
+        centroidCardinalities:
+          type: array
+          description: Only returned if `insight` is `centroidCardinalities`.
+          items:
+            $ref: "#/components/schemas/InsightsCentroidCardinality"
+
+    InsightsTermFrequency:
+      type: object
+      title: Term Frequency
+      properties:
+        term:
+          type: string
+          description: The term.
+        frequency:
+          type: integer
+          format: int64
+          description: The number of times the term occurs in the field.
+
+    InsightsCentroidCardinality:
+      type: object
+      title: Centroid Cardinality
+      properties:
+        index:
+          type: string
+          description: The name of the index partition containing the centroid.
+        centroid:
+          type: array
+          description: The centroid vector. The length of the array is equal to the `dims` of the vector field.
+          items:
+            type: number
+            format: float
+        cardinality:
+          type: integer
+          format: int64
+          description: The number of vectors assigned to the centroid.
+
+    ErrorResponse:
+      type: object
+      title: Error Response
+      properties:
+        status:
+          $ref: "#/components/schemas/CommonStatus"
+        error:
+          type: string
+          description: The error message.
+
     IndexDefinition:
       type: object
       title: Index Definition
@@ -1052,6 +1270,13 @@ components:
           $ref: '#/components/schemas/CommonIndexParams'
         planParams:
           $ref: '#/components/schemas/IndexDefinitionPlanParams'
+        appInfo:
+          description: |-
+            Optional application metadata for the Search index.
+            The value can be any valid JSON value.
+            The Search Service stores the value with the Search index definition and returns it when you retrieve the definition, but does not otherwise use it.
+
+            You cannot set `appInfo` until all nodes in the cluster are running Couchbase Server 8.5 or later.
         prevIndexUUID:
           type: string
           writeOnly: true
@@ -1116,6 +1341,13 @@ components:
           description: |-
             An object that contains properties for query consistency.
             For more information, see [Ctl Object](../search/search-request-params.html#ctl).
+          properties:
+            bleveMaxTerms:
+              type: integer
+              description: |-
+                The maximum number of term searchers this query can use on each index partition.
+                Overrides the `bleveMaxTerms` manager option for this query.
+                A value of `0` or less disables the limit for this query.
         size:
           type: integer
           description: Set the total number of results to return for a single page of search results.
@@ -1151,15 +1383,34 @@ components:
           description: Whether to return the position of each occurrence of a search term inside a document.
         score:
           type: string
-          description: Whether to include document relevancy scoring in search results.
+          enum:
+            - none
+            - rrf
+            - rsf
+          description: |-
+            Controls document relevancy scoring in search results.
+
+            - `none`: do not score search results.
+            - `rrf`: combine the results of the `query` and `knn` components using Reciprocal Rank Fusion.
+            - `rsf`: combine the results of the `query` and `knn` components using Relative Score Fusion.
+
+            If you omit this property, the Search Service scores search results as normal.
+        params:
+          $ref: '#/components/schemas/QueryRequestParams'
         search_after:
           type: array
-          description: Use to control pagination in search results.
+          description: |-
+            Use to control pagination in search results.
+            Contains one value for each entry in `sort`.
+            Specify numeric and geo distance values as decimal strings, and date values as RFC 3339 strings.
           items:
             type: string
         search_before:
           type: array
-          description: Use to control pagination in search results.
+          description: |-
+            Use to control pagination in search results.
+            Contains one value for each entry in `sort`.
+            Specify numeric and geo distance values as decimal strings, and date values as RFC 3339 strings.
           items:
             type: string
         collections:
@@ -1167,6 +1418,30 @@ components:
           description: An array of strings that specify the collections where you want to run the query.
           items:
             type: string
+
+    QueryRequestParams:
+      type: object
+      title: Score Fusion Parameters
+      description: |-
+        Parameters for score fusion.
+        Only used if `score` is `rrf` or `rsf`.
+      properties:
+        score_window_size:
+          type: integer
+          minimum: 1
+          description: |-
+            The number of results to take from each of the `query` and `knn` result lists before combining them.
+            The default is the value of `from` plus `size`.
+
+            The value must be greater than or equal to `size`, and less than or equal to the maximum result window for the Search Service.
+            Pagination cannot go beyond this number of results.
+        score_rank_constant:
+          type: integer
+          default: 60
+          x-has-default: true
+          description: |-
+            The rank constant used by Reciprocal Rank Fusion.
+            Only used if `score` is `rrf`.
 
     QueryResponse:
       type: object

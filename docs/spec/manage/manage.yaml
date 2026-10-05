@@ -37,7 +37,8 @@ paths:
       summary: Modify Search Manager Options
       description: |-
         Sets Search manager options.
-        Note that only one setting is available: `disableFileTransferRebalance`.
+        The options you specify are merged with the existing options, so you only need to include the options you want to change.
+        Specify all option values as strings.
       requestBody:
         description: An object specifying Search manager options.
         content:
@@ -77,6 +78,81 @@ components:
 
             If the value is `true`, partitions are created by means of partition build, from scratch, over DCP connections from the Data Service.
           default: false
+          x-has-default: true
+        customScriptQueriesEnabled:
+          type: string
+          enum:
+            - "true"
+            - "false"
+          description: |-
+            Whether Search queries can use the `custom_filter` and `custom_score` query types, which run user-supplied JavaScript functions.
+            This option applies to the whole cluster and is available only in Couchbase Server Enterprise Edition.
+
+            If the value is `false` (the default), any Search query that uses these query types fails.
+          default: "false"
+          x-has-default: true
+        searchHistoryEnabled:
+          type: string
+          enum:
+            - "true"
+            - "false"
+          description: |-
+            Whether the Search Service records Search requests in the search history.
+            Use the View Search History API to retrieve recorded requests.
+          default: "false"
+          x-has-default: true
+        searchHistoryMaxRecords:
+          type: string
+          description: |-
+            The maximum number of Search requests recorded in the search history on each node.
+            The value must be between `1` and `20000`.
+          default: "8000"
+          x-has-default: true
+        collectionsLimitPerIndex:
+          type: string
+          description: |-
+            The maximum number of source collections for a single Search index.
+            A collection with more than one type mapping counts once for each type mapping.
+
+            The Search Service rejects any request to create or update a Search index that exceeds this limit.
+          default: "100"
+          x-has-default: true
+        scanPlusNumWorkers:
+          type: string
+          description: |-
+            The number of workers each node uses to fetch sequence numbers from the Data Service for Search queries with `scan_plus` consistency.
+            The value must be `1` or greater.
+          default: "10"
+          x-has-default: true
+        scanPlusNumRetries:
+          type: string
+          description: |-
+            The number of times the Search Service retries a failed request to fetch sequence numbers from the Data Service for Search queries with `scan_plus` consistency.
+            The value must be `1` or greater.
+          default: "5"
+          x-has-default: true
+        numSamplesPerCentroid:
+          type: string
+          description: |-
+            The number of training samples per centroid for vector indexes that have `vector_index_fast_merge` enabled.
+            Values less than `39` are treated as `39`, and values greater than `256` are treated as `256`.
+          default: "39"
+          x-has-default: true
+        enableLazyIndexUpdate:
+          type: string
+          description: |-
+            Whether the Search Service can update an existing Search index in place, without rebuilding it, when an index definition update deletes or modifies fields.
+            Set the value to `True` to enable in-place updates.
+            Any other value disables them.
+        bleveMaxTerms:
+          type: string
+          description: |-
+            The maximum number of term searchers a Search query can use on each index partition.
+            A query that exceeds this limit fails.
+            You can override this limit for a single query with the `bleveMaxTerms` property in the `ctl` object.
+
+            A value of `0` or less disables the limit.
+          default: "1024"
           x-has-default: true
 
     Response:
