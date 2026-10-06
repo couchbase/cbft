@@ -301,10 +301,11 @@ func TestExtractIndexNameFromPathUnknownPath(t *testing.T) {
 	tr := &vectorIndexTrainer{mgr: mgr, bleveDest: &BleveDest{stopCh: make(chan struct{})}}
 
 	// No pindex registered → GetPIndexName returns "", nil (refresh=false).
-	// extractIndexNameFromPath should return empty indexName without error.
+	// extractIndexNameFromPath must error out rather than return an empty
+	// indexName, which would be shared as a worker key across indexes.
 	indexName, err := tr.extractIndexNameFromPath("/some/path/unknownFormat")
-	if err != nil {
-		t.Fatalf("unexpected error for unknown path: %v", err)
+	if err == nil {
+		t.Fatalf("expected error for unknown path, got indexName %q", indexName)
 	}
 	if indexName != "" {
 		t.Fatalf("expected empty indexName for unknown path, got %q", indexName)
