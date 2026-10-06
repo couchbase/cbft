@@ -775,6 +775,11 @@ func (t *vectorIndexTrainer) extractIndexNameFromPath(path string) (string, erro
 	if err != nil {
 		return "", err
 	}
+	// an empty name must not be used as a worker key, as it would make
+	// partitions of unrelated indexes share a trained index
+	if partitionName == "" {
+		return "", fmt.Errorf("no pindex name found for path: %s", path)
+	}
 	t.partitionName = partitionName
 	var indexName string
 	if x := strings.LastIndex(partitionName, "_"); x > 0 && x < len(partitionName) {
@@ -782,6 +787,10 @@ func (t *vectorIndexTrainer) extractIndexNameFromPath(path string) (string, erro
 		if x = strings.LastIndex(temp, "_"); x > 0 && x < len(temp) {
 			indexName = temp[:x]
 		}
+	}
+	if indexName == "" {
+		return "", fmt.Errorf("could not extract index name from pindex: %s",
+			partitionName)
 	}
 	return indexName, nil
 }
@@ -830,10 +839,9 @@ func (t *vectorIndexTrainer) acquireSamples() {
 		close(t.doneCh)
 	}()
 
-	// before the partition is registered with the manager, the bindex.Name() is
-	// the full path to the partition directory, so we need to handle the extraction
-	// carefully
-	indexName, err := t.extractIndexNameFromPath(t.bleveDest.bindex.Name())
+	// Use the BleveDest path to extract the index name rather than
+	// bindex.Name(), since the latter may be modified during registration
+	indexName, err := t.extractIndexNameFromPath(t.bleveDest.path)
 	if err != nil {
 		err = fmt.Errorf("error extracting index name from path: %w", err)
 		return
