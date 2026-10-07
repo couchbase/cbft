@@ -76,7 +76,6 @@ require (
 	github.com/couchbase/gocbcoreps v0.1.5-0.20260107140814-1c3a03f888f8 // indirect
 	github.com/couchbase/gomemcached v0.3.4 // indirect
 	github.com/couchbase/goprotostellar v1.0.6-0.20260407143512-d7af25156dcc // indirect
-	github.com/couchbase/hebrew v0.0.0-00010101000000-000000000000 // indirect
 	github.com/couchbase/moss v0.3.0 // indirect
 	github.com/couchbase/query v0.0.0-20260401214352-fd7842db0db8 // indirect
 	github.com/couchbase/tools-common/fs v1.0.3 // indirect
@@ -137,8 +136,6 @@ replace github.com/couchbase/regulator => ../goproj/src/github.com/couchbase/reg
 replace github.com/couchbase/cbftx => ../cbftx
 
 replace github.com/couchbase/eventing-ee => ../goproj/src/github.com/couchbase/eventing-ee
-
-replace github.com/couchbase/hebrew => ../hebrew
 
 replace github.com/couchbase/cbgt => ../cbgt
 
