@@ -367,6 +367,29 @@ func (em *encryptionManager) dropPlanPIndexes(keysToDropMap map[string]struct{},
 }
 
 func (em *encryptionManager) dropPIndex(pIndex *cbgt.PIndex, keysToDropMap map[string]struct{}) error {
+	info, err := em.pindexSourceStore.getPIndexInfo(pIndex.Name)
+	if err != nil {
+		log.Printf("encryptionManager: failed to get pindex info for "+
+			"pindex %s: %v", pIndex.Name, err)
+		return err
+	}
+
+	// a pindex that cannot be encrypted only ever holds the empty key, so
+	// nothing is dropped and only a request to drop the empty key is
+	// reported as failed
+	if !info.encryptable() {
+		if _, ok := keysToDropMap[""]; !ok {
+			return nil
+		}
+		err = fmt.Errorf("index %s (pindex %s) uses zap segment version %d, "+
+			"which does not support encryption. Recreate the index with "+
+			"segmentVersion %d or higher to encrypt it", pIndex.IndexName,
+			pIndex.Name, info.segmentVersion,
+			bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion)
+		log.Warnf("encryptionManager: %v", err)
+		return err
+	}
+
 	// obtain the bleve index for the pindex
 	bIndex, _, _, err := bleveIndex(pIndex)
 	if err != nil {
@@ -510,7 +533,7 @@ func (em *encryptionManager) bleveWriterHook(path []byte) (
 	}
 
 	// process the path to obtain the key type, bucket name and context for encryption
-	keyType, bucketName, context, err := processPath(string(path))
+	keyType, bucketName, context, pindexName, err := processPath(string(path))
 	if err != nil {
 		return "", nil, err
 	}
@@ -523,7 +546,7 @@ func (em *encryptionManager) bleveWriterHook(path []byte) (
 	}
 
 	// create and return the writer callback for encrypting data with the obtained key type, bucket UUID and context
-	return em.newWriter(keyType, bucketUUID, context)
+	return em.newWriter(keyType, bucketUUID, context, pindexName)
 }
 
 // hook used by bleve to obtain a reader callback for decrypting data. The callback
@@ -536,7 +559,7 @@ func (em *encryptionManager) bleveReaderHook(keyId string, path []byte) (
 	}
 
 	// process the path to obtain the key type, bucket name and context for decryption
-	keyType, bucketName, context, err := processPath(string(path))
+	keyType, bucketName, context, _, err := processPath(string(path))
 	if err != nil {
 		return nil, err
 	}
@@ -1019,10 +1042,8 @@ func newBucketStore(mgr *cbgt.Manager) *bucketStore {
 
 // ---------------------- pindex source store implementation -------------------
 
-// This store caches pindex name to source (bucket) name mappings for
-// non-scoped indexes, so the bleve writer hook does not have to consult
-// the cfg on every index file creation. The mapping is immutable for
-// the lifetime of a pindex.
+// This store caches per pindex info - the source (bucket) name and the
+// zap segment version. The info is immutable for the lifetime of a pindex.
 // Only successful resolutions are cached; a pindex that cannot be
 // resolved (e.g. its index was deleted while files are still being
 // flushed) falls through to a cfg lookup on every call.
@@ -1030,12 +1051,24 @@ type pindexSourceStore struct {
 	mgr *cbgt.Manager
 
 	sourceLock    sync.RWMutex
-	sourceNameMap map[string]string
+	pindexInfoMap map[string]pindexInfo
+}
+
+type pindexInfo struct {
+	sourceName     string
+	segmentVersion int
+}
+
+// zap segments older than v17 carry no file writer id and are always
+// written unencrypted. Every file of such a pindex is kept unencrypted.
+func (pi pindexInfo) encryptable() bool {
+	return pi.segmentVersion == 0 ||
+		pi.segmentVersion >= bleveHierarchicalNestedBinaryVectorGeoV2ZapVersion
 }
 
 func newPIndexSourceStore(mgr *cbgt.Manager) *pindexSourceStore {
 	return &pindexSourceStore{
-		sourceNameMap: make(map[string]string),
+		pindexInfoMap: make(map[string]pindexInfo),
 		mgr:           mgr,
 	}
 }
@@ -1046,62 +1079,89 @@ func newPIndexSourceStore(mgr *cbgt.Manager) *pindexSourceStore {
 // unreachable.
 func (ps *pindexSourceStore) reset() {
 	ps.sourceLock.Lock()
-	ps.sourceNameMap = make(map[string]string)
+	ps.pindexInfoMap = make(map[string]pindexInfo)
 	ps.sourceLock.Unlock()
 }
 
-// returns the source (bucket) name for the given pindex name, checking
-// the cache first and resolving via the manager on a miss
+// returns the source (bucket) name for the given pindex name
 func (ps *pindexSourceStore) getSourceNameForPIndex(pindexName string) (
 	string, error) {
-	// check cache first for the source name
-	ps.sourceLock.RLock()
-	sourceName := ps.sourceNameMap[pindexName]
-	ps.sourceLock.RUnlock()
-
-	// if not present, resolve via the manager and refresh the cache
-	if sourceName == "" {
-		var err error
-		sourceName, err = ps.resolveSourceName(pindexName)
-		if err != nil {
-			return "", err
-		}
-
-		ps.sourceLock.Lock()
-		ps.sourceNameMap[pindexName] = sourceName
-		ps.sourceLock.Unlock()
-	}
-	return sourceName, nil
-}
-
-// resolves the source (bucket) name for a pindex from the manager's
-// metadata, without consulting the cache
-func (ps *pindexSourceStore) resolveSourceName(pindexName string) (
-	string, error) {
-	// might be available in memory if the pindex is registered, so check that first
-	if pindex := ps.mgr.GetPIndex(pindexName); pindex != nil &&
-		pindex.SourceName != "" {
-		return pindex.SourceName, nil
-	}
-
-	// fallback for pindexes not yet registered. Note that this path hits
-	// the cfg, and failures are not cached - a pindex that cannot be
-	// resolved pays this cfg lookup on every call
-	indexName, err := ps.mgr.GetIndexNameForPIndex(pindexName)
+	info, err := ps.getPIndexInfo(pindexName)
 	if err != nil {
 		return "", err
 	}
+	return info.sourceName, nil
+}
 
-	indexDef, _, err := ps.mgr.GetIndexDef(indexName, false)
-	if err != nil {
-		// Force a full check in case the index def is not loaded yet
-		indexDef, _, err = ps.mgr.GetIndexDef(indexName, true)
+// returns the info for the given pindex name, checking the cache first
+// and resolving via the manager on a miss
+func (ps *pindexSourceStore) getPIndexInfo(pindexName string) (
+	pindexInfo, error) {
+	// check cache first for the pindex info
+	ps.sourceLock.RLock()
+	info, ok := ps.pindexInfoMap[pindexName]
+	ps.sourceLock.RUnlock()
+
+	// if not present, resolve via the manager and refresh the cache
+	if !ok {
+		var err error
+		info, err = ps.resolvePIndexInfo(pindexName)
 		if err != nil {
-			return "", err
+			return pindexInfo{}, err
 		}
+
+		ps.sourceLock.Lock()
+		ps.pindexInfoMap[pindexName] = info
+		ps.sourceLock.Unlock()
+	}
+	return info, nil
+}
+
+// resolves the info for a pindex from the manager's metadata, without
+// consulting the cache
+func (ps *pindexSourceStore) resolvePIndexInfo(pindexName string) (
+	pindexInfo, error) {
+	var sourceName, indexParams string
+
+	// might be available in memory if the pindex is registered, so check that first
+	if pindex := ps.mgr.GetPIndex(pindexName); pindex != nil &&
+		pindex.SourceName != "" {
+		sourceName, indexParams = pindex.SourceName, pindex.IndexParams
+	} else {
+		// fallback for pindexes not yet registered. Note that this path hits
+		// the cfg, and failures are not cached - a pindex that cannot be
+		// resolved pays this cfg lookup on every call
+		indexName, err := ps.mgr.GetIndexNameForPIndex(pindexName)
+		if err != nil {
+			return pindexInfo{}, err
+		}
+
+		indexDef, _, err := ps.mgr.GetIndexDef(indexName, false)
+		if err != nil {
+			// Force a full check in case the index def is not loaded yet
+			indexDef, _, err = ps.mgr.GetIndexDef(indexName, true)
+			if err != nil {
+				return pindexInfo{}, err
+			}
+		}
+		sourceName, indexParams = indexDef.SourceName, indexDef.Params
 	}
 
-	return indexDef.SourceName, nil
+	var params struct {
+		Store struct {
+			SegmentVersion float64 `json:"segmentVersion"`
+		} `json:"store"`
+	}
+	err := json.Unmarshal([]byte(indexParams), &params)
+	if err != nil {
+		return pindexInfo{}, fmt.Errorf("failed to parse index params for "+
+			"pindex %s: %w", pindexName, err)
+	}
+
+	return pindexInfo{
+		sourceName:     sourceName,
+		segmentVersion: int(params.Store.SegmentVersion),
+	}, nil
 }
 
 // splitPathComponents cleans p and splits it on sep, independent of platform.
@@ -1109,17 +1169,18 @@ func splitPathComponents(p string, sep rune) []string {
 	return strings.Split(filepath.Clean(p), string(sep))
 }
 
-// clean disk path and obtain key type, bucket name and context for encryption
-func processPath(p string) (string, string, string, error) {
+// clean disk path and obtain key type, bucket name, context for encryption
+// and the pindex name, empty if the path is not a pindex path
+func processPath(p string) (string, string, string, string, error) {
 	if p == "" {
-		return "", "", "", fmt.Errorf("empty path provided")
+		return "", "", "", "", fmt.Errorf("empty path provided")
 	}
 
 	// clean the path to ensure consistent processing and
 	// split into components for analysis
 	parts := splitPathComponents(p, os.PathSeparator)
 	if len(parts) == 0 {
-		return "", "", "", fmt.Errorf("invalid path provided: %s", p)
+		return "", "", "", "", fmt.Errorf("invalid path provided: %s", p)
 	}
 
 	// process the components from the file name first to ensure we
@@ -1145,14 +1206,14 @@ func processPath(p string) (string, string, string, error) {
 			if len(pindexParts) < 3 {
 				bucketName, err = nonScopedIndexSourceName(pindexName)
 				if err != nil {
-					return "", "", "", fmt.Errorf("invalid pindex name extracted: %s from path: %s, err: %v",
+					return "", "", "", "", fmt.Errorf("invalid pindex name extracted: %s from path: %s, err: %v",
 						pindexName, p, err)
 				}
 			} else {
 				bucketName = pindexParts[0]
 			}
 			context := normalizePathContext(strings.Join(parts[i+1:], "/"))
-			return bucketKeyType, bucketName, context, nil
+			return bucketKeyType, bucketName, context, pindexName, nil
 		}
 
 		// if the path component is a recover plan or a search history directory,
@@ -1160,11 +1221,11 @@ func processPath(p string) (string, string, string, error) {
 		// the directories after the the current path component.
 		if pathIsRecoveryPlan(parts[i]) || pathIsSearchHistory(parts[i]) {
 			context := normalizePathContext(strings.Join(parts[i+1:], "/"))
-			return otherKeyType, "", context, nil
+			return otherKeyType, "", context, "", nil
 		}
 	}
 
-	return "", "", "", fmt.Errorf("no valid pindex, recovery plan, "+
+	return "", "", "", "", fmt.Errorf("no valid pindex, recovery plan, "+
 		"or search history found in path: %s", p)
 }
 
@@ -1293,8 +1354,9 @@ func (bs *bucketStore) refreshBucketUUIDMap() error {
 // ------------------------- file io implementations ---------------------------------
 
 // creates a new writer callback for the given key type, bucket UUID and context.
-func (em *encryptionManager) newWriter(keyType, bucketUUID string, context string) (
-	string, func(data []byte) []byte, error) {
+// pindexName is the pindex the file belongs to, empty for non pindex files.
+func (em *encryptionManager) newWriter(keyType, bucketUUID string, context string,
+	pindexName string) (string, func(data []byte) []byte, error) {
 
 	key, err := em.getKey(keyType, bucketUUID)
 	if err != nil {
@@ -1307,6 +1369,14 @@ func (em *encryptionManager) newWriter(keyType, bucketUUID string, context strin
 	// that have keys configured.
 	if key == nil {
 		return "", emptyWriterCallback(), nil
+	}
+
+	// files of a pindex that cannot be encrypted are written unencrypted.
+	if pindexName != "" {
+		info, err := em.pindexSourceStore.getPIndexInfo(pindexName)
+		if err == nil && !info.encryptable() {
+			return "", emptyWriterCallback(), nil
+		}
 	}
 
 	// send a call to the key store for every key being used for creating callbacks
@@ -1331,7 +1401,7 @@ func emptyWriterCallback() func(data []byte) []byte {
 // writes the given data to the given path with encryption, and returns the key ID used for encryption
 func (em *encryptionManager) encryptAndWriteFile(path string, data []byte, perm os.FileMode) (string, error) {
 	// process the path to obtain the key type, bucket name and context for encryption
-	keyType, bucket, context, err := processPath(path)
+	keyType, bucket, context, pindexName, err := processPath(path)
 	if err != nil {
 		return "", fmt.Errorf(
 			"encryptionManager: failed to process path for encryption: %w", err)
@@ -1347,7 +1417,7 @@ func (em *encryptionManager) encryptAndWriteFile(path string, data []byte, perm 
 
 	// create a writer callback for the key type, bucket UUID and context
 	id, writerCallback, err := encryptionManagerInstance.newWriter(
-		keyType, bucketUUID, context)
+		keyType, bucketUUID, context, pindexName)
 	if err != nil {
 		return "", fmt.Errorf(
 			"encryptionManager: failed to create writer callback: %w", err)
@@ -1423,7 +1493,7 @@ func (em *encryptionManager) decryptAndReadFile(path string) ([]byte, string, er
 
 	// if unmarshalling fails, we assume the file is encrypted and attempt to process the path
 	// to obtain the key type, bucket name and context for decryption
-	keyType, bucket, context, err := processPath(path)
+	keyType, bucket, context, _, err := processPath(path)
 	if err != nil {
 		return nil, "", fmt.Errorf(
 			"encryptionManager: failed to process path for decryption: %w", err)
@@ -1539,7 +1609,7 @@ func (em *encryptionManager) prepEncryptionKeys(primaryPath, tempPath string) er
 	}
 
 	// process the primary path to obtain the key type and bucket name for which we need to prep the keys
-	keyType, bucketName, _, err := processPath(primaryPath)
+	keyType, bucketName, _, _, err := processPath(primaryPath)
 	if err != nil {
 		return fmt.Errorf("failed to process path %s: %w", primaryPath, err)
 	}
@@ -1675,7 +1745,7 @@ func (em *encryptionManager) importEncryptionKeys(path string) error {
 	}
 
 	// process the path to obtain the key type and bucket name for which we need to import the keys
-	keyType, bucketName, _, err := processPath(path)
+	keyType, bucketName, _, _, err := processPath(path)
 	if err != nil {
 		return err
 	}
