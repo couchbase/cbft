@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -139,12 +140,12 @@ func (t *vectorIndexTrainer) close() error {
 	defer workerRegistry.m.Unlock()
 	close(t.closeCh)
 	if t.worker != nil {
-		t.worker.ref--
-		if t.worker.ref == 0 {
-			t.worker.close()
-			log.Printf("trainer_vector: closing and remove worker for index %s "+
-				"from registry", t.indexName)
-			delete(workerRegistry.workers, t.indexName)
+		delete(t.worker.holders, t)
+		// once trained, the worker is only useful while some partition on
+		// this node still holds the trained index. while training is in
+		// progress, finishTraining takes care of it.
+		if len(t.worker.holders) == 0 && isClosed(t.worker.copyCh) {
+			workerRegistry.retireLOCKED(t.indexName, t.worker)
 		}
 	}
 	return nil
@@ -169,7 +170,7 @@ func (r *samplingWorkerRegistry) getOrCreateWorker(indexName string) (*samplingW
 	worker, ok := r.workers[indexName]
 	if !ok {
 		worker = &samplingWorker{
-			ref:      1,
+			holders:  make(map[*vectorIndexTrainer]bleve.TrainableIndex),
 			sampleCh: make(chan *sample, sampleChannelBuffer),
 			doneCh:   make(chan struct{}),
 			closeCh:  make(chan struct{}),
@@ -178,8 +179,86 @@ func (r *samplingWorkerRegistry) getOrCreateWorker(indexName string) (*samplingW
 		r.workers[indexName] = worker
 		return worker, false
 	}
-	worker.ref++
 	return worker, true
+}
+
+// addHolder registers the trainer's partition as holding the worker's
+// trained index.
+func (r *samplingWorkerRegistry) addHolder(w *samplingWorker,
+	t *vectorIndexTrainer, vecIndex bleve.TrainableIndex) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.addHolderLOCKED(w, t, vecIndex)
+}
+
+func (r *samplingWorkerRegistry) addHolderLOCKED(w *samplingWorker,
+	t *vectorIndexTrainer, vecIndex bleve.TrainableIndex) {
+	// a closed partition has already deregistered, don't add it back
+	if isClosed(t.closeCh) {
+		return
+	}
+	w.holders[t] = vecIndex
+}
+
+// getHolder returns the index of a partition that holds the worker's trained
+// index, or nil if there's none.
+func (r *samplingWorkerRegistry) getHolder(w *samplingWorker) bleve.TrainableIndex {
+	r.m.Lock()
+	defer r.m.Unlock()
+	for _, vecIndex := range w.holders {
+		return vecIndex
+	}
+	return nil
+}
+
+// removeHolder drops a holder whose index turned out to be closed, either
+// because it closed after being picked or because its index was closed without
+// it deregistering. As on close, the worker is retired once trained if no
+// holder is left.
+func (r *samplingWorkerRegistry) removeHolder(indexName string, w *samplingWorker,
+	vecIndex bleve.TrainableIndex) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	for t, holderIndex := range w.holders {
+		if holderIndex == vecIndex {
+			delete(w.holders, t)
+		}
+	}
+	if len(w.holders) == 0 && isClosed(w.copyCh) {
+		r.retireLOCKED(indexName, w)
+	}
+}
+
+// finishTraining registers the creator as the first holder if training
+// succeeded.
+func (r *samplingWorkerRegistry) finishTraining(w *samplingWorker,
+	t *vectorIndexTrainer, vecIndex bleve.TrainableIndex) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	if w.success {
+		r.addHolderLOCKED(w, t, vecIndex)
+	}
+	if len(w.holders) == 0 {
+		r.retireLOCKED(t.indexName, w)
+	}
+}
+
+// retire stops the worker and removes it from the registry, see retireLOCKED.
+func (r *samplingWorkerRegistry) retire(indexName string, w *samplingWorker) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.retireLOCKED(indexName, w)
+}
+
+// retireLOCKED stops the worker and removes it from the registry, unless the
+// registry already holds a newer worker for the index.
+func (r *samplingWorkerRegistry) retireLOCKED(indexName string, w *samplingWorker) {
+	w.close()
+	if r.workers[indexName] == w {
+		log.Printf("trainer_vector: closing and remove worker for index %s "+
+			"from registry", indexName)
+		delete(r.workers, indexName)
+	}
 }
 
 // samplingWorker runs sampling for one index with a single goroutine other
@@ -188,7 +267,10 @@ type samplingWorker struct {
 	samplingWorkerRunConfig
 
 	success bool
-	ref     int64
+
+	// partitions on this node that hold the trained index, guarded by
+	// workerRegistry.m
+	holders map[*vectorIndexTrainer]bleve.TrainableIndex
 
 	sampleCh chan *sample
 	closeCh  chan struct{} // closed to signal the worker to stop sampling
@@ -377,7 +459,10 @@ func (w *samplingWorker) run() {
 // this basically shuts down the sampling worker when the bleveDest experiences
 // some failure in operations
 func (w *samplingWorker) close() {
-	close(w.closeCh)
+	// callers hold workerRegistry.m, and a worker can be retired more than once
+	if !isClosed(w.closeCh) {
+		close(w.closeCh)
+	}
 }
 
 func fetchMemcachedURLs(mgr *cbgt.Manager) ([]string, error) {
@@ -643,12 +728,14 @@ type trainedIndexConfig struct {
 // configures the worker, and runs 4 goroutines that consume samples from the
 // worker's channels and train the vector index. When training finishes, copyCh
 // is closed so other BleveDests can copy the trained index.
-func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) error {
-	var err error
+func (t *vectorIndexTrainer) createTrainedIndex(cfg *trainedIndexConfig) (err error) {
 	samplingStart := time.Now()
 	defer func() {
 		atomic.AddUint64(&t.trainStats.TotTrainedIndexBuildTimeInNs, uint64(time.Since(samplingStart)))
 		cfg.worker.success = (err == nil)
+		// register as the first holder before waking the partitions
+		// waiting to copy, so that they always find one
+		workerRegistry.finishTraining(cfg.worker, t, cfg.vecIndex)
 		close(cfg.worker.copyCh)
 	}()
 
@@ -870,57 +957,99 @@ func (t *vectorIndexTrainer) acquireSamples() {
 		return
 	}
 
-	worker, ok := workerRegistry.getOrCreateWorker(indexName)
-	if !ok {
-		t.worker = worker
-		// track the index name to clear out the entry during an index delete operation
-		err = t.createTrainedIndex(&trainedIndexConfig{
-			worker:          worker,
-			vecIndex:        vecIndex,
-			defaultType:     defaultType,
-			scopeName:       scopeName,
-			collectionNames: collectionNames,
-		})
-		if err != nil {
-			err = fmt.Errorf("error creating trained index: %w", err)
-		}
-		return
-	}
-	if worker == nil {
-		return
-	}
-
-	t.worker = worker
-	// Wait for the source partition to finish building the trained index, then copy it.
-	trainedIndexWriter := &trainedIndexWriter{
-		rootpath: t.bleveDest.path,
-	}
-	// the remaining bleve dests will wait here for the trained index to be created,
-	// after which they will file transfer it from the source bleveDest
-	select {
-	case <-worker.copyCh:
-	case <-t.closeCh:
-		log.Warnf("trainer_vector: received stop signal while waiting to copy the "+
-			"trained index, shutting down on %s", t.partitionName)
-		return
-	}
-
-	start := time.Now()
-	if ic, ok := worker.vecIndex.(bleve.IndexFileCopyable); ok && worker.success {
-		dest, ok := t.bleveDest.bindex.(bleve.IndexFileCopyable)
+	// a partition rejoins the registry when it finds no partition holding the
+	// trained index after all: training failed, the creator closed during
+	// training, or every holder closed before the copy. the registry hands out
+	// a single worker per index, so the first partition to rejoin trains again
+	// and the rest wait on it, like on the first join.
+rejoin:
+	for {
+		worker, ok := workerRegistry.getOrCreateWorker(indexName)
 		if !ok {
-			err = fmt.Errorf("error getting index file copyable: %w", err)
+			t.worker = worker
+			// track the index name to clear out the entry during an index delete operation
+			err = t.createTrainedIndex(&trainedIndexConfig{
+				worker:          worker,
+				vecIndex:        vecIndex,
+				defaultType:     defaultType,
+				scopeName:       scopeName,
+				collectionNames: collectionNames,
+			})
+			if err != nil {
+				err = fmt.Errorf("error creating trained index: %w", err)
+			}
 			return
 		}
-		trainedIndexWriter.destIndex = dest
-		err = ic.CopyFile(index.TrainedIndexFileName, trainedIndexWriter)
-		if err != nil {
-			err = fmt.Errorf("error copying trained index: %w", err)
+		if worker == nil {
 			return
 		}
-		log.Printf("trainer_vector: finished copying trained index from"+
-			" source partition %s", worker.vecIndex.Name())
-		atomic.AddUint64(&t.trainStats.TotTrainedIndexCopyTimeInNs, uint64(time.Since(start)))
+
+		t.worker = worker
+		// Wait for the source partition to finish building the trained index, then copy it.
+		trainedIndexWriter := &trainedIndexWriter{
+			rootpath: t.bleveDest.path,
+		}
+		// the remaining bleve dests will wait here for the trained index to be created,
+		// after which they will file transfer it from the source bleveDest
+		select {
+		case <-worker.copyCh:
+		case <-t.closeCh:
+			log.Warnf("trainer_vector: received stop signal while waiting to copy the "+
+				"trained index, shutting down on %s", t.partitionName)
+			return
+		}
+
+		start := time.Now()
+		// copy from any partition that holds the trained index, the creator may
+		// have moved off this node since.
+		for {
+			source := workerRegistry.getHolder(worker)
+			ic, ok := source.(bleve.IndexFileCopyable)
+			if !ok {
+				if isClosed(t.closeCh) {
+					if err != nil {
+						err = fmt.Errorf("error copying trained index: %w", err)
+					}
+					return
+				}
+				// the worker is retired by whoever left it without holders. make
+				// sure of it before rejoining, so that rejoining can't hand the
+				// same worker back.
+				workerRegistry.retire(indexName, worker)
+				log.Warnf("trainer_vector: no partition holds the trained index"+
+					" for %s, rejoining the registry for %s", indexName,
+					t.partitionName)
+				err = nil
+				continue rejoin
+			}
+			dest, ok := t.bleveDest.bindex.(bleve.IndexFileCopyable)
+			if !ok {
+				err = fmt.Errorf("error getting index file copyable: %w", err)
+				return
+			}
+			trainedIndexWriter.destIndex = dest
+			err = ic.CopyFile(index.TrainedIndexFileName, trainedIndexWriter)
+			if err == nil {
+				// this partition now holds the trained index too
+				workerRegistry.addHolder(worker, t, vecIndex)
+				log.Printf("trainer_vector: finished copying trained index from"+
+					" source partition %s", source.Name())
+				atomic.AddUint64(&t.trainStats.TotTrainedIndexCopyTimeInNs, uint64(time.Since(start)))
+				return
+			}
+
+			// a holder can close between being picked and being copied from. the
+			// closed check comes before anything is written, so try another one.
+			// this partition closing surfaces the same way from the dest's bolt
+			// update, but its closeCh is closed before its index is.
+			if !errors.Is(err, bleve.ErrorIndexClosed) || isClosed(t.closeCh) {
+				err = fmt.Errorf("error copying trained index: %w", err)
+				return
+			}
+			log.Warnf("trainer_vector: source partition %s is closed, trying"+
+				" another holder for %s", source.Name(), t.partitionName)
+			workerRegistry.removeHolder(t.indexName, worker, source)
+		}
 	}
 }
 
