@@ -498,6 +498,10 @@ func (t *BleveDest) tryTraining() {
 }
 
 func (t *BleveDest) startBatchWorkers() {
+	// read once under the lock, since Close resets t.bindex concurrently
+	t.m.Lock()
+	bindex := t.bindex
+	t.m.Unlock()
 	for i := 0; i < asyncBatchWorkerCount; i++ {
 		t.batchReqChs[i] = make(chan *batchRequest, 1)
 		go func(i int) {
@@ -514,7 +518,7 @@ func (t *BleveDest) startBatchWorkers() {
 					return
 				}
 			}
-			runBatchWorker(t.batchReqChs[i], t.stopCh, t.bindex, i)
+			runBatchWorker(t.batchReqChs[i], t.stopCh, bindex, i)
 		}(i)
 	}
 }
@@ -1227,28 +1231,7 @@ func parseIndexParams(indexParams string) (
 
 func NewBlevePIndexImpl(indexType, indexParams, path string,
 	rollback func()) (cbgt.PIndexImpl, cbgt.Dest, error) {
-	bleveParams, kvConfig, bleveIndexType, kvStoreName, err :=
-		parseIndexParams(indexParams)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if bleveIndexType == "upside_down" {
-		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
-			" uses index type upside_down which is no longer supported", path)
-	}
-
-	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
-		bleveIndexType, kvStoreName, kvConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
-			" kvStoreName: %s, kvConfig: %#v, err: %s",
-			path, kvStoreName, kvConfig, err)
-	}
-
-	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
-	_, err = encryptionManagerInstance.encryptAndWriteFile(
-		pathMeta, []byte(indexParams), 0600)
+	bindex, bleveParams, kvConfig, err := newBleveIndex(indexParams, path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1265,6 +1248,43 @@ func NewBlevePIndexImpl(indexType, indexParams, path string,
 		DestProvider: NewBleveDestEx(path, bindex, rollback, bleveParams.DocConfig,
 			&tmp),
 	}, nil
+}
+
+// newBleveIndex creates the bleve index for a pindex at path, along with its
+// parsed params and kv config, without a dest. NewBlevePIndexImpl wraps the
+// index in a new dest. The file transfer fallback hands it to the pindex's
+// existing dest instead, as a new dest would start a second trainer and set of
+// batch workers on the index.
+func newBleveIndex(indexParams, path string) (
+	bleve.Index, *BleveParams, map[string]interface{}, error) {
+	bleveParams, kvConfig, bleveIndexType, kvStoreName, err :=
+		parseIndexParams(indexParams)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if bleveIndexType == "upside_down" {
+		return nil, nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
+			" uses index type upside_down which is no longer supported", path)
+	}
+
+	bindex, err := bleve.NewUsing(path, bleveParams.Mapping,
+		bleveIndexType, kvStoreName, kvConfig)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("bleve: new index, path: %s,"+
+			" kvStoreName: %s, kvConfig: %#v, err: %s",
+			path, kvStoreName, kvConfig, err)
+	}
+
+	pathMeta := path + string(os.PathSeparator) + "PINDEX_BLEVE_META"
+	_, err = encryptionManagerInstance.encryptAndWriteFile(
+		pathMeta, []byte(indexParams), 0600)
+	if err != nil {
+		bindex.Close()
+		return nil, nil, nil, err
+	}
+
+	return bindex, bleveParams, kvConfig, nil
 }
 
 func RollbackBleve(indexType, indexParams, sourceParams, path string,
