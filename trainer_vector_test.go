@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -122,9 +123,6 @@ func TestGetOrCreateWorkerCreatesNew(t *testing.T) {
 	if w == nil {
 		t.Fatal("expected non-nil worker")
 	}
-	if w.ref != 1 {
-		t.Fatalf("expected ref=1, got %d", w.ref)
-	}
 }
 
 func TestGetOrCreateWorkerReturnsExisting(t *testing.T) {
@@ -138,9 +136,6 @@ func TestGetOrCreateWorkerReturnsExisting(t *testing.T) {
 	}
 	if w1 != w2 {
 		t.Fatal("expected same worker pointer on second call")
-	}
-	if w2.ref != 2 {
-		t.Fatalf("expected ref=2, got %d", w2.ref)
 	}
 }
 
@@ -175,17 +170,15 @@ func newTestTrainer() *vectorIndexTrainer {
 // vectorIndexTrainer.close (registry cleanup)
 // ---------------------------------------------------------------------------
 
-func TestTrainerCloseDecrementsRef(t *testing.T) {
+// A partition closing while training is still in progress must not retire
+// the worker the creator is training.
+func TestTrainerCloseKeepsWorkerDuringTraining(t *testing.T) {
 	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
 	origRegistry := workerRegistry
 	workerRegistry = r
 	defer func() { workerRegistry = origRegistry }()
 
 	w, _ := r.getOrCreateWorker("idx1")
-	// Bump ref to 2 as if two partitions share the worker.
-	r.m.Lock()
-	w.ref++
-	r.m.Unlock()
 
 	tr := newTestTrainer()
 	tr.indexName = "idx1"
@@ -195,35 +188,36 @@ func TestTrainerCloseDecrementsRef(t *testing.T) {
 
 	r.m.Lock()
 	defer r.m.Unlock()
-	if w.ref != 1 {
-		t.Fatalf("expected ref=1 after one trainer closes, got %d", w.ref)
-	}
 	if _, stillPresent := r.workers["idx1"]; !stillPresent {
-		t.Fatal("worker should still be in registry while ref > 0")
+		t.Fatal("worker should still be in registry while training is in progress")
+	}
+	if isClosed(w.closeCh) {
+		t.Fatal("worker should not be closed while training is in progress")
 	}
 }
 
-func TestTrainerCloseRemovesWorkerWhenRefZero(t *testing.T) {
+// Once the last holder closes, the worker must be retired even though other
+// partitions still use it, so later partitions don't copy from it.
+func TestTrainerCloseRemovesWorkerWhenLastHolderCloses(t *testing.T) {
 	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
 	origRegistry := workerRegistry
 	workerRegistry = r
 	defer func() { workerRegistry = origRegistry }()
 
-	w, _ := r.getOrCreateWorker("idx1")
-	if w.ref != 1 {
-		t.Fatalf("expected ref=1, got %d", w.ref)
-	}
+	creator := newTestTrainerForIndex("idx1")
+	// a sibling whose copy failed, so it uses the worker but isn't a holder
+	sibling := newTestTrainerForIndex("idx1")
+	w := newTrainedTestWorker(r, creator, sibling)
 
-	tr := newTestTrainer()
-	tr.indexName = "idx1"
-	tr.worker = w
-
-	_ = tr.close()
+	_ = creator.close()
 
 	r.m.Lock()
 	defer r.m.Unlock()
 	if _, stillPresent := r.workers["idx1"]; stillPresent {
-		t.Fatal("worker should be removed from registry when ref reaches 0")
+		t.Fatal("worker should be removed from registry once its last holder closes")
+	}
+	if !isClosed(w.closeCh) {
+		t.Fatal("worker without holders should be closed")
 	}
 }
 
@@ -321,12 +315,18 @@ func TestGetOrCreateWorkerConcurrentAccess(t *testing.T) {
 
 	const goroutines = 20
 	var wg sync.WaitGroup
+	var created int64
+	workers := make([]*samplingWorker, goroutines)
 	wg.Add(goroutines)
 	for i := 0; i < goroutines; i++ {
-		go func() {
+		go func(i int) {
 			defer wg.Done()
-			r.getOrCreateWorker("sharedIndex")
-		}()
+			w, existed := r.getOrCreateWorker("sharedIndex")
+			if !existed {
+				atomic.AddInt64(&created, 1)
+			}
+			workers[i] = w
+		}(i)
 	}
 	wg.Wait()
 
@@ -337,8 +337,13 @@ func TestGetOrCreateWorkerConcurrentAccess(t *testing.T) {
 	if !ok {
 		t.Fatal("expected worker in registry")
 	}
-	if w.ref != int64(goroutines) {
-		t.Fatalf("expected ref=%d, got %d", goroutines, w.ref)
+	if created != 1 {
+		t.Fatalf("expected exactly one caller to create the worker, got %d", created)
+	}
+	for _, got := range workers {
+		if got != w {
+			t.Fatal("expected every caller to get the same worker")
+		}
 	}
 }
 
@@ -758,10 +763,6 @@ func TestShutdownUsingMockCluster(t *testing.T) {
 	// check shutdown was handled gracefully and training was stopped without marking complete
 	select {
 	case <-tw.closeCh:
-		if tw.ref != 0 {
-			t.Fatalf("expected worker ref=0 after shutdown, got %d", tw.ref)
-		}
-
 		select {
 		case <-tw.doneCh:
 			// indicates that the sampler goroutine exited
@@ -781,4 +782,614 @@ func TestShutdownUsingMockCluster(t *testing.T) {
 		t.Fatal("expected closeCh to be closed on shutdown")
 	}
 
+}
+
+// The creator must be registered as a holder of the trained index by the time
+// the partitions waiting on copyCh are woken.
+func TestCreateTrainedIndexRegistersCreatorAsHolder(t *testing.T) {
+	const (
+		indexName     = "testVectorIndex"
+		partitionName = "testVectorIndex_indexUUID_pindexUUID"
+	)
+	vecIndex, cleanup := buildTestVectorBleveIndex(t, partitionName)
+	defer cleanup()
+
+	tr := newTestTrainer()
+	tr.indexName = indexName
+	tr.partitionName = partitionName
+
+	params := &samplingParams{
+		collectionNames: []string{"col1"},
+		sampleLimit:     []int{20},
+		scopeName:       "testScope",
+		sourceName:      "testBucket",
+	}
+	mockC := &mockKVCluster{iterators: makeSimpleMockIterables(params)}
+	worker, cfg := newTestWorkerAndConfig(t, tr, vecIndex, params, mockC)
+
+	// what a waiting partition sees as soon as it's woken
+	seen := make(chan bleve.TrainableIndex, 1)
+	go func() {
+		<-worker.copyCh
+		workerRegistry.m.Lock()
+		seen <- worker.holders[tr]
+		workerRegistry.m.Unlock()
+	}()
+
+	if err := tr.createTrainedIndex(cfg); err != nil {
+		t.Fatalf("createTrainedIndex failed: %v", err)
+	}
+
+	select {
+	case holder := <-seen:
+		if holder != vecIndex {
+			t.Fatal("expected the creator to be a holder when copyCh is closed")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("copyCh wasn't closed")
+	}
+}
+
+// A failed training must not register the creator as a holder.
+func TestCreateTrainedIndexFailureRegistersNoHolder(t *testing.T) {
+	tr := newTestTrainer()
+	tr.indexName = "testVectorIndex"
+
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	worker, _ := r.getOrCreateWorker(tr.indexName)
+	err := tr.createTrainedIndex(&trainedIndexConfig{
+		worker: worker,
+		initClusterCallback: func() error {
+			return fmt.Errorf("cluster unavailable")
+		},
+	})
+	if err == nil {
+		t.Fatal("expected createTrainedIndex to fail")
+	}
+
+	workerRegistry.m.Lock()
+	defer workerRegistry.m.Unlock()
+	if len(worker.holders) != 0 {
+		t.Fatalf("expected no holders after a failed training, got %d",
+			len(worker.holders))
+	}
+}
+
+// A partition that copies the trained index must be registered as a holder,
+// so it can serve later copies.
+func TestCopyTrainedIndexRegistersHolder(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	// the creator trains the worker's trained index
+	creatorIndex, cleanupCreator := buildTestVectorBleveIndex(t, "idx_indexUUID_p1")
+	defer cleanupCreator()
+	creator := newTestTrainer()
+	creator.indexName = "idx"
+	worker, _ := r.getOrCreateWorker(creator.indexName)
+	params := &samplingParams{
+		collectionNames: []string{"col1"},
+		sampleLimit:     []int{20},
+		scopeName:       "testScope",
+		sourceName:      "testBucket",
+	}
+	mockC := &mockKVCluster{iterators: makeSimpleMockIterables(params)}
+	err := creator.createTrainedIndex(&trainedIndexConfig{
+		worker:          worker,
+		vecIndex:        creatorIndex,
+		scopeName:       params.scopeName,
+		collectionNames: params.collectionNames,
+		initClusterCallback: func() error {
+			worker.configure(&samplingWorkerRunConfig{cluster: mockC, params: params,
+				trainStats: &creator.trainStats, vecIndex: creatorIndex})
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("createTrainedIndex failed: %v", err)
+	}
+
+	// a sibling partition of the same index copies it
+	const copierPath = "copierpindexuuid"
+	mgr, cleanupMgr := setupManagerWithPIndex(t, copierPath, "idx_indexUUID_p2")
+	defer cleanupMgr()
+	copierIndex, cleanupCopier := buildTestVectorBleveIndex(t, copierPath)
+	defer cleanupCopier()
+	copier := newTestTrainer()
+	copier.mgr = mgr
+	copier.bleveDest.path = copierPath
+	copier.bleveDest.bindex = copierIndex
+
+	copier.acquireSamples()
+
+	if _, err := os.Stat(filepath.Join(copierPath, "store",
+		index.TrainedIndexFileName)); err != nil {
+		t.Fatalf("expected the trained index to be copied: %v", err)
+	}
+	workerRegistry.m.Lock()
+	defer workerRegistry.m.Unlock()
+	if worker.holders[copier] != copierIndex {
+		t.Fatal("expected the copier to be registered as a holder")
+	}
+	if worker.holders[creator] != creatorIndex {
+		t.Fatal("expected the creator to remain a holder")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// holder deregistration on close
+// ---------------------------------------------------------------------------
+
+// newTrainedTestWorker creates a worker in r whose training succeeded with
+// creator as the only holder, and attaches the given siblings to it.
+func newTrainedTestWorker(r *samplingWorkerRegistry, creator *vectorIndexTrainer,
+	siblings ...*vectorIndexTrainer) *samplingWorker {
+	w, _ := r.getOrCreateWorker(creator.indexName)
+	creator.worker = w
+	for _, s := range siblings {
+		s.worker = w
+	}
+	w.success = true
+	r.finishTraining(w, creator, nil)
+	close(w.copyCh)
+	return w
+}
+
+func newTestTrainerForIndex(indexName string) *vectorIndexTrainer {
+	tr := newTestTrainer()
+	tr.indexName = indexName
+	return tr
+}
+
+// Closing a holder deregisters it, and the worker stays as long as another
+// partition still holds the trained index.
+func TestTrainerCloseKeepsWorkerWhileHoldersRemain(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	creator := newTestTrainerForIndex("idx")
+	copier := newTestTrainerForIndex("idx")
+	w := newTrainedTestWorker(r, creator, copier)
+	r.addHolder(w, copier, nil)
+
+	_ = creator.close()
+
+	r.m.Lock()
+	defer r.m.Unlock()
+	if _, ok := w.holders[creator]; ok {
+		t.Fatal("closed partition should be deregistered as a holder")
+	}
+	if _, ok := w.holders[copier]; !ok {
+		t.Fatal("remaining holder should stay registered")
+	}
+	if r.workers["idx"] != w {
+		t.Fatal("worker should stay registered while a holder remains")
+	}
+	if isClosed(w.closeCh) {
+		t.Fatal("worker should not be closed while a holder remains")
+	}
+}
+
+// If the creator closes before training finishes, the worker must be retired
+// before the partitions waiting on it are woken.
+func TestCreatorCloseDuringTrainingRetiresWorker(t *testing.T) {
+	const (
+		indexName     = "testVectorIndex"
+		partitionName = "testVectorIndex_indexUUID_pindexUUID"
+	)
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	vecIndex, cleanup := buildTestVectorBleveIndex(t, partitionName)
+	defer cleanup()
+
+	creator := newTestTrainerForIndex(indexName)
+	creator.partitionName = partitionName
+	waiter := newTestTrainerForIndex(indexName)
+	w, _ := r.getOrCreateWorker(indexName)
+	creator.worker = w
+	r.getOrCreateWorker(indexName)
+	waiter.worker = w
+
+	params := &samplingParams{
+		collectionNames: []string{"col1"},
+		sampleLimit:     []int{20},
+		scopeName:       "testScope",
+		sourceName:      "testBucket",
+	}
+	// the creator's partition closes midway through sampling
+	itrs := []sourceIterator{&mockSourceIterable{
+		docs:  makeVectorTestDocs(params.sampleLimit[0]),
+		errAt: -1,
+		shutdown: func(pos int) error {
+			if pos == 10 {
+				creator.close()
+			}
+			return nil
+		},
+	}}
+	mockC := &mockKVCluster{iterators: itrs}
+
+	// what a waiting partition sees as soon as it's woken
+	retired := make(chan bool, 1)
+	go func() {
+		<-w.copyCh
+		r.m.Lock()
+		_, registered := r.workers[indexName]
+		retired <- !registered && len(w.holders) == 0
+		r.m.Unlock()
+	}()
+
+	_ = creator.createTrainedIndex(&trainedIndexConfig{
+		worker:          w,
+		vecIndex:        vecIndex,
+		scopeName:       params.scopeName,
+		collectionNames: params.collectionNames,
+		initClusterCallback: func() error {
+			w.configure(&samplingWorkerRunConfig{cluster: mockC, params: params,
+				trainStats: &creator.trainStats})
+			return nil
+		},
+	})
+
+	select {
+	case ok := <-retired:
+		if !ok {
+			t.Fatal("expected the worker to be retired, without holders, " +
+				"when copyCh is closed")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("copyCh wasn't closed")
+	}
+	r.m.Lock()
+	defer r.m.Unlock()
+	if !isClosed(w.closeCh) {
+		t.Fatal("expected the sampler to be stopped")
+	}
+}
+
+// Retiring a worker must not remove a newer worker registered for the index.
+func TestRetireKeepsNewerWorker(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	old, _ := r.getOrCreateWorker("idx")
+	delete(r.workers, "idx")
+	newer, _ := r.getOrCreateWorker("idx")
+
+	r.m.Lock()
+	r.retireLOCKED("idx", old)
+	r.m.Unlock()
+
+	if r.workers["idx"] != newer {
+		t.Fatal("retiring an old worker removed the newer one")
+	}
+	if !isClosed(old.closeCh) || isClosed(newer.closeCh) {
+		t.Fatal("expected only the old worker to be closed")
+	}
+}
+
+// A partition that closed must not be added back as a holder.
+func TestAddHolderSkipsClosedPartition(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	tr := newTestTrainerForIndex("idx")
+	w, _ := r.getOrCreateWorker("idx")
+	close(tr.closeCh)
+
+	r.addHolder(w, tr, nil)
+
+	if len(w.holders) != 0 {
+		t.Fatal("closed partition was registered as a holder")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// copying from any holder
+// ---------------------------------------------------------------------------
+
+// newTestCopier builds a partition of index "idx" at path, registered with a
+// manager so that acquireSamples can resolve its index name.
+func newTestCopier(t *testing.T, path, partitionName string) (
+	*vectorIndexTrainer, bleve.TrainableIndex, func()) {
+	t.Helper()
+	mgr, cleanupMgr := setupManagerWithPIndex(t, path, partitionName)
+	vecIndex, cleanupIndex := buildTestVectorBleveIndex(t, path)
+	tr := newTestTrainer()
+	tr.mgr = mgr
+	tr.bleveDest.path = path
+	tr.bleveDest.bindex = vecIndex
+	return tr, vecIndex, func() {
+		cleanupIndex()
+		cleanupMgr()
+	}
+}
+
+// After the creator moves off the node, a partition arriving later must copy
+// the trained index from a sibling that still holds it, rather than from the
+// closed creator.
+func TestCopyTrainedIndexFromHolderAfterCreatorCloses(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	// the creator trains the worker's trained index
+	creatorIndex, cleanupCreator := buildTestVectorBleveIndex(t, "idx_indexUUID_p1")
+	var closeCreatorOnce sync.Once
+	closeCreator := func() { closeCreatorOnce.Do(cleanupCreator) }
+	defer closeCreator()
+	creator := newTestTrainerForIndex("idx")
+	worker, _ := r.getOrCreateWorker(creator.indexName)
+	creator.worker = worker
+	params := &samplingParams{
+		collectionNames: []string{"col1"},
+		sampleLimit:     []int{20},
+		scopeName:       "testScope",
+		sourceName:      "testBucket",
+	}
+	mockC := &mockKVCluster{iterators: makeSimpleMockIterables(params)}
+	err := creator.createTrainedIndex(&trainedIndexConfig{
+		worker:          worker,
+		vecIndex:        creatorIndex,
+		scopeName:       params.scopeName,
+		collectionNames: params.collectionNames,
+		initClusterCallback: func() error {
+			worker.configure(&samplingWorkerRunConfig{cluster: mockC, params: params,
+				trainStats: &creator.trainStats, vecIndex: creatorIndex})
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("createTrainedIndex failed: %v", err)
+	}
+
+	// a sibling copies it and becomes a holder
+	sibling, siblingIndex, cleanupSibling := newTestCopier(t,
+		"siblingpindexuuid", "idx_indexUUID_p2")
+	defer cleanupSibling()
+	sibling.acquireSamples()
+
+	// the creator moves off the node: its trainer closes, then its index
+	_ = creator.close()
+	closeCreator()
+
+	// a partition of the same index arrives later
+	arrival, _, cleanupArrival := newTestCopier(t,
+		"arrivalpindexuuid", "idx_indexUUID_p3")
+	defer cleanupArrival()
+	arrival.acquireSamples()
+
+	if _, err := os.Stat(filepath.Join(arrival.bleveDest.path, "store",
+		index.TrainedIndexFileName)); err != nil {
+		t.Fatalf("expected the trained index to be copied from the sibling: %v", err)
+	}
+	workerRegistry.m.Lock()
+	defer workerRegistry.m.Unlock()
+	if _, ok := worker.holders[arrival]; !ok {
+		t.Fatal("expected the arrival to be registered as a holder")
+	}
+	if worker.holders[sibling] != siblingIndex {
+		t.Fatal("expected the sibling to remain a holder")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// retrying the copy with another holder
+// ---------------------------------------------------------------------------
+
+// trainTestCreator trains index "idx" on a new partition at path through r, as
+// the creator of its worker. The returned func closes the creator's index and
+// can be called more than once.
+func trainTestCreator(t *testing.T, r *samplingWorkerRegistry, path string) (
+	*vectorIndexTrainer, bleve.TrainableIndex, *samplingWorker, func()) {
+	t.Helper()
+	vecIndex, cleanup := buildTestVectorBleveIndex(t, path)
+	var once sync.Once
+	closeIndex := func() { once.Do(cleanup) }
+
+	creator := newTestTrainerForIndex("idx")
+	worker, _ := r.getOrCreateWorker(creator.indexName)
+	creator.worker = worker
+	params := &samplingParams{
+		collectionNames: []string{"col1"},
+		sampleLimit:     []int{20},
+		scopeName:       "testScope",
+		sourceName:      "testBucket",
+	}
+	mockC := &mockKVCluster{iterators: makeSimpleMockIterables(params)}
+	err := creator.createTrainedIndex(&trainedIndexConfig{
+		worker:          worker,
+		vecIndex:        vecIndex,
+		scopeName:       params.scopeName,
+		collectionNames: params.collectionNames,
+		initClusterCallback: func() error {
+			worker.configure(&samplingWorkerRunConfig{cluster: mockC, params: params,
+				trainStats: &creator.trainStats, vecIndex: vecIndex})
+			return nil
+		},
+	})
+	if err != nil {
+		closeIndex()
+		t.Fatalf("createTrainedIndex failed: %v", err)
+	}
+	return creator, vecIndex, worker, closeIndex
+}
+
+// A copier that picks a holder whose index has closed must move on to another
+// holder instead of failing.
+func TestCopyTrainedIndexSkipsClosedHolders(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	creator, creatorIndex, worker, closeCreator := trainTestCreator(t, r,
+		"idx_indexUUID_p1")
+	defer closeCreator()
+
+	// holders whose index closed without them deregistering. with several of
+	// them, the copier almost always picks a closed one first.
+	var closedHolders []*vectorIndexTrainer
+	for i := 0; i < 5; i++ {
+		path := fmt.Sprintf("closedholderpindex%d", i)
+		closedIndex, cleanup := buildTestVectorBleveIndex(t, path)
+		cleanup()
+		holder := newTestTrainerForIndex("idx")
+		r.addHolder(worker, holder, closedIndex)
+		closedHolders = append(closedHolders, holder)
+	}
+
+	arrival, _, cleanupArrival := newTestCopier(t, "arrivalpindexuuid",
+		"idx_indexUUID_p2")
+	defer cleanupArrival()
+	arrival.acquireSamples()
+
+	if _, err := os.Stat(filepath.Join(arrival.bleveDest.path, "store",
+		index.TrainedIndexFileName)); err != nil {
+		t.Fatalf("expected the trained index to be copied from the live holder: %v", err)
+	}
+	r.m.Lock()
+	defer r.m.Unlock()
+	if worker.holders[creator] != creatorIndex {
+		t.Fatal("expected the live holder to remain a holder")
+	}
+	if _, ok := worker.holders[arrival]; !ok {
+		t.Fatal("expected the arrival to be registered as a holder")
+	}
+	if r.workers["idx"] != worker {
+		t.Fatal("worker should stay registered while a live holder remains")
+	}
+}
+
+// If every holder turns out to be closed, the closed holders are dropped, the
+// worker is retired and the copier rejoins the registry. With no worker left it
+// becomes the creator of a new one, whose training fails here without KV, so
+// that worker is retired too and no trained index is copied.
+func TestCopyTrainedIndexAllHoldersClosed(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	creator, _, worker, closeCreator := trainTestCreator(t, r, "idx_indexUUID_p1")
+	defer closeCreator()
+	// the creator's index closes without its trainer deregistering
+	closeCreator()
+
+	arrival, _, cleanupArrival := newTestCopier(t, "arrivalpindexuuid",
+		"idx_indexUUID_p2")
+	defer cleanupArrival()
+
+	done := make(chan struct{})
+	go func() {
+		arrival.acquireSamples()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("copier kept retrying closed holders or rejoining")
+	}
+
+	if _, err := os.Stat(filepath.Join(arrival.bleveDest.path, "store",
+		index.TrainedIndexFileName)); !os.IsNotExist(err) {
+		t.Fatalf("expected no trained index to be copied, stat err: %v", err)
+	}
+	r.m.Lock()
+	defer r.m.Unlock()
+	if _, ok := worker.holders[creator]; ok {
+		t.Fatal("expected the closed holder to be dropped")
+	}
+	if _, ok := r.workers["idx"]; ok {
+		t.Fatal("worker without holders should be removed from the registry")
+	}
+	if !isClosed(worker.closeCh) {
+		t.Fatal("worker without holders should be closed")
+	}
+}
+
+// Partitions waiting on a worker whose creator closed mid-training must rejoin
+// the registry and wait on the worker registered for the index by then, rather
+// than train themselves, and then copy its trained index.
+func TestRejoinWaitsOnCurrentWorker(t *testing.T) {
+	r := &samplingWorkerRegistry{workers: make(map[string]*samplingWorker)}
+	origRegistry := workerRegistry
+	workerRegistry = r
+	defer func() { workerRegistry = origRegistry }()
+
+	// the first creator, which never finishes training
+	creator1 := newTestTrainerForIndex("idx")
+	w1, _ := r.getOrCreateWorker("idx")
+	creator1.worker = w1
+
+	var copiers []*vectorIndexTrainer
+	var wg sync.WaitGroup
+	for i := 0; i < 3; i++ {
+		copier, _, cleanup := newTestCopier(t, fmt.Sprintf("copierpindex%d", i),
+			fmt.Sprintf("idx_indexUUID_p%d", i+2))
+		defer cleanup()
+		copiers = append(copiers, copier)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			copier.acquireSamples()
+		}()
+	}
+	// give the copiers time to join w1 and wait on it. a copier joining
+	// later lands on the current worker directly, which the checks below
+	// accept as well.
+	time.Sleep(500 * time.Millisecond)
+
+	// a worker of the index's next creator is registered by the time the
+	// copiers rejoin
+	r.m.Lock()
+	delete(r.workers, "idx")
+	r.m.Unlock()
+	w2, _ := r.getOrCreateWorker("idx")
+
+	// the first creator closes mid-training: its training ends without a holder
+	_ = creator1.close()
+	r.finishTraining(w1, creator1, nil)
+	close(w1.copyCh)
+
+	// the next creator trains w2
+	creator2, _, gotW2, closeCreator2 := trainTestCreator(t, r, "idx_indexUUID_p1")
+	defer closeCreator2()
+	if gotW2 != w2 {
+		t.Fatal("expected the next creator to train the registered worker")
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("copiers didn't finish")
+	}
+
+	r.m.Lock()
+	defer r.m.Unlock()
+	if _, ok := w2.holders[creator2]; !ok {
+		t.Fatal("expected the next creator to hold the trained index")
+	}
+	for _, copier := range copiers {
+		if atomic.LoadUint64(&copier.trainStats.TotTrainedIndexBuildTimeInNs) != 0 {
+			t.Fatalf("copier %s trained instead of waiting", copier.bleveDest.path)
+		}
+		if _, err := os.Stat(filepath.Join(copier.bleveDest.path, "store",
+			index.TrainedIndexFileName)); err != nil {
+			t.Fatalf("expected copier %s to copy the trained index: %v",
+				copier.bleveDest.path, err)
+		}
+		if _, ok := w2.holders[copier]; !ok {
+			t.Fatalf("expected copier %s to be a holder", copier.bleveDest.path)
+		}
+	}
 }
