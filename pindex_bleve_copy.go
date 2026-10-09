@@ -512,7 +512,8 @@ func createNewBleveIndex(indexType, indexParams, path string,
 		return
 	}
 
-	impl, destWrapper, err := NewBlevePIndexImpl(indexType, indexParams, path, rollback)
+	// only the index is created here, the dest already exists.
+	bindex, _, _, err := newBleveIndex(indexParams, path)
 	if err != nil {
 		var ok bool
 		var pi *cbgt.PIndex
@@ -535,27 +536,8 @@ func createNewBleveIndex(indexType, indexParams, path string,
 		return
 	}
 
-	// stop the old workers.
-	if fwder, ok := destWrapper.(*cbgt.DestForwarder); ok {
-		if bdest, ok := fwder.DestProvider.(*BleveDest); ok {
-			closed, remove := isDestClosedAndNeedsToBeRemoved(bdest)
-			if closed {
-				log.Printf("pindex_bleve_copy: createNewBleveIndex pindex: %s"+
-					" dest closed", pindexName)
-				closeBleveIndex(bdest.bindex, bdest, remove)
-				return
-			}
-			bdest.stopBatchWorkers()
-		}
-	}
-
 	// update the new index into the pindex.
-	if bindex, ok := impl.(bleve.Index); ok {
-		updateBleveIndex(pindexName, mgr, bindex, dest)
-	} else {
-		log.Errorf("pindex_bleve_copy: no bleve.Index implementation"+
-			"found: %s", pindexName)
-	}
+	updateBleveIndex(pindexName, mgr, bindex, dest)
 }
 
 // helper function that returns if the BleveDest is closed and needs to be removed

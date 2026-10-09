@@ -27,6 +27,7 @@ import (
 	"github.com/blevesearch/bleve/v2/index/scorch"
 	"github.com/blevesearch/bleve/v2/util"
 	index "github.com/blevesearch/bleve_index_api"
+	ftsHttp "github.com/couchbase/cbft/http"
 	"github.com/couchbase/cbgt"
 	"github.com/couchbase/gocbcore/v10"
 )
@@ -1391,5 +1392,62 @@ func TestRejoinWaitsOnCurrentWorker(t *testing.T) {
 		if _, ok := w2.holders[copier]; !ok {
 			t.Fatalf("expected copier %s to be a holder", copier.bleveDest.path)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// createNewBleveIndex (file transfer fallback)
+// ---------------------------------------------------------------------------
+
+// The fresh index built when a partition copy falls back must be trained by the
+// existing dest alone. Wrapping it in a dest of its own started a second trainer
+// on the same index, which then copied the trained index into itself.
+func TestCreateNewBleveIndexStartsSingleTrainer(t *testing.T) {
+	const (
+		uuidPath      = "6d0a4a9f0123abcd"
+		partitionName = "idx_indexUUID_6d0a4a9f"
+	)
+	// not tagged as a janitor, so updateBleveIndex's janitor kick doesn't block
+	mgr := cbgt.NewManager(cbgt.VERSION, cbgt.NewCfgMem(), cbgt.NewUUID(),
+		[]string{"feed"}, "", 1, "", ":18094", t.TempDir(), "test", nil)
+	if err := mgr.SetPIndexName(uuidPath, partitionName); err != nil {
+		t.Fatalf("SetPIndexName failed: %v", err)
+	}
+	origFetcher := CurrentNodeDefsFetcher
+	CurrentNodeDefsFetcher = &NodeDefsFetcher{mgr: mgr}
+	defer func() { CurrentNodeDefsFetcher = origFetcher }()
+
+	path := filepath.Join(t.TempDir(), uuidPath)
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Fatal(err)
+	}
+	indexParams := `{"indexName":"idx","params":` +
+		`"{\"store\":{\"indexType\":\"scorch\",\"vector_index_fast_merge\":true}}"}`
+	bleveParams, kvConfig, _, _, err := parseIndexParams(indexParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// the placeholder dest the pindex is registered with during the copy
+	dest := newNoOpBleveDest(partitionName, path, bleveParams, nil,
+		&sourceInfo{kvconfig: kvConfig})
+	defer ftsHttp.UnregisterIndexByName(partitionName)
+	defer dest.Close(false)
+
+	opened := atomic.LoadUint64(&TotBleveDestOpened)
+	createNewBleveIndex("fulltext-index", indexParams, path, nil, dest, mgr)
+
+	if n := atomic.LoadUint64(&TotBleveDestOpened) - opened; n != 0 {
+		t.Fatalf("expected no additional dest to be opened, got %d", n)
+	}
+	if _, ok := dest.bindex.(*noopBleveIndex); ok {
+		t.Fatal("expected the dest to hold the newly created index")
+	}
+	if dest.trainingSampler == nil {
+		t.Fatal("expected the dest to run the trainer for the new index")
+	}
+	select {
+	case <-dest.trainingSampler.wait():
+	case <-time.After(5 * time.Second):
+		t.Fatal("trainer didn't complete")
 	}
 }
