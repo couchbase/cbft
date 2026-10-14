@@ -1372,9 +1372,12 @@ func (em *encryptionManager) newWriter(keyType, bucketUUID string, context strin
 	}
 
 	// files of a pindex that cannot be encrypted are written unencrypted.
+	// The empty key is recorded like any other key in use, so the
+	// unencrypted data is reported before the next keys in use refresh.
 	if pindexName != "" {
 		info, err := em.pindexSourceStore.getPIndexInfo(pindexName)
 		if err == nil && !info.encryptable() {
+			em.keyStore.setNewKey(keyType, bucketUUID, "")
 			return "", emptyWriterCallback(), nil
 		}
 	}
