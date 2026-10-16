@@ -128,6 +128,12 @@ func NewEncryptionManager(mgr *cbgt.Manager) (*encryptionManager, error) {
 		encryptionManagerInstance.encryptAndWriteFile)
 	mgr.SetDecryptAndReadFileCallback(
 		encryptionManagerInstance.decryptAndReadFile)
+
+	// a pindex added to or removed from this node, such as one moved by a
+	// rebalance, changes the keys in use
+	cbgt.RegisteredPIndexCallbacks.OnCreate = encryptionManagerInstance.pindexChanged
+	cbgt.RegisteredPIndexCallbacks.OnDelete = encryptionManagerInstance.pindexChanged
+
 	log.Print("encryptionManager: encryption manager created and callbacks " +
 		"registered successfully")
 
@@ -135,6 +141,12 @@ func NewEncryptionManager(mgr *cbgt.Manager) (*encryptionManager, error) {
 }
 
 // ---------------------------- callbacks implementation --------------------------
+
+// requests a keys in use cache refresh when a pindex is registered on or
+// unregistered from this node
+func (em *encryptionManager) pindexChanged(pindexName string) {
+	em.keyStore.requestRefresh()
+}
 
 // updates bucket cache when there is an index introduction/deletion,
 // which is the only time we need to check bucket UUID changes.
@@ -712,14 +724,19 @@ type keyStore struct {
 	// in use until the next refresh happens.
 	newKeysLock sync.RWMutex
 	newKeys     map[string]map[string]struct{}
+
+	// signals the monitor to refresh the keys in use cache outside of its
+	// regular interval.
+	refreshCh chan struct{}
 }
 
 // Initializes the key store and starts the monitor for active keys.
 func newKeyStore(mgr *cbgt.Manager) *keyStore {
 	ks := &keyStore{
-		keys:    make(map[string]*cbauth.EncrKeysInfo),
-		newKeys: make(map[string]map[string]struct{}),
-		mgr:     mgr,
+		keys:      make(map[string]*cbauth.EncrKeysInfo),
+		newKeys:   make(map[string]map[string]struct{}),
+		refreshCh: make(chan struct{}, 1),
+		mgr:       mgr,
 	}
 	ks.keysInUseCache.Store(&map[string]map[string]struct{}{})
 
@@ -775,12 +792,19 @@ func (ks *keyStore) setNewKey(keyType, bucketUUID string, keyId string) {
 	ks.newKeysLock.Unlock()
 }
 
-// starts a monitor that refreshes the keys in use cache at a regular interval.
+// starts a monitor that refreshes the keys in use cache at a regular interval,
+// and whenever a refresh is requested.
 func (ks *keyStore) startMonitor() {
 	// monitor is paused until initial load is done to
 	// avoid improper cache updates when keys are loaded
 	// on demand during booting
 	ks.waitPreLoad()
+
+	// pindexes registered while booting are covered by the initial refresh
+	select {
+	case <-ks.refreshCh:
+	default:
+	}
 	ks.refreshKeysInUseCache()
 
 	// refresh keys in use cache at a regular interval to
@@ -793,7 +817,19 @@ func (ks *keyStore) startMonitor() {
 		select {
 		case <-ticker.C:
 			ks.refreshKeysInUseCache()
+		case <-ks.refreshCh:
+			ks.refreshKeysInUseCache()
 		}
+	}
+}
+
+// requests the monitor to refresh the keys in use cache. Never blocks, so it
+// is safe to call while holding the cbgt manager lock. A request made while
+// one is already pending is merged into it.
+func (ks *keyStore) requestRefresh() {
+	select {
+	case ks.refreshCh <- struct{}{}:
+	default:
 	}
 }
 
