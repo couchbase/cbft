@@ -26,6 +26,7 @@ require (
 	github.com/couchbase/gocb/v2 v2.12.4
 	github.com/couchbase/gocbcore/v10 v10.9.3
 	github.com/couchbase/gocbcrypto v0.0.0-00010101000000-000000000000
+	github.com/couchbase/gocoverage v0.0.0
 	github.com/couchbase/goutils v0.3.0
 	github.com/couchbase/regulator v0.0.0-00010101000000-000000000000
 	github.com/couchbase/tools-common/cloud/v8 v8.1.4
@@ -151,6 +152,8 @@ replace github.com/couchbase/gomemcached => ../goproj/src/github.com/couchbase/g
 replace github.com/couchbase/goutils => ../goproj/src/github.com/couchbase/goutils
 
 replace github.com/couchbase/gocbcrypto => ../goproj/src/github.com/couchbase/gocbcrypto
+
+replace github.com/couchbase/gocoverage => ../gocoverage
 
 replace github.com/couchbase/eventing => ../goproj/src/github.com/couchbase/eventing
 
