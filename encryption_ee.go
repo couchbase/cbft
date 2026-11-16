@@ -42,6 +42,7 @@ import (
 
 var encryptionManagerInstance *encryptionManager
 var encryptionManagerOnce sync.Once
+var pindexCallbacksOnce sync.Once
 
 // This is responsible for all encryption related operations.
 // Managing encryption, decryption, key management,
@@ -130,9 +131,25 @@ func NewEncryptionManager(mgr *cbgt.Manager) (*encryptionManager, error) {
 		encryptionManagerInstance.decryptAndReadFile)
 
 	// a pindex added to or removed from this node, such as one moved by a
-	// rebalance, changes the keys in use
-	cbgt.RegisteredPIndexCallbacks.OnCreate = encryptionManagerInstance.pindexChanged
-	cbgt.RegisteredPIndexCallbacks.OnDelete = encryptionManagerInstance.pindexChanged
+	// rebalance, changes the keys in use. Wrap the existing callback to refresh
+	// the keys in use.
+	pindexCallbacksOnce.Do(func() {
+		prevOnCreate := cbgt.RegisteredPIndexCallbacks.OnCreate
+		cbgt.RegisteredPIndexCallbacks.OnCreate = func(pindexName string) {
+			if prevOnCreate != nil {
+				prevOnCreate(pindexName)
+			}
+			encryptionManagerInstance.pindexChanged(pindexName)
+		}
+
+		prevOnDelete := cbgt.RegisteredPIndexCallbacks.OnDelete
+		cbgt.RegisteredPIndexCallbacks.OnDelete = func(pindexName string) {
+			if prevOnDelete != nil {
+				prevOnDelete(pindexName)
+			}
+			encryptionManagerInstance.pindexChanged(pindexName)
+		}
+	})
 
 	log.Print("encryptionManager: encryption manager created and callbacks " +
 		"registered successfully")
