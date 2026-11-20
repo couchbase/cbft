@@ -67,7 +67,7 @@ index definitions.
 # Additional reading
 
 Tradeoffs and considerations to [increasing index
-performance](../dev-guide/performance)
+performance](../cbft/dev-guide/performance)
 
 ---
 
