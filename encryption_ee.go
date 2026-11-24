@@ -898,7 +898,7 @@ func (ks *keyStore) refreshKeysInUseCache() {
 		if _, exists := curKeyMap[bucketKeyType+pIndex.SourceUUID]; !exists {
 			curKeyMap[bucketKeyType+pIndex.SourceUUID] = make(map[string]struct{})
 		}
-		bIndex, _, _, err := bleveIndex(pIndex)
+		_, bdest, _, err := bleveIndex(pIndex)
 		if err != nil {
 			log.Printf("keyStore: failed to get bleve index for pindex %s: %v",
 				pIndex.Name, err)
@@ -906,17 +906,15 @@ func (ks *keyStore) refreshKeysInUseCache() {
 		}
 
 		// obtain keys in use from the bleve index
-		if cIndex, ok := bIndex.(bleve.IndexWithCallbacks); ok {
-			keysInUse, err := cIndex.FileWriterIDsInUse()
-			if err != nil {
-				log.Printf("keyStore: failed to get writer ids in use for pindex %s: %v",
-					pIndex.Name, err)
-				continue
-			}
+		keysInUse, err := bdest.fileWriterIDsInUse()
+		if err != nil {
+			log.Printf("keyStore: failed to get writer ids in use for pindex %s: %v",
+				pIndex.Name, err)
+			continue
+		}
 
-			for key := range keysInUse {
-				curKeyMap[bucketKeyType+pIndex.SourceUUID][key] = struct{}{}
-			}
+		for key := range keysInUse {
+			curKeyMap[bucketKeyType+pIndex.SourceUUID][key] = struct{}{}
 		}
 
 		path := pIndex.Path
@@ -993,6 +991,19 @@ func (ks *keyStore) refreshKeysInUseCache() {
 
 	// update the keys in use cache with the new list of keys in use
 	ks.keysInUseCache.Store(&curKeyMap)
+}
+
+// returns the file writer ids in use by the dest's bleve index. The read lock
+// is held so the janitor cannot close the index mid-read, as it may when a
+// rebalance removes the pindex (MB-75560)
+func (t *BleveDest) fileWriterIDsInUse() (map[string]struct{}, error) {
+	t.m.RLock()
+	defer t.m.RUnlock()
+
+	if cIndex, ok := t.bindex.(bleve.IndexWithCallbacks); ok {
+		return cIndex.FileWriterIDsInUse()
+	}
+	return nil, nil
 }
 
 // quick function to combine keys from newKeys cache and current keys in use cache
